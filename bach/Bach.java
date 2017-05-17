@@ -27,9 +27,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -49,10 +58,11 @@ public class Bach {
             .run("com.greetings", "com.greetings.Main");
 
     System.out.printf("%n%s%n%n", "COMMON");
-    new Bach(Level.FINE, Layout.COMMON)
+    new Bach(Level.INFO, Layout.COMMON)
             .set(Folder.SOURCE, Paths.get("demo/common"))
-            .set(Folder.TARGET, Paths.get("target/bach/common"));
-            // .compile();
+            .set(Folder.TARGET, Paths.get("target/bach/common"))
+            .compile()
+            .run("com.greetings", "com.greetings.Main");
   }
 
   enum Layout {
@@ -73,15 +83,21 @@ public class Bach {
   }
 
   enum Folder {
-    DEPENDENCIES("deps"),
+    DEPENDENCIES("dependencies"),
     SOURCE("src"),
     TARGET("target/bach"),
+    TARGET_MAIN_SOURCE("main/module-source-path", TARGET),
+    TARGET_MAIN_COMPILED("main/compiled", TARGET),
+    TARGET_TEST_SOURCE("test/module-source-path", TARGET),
+    TARGET_TEST_COMPILED("test/compiled", TARGET),
     ;
 
-    final Path defaultPath;
+    final List<Folder> parents;
+    final Path path;
 
-    Folder(String defaultPath) {
-      this.defaultPath = Paths.get(defaultPath);
+    Folder(String path, Folder... parents) {
+      this.path = Paths.get(path);
+      this.parents = List.of(parents);
     }
   }
 
@@ -107,7 +123,7 @@ public class Bach {
     log.log(Level.CONFIG, "level=%s%n", initialLevel);
     log.log(Level.CONFIG, "layout=%s%n", layout);
     log.log(Level.CONFIG, "pwd=`%s`%n", Paths.get(".").toAbsolutePath().normalize());
-    log.log(Level.CONFIG, "folder %s%n", folders.entrySet());
+    log.log(Level.CONFIG, "folder %s%n", folders.keySet());
   }
 
   public Bach set(Folder folder, Path path) {
@@ -116,7 +132,15 @@ public class Bach {
   }
 
   public Path get(Folder folder) {
-    return folders.get(folder);
+    if (folder.parents.isEmpty()) {
+      return folders.get(folder);
+    }
+    Iterator<Folder> iterator = folder.parents.iterator();
+    Path path = folders.get(iterator.next());
+    while (iterator.hasNext()) {
+      path = path.resolve(folders.get(iterator.next()));
+    }
+    return path.resolve(folders.get(folder));
   }
 
   public Bach set(Level level) {
@@ -127,23 +151,6 @@ public class Bach {
   public Bach clean() throws IOException {
     log.tag("clean");
     util.cleanTree(get(Folder.TARGET), false);
-    return this;
-  }
-
-  public Bach prepareCommon(Path modules) {
-    log.log(Level.CONFIG, "jigsaw %s%n", modules);
-//    Path target = get(Folder.TARGET).resolve(get(Folder.TARGET_PREPARED));
-//    Path preparedMain = target.resolve(get(Folder.TARGET_PREPARED_SOURCE_MAIN));
-//    Path preparedTest = target.resolve(get(Folder.TARGET_PREPARED_SOURCE_TEST));
-//    util.copyTree(modules.resolve(module + "/main/java"), preparedMain.resolve(module));
-//    util.copyTree(modules.resolve(module + "/main/resources"), target.resolve("main/resources/" + module));
-//    util.copyTree(modules.resolve(module + "/test/java"), preparedTest.resolve(module));
-//    util.copyTree(modules.resolve(module + "/test/resources"), target.resolve("test/resources/" + module));
-//    util.moveModuleInfo(preparedTest.resolve(module));
-    util.copyTree(modules.resolve("main/java"), get(Folder.TARGET).resolve("main/module-source-path"));
-    util.copyTree(modules.resolve("main/resources"), get(Folder.TARGET).resolve("main/module-source-path"));
-    util.copyTree(modules.resolve("test/java"), get(Folder.TARGET).resolve("test/module-source-path"));
-    util.copyTree(modules.resolve("test/resources"), get(Folder.TARGET).resolve("test/module-source-path"));
     return this;
   }
 
@@ -162,29 +169,34 @@ public class Bach {
   }
 
   public Bach compile() throws IOException {
-    log.tag("compile").log(Level.CONFIG, "folder %s%n", folders.entrySet());
+    log.tag("compile").log(Level.CONFIG, "folder %s%n", folders.keySet());
     Path modules = get(Folder.SOURCE);
     if (Files.notExists(modules)) {
       throw new Error("folder source `" + modules + "` does not exist");
     }
-    Path compiled = util.cleanTree(get(Folder.TARGET).resolve("compiled"), true);
+    util.cleanTree(get(Folder.TARGET), true);
     switch (layout) {
       case BASIC:
-        compile(get(Folder.SOURCE), compiled);
+        log.info("main%n");
+        compile(modules, get(Folder.TARGET_MAIN_COMPILED));
         break;
       case COMMON:
-        prepareCommon(modules);
         log.info("main%n");
-        compile(get(Folder.SOURCE), compiled.resolve("main/exploded"));
+        compile(modules.resolve("main/java"), get(Folder.TARGET_MAIN_COMPILED));
         log.info("test%n");
-        // TODO util.copyTree(folders.get(Folder.SOURCE_MAIN_JAVA), folders.get(Folder.SOURCE_TEST_JAVA), true);
-        // TODO compile(folders.get(Folder.SOURCE_TEST_JAVA), compiled.resolve("test/exploded"));
+        util.copyTree(modules.resolve("main/java"), get(Folder.TARGET_TEST_SOURCE));
+        util.copyTree(modules.resolve("test/java"), get(Folder.TARGET_TEST_SOURCE));
+        compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
         break;
       case TILED:
         Files.find(modules, 1, (path, attr) -> Files.isDirectory(path))
                 .filter(path -> !modules.equals(path))
                 .map(path -> modules.relativize(path).toString())
                 .forEach(module -> prepareIDEA(modules, module));
+        log.info("main%n");
+        compile(get(Folder.TARGET_MAIN_SOURCE), get(Folder.TARGET_MAIN_COMPILED));
+        log.info("test%n");
+        compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
       default:
         throw new Error("unsupported module source path layout "+layout+" for: `" + modules + "`");
     }
@@ -234,11 +246,11 @@ public class Bach {
 
   public int run(String module, String main) throws Exception {
     log.tag("run").info("%s/%s%n", module, main);
+    Stream<Folder> folders = Stream.of(Folder.DEPENDENCIES, Folder.TARGET_MAIN_COMPILED);
     List<String> command = new ArrayList<>();
     command.add("java");
     command.add("--module-path");
-    List<String> modulePath = List.of(get(Folder.DEPENDENCIES).toString(), get(Folder.TARGET).resolve("compiled").toString());
-    command.add(String.join(File.pathSeparator, modulePath));
+    command.add(String.join(File.pathSeparator, folders.map(f -> get(f).toString()).collect(Collectors.toList())));
     command.add("--module");
     command.add(module + "/" + main);
     command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
@@ -283,6 +295,9 @@ public class Bach {
       if (args.length == 1 && args[0] instanceof Collection) {
         for (Object arg : (Iterable<?>) args[0]) {
           printContext(level);
+          if (arg instanceof Folder) {
+            arg = arg + " -> " + get((Folder) arg);
+          }
           standardStreams.out.printf(format, arg);
         }
         return;
@@ -301,7 +316,7 @@ public class Bach {
     EnumMap<Folder, Path> defaultFolders() {
       EnumMap<Folder, Path> folders = new EnumMap<>(Folder.class);
       for (Folder folder : Folder.values()) {
-        folders.put(folder, folder.defaultPath);
+        folders.put(folder, folder.path);
       }
       return folders;
     }
@@ -330,10 +345,6 @@ public class Bach {
     }
 
     void copyTree(Path source, Path target) {
-      copyTree(source, target, false);
-    }
-
-    void copyTree(Path source, Path target, boolean ignoreExistingFiles) {
       if (!Files.exists(source)) {
         return;
       }
@@ -357,13 +368,7 @@ public class Bach {
 
               @Override
               public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                try {
-                  Files.copy(file, target.resolve(source.relativize(file)));
-                } catch (FileAlreadyExistsException e) {
-                  if (!ignoreExistingFiles) {
-                    throw e;
-                  }
-                }
+                Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
               }
             });
