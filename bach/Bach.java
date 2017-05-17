@@ -16,6 +16,7 @@
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -40,13 +41,14 @@ import static java.util.Objects.requireNonNull;
 public class Bach {
 
   public static void main(String... args) throws Exception {
-    // BASIC
-    new Bach(Level.FINE, Layout.BASIC)
+    System.out.printf("%n%s%n%n", "BASIC");
+    new Bach(Level.INFO, Layout.BASIC)
             .set(Folder.SOURCE, Paths.get("demo/basic"))
             .set(Folder.TARGET, Paths.get("target/bach/basic"))
-            .compile();
+            .compile()
+            .run("com.greetings", "com.greetings.Main");
 
-    // COMMON
+    System.out.printf("%n%s%n%n", "COMMON");
     new Bach(Level.FINE, Layout.COMMON)
             .set(Folder.SOURCE, Paths.get("demo/common"))
             .set(Folder.TARGET, Paths.get("target/bach/common"));
@@ -210,7 +212,8 @@ public class Bach {
     // specify where to find input source files for multiple modules
     arguments.add("--module-source-path");
     arguments.add(moduleSourcePath.toString());
-    log.log(Level.FINE, "javac %s%n", arguments);
+    log.log(Level.FINE,"javac%n");
+    arguments.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
     // collect .java source files
     int[] count = {0};
     Files.walk(moduleSourcePath)
@@ -219,9 +222,33 @@ public class Bach {
         .peek(name -> count[0]++)
         .forEach(arguments::add);
     // compile
+    long start = System.currentTimeMillis();
     int code = javac.run(standardStreams.in, standardStreams.out, standardStreams.err, arguments.toArray(new String[0]));
-    log.info("%d java files processed%n", count[0]);
+    log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
     return code;
+  }
+
+  public int jar() {
+    throw new UnsupportedOperationException("jar() not implemented, yet");
+  }
+
+  public int run(String module, String main) throws Exception {
+    log.tag("run").info("%s/%s%n", module, main);
+    List<String> command = new ArrayList<>();
+    command.add("java");
+    command.add("--module-path");
+    List<String> modulePath = List.of(get(Folder.DEPENDENCIES).toString(), get(Folder.TARGET).resolve("compiled").toString());
+    command.add(String.join(File.pathSeparator, modulePath));
+    command.add("--module");
+    command.add(module + "/" + main);
+    command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+    Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
+    process.getInputStream().transferTo(System.out);
+    try {
+      return process.waitFor();
+    } catch (InterruptedException e) {
+      return 1;
+    }
   }
 
   class Log {
@@ -238,7 +265,7 @@ public class Bach {
         return this;
       }
       this.tag = tag;
-      info("%n");
+      log(Level.CONFIG,"%n");
       return this;
     }
 
