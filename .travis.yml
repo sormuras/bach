@@ -1,0 +1,17 @@
+sudo: false
+dist: trusty
+language: java
+
+install:
+# Download jdk-9 and "install" it into "~/jdk-9"
+- cd ~
+- wget http://download.java.net/java/jdk9/archive/168/binaries/jdk-9-ea+168_linux-x64_bin.tar.gz
+- tar -xzf jdk-9-ea+168_linux-x64_bin.tar.gz
+- JAVA_HOME=~/jdk-9
+- PATH=$JAVA_HOME/bin:$PATH
+- java -version
+
+script:
+- cd $TRAVIS_BUILD_DIR
+- jshell --show-version bach.jsh
+- find target/bach -type d
