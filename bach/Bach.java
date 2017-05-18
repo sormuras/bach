@@ -44,11 +44,11 @@ enum Folder {
   MAIN_JAVA("main/java"),
   TEST_JAVA("test/java"),
   TARGET("target/bach"),
+  TARGET_TOOLS("target/bach/.tools"),
   TARGET_MAIN_SOURCE("main/module-source-path", TARGET),
   TARGET_MAIN_COMPILED("main/compiled", TARGET),
   TARGET_TEST_SOURCE("test/module-source-path", TARGET),
   TARGET_TEST_COMPILED("test/compiled", TARGET),
-  TARGET_TOOLS("tools", TARGET),
   ;
 
   final List<Folder> parents;
