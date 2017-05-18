@@ -101,6 +101,8 @@ public class Bach {
   enum Folder {
     DEPENDENCIES("dependencies"),
     SOURCE("src"),
+    MAIN_JAVA("main/java"),
+    TEST_JAVA("test/java"),
     TARGET("target/bach"),
     TARGET_MAIN_SOURCE("main/module-source-path", TARGET),
     TARGET_MAIN_COMPILED("main/compiled", TARGET),
@@ -192,26 +194,30 @@ public class Bach {
         break;
       case COMMON:
         log.info("main%n");
-        compile(modules.resolve("main/java"), get(Folder.TARGET_MAIN_COMPILED));
-        log.info("test%n");
-        util.copyTree(modules.resolve("main/java"), get(Folder.TARGET_TEST_SOURCE));
-        util.copyTree(modules.resolve("test/java"), get(Folder.TARGET_TEST_SOURCE));
-        compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
+        compile(modules.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_MAIN_COMPILED));
+        if (Files.exists(modules.resolve(get(Folder.TEST_JAVA)))) {
+          log.info("test%n");
+          util.copyTree(modules.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_TEST_SOURCE));
+          util.copyTree(modules.resolve(get(Folder.TEST_JAVA)), get(Folder.TARGET_TEST_SOURCE));
+          compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
+        }
         break;
       case IDEA:
         util.findDirectoryNames(modules).forEach(module -> {
           log.log(Level.FINE, "module %s%n", module);
-          Path modulePath = modules.resolve(module);
+          Path source = modules.resolve(module);
           // main
-          util.copyTree(modulePath.resolve("main/java"), get(Folder.TARGET_MAIN_SOURCE).resolve(module));
+          util.copyTree(source.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_MAIN_SOURCE).resolve(module));
           // test
-          util.copyTree(modulePath.resolve("main/java"), get(Folder.TARGET_TEST_SOURCE).resolve(module));
-          util.copyTree(modulePath.resolve("test/java"), get(Folder.TARGET_TEST_SOURCE).resolve(module));
+          util.copyTree(source.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
+          util.copyTree(source.resolve(get(Folder.TEST_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
         });
         log.info("main%n");
         compile(get(Folder.TARGET_MAIN_SOURCE), get(Folder.TARGET_MAIN_COMPILED));
-        log.info("test%n");
-        compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
+        if (Files.exists(get(Folder.TARGET_TEST_SOURCE))) {
+          log.info("test%n");
+          compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
+        }
         break;
       default:
         throw new Error("unsupported module source path layout " + layout + " for: `" + modules + "`");

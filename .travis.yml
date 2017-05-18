@@ -15,3 +15,4 @@ script:
 - cd $TRAVIS_BUILD_DIR
 - jshell --show-version bach.jsh
 - find target/bach -type d
+- find dependecies -type f
