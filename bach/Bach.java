@@ -61,9 +61,10 @@ public class Bach {
 
   public static void main(String... args) throws Exception {
     System.out.printf("%n%s%n%n", "BASIC");
-    new Bach(Level.INFO, Layout.BASIC)
+    new Bach(Level.FINE, Layout.BASIC)
             .set(Folder.SOURCE, Paths.get("demo/basic"))
             .set(Folder.TARGET, Paths.get("target/bach/basic"))
+            .format()
             .compile()
             .run("com.greetings", "com.greetings.Main");
 
@@ -71,6 +72,7 @@ public class Bach {
     new Bach(Level.INFO, Layout.COMMON)
             .set(Folder.SOURCE, Paths.get("demo/common"))
             .set(Folder.TARGET, Paths.get("target/bach/common"))
+            .format()
             .compile()
             .run("com.greetings", "com.greetings.Main");
 
@@ -78,6 +80,7 @@ public class Bach {
     new Bach(Level.INFO, Layout.IDEA)
             .set(Folder.SOURCE, Paths.get("demo/idea"))
             .set(Folder.TARGET, Paths.get("target/bach/idea"))
+            .format()
             .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
             .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
             // .load("org.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
@@ -318,6 +321,37 @@ public class Bach {
         log.error(e, "testing %s failed", module);
       }
     });
+    return this;
+  }
+
+  public Bach format() throws Exception {
+    log.tag("format");
+    Path path = get(Folder.SOURCE);
+    log.info("format %s%n", path);
+    Path formatPath = get(Folder.TARGET_TOOLS).resolve("format");
+    Path formatJar = util.download(URI.create("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"), formatPath);
+    try {
+      List<String> command = new ArrayList<>();
+      command.add("java");
+      command.add("-jar");
+      command.add(formatJar.toString());
+      command.add("--replace");
+      command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+      // collect .java source files
+      int[] count = {0};
+      Files.walk(path)
+              .map(Path::toString)
+              .filter(name -> name.endsWith(".java"))
+              .filter(name -> !name.endsWith("module-info.java"))
+              .peek(name -> count[0]++)
+              .forEach(command::add);
+      Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
+      process.getInputStream().transferTo(System.out);
+      process.waitFor();
+      log.info("%d files formatted%n", count[0]);
+    } catch (Exception e) {
+      log.error(e, "format failed");
+    }
     return this;
   }
 

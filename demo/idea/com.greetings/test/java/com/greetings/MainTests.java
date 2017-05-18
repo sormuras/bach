@@ -2,7 +2,6 @@ package com.greetings;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.astro.World;
 
 class MainTests {
 
