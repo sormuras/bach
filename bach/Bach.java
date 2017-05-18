@@ -30,6 +30,37 @@ import java.util.logging.*;
 import java.util.stream.*;
 import javax.tools.*;
 
+enum Layout {
+  /** {@code src/<module>} */
+  BASIC,
+  /** {@code src/[main|test]/[java|resources]/<module>} */
+  COMMON,
+  /** {@code src/<module>/[main|test]/[java|resources]} */
+  IDEA,
+}
+
+enum Folder {
+  DEPENDENCIES("dependencies"),
+  SOURCE("src"),
+  MAIN_JAVA("main/java"),
+  TEST_JAVA("test/java"),
+  TARGET("target/bach"),
+  TARGET_MAIN_SOURCE("main/module-source-path", TARGET),
+  TARGET_MAIN_COMPILED("main/compiled", TARGET),
+  TARGET_TEST_SOURCE("test/module-source-path", TARGET),
+  TARGET_TEST_COMPILED("test/compiled", TARGET),
+  TARGET_TOOLS("tools", TARGET),
+  ;
+
+  final List<Folder> parents;
+  final Path path;
+
+  Folder(String path, Folder... parents) {
+    this.path = Paths.get(path);
+    this.parents = List.of(parents);
+  }
+}
+
 /**
  * Java Shell Builder.
  *
@@ -64,45 +95,6 @@ public class Bach {
             .compile()
             .test()
             .run("com.greetings", "com.greetings.Main");
-  }
-
-  enum Layout {
-    /**
-     * {@code src/<module>}
-     */
-    BASIC,
-
-    /**
-     * {@code src/[main|test]/[java|resources]/<module>}
-     */
-    COMMON,
-
-    /**
-     * {@code src/<module>/[main|test]/[java|resources]}
-     */
-    IDEA,
-  }
-
-  enum Folder {
-    DEPENDENCIES("dependencies"),
-    SOURCE("src"),
-    MAIN_JAVA("main/java"),
-    TEST_JAVA("test/java"),
-    TARGET("target/bach"),
-    TARGET_MAIN_SOURCE("main/module-source-path", TARGET),
-    TARGET_MAIN_COMPILED("main/compiled", TARGET),
-    TARGET_TEST_SOURCE("test/module-source-path", TARGET),
-    TARGET_TEST_COMPILED("test/compiled", TARGET),
-    TARGET_TOOLS("tools", TARGET),
-    ;
-
-    final List<Folder> parents;
-    final Path path;
-
-    Folder(String path, Folder... parents) {
-      this.path = Paths.get(path);
-      this.parents = List.of(parents);
-    }
   }
 
   private final JavaCompiler javac;
