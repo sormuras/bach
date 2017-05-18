@@ -78,6 +78,7 @@ public class Bach {
             .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
             // .load("org.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
             .compile()
+            .test()
             .run("com.greetings", "com.greetings.Main");
   }
 
@@ -108,6 +109,7 @@ public class Bach {
     TARGET_MAIN_COMPILED("main/compiled", TARGET),
     TARGET_TEST_SOURCE("test/module-source-path", TARGET),
     TARGET_TEST_COMPILED("test/compiled", TARGET),
+    TARGET_TOOLS("tools", TARGET),
     ;
 
     final List<Folder> parents;
@@ -186,7 +188,8 @@ public class Bach {
     if (util.findDirectoryNames(modules).count() == 0) {
       throw new Error("no directory found in `" + modules + "`");
     }
-    util.cleanTree(get(Folder.TARGET), true);
+    Path tools = get(Folder.TARGET_TOOLS);
+    util.cleanTree(get(Folder.TARGET), true, path -> !path.startsWith(tools));
     switch (layout) {
       case BASIC:
         log.info("main%n");
@@ -268,10 +271,6 @@ public class Bach {
     return code;
   }
 
-  public int jar() {
-    throw new UnsupportedOperationException("jar() not implemented, yet");
-  }
-
   public int run(String module, String main) throws Exception {
     log.tag("run").info("%s/%s%n", module, main);
     Stream<Folder> folders = Stream.of(Folder.DEPENDENCIES, Folder.TARGET_MAIN_COMPILED);
@@ -289,6 +288,33 @@ public class Bach {
     } catch (InterruptedException e) {
       return 1;
     }
+  }
+
+  public Bach test() throws Exception {
+    log.tag("test");
+    Path junitPath = get(Folder.TARGET_TOOLS).resolve("junit");
+    Path junitJar = util.download(URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar"), junitPath);
+    util.findDirectoryNames(get(Folder.TARGET_TEST_COMPILED)).forEach(module -> {
+      try {
+        log.info("module %s%n", module);
+        Path modulePath = get(Folder.TARGET_TEST_COMPILED).resolve(module);
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-jar");
+        command.add(junitJar.toString());
+        command.add("--classpath");
+        command.add(modulePath.toString());
+        command.add("--scan-classpath");
+        command.add(modulePath.toString());
+        command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+        Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
+        process.getInputStream().transferTo(System.out);
+        process.waitFor();
+      } catch (Exception e) {
+        throw new Error("Testing module " + module + "failed!", e);
+      }
+    });
+    return this;
   }
 
   class Log {
@@ -365,6 +391,10 @@ public class Bach {
     }
 
     Path cleanTree(Path root, boolean keepRoot) throws IOException {
+      return cleanTree(root, keepRoot, __ -> true);
+    }
+
+    Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) throws IOException {
       if (Files.notExists(root)) {
         if (keepRoot) {
           Files.createDirectories(root);
@@ -373,6 +403,7 @@ public class Bach {
       }
       Files.walk(root)
           .filter(p -> !(keepRoot && root.equals(p)))
+          .filter(filter)
           .sorted((p, q) -> -p.compareTo(q))
           .forEach(this::deleteIfExists);
       log.log(Level.FINE, "deleted tree `%s`%n", root);
@@ -436,16 +467,20 @@ public class Bach {
         if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
           if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
             if (useTimeStamp.test(targetPath)) {
+              log.log(Level.FINE, "download skipped - using `%s`%n", targetPath);
               return targetPath;
             }
           }
         }
         Files.delete(targetPath);
       }
+      log.log(Level.FINE, "download `%s` in progress...%n", uri);
       try (InputStream sourceStream = url.openStream(); OutputStream targetStream = Files.newOutputStream(targetPath)) {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
+      log.info("download `%s` completed%n", uri);
+      log.info("  stored `%s` [timestamp=%s]%n", targetPath, urlLastModifiedTime.toString());
       return targetPath;
     }
 

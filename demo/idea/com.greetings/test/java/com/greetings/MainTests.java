@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.astro.World;
 
-public class MainTests {
+class MainTests {
 
   @Test
   void main() {
