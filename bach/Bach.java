@@ -20,37 +20,15 @@
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+import java.util.*;
+import java.util.function.*;
+import java.util.logging.*;
+import java.util.stream.*;
+import javax.tools.*;
 
 /**
  * Java Shell Builder.
@@ -83,7 +61,6 @@ public class Bach {
             .format()
             .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
             .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
-            // .load("org.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
             .compile()
             .test()
             .run("com.greetings", "com.greetings.Main");
@@ -223,6 +200,7 @@ public class Bach {
           // test
           util.copyTree(source.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
           util.copyTree(source.resolve(get(Folder.TEST_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
+          util.moveModuleInfo(get(Folder.TARGET_TEST_SOURCE).resolve(module));
         });
         log.info("main%n");
         compile(get(Folder.TARGET_MAIN_SOURCE), get(Folder.TARGET_MAIN_COMPILED));
@@ -546,12 +524,12 @@ public class Bach {
         return;
       }
       try {
-        Files.move(pathSource, path.resolve("module-info.java"));
-        log.log(Level.FINE, "moved `%s` to `%s`%n", pathSource, "module-info.java");
+        Files.move(pathSource, path.resolve("module-info.java"), StandardCopyOption.REPLACE_EXISTING);
       }
       catch(IOException e) {
         log.error(e, "moving module-info failed for %s", path);
       }
+      log.log(Level.FINE, "moved `%s` to `%s`%n", pathSource, "module-info.java");
     }
   }
 
