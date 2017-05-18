@@ -278,7 +278,7 @@ public class Bach {
     return code;
   }
 
-  public int run(String module, String main) throws Exception {
+  public int run(String module, String main, String... arguments) throws Exception {
     log.tag("run").info("%s/%s%n", module, main);
     Stream<Folder> folders = Stream.of(Folder.DEPENDENCIES, Folder.TARGET_MAIN_COMPILED);
     List<String> command = new ArrayList<>();
@@ -287,6 +287,7 @@ public class Bach {
     command.add(String.join(File.pathSeparator, folders.map(f -> get(f).toString()).collect(Collectors.toList())));
     command.add("--module");
     command.add(module + "/" + main);
+    command.addAll(List.of(arguments));
     command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
     Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
     process.getInputStream().transferTo(System.out);
