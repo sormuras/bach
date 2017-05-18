@@ -14,12 +14,16 @@
 
 // no package
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -29,6 +33,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -36,11 +41,12 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
 /**
  * Java Shell Builder.
@@ -63,6 +69,16 @@ public class Bach {
             .set(Folder.TARGET, Paths.get("target/bach/common"))
             .compile()
             .run("com.greetings", "com.greetings.Main");
+
+    System.out.printf("%n%s%n%n", "IDEA");
+    new Bach(Level.INFO, Layout.IDEA)
+            .set(Folder.SOURCE, Paths.get("demo/idea"))
+            .set(Folder.TARGET, Paths.get("target/bach/idea"))
+            .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
+            .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
+            // .load("org.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
+            .compile()
+            .run("com.greetings", "com.greetings.Main");
   }
 
   enum Layout {
@@ -79,7 +95,7 @@ public class Bach {
     /**
      * {@code src/<module>/[main|test]/[java|resources]}
      */
-    TILED,
+    IDEA,
   }
 
   enum Folder {
@@ -154,17 +170,8 @@ public class Bach {
     return this;
   }
 
-  // modules/<module>/[main|test]/[java|resources]
-  public Bach prepareIDEA(Path modules, String module) {
-    log.log(Level.CONFIG, "idea %s%n", module);
-    //Path target = get(Folder.TARGET).resolve(get(Folder.TARGET_PREPARED));
-    //Path preparedMain = target.resolve(get(Folder.TARGET_PREPARED_SOURCE_MAIN));
-    //Path preparedTest = target.resolve(get(Folder.TARGET_PREPARED_SOURCE_TEST));
-    //util.copyTree(modules.resolve(module + "/main/java"), preparedMain.resolve(module));
-    //util.copyTree(modules.resolve(module + "/main/resources"), target.resolve("main/resources/" + module));
-    //util.copyTree(modules.resolve(module + "/test/java"), preparedTest.resolve(module));
-    //util.copyTree(modules.resolve(module + "/test/resources"), target.resolve("test/resources/" + module));
-    //util.moveModuleInfo(preparedTest.resolve(module));
+  public Bach load(String module, URI uri) throws IOException {
+    util.download(uri, get(Folder.DEPENDENCIES), module + ".jar", path -> true);
     return this;
   }
 
@@ -173,6 +180,9 @@ public class Bach {
     Path modules = get(Folder.SOURCE);
     if (Files.notExists(modules)) {
       throw new Error("folder source `" + modules + "` does not exist");
+    }
+    if (util.findDirectoryNames(modules).count() == 0) {
+      throw new Error("no directory found in `" + modules + "`");
     }
     util.cleanTree(get(Folder.TARGET), true);
     switch (layout) {
@@ -188,17 +198,23 @@ public class Bach {
         util.copyTree(modules.resolve("test/java"), get(Folder.TARGET_TEST_SOURCE));
         compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
         break;
-      case TILED:
-        Files.find(modules, 1, (path, attr) -> Files.isDirectory(path))
-                .filter(path -> !modules.equals(path))
-                .map(path -> modules.relativize(path).toString())
-                .forEach(module -> prepareIDEA(modules, module));
+      case IDEA:
+        util.findDirectoryNames(modules).forEach(module -> {
+          log.log(Level.FINE, "module %s%n", module);
+          Path modulePath = modules.resolve(module);
+          // main
+          util.copyTree(modulePath.resolve("main/java"), get(Folder.TARGET_MAIN_SOURCE).resolve(module));
+          // test
+          util.copyTree(modulePath.resolve("main/java"), get(Folder.TARGET_TEST_SOURCE).resolve(module));
+          util.copyTree(modulePath.resolve("test/java"), get(Folder.TARGET_TEST_SOURCE).resolve(module));
+        });
         log.info("main%n");
         compile(get(Folder.TARGET_MAIN_SOURCE), get(Folder.TARGET_MAIN_COMPILED));
         log.info("test%n");
         compile(get(Folder.TARGET_TEST_SOURCE), get(Folder.TARGET_TEST_COMPILED));
+        break;
       default:
-        throw new Error("unsupported module source path layout "+layout+" for: `" + modules + "`");
+        throw new Error("unsupported module source path layout " + layout + " for: `" + modules + "`");
     }
     return this;
   }
@@ -215,6 +231,12 @@ public class Bach {
     // file encoding
     arguments.add("-d");
     arguments.add(destinationPath.toString());
+    // output source locations where deprecated APIs are used
+    arguments.add("-deprecation");
+    // generate metadata for reflection on method parameters
+    arguments.add("-parameters");
+    // terminate compilation if warnings occur
+    arguments.add("-Werror");
     // specify character encoding used by source files
     arguments.add("-encoding");
     arguments.add("UTF-8");
@@ -329,6 +351,13 @@ public class Bach {
       }
     }
 
+    Stream<String> findDirectoryNames(Path root) throws IOException {
+      return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
+              .filter(path -> !root.equals(path))
+              .map(root::relativize)
+              .map(Path::toString);
+    }
+
     Path cleanTree(Path root, boolean keepRoot) throws IOException {
       if (Files.notExists(root)) {
         if (keepRoot) {
@@ -375,6 +404,51 @@ public class Bach {
       } catch (IOException e) {
         throw new Error("Copying " + source + " to " + target + " failed: " + e, e);
       }
+    }
+
+    /**
+     * Download the resource specified by its URI to the target directory.
+     */
+    Path download(URI uri, Path targetDirectory) throws IOException {
+      return download(uri, targetDirectory, fileName(uri), targetPath -> true);
+    }
+
+    /**
+     * Download the resource specified by its URI to the target directory using the provided file name.
+     */
+    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp) throws IOException {
+      URL url = requireNonNull(uri, "uri must not be null").toURL();
+      requireNonNull(targetDirectory, "targetDirectory must be null");
+      if (requireNonNull(targetFileName, "targetFileName must be null").isEmpty()) {
+        throw new IllegalArgumentException("targetFileName must be blank");
+      }
+      Files.createDirectories(targetDirectory);
+      Path targetPath = targetDirectory.resolve(targetFileName);
+      URLConnection urlConnection = url.openConnection();
+      FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+      if (Files.exists(targetPath)) {
+        if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
+          if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
+            if (useTimeStamp.test(targetPath)) {
+              return targetPath;
+            }
+          }
+        }
+        Files.delete(targetPath);
+      }
+      try (InputStream sourceStream = url.openStream(); OutputStream targetStream = Files.newOutputStream(targetPath)) {
+        sourceStream.transferTo(targetStream);
+      }
+      Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
+      return targetPath;
+    }
+
+    /**
+     * Extract the file name from the uri.
+     */
+    String fileName(URI uri) {
+      String urlString = uri.getPath();
+      return urlString.substring(urlString.lastIndexOf('/') + 1).split("\\?")[0].split("#")[0];
     }
 
     void moveModuleInfo(Path path) {
