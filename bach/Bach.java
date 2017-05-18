@@ -1,15 +1,19 @@
 /*
- * Copyright 2017 Christian Stein
+ * Java Shell Builder
+ * Copyright (C) 2017 Christian Stein
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // no package
@@ -179,15 +183,17 @@ public class Bach {
     return this;
   }
 
-  public Bach compile() throws IOException {
+  private void check(boolean condition, String format, Object...args) {
+    if (!condition) {
+      log.error(null, format, args);
+    }
+  }
+
+  public Bach compile() throws Exception {
     log.tag("compile").log(Level.CONFIG, "folder %s%n", folders.keySet());
     Path modules = get(Folder.SOURCE);
-    if (Files.notExists(modules)) {
-      throw new Error("folder source `" + modules + "` does not exist");
-    }
-    if (util.findDirectoryNames(modules).count() == 0) {
-      throw new Error("no directory found in `" + modules + "`");
-    }
+    check(Files.exists(modules),"folder source `%s` does not exist", modules);
+    check(util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
     Path tools = get(Folder.TARGET_TOOLS);
     util.cleanTree(get(Folder.TARGET), true, path -> !path.startsWith(tools));
     switch (layout) {
@@ -223,15 +229,13 @@ public class Bach {
         }
         break;
       default:
-        throw new Error("unsupported module source path layout " + layout + " for: `" + modules + "`");
+        check(false, "unsupported module source path layout %s for: `%s`", layout, modules);
     }
     return this;
   }
 
   public int compile(Path moduleSourcePath, Path destinationPath) throws IOException {
-    if (Files.notExists(moduleSourcePath)) {
-      throw new Error("module source path `" + moduleSourcePath + "` does not exist!");
-    }
+    check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
     List<String> arguments = new ArrayList<>();
     if (log.threshold <= Level.FINEST.intValue()) {
       // output messages about what the compiler is doing
@@ -311,7 +315,7 @@ public class Bach {
         process.getInputStream().transferTo(System.out);
         process.waitFor();
       } catch (Exception e) {
-        throw new Error("Testing module " + module + "failed!", e);
+        log.error(e, "testing %s failed", module);
       }
     });
     return this;
@@ -362,6 +366,12 @@ public class Bach {
 
     void info(String format, Object... args) {
       log(Level.INFO, format, args);
+    }
+
+    void error(Throwable cause, String format, Object... args) {
+      String message = String.format(format, args);
+      log(Level.SEVERE, message);
+      throw new Error(message, cause);
     }
   }
 
@@ -439,7 +449,7 @@ public class Bach {
               }
             });
       } catch (IOException e) {
-        throw new Error("Copying " + source + " to " + target + " failed: " + e, e);
+        log.error(e, "copying `%s` to `%s` failed", source, target);
       }
     }
 
@@ -479,8 +489,8 @@ public class Bach {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
-      log.info("download `%s` completed%n", uri);
-      log.info("  stored `%s` [timestamp=%s]%n", targetPath, urlLastModifiedTime.toString());
+      log.log(Level.CONFIG, "download `%s` completed%n", uri);
+      log.info("stored `%s` [timestamp=%s]%n", targetPath, urlLastModifiedTime.toString());
       return targetPath;
     }
 
@@ -505,7 +515,7 @@ public class Bach {
         log.log(Level.FINE, "moved `%s` to `%s`%n", pathSource, "module-info.java");
       }
       catch(IOException e) {
-        throw new Error("Moving module-info failed: " + path, e);
+        log.error(e, "moving module-info failed for %s", path);
       }
     }
   }
