@@ -22,26 +22,33 @@ import java.util.logging.Level;
 public class Demo {
 
   public static void main(String... args) throws Exception {
-    System.out.printf("%n%s%n%n", "BASIC");
-    new Bach(Level.FINE, Layout.BASIC)
-        .set(Folder.SOURCE, Paths.get("demo/basic"))
-        .set(Folder.TARGET, Paths.get("target/bach/basic"))
+    Bach.builder()
+        .name("basic")
+        .log(Level.FINE)
+        .override(Folder.SOURCE, Paths.get("demo/basic"))
+        .override(Folder.TARGET, Paths.get("target/bach/basic"))
+        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+      .bach()
         .format()
         .compile()
         .run("com.greetings", "com.greetings.Main");
 
-    System.out.printf("%n%s%n%n", "COMMON");
-    new Bach(Level.INFO, Layout.COMMON)
-        .set(Folder.SOURCE, Paths.get("demo/common"))
-        .set(Folder.TARGET, Paths.get("target/bach/common"))
+    Bach.builder()
+        .name("common")
+        .override(Folder.SOURCE, Paths.get("demo/common"))
+        .override(Folder.TARGET, Paths.get("target/bach/common"))
+        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+      .bach()
         .format()
         .compile()
         .run("com.greetings", "com.greetings.Main");
 
-    System.out.printf("%n%s%n%n", "IDEA");
-    new Bach(Level.INFO, Layout.IDEA)
-        .set(Folder.SOURCE, Paths.get("demo/idea"))
-        .set(Folder.TARGET, Paths.get("target/bach/idea"))
+    Bach.builder()
+        .name("idea")
+        .override(Folder.SOURCE, Paths.get("demo/idea"))
+        .override(Folder.TARGET, Paths.get("target/bach/idea"))
+        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+      .bach()
         .format()
         .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
         .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
