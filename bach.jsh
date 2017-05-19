@@ -16,14 +16,14 @@
  */
 
 // Load and open Bach.java
-Path bachPath = Paths.get("target")
-Path bachJava = bachPath.resolve("Bach.java")
+Path bachJava = Paths.get("target/Bach.java")
 if (Files.notExists(bachJava)) {
   URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/bach/Bach.java");
-  Files.createDirectories(bachPath);
+  Files.createDirectories(bachJava.getParent());
   try (InputStream in = bachURL.openStream()) {
     Files.copy(in, bachJava, StandardCopyOption.REPLACE_EXISTING);
   }
+  System.out.printf("created %s [url=%s]%n", bachJava, bachURL);
 }
 /open target/Bach.java
 
@@ -32,6 +32,7 @@ if (Files.notExists(bachJava)) {
 Bach.builder()
     .override(Folder.SOURCE, Paths.get("demo/basic"))
   .bach()
+    .format()
     .compile()
     .run("com.greetings", "com.greetings.Main");
 }

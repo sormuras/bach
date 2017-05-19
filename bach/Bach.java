@@ -67,6 +67,15 @@ enum Folder {
   }
 }
 
+enum Tool {
+  FORMAT("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"),
+  JUNIT("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar");
+  URI uri;
+  Tool(String uri) {
+    this.uri = URI.create(uri);
+  }
+}
+
 /**
  * Java Shell Builder.
  *
@@ -112,14 +121,18 @@ public class Bach {
     this.util = new Util();
     this.javac = log.assigned(ToolProvider.getSystemJavaCompiler(), "java compiler not available");
     log.info("project %s [%s] initialized%n", score.name, getClass());
-    log.log(Level.CONFIG, "level=%s%n", score.level);
-    log.log(Level.CONFIG, "pwd=`%s`%n", Paths.get(".").toAbsolutePath().normalize());
-    log.log(Level.CONFIG, "layout=%s%n", score.layout);
-    log.log(Level.FINEST, "folder %s%n", score.folders.keySet());
+    log.print(Level.CONFIG, "level=%s%n", score.level);
+    log.print(Level.CONFIG, "pwd=`%s`%n", Paths.get(".").toAbsolutePath().normalize());
+    log.print(Level.CONFIG, "layout=%s%n", score.layout);
+    log.print(Level.FINEST, "folder %s%n", score.folders.keySet());
   }
 
   public Path path(Folder folder) {
     return score.folders.get(folder);
+  }
+
+  Path path(Tool tool) {
+    return util.tools.computeIfAbsent(tool, util::load);
   }
 
   public Bach set(Level level) {
@@ -127,12 +140,12 @@ public class Bach {
     return this;
   }
 
-  public Bach clean() throws IOException {
+  public Bach clean() throws Exception {
     clean(Folder.TARGET);
     return this;
   }
 
-  public Bach clean(Folder... folders) throws IOException {
+  public Bach clean(Folder... folders) throws Exception {
     log.tag("clean");
     for (Folder folder : folders) {
       util.cleanTree(path(folder), false);
@@ -140,14 +153,13 @@ public class Bach {
     return this;
   }
 
-  public Bach load(String module, URI uri) throws IOException {
+  public Bach load(String module, URI uri) throws Exception {
     util.download(uri, path(Folder.DEPENDENCIES), module + ".jar", path -> true);
     return this;
   }
 
-
   public Bach compile() throws Exception {
-    log.tag("compile").log(Level.CONFIG, "folder %s%n", score.folders.keySet());
+    log.tag("compile").print(Level.CONFIG, "folder %s%n", score.folders.keySet());
     Path modules = path(Folder.SOURCE);
     log.check(Files.exists(modules),"folder source `%s` does not exist", modules);
     log.check(util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
@@ -159,7 +171,7 @@ public class Bach {
         break;
       case FIRST:
         util.findDirectoryNames(modules).forEach(module -> {
-          log.log(Level.FINE, "module %s%n", module);
+          log.fine("module %s%n", module);
           Path source = modules.resolve(module);
           // main
           util.copyTree(source.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_SOURCE).resolve(module));
@@ -191,122 +203,110 @@ public class Bach {
     return this;
   }
 
-  public int compile(Path moduleSourcePath, Path destinationPath) throws IOException {
+  public int compile(Path moduleSourcePath, Path destinationPath) throws Exception {
     log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
-    List<String> arguments = new ArrayList<>();
-    if (log.threshold <= Level.FINEST.intValue()) {
-      // output messages about what the compiler is doing
-      arguments.add("-verbose");
-    }
+    Command command = new Command()
+    // output messages about what the compiler is doing
+        .add(log.threshold <= Level.FINEST.intValue(), "-verbose")
     // file encoding
-    arguments.add("-d");
-    arguments.add(destinationPath.toString());
+        .add("-d")
+        .add(destinationPath.toString())
     // output source locations where deprecated APIs are used
-    arguments.add("-deprecation");
+        .add("-deprecation")
     // generate metadata for reflection on method parameters
-    arguments.add("-parameters");
+        .add("-parameters")
     // terminate compilation if warnings occur
-    arguments.add("-Werror");
+        .add("-Werror")
     // specify character encoding used by source files
-    arguments.add("-encoding");
-    arguments.add("UTF-8");
+        .add("-encoding")
+        .add("UTF-8")
     // specify where to find application modules
-    arguments.add("--module-path");
-    arguments.add(path(Folder.DEPENDENCIES).toString());
+        .add("--module-path")
+        .add(path(Folder.DEPENDENCIES))
     // specify where to find input source files for multiple modules
-    arguments.add("--module-source-path");
-    arguments.add(moduleSourcePath.toString());
-    log.log(Level.FINE,"javac%n");
-    arguments.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+        .add("--module-source-path")
+        .add(moduleSourcePath);
+    log.fine("javac%n");
+    command.get().forEach(a -> log.fine("%s%s%n", a.startsWith("-") ? "  " : "", a));
     // collect .java source files
     int[] count = {0};
     Files.walk(moduleSourcePath)
         .map(Path::toString)
         .filter(name -> name.endsWith(".java"))
         .peek(name -> count[0]++)
-        .forEach(arguments::add);
+        .forEach(command::add);
     // compile
     long start = System.currentTimeMillis();
-    int code = javac.run(score.streamIn, score.streamOut, score.streamErr, arguments.toArray(new String[0]));
+    int code = javac.run(score.streamIn, score.streamOut, score.streamErr, command.toArray());
     log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
     return code;
   }
 
   public int run(String module, String main, String... arguments) throws Exception {
     log.tag("run").info("%s/%s%n", module, main);
-    Stream<Folder> folders = Stream.of(Folder.DEPENDENCIES, Folder.TARGET_MAIN_COMPILED);
-    List<String> command = new ArrayList<>();
-    command.add("java");
-    command.add("--module-path");
-    command.add(String.join(File.pathSeparator, folders.map(f -> path(f).toString()).collect(Collectors.toList())));
-    command.add("--module");
-    command.add(module + "/" + main);
-    command.addAll(List.of(arguments));
-    command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
-    Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
-    process.getInputStream().transferTo(System.out);
-    try {
-      return process.waitFor();
-    } catch (InterruptedException e) {
-      return 1;
-    }
+    return execute(Command.of("java")
+        .add("--module-path")
+        .add(this::path, Folder.TARGET_MAIN_COMPILED, Folder.DEPENDENCIES)
+        .add("--module")
+        .add(module + "/" + main)
+        .addAll((Object[]) arguments));
   }
 
-  public Bach test() throws Exception {
+  public int execute(Command command) throws Exception {
+    command.dump(log, Level.FINE);
+    Process process = command.newProcessBuilder().redirectErrorStream(true).start();
+    process.getInputStream().transferTo(score.streamOut);
+    return process.waitFor();
+  }
+
+  public Bach test(String... options) throws Exception {
+    return test(true, options);
+  }
+
+  public Bach test(boolean additional, String... options) throws Exception {
     log.tag("test");
-    Path junitPath = path(Folder.TOOLS).resolve("junit");
-    Path junitJar = util.download(URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar"), junitPath);
-    util.findDirectoryNames(path(Folder.TARGET_TEST_COMPILED)).forEach(module -> {
-      try {
-        log.info("module %s%n", module);
-        Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
-        List<String> command = new ArrayList<>();
-        command.add("java");
-        command.add("-jar");
-        command.add(junitJar.toString());
-        command.add("--classpath");
-        command.add(modulePath.toString());
-        command.add("--scan-classpath");
-        command.add(modulePath.toString());
-        command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
-        Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
-        process.getInputStream().transferTo(System.out);
-        process.waitFor();
-      } catch (Exception e) {
-        log.error(e, "testing %s failed", module);
-      }
-    });
+    List<String> modules = util.findDirectoryNames(path(Folder.TARGET_TEST_COMPILED)).collect(Collectors.toList());
+    for (String module : modules) {
+      test(module, additional, options);
+    }
     return this;
+  }
+
+  public int test(String module, boolean additional, String... options) throws Exception {
+    log.tag("test").info("module %s%n", module);
+    Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
+    return execute(Command.of("java")
+            .add("-jar")
+            .add(path(Tool.JUNIT))
+            .add(additional, "--classpath")
+            .add(additional, modulePath)
+            .add(additional, "--scan-classpath")
+            .add(additional, modulePath)
+            .addAll((Object[]) options));
   }
 
   public Bach format() throws Exception {
     log.tag("format");
     Path path = path(Folder.SOURCE);
     log.info("format %s%n", path);
-    Path formatPath = path(Folder.TOOLS).resolve("format");
-    Path formatJar = util.download(URI.create("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"), formatPath);
-    try {
-      List<String> command = new ArrayList<>();
-      command.add("java");
-      command.add("-jar");
-      command.add(formatJar.toString());
-      command.add("--replace");
-      command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
-      // collect .java source files
-      int[] count = {0};
-      Files.walk(path)
-              .map(Path::toString)
-              .filter(name -> name.endsWith(".java"))
-              .filter(name -> !name.endsWith("module-info.java"))
-              .peek(name -> count[0]++)
-              .forEach(command::add);
-      Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
-      process.getInputStream().transferTo(System.out);
-      process.waitFor();
-      log.info("%d files formatted%n", count[0]);
-    } catch (Exception e) {
-      log.error(e, "format failed");
-    }
+    Command command = Command.of("java")
+        .add("-jar")
+        .add(path(Tool.FORMAT))
+        .add("--replace");
+    // collect .java source files
+    int[] count = {0};
+    Files.walk(path)
+        .map(Path::toString)
+        .filter(name -> name.endsWith(".java"))
+        .filter(name -> !name.endsWith("module-info.java"))
+        .peek(name -> count[0]++)
+        .forEach(command::add);
+    execute(command);
+    log.info("%d files formatted%n", count[0]);
+    return this;
+  }
+
+  public Bach jar() throws Exception {
     return this;
   }
 
@@ -331,77 +331,102 @@ public class Bach {
         return this;
       }
       this.tag = tag;
-      log(Level.CONFIG,"%n");
+      print(Level.CONFIG,"%n");
       return this;
     }
 
     void check(boolean condition, String format, Object...args) {
-      if (!condition) log.error(new AssertionError("check failed"), format, args);
+      if (!condition) log.fail(new AssertionError("check failed"), format, args);
     }
 
     <T> T assigned(T instance, String format, Object...args) {
-      if (instance == null) log.error(new NullPointerException("check failed"), format, args);
+      if (instance == null) log.fail(new NullPointerException("check failed"), format, args);
       return instance;
     }
 
-    private void printContext(Level level) {
-      score.streamOut.printf("%7s ", tag);
+    private void print(String format, Object... args) {
+      score.streamOut.printf(format, args);
+    }
+
+    private void printTag(Level level) {
+      print("%7s ", tag);
       if (threshold < Level.INFO.intValue()) {
-        score.streamOut.printf("%6s| ", level.getName().toLowerCase());
+        print("%6s| ", level.getName().toLowerCase());
       }
     }
 
-    void log(Level level, String format, Object... args) {
-      if (level.intValue() < threshold) {
+    boolean isLevelSuppressed(Level level) {
+      return level.intValue() < threshold;
+    }
+
+    void print(Level level, String format, Object... args) {
+      if (isLevelSuppressed(level)) {
         return;
       }
       if (args.length == 1 && args[0] instanceof Collection) {
         for (Object arg : (Iterable<?>) args[0]) {
-          printContext(level);
+          printTag(level);
           if (arg instanceof Folder) {
             arg = arg + " -> " + path((Folder) arg);
           }
-          score.streamOut.printf(format, arg);
+          print(format, arg);
         }
         return;
       }
-      printContext(level);
-      score.streamOut.printf(format, args);
+      printTag(level);
+      print(format, args);
+    }
+
+    void fine(String format, Object... args) {
+      print(Level.FINE, format, args);
     }
 
     void info(String format, Object... args) {
-      log(Level.INFO, format, args);
+      print(Level.INFO, format, args);
     }
 
-    void error(Throwable cause, String format, Object... args) {
+    <T> T fail(Throwable cause, String format, Object... args) {
       String message = String.format(format, args);
-      log(Level.SEVERE, message);
+      print(Level.SEVERE, message);
       throw new Error(message, cause);
     }
   }
 
   class Util {
 
+    EnumMap<Tool, Path> tools = new EnumMap<>(Tool.class);
+
+    Path load(Tool tool) {
+      Path toolPath = path(Folder.TOOLS).resolve(tool.name().toLowerCase());
+      try {
+        return util.download(tool.uri, toolPath);
+      }
+      catch (Exception e) {
+        log.fail(e, "loading tool %s from uri %s failed", tool, tool.uri);
+        throw new Error(e);
+      }
+    }
+
     void deleteIfExists(Path path) {
       try {
         Files.deleteIfExists(path);
-      } catch (IOException e) {
+      } catch (Exception e) {
         throw new AssertionError("should not happen", e);
       }
     }
 
-    Stream<String> findDirectoryNames(Path root) throws IOException {
+    Stream<String> findDirectoryNames(Path root) throws Exception {
       return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
               .filter(path -> !root.equals(path))
               .map(root::relativize)
               .map(Path::toString);
     }
 
-    Path cleanTree(Path root, boolean keepRoot) throws IOException {
+    Path cleanTree(Path root, boolean keepRoot) throws Exception {
       return cleanTree(root, keepRoot, __ -> true);
     }
 
-    Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) throws IOException {
+    Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) throws Exception {
       if (Files.notExists(root)) {
         if (keepRoot) {
           Files.createDirectories(root);
@@ -413,7 +438,7 @@ public class Bach {
           .filter(filter)
           .sorted((p, q) -> -p.compareTo(q))
           .forEach(this::deleteIfExists);
-      log.log(Level.FINE, "deleted tree `%s`%n", root);
+      log.fine("deleted tree `%s`%n", root);
       return root;
     }
 
@@ -421,13 +446,13 @@ public class Bach {
       if (!Files.exists(source)) {
         return;
       }
-      log.log(Level.FINE, "copy `%s` to `%s`%n", source, target);
+      log.fine("copy `%s` to `%s`%n", source, target);
       try {
         Files.createDirectories(target);
         Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
             new SimpleFileVisitor<>() {
               @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes bfa) throws IOException {
                 Path targetdir = target.resolve(source.relativize(dir));
                 try {
                   Files.copy(dir, targetdir);
@@ -440,27 +465,27 @@ public class Bach {
               }
 
               @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+              public FileVisitResult visitFile(Path file, BasicFileAttributes bfa) throws IOException {
                 Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
               }
             });
-      } catch (IOException e) {
-        log.error(e, "copying `%s` to `%s` failed", source, target);
+      } catch (Exception e) {
+        log.fail(e, "copying `%s` to `%s` failed", source, target);
       }
     }
 
     /**
      * Download the resource specified by its URI to the target directory.
      */
-    Path download(URI uri, Path targetDirectory) throws IOException {
+    Path download(URI uri, Path targetDirectory) throws Exception {
       return download(uri, targetDirectory, fileName(uri), targetPath -> true);
     }
 
     /**
      * Download the resource specified by its URI to the target directory using the provided file name.
      */
-    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp) throws IOException {
+    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp) throws Exception {
       URL url = log.assigned(uri, "uri").toURL();
       log.assigned(targetDirectory, "targetDirectory");
       if (log.assigned(targetFileName, "targetFileName").isEmpty()) {
@@ -474,20 +499,20 @@ public class Bach {
         if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
           if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
             if (useTimeStamp.test(targetPath)) {
-              log.log(Level.FINE, "download skipped - using `%s`%n", targetPath);
+              log.fine("download skipped - using `%s`%n", targetPath);
               return targetPath;
             }
           }
         }
         Files.delete(targetPath);
       }
-      log.log(Level.FINE, "download `%s` in progress...%n", uri);
+      log.fine("download `%s` in progress...%n", uri);
       try (InputStream sourceStream = url.openStream(); OutputStream targetStream = Files.newOutputStream(targetPath)) {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
-      log.log(Level.CONFIG, "download `%s` completed%n", uri);
-      log.info("stored `%s` [timestamp=%s]%n", targetPath, urlLastModifiedTime.toString());
+      log.print(Level.CONFIG, "download `%s` completed%n", uri);
+      log.info("stored `%s` [%s]%n", targetPath, urlLastModifiedTime.toString());
       return targetPath;
     }
 
@@ -510,10 +535,76 @@ public class Bach {
       try {
         Files.move(pathSource, path.resolve("module-info.java"), StandardCopyOption.REPLACE_EXISTING);
       }
-      catch(IOException e) {
-        log.error(e, "moving module-info failed for %s", path);
+      catch(Exception e) {
+        log.fail(e, "moving module-info failed for %s", path);
       }
-      log.log(Level.FINE, "moved `%s` to `%s`%n", pathSource, "module-info.java");
+      log.fine("moved `%s` to `%s`%n", pathSource, "module-info.java");
+    }
+  }
+
+  static class Command {
+
+    static Command of(String name) {
+      return new Command().add(name);
+    }
+
+    final ArrayList<String> arguments = new ArrayList<>();
+
+    Command add(Object value) {
+      arguments.add(value.toString());
+      return this;
+    }
+
+    Command add(boolean condition, Object value) {
+      if (condition) {
+        add(value);
+      }
+      return this;
+    }
+
+    Command addAll(Object... values) {
+      for (Object value: values) {
+        add(value);
+      }
+      return this;
+    }
+
+    Command add(Collection<?> collection, String separator) {
+      return add(collection.stream(), separator);
+    }
+
+    Command add(Stream<?> stream, String separator) {
+      return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
+    }
+
+    Command add(Function<Folder, Path> mapper, Folder... folders) {
+      return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
+    }
+
+    List<String> get() {
+      return arguments;
+    }
+
+    ProcessBuilder newProcessBuilder() {
+      return new ProcessBuilder(arguments);
+    }
+
+    String[] toArray() {
+      return arguments.toArray(new String[arguments.size()]);
+    }
+
+    Command dump(Log log, Level level) {
+      if (log.isLevelSuppressed(level)) {
+        return this;
+      }
+      Iterator<String> iterator = arguments.iterator();
+      log.print(level, "%s%n", iterator.next());
+      while (iterator.hasNext()) {
+        String argument = iterator.next();
+        String indent = argument.startsWith("-") ? "" : "  ";
+        log.print(level, "%s%s%n", indent, argument);
+      }
+      return this;
     }
   }
 
