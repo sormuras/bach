@@ -17,7 +17,7 @@
 
 // Load and open Bach.java
 Path bachPath = Paths.get("target")
-Path bachJava = bachPath.resolve("Bach.java");
+Path bachJava = bachPath.resolve("Bach.java")
 if (Files.notExists(bachJava)) {
   URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/bach/Bach.java");
   Files.createDirectories(bachPath);
@@ -28,9 +28,11 @@ if (Files.notExists(bachJava)) {
 /open target/Bach.java
 
 // Use it!
-Bach bach = new Bach(Level.INFO, Layout.BASIC)
-bach.set(Folder.SOURCE, Paths.get("demo/basic"))
-bach.compile()
-bach.run("com.greetings", "com.greetings.Main")
-
+{
+Bach.builder()
+    .override(Folder.SOURCE, Paths.get("demo/basic"))
+  .bach()
+    .compile()
+    .run("com.greetings", "com.greetings.Main");
+}
 /exit
