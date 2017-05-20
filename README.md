@@ -10,9 +10,9 @@ Use Java source in JShell to build your modular project.
 
 # how to use bach
 
-Fast-forward to the **full-featured build mode** to get the most out of `bach`,
-including IDE step-by-step build debug support! The preceding run modes show
-the hassle-free usage of JShell as a build platform.
+Fast-forward to the :sparkles:**full-featured build mode**:sparkles: to get the
+most out of `bach`, including IDE step-by-step build debug support! The
+preceding run modes show the hassle-free usage of JShell as a build platform.
 
 The sources under the [demo] directory are based on [jigsaw/quick-start](http://openjdk.java.net/projects/jigsaw/quick-start).
 
@@ -84,11 +84,19 @@ With `jshell build.jsh` you still launch the build from the command line as
 described above. That retains the ability to run the build on any system with
 an installed JDK.
 
-:sparkles: Now include the `build` directory a source folder in your IDE. It
-should show the **:arrow_forward: Run 'Build.main()'** marker. And also the **:bug: Debug 'Build.main()'**   
+Now include the `build` directory a source folder in your IDE. It should show
+the executable 
+
+**:arrow_forward: Run 'Build.main()'**
+
+marker. And also the 
+
+**:bug: Debug 'Build.main()'**
+
+one.
 
 
-## jsb
+## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [demo]:      https://github.com/sormuras/bach/tree/master/demo
