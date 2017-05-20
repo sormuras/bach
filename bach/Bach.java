@@ -709,3 +709,19 @@ public class Bach {
     }
   }
 }
+
+// https://github.com/sormuras/bach#raw-mode
+//
+//   To use "bach" in raw mode, uncomment the following command block and edit
+//   it to your project's needs. Launch build with `jshell Bach.java`.
+
+/*
+{
+Bach.builder()
+    .override(Folder.SOURCE, Paths.get("source"))
+  .bach()
+    .compile()
+    .run("org.foo.bar", "org.foo.bar.Main");
+}
+/exit
+*/
