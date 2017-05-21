@@ -24,6 +24,7 @@ public class Demo {
   public static void main(String... args) throws Exception {
     Bach.builder()
         .name("basic")
+        .version("0.9")
         .log(Level.FINE)
         .override(Folder.SOURCE, Paths.get("demo/basic"))
         .override(Folder.TARGET, Paths.get("target/bach/basic"))
@@ -31,6 +32,7 @@ public class Demo {
       .build()
         .format()
         .compile()
+        .jar()
         .run("com.greetings", "com.greetings.Main");
 
     Bach.builder()

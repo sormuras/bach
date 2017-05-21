@@ -50,6 +50,7 @@ enum Folder {
   TARGET("target/bach"),
   TARGET_MAIN_SOURCE(TARGET, "main/module-source-path"),
   TARGET_MAIN_COMPILED(TARGET, "main/compiled"),
+  TARGET_MAIN_JAR(TARGET, "main/archives"),
   TARGET_TEST_SOURCE(TARGET, "test/module-source-path"),
   TARGET_TEST_COMPILED(TARGET, "test/compiled"),
   ;
@@ -87,6 +88,7 @@ public class Bach {
   public static class Score {
 
     final String name;
+    final String version;
     final Level level;
     final Layout layout;
     final Map<Folder, Path> folders;
@@ -96,6 +98,7 @@ public class Bach {
 
     Score(Builder builder) {
       this.name = builder.name;
+      this.version = builder.version;
       this.level = builder.level;
       this.layout = builder.layout;
       this.folders = Collections.unmodifiableMap(new EnumMap<>(builder.folders));
@@ -125,6 +128,7 @@ public class Bach {
     this.util = new Util();
     this.javac = log.assigned(ToolProvider.getSystemJavaCompiler(), "java compiler not available");
     log.info("project %s [%s] initialized%n", score.name, getClass());
+    log.print(Level.CONFIG, "version=%s%n", score.version);
     log.print(Level.CONFIG, "level=%s%n", score.level);
     log.print(Level.CONFIG, "pwd=`%s`%n", Paths.get(".").toAbsolutePath().normalize());
     log.print(Level.CONFIG, "layout=%s%n", score.layout);
@@ -294,27 +298,72 @@ public class Bach {
   }
 
   public Bach format() throws Exception {
+    return format(path(Folder.SOURCE));
+  }
+
+  public Bach format(Path... paths) throws Exception {
     log.tag("format");
-    Path path = path(Folder.SOURCE);
-    log.info("format %s%n", path);
     Command command = Command.of("java")
         .add("-jar")
         .add(path(Tool.FORMAT))
         .add("--replace");
     // collect .java source files
     int[] count = {0};
-    Files.walk(path)
-        .map(Path::toString)
-        .filter(name -> name.endsWith(".java"))
-        .filter(name -> !name.endsWith("module-info.java"))
-        .peek(name -> count[0]++)
-        .forEach(command::add);
-    execute(command);
+    for (Path path : paths) {
+      log.fine("formatting `%s`...%n", path);
+      Files.walk(path)
+              .map(Path::toString)
+              .filter(name -> name.endsWith(".java"))
+              .filter(name -> !name.endsWith("module-info.java"))
+              .peek(name -> count[0]++)
+              .forEach(command::add);
+      execute(command);
+    }
     log.info("%d files formatted%n", count[0]);
     return this;
   }
 
   public Bach jar() throws Exception {
+    log.tag("jar");
+    List<String> modules = util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILED)).collect(Collectors.toList());
+    for (String module : modules) {
+      Path modulePath = path(Folder.TARGET_MAIN_COMPILED).resolve(module);
+      String main = module + "." + "Main"; // TODO Add score function: module -> main
+      if (Files.notExists(modulePath.resolve(main.replace('.', '/') + ".class"))) {
+        main = null;
+      }
+      jar(module + ".jar", module, main, score.version);
+    }
+    return this;
+  }
+
+  public Bach jar(String fileName, String module, String main, String version) throws Exception {
+    log.tag("jar");
+    Files.createDirectories(path(Folder.TARGET_MAIN_JAR));
+    Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
+    Command command = Command.of("jar")
+            // output messages about what the jar command is doing
+            .add(log.threshold <= Level.FINEST.intValue(), "--verbose")
+            // creates the archive
+            .add("--create")
+            // specifies the archive file name
+            .add("--file").add(jarFile);
+            if (main != null && !main.isEmpty()) {
+              // specifies the application entry point for stand-alone applications
+              command.add("--main-class").add(main);
+            }
+            if (version != null && !version.isEmpty()) {
+              // specifies the module version
+              command.add("--module-version").add(version);
+            }
+            // changes to the specified directory and includes the files specified at the end of the command line.
+            command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
+    if (execute(command) != 0) {
+      throw new RuntimeException("jar failed");
+    }
+    if (log.isLevelActive(Level.FINE)) {
+      execute("jar", "--describe-module", "--file", jarFile);
+    }
     return this;
   }
 
@@ -361,6 +410,10 @@ public class Bach {
       if (threshold < Level.INFO.intValue()) {
         print("%6s| ", level.getName().toLowerCase());
       }
+    }
+
+    boolean isLevelActive(Level level) {
+      return !isLevelSuppressed(level);
     }
 
     boolean isLevelSuppressed(Level level) {
@@ -628,6 +681,7 @@ public class Bach {
 
     Level level = Level.INFO;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
+    String version = "";
     // Path jdkBinPath = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
     Layout layout = Layout.AUTO;
     Map<Folder, Path> folders = Collections.emptyMap();
@@ -664,6 +718,11 @@ public class Bach {
 
     Builder name(String name) {
       this.name = name;
+      return this;
+    }
+
+    Builder version(String version) {
+      this.version = version;
       return this;
     }
 
