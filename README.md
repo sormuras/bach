@@ -1,5 +1,4 @@
-# bach
-Java Shell Builder
+# bach - Java Shell Builder
  
 [![jdk9](https://img.shields.io/badge/jdk-9-blue.svg)](https://shields.io)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
@@ -72,7 +71,7 @@ public class Build {
         .override(Folder.SOURCE, Paths.get("source"))
         .override(Folder.TARGET, Paths.get("target/bach/foo"))
         .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
-      .bach()
+      .build()
         .format()
         .compile()
         .run("org.foo.bar", "org.foo.bar.Main");

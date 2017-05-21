@@ -135,7 +135,7 @@ public class Bach {
     return score.folders.get(folder);
   }
 
-  Path path(Tool tool) {
+  public Path path(Tool tool) {
     return util.tools.computeIfAbsent(tool, util::load);
   }
 
@@ -740,7 +740,7 @@ public class Bach {
 {
 Bach.builder()
     .override(Folder.SOURCE, Paths.get("source"))
-  .bach()
+  .build()
     .compile()
     .run("org.foo.bar", "org.foo.bar.Main");
 }
