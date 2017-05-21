@@ -235,7 +235,7 @@ public class Bach {
         .add("--module-source-path")
         .add(moduleSourcePath);
     // collect .java source files
-    command.mark();
+    command.limit(10);
     int[] count = {0};
     Files.walk(moduleSourcePath)
         .map(Path::toString)
@@ -258,7 +258,7 @@ public class Bach {
         .add(this::path, Folder.TARGET_MAIN_COMPILED, Folder.DEPENDENCIES)
         .add("--module")
         .add(module + "/" + main)
-        .mark()
+        .limit(20)
         .addAll((Object[]) arguments));
   }
 
@@ -296,7 +296,7 @@ public class Bach {
             .add(additional, modulePath)
             .add(additional, "--scan-classpath")
             .add(additional, modulePath)
-            .mark()
+            .limit(10)
             .addAll((Object[]) options));
   }
 
@@ -310,7 +310,7 @@ public class Bach {
         .add("-jar")
         .add(path(Tool.FORMAT))
         .add("--replace")
-        .mark();
+        .limit(10);
     // collect .java source files
     int[] count = {0};
     for (Path path : paths) {
@@ -614,8 +614,8 @@ public class Bach {
     }
 
     ArrayList<String> arguments = new ArrayList<>();
-    int dumpListLineIndex = Integer.MAX_VALUE;
-    int dumpListMaxLines = 10;
+    int indentOff = Integer.MAX_VALUE;
+    int dumpLimit = Integer.MAX_VALUE;
 
     Command add(Object value) {
       arguments.add(value.toString());
@@ -660,8 +660,9 @@ public class Bach {
       return arguments.toArray(new String[arguments.size()]);
     }
 
-    Command mark() {
-      this.dumpListLineIndex = arguments.size();
+    Command limit(int limit) {
+      this.indentOff = arguments.size();
+      this.dumpLimit = arguments.size() + limit;
       return this;
     }
 
@@ -669,14 +670,24 @@ public class Bach {
       if (log.isLevelSuppressed(level)) {
         return this;
       }
+      return dump((format, args) -> log.print(level, format, args));
+    }
+
+    private static Object[] args(Object... args) {
+      return args;
+    }
+
+    Command dump(BiConsumer<String, Object[]> printer) {
       ListIterator<String> iterator = arguments.listIterator();
-      log.print(level, "%s%n", iterator.next());
+      printer.accept("%s%n", args(iterator.next()));
       while (iterator.hasNext()) {
         String argument = iterator.next();
-        String indent = iterator.nextIndex() > dumpListLineIndex || argument.startsWith("-") ? "" : "  ";
-        log.print(level, "%s%s%n", indent, argument);
-        if (iterator.nextIndex() > dumpListMaxLines) {
-          log.print(level, "%s[...]%n", indent);
+        int nextIndex = iterator.nextIndex();
+        String indent = nextIndex > indentOff || argument.startsWith("-") ? "" : "  ";
+        printer.accept("%s%s%n", args(indent, argument));
+        if (nextIndex >= dumpLimit) {
+          printer.accept("%s... [omitted %d arguments]%n", args(indent, arguments.size() - nextIndex - 1));
+          printer.accept("%s%s%n", args(indent, arguments.get(arguments.size() - 1)));
           break;
         }
       }

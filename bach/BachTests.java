@@ -18,6 +18,7 @@ class BachTests {
   public static void main(String[] args) {
     scoreDefault();
     layoutOf();
+    CommandTests.main(args);
   }
 
 }
