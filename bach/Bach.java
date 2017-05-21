@@ -234,14 +234,15 @@ public class Bach {
     // specify where to find input source files for multiple modules
         .add("--module-source-path")
         .add(moduleSourcePath);
-    log.fine("javac%n");
     // collect .java source files
+    command.mark();
     int[] count = {0};
     Files.walk(moduleSourcePath)
         .map(Path::toString)
         .filter(name -> name.endsWith(".java"))
         .peek(name -> count[0]++)
         .forEach(command::add);
+    log.fine("javac%n");
     command.dump(log, Level.FINE);
     // compile
     long start = System.currentTimeMillis();
@@ -257,6 +258,7 @@ public class Bach {
         .add(this::path, Folder.TARGET_MAIN_COMPILED, Folder.DEPENDENCIES)
         .add("--module")
         .add(module + "/" + main)
+        .mark()
         .addAll((Object[]) arguments));
   }
 
@@ -294,6 +296,7 @@ public class Bach {
             .add(additional, modulePath)
             .add(additional, "--scan-classpath")
             .add(additional, modulePath)
+            .mark()
             .addAll((Object[]) options));
   }
 
@@ -306,7 +309,8 @@ public class Bach {
     Command command = Command.of("java")
         .add("-jar")
         .add(path(Tool.FORMAT))
-        .add("--replace");
+        .add("--replace")
+        .mark();
     // collect .java source files
     int[] count = {0};
     for (Path path : paths) {
@@ -609,7 +613,9 @@ public class Bach {
       return new Command().add(name);
     }
 
-    final ArrayList<String> arguments = new ArrayList<>();
+    ArrayList<String> arguments = new ArrayList<>();
+    int dumpListLineIndex = Integer.MAX_VALUE;
+    int dumpListMaxLines = 10;
 
     Command add(Object value) {
       arguments.add(value.toString());
@@ -654,11 +660,12 @@ public class Bach {
       return arguments.toArray(new String[arguments.size()]);
     }
 
-    Command dump(Log log, Level level) {
-      return dump(log, level, 23);
+    Command mark() {
+      this.dumpListLineIndex = arguments.size();
+      return this;
     }
 
-    Command dump(Log log, Level level, int maxLines) {
+    Command dump(Log log, Level level) {
       if (log.isLevelSuppressed(level)) {
         return this;
       }
@@ -666,10 +673,10 @@ public class Bach {
       log.print(level, "%s%n", iterator.next());
       while (iterator.hasNext()) {
         String argument = iterator.next();
-        String indent = argument.startsWith("-") ? "" : "  ";
+        String indent = iterator.nextIndex() > dumpListLineIndex || argument.startsWith("-") ? "" : "  ";
         log.print(level, "%s%s%n", indent, argument);
-        if (iterator.nextIndex() >= maxLines) {
-          log.print(level, "...[%d arguments skipped]%n", arguments.size() - maxLines);
+        if (iterator.nextIndex() > dumpListMaxLines) {
+          log.print(level, "%s[...]%n", indent);
           break;
         }
       }
