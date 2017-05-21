@@ -110,6 +110,10 @@ public class Bach {
     return new Builder();
   }
 
+  public static Bach create() {
+    return builder().build();
+  }
+
   private final JavaCompiler javac;
   private final Log log;
   private final Util util;
@@ -227,7 +231,6 @@ public class Bach {
         .add("--module-source-path")
         .add(moduleSourcePath);
     log.fine("javac%n");
-    command.get().forEach(a -> log.fine("%s%s%n", a.startsWith("-") ? "  " : "", a));
     // collect .java source files
     int[] count = {0};
     Files.walk(moduleSourcePath)
@@ -235,6 +238,7 @@ public class Bach {
         .filter(name -> name.endsWith(".java"))
         .peek(name -> count[0]++)
         .forEach(command::add);
+    command.dump(log, Level.FINE);
     // compile
     long start = System.currentTimeMillis();
     int code = javac.run(score.streamIn, score.streamOut, score.streamErr, command.toArray());
@@ -250,6 +254,10 @@ public class Bach {
         .add("--module")
         .add(module + "/" + main)
         .addAll((Object[]) arguments));
+  }
+
+  public int execute(Object... command) throws Exception {
+    return execute(new Command().addAll(command));
   }
 
   public int execute(Command command) throws Exception {
@@ -594,15 +602,23 @@ public class Bach {
     }
 
     Command dump(Log log, Level level) {
+      return dump(log, level, 23);
+    }
+
+    Command dump(Log log, Level level, int maxLines) {
       if (log.isLevelSuppressed(level)) {
         return this;
       }
-      Iterator<String> iterator = arguments.iterator();
+      ListIterator<String> iterator = arguments.listIterator();
       log.print(level, "%s%n", iterator.next());
       while (iterator.hasNext()) {
         String argument = iterator.next();
         String indent = argument.startsWith("-") ? "" : "  ";
         log.print(level, "%s%s%n", indent, argument);
+        if (iterator.nextIndex() >= maxLines) {
+          log.print(level, "...[%d arguments skipped]%n", arguments.size() - maxLines);
+          break;
+        }
       }
       return this;
     }
@@ -612,6 +628,7 @@ public class Bach {
 
     Level level = Level.INFO;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
+    // Path jdkBinPath = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
     Layout layout = Layout.AUTO;
     Map<Folder, Path> folders = Collections.emptyMap();
     private Map<Folder, Path> override = new EnumMap<>(Folder.class);
@@ -619,7 +636,15 @@ public class Bach {
     PrintStream streamOut = System.out;
     PrintStream streamErr = System.err;
 
-    Score build() {
+    Bach build() {
+      return new Bach(score());
+    }
+
+    Score score() {
+      //if (jdkBinPath == null) {
+      //  String javaHome = System.getenv("JAVA_HOME");
+      //  jdkBinPath = javaHome == null ? Paths.get("") : Paths.get(javaHome, "bin");
+      //}
       if (folders == Collections.EMPTY_MAP) {
         folders = generateFolderPathMap(override);
       }
@@ -630,10 +655,6 @@ public class Bach {
         layout = layoutOf(folders.get(Folder.SOURCE));
       }
       return new Score(this);
-    }
-
-    Bach bach() {
-      return new Bach(build());
     }
 
     Builder peek(Consumer<Builder> consumer) {

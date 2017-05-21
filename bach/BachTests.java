@@ -4,7 +4,7 @@ import java.util.Objects;
 class BachTests {
 
   private static void scoreDefault() {
-    Bach.Score score = Bach.builder().layout(Layout.BASIC).build();
+    Bach.Score score = Bach.builder().layout(Layout.BASIC).score();
     assert Objects.equals(Layout.BASIC, score.layout);
     assert Objects.equals("bach", score.name);
   }

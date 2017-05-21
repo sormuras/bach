@@ -28,7 +28,7 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/basic"))
         .override(Folder.TARGET, Paths.get("target/bach/basic"))
         .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
-      .bach()
+      .build()
         .format()
         .compile()
         .run("com.greetings", "com.greetings.Main");
@@ -38,7 +38,7 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/common"))
         .override(Folder.TARGET, Paths.get("target/bach/common"))
         .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
-      .bach()
+      .build()
         .format()
         .compile()
         .run("com.greetings", "com.greetings.Main");
@@ -48,7 +48,7 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/idea"))
         .override(Folder.TARGET, Paths.get("target/bach/idea"))
         .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
-      .bach()
+      .build()
         .format()
         .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
         .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
