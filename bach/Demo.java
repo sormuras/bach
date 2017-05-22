@@ -25,6 +25,7 @@ public class Demo {
     Bach.builder()
         .name("basic")
         .version("0.9")
+        .main("com.greetings", "com.greetings.Main")
         .log(Level.FINE)
         .override(Folder.SOURCE, Paths.get("demo/basic"))
         .override(Folder.TARGET, Paths.get("target/bach/basic"))
@@ -33,7 +34,7 @@ public class Demo {
         .format()
         .compile()
         .jar()
-        .run("com.greetings", "com.greetings.Main");
+        .runJar("com.greetings");
 
     Bach.builder()
         .name("common")
@@ -43,7 +44,7 @@ public class Demo {
       .build()
         .format()
         .compile()
-        .run("com.greetings", "com.greetings.Main");
+        .runCompiled("com.greetings");
 
     Bach.builder()
         .name("idea")
@@ -56,6 +57,6 @@ public class Demo {
         .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
         .compile()
         .test()
-        .run("com.greetings", "com.greetings.Main");
+        .run(Folder.TARGET_MAIN_COMPILED, "com.greetings", "com.greetings.Main");
   }
 }

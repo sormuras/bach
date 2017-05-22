@@ -92,6 +92,7 @@ public class Bach {
     final Level level;
     final Layout layout;
     final Map<Folder, Path> folders;
+    final Map<String, String> mains;
     final InputStream streamIn;
     final PrintStream streamOut;
     final PrintStream streamErr;
@@ -102,6 +103,7 @@ public class Bach {
       this.level = builder.level;
       this.layout = builder.layout;
       this.folders = Collections.unmodifiableMap(new EnumMap<>(builder.folders));
+      this.mains = Collections.unmodifiableMap(new HashMap<>(builder.moduleEntryPointMap));
       this.streamIn = builder.streamIn;
       this.streamOut = builder.streamOut;
       this.streamErr = builder.streamErr;
@@ -249,18 +251,27 @@ public class Bach {
     int code = javac.run(score.streamIn, score.streamOut, score.streamErr, command.toArray());
     log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
     if (code != 0) {
-      log.fail(new RuntimeException(), "javac reported %d as exit value", code);
+      log.fail(RuntimeException::new, "javac reported %d as exit value", code);
     }
     return this;
   }
 
-  public Bach run(String module, String main, String... arguments) {
-    log.tag("run").info("%s/%s%n", module, main);
+  public Bach runCompiled(String module, String... arguments) {
+    return run(Folder.TARGET_MAIN_COMPILED, module, score.mains.getOrDefault(module, module + ".Main"), arguments);
+  }
+
+  public Bach runJar(String module, String... arguments) {
+    return run(Folder.TARGET_MAIN_JAR, module, score.mains.get(module), arguments);
+  }
+
+  public Bach run(Folder folder, String module, String main, String... arguments) {
+    String entryPoint = main == null ? module : module + "/" + main;
+    log.tag("run").info("%s%n", entryPoint);
     return execute(Command.of("java")
         .add("--module-path")
-        .add(this::path, Folder.TARGET_MAIN_COMPILED, Folder.DEPENDENCIES)
+        .add(this::path, folder, Folder.DEPENDENCIES)
         .add("--module")
-        .add(module + "/" + main)
+        .add(entryPoint)
         .limit(20)
         .addAll((Object[]) arguments));
   }
@@ -343,8 +354,11 @@ public class Bach {
     List<String> modules = util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILED)).collect(Collectors.toList());
     for (String module : modules) {
       Path modulePath = path(Folder.TARGET_MAIN_COMPILED).resolve(module);
-      String main = module + "." + "Main"; // TODO Add score function: module -> main
+      String main = score.mains.getOrDefault(module, module + "." + "Main");
       if (Files.notExists(modulePath.resolve(main.replace('.', '/') + ".class"))) {
+        if (score.mains.get(module) == null) {
+          log.fail(IllegalStateException::new, "entry-point `%s` not found in `%s`", main, modulePath);
+        }
         main = null;
       }
       jar(module + ".jar", module, main, score.version);
@@ -465,7 +479,7 @@ public class Bach {
 
     <T> T fail(Throwable cause, String format, Object... args) {
       String message = String.format(format, args);
-      print(Level.SEVERE, message);
+      print(Level.SEVERE, message + "%n");
       throw new Error(message, cause);
     }
   }
@@ -777,6 +791,13 @@ public class Bach {
       return this;
     }
 
+    final Map<String, String> moduleEntryPointMap = new HashMap<>();
+
+    Builder main(String module, String main) {
+      this.moduleEntryPointMap.put(module, main);
+      return this;
+    }
+
     static Map<Folder, Path> generateFolderPathMap(Map<Folder, Path> override) {
       Map<Folder, Path> map = new EnumMap<>(Folder.class);
       for (Folder folder : Folder.values()) {
@@ -795,6 +816,9 @@ public class Bach {
     }
 
     static Layout layoutOf(Path root) {
+      if (Files.notExists(root)) {
+        return Layout.AUTO;
+      }
       try {
         Path path = Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
                 .map(root::relativize)
