@@ -256,6 +256,10 @@ public class Bach {
     return this;
   }
 
+  public Bach run(String module, String main, String... arguments) {
+    return run(Folder.TARGET_MAIN_COMPILED, module, main, arguments);
+  }
+
   public Bach runCompiled(String module, String... arguments) {
     return run(Folder.TARGET_MAIN_COMPILED, module, score.mains.getOrDefault(module, module + ".Main"), arguments);
   }

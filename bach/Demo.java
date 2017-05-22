@@ -57,6 +57,6 @@ public class Demo {
         .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
         .compile()
         .test()
-        .run(Folder.TARGET_MAIN_COMPILED, "com.greetings", "com.greetings.Main");
+        .run("com.greetings", "com.greetings.Main");
   }
 }

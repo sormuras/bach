@@ -31,7 +31,7 @@ if (Files.notExists(bachJava)) {
 {
 Bach.builder()
     .override(Folder.SOURCE, Paths.get("demo/basic"))
-  .bach()
+  .build()
     .format()
     .compile()
     .run("com.greetings", "com.greetings.Main");
