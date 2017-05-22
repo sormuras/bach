@@ -211,7 +211,7 @@ public class Bach {
     return this;
   }
 
-  public int compile(Path moduleSourcePath, Path destinationPath) throws Exception {
+  public Bach compile(Path moduleSourcePath, Path destinationPath) throws Exception {
     log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
     Command command = new Command()
     // output messages about what the compiler is doing
@@ -248,10 +248,13 @@ public class Bach {
     long start = System.currentTimeMillis();
     int code = javac.run(score.streamIn, score.streamOut, score.streamErr, command.toArray());
     log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
-    return code;
+    if (code != 0) {
+      log.fail(new RuntimeException(), "javac reported %d as exit value", code);
+    }
+    return this;
   }
 
-  public int run(String module, String main, String... arguments) throws Exception {
+  public Bach run(String module, String main, String... arguments) {
     log.tag("run").info("%s/%s%n", module, main);
     return execute(Command.of("java")
         .add("--module-path")
@@ -262,15 +265,23 @@ public class Bach {
         .addAll((Object[]) arguments));
   }
 
-  public int execute(Object... command) throws Exception {
+  public Bach execute(Object... command) {
     return execute(new Command().addAll(command));
   }
 
-  public int execute(Command command) throws Exception {
+  public Bach execute(Command command) {
     command.dump(log, Level.FINE);
-    Process process = command.newProcessBuilder().redirectErrorStream(true).start();
-    process.getInputStream().transferTo(score.streamOut);
-    return process.waitFor();
+    try {
+      Process process = command.newProcessBuilder().redirectErrorStream(true).start();
+      process.getInputStream().transferTo(score.streamOut);
+      int exitValue = process.waitFor();
+      if (exitValue != 0) {
+        log.fail(RuntimeException::new, "exit value of %d indicates an error", exitValue);
+      }
+    } catch (Exception e) {
+      log.fail(e, "execute(command) failed");
+    }
+    return this;
   }
 
   public Bach test(String... options) throws Exception {
@@ -286,7 +297,7 @@ public class Bach {
     return this;
   }
 
-  public int test(String module, boolean additional, String... options) throws Exception {
+  public Bach test(String module, boolean additional, String... options) throws Exception {
     log.tag("test").info("module %s%n", module);
     Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
     return execute(Command.of("java")
@@ -362,9 +373,7 @@ public class Bach {
             }
             // changes to the specified directory and includes the files specified at the end of the command line.
             command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
-    if (execute(command) != 0) {
-      throw new RuntimeException("jar failed");
-    }
+    execute(command);
     if (log.isLevelActive(Level.FINE)) {
       execute("jar", "--describe-module", "--file", jarFile);
     }
@@ -397,11 +406,11 @@ public class Bach {
     }
 
     void check(boolean condition, String format, Object...args) {
-      if (!condition) log.fail(new AssertionError("check failed"), format, args);
+      if (!condition) log.fail(AssertionError::new, format, args);
     }
 
     <T> T assigned(T instance, String format, Object...args) {
-      if (instance == null) log.fail(new NullPointerException("check failed"), format, args);
+      if (instance == null) log.fail(NullPointerException::new, format, args);
       return instance;
     }
 
@@ -448,6 +457,10 @@ public class Bach {
 
     void info(String format, Object... args) {
       print(Level.INFO, format, args);
+    }
+
+    <T> T fail(Function<String, Throwable> supplier, String format, Object... args) {
+      return fail(supplier.apply(String.format(format, args)), format, args);
     }
 
     <T> T fail(Throwable cause, String format, Object... args) {
