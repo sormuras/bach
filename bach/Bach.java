@@ -360,7 +360,7 @@ public class Bach {
       Path modulePath = path(Folder.TARGET_MAIN_COMPILED).resolve(module);
       String main = score.mains.getOrDefault(module, module + "." + "Main");
       if (Files.notExists(modulePath.resolve(main.replace('.', '/') + ".class"))) {
-        if (score.mains.get(module) == null) {
+        if (score.mains.containsKey(module)) {
           log.fail(IllegalStateException::new, "entry-point `%s` not found in `%s`", main, modulePath);
         }
         main = null;
