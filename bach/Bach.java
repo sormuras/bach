@@ -41,6 +41,9 @@ enum Layout {
 }
 
 enum Folder {
+  JDK_HOME("jdk-9"),
+  JDK_HOME_BIN(JDK_HOME, "bin"),
+  JDK_HOME_MODS(JDK_HOME, "jmods"),
   AUXILIARY(".bach"),
   DEPENDENCIES(AUXILIARY, "dependencies"),
   TOOLS(AUXILIARY, "tools"),
@@ -389,12 +392,49 @@ public class Bach {
               // specifies the module version
               command.add("--module-version").add(version);
             }
-            // changes to the specified directory and includes the files specified at the end of the command line.
+            // changes to the specified directory and includes the files specified at the end of the command line
             command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
     execute(command);
     if (log.isLevelActive(Level.FINE)) {
       execute("jar", "--describe-module", "--file", jarFile);
     }
+    return this;
+  }
+
+  /**
+   * Assemble and optimize a set of modules and their dependencies into a custom runtime image.
+   */
+  public Bach link(String module, String name) {
+    log.tag("link").info("%s%n", name);
+    Path target = path(Folder.TARGET).resolve(name);
+    Command command = Command.of("jlink")
+            // specifies the module path
+            .add("--module-path")
+            .add(this::path, Folder.TARGET_MAIN_JAR, Folder.DEPENDENCIES, Folder.JDK_HOME_MODS)
+            // adds the named module to the default set of root modules (the default set of root modules is empty)
+            .add("--add-modules")
+            .add(module)
+            // specifies the launcher command name for the module
+            .add("--launcher")
+            .add(name + "=" + module)
+            // excludes header files
+            .add("--no-header-files")
+            // excludes man pages
+            .add("--no-man-pages")
+            // strip debug information from the output image
+            .add("--strip-debug")
+            // exclude native commands (such as java or java.exe) from the image
+            // .add("--strip-native-commands")
+            // compress all resources in the output image: 0=no compression, 1=constant string sharing, 2=ZIP
+            .add("--compress")
+            .add(2)
+            // saves options in the specified file
+            .add("--save-opts")
+            .add(target.resolve("jlink.options.txt"))
+            // specifies the location of the generated runtime image
+            .add("--output")
+            .add(target);
+    execute(command);
     return this;
   }
 
@@ -728,10 +768,12 @@ public class Bach {
 
   static class Builder {
 
+    private static final Path UNDEFINED = Paths.get(".");
+
     Level level = Level.INFO;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
+    Path jdkHome = UNDEFINED;
     String version = "";
-    // Path jdkBinPath = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
     Layout layout = Layout.AUTO;
     Map<Folder, Path> folders = Collections.emptyMap();
     private Map<Folder, Path> override = new EnumMap<>(Folder.class);
@@ -744,18 +786,18 @@ public class Bach {
     }
 
     Score score() {
-      //if (jdkBinPath == null) {
-      //  String javaHome = System.getenv("JAVA_HOME");
-      //  jdkBinPath = javaHome == null ? Paths.get("") : Paths.get(javaHome, "bin");
-      //}
+      if (jdkHome == UNDEFINED) {
+        jdkHome = buildJdkHome();
+      }
+      override(Folder.JDK_HOME, jdkHome);
       if (folders == Collections.EMPTY_MAP) {
-        folders = generateFolderPathMap(override);
+        folders = buildFolderPathMap(override);
       }
       if (!folders.keySet().equals(Set.of(Folder.values()))) {
         throw new AssertionError("key set mismatch in folders=" + folders);
       }
       if (layout == Layout.AUTO) {
-        layout = layoutOf(folders.get(Folder.SOURCE));
+        layout = buildLayout(folders.get(Folder.SOURCE));
       }
       return new Score(this);
     }
@@ -802,7 +844,29 @@ public class Bach {
       return this;
     }
 
-    static Map<Folder, Path> generateFolderPathMap(Map<Folder, Path> override) {
+    static Path buildJdkHome() {
+      // try current process information: <JDK_HOME>/bin/java[.exe]
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null) {
+        Path path = executable.getParent(); // <JDK_HOME>/bin
+        if (path != null) {
+          return path.getParent(); // <JDK_HOME>
+        }
+      }
+      // next, examine system environment...
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome);
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome);
+      }
+      // still here? not so good... try with default (not-existent) path
+      return Folder.JDK_HOME.path;
+    }
+
+    static Map<Folder, Path> buildFolderPathMap(Map<Folder, Path> override) {
       Map<Folder, Path> map = new EnumMap<>(Folder.class);
       for (Folder folder : Folder.values()) {
         if (override != Collections.EMPTY_MAP && override.containsKey(folder)) {
@@ -819,7 +883,7 @@ public class Bach {
       return map;
     }
 
-    static Layout layoutOf(Path root) {
+    static Layout buildLayout(Path root) {
       if (Files.notExists(root)) {
         return Layout.AUTO;
       }
@@ -837,7 +901,7 @@ public class Bach {
         Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
         Matcher nameMatcher = namePattern.matcher(moduleSource);
         if (!nameMatcher.find()) {
-          throw new IllegalArgumentException("Expected java module descriptor unit, but got: \n" + moduleSource);
+          throw new IllegalArgumentException("expected java module descriptor unit, but got: \n" + moduleSource);
         }
         String moduleName = nameMatcher.group(2).trim();
         return path.startsWith(moduleName) ? Layout.FIRST : Layout.TRAIL;

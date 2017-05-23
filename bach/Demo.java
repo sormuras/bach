@@ -34,7 +34,8 @@ public class Demo {
         .format()
         .compile()
         .jar()
-        .runJar("com.greetings");
+        .runJar("com.greetings")
+        .link("com.greetings", "greetings");
 
     Bach.builder()
         .name("common")
