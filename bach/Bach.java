@@ -24,9 +24,9 @@ import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.spi.*;
 import java.util.stream.*;
 import java.util.regex.*;
-import javax.tools.*;
 
 /** Source directory module tree layout/scheme. */
 enum Layout {
@@ -42,7 +42,6 @@ enum Layout {
 
 enum Folder {
   JDK_HOME("jdk-9"),
-  JDK_HOME_BIN(JDK_HOME, "bin"),
   JDK_HOME_MODS(JDK_HOME, "jmods"),
   AUXILIARY(".bach"),
   DEPENDENCIES(AUXILIARY, "dependencies"),
@@ -122,7 +121,6 @@ public class Bach {
     return builder().build();
   }
 
-  private final JavaCompiler javac;
   private final Log log;
   private final Util util;
   private final Score score;
@@ -131,7 +129,6 @@ public class Bach {
     this.score = score;
     this.log = new Log();
     this.util = new Util();
-    this.javac = log.assigned(ToolProvider.getSystemJavaCompiler(), "java compiler not available");
     log.info("project %s [%s] initialized%n", score.name, getClass());
     log.print(Level.CONFIG, "version=%s%n", score.version);
     log.print(Level.CONFIG, "level=%s%n", score.level);
@@ -217,8 +214,9 @@ public class Bach {
   }
 
   public Bach compile(Path moduleSourcePath, Path destinationPath) throws Exception {
+    log.tag("compile");
     log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
-    Command command = new Command()
+    Command command = Command.of("javac")
     // output messages about what the compiler is doing
         .add(log.threshold <= Level.FINEST.intValue(), "-verbose")
     // file encoding
@@ -247,15 +245,8 @@ public class Bach {
         .filter(name -> name.endsWith(".java"))
         .peek(name -> count[0]++)
         .forEach(command::add);
-    log.fine("javac%n");
-    command.dump(log, Level.FINE);
     // compile
-    long start = System.currentTimeMillis();
-    int code = javac.run(score.streamIn, score.streamOut, score.streamErr, command.toArray());
-    log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
-    if (code != 0) {
-      log.fail(RuntimeException::new, "javac reported %d as exit value", code);
-    }
+    execute(command);
     return this;
   }
 
@@ -283,21 +274,34 @@ public class Bach {
         .addAll((Object[]) arguments));
   }
 
-  public Bach execute(Object... command) {
-    return execute(new Command().addAll(command));
+  public Bach execute(String executable, Object... command) {
+    return execute(Command.of(executable).addAll(command));
   }
 
   public Bach execute(Command command) {
     command.dump(log, Level.FINE);
     try {
-      Process process = command.newProcessBuilder().redirectErrorStream(true).start();
-      process.getInputStream().transferTo(score.streamOut);
-      int exitValue = process.waitFor();
+      long start = System.currentTimeMillis();
+      int exitValue;
+      Optional<ToolProvider> tool = ToolProvider.findFirst(command.name);
+      if (tool.isPresent()) {
+        log.fine("running provided `%s` tool in-process...%n", command.name);
+        exitValue = tool.get().run(score.streamOut, score.streamErr, command.toArray());
+      } else {
+        log.fine("starting external `%s` tool in new process...%n", command.name);
+        Process process = command.newProcessBuilder().redirectErrorStream(true).start();
+        process.getInputStream().transferTo(score.streamOut);
+        exitValue = process.waitFor();
+      }
+      log.fine("%s finished after %d ms%n", command.name, System.currentTimeMillis() - start);
       if (exitValue != 0) {
         log.fail(RuntimeException::new, "exit value of %d indicates an error", exitValue);
       }
     } catch (Exception e) {
-      log.fail(e, "execute(command) failed");
+      if (log.isLevelSuppressed(Level.FINE)) {
+        command.dump(log, Level.SEVERE);
+      }
+      log.fail(e, "execute(command `%s`) failed", command.name);
     }
     return this;
   }
@@ -394,9 +398,11 @@ public class Bach {
             }
             // changes to the specified directory and includes the files specified at the end of the command line
             command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
-    execute(command);
+    ToolProvider jarTool = ToolProvider.findFirst("jar").orElseThrow(() -> new IllegalStateException("can not find tool: jar"));
+    jarTool.run(score.streamOut, score.streamErr, command.toArray());
+
     if (log.isLevelActive(Level.FINE)) {
-      execute("jar", "--describe-module", "--file", jarFile);
+      jarTool.run(score.streamOut, score.streamErr, "--describe-module", "--file", jarFile.toString());
     }
     return this;
   }
@@ -681,12 +687,17 @@ public class Bach {
   static class Command {
 
     static Command of(String name) {
-      return new Command().add(name);
+      return new Command(name);
     }
 
-    ArrayList<String> arguments = new ArrayList<>();
+    final String name;
+    final ArrayList<String> arguments = new ArrayList<>();
     int indentOff = Integer.MAX_VALUE;
     int dumpLimit = Integer.MAX_VALUE;
+
+    Command(String name) {
+      this.name = name;
+    }
 
     Command add(Object value) {
       arguments.add(value.toString());
@@ -719,12 +730,15 @@ public class Bach {
       return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
     }
 
-    List<String> get() {
+    List<String> arguments() {
       return arguments;
     }
 
     ProcessBuilder newProcessBuilder() {
-      return new ProcessBuilder(arguments);
+      ArrayList<String> command = new ArrayList<>(1 + arguments.size());
+      command.add(name);
+      command.addAll(arguments);
+      return new ProcessBuilder(command);
     }
 
     String[] toArray() {
@@ -750,7 +764,7 @@ public class Bach {
 
     Command dump(BiConsumer<String, Object[]> printer) {
       ListIterator<String> iterator = arguments.listIterator();
-      printer.accept("%s%n", args(iterator.next()));
+      printer.accept("%s%n", args(name));
       while (iterator.hasNext()) {
         String argument = iterator.next();
         int nextIndex = iterator.nextIndex();

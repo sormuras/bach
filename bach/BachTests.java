@@ -6,7 +6,6 @@ class BachTests {
   private static void defaultFolders() {
     Bach bach = Bach.builder().log(Level.OFF).build();
     assert bach.path(Folder.JDK_HOME).isAbsolute();
-    assert bach.path(Folder.JDK_HOME_BIN).isAbsolute();
     assert bach.path(Folder.JDK_HOME_MODS).isAbsolute();
   }
 

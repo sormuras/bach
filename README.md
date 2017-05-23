@@ -66,7 +66,7 @@ The actual build block is found in `build/Build.java`'s `main` method:
 public class Build {
   public static void main(String... args) throws Exception {
     Bach.builder()
-        .name("org.foo.bar")
+        .name("bar")
         .log(Level.FINE)
         .override(Folder.SOURCE, Paths.get("source"))
         .override(Folder.TARGET, Paths.get("target/bach/foo"))
