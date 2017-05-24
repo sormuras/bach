@@ -46,7 +46,7 @@ public class Demo {
 
     Bach.Visitor jdeps = bach -> bach.execute("jdeps",
             "-profile",
-            "--dot-output", bach.path(Folder.TARGET),
+            // "--dot-output", bach.path(Folder.TARGET),
             "--module-path", bach.path(Folder.TARGET_MAIN_JAR),
             "--module", "com.greetings");
     Bach.builder()
