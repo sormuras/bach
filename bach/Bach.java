@@ -19,6 +19,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.util.*;
@@ -48,7 +49,9 @@ enum Folder {
   TOOLS(AUXILIARY, "tools"),
   SOURCE("src"),
   MAIN_JAVA("main/java"),
+  MAIN_RESOURCES("main/resources"),
   TEST_JAVA("test/java"),
+  TEST_RESOURCES("test/resources"),
   TARGET("target/bach"),
   TARGET_MAIN_SOURCE(TARGET, "main/module-source-path"),
   TARGET_MAIN_COMPILED(TARGET, "main/compiled"),
@@ -89,6 +92,7 @@ public class Bach {
   /** Immutable configuration, setup, partition...*/
   public static class Score {
 
+    final Charset charset;
     final String name;
     final String version;
     final Level level;
@@ -100,6 +104,7 @@ public class Bach {
     final PrintStream streamErr;
 
     Score(Builder builder) {
+      this.charset = builder.charset;
       this.name = builder.name;
       this.version = builder.version;
       this.level = builder.level;
@@ -178,6 +183,7 @@ public class Bach {
       case BASIC:
         log.info("main%n");
         compile(modules, path(Folder.TARGET_MAIN_COMPILED));
+        util.copyTree(modules, path(Folder.TARGET_MAIN_COMPILED)); // TODO exclude .java files?
         break;
       case FIRST:
         util.findDirectoryNames(modules).forEach(module -> {
@@ -185,10 +191,12 @@ public class Bach {
           Path source = modules.resolve(module);
           // main
           util.copyTree(source.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_SOURCE).resolve(module));
+          util.copyTree(source.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILED).resolve(module));
           // test
           util.copyTree(source.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_TEST_SOURCE).resolve(module));
           util.copyTree(source.resolve(path(Folder.TEST_JAVA)), path(Folder.TARGET_TEST_SOURCE).resolve(module));
           util.moveModuleInfo(path(Folder.TARGET_TEST_SOURCE).resolve(module));
+          util.copyTree(source.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILED).resolve(module));
         });
         log.info("main%n");
         compile(path(Folder.TARGET_MAIN_SOURCE), path(Folder.TARGET_MAIN_COMPILED));
@@ -200,11 +208,13 @@ public class Bach {
       case TRAIL:
         log.info("main%n");
         compile(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_COMPILED));
+        util.copyTree(modules.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILED));
         if (Files.exists(modules.resolve(path(Folder.TEST_JAVA)))) {
           log.info("test%n");
           util.copyTree(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_TEST_SOURCE));
           util.copyTree(modules.resolve(path(Folder.TEST_JAVA)), path(Folder.TARGET_TEST_SOURCE));
           compile(path(Folder.TARGET_TEST_SOURCE), path(Folder.TARGET_TEST_COMPILED));
+          util.copyTree(modules.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILED));
         }
         break;
       default:
@@ -230,7 +240,7 @@ public class Bach {
         .add("-Werror")
     // specify character encoding used by source files
         .add("-encoding")
-        .add("UTF-8")
+        .add(score.charset.name())
     // specify where to find application modules
         .add("--module-path")
         .add(path(Folder.DEPENDENCIES))
@@ -266,11 +276,17 @@ public class Bach {
     String entryPoint = main == null ? module : module + "/" + main;
     log.tag("run").info("%s%n", entryPoint);
     return execute(Command.of("java")
+    // options
+        .add("-Dfile.encoding=" + score.charset.name())
+    // module-path: a list of directories in which each directory is a directory of modules
         .add("--module-path")
         .add(this::path, folder, Folder.DEPENDENCIES)
+    // name of the initial module to resolve and execute
         .add("--module")
         .add(entryPoint)
+    // set internal dump mark and limit
         .limit(20)
+    // arguments passed to the main method separated by spaces
         .addAll((Object[]) arguments));
   }
 
@@ -809,11 +825,11 @@ public class Bach {
 
   static class Builder {
 
-    private static final Path UNDEFINED = Paths.get(".");
+    private static final Path UNDEFINED_PATH = Paths.get(".");
 
     Level level = Level.INFO;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
-    Path jdkHome = UNDEFINED;
+    Path jdkHome = UNDEFINED_PATH;
     String version = "";
     Layout layout = Layout.AUTO;
     Map<Folder, Path> folders = Collections.emptyMap();
@@ -826,8 +842,15 @@ public class Bach {
       return new Bach(score());
     }
 
+    Charset charset = StandardCharsets.UTF_8; // Charset.forName(System.getProperty("file.encoding", "UTF-8"))
+
+    Builder charset(Charset charset) {
+      this.charset = charset;
+      return this;
+    }
+
     Score score() {
-      if (jdkHome == UNDEFINED) {
+      if (jdkHome == UNDEFINED_PATH) {
         jdkHome = buildJdkHome();
       }
       override(Folder.JDK_HOME, jdkHome);
@@ -938,7 +961,7 @@ public class Bach {
           return Layout.BASIC;
         }
         // nested case: extract module name and check whether the relative path starts with it
-        String moduleSource = new String(Files.readAllBytes(root.resolve(path)), "UTF-8");
+        String moduleSource = new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
         Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
         Matcher nameMatcher = namePattern.matcher(moduleSource);
         if (!nameMatcher.find()) {
