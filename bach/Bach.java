@@ -278,6 +278,12 @@ public class Bach {
     return execute(Command.of(executable).addAll(command));
   }
 
+  @SafeVarargs
+  public final Bach execute(String executable, Function<Bach, Object>... command) {
+    List<Object> commands = Arrays.stream(command).map(c -> c.apply(this)).collect(Collectors.toList());
+    return execute(Command.of(executable).addAll(commands));
+  }
+
   public Bach execute(Command command) {
     command.dump(log, Level.FINE);
     try {
