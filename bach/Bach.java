@@ -345,14 +345,24 @@ public class Bach {
         .add(path(Tool.FORMAT))
         .add("--replace")
         .limit(10);
-    // collect .java source files
+    // collect valid .java source files
+    Predicate<Path> validJavaFilePath = path -> {
+      String name = path.getFileName().toString();
+      if (name.equals("module-info.java")) {
+        return false; // see https://github.com/google/google-java-format/issues/75
+      }
+      //noinspection SimplifiableIfStatement
+      if (name.chars().filter(c -> c == '.').count() != 1) {
+        return false;
+      }
+      return name.endsWith(".java");
+    };
     int[] count = {0};
     for (Path path : paths) {
       log.fine("formatting `%s`...%n", path);
       Files.walk(path)
+              .filter(validJavaFilePath)
               .map(Path::toString)
-              .filter(name -> name.endsWith(".java"))
-              .filter(name -> !name.endsWith("module-info.java"))
               .peek(name -> count[0]++)
               .forEach(command::add);
       execute(command);
