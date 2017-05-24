@@ -275,13 +275,8 @@ public class Bach {
   }
 
   public Bach execute(String executable, Object... command) {
+    log.tag("execute");
     return execute(Command.of(executable).addAll(command));
-  }
-
-  @SafeVarargs
-  public final Bach execute(String executable, Function<Bach, Object>... command) {
-    List<Object> commands = Arrays.stream(command).map(c -> c.apply(this)).collect(Collectors.toList());
-    return execute(Command.of(executable).addAll(commands));
   }
 
   public Bach execute(Command command) {
@@ -448,6 +443,22 @@ public class Bach {
             .add(target);
     execute(command);
     return this;
+  }
+
+  public Bach visit(Visitor visitor) {
+    log.tag("visit");
+    try {
+      visitor.visit(this);
+    }
+    catch (Exception e) {
+      log.fail(e, "visit failed");
+    }
+    return this;
+  }
+
+  @FunctionalInterface
+  interface Visitor {
+    void visit(Bach bach) throws Exception;
   }
 
   class Log {

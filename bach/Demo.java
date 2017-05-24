@@ -24,40 +24,48 @@ public class Demo {
   public static void main(String... args) throws Exception {
     Bach.builder()
         .name("basic")
-        .version("0.9")
-        .main("com.greetings", "com.greetings.Main")
         .log(Level.FINE)
         .override(Folder.SOURCE, Paths.get("demo/basic"))
         .override(Folder.TARGET, Paths.get("target/bach/basic"))
-        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+        .peek(builder -> System.out.println(builder.name))
       .build()
+        .execute("java", "--version")
         .format()
         .compile()
-        .jar()
-        .runJar("com.greetings")
-        .link("com.greetings", "greetings");
+        .run("com.greetings", "com.greetings.Main");
 
     Bach.builder()
         .name("common")
         .override(Folder.SOURCE, Paths.get("demo/common"))
         .override(Folder.TARGET, Paths.get("target/bach/common"))
-        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+        .peek(builder -> System.out.println(builder.name))
       .build()
         .format()
         .compile()
         .runCompiled("com.greetings");
 
+    Bach.Visitor jdeps = bach -> bach.execute("jdeps",
+            "-profile",
+            "--dot-output", bach.path(Folder.TARGET),
+            "--module-path", bach.path(Folder.TARGET_MAIN_JAR),
+            "--module", "com.greetings");
     Bach.builder()
         .name("idea")
+        .log(Level.FINE)
+        .version("0.9")
+        .main("com.greetings", "com.greetings.Main")
         .override(Folder.SOURCE, Paths.get("demo/idea"))
         .override(Folder.TARGET, Paths.get("target/bach/idea"))
-        .peek(builder -> System.out.printf("%n%s%n%n", builder.name))
+        .peek(builder -> System.out.println(builder.name))
       .build()
         .format()
         .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
         .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
         .compile()
         .test()
-        .run("com.greetings", "com.greetings.Main");
+        .jar()
+        .visit(jdeps)
+        .runJar("com.greetings")
+        .link("com.greetings", "greetings");
   }
 }
