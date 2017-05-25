@@ -339,15 +339,18 @@ public class Bach {
   public Bach test(String module, boolean additional, String... options) throws Exception {
     log.tag("test").info("module %s%n", module);
     Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
-    return execute(Command.of("java")
+    Command command = Command.of("java")
+            .add("-ea")
+            .add("-Dfile.encoding=" + score.charset.name())
             .add("-jar")
-            .add(path(Tool.JUNIT))
-            .add(additional, "--classpath")
-            .add(additional, modulePath)
-            .add(additional, "--scan-classpath")
+            .add(path(Tool.JUNIT));
+    util.findDirectories(path(Folder.TARGET_TEST_COMPILED))
+            .forEach(m -> command.add(additional, "--classpath").add(additional, m));
+    command.add(additional, "--scan-classpath")
             .add(additional, modulePath)
             .limit(10)
-            .addAll((Object[]) options));
+            .addAll((Object[]) options);
+    return execute(command);
   }
 
   public Bach format() throws Exception {
@@ -600,9 +603,13 @@ public class Bach {
       }
     }
 
-    Stream<String> findDirectoryNames(Path root) throws Exception {
+    Stream<Path> findDirectories(Path root) throws Exception {
       return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
-              .filter(path -> !root.equals(path))
+              .filter(path -> !root.equals(path));
+    }
+
+    Stream<String> findDirectoryNames(Path root) throws Exception {
+      return findDirectories(root)
               .map(root::relativize)
               .map(Path::toString);
     }
