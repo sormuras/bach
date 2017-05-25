@@ -357,16 +357,16 @@ public class Bach {
     return format(true);
   }
 
-  public Bach format(boolean validateOnly) throws Exception {
-    return format(validateOnly, path(Folder.SOURCE));
+  public Bach format(boolean validate) throws Exception {
+    return format(validate, path(Folder.SOURCE));
   }
 
-  public Bach format(boolean validateOnly, Path... paths) throws Exception {
+  public Bach format(boolean validate, Path... paths) throws Exception {
     log.tag("format");
     Command command = Command.of("java")
         .add("-jar")
         .add(path(Tool.FORMAT))
-        .add(validateOnly ? "--validate" : "--replace")
+        .add(validate ? "--validate" : "--replace")
         .limit(10);
     // collect valid .java source files
     Predicate<Path> validJavaFilePath = path -> {
@@ -382,7 +382,7 @@ public class Bach {
     };
     int[] count = {0};
     for (Path path : paths) {
-      log.fine("formatting `%s`...%n", path);
+      log.fine("%s `%s`...%n", validate ? "validating" : "formatting", path);
       Files.walk(path)
               .filter(validJavaFilePath)
               .map(Path::toString)
@@ -390,7 +390,7 @@ public class Bach {
               .forEach(command::add);
       execute(command);
     }
-    log.info("%d files formatted%n", count[0]);
+    log.info("%d files %s%n", count[0], validate ? "validated" : "formatted");
     return this;
   }
 
