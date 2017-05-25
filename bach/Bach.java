@@ -74,7 +74,8 @@ enum Folder {
 }
 
 enum Tool {
-  FORMAT("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"),
+  //FORMAT("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"),
+  FORMAT("https://jitpack.io/com/github/sormuras/google-java-format/google-java-format/validate-SNAPSHOT/google-java-format-validate-SNAPSHOT-all-deps.jar"),
   JUNIT("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar");
   URI uri;
   Tool(String uri) {
@@ -354,15 +355,19 @@ public class Bach {
   }
 
   public Bach format() throws Exception {
-    return format(path(Folder.SOURCE));
+    return format(false);
   }
 
-  public Bach format(Path... paths) throws Exception {
+  public Bach format(boolean validateOnly) throws Exception {
+    return format(validateOnly, path(Folder.SOURCE));
+  }
+
+  public Bach format(boolean validateOnly, Path... paths) throws Exception {
     log.tag("format");
     Command command = Command.of("java")
         .add("-jar")
         .add(path(Tool.FORMAT))
-        .add("--replace")
+        .add(validateOnly ? "--validate" : "--replace")
         .limit(10);
     // collect valid .java source files
     Predicate<Path> validJavaFilePath = path -> {
