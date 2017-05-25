@@ -74,7 +74,6 @@ enum Folder {
 }
 
 enum Tool {
-  //FORMAT("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"),
   FORMAT("https://jitpack.io/com/github/sormuras/google-java-format/google-java-format/validate-SNAPSHOT/google-java-format-validate-SNAPSHOT-all-deps.jar"),
   JUNIT("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar");
   URI uri;
@@ -355,7 +354,7 @@ public class Bach {
   }
 
   public Bach format() throws Exception {
-    return format(false);
+    return format(true);
   }
 
   public Bach format(boolean validateOnly) throws Exception {
