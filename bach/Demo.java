@@ -21,7 +21,7 @@ import java.util.logging.Level;
 
 public class Demo {
 
-  public static void main(String... args) throws Exception {
+  static void basic() throws Exception {
     Bach.builder()
         .name("basic")
         .log(Level.FINE)
@@ -33,7 +33,9 @@ public class Demo {
         .format()
         .compile()
         .run("com.greetings", "com.greetings.Main");
+  }
 
+  static void common() throws Exception {
     Bach.builder()
         .name("common")
         .override(Folder.SOURCE, Paths.get("demo/common"))
@@ -43,7 +45,9 @@ public class Demo {
         .format()
         .compile()
         .runCompiled("com.greetings");
+  }
 
+  static void idea() throws Exception {
     Bach.Visitor jdeps = bach -> bach.execute("jdeps",
             "-profile",
             // "--dot-output", bach.path(Folder.TARGET),
@@ -67,5 +71,11 @@ public class Demo {
         .visit(jdeps)
         .runJar("com.greetings")
         .link("com.greetings", "greetings");
+  }
+
+  public static void main(String... args) throws Exception {
+    basic();
+    common();
+    idea();
   }
 }
