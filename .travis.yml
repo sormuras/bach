@@ -12,4 +12,6 @@ install:
 
 script:
 - cd $TRAVIS_BUILD_DIR
-- jshell --show-version demo.jsh
+- chmod u+x build.jsh demo.jsh
+- ./build.jsh
+- ./demo.jsh

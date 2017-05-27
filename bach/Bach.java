@@ -43,6 +43,7 @@ enum Layout {
 
 enum Folder {
   JDK_HOME("jdk-9"),
+  JDK_HOME_BIN(JDK_HOME, "bin"),
   JDK_HOME_MODS(JDK_HOME, "jmods"),
   AUXILIARY(".bach"),
   DEPENDENCIES(AUXILIARY, "dependencies"),
@@ -339,7 +340,7 @@ public class Bach {
   public Bach test(String module, boolean additional, String... options) throws Exception {
     log.tag("test").info("module %s%n", module);
     Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
-    Command command = Command.of("java")
+    Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
             .add("-ea")
             .add("-Dfile.encoding=" + score.charset.name())
             .add("-jar")
@@ -363,7 +364,7 @@ public class Bach {
 
   public Bach format(boolean validate, Path... paths) throws Exception {
     log.tag("format");
-    Command command = Command.of("java")
+    Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
         .add("-jar")
         .add(path(Tool.FORMAT))
         .add(validate ? "--validate" : "--replace")
@@ -742,6 +743,10 @@ public class Bach {
 
     static Command of(String name) {
       return new Command(name);
+    }
+
+    static Command of(Path path, String name) {
+      return new Command(path.resolve(name).toString());
     }
 
     final String name;

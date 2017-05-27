@@ -1,0 +1,3 @@
+module de.sormuras.solartools {
+  requires org.junit.jupiter.api;
+}

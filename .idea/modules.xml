@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.iml" filepath="$PROJECT_DIR$/.idea/bach.iml" />
+      <module fileurl="file://$PROJECT_DIR$/src/de.sormuras.solartools/de.sormuras.solartools.iml" filepath="$PROJECT_DIR$/src/de.sormuras.solartools/de.sormuras.solartools.iml" />
     </modules>
   </component>
 </project>
