@@ -355,19 +355,23 @@ public class Bach {
   }
 
   public Bach format() throws Exception {
-    return format(true);
+    boolean replace = Boolean.getBoolean("format");
+    String envKey = score.name.toUpperCase() + "_FORMAT";
+    replace |= "true".equals(System.getenv(envKey));
+    return format(replace);
   }
 
-  public Bach format(boolean validate) throws Exception {
-    return format(validate, path(Folder.SOURCE));
+  public Bach format(boolean replace) throws Exception {
+    return format(replace, path(Folder.SOURCE));
   }
 
-  public Bach format(boolean validate, Path... paths) throws Exception {
-    log.tag("format");
+  public Bach format(boolean replace, Path... paths) throws Exception {
+    String mode = replace ? "replace" : "validate";
+    log.tag("format").fine("mode=%s%n", mode);
     Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
         .add("-jar")
         .add(path(Tool.FORMAT))
-        .add(validate ? "--validate" : "--replace")
+        .add("--" + mode)
         .limit(10);
     // collect valid .java source files
     Predicate<Path> validJavaFilePath = path -> {
@@ -383,7 +387,7 @@ public class Bach {
     };
     int[] count = {0};
     for (Path path : paths) {
-      log.fine("%s `%s`...%n", validate ? "validating" : "formatting", path);
+      log.fine("%s `%s`...%n", replace ? "formatting" : "validating", path);
       Files.walk(path)
               .filter(validJavaFilePath)
               .map(Path::toString)
@@ -391,7 +395,7 @@ public class Bach {
               .forEach(command::add);
       execute(command);
     }
-    log.info("%d files %s%n", count[0], validate ? "validated" : "formatted");
+    log.info("%d files %s%n", count[0], replace ? "formatted" : "validated");
     return this;
   }
 
@@ -858,7 +862,7 @@ public class Bach {
       return new Bach(score());
     }
 
-    Charset charset = StandardCharsets.UTF_8; // Charset.forName(System.getProperty("file.encoding", "UTF-8"))
+    Charset charset = Charset.forName(System.getProperty("file.encoding", "UTF-8"));
 
     Builder charset(Charset charset) {
       this.charset = charset;

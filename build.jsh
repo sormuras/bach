@@ -13,12 +13,12 @@ if (Files.notExists(bachJava)) {
 
 {
 Bach.create()
-    .format(!"true".equals(System.getenv("BACH_FORMAT")))
+    .set(Level.FINE)
+    .format()
     .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
     .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
     .load("org.opentest4j.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
     .compile()
-    .set(Level.FINE)
     .test()
     .runCompiled("de.sormuras.solartools");
 }
