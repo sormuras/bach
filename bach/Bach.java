@@ -229,8 +229,8 @@ public class Bach {
     log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
     Command command = Command.of("javac")
     // output messages about what the compiler is doing
-        .add(log.threshold <= Level.FINEST.intValue(), "-verbose")
-    // file encoding
+        .add(log.isLevelActive(Level.FINEST), "-verbose")
+    // sets the destination directory for class files
         .add("-d")
         .add(destinationPath.toString())
     // output source locations where deprecated APIs are used
@@ -421,7 +421,7 @@ public class Bach {
     Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
     Command command = Command.of("jar")
             // output messages about what the jar command is doing
-            .add(log.threshold <= Level.FINEST.intValue(), "--verbose")
+            .add(log.isLevelActive(Level.FINEST), "--verbose")
             // creates the archive
             .add("--create")
             // specifies the archive file name
@@ -436,11 +436,9 @@ public class Bach {
             }
             // changes to the specified directory and includes the files specified at the end of the command line
             command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
-    ToolProvider jarTool = ToolProvider.findFirst("jar").orElseThrow(() -> new IllegalStateException("can not find tool: jar"));
-    jarTool.run(score.streamOut, score.streamErr, command.toArray());
-
+   execute(command);
     if (log.isLevelActive(Level.FINE)) {
-      jarTool.run(score.streamOut, score.streamErr, "--describe-module", "--file", jarFile.toString());
+      execute("jar", "--describe-module", "--file", jarFile.toString());
     }
     return this;
   }
