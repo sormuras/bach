@@ -354,10 +354,7 @@ public class Bach {
   }
 
   public Bach format() throws Exception {
-    boolean replace = Boolean.getBoolean("format");
-    String envKey = score.name.toUpperCase() + "_FORMAT";
-    replace |= "true".equals(System.getenv(envKey));
-    return format(replace);
+    return format(Boolean.getBoolean("bach.format.replace"));
   }
 
   public Bach format(boolean replace) throws Exception {
@@ -411,6 +408,8 @@ public class Bach {
         main = null;
       }
       jar(module + ".jar", module, main, score.version);
+      jar(module + "-sources.jar", path(Folder.TARGET_MAIN_SOURCE).resolve(module));
+      // TODO jar(module + "-javadoc.jar", Folder.JAVADOC);
     }
     return this;
   }
@@ -438,8 +437,25 @@ public class Bach {
             command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
    execute(command);
     if (log.isLevelActive(Level.FINE)) {
-      execute("jar", "--describe-module", "--file", jarFile.toString());
+      execute("jar", "--describe-module", "--file", jarFile);
     }
+    return this;
+  }
+
+  public Bach jar(String fileName, Path path) throws Exception {
+    log.tag("jar");
+    Files.createDirectories(path(Folder.TARGET_MAIN_JAR));
+    Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
+    Command command = Command.of("jar")
+            // output messages about what the jar command is doing
+            .add(log.isLevelActive(Level.FINEST), "--verbose")
+            // creates the archive
+            .add("--create")
+            // specifies the archive file name
+            .add("--file").add(jarFile);
+    // changes to the specified directory and includes the files specified at the end of the command line
+    command.add("-C").add(path).add(".");
+    execute(command);
     return this;
   }
 
