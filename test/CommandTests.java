@@ -1,3 +1,5 @@
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -5,14 +7,14 @@ import java.util.Objects;
 public class CommandTests {
     private static void dump() {
         List<String> strings = new ArrayList<>();
-        Bach.Command command = Bach.Command.of("executable");
+        Bach.Command command = Bach.Command.of(Paths.get("."), "executable");
         command.add("--some-option").add("value");
         command.add("-single-flag-without-values");
         command.limit(5);
         command.addAll("0", "1", "2", "3", "4");
         command.addAll("5", "6", "7", "8", "9");
         command.dump((format, args) -> strings.add(String.format('|' + format, args).trim()));
-        assert Objects.equals("|executable", strings.get(0));
+        assert Objects.equals("|." + File.separator + "executable", strings.get(0));
         assert Objects.equals("|--some-option", strings.get(1));
         assert Objects.equals("|  value", strings.get(2));
         assert Objects.equals("|-single-flag-without-values", strings.get(3));

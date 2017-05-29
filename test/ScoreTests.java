@@ -9,7 +9,7 @@ class ScoreTests {
     Bach.Score score = Bach.builder().score();
     assert Objects.equals("bach", score.name);
     assert Objects.equals("", score.version);
-    assert Objects.equals(Layout.AUTO, score.layout);
+    assert Objects.equals(Layout.FIRST, score.layout);
     assert Objects.equals(StandardCharsets.UTF_8, score.charset);
     assert score.mains.isEmpty();
   }
