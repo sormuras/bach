@@ -342,7 +342,6 @@ public class Bach {
     Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
     Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
             .add("-ea")
-            .add("-Dfile.encoding=" + score.charset.name())
             .add("-jar")
             .add(path(Tool.JUNIT));
     util.findDirectories(path(Folder.TARGET_TEST_COMPILED))
