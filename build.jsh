@@ -19,6 +19,8 @@ Bach.create()
     .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
     .load("org.opentest4j.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
     .compile()
+    .javadoc("de.sormuras.solartools", Paths.get("src/de.sormuras.solartools/main/java"), "de.sormuras.solartools")
+    .jar()
     .test()
     .runCompiled("de.sormuras.solartools");
 }

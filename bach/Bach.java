@@ -56,6 +56,7 @@ enum Folder {
   TARGET("target/bach"),
   TARGET_MAIN_SOURCE(TARGET, "main/module-source-path"),
   TARGET_MAIN_COMPILED(TARGET, "main/compiled"),
+  TARGET_MAIN_JAVADOC(TARGET, "main/javadoc"),
   TARGET_MAIN_JAR(TARGET, "main/archives"),
   TARGET_TEST_SOURCE(TARGET, "test/module-source-path"),
   TARGET_TEST_COMPILED(TARGET, "test/compiled"),
@@ -395,6 +396,22 @@ public class Bach {
     return this;
   }
 
+  public Bach javadoc(String module, Path source, String... packageNames) throws Exception {
+    log.tag("javadoc");
+    Path destination = path(Folder.TARGET_MAIN_JAVADOC).resolve(module);
+    Command command = Command.of("javadoc")
+            // provides more detailed messages while the javadoc command runs
+            .add(log.isLevelActive(Level.FINEST), "-verbose")
+            // specifies the destination directory where the javadoc command saves the generated HTML files
+            .add("-d").add(destination)
+            // specifies the search paths for finding source files when passing package names
+            .add("--source-path").add(source)
+            // package names
+            .add(Arrays.stream(packageNames), " ");
+    execute(command);
+    return this;
+  }
+
   public Bach jar() throws Exception {
     log.tag("jar");
     List<String> modules = util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILED)).collect(Collectors.toList());
@@ -409,7 +426,7 @@ public class Bach {
       }
       jar(module + ".jar", module, main, score.version);
       jar(module + "-sources.jar", path(Folder.TARGET_MAIN_SOURCE).resolve(module));
-      // TODO jar(module + "-javadoc.jar", Folder.JAVADOC);
+      jar(module + "-javadoc.jar", path(Folder.TARGET_MAIN_JAVADOC).resolve(module));
     }
     return this;
   }
