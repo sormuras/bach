@@ -26,10 +26,10 @@ your project's needs. At the command line use `jshell` to launch the build:
 
 ## auto-download mode
 
-Copy and paste contents of [bach.jsh] to your project's root directory and edit
+Copy and paste contents of [build.jsh] to your project's root directory and edit
 the example build command block. Launch the download and build process with:
 
-    jshell bach.jsh
+    jshell build.jsh
 
 
 ## full-featured build mode
@@ -53,6 +53,7 @@ directory `build`. Drop [Bach.java] into the `build` directory and create a
 The content of `build.jsh` is simply:
 
 ```javascript
+//$JAVA_HOME/bin/jshell --show-version $0 $@; exit $?
 /open build/Bach.java
 /open build/Build.java
 Build.main()
@@ -100,4 +101,4 @@ one.
 
 [demo]:      https://github.com/sormuras/bach/tree/master/demo
 [Bach.java]: https://github.com/sormuras/bach/blob/master/bach/Bach.java
-[bach.jsh]:  https://github.com/sormuras/bach/blob/master/bach.jsh
+[build.jsh]:  https://github.com/sormuras/bach/blob/master/build.jsh
