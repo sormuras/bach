@@ -18,6 +18,7 @@
 // no package
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.*;
 import java.nio.charset.*;
 import java.nio.file.*;
@@ -90,6 +91,42 @@ enum Tool {
  * @noinspection WeakerAccess, UnusedReturnValue, unused
  */
 public class Bach {
+
+  class JavacOptions {
+    /** Output source locations where deprecated APIs are used. */
+    boolean deprecation = true;
+
+    /** Specify character encoding used by source files. */
+    Charset encoding = score.charset;
+
+    /** Generate metadata for reflection on method parameters. */
+    boolean parameters = true;
+
+    /** Terminate compilation if warnings occur. */
+    boolean failOnWarnings = true;
+
+    /** Specify where to find application modules. */
+    List<Path> modulePaths = List.of(path(Folder.DEPENDENCIES));
+
+    /** Output messages about what the compiler is doing. */
+    boolean verbose = log.isLevelActive(Level.FINEST);
+
+    List<String> encoding() {
+      if (Charset.defaultCharset().equals(encoding)) {
+        return Collections.emptyList();
+      }
+      return List.of("-encoding", encoding.name());
+    }
+
+    List<String> failOnWarnings() {
+      return failOnWarnings ? List.of("-Werror") : Collections.emptyList();
+    }
+
+    List<String> modulePaths() {
+      List<String> locations = modulePaths.stream().map(Object::toString).collect(Collectors.toList());
+      return List.of("--module-path", String.join(File.pathSeparator, locations));
+    }
+  }
 
   /** Immutable configuration, setup, partition...*/
   public static class Score {
@@ -229,26 +266,13 @@ public class Bach {
     log.tag("compile");
     log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
     Command command = Command.of("javac")
-    // output messages about what the compiler is doing
-        .add(log.isLevelActive(Level.FINEST), "-verbose")
     // sets the destination directory for class files
         .add("-d")
         .add(destinationPath.toString())
-    // output source locations where deprecated APIs are used
-        .add("-deprecation")
-    // generate metadata for reflection on method parameters
-        .add("-parameters")
-    // terminate compilation if warnings occur
-        .add("-Werror")
-    // specify character encoding used by source files
-        .add("-encoding")
-        .add(score.charset.name())
-    // specify where to find application modules
-        .add("--module-path")
-        .add(path(Folder.DEPENDENCIES))
     // specify where to find input source files for multiple modules
         .add("--module-source-path")
         .add(moduleSourcePath);
+    command.addOptions(new JavacOptions());
     // collect .java source files
     command.limit(10);
     int[] count = {0};
@@ -821,6 +845,41 @@ public class Bach {
 
     Command add(Function<Folder, Path> mapper, Folder... folders) {
       return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
+    }
+
+    Command addOptions(Object object) {
+      try {
+        for (Field field : object.getClass().getDeclaredFields()) {
+          // custom generator available?
+          try {
+            Object result = object.getClass().getDeclaredMethod(field.getName()).invoke(object);
+            if (result instanceof List) {
+              ((List<?>) result).forEach(this::add);
+              continue;
+            }
+          } catch (NoSuchMethodException e) {
+            // fall-through
+          }
+          // guess key and value
+          String optionKey = "-" + field.getName();
+          String optionValue = Objects.toString(field.get(object));
+          // just a flag?
+          if (field.getType() == boolean.class) {
+            boolean value = field.getBoolean(object);
+            if (value) {
+              add(optionKey);
+            }
+            continue;
+          }
+          // as-is
+          add(optionKey);
+          add(optionValue);
+        }
+      }
+      catch (Exception e) {
+        throw new Error(e);
+      }
+      return this;
     }
 
     List<String> arguments() {
