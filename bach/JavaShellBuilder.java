@@ -48,6 +48,7 @@ class JavaShellBuilder {
   /** Compile all java modules (main and test). */
   void compile() {
     log.tag("compile");
+    log.println(Level.CONFIG, "folder %s", folders.keySet());
     // TODO javac(Paths.get("src"), path(Folder.TARGET_COMPILE_MAIN),
     // tool.defaultJavacOptions.get());
   }
@@ -79,15 +80,18 @@ class JavaShellBuilder {
     command.execute();
   }
 
+  /** Resolve path for given folder. */
   Path path(Folder folder) {
     Path path = folders.getOrDefault(folder, folder.path);
     return folder.parent == null ? path : path(folder.parent).resolve(path);
   }
 
+  /** Override default folder path with a custom path. */
   void set(Folder folder, Path path) {
     folders.put(folder, path);
   }
 
+  /** Set log level threshold. */
   void set(Level level) {
     log.level(level);
   }
@@ -273,8 +277,15 @@ class JavaShellBuilder {
   }
 
   enum Folder {
-    DEPENDENCIES(null, Paths.get(".bach", "dependencies")),
-    TARGET(null, Paths.get("target", "bach")),
+    JDK_HOME(Util.buildJdkHome()),
+    JDK_HOME_BIN(JDK_HOME, Paths.get("bin")),
+    JDK_HOME_MODS(JDK_HOME, Paths.get("jmods")),
+    //
+    AUXILIARY(Paths.get(".bach")),
+    DEPENDENCIES(AUXILIARY, Paths.get("dependencies")),
+    TOOLS(AUXILIARY, Paths.get("tools")),
+    //
+    TARGET(Paths.get("target", "bach")),
     TARGET_COMPILE_MAIN(TARGET, Paths.get("main", "java"));
 
     final Folder parent;
@@ -283,6 +294,10 @@ class JavaShellBuilder {
     Folder(Folder parent, Path path) {
       this.parent = parent;
       this.path = path;
+    }
+
+    Folder(Path path) {
+      this(null, path);
     }
   }
 
@@ -337,9 +352,9 @@ class JavaShellBuilder {
       }
       if (args.length == 1 && args[0] instanceof Iterable) {
         for (Object arg : (Iterable<?>) args[0]) {
-          // if (arg instanceof Folder) {
-          //  arg = arg + " -> " + path((Folder) arg);
-          // }
+          if (arg instanceof Folder) {
+            arg = arg + " -> " + JavaShellBuilder.this.path((Folder) arg);
+          }
           printTagAndMessage(level, format, arg);
         }
         return;
@@ -409,6 +424,31 @@ class JavaShellBuilder {
   }
 
   interface Util {
+
+    /** Return path to JDK installation directory. */
+    static Path buildJdkHome() {
+      // try current process information: <JDK_HOME>/bin/java[.exe]
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null) {
+        Path path = executable.getParent(); // <JDK_HOME>/bin
+        if (path != null) {
+          return path.getParent(); // <JDK_HOME>
+        }
+      }
+      // next, examine system environment...
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome);
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome);
+      }
+      // still here? not so good... try with default (not-existent) path
+      return Paths.get("jdk-" + Runtime.version().major());
+    }
+
+    /** Return {@code true} if the path points to a Java compilation unit. */
     static boolean isJavaSourceFile(Path path) {
       if (!Files.isRegularFile(path)) {
         return false;
@@ -419,6 +459,7 @@ class JavaShellBuilder {
       return true;
     }
 
+    /** Join paths to a single representation using system-dependent path-separator character. */
     static String join(List<Path> paths) {
       List<String> locations = paths.stream().map(Object::toString).collect(Collectors.toList());
       return String.join(File.pathSeparator, locations);
