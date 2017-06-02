@@ -44,6 +44,12 @@ class Bach {
   PrintStream streamOut = System.out;
   final Tool tool = new Tool();
 
+  /** Create and execute command. */
+  void call(String executable, Object... arguments) {
+    log.tag("call");
+    command(executable, arguments).execute();
+  }
+
   /** Create command instance from executable name and optional arguments. */
   Command command(String executable, Object... arguments) {
     return new Command(executable).addAll(arguments);
@@ -93,12 +99,6 @@ class Bach {
     } catch (Exception e) {
       throw new Error("should not happen", e);
     }
-  }
-
-  /** Create and execute command. */
-  void execute(String executable, Object... arguments) {
-    log.tag("execute");
-    command(executable, arguments).execute();
   }
 
   /** Format all source files. */
@@ -293,6 +293,7 @@ class Bach {
 
     /** Execute command with supplied exit value checker. */
     int execute(Consumer<Integer> exitValueChecker) {
+      String tag = log.tag("execute");
       dumpToLog(Level.FINE);
       long start = System.currentTimeMillis();
       Integer exitValue = null;
@@ -322,6 +323,7 @@ class Bach {
           throw log.error(e, "execution of %s as process failed", executable);
         }
       }
+      log.tag = tag;
       log.fine("%s finished after %d ms", executable, System.currentTimeMillis() - start);
       exitValueChecker.accept(exitValue);
       return exitValue;
@@ -455,11 +457,13 @@ class Bach {
     }
 
     /** Set current log tag if it differs from the old one. */
-    void tag(String tag) {
-      if (!Objects.equals(this.tag, tag)) {
+    String tag(String tag) {
+      String old = this.tag;
+      if (!Objects.equals(old, tag)) {
         this.tag = tag;
         println(Level.CONFIG, "");
       }
+      return old;
     }
   }
 

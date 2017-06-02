@@ -27,7 +27,7 @@ class BachTests {
   private static void provideTool() {
     Bach bach = new Bach();
     bach.set(new ExampleTool());
-    bach.execute("example", "123");
+    bach.call("example", "123");
   }
 
   public static void main(String[] args) {

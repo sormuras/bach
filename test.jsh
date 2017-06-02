@@ -3,7 +3,7 @@
 /open bach/Bach.java
 
 Bach bach = new Bach()
-bach.execute("java", "-version")
+bach.call("java", "-version")
 {
 bach.command("javac")
     .addAll("-d", "target/test")
@@ -12,6 +12,6 @@ bach.command("javac")
     .addAllJavaFiles(Paths.get("test"))
     .execute();
 }
-bach.execute("java", "-ea", "-cp", "target/test", "BachTests")
+bach.call("java", "-ea", "-cp", "target/test", "BachTests")
 
 /exit
