@@ -58,47 +58,16 @@ class Bach {
   /** Compile all java modules (main and test). */
   void compile() {
     log.tag("compile");
-    log.println(Level.CONFIG, "folder %s", folders.keySet());
+    for (Folder folder : Folder.values()) {
+      log.println(Level.CONFIG, "folder %s -> `%s`", folder, path(folder));
+    }
     // TODO javac(Paths.get("src"), path(Folder.TARGET_COMPILE_MAIN),
     // tool.defaultJavacOptions.get());
   }
 
   /** Download the resource specified by its URI to the target directory. */
   Path download(URI uri, Path targetDirectory) {
-    return download(uri, targetDirectory, Util.buildFileName(uri), targetPath -> true);
-  }
-
-  /** Download the resource from URI to the target directory using the provided file name. */
-  Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
-    try {
-      URL url = uri.toURL();
-      Files.createDirectories(targetDirectory);
-      Path targetPath = targetDirectory.resolve(targetFileName);
-      URLConnection urlConnection = url.openConnection();
-      FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
-      if (Files.exists(targetPath)) {
-        if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
-          if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
-            if (skip.test(targetPath)) {
-              log.fine("download skipped - using `%s`", targetPath);
-              return targetPath;
-            }
-          }
-        }
-        Files.delete(targetPath);
-      }
-      log.fine("download `%s` in progress...", uri);
-      try (InputStream sourceStream = url.openStream();
-          OutputStream targetStream = Files.newOutputStream(targetPath)) {
-        sourceStream.transferTo(targetStream);
-      }
-      Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
-      log.fine("download `%s` completed", uri);
-      log.info("stored `%s` [%s]", targetPath, urlLastModifiedTime.toString());
-      return targetPath;
-    } catch (Exception e) {
-      throw new Error("should not happen", e);
-    }
+    return tool.download(uri, targetDirectory, Util.buildFileName(uri), targetPath -> true);
   }
 
   /** Format all source files. */
@@ -139,6 +108,12 @@ class Bach {
   Path path(Folder folder) {
     Path path = folders.getOrDefault(folder, folder.path);
     return folder.parent == null ? path : path(folder.parent).resolve(path);
+  }
+
+  /** Resolve named module by downloading its jar artifact from the specified location. */
+  Path resolve(String module, String uri) {
+    log.tag("resolve");
+    return tool.download(URI.create(uri), path(Folder.DEPENDENCIES), module + ".jar", path -> true);
   }
 
   /** Override default folder path with a custom path. */
@@ -504,7 +479,7 @@ class Bach {
         String mode = replace ? "replace" : "validate";
         log.tag("format");
         log.fine("mode=%s", mode);
-        Path jar = download(uri, path(Folder.TOOLS).resolve("google-java-format"));
+        Path jar = Bach.this.download(uri, path(Folder.TOOLS).resolve("google-java-format"));
         Command command =
             new Command(path(Folder.JDK_HOME_BIN).resolve("java").toString())
                 .add("-jar")
@@ -572,6 +547,39 @@ class Bach {
     }
 
     Supplier<Tool.JavacOptions> defaultJavacOptions = JavacOptions::new;
+
+    /** Download the resource from URI to the target directory using the provided file name. */
+    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
+      try {
+        URL url = uri.toURL();
+        Files.createDirectories(targetDirectory);
+        Path targetPath = targetDirectory.resolve(targetFileName);
+        URLConnection urlConnection = url.openConnection();
+        FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+        if (Files.exists(targetPath)) {
+          if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
+            if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
+              if (skip.test(targetPath)) {
+                log.fine("download skipped - using `%s`", targetPath);
+                return targetPath;
+              }
+            }
+          }
+          Files.delete(targetPath);
+        }
+        log.fine("download `%s` in progress...", uri);
+        try (InputStream sourceStream = url.openStream();
+             OutputStream targetStream = Files.newOutputStream(targetPath)) {
+          sourceStream.transferTo(targetStream);
+        }
+        Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
+        log.fine("download `%s` completed", uri);
+        log.info("stored `%s` [%s]", targetPath, urlLastModifiedTime.toString());
+        return targetPath;
+      } catch (Exception e) {
+        throw new Error("should not happen", e);
+      }
+    }
   }
 
   interface Util {

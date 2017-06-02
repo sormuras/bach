@@ -14,5 +14,5 @@ install:
 
 script:
 - ./test.jsh
-#- ./build.jsh
+- ./build.jsh
 #- ./demo.jsh

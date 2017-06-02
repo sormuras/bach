@@ -15,5 +15,6 @@ bach.command("javac")
 bach.call("java", "-ea", "-cp", "target/test", "BachTests")
 
 bach.format(false, Paths.get("test"), "--skip-sorting-imports")
+bach.resolve("org.junit.jupiter.api", "http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar")
 
 /exit
