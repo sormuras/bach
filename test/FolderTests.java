@@ -21,7 +21,7 @@ public class FolderTests {
     assert path("JDK_HOME_BIN").isAbsolute();
     assert path("JDK_HOME_MODS").isAbsolute();
     assert path("TARGET").equals(Paths.get("target", "bach"));
-    assert path("TARGET_COMPILE_MAIN").equals(Paths.get("target", "bach", "main", "java"));
+    assert path("TARGET_MAIN_COMPILE").equals(Paths.get("target", "bach", "main", "compile"));
   }
 
   private static void paths() {
@@ -29,10 +29,10 @@ public class FolderTests {
     Path bin = Paths.get("bin");
     builder.set(Bach.Folder.TARGET, bin);
     assert bin.equals(builder.path(Bach.Folder.TARGET));
-    assert bin.resolve("main/java").equals(builder.path(folder("TARGET_COMPILE_MAIN")));
-    builder.set(Bach.Folder.TARGET_COMPILE_MAIN, Paths.get("classes"));
+    assert bin.resolve("main/compile").equals(builder.path(folder("TARGET_MAIN_COMPILE")));
+    builder.set(Bach.Folder.TARGET_MAIN_COMPILE, Paths.get("classes"));
     assert bin.equals(builder.path(Bach.Folder.TARGET));
-    assert bin.resolve("classes").equals(builder.path(folder("TARGET_COMPILE_MAIN")));
+    assert bin.resolve("classes").equals(builder.path(folder("TARGET_MAIN_COMPILE")));
   }
 
   public static void main(String... args) {

@@ -25,6 +25,7 @@ import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
@@ -45,9 +46,9 @@ class Bach {
   final Tool tool = new Tool();
 
   /** Create and execute command. */
-  void call(String executable, Object... arguments) {
+  int call(String executable, Object... arguments) {
     log.tag("call");
-    command(executable, arguments).execute();
+    return command(executable, arguments).execute();
   }
 
   /** Create command instance from executable name and optional arguments. */
@@ -61,8 +62,70 @@ class Bach {
     for (Folder folder : Folder.values()) {
       log.println(Level.CONFIG, "folder %s -> `%s`", folder, path(folder));
     }
-    // TODO javac(Paths.get("src"), path(Folder.TARGET_COMPILE_MAIN),
-    // tool.defaultJavacOptions.get());
+    Path modules = path(Folder.SOURCE);
+    log.check(Files.exists(modules), "folder source `%s` does not exist", modules);
+    log.check(Util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
+    Layout layout = Util.buildLayout(modules);
+    log.fine("layout %s", layout);
+    Tool.JavacOptions options = tool.defaultJavacOptions.get();
+    Util.cleanTree(path(Folder.TARGET), true);
+    switch (layout) {
+      case BASIC:
+        log.info("main");
+        javac(modules, path(Folder.TARGET_MAIN_COMPILE), options);
+        Util.copyTree(modules, path(Folder.TARGET_MAIN_COMPILE)); // TODO exclude .java files?
+        break;
+      case FIRST:
+        Util.findDirectoryNames(modules)
+            .forEach(
+                module -> {
+                  log.fine("module %s", module);
+                  Path source = modules.resolve(module);
+                  // main
+                  Util.copyTree(
+                      source.resolve(path(Folder.MAIN_JAVA)),
+                      path(Folder.TARGET_MAIN_SOURCE).resolve(module));
+                  Util.copyTree(
+                      source.resolve(path(Folder.MAIN_RESOURCES)),
+                      path(Folder.TARGET_MAIN_COMPILE).resolve(module));
+                  // test
+                  Util.copyTree(
+                      source.resolve(path(Folder.MAIN_JAVA)),
+                      path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  Util.copyTree(
+                      source.resolve(path(Folder.TEST_JAVA)),
+                      path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  Util.moveModuleInfo(path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  Util.copyTree(
+                      source.resolve(path(Folder.TEST_RESOURCES)),
+                      path(Folder.TARGET_TEST_COMPILE).resolve(module));
+                });
+        log.info("main");
+        javac(path(Folder.TARGET_MAIN_SOURCE), path(Folder.TARGET_MAIN_COMPILE), options);
+        if (Files.exists(path(Folder.TARGET_TEST_SOURCE))) {
+          log.info("test");
+          javac(path(Folder.TARGET_TEST_SOURCE), path(Folder.TARGET_TEST_COMPILE), options);
+        }
+        break;
+      case TRAIL:
+        log.info("main");
+        javac(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_COMPILE), options);
+        Util.copyTree(
+            modules.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILE));
+        if (Files.exists(modules.resolve(path(Folder.TEST_JAVA)))) {
+          log.info("test");
+          Util.copyTree(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_TEST_SOURCE));
+          Util.copyTree(modules.resolve(path(Folder.TEST_JAVA)), path(Folder.TARGET_TEST_SOURCE));
+          javac(path(Folder.TARGET_TEST_SOURCE), path(Folder.TARGET_TEST_COMPILE), options);
+          Util.copyTree(
+              modules.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILE));
+        }
+        break;
+      default:
+        log.check(false, "unsupported module source path layout %s for: `%s`", layout, modules);
+    }
+    log.tag("compile");
+    log.info("compiled");
   }
 
   /** Download the resource specified by its URI to the target directory. */
@@ -97,7 +160,7 @@ class Bach {
     command.add(moduleSourcePath);
     command.markDumpLimit(10);
     try {
-      command.addAll(Files.walk(moduleSourcePath, 1).filter(Util::isJavaSourceFile));
+      command.addAll(Files.walk(moduleSourcePath).filter(Util::isJavaSourceFile));
     } catch (IOException e) {
       throw log.error(e, "gathering java source files in %s", moduleSourcePath);
     }
@@ -114,6 +177,33 @@ class Bach {
   Path resolve(String module, String uri) {
     log.tag("resolve");
     return tool.download(URI.create(uri), path(Folder.DEPENDENCIES), module + ".jar", path -> true);
+  }
+
+  /** Run compiled module with specified entry-point. */
+  int run(String module, String main, String... arguments) {
+    return run(Folder.TARGET_MAIN_COMPILE, module, main, arguments);
+  }
+
+  /** Run module. */
+  int run(Folder folder, String module, String main, String... arguments) {
+    String entryPoint = main == null ? module : module + "/" + main;
+    log.tag("run");
+    log.info("%s", entryPoint);
+    return command("java")
+        // options
+        .add("-Dfile.encoding=" + charset.name())
+        // module-path: a list of directories in which each directory is a directory of modules
+        .add("--module-path")
+        .add(this::path, folder, Folder.DEPENDENCIES)
+        // name of the initial module to resolve and execute
+        .add("--module")
+        .add(entryPoint)
+        // set internal dump mark and limit
+        .markDumpLimit(20)
+        // arguments passed to the main method separated by spaces
+        .addAll((Object[]) arguments)
+        // run!
+        .execute();
   }
 
   /** Override default folder path with a custom path. */
@@ -153,6 +243,16 @@ class Bach {
     Command add(Object argument) {
       arguments.add(argument.toString());
       return this;
+    }
+
+    /** Add all stream elements joined to a single argument. */
+    Command add(Stream<?> stream, String separator) {
+      return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
+    }
+
+    /** Add all folders joined to a single argument. */
+    Command add(Function<Folder, Path> mapper, Folder... folders) {
+      return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
     }
 
     /** Add all arguments from the array. */
@@ -268,7 +368,6 @@ class Bach {
 
     /** Execute command with supplied exit value checker. */
     int execute(Consumer<Integer> exitValueChecker) {
-      String tag = log.tag("execute");
       dumpToLog(Level.FINE);
       long start = System.currentTimeMillis();
       Integer exitValue = null;
@@ -298,7 +397,6 @@ class Bach {
           throw log.error(e, "execution of %s as process failed", executable);
         }
       }
-      log.tag = tag;
       log.fine("%s finished after %d ms", executable, System.currentTimeMillis() - start);
       exitValueChecker.accept(exitValue);
       return exitValue;
@@ -343,9 +441,19 @@ class Bach {
     TOOLS(AUXILIARY, Paths.get("tools")),
     //
     SOURCE(Paths.get("src")),
+    MAIN_JAVA(Paths.get("main", "java")),
+    MAIN_RESOURCES(Paths.get("main", "resources")),
+    TEST_JAVA(Paths.get("test", "java")),
+    TEST_RESOURCES(Paths.get("test", "resources")),
     //
     TARGET(Paths.get("target", "bach")),
-    TARGET_COMPILE_MAIN(TARGET, Paths.get("main", "java"));
+    TARGET_MAIN_SOURCE(TARGET, Paths.get("main/module-source-path")),
+    TARGET_MAIN_COMPILE(TARGET, Paths.get("main/compile")),
+    TARGET_MAIN_JAVADOC(TARGET, Paths.get("main/javadoc")),
+    TARGET_MAIN_JAR(TARGET, Paths.get("main/archives")),
+    TARGET_TEST_SOURCE(TARGET, Paths.get("test/module-source-path")),
+    TARGET_TEST_COMPILE(TARGET, Paths.get("test/compile")),
+    ;
 
     final Folder parent;
     final Path path;
@@ -358,6 +466,18 @@ class Bach {
     Folder(Path path) {
       this(null, path);
     }
+  }
+
+  /** Source directory module tree layout/scheme. */
+  enum Layout {
+    /** Auto-detect at configuration time. */
+    AUTO,
+    /** Module folder first, no tests: {@code src/<module>} */
+    BASIC,
+    /** Module folders first: {@code src/<module>/[main|test]/[java|resources]} */
+    FIRST,
+    /** Module folders last: {@code src/[main|test]/[java|resources]/<module>} */
+    TRAIL,
   }
 
   class Log {
@@ -569,7 +689,7 @@ class Bach {
         }
         log.fine("download `%s` in progress...", uri);
         try (InputStream sourceStream = url.openStream();
-             OutputStream targetStream = Files.newOutputStream(targetPath)) {
+            OutputStream targetStream = Files.newOutputStream(targetPath)) {
           sourceStream.transferTo(targetStream);
         }
         Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
@@ -612,6 +732,36 @@ class Bach {
       }
       // still here? not so good... try with default (not-existent) path
       return Paths.get("jdk-" + Runtime.version().major());
+    }
+
+    static Layout buildLayout(Path root) {
+      if (Files.notExists(root)) {
+        return Layout.AUTO;
+      }
+      try {
+        Path path =
+            Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                .map(root::relativize)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
+        // trivial case: <module>/module-info.java
+        if (path.getNameCount() == 2) {
+          return Layout.BASIC;
+        }
+        // nested case: extract module name and check whether the relative path starts with it
+        String moduleSource =
+            new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
+        Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+        Matcher nameMatcher = namePattern.matcher(moduleSource);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "expected java module descriptor unit, but got: \n" + moduleSource);
+        }
+        String moduleName = nameMatcher.group(2).trim();
+        return path.startsWith(moduleName) ? Layout.FIRST : Layout.TRAIL;
+      } catch (Exception e) {
+        throw new Error("detection failed " + e, e);
+      }
     }
 
     static Path cleanTree(Path root, boolean keepRoot) {
