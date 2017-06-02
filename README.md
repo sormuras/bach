@@ -22,14 +22,11 @@ bach.call("java", "-version")
 {
 bach.command("javac")
     .addAll("-d", "target/test")
-    .markDumpLimit(1)
     .addAllJavaFiles(Paths.get("bach"))
     .addAllJavaFiles(Paths.get("test"))
     .execute();
 }
 bach.call("java", "-ea", "-cp", "target/test", "BachTests")
-
-bach.format(false, Paths.get("test"), "--skip-sorting-imports")
 
 /exit
 ```
@@ -55,6 +52,8 @@ if (Files.notExists(bachJava)) {
 /open target/Bach.java
 
 // place your build commands here
+Bach bach = new Bach()
+bach.call("java", "-version")
 ```
 
 ## be free - have fun
