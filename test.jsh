@@ -14,4 +14,6 @@ bach.command("javac")
 }
 bach.call("java", "-ea", "-cp", "target/test", "BachTests")
 
+bach.format(false, Paths.get("test"), "--skip-sorting-imports")
+
 /exit

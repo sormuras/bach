@@ -64,11 +64,11 @@ class Bach {
   }
 
   /** Download the resource specified by its URI to the target directory. */
-  Path download(URI uri, Path targetDirectory) throws Exception {
-    return download(uri, targetDirectory, Util.fileName(uri), targetPath -> true);
+  Path download(URI uri, Path targetDirectory) {
+    return download(uri, targetDirectory, Util.buildFileName(uri), targetPath -> true);
   }
 
-  /** Download the resource by its URI to the target directory using the provided file name. */
+  /** Download the resource from URI to the target directory using the provided file name. */
   Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
     try {
       URL url = uri.toURL();
@@ -93,7 +93,7 @@ class Bach {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
-      log.println(Level.CONFIG, "download `%s` completed", uri);
+      log.fine("download `%s` completed", uri);
       log.info("stored `%s` [%s]", targetPath, urlLastModifiedTime.toString());
       return targetPath;
     } catch (Exception e) {
@@ -104,13 +104,13 @@ class Bach {
   /** Format all source files. */
   void format(String... additionalArguments) {
     boolean replace = Boolean.getBoolean("bach.format.replace");
-    format(replace, additionalArguments);
+    format(replace, path(Folder.SOURCE), additionalArguments);
   }
 
   /** Format or validate source file formatting in specified paths. */
-  void format(boolean replace, String... additionalArguments) {
+  void format(boolean replace, Path path, String... additionalArguments) {
     log.tag("format");
-    ToolProvider format = tool.new GoogleJavaFormat(replace, path(Folder.SOURCE));
+    ToolProvider format = tool.new GoogleJavaFormat(replace, path);
     format.run(streamOut, streamErr, additionalArguments);
   }
 
@@ -434,8 +434,8 @@ class Bach {
       if (isLevelSuppressed(level)) {
         return;
       }
-      if (args.length == 1 && args[0] instanceof Iterable) {
-        for (Object arg : (Iterable<?>) args[0]) {
+      if (args.length == 1 && args[0] instanceof Collection) {
+        for (Object arg : (Collection<?>) args[0]) {
           if (arg instanceof Folder) {
             arg = arg + " -> " + Bach.this.path((Folder) arg);
           }
@@ -471,6 +471,13 @@ class Bach {
 
     class GoogleJavaFormat implements ToolProvider {
 
+      final String SRV = "https://jitpack.io";
+      final String PTH = "com/github/sormuras";
+      final String GJF = "google-java-format";
+      final String VER = "validate-SNAPSHOT";
+      final String VAR = "-all-deps";
+      final String FORMAT = "%1$s/%2$s/%3$s/%3$s/%4$s/%3$s-%4$s%5$s.jar";
+      final URI uri = URI.create(String.format(FORMAT, SRV, PTH, GJF, VER, VAR));
       final List<Path> paths;
       final boolean replace;
 
@@ -484,10 +491,7 @@ class Bach {
         if (name.equals("module-info.java")) {
           return false; // see https://github.com/google/google-java-format/issues/75
         }
-        if (name.chars().filter(c -> c == '.').count() != 1) {
-          return false;
-        }
-        return name.endsWith(".java");
+        return Util.isJavaSourceFile(path);
       }
 
       @Override
@@ -500,15 +504,15 @@ class Bach {
         String mode = replace ? "replace" : "validate";
         log.tag("format");
         log.fine("mode=%s", mode);
+        Path jar = download(uri, path(Folder.TOOLS).resolve("google-java-format"));
         Command command =
             new Command(path(Folder.JDK_HOME_BIN).resolve("java").toString())
                 .add("-jar")
-                .add(
-                    path(Folder.TOOLS)
-                        .resolve("format/google-java-format-validate-SNAPSHOT-all-deps.jar"))
+                .add(jar)
                 .add("--" + mode)
+                .addAll((Object[]) additionalArguments)
                 .markDumpLimit(10);
-        // collect valid .java source files
+        // collect consumable .java source files
         int exitValue = 0;
         int[] count = {0};
         for (Path path : paths) {
@@ -572,25 +576,34 @@ class Bach {
 
   interface Util {
 
-    static void deleteIfExists(Path path) {
-      try {
-        Files.deleteIfExists(path);
-      } catch (Exception e) {
-        throw new Error("should not happen", e);
-      }
+    /** Extract the file name from the uri. */
+    static String buildFileName(URI uri) {
+      String urlString = uri.getPath();
+      int begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
     }
 
-    static Stream<Path> findDirectories(Path root) {
-      try {
-        return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
-            .filter(path -> !root.equals(path));
-      } catch (Exception e) {
-        throw new Error("should not happen", e);
+    /** Return path to JDK installation directory. */
+    static Path buildJdkHome() {
+      // try current process information: <JDK_HOME>/bin/java[.exe]
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null) {
+        Path path = executable.getParent(); // <JDK_HOME>/bin
+        if (path != null) {
+          return path.getParent(); // <JDK_HOME>
+        }
       }
-    }
-
-    static Stream<String> findDirectoryNames(Path root) {
-      return findDirectories(root).map(root::relativize).map(Path::toString);
+      // next, examine system environment...
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome);
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome);
+      }
+      // still here? not so good... try with default (not-existent) path
+      return Paths.get("jdk-" + Runtime.version().major());
     }
 
     static Path cleanTree(Path root, boolean keepRoot) {
@@ -609,7 +622,7 @@ class Bach {
             .filter(p -> !(keepRoot && root.equals(p)))
             .filter(filter)
             .sorted((p, q) -> -p.compareTo(q))
-            .forEach(Util::deleteIfExists);
+            .forEach(Util::delete);
         // log.fine("deleted tree `%s`%n", root);
         return root;
       } catch (Exception e) {
@@ -658,11 +671,43 @@ class Bach {
       }
     }
 
-    /** Extract the file name from the uri. */
-    static String fileName(URI uri) {
-      String urlString = uri.getPath();
-      int begin = urlString.lastIndexOf('/') + 1;
-      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    static void delete(Path path) {
+      try {
+        Files.deleteIfExists(path);
+      } catch (Exception e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
+    static Stream<Path> findDirectories(Path root) {
+      try {
+        return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
+            .filter(path -> !root.equals(path));
+      } catch (Exception e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
+    static Stream<String> findDirectoryNames(Path root) {
+      return findDirectories(root).map(root::relativize).map(Path::toString);
+    }
+
+    /** Return {@code true} if the path points to a canonical Java compilation unit. */
+    static boolean isJavaSourceFile(Path path) {
+      if (!Files.isRegularFile(path)) {
+        return false;
+      }
+      String name = path.getFileName().toString();
+      if (name.chars().filter(c -> c == '.').count() != 1) {
+        return false;
+      }
+      return name.endsWith(".java");
+    }
+
+    /** Join paths to a single representation using system-dependent path-separator character. */
+    static String join(List<Path> paths) {
+      List<String> locations = paths.stream().map(Object::toString).collect(Collectors.toList());
+      return String.join(File.pathSeparator, locations);
     }
 
     static void moveModuleInfo(Path path) {
@@ -676,46 +721,6 @@ class Bach {
       } catch (Exception e) {
         throw new Error("should not happen", e);
       }
-    }
-
-    /** Return path to JDK installation directory. */
-    static Path buildJdkHome() {
-      // try current process information: <JDK_HOME>/bin/java[.exe]
-      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
-      if (executable != null) {
-        Path path = executable.getParent(); // <JDK_HOME>/bin
-        if (path != null) {
-          return path.getParent(); // <JDK_HOME>
-        }
-      }
-      // next, examine system environment...
-      String jdkHome = System.getenv("JDK_HOME");
-      if (jdkHome != null) {
-        return Paths.get(jdkHome);
-      }
-      String javaHome = System.getenv("JAVA_HOME");
-      if (javaHome != null) {
-        return Paths.get(javaHome);
-      }
-      // still here? not so good... try with default (not-existent) path
-      return Paths.get("jdk-" + Runtime.version().major());
-    }
-
-    /** Return {@code true} if the path points to a Java compilation unit. */
-    static boolean isJavaSourceFile(Path path) {
-      if (!Files.isRegularFile(path)) {
-        return false;
-      }
-      if (!path.getFileName().toString().endsWith(".java")) {
-        return false;
-      }
-      return true;
-    }
-
-    /** Join paths to a single representation using system-dependent path-separator character. */
-    static String join(List<Path> paths) {
-      List<String> locations = paths.stream().map(Object::toString).collect(Collectors.toList());
-      return String.join(File.pathSeparator, locations);
     }
   }
 }
