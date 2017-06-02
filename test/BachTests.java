@@ -1,25 +1,39 @@
-import java.nio.file.Paths;
-import java.util.logging.Level;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.spi.ToolProvider;
 
 class BachTests {
 
-  private static void defaultFolders() {
-    Bach bach = Bach.builder().log(Level.OFF).build();
-    assert bach.path(Folder.JDK_HOME).isAbsolute();
-    assert bach.path(Folder.JDK_HOME_MODS).isAbsolute();
+  static class ExampleTool implements ToolProvider {
+
+    @Override
+    public String name() {
+      return "example";
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      out.println("Example with " + Arrays.toString(args));
+      return 0;
+    }
   }
 
   private static void buildLayout() {
-    assert Layout.BASIC == Bach.Builder.buildLayout(Paths.get("demo/basic"));
-    assert Layout.FIRST == Bach.Builder.buildLayout(Paths.get("demo/idea"));
-    assert Layout.TRAIL == Bach.Builder.buildLayout(Paths.get("demo/common"));
+    // assert Layout.BASIC == Bach.Builder.buildLayout(Paths.get("demo/basic"));
+    // assert Layout.FIRST == Bach.Builder.buildLayout(Paths.get("demo/idea"));
+    // assert Layout.TRAIL == Bach.Builder.buildLayout(Paths.get("demo/common"));
+  }
+
+  private static void provideTool() {
+    Bach bach = new Bach();
+    bach.set(new ExampleTool());
+    bach.execute("example", "123");
   }
 
   public static void main(String[] args) {
-    defaultFolders();
     buildLayout();
-    ScoreTests.main(args);
+    provideTool();
     CommandTests.main(args);
+    FolderTests.main(args);
   }
-
 }

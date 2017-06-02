@@ -4,14 +4,15 @@ language: java
 
 install:
 - cd ~
-- wget http://download.java.net/java/jdk9/archive/171/binaries/jdk-9-ea+171_linux-x64_bin.tar.gz
-- tar -xzf jdk-9-ea+171_linux-x64_bin.tar.gz
+- wget http://download.java.net/java/jdk9/archive/172/binaries/jdk-9-ea+172_linux-x64_bin.tar.gz
+- tar -xzf jdk-9-ea+172_linux-x64_bin.tar.gz
 - JAVA_HOME=~/jdk-9
 - PATH=$JAVA_HOME/bin:$PATH
 - java -version
+- cd $TRAVIS_BUILD_DIR
+- chmod u+x test.jsh build.jsh demo.jsh
 
 script:
-- cd $TRAVIS_BUILD_DIR
-- chmod u+x build.jsh demo.jsh
-- ./build.jsh
-- ./demo.jsh
+- ./test.jsh
+#- ./build.jsh
+#- ./demo.jsh

@@ -3,10 +3,10 @@ import java.nio.file.Paths;
 
 public class FolderTests {
 
-  private static final JavaShellBuilder JAVA_SHELL_BUILDER = new JavaShellBuilder();
+  private static final Bach JAVA_SHELL_BUILDER = new Bach();
 
-  private static JavaShellBuilder.Folder folder(String name) {
-    return JavaShellBuilder.Folder.valueOf(name);
+  private static Bach.Folder folder(String name) {
+    return Bach.Folder.valueOf(name);
   }
 
   private static Path path(String name) {
@@ -14,7 +14,7 @@ public class FolderTests {
   }
 
   private static void defaults() {
-    for (JavaShellBuilder.Folder folder : JavaShellBuilder.Folder.values()) {
+    for (Bach.Folder folder : Bach.Folder.values()) {
       assert JAVA_SHELL_BUILDER.path(folder) != null;
     }
     assert path("JDK_HOME").isAbsolute();
@@ -25,13 +25,13 @@ public class FolderTests {
   }
 
   private static void paths() {
-    JavaShellBuilder builder = new JavaShellBuilder();
+    Bach builder = new Bach();
     Path bin = Paths.get("bin");
-    builder.set(JavaShellBuilder.Folder.TARGET, bin);
-    assert bin.equals(builder.path(JavaShellBuilder.Folder.TARGET));
+    builder.set(Bach.Folder.TARGET, bin);
+    assert bin.equals(builder.path(Bach.Folder.TARGET));
     assert bin.resolve("main/java").equals(builder.path(folder("TARGET_COMPILE_MAIN")));
-    builder.set(JavaShellBuilder.Folder.TARGET_COMPILE_MAIN, Paths.get("classes"));
-    assert bin.equals(builder.path(JavaShellBuilder.Folder.TARGET));
+    builder.set(Bach.Folder.TARGET_COMPILE_MAIN, Paths.get("classes"));
+    assert bin.equals(builder.path(Bach.Folder.TARGET));
     assert bin.resolve("classes").equals(builder.path(folder("TARGET_COMPILE_MAIN")));
   }
 
