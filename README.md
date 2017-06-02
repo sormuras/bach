@@ -10,8 +10,12 @@ Use Java source in JShell to build your modular project.
 
 ## simple usage
 
+Download a copy of [Bach.java] to your project's root directory and put the
+following script in file called `build.jsh`. Edit the source and target paths
+to your needs and launch the build with `jshell build.jsh`
+
 ```javascript
-/open bach/Bach.java
+/open Bach.java
 
 Bach bach = new Bach()
 bach.call("java", "-version")
@@ -30,7 +34,28 @@ bach.format(false, Paths.get("test"), "--skip-sorting-imports")
 /exit
 ```
 
+## bootstrap on-the-fly
 
+You may want to mark `build.jsh` as executable and use the following bootstrap
+lines to automatically download that latest [Bach.java] -- and use it via
+`./build.jsh`
+
+```javascript
+//$JAVA_HOME/bin/jshell --show-version $0 $@; exit $?
+
+Path bachJava = Paths.get("target/Bach.java")
+if (Files.notExists(bachJava)) {
+  URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/bach/Bach.java");
+  Files.createDirectories(bachJava.getParent());
+  try (InputStream in = bachURL.openStream()) {
+    Files.copy(in, bachJava, StandardCopyOption.REPLACE_EXISTING);
+  }
+  System.out.printf("created %s [url=%s]%n", bachJava, bachURL);
+}
+/open target/Bach.java
+
+// place your build commands here
+```
 
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
