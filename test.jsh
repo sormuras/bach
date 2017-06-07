@@ -18,6 +18,6 @@ bach.format(false, Paths.get("test"), "--skip-sorting-imports")
 bach.resolve("org.junit.jupiter.api", "http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar")
 
 bach.call("javadoc", "-Xdoclint:none", "-d", "target/test/doc", "bach/Bach.java")
-bach.call("jar", "--create", "--file=target/test/javadoc.jar", "-C", "target/test/doc", ".")
+bach.call("jar", "--create", "--file=target/test/bach-javadoc.jar", "-C", "target/test/doc", ".")
 
 /exit
