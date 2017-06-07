@@ -64,6 +64,7 @@ public class Demo {
         bach.path(Bach.Folder.TARGET_MAIN_COMPILE),
         "--module",
         "com.greetings");
+    bach.javadoc();
     // TODO bach.test();
     // TODO bach.jar();
     // TODO bach.runJar("com.greetings");

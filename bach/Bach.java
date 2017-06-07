@@ -29,13 +29,15 @@ import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
-/**
- * Java Shell Builder.
- *
- * @noinspection WeakerAccess, RedundantIfStatement, UnusedReturnValue, SameParameterValue,
- *     SimplifiableIfStatement, unused
- */
-class Bach {
+/** Java Shell Builder. */
+@SuppressWarnings({
+  "WeakerAccess",
+  "RedundantIfStatement",
+  "UnusedReturnValue",
+  "SameParameterValue",
+  "SimplifiableIfStatement"
+})
+public class Bach {
 
   Charset charset = StandardCharsets.UTF_8;
   final Map<String, ToolProvider> customTools = new TreeMap<>();
@@ -57,7 +59,7 @@ class Bach {
   }
 
   /** Compile all java modules (main and test). */
-  void compile() {
+  public void compile() {
     log.tag("compile");
     for (Folder folder : Folder.values()) {
       log.println(Level.CONFIG, "folder %s -> `%s`", folder, path(folder));
@@ -167,6 +169,48 @@ class Bach {
     command.execute();
   }
 
+  /** Generate HTML pages of API documentation from Java source files. */
+  public void javadoc() {
+    Path modules = path(Folder.SOURCE);
+    Layout layout = Util.buildLayout(modules);
+    log.fine("layout %s", layout);
+    Tool.JavadocOptions options = tool.defaultJavadocOptions.get();
+    Util.cleanTree(path(Folder.TARGET_MAIN_JAVADOC), true);
+    switch (layout) {
+      case BASIC:
+        javadoc(modules, options);
+        break;
+      case FIRST:
+        // TODO Util.findDirectories(modules).forEach(module -> copy...);
+        javadoc(path(Folder.TARGET_MAIN_SOURCE), options);
+        break;
+      case TRAIL:
+        javadoc(modules.resolve(path(Folder.MAIN_JAVA)), options);
+        break;
+    }
+  }
+
+  /** Generate HTML pages of API documentation from Java source files. */
+  void javadoc(Path moduleSourcePath, Tool.JavadocOptions options) {
+    log.tag("javadoc");
+    log.check(Files.exists(moduleSourcePath), "path `%s` does not exist", moduleSourcePath);
+    Command command = command("javadoc");
+    command.addOptions(options);
+    // sets the destination directory for class files
+    command.add("-d");
+    command.add(path(Folder.TARGET_MAIN_JAVADOC));
+    // specify where to find input source files for multiple modules
+    command.add("--module-source-path");
+    command.add(moduleSourcePath);
+    command.markDumpLimit(10);
+    try {
+      command.addAll(Files.walk(moduleSourcePath).filter(Util::isJavaSourceFile));
+    } catch (IOException e) {
+      throw log.error(e, "gathering java source files in %s", moduleSourcePath);
+    }
+    command.execute();
+  }
+
   /** Resolve path for given folder. */
   Path path(Folder folder) {
     Path path = folders.getOrDefault(folder, folder.path);
@@ -221,18 +265,18 @@ class Bach {
     customTools.put(toolProvider.name(), toolProvider);
   }
 
-  class Command {
+  public class Command {
     final List<String> arguments = new ArrayList<>();
     int dumpLimit = Integer.MAX_VALUE;
     int dumpOffset = Integer.MAX_VALUE;
     final String executable;
 
-    Command(String executable) {
+    public Command(String executable) {
       this.executable = executable;
     }
 
     /** Conditionally add argument. */
-    Command add(boolean condition, Object argument) {
+    public Command add(boolean condition, Object argument) {
       if (condition) {
         add(argument);
       }
@@ -240,23 +284,23 @@ class Bach {
     }
 
     /** Add single argument with implicit null pointer check. */
-    Command add(Object argument) {
+    public Command add(Object argument) {
       arguments.add(argument.toString());
       return this;
     }
 
     /** Add all stream elements joined to a single argument. */
-    Command add(Stream<?> stream, String separator) {
+    public Command add(Stream<?> stream, String separator) {
       return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
     }
 
     /** Add all folders joined to a single argument. */
-    Command add(Function<Folder, Path> mapper, Folder... folders) {
+    public Command add(Function<Folder, Path> mapper, Folder... folders) {
       return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
     }
 
     /** Add all arguments from the array. */
-    Command addAll(Object... arguments) {
+    public Command addAll(Object... arguments) {
       for (Object argument : arguments) {
         add(argument);
       }
@@ -264,7 +308,7 @@ class Bach {
     }
 
     /** Add all arguments from the stream. */
-    Command addAll(Stream<?> stream) {
+    public Command addAll(Stream<?> stream) {
       // FIXME "try (stream)" is blocked by https://github.com/google/google-java-format/issues/155
       try {
         stream.forEach(this::add);
@@ -275,7 +319,7 @@ class Bach {
     }
 
     /** Add all java source files. */
-    Command addAllJavaFiles(Path path) {
+    public Command addAllJavaFiles(Path path) {
       try {
         addAll(Files.walk(path).filter(Util::isJavaSourceFile));
       } catch (IOException e) {
@@ -298,6 +342,7 @@ class Bach {
       // additional arguments?
       String name = field.getName();
       Object value = field.get(options);
+      System.out.println(name + " -> " + value);
       if ("additionalArguments".equals(name) && value instanceof List) {
         ((List<?>) value).forEach(this::add);
         return;
@@ -317,7 +362,7 @@ class Bach {
     }
 
     /** Reflect and add all options. */
-    Command addOptions(Object options) {
+    public Command addOptions(Object options) {
       if (options == null) {
         return this;
       }
@@ -362,12 +407,12 @@ class Bach {
     }
 
     /** Execute command throwing a runtime exception when the exit value is not zero. */
-    int execute() {
+    public int execute() {
       return execute(this::exitValueChecker);
     }
 
     /** Execute command with supplied exit value checker. */
-    int execute(Consumer<Integer> exitValueChecker) {
+    public int execute(Consumer<Integer> exitValueChecker) {
       dumpToLog(Level.FINE);
       long start = System.currentTimeMillis();
       Integer exitValue = null;
@@ -418,12 +463,12 @@ class Bach {
     }
 
     /** Create new argument array based on this command's arguments. */
-    String[] toArgumentsArray() {
+    public String[] toArgumentsArray() {
       return arguments.toArray(new String[arguments.size()]);
     }
 
     /** Create new {@link ProcessBuilder} instance based on this command setup. */
-    ProcessBuilder toProcessBuilder() {
+    public ProcessBuilder toProcessBuilder() {
       ArrayList<String> command = new ArrayList<>(1 + arguments.size());
       command.add(executable);
       command.addAll(arguments);
@@ -431,7 +476,7 @@ class Bach {
     }
   }
 
-  enum Folder {
+  public enum Folder {
     JDK_HOME(Util.buildJdkHome()),
     JDK_HOME_BIN(JDK_HOME, Paths.get("bin")),
     JDK_HOME_MODS(JDK_HOME, Paths.get("jmods")),
@@ -562,7 +607,7 @@ class Bach {
     }
   }
 
-  class Tool {
+  public class Tool {
 
     class GoogleJavaFormat implements ToolProvider {
 
@@ -628,7 +673,11 @@ class Bach {
       }
     }
 
-    class JavacOptions {
+    /**
+     * You can use the javac tools and its options to read Java class and interface definitions and
+     * compile them into bytecode and class files.
+     */
+    public class JavacOptions {
       /** User-defined arguments. */
       List<String> additionalArguments = Collections.emptyList();
 
@@ -666,7 +715,18 @@ class Bach {
       }
     }
 
-    Supplier<Tool.JavacOptions> defaultJavacOptions = JavacOptions::new;
+    /**
+     * You use the javadoc tool and options to generate HTML pages of API documentation from Java
+     * source files.
+     */
+    public class JavadocOptions {
+      /** Shuts off messages so that only the warnings and errors appear to make them easier to view. */
+      boolean quiet = true;
+    }
+
+    Supplier<JavacOptions> defaultJavacOptions = JavacOptions::new;
+
+    Supplier<JavadocOptions> defaultJavadocOptions = JavadocOptions::new;
 
     /** Download the resource from URI to the target directory using the provided file name. */
     Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
@@ -702,7 +762,7 @@ class Bach {
     }
   }
 
-  interface Util {
+  public interface Util {
 
     /** Extract the file name from the uri. */
     static String buildFileName(URI uri) {

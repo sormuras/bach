@@ -6,15 +6,18 @@ Bach bach = new Bach()
 bach.call("java", "-version")
 {
 bach.command("javac")
-    .addAll("-d", "target/test")
+    .addAll("-d", "target/test/classes")
     .markDumpLimit(1)
     .addAllJavaFiles(Paths.get("bach"))
     .addAllJavaFiles(Paths.get("test"))
     .execute();
 }
-bach.call("java", "-ea", "-cp", "target/test", "BachTests")
+bach.call("java", "-ea", "-cp", "target/test/classes", "BachTests")
 
 bach.format(false, Paths.get("test"), "--skip-sorting-imports")
 bach.resolve("org.junit.jupiter.api", "http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar")
+
+bach.call("javadoc", "-Xdoclint:none", "-d", "target/test/doc", "bach/Bach.java")
+bach.call("jar", "--create", "--file=target/test/javadoc.jar", "-C", "target/test/doc", ".")
 
 /exit
