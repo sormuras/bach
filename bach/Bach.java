@@ -342,7 +342,6 @@ public class Bach {
       // additional arguments?
       String name = field.getName();
       Object value = field.get(options);
-      System.out.println(name + " -> " + value);
       if ("additionalArguments".equals(name) && value instanceof List) {
         ((List<?>) value).forEach(this::add);
         return;
