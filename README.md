@@ -1,8 +1,8 @@
 # bach - Java Shell Builder
  
-[![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](http://github.com/badges/stability-badges)
 [![jdk9](https://img.shields.io/badge/jdk-9-blue.svg)](https://docs.oracle.com/javase/9/index.html)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
+[![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](http://github.com/badges/stability-badges)
 
 Use Java source in JShell to build your modular project.
 

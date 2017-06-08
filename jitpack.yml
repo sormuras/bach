@@ -8,6 +8,4 @@ install:
 - cd -
 - jshell --show-version test.jsh
 - find target/test
-- mvn install:install-file -Dfile=target/test/bach.jar -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
-- mvn install:install-file -Dfile=target/test/bach-sources.jar -DgroupId=$GROUP -DartifactId=bach-sources -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
-- mvn install:install-file -Dfile=target/test/bach-javadoc.jar -DgroupId=$GROUP -DartifactId=bach-javadoc -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+- mvn install:install-file -Dfile=target/test/bach.jar -Dsources=target/test/bach-sources.jar -Djavadoc=target/test/bach-javadoc.jar -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
