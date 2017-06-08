@@ -10,7 +10,6 @@ install:
 - PATH=$JAVA_HOME/bin:$PATH
 - java -version
 - cd $TRAVIS_BUILD_DIR
-- chmod u+x test.jsh build.jsh demo.jsh
 
 script:
 - ./test.jsh
