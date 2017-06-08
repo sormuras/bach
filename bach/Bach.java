@@ -48,9 +48,24 @@ public class Bach {
   final Tool tool = new Tool();
 
   /** Create and execute command. */
-  int call(String executable, Object... arguments) {
+  public int call(String executable, Object... arguments) {
     log.tag("call");
     return command(executable, arguments).execute();
+  }
+
+  /** Clean target folder. */
+  public void clean() {
+    clean(Folder.TARGET);
+  }
+
+  /** Clean all specified folders. */
+  void clean(Folder... folders)  {
+    log.tag("clean");
+    for (Folder folder : folders) {
+      Path root = path(folder);
+      log.fine("deleting path `%s`", root);
+      Util.cleanTree(root, false);
+    }
   }
 
   /** Create command instance from executable name and optional arguments. */
@@ -235,7 +250,7 @@ public class Bach {
     log.info("%s", entryPoint);
     return command("java")
         // options
-        .add("-Dfile.encoding=" + charset.name())
+        .add("-Dfile.encoding=" + Charset.defaultCharset())
         // module-path: a list of directories in which each directory is a directory of modules
         .add("--module-path")
         .add(this::path, folder, Folder.DEPENDENCIES)

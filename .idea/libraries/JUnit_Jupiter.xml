@@ -3,7 +3,7 @@
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.junit.jupiter.api.jar!/" />
       <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.junit.platform.commons.jar!/" />
-      <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.opentest4j.opentest4j.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.opentest4j.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

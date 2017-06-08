@@ -4,7 +4,7 @@
 
 Bach bach = new Bach()
 bach.call("java", "-version")
-Bach.Util.cleanTree(Paths.get("target/test"), true)
+bach.clean()
 {
 bach.command("javac")
     .addAll("-d", "target/test/classes")

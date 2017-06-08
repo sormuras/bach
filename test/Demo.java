@@ -20,7 +20,7 @@ import java.util.logging.Level;
 
 public class Demo {
 
-  static void basic() {
+  private static void basic() {
     Bach bach = new Bach();
     bach.set(Level.FINE);
     bach.set(Bach.Folder.SOURCE, Paths.get("demo/basic"));
@@ -31,7 +31,7 @@ public class Demo {
     bach.run("com.greetings", "com.greetings.Main");
   }
 
-  static void common() {
+  private static void common() {
     Bach bach = new Bach();
     bach.set(Level.FINE);
     bach.set(Bach.Folder.SOURCE, Paths.get("demo/common"));
@@ -42,7 +42,7 @@ public class Demo {
     // TODO bach.test();
   }
 
-  static void idea() {
+  private static void idea() {
     Bach bach = new Bach();
     bach.set(Level.INFO);
     bach.set(Bach.Folder.SOURCE, Paths.get("demo/idea"));
