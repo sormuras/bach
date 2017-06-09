@@ -55,6 +55,7 @@ public class Demo {
         "http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar");
     bach.compile();
     bach.run("com.greetings", "com.greetings.Main");
+    bach.log.info("Launch the Java class dependency analyzer");
     bach.call(
         "jdeps",
         "-profile",
@@ -66,6 +67,7 @@ public class Demo {
     bach.javadoc();
     bach.test();
     // TODO bach.jar();
+    bach.jar("idea-sources.jar", bach.path(Bach.Folder.SOURCE));
     // TODO bach.runJar("com.greetings");
     // TODO bach.link("com.greetings", "greetings");
   }

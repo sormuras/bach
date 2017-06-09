@@ -18,6 +18,7 @@
 // default package
 
 import java.io.*;
+import java.lang.annotation.*;
 import java.net.*;
 import java.nio.charset.*;
 import java.nio.file.*;
@@ -205,11 +206,12 @@ public class Bach {
   void javadoc(Path moduleSourcePath, Tool.JavadocOptions options) {
     log.tag("javadoc");
     log.check(Files.exists(moduleSourcePath), "path `%s` does not exist", moduleSourcePath);
+    Path destination = path(Folder.TARGET_MAIN_JAVADOC);
     Command command = command("javadoc");
     command.addOptions(options);
     // sets the destination directory for class files
     command.add("-d");
-    command.add(path(Folder.TARGET_MAIN_JAVADOC));
+    command.add(destination);
     // specify where to find input source files for multiple modules
     command.add("--module-source-path");
     command.add(moduleSourcePath);
@@ -220,6 +222,23 @@ public class Bach {
       throw log.error(e, "gathering java source files in %s", moduleSourcePath);
     }
     command.execute();
+    log.info("generated javadoc to `%s`", destination);
+  }
+
+  void jar(String fileName, Path path) {
+    log.tag("jar");
+    Util.cleanTree(path(Folder.TARGET_MAIN_JAR), true);
+    Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
+    Command command = command("jar");
+    command.addOptions(tool.defaultJarOptions.get());
+    // creates the archive
+    command.add("--create");
+    // specifies the archive file name
+    command.add("--file").add(jarFile);
+    // changes to the specified directory and includes all files
+    command.add("-C").add(path).add(".");
+    command.execute();
+    log.info("created archive `%s`", jarFile);
   }
 
   /** Resolve path for given folder. */
@@ -369,18 +388,29 @@ public class Bach {
         ((List<?>) value).forEach(this::add);
         return;
       }
-      // guess key and value
-      String optionKey = "-" + name;
+      // get (or guess) name and value
+      String optionName = "-" + name;
+      if (field.isAnnotationPresent(OptionName.class)) {
+        optionName = field.getAnnotation(OptionName.class).value();
+      }
       // just a flag?
       if (field.getType() == boolean.class) {
         if (field.getBoolean(options)) {
-          add(optionKey);
+          add(optionName);
         }
         return;
       }
       // as-is
-      add(optionKey);
+      add(optionName);
       add(Objects.toString(value));
+    }
+
+    private void addOptionUnchecked(Object options, java.lang.reflect.Field field) {
+      try {
+        addOption(options, field);
+      } catch (Exception e) {
+        throw log.error(e, "reflecting options failed for %s", options);
+      }
     }
 
     /** Reflect and add all options. */
@@ -388,17 +418,11 @@ public class Bach {
       if (options == null) {
         return this;
       }
-      try {
-        for (java.lang.reflect.Field field : options.getClass().getDeclaredFields()) {
-          // skip static and synthetic fields (like pointer to "this", "super", etc)
-          if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
-            continue;
-          }
-          addOption(options, field);
-        }
-      } catch (Exception e) {
-        throw log.error(e, "reflecting options failed for %s", options);
-      }
+      Arrays.stream(options.getClass().getDeclaredFields())
+          .sorted(Comparator.comparing(java.lang.reflect.Field::getName))
+          .filter(field -> !field.isSynthetic())
+          .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+          .forEach(field -> addOptionUnchecked(options, field));
       return this;
     }
 
@@ -546,28 +570,29 @@ public class Bach {
     /** Module folders last: {@code src/[main|test]/[java|resources]/<module>} */
     TRAIL,
     ;
+
     static Layout of(Path root) {
       if (Files.notExists(root)) {
         return AUTO;
       }
       try {
         Path path =
-                Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
-                        .map(root::relativize)
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
+            Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                .map(root::relativize)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
         // trivial case: <module>/module-info.java
         if (path.getNameCount() == 2) {
           return BASIC;
         }
         // nested case: extract module name and check whether the relative path starts with it
         String moduleSource =
-                new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
+            new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
         Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
         Matcher nameMatcher = namePattern.matcher(moduleSource);
         if (!nameMatcher.find()) {
           throw new IllegalArgumentException(
-                  "expected java module descriptor unit, but got: \n" + moduleSource);
+              "expected java module descriptor unit, but got: \n" + moduleSource);
         }
         String moduleName = nameMatcher.group(2).trim();
         return path.startsWith(moduleName) ? FIRST : TRAIL;
@@ -659,6 +684,12 @@ public class Bach {
     }
   }
 
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface OptionName {
+    String value();
+  }
+
   public class Tool {
 
     class GoogleJavaFormat implements ToolProvider {
@@ -739,6 +770,7 @@ public class Bach {
       Charset encoding = Bach.this.charset;
 
       /** Terminate compilation if warnings occur. */
+      @OptionName("-Werror")
       boolean failOnWarnings = true;
 
       /** Specify where to find application modules. */
@@ -757,10 +789,6 @@ public class Bach {
         return List.of("-encoding", encoding.name());
       }
 
-      List<String> failOnWarnings() {
-        return failOnWarnings ? List.of("-Werror") : Collections.emptyList();
-      }
-
       List<String> modulePaths() {
         return List.of("--module-path", Util.join(modulePaths));
       }
@@ -775,6 +803,20 @@ public class Bach {
        * Shuts off messages so that only the warnings and errors appear to make them easier to view.
        */
       boolean quiet = true;
+    }
+
+    /**
+     * You can use the jar command to create an archive for classes and resources, and manipulate or
+     * restore individual classes or resources from an archive.
+     */
+    public class JarOptions {
+      /** Stores without using ZIP compression. */
+      @OptionName("--no-compress")
+      boolean noCompress = false;
+
+      /** Sends or prints verbose output to standard output. */
+      @OptionName("--verbose")
+      boolean verbose = log.isLevelActive(Level.FINEST);
     }
 
     public class JUnitPlatform implements ToolProvider {
@@ -817,6 +859,8 @@ public class Bach {
     Supplier<JavacOptions> defaultJavacOptions = JavacOptions::new;
 
     Supplier<JavadocOptions> defaultJavadocOptions = JavadocOptions::new;
+
+    Supplier<JarOptions> defaultJarOptions = JarOptions::new;
 
     /** Download the resource from URI to the target directory using the provided file name. */
     Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
