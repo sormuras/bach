@@ -39,7 +39,6 @@ public class Demo {
     bach.format();
     bach.compile();
     bach.run("com.greetings", "com.greetings.Main");
-    // TODO bach.test();
   }
 
   private static void idea() {
@@ -65,7 +64,7 @@ public class Demo {
         "--module",
         "com.greetings");
     bach.javadoc();
-    // TODO bach.test();
+    bach.test();
     // TODO bach.jar();
     // TODO bach.runJar("com.greetings");
     // TODO bach.link("com.greetings", "greetings");

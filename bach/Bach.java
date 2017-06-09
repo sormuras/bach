@@ -59,7 +59,7 @@ public class Bach {
   }
 
   /** Clean all specified folders. */
-  void clean(Folder... folders)  {
+  void clean(Folder... folders) {
     log.tag("clean");
     for (Folder folder : folders) {
       Path root = path(folder);
@@ -82,11 +82,9 @@ public class Bach {
     Path modules = path(Folder.SOURCE);
     log.check(Files.exists(modules), "folder source `%s` does not exist", modules);
     log.check(Util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
-    Layout layout = Util.buildLayout(modules);
-    log.fine("layout %s", layout);
     Tool.JavacOptions options = tool.defaultJavacOptions.get();
     Util.cleanTree(path(Folder.TARGET), true);
-    switch (layout) {
+    switch (Layout.of(modules)) {
       case BASIC:
         log.info("main");
         javac(modules, path(Folder.TARGET_MAIN_COMPILE), options);
@@ -139,7 +137,7 @@ public class Bach {
         }
         break;
       default:
-        log.check(false, "unsupported module source path layout %s for: `%s`", layout, modules);
+        log.check(false, "unsupported module source path layout of `%s`", modules);
     }
     log.tag("compile");
     log.info("compiled");
@@ -187,11 +185,9 @@ public class Bach {
   /** Generate HTML pages of API documentation from Java source files. */
   public void javadoc() {
     Path modules = path(Folder.SOURCE);
-    Layout layout = Util.buildLayout(modules);
-    log.fine("layout %s", layout);
     Tool.JavadocOptions options = tool.defaultJavadocOptions.get();
     Util.cleanTree(path(Folder.TARGET_MAIN_JAVADOC), true);
-    switch (layout) {
+    switch (Layout.of(modules)) {
       case BASIC:
         javadoc(modules, options);
         break;
@@ -278,6 +274,18 @@ public class Bach {
   /** Register custom tool provider. */
   void set(ToolProvider toolProvider) {
     customTools.put(toolProvider.name(), toolProvider);
+  }
+
+  /** Run all tests in all modules. */
+  public void test() {
+    Util.findDirectoryNames(path(Folder.TARGET_TEST_COMPILE)).forEach(this::test);
+  }
+
+  /** Run all tests in the specified module. */
+  void test(String module) {
+    log.tag("test");
+    ToolProvider format = tool.new JUnitPlatform(module);
+    format.run(streamOut, streamErr);
   }
 
   public class Command {
@@ -537,6 +545,36 @@ public class Bach {
     FIRST,
     /** Module folders last: {@code src/[main|test]/[java|resources]/<module>} */
     TRAIL,
+    ;
+    static Layout of(Path root) {
+      if (Files.notExists(root)) {
+        return AUTO;
+      }
+      try {
+        Path path =
+                Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                        .map(root::relativize)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
+        // trivial case: <module>/module-info.java
+        if (path.getNameCount() == 2) {
+          return BASIC;
+        }
+        // nested case: extract module name and check whether the relative path starts with it
+        String moduleSource =
+                new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
+        Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+        Matcher nameMatcher = namePattern.matcher(moduleSource);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+                  "expected java module descriptor unit, but got: \n" + moduleSource);
+        }
+        String moduleName = nameMatcher.group(2).trim();
+        return path.startsWith(moduleName) ? FIRST : TRAIL;
+      } catch (Exception e) {
+        throw new Error("detection failed " + e, e);
+      }
+    }
   }
 
   class Log {
@@ -625,13 +663,6 @@ public class Bach {
 
     class GoogleJavaFormat implements ToolProvider {
 
-      final String SRV = "https://jitpack.io";
-      final String PTH = "com/github/sormuras";
-      final String GJF = "google-java-format";
-      final String VER = "validate-SNAPSHOT";
-      final String VAR = "-all-deps";
-      final String FORMAT = "%1$s/%2$s/%3$s/%3$s/%4$s/%3$s-%4$s%5$s.jar";
-      final URI uri = URI.create(String.format(FORMAT, SRV, PTH, GJF, VER, VAR));
       final List<Path> paths;
       final boolean replace;
 
@@ -658,6 +689,12 @@ public class Bach {
         String mode = replace ? "replace" : "validate";
         log.tag("format");
         log.fine("mode=%s", mode);
+        URI uri =
+            URI.create(
+                "https://jitpack.io/com/"
+                    + "github/sormuras/google-java-format/"
+                    + "google-java-format/validate-SNAPSHOT/"
+                    + "google-java-format-validate-SNAPSHOT-all-deps.jar");
         Path jar = Bach.this.download(uri, path(Folder.TOOLS).resolve("google-java-format"));
         Command command =
             new Command(path(Folder.JDK_HOME_BIN).resolve("java").toString())
@@ -734,8 +771,47 @@ public class Bach {
      * source files.
      */
     public class JavadocOptions {
-      /** Shuts off messages so that only the warnings and errors appear to make them easier to view. */
+      /**
+       * Shuts off messages so that only the warnings and errors appear to make them easier to view.
+       */
       boolean quiet = true;
+    }
+
+    public class JUnitPlatform implements ToolProvider {
+
+      final String module;
+
+      JUnitPlatform(String module) {
+        this.module = module;
+      }
+
+      @Override
+      public String name() {
+        return "test";
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        log.tag("test");
+        URI uri =
+            URI.create(
+                "http://central.maven.org/maven2/"
+                    + "org/junit/platform/"
+                    + "junit-platform-console-standalone/1.0.0-M4/"
+                    + "junit-platform-console-standalone-1.0.0-M4.jar");
+        Path jar = Bach.this.download(uri, path(Folder.TOOLS).resolve("junit-platform"));
+        Command command = new Command(path(Folder.JDK_HOME_BIN).resolve("java").toString());
+        command.add("-ea");
+        command.add("-jar");
+        command.add(jar);
+        command.add("--scan-classpath");
+        command.add(path(Folder.TARGET_TEST_COMPILE).resolve(module));
+        Util.findDirectories(path(Folder.TARGET_TEST_COMPILE))
+            .forEach(m -> command.add("--classpath").add(m));
+        command.markDumpLimit(10);
+        command.addAll((Object[]) args);
+        return command.execute();
+      }
     }
 
     Supplier<JavacOptions> defaultJavacOptions = JavacOptions::new;
@@ -806,36 +882,6 @@ public class Bach {
       }
       // still here? not so good... try with default (not-existent) path
       return Paths.get("jdk-" + Runtime.version().major());
-    }
-
-    static Layout buildLayout(Path root) {
-      if (Files.notExists(root)) {
-        return Layout.AUTO;
-      }
-      try {
-        Path path =
-            Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
-                .map(root::relativize)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
-        // trivial case: <module>/module-info.java
-        if (path.getNameCount() == 2) {
-          return Layout.BASIC;
-        }
-        // nested case: extract module name and check whether the relative path starts with it
-        String moduleSource =
-            new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
-        Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
-        Matcher nameMatcher = namePattern.matcher(moduleSource);
-        if (!nameMatcher.find()) {
-          throw new IllegalArgumentException(
-              "expected java module descriptor unit, but got: \n" + moduleSource);
-        }
-        String moduleName = nameMatcher.group(2).trim();
-        return path.startsWith(moduleName) ? Layout.FIRST : Layout.TRAIL;
-      } catch (Exception e) {
-        throw new Error("detection failed " + e, e);
-      }
     }
 
     static Path cleanTree(Path root, boolean keepRoot) {

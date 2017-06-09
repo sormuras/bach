@@ -1,3 +1,4 @@
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +26,16 @@ public class CommandTests {
     assert Objects.equals("|9", strings.get(10));
   }
 
+  private static void addAllJavaFiles() {
+    Bach.Command command = new Bach().new Command("executable");
+    command.addAllJavaFiles(Paths.get("src"));
+    command.addAllJavaFiles(Paths.get("test"));
+    List<String> arguments = List.of(command.toArgumentsArray());
+    assert arguments.size() > 0;
+  }
+
   public static void main(String[] args) {
     dump();
+    addAllJavaFiles();
   }
 }

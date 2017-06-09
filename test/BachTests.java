@@ -1,4 +1,5 @@
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.spi.ToolProvider;
 
@@ -19,9 +20,9 @@ class BachTests {
   }
 
   private static void buildLayout() {
-    // assert Layout.BASIC == Bach.Builder.buildLayout(Paths.get("demo/basic"));
-    // assert Layout.FIRST == Bach.Builder.buildLayout(Paths.get("demo/idea"));
-    // assert Layout.TRAIL == Bach.Builder.buildLayout(Paths.get("demo/common"));
+    assert Bach.Layout.BASIC == Bach.Layout.of(Paths.get("demo/basic"));
+    assert Bach.Layout.FIRST == Bach.Layout.of(Paths.get("demo/idea"));
+    assert Bach.Layout.TRAIL == Bach.Layout.of(Paths.get("demo/common"));
   }
 
   private static void provideTool() {

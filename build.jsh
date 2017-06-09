@@ -20,7 +20,7 @@ bach.resolve("org.opentest4j", "http://central.maven.org/maven2/org/opentest4j/o
 bach.compile()
 bach.run("de.sormuras.solartools", "de.sormuras.solartools.Main")
 bach.javadoc()
+bach.test()
 // TODO bach.jar()
-// TODO bach.test()
 
 /exit
