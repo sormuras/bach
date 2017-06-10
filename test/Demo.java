@@ -29,6 +29,8 @@ public class Demo {
     bach.format();
     bach.compile();
     bach.run("com.greetings", "com.greetings.Main");
+    bach.javadoc();
+    bach.jar();
   }
 
   private static void common() {
@@ -39,6 +41,8 @@ public class Demo {
     bach.format();
     bach.compile();
     bach.run("com.greetings", "com.greetings.Main");
+    bach.javadoc();
+    bach.jar();
   }
 
   private static void idea() {
@@ -65,9 +69,8 @@ public class Demo {
         "--module",
         "com.greetings");
     bach.javadoc();
+    bach.jar();
     bach.test();
-    // TODO bach.jar();
-    bach.jar("idea-sources.jar", bach.path(Bach.Folder.SOURCE));
     // TODO bach.runJar("com.greetings");
     // TODO bach.link("com.greetings", "greetings");
   }

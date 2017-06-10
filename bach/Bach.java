@@ -185,19 +185,17 @@ public class Bach {
 
   /** Generate HTML pages of API documentation from Java source files. */
   public void javadoc() {
-    Path modules = path(Folder.SOURCE);
+    Path moduleSourcePath = path(Folder.SOURCE);
     Tool.JavadocOptions options = tool.defaultJavadocOptions.get();
-    Util.cleanTree(path(Folder.TARGET_MAIN_JAVADOC), true);
-    switch (Layout.of(modules)) {
+    switch (Layout.of(moduleSourcePath)) {
       case BASIC:
-        javadoc(modules, options);
+        javadoc(moduleSourcePath, options);
         break;
       case FIRST:
-        // TODO Util.findDirectories(modules).forEach(module -> copy...);
         javadoc(path(Folder.TARGET_MAIN_SOURCE), options);
         break;
       case TRAIL:
-        javadoc(modules.resolve(path(Folder.MAIN_JAVA)), options);
+        javadoc(moduleSourcePath.resolve(path(Folder.MAIN_JAVA)), options);
         break;
     }
   }
@@ -207,6 +205,7 @@ public class Bach {
     log.tag("javadoc");
     log.check(Files.exists(moduleSourcePath), "path `%s` does not exist", moduleSourcePath);
     Path destination = path(Folder.TARGET_MAIN_JAVADOC);
+    Util.createDirectories(destination);
     Command command = command("javadoc");
     command.addOptions(options);
     // sets the destination directory for class files
@@ -225,9 +224,51 @@ public class Bach {
     log.info("generated javadoc to `%s`", destination);
   }
 
+  public void jar() {
+    log.tag("jar");
+    // all modules: in one
+    jar("all" + "-sources.jar", path(Folder.SOURCE));
+    jar("all" + "-javadoc.jar", path(Folder.TARGET_MAIN_JAVADOC));
+    // per module: binary artifact with resources and entry-points, version, etc...
+    Util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILE))
+        .forEach(
+            module -> {
+              // Path modulePath = path(Folder.TARGET_MAIN_COMPILE).resolve(module);
+              // TODO String main = score.mains.getOrDefault(module, module + "." + "Main");
+              // if (Files.notExists(modulePath.resolve(main.replace('.', '/') + ".class"))) {
+              //  if (score.mains.containsKey(module)) {
+              //    log.fail(IllegalStateException::new, "entry-point `%s` not found in `%s`", main,
+              // modulePath);
+              //  }
+              //  main = null;
+              // }
+              // TODO jar(module + ".jar", module, main, score.version);
+              jar(module + ".jar", path(Folder.TARGET_MAIN_COMPILE).resolve(module));
+            });
+    // per module: source artifact
+    // TODO jar(module + "-sources.jar", path(Folder.TARGET_MAIN_SOURCE).resolve(module));
+    switch (Layout.of(path(Folder.SOURCE))) {
+      case BASIC:
+        Path path0 = path(Folder.SOURCE);
+        Util.findDirectoryNames(path0)
+            .forEach(module -> jar(module + "-sources.jar", path0.resolve(module)));
+        break;
+      case FIRST:
+        Path path1 = path(Folder.TARGET_MAIN_SOURCE);
+        Util.findDirectoryNames(path1)
+            .forEach(module -> jar(module + "-sources.jar", path1.resolve(module)));
+        break;
+      case TRAIL:
+        Path path2 = path(Folder.SOURCE).resolve(path(Folder.MAIN_JAVA));
+        Util.findDirectoryNames(path2)
+            .forEach(module -> jar(module + "-sources.jar", path2.resolve(module)));
+        break;
+    }
+  }
+
   void jar(String fileName, Path path) {
     log.tag("jar");
-    Util.cleanTree(path(Folder.TARGET_MAIN_JAR), true);
+    Util.createDirectories(path(Folder.TARGET_MAIN_JAR));
     Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
     Command command = command("jar");
     command.addOptions(tool.defaultJarOptions.get());
@@ -238,7 +279,7 @@ public class Bach {
     // changes to the specified directory and includes all files
     command.add("-C").add(path).add(".");
     command.execute();
-    log.info("created archive `%s`", jarFile);
+    log.info("created archive `%s` [%d bytes]", jarFile, Util.size(jarFile));
   }
 
   /** Resolve path for given folder. */
@@ -993,10 +1034,18 @@ public class Bach {
       }
     }
 
-    static void delete(Path path) {
+    static Path createDirectories(Path path) {
       try {
-        Files.deleteIfExists(path);
-      } catch (Exception e) {
+        return Files.createDirectories(path);
+      } catch (IOException e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
+    static boolean delete(Path path) {
+      try {
+        return Files.deleteIfExists(path);
+      } catch (IOException e) {
         throw new Error("should not happen", e);
       }
     }
@@ -1041,6 +1090,14 @@ public class Bach {
       try {
         Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
       } catch (Exception e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
+    static long size(Path path) {
+      try {
+        return Files.size(path);
+      } catch (IOException e) {
         throw new Error("should not happen", e);
       }
     }
