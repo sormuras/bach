@@ -8,10 +8,10 @@ install:
 - tar -xzf jdk-9-ea+173_linux-x64_bin.tar.gz
 - JAVA_HOME=~/jdk-9
 - PATH=$JAVA_HOME/bin:$PATH
-- java -version
 - cd $TRAVIS_BUILD_DIR
 
 script:
+- java -version
 #- ./build.jsh
 #- ./test.jsh
 #- ./demo.jsh
