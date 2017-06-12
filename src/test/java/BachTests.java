@@ -20,20 +20,29 @@ import org.junit.jupiter.api.Test;
 
 class BachTests {
 
-    @Test
-    void isInterface() {
-        Assertions.assertTrue(Bach.class.isInterface());
-    }
+  @Test
+  void isInterface() {
+    Assertions.assertTrue(Bach.class.isInterface());
+  }
 
-    @Test
-    void builder() {
-        Assertions.assertNotNull(Bach.builder());
-        Assertions.assertNotNull(Bach.builder().build());
-    }
+  @Test
+  void builder() {
+    Assertions.assertNotNull(Bach.builder());
+    Assertions.assertNotNull(Bach.builder().build());
+  }
 
-    @Test
-    void build() {
-        Bach.builder().build().build();
-    }
+  @Test
+  void defaultConfiguration() {
+    Bach.Configuration configuration = Bach.builder().build().configuration();
+    Assertions.assertEquals("bach", configuration.name());
+    Assertions.assertEquals("1.0.0-SNAPSHOT", configuration.version());
+  }
 
+  @Test
+  void customConfiguration() {
+    Bach.Configuration configuration =
+        Bach.builder().name("kernel").version("4.12-rc5").build().configuration();
+    Assertions.assertEquals("kernel", configuration.name());
+    Assertions.assertEquals("4.12-rc5", configuration.version());
+  }
 }

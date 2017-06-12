@@ -17,43 +17,101 @@
 
 // default package
 
+import java.nio.file.*;
+
 /** JShell Builder. */
 @SuppressWarnings({
-        "WeakerAccess",
-        "RedundantIfStatement",
-        "UnusedReturnValue",
-        "SameParameterValue",
-        "SimplifiableIfStatement"
+  "WeakerAccess",
+  "RedundantIfStatement",
+  "UnusedReturnValue",
+  "SameParameterValue",
+  "SimplifiableIfStatement"
 })
 public interface Bach {
 
-    default void build() {
-        clean();
-        compile();
-        test();
+  default void build() {
+    clean();
+    format();
+    compile();
+    test();
+    link();
+  }
+
+  static Builder builder() {
+    return new Builder();
+  }
+
+  default void clean() {
+    System.out.println("clean not implemented, yet");
+  }
+
+  default void compile() {
+    System.out.println("compile (javac, javadoc, jar) not implemented, yet");
+  }
+
+  Configuration configuration();
+
+  default void format() {
+    System.out.println("format not implemented, yet");
+  }
+
+  default void link() {
+    System.out.println("link not implemented, yet");
+  }
+
+  default void test() {
+    System.out.println("test not implemented, yet");
+  }
+
+  class Builder implements Configuration {
+    String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
+    String version = "1.0.0-SNAPSHOT";
+
+    public Bach build() {
+      Builder configuration = new Builder();
+      configuration.name = name;
+      configuration.version = version;
+      return new Default(configuration);
     }
 
-    static Builder builder() {
-        return new Builder();
+    public Builder name(String name) {
+      this.name = name;
+      return this;
     }
 
-    default void clean() {
+    @Override
+    public String name() {
+      return name;
     }
 
-    default void compile() {
+    @Override
+    public String version() {
+      return version;
     }
 
-    default void test() {
+    public Builder version(String version) {
+      this.version = version;
+      return this;
+    }
+  }
+
+  interface Configuration {
+    String name();
+
+    String version();
+  }
+
+  class Default implements Bach {
+
+    final Configuration configuration;
+
+    Default(Configuration configuration) {
+      this.configuration = configuration;
     }
 
-    class Builder {
-        public Bach build() {
-            return new Impl(this);
-        }
+    @Override
+    public Configuration configuration() {
+      return configuration;
     }
-
-    class Impl implements Bach {
-        public Impl(Builder builder) {
-        }
-    }
+  }
 }
