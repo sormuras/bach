@@ -45,38 +45,24 @@ public interface JShellBuilder {
   }
 
   /** Create and execute command. */
-  default int call(String executable, Object... arguments) {
-    logger().entering(getClass().getName(), "call", new Object[] {executable, List.of(arguments)});
-    try {
-      return execute(command(executable, arguments));
-    } finally {
-      logger().exiting(getClass().getName(), "call");
-    }
-  }
+  int call(String executable, Object... arguments);
 
+  /** Delete all generated files. */
   void clean();
 
-  /** Create command instance from executable name and optional arguments. */
-  default Command command(String executable, Object... arguments) {
-    return new Command(executable).addAll(arguments);
-  }
-
+  /** Compile all modules. */
   void compile();
 
-  /** Execute command throwing a runtime exception when the exit value is not zero. */
-  int execute(Command command);
-
-  Logger logger();
-
+  /** Test all modules. */
   void test();
 
   class Bach implements JShellBuilder {
 
-    final Map<String, ToolProvider> customTools = new TreeMap<>();
     final Logger logger;
     final String projectName;
     final PrintStream streamErr = System.err;
     final PrintStream streamOut = System.out;
+    final Map<String, ToolProvider> toolProviderMap = new TreeMap<>();
 
     Bach(Builder builder) {
       this.projectName = builder.name;
@@ -92,13 +78,27 @@ public interface JShellBuilder {
     }
 
     @Override
-    public void clean() {}
+    public int call(String executable, Object... arguments) {
+      return execute(command(executable, arguments));
+    }
 
     @Override
-    public void compile() {}
+    public void clean() {
+      logger.info("clean");
+    }
+
+    /** Create command instance from executable name and optional arguments. */
+    Command command(String executable, Object... arguments) {
+      return new Command(executable).addAll(arguments);
+    }
 
     @Override
-    public int execute(Command command) {
+    public void compile() {
+      logger.info("compile");
+    }
+
+    /** Execute command throwing a runtime exception when the exit value is not zero. */
+    int execute(Command command) {
       return execute(command, this::exitValueChecker);
     }
 
@@ -109,21 +109,20 @@ public interface JShellBuilder {
       String executable = command.executable;
       long start = System.currentTimeMillis();
       Integer exitValue = null;
-      ToolProvider customTool = customTools.get(executable);
-      if (customTool != null) {
-        logger.fine(() -> String.format("executing custom `%s` tool in-process...", executable));
-        exitValue = customTool.run(streamOut, streamErr, command.toArgumentsArray());
+      ToolProvider providedTool = toolProviderMap.get(executable);
+      if (providedTool != null) {
+        logger.fine(() -> String.format("executing provided `%s` tool...", executable));
+        exitValue = providedTool.run(streamOut, streamErr, command.toArgumentsArray());
       }
       if (exitValue == null) {
         Optional<ToolProvider> tool = ToolProvider.findFirst(executable);
         if (tool.isPresent()) {
-          logger.fine(() -> String.format("executing loaded `%s` tool in-process...", executable));
+          logger.fine(() -> String.format("executing loaded `%s` tool...", executable));
           exitValue = tool.get().run(streamOut, streamErr, command.toArgumentsArray());
         }
       }
       if (exitValue == null) {
-        logger.fine(
-            () -> String.format("executing external `%s` tool in new process...", executable));
+        logger.fine(() -> String.format("executing external `%s` tool...", executable));
         ProcessBuilder processBuilder = command.toProcessBuilder().redirectErrorStream(true);
         try {
           Process process = processBuilder.start();
@@ -153,12 +152,9 @@ public interface JShellBuilder {
     }
 
     @Override
-    public Logger logger() {
-      return logger;
+    public void test() {
+      logger.info("test");
     }
-
-    @Override
-    public void test() {}
   }
 
   class Builder {
@@ -367,31 +363,23 @@ public interface JShellBuilder {
 
     @Override
     public String format(LogRecord record) {
-      StringBuilder sb = new StringBuilder();
-      sb.append(instantFormatter.format(record.getInstant()));
-      // sb.append(' ');
-      // sb.append(record.getLevel());
-      // sb.append(' ');
-      // sb.append('[');
-      // sb.append(Thread.currentThread().getName());
-      // sb.append(']');
-      // sb.append(' ');
-      // sb.append(record.getSourceClassName());
-      sb.append(' ');
-      sb.append(record.getSourceMethodName());
-      sb.append(' ');
-      sb.append(formatMessage(record));
+      StringBuilder builder = new StringBuilder();
+      builder.append(instantFormatter.format(record.getInstant()));
+      builder.append(' ');
+      builder.append(record.getSourceMethodName());
+      builder.append(' ');
+      builder.append(formatMessage(record));
       if (record.getThrown() != null) {
-        sb.append(System.lineSeparator());
-        sb.append(' ');
+        builder.append(System.lineSeparator());
+        builder.append(' ');
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         record.getThrown().printStackTrace(pw);
         pw.close();
-        sb.append(sw.getBuffer());
+        builder.append(sw.getBuffer());
       }
-      sb.append(System.lineSeparator());
-      return sb.toString();
+      builder.append(System.lineSeparator());
+      return builder.toString();
     }
   }
 }
