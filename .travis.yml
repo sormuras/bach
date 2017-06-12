@@ -12,6 +12,6 @@ install:
 - cd $TRAVIS_BUILD_DIR
 
 script:
-- ./test.jsh
-- ./build.jsh
-- ./demo.jsh
+#- ./build.jsh
+#- ./test.jsh
+#- ./demo.jsh
