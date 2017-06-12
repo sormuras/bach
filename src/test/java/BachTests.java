@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import java.util.logging.Level;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +42,13 @@ class BachTests {
   @Test
   void customConfiguration() {
     Bach.Configuration configuration =
-        Bach.builder().name("kernel").version("4.12-rc5").build().configuration();
+        Bach.builder()
+            .name("kernel")
+            .version("4.12-rc5")
+            .handler(null)
+            .level(Level.WARNING)
+            .build()
+            .configuration();
     Assertions.assertEquals("kernel", configuration.name());
     Assertions.assertEquals("4.12-rc5", configuration.version());
   }

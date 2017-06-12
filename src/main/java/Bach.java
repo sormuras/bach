@@ -21,7 +21,10 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.time.*;
+import java.time.format.*;
 import java.util.function.*;
+import java.util.logging.*;
 
 /** JShell Builder. */
 @SuppressWarnings({
@@ -34,11 +37,14 @@ import java.util.function.*;
 public interface Bach {
 
   default void build() {
+    long start = System.currentTimeMillis();
+    logger.fine("building...");
     clean();
     format();
     compile();
     test();
     link();
+    logger.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
   }
 
   static Builder builder() {
@@ -46,21 +52,21 @@ public interface Bach {
   }
 
   default void clean() {
-    System.out.println("clean not implemented, yet");
+    logger.warning("not implemented, yet");
   }
 
   default void compile() {
-    System.out.println("compile (javac, javadoc, jar) not implemented, yet");
+    logger.warning("(javac, javadoc, jar) not implemented, yet");
   }
 
   Configuration configuration();
 
   default void format() {
-    System.out.println("format not implemented, yet");
+    logger.warning("not implemented, yet");
   }
 
   default void link() {
-    System.out.println("link not implemented, yet");
+    logger.warning("not implemented, yet");
   }
 
   /** Resolve named module by downloading its jar artifact from the specified location. */
@@ -70,10 +76,12 @@ public interface Bach {
   }
 
   default void test() {
-    System.out.println("test not implemented, yet");
+    logger.warning("not implemented, yet");
   }
 
   class Builder implements Configuration {
+    Handler handler = buildHandler();
+    Level level = Level.FINE;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     String version = "1.0.0-SNAPSHOT";
 
@@ -81,17 +89,39 @@ public interface Bach {
       Builder configuration = new Builder();
       configuration.name = name;
       configuration.version = version;
+      if (handler != null && logger.getHandlers().length == 0) {
+        logger.addHandler(handler);
+        logger.setUseParentHandlers(false);
+      }
+      logger.setLevel(level);
       return new Default(configuration);
     }
 
-    public Builder name(String name) {
-      this.name = name;
+    private Handler buildHandler() {
+      Handler handler = new ConsoleHandler();
+      handler.setLevel(Level.ALL);
+      handler.setFormatter(new Util.SingleLineFormatter());
+      return handler;
+    }
+
+    public Builder handler(Handler handler) {
+      this.handler = handler;
+      return this;
+    }
+
+    public Builder level(Level level) {
+      this.level = level;
       return this;
     }
 
     @Override
     public String name() {
       return name;
+    }
+
+    public Builder name(String name) {
+      this.name = name;
+      return this;
     }
 
     @Override
@@ -117,6 +147,7 @@ public interface Bach {
 
     Default(Configuration configuration) {
       this.configuration = configuration;
+      logger.fine("initialized");
     }
 
     @Override
@@ -127,40 +158,68 @@ public interface Bach {
 
   interface Util {
 
+    class SingleLineFormatter extends java.util.logging.Formatter {
+
+      private final DateTimeFormatter instantFormatter =
+              DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss:SSS").withZone(ZoneId.systemDefault());
+
+      @Override
+      public String format(LogRecord record) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(instantFormatter.format(record.getInstant()));
+        builder.append(' ');
+        builder.append(record.getSourceClassName());
+        builder.append(' ');
+        builder.append(record.getSourceMethodName());
+        builder.append(' ');
+        builder.append(formatMessage(record));
+        builder.append(System.lineSeparator());
+        if (record.getThrown() == null) {
+          return builder.toString();
+        }
+        builder.append(System.lineSeparator());
+        builder.append(' ');
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        record.getThrown().printStackTrace(pw);
+        pw.close();
+        builder.append(sw.getBuffer());
+        return builder.toString();
+      }
+    }
+
     /** Download the resource specified by its URI to the target directory. */
     static Path download(URI uri, Path targetDirectory) {
       return Util.download(uri, targetDirectory, extractFileName(uri), path -> true);
     }
 
     /** Download the resource from URI to the target directory using the provided file name. */
-    static Path download(
-        URI uri, Path targetDirectory, String targetFileName, Predicate<Path> skip) {
+    static Path download(URI uri, Path directory, String fileName, Predicate<Path> skip) {
       try {
         URL url = uri.toURL();
-        Files.createDirectories(targetDirectory);
-        Path targetPath = targetDirectory.resolve(targetFileName);
+        Files.createDirectories(directory);
+        Path target = directory.resolve(fileName);
         URLConnection urlConnection = url.openConnection();
         FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
-        if (Files.exists(targetPath)) {
-          if (Files.getLastModifiedTime(targetPath).equals(urlLastModifiedTime)) {
-            if (Files.size(targetPath) == urlConnection.getContentLengthLong()) {
-              if (skip.test(targetPath)) {
-                // TODO log.fine("download skipped - using `%s`", targetPath);
-                return targetPath;
+        if (Files.exists(target)) {
+          if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
+            if (Files.size(target) == urlConnection.getContentLengthLong()) {
+              if (skip.test(target)) {
+                logger.fine(() -> "skipped, using `" + target + "`");
+                return target;
               }
             }
           }
-          Files.delete(targetPath);
+          Files.delete(target);
         }
-        // TODO log.fine("download `%s` in progress...", uri);
+        logger.fine(() -> "transferring `" + uri + "`...");
         try (InputStream sourceStream = url.openStream();
-            OutputStream targetStream = Files.newOutputStream(targetPath)) {
+            OutputStream targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
         }
-        Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
-        // TODO log.fine("download `%s` completed", uri);
-        // TODO log.info("stored `%s` [%s]", targetPath, urlLastModifiedTime.toString());
-        return targetPath;
+        Files.setLastModifiedTime(target, urlLastModifiedTime);
+        logger.info(() -> "stored `" + target + "` [" + urlLastModifiedTime + "]");
+        return target;
       } catch (IOException e) {
         throw new Error("should not happen", e);
       }
@@ -196,4 +255,6 @@ public interface Bach {
       return Paths.get("jdk-" + Runtime.version().major());
     }
   }
+
+  Logger logger = Logger.getLogger("Bach");
 }
