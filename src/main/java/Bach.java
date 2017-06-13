@@ -38,13 +38,13 @@ public interface Bach {
 
   default void build() {
     long start = System.currentTimeMillis();
-    logger.fine("building...");
+    Util.log.fine("building...");
     clean();
     format();
     compile();
     test();
     link();
-    logger.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
+    Util.log.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
   }
 
   static Builder builder() {
@@ -52,21 +52,21 @@ public interface Bach {
   }
 
   default void clean() {
-    logger.warning("not implemented, yet");
+    Util.log.warning("not implemented, yet");
   }
 
   default void compile() {
-    logger.warning("(javac, javadoc, jar) not implemented, yet");
+    Util.log.warning("(javac, javadoc, jar) not implemented, yet");
   }
 
   Configuration configuration();
 
   default void format() {
-    logger.warning("not implemented, yet");
+    Util.log.warning("not implemented, yet");
   }
 
   default void link() {
-    logger.warning("not implemented, yet");
+    Util.log.warning("not implemented, yet");
   }
 
   /** Resolve named module by downloading its jar artifact from the specified location. */
@@ -76,7 +76,7 @@ public interface Bach {
   }
 
   default void test() {
-    logger.warning("not implemented, yet");
+    Util.log.warning("not implemented, yet");
   }
 
   class Builder implements Configuration {
@@ -87,13 +87,12 @@ public interface Bach {
 
     public Bach build() {
       Builder configuration = new Builder();
+      configuration.handler = handler;
+      configuration.level = level;
       configuration.name = name;
       configuration.version = version;
-      if (handler != null && logger.getHandlers().length == 0) {
-        logger.addHandler(handler);
-        logger.setUseParentHandlers(false);
-      }
-      logger.setLevel(level);
+      Util.setHandler(handler);
+      Util.log.setLevel(level);
       return new Default(configuration);
     }
 
@@ -147,7 +146,7 @@ public interface Bach {
 
     Default(Configuration configuration) {
       this.configuration = configuration;
-      logger.fine("initialized");
+      Util.log.fine("initialized");
     }
 
     @Override
@@ -158,10 +157,12 @@ public interface Bach {
 
   interface Util {
 
+    Logger log = Logger.getLogger("Bach");
+
     class SingleLineFormatter extends java.util.logging.Formatter {
 
       private final DateTimeFormatter instantFormatter =
-              DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss:SSS").withZone(ZoneId.systemDefault());
+          DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss:SSS").withZone(ZoneId.systemDefault());
 
       @Override
       public String format(LogRecord record) {
@@ -178,7 +179,7 @@ public interface Bach {
           return builder.toString();
         }
         builder.append(System.lineSeparator());
-        builder.append(' ');
+        builder.append('-');
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         record.getThrown().printStackTrace(pw);
@@ -205,20 +206,20 @@ public interface Bach {
           if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
             if (Files.size(target) == urlConnection.getContentLengthLong()) {
               if (skip.test(target)) {
-                logger.fine(() -> "skipped, using `" + target + "`");
+                log.fine(() -> "skipped, using `" + target + "`");
                 return target;
               }
             }
           }
           Files.delete(target);
         }
-        logger.fine(() -> "transferring `" + uri + "`...");
+        log.fine(() -> "transferring `" + uri + "`...");
         try (InputStream sourceStream = url.openStream();
             OutputStream targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
         }
         Files.setLastModifiedTime(target, urlLastModifiedTime);
-        logger.info(() -> "stored `" + target + "` [" + urlLastModifiedTime + "]");
+        log.info(() -> "stored `" + target + "` [" + urlLastModifiedTime + "]");
         return target;
       } catch (IOException e) {
         throw new Error("should not happen", e);
@@ -254,7 +255,17 @@ public interface Bach {
       // still here? not so good... try with default (not-existent) path
       return Paths.get("jdk-" + Runtime.version().major());
     }
-  }
 
-  Logger logger = Logger.getLogger("Bach");
+    static void setHandler(Handler handler) {
+      for (Handler remove : log.getHandlers()) {
+        log.removeHandler(remove);
+      }
+      if (handler == null) {
+        log.setUseParentHandlers(true);
+        return;
+      }
+      log.addHandler(handler);
+      log.setUseParentHandlers(false);
+    }
+  }
 }
