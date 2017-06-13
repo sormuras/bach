@@ -249,11 +249,9 @@ public interface Bach {
     static Path findJdkHome() {
       // extract path from current process information: <JDK_HOME>/bin/java[.exe]
       Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
-      if (executable != null) {
-        Path path = executable.getParent(); // <JDK_HOME>/bin
-        if (path != null) {
-          return path.getParent().toAbsolutePath(); // <JDK_HOME>
-        }
+      if (executable != null && executable.getNameCount() > 2) {
+        // noinspection ConstantConditions -- path name count is 3 or higher
+        return executable.getParent().getParent().toAbsolutePath();
       }
       // next, examine system environment...
       String jdkHome = System.getenv("JDK_HOME");
