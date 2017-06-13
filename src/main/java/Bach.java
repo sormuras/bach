@@ -80,7 +80,7 @@ public interface Bach {
   }
 
   class Builder implements Configuration {
-    Handler handler = buildHandler();
+    Handler handler = new Util.ConsoleHandler(System.out, Level.ALL);
     Level level = Level.FINE;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     String version = "1.0.0-SNAPSHOT";
@@ -94,13 +94,6 @@ public interface Bach {
       Util.setHandler(handler);
       Util.log.setLevel(level);
       return new Default(configuration);
-    }
-
-    private Handler buildHandler() {
-      Handler handler = new ConsoleHandler();
-      handler.setLevel(Level.ALL);
-      handler.setFormatter(new Util.SingleLineFormatter());
-      return handler;
     }
 
     public Builder handler(Handler handler) {
@@ -158,6 +151,25 @@ public interface Bach {
   interface Util {
 
     Logger log = Logger.getLogger("Bach");
+
+    class ConsoleHandler extends StreamHandler {
+
+      public ConsoleHandler(OutputStream stream, Level level) {
+        super(stream, new SingleLineFormatter());
+        setLevel(level);
+      }
+
+      @Override
+      public void publish(LogRecord record) {
+        super.publish(record);
+        flush();
+      }
+
+      @Override
+      public void close() {
+        flush();
+      }
+    }
 
     class SingleLineFormatter extends java.util.logging.Formatter {
 
@@ -240,20 +252,22 @@ public interface Bach {
       if (executable != null) {
         Path path = executable.getParent(); // <JDK_HOME>/bin
         if (path != null) {
-          return path.getParent(); // <JDK_HOME>
+          return path.getParent().toAbsolutePath(); // <JDK_HOME>
         }
       }
       // next, examine system environment...
       String jdkHome = System.getenv("JDK_HOME");
       if (jdkHome != null) {
-        return Paths.get(jdkHome);
+        return Paths.get(jdkHome).toAbsolutePath();
       }
       String javaHome = System.getenv("JAVA_HOME");
       if (javaHome != null) {
-        return Paths.get(javaHome);
+        return Paths.get(javaHome).toAbsolutePath();
       }
       // still here? not so good... try with default (not-existent) path
-      return Paths.get("jdk-" + Runtime.version().major());
+      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
+      log.warning("path of JDK not found, using: " + fallback);
+      return fallback;
     }
 
     static void setHandler(Handler handler) {
