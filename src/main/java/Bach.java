@@ -247,13 +247,11 @@ public interface Bach {
 
     /** Return path to JDK installation directory. */
     static Path findJdkHome() {
-      // extract path from current process information: <JDK_HOME>/bin/java[.exe]
       Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
       if (executable != null && executable.getNameCount() > 2) {
-        // noinspection ConstantConditions -- path name count is 3 or higher
+        // noinspection ConstantConditions -- count is 3 or higher: "<JDK_HOME>/bin/java[.exe]"
         return executable.getParent().getParent().toAbsolutePath();
       }
-      // next, examine system environment...
       String jdkHome = System.getenv("JDK_HOME");
       if (jdkHome != null) {
         return Paths.get(jdkHome).toAbsolutePath();
@@ -262,7 +260,6 @@ public interface Bach {
       if (javaHome != null) {
         return Paths.get(javaHome).toAbsolutePath();
       }
-      // still here? not so good... try with default (not-existent) path
       Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
       log.warning("path of JDK not found, using: " + fallback);
       return fallback;
