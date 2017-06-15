@@ -28,13 +28,13 @@ class BachTests {
 
   @Test
   void builder() {
-    Assertions.assertNotNull(Bach.builder());
-    Assertions.assertNotNull(Bach.builder().build());
+    Assertions.assertNotNull(new Bach.Builder().toString());
+    Assertions.assertNotNull(new Bach.Builder().build());
   }
 
   @Test
   void defaultConfiguration() {
-    Bach.Configuration configuration = Bach.builder().build().configuration();
+    Bach.Configuration configuration = new Bach.Builder().build().configuration();
     Assertions.assertEquals("bach", configuration.name());
     Assertions.assertEquals("1.0.0-SNAPSHOT", configuration.version());
   }
@@ -42,7 +42,7 @@ class BachTests {
   @Test
   void customConfiguration() {
     Bach.Configuration configuration =
-        Bach.builder()
+        new Bach.Builder()
             .name("kernel")
             .version("4.12-rc5")
             .handler(null)

@@ -47,10 +47,6 @@ public interface Bach {
     Util.log.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
   }
 
-  static Builder builder() {
-    return new Builder();
-  }
-
   default void clean() {
     Util.log.warning("not implemented, yet");
   }
@@ -199,6 +195,17 @@ public interface Bach {
         builder.append(sw.getBuffer());
         return builder.toString();
       }
+    }
+
+    /** Maven uri for jar artifact at {@code http://central.maven.org/maven2} repository. */
+    static URI maven(String group, String artifact, String version) {
+      return maven("http://central.maven.org/maven2", group, artifact, version, "jar");
+    }
+
+    /** Maven uri for specified coordinates. */
+    static URI maven(String repo, String group, String artifact, String version, String kind) {
+      String path = artifact + '/' + version + '/' + artifact + '-' + version + '.' + kind;
+      return URI.create(repo + '/' + group.replace('.', '/') + '/' + path);
     }
 
     /** Download the resource specified by its URI to the target directory. */
