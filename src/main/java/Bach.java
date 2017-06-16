@@ -23,6 +23,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.time.*;
 import java.time.format.*;
+import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
 
@@ -65,9 +66,14 @@ public interface Bach {
     Util.log.warning("not implemented, yet");
   }
 
+  /** Get path for the specified folder. Same as: {@code configuration().folders().get(folder)} */
+  default Path path(Folder folder) {
+    return configuration().folders().get(folder);
+  }
+
   /** Resolve named module by downloading its jar artifact from the specified location. */
   default Path resolve(String module, URI uri) {
-    Path targetDirectory = Paths.get(".bach", "dependencies");
+    Path targetDirectory = path(Folder.DEPENDENCIES);
     return Util.download(uri, targetDirectory, module + ".jar", path -> true);
   }
 
@@ -76,6 +82,8 @@ public interface Bach {
   }
 
   class Builder implements Configuration {
+    Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
+    Map<Folder, Path> folders = buildFolders(Collections.emptyMap());
     Handler handler = new Util.ConsoleHandler(System.out, Level.ALL);
     Level level = Level.FINE;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
@@ -83,6 +91,7 @@ public interface Bach {
 
     public Bach build() {
       Builder configuration = new Builder();
+      configuration.folders = buildFolders(customFolderLocations);
       configuration.handler = handler;
       configuration.level = level;
       configuration.name = name;
@@ -90,6 +99,42 @@ public interface Bach {
       Util.setHandler(handler);
       Util.log.setLevel(level);
       return new Default(configuration);
+    }
+
+    private Map<Folder, Path> buildFolders(Map<Folder, Folder.Location> locations) {
+      Function<Folder, Folder.Location> locator =
+          folder -> locations.getOrDefault(folder, folder.location);
+      Map<Folder, Path> map = new EnumMap<>(Folder.class);
+      for (Folder folder : Folder.values()) {
+        Folder.Location location = locator.apply(folder);
+        Path path = location.path;
+        List<Folder> parents = location.parents;
+        if (!parents.isEmpty()) {
+          Iterator<Folder> iterator = parents.iterator();
+          path = locator.apply(iterator.next()).path;
+          while (iterator.hasNext()) {
+            path = path.resolve(locator.apply(iterator.next()).path);
+          }
+          path = path.resolve(location.path);
+        }
+        map.put(folder, path);
+      }
+      return Collections.unmodifiableMap(map);
+    }
+
+    public Builder folder(Folder folder, Folder.Location location) {
+      customFolderLocations.put(folder, location);
+      folders = buildFolders(customFolderLocations);
+      return this;
+    }
+
+    public Builder folder(Folder folder, Path path) {
+      return folder(folder, Folder.Location.of(folder.location.parents, path));
+    }
+
+    @Override
+    public Map<Folder, Path> folders() {
+      return folders;
     }
 
     public Builder handler(Handler handler) {
@@ -124,6 +169,13 @@ public interface Bach {
   }
 
   interface Configuration {
+    default void dump(Consumer<String> stringConsumer) {
+      stringConsumer.accept(name() + " " + version());
+      stringConsumer.accept("  " + folders());
+    }
+
+    Map<Folder, Path> folders();
+
     String name();
 
     String version();
@@ -135,12 +187,43 @@ public interface Bach {
 
     Default(Configuration configuration) {
       this.configuration = configuration;
-      Util.log.fine("initialized");
+      configuration.dump(Util.log::config);
+      Util.log.info("initialized");
     }
 
     @Override
     public Configuration configuration() {
       return configuration;
+    }
+  }
+
+  enum Folder {
+    JDK_HOME(Location.of(Util.findJdkHome())),
+    AUXILIARY(Location.of(Paths.get(".bach"))),
+    DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies")));
+
+    public static class Location {
+      final List<Folder> parents;
+      final Path path;
+
+      private Location(List<Folder> parents, Path path) {
+        this.path = path;
+        this.parents = parents;
+      }
+
+      public static Location of(List<Folder> parents, Path path) {
+        return new Location(parents, path);
+      }
+
+      public static Location of(Path path) {
+        return new Location(Collections.emptyList(), path);
+      }
+    }
+
+    final Location location;
+
+    Folder(Location location) {
+      this.location = location;
     }
   }
 
