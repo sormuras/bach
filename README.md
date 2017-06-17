@@ -12,7 +12,7 @@ Use Java source in JShell to build your modular project.
 
 Download a copy of [Bach.java] to your project's root directory and put the
 following script in file called `build.jsh`. Edit the source and target paths
-to your needs and launch the build with `jshell build.jsh`
+to your needs and launch the build with `jshell build.jsh`.
 
 ```javascript
 /open Bach.java
@@ -27,32 +27,38 @@ bach.call("java", "-ea", "-cp", "target/classes", "BachTests")
 
 ## bootstrap on-the-fly
 
-You may want to mark `build.jsh` as executable and use the following bootstrap
-lines to automatically download that latest [Bach.java] -- and use it via
-`./build.jsh`
+You may want to mark the build script executable and use [bootstrap.jsh] to
+automatically download that latest [Bach.java].
 
 ```javascript
 //$JAVA_HOME/bin/jshell --show-version $0 $@; exit $?
 
-Path bachJava = Paths.get("target/Bach.java")
-if (Files.notExists(bachJava)) {
-  URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
-  Files.createDirectories(bachJava.getParent());
-  try (InputStream in = bachURL.openStream()) {
-    Files.copy(in, bachJava, StandardCopyOption.REPLACE_EXISTING);
+//
+// download "Bach.java"
+//
+Path target = Paths.get("target")
+Path source = target.resolve("Bach.java")
+if (Files.notExists(source)) {
+  Files.createDirectories(target);
+  URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
+  try (InputStream in = url.openStream()) {
+    Files.copy(in, source, StandardCopyOption.REPLACE_EXISTING);
   }
-  System.out.printf("created %s [url=%s]%n", bachJava, bachURL);
+  System.out.printf("created %s [%s]%n", source, url);
 }
-/open target/Bach.java
 
 //
-// place your build commands here
+// source "Bach.java" into this jshell environment and build
 //
-Bach bach = new Bach.Builder().build()
-bach.call("javac", ...)
+/open target/Bach.java
+
+new Bach.Builder().build().call("java", "--version")
+
+/exit
 ```
 
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [Bach.java]: https://github.com/sormuras/bach/blob/master/src/main/java/Bach.java
+[bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/bootstrap.jsh
