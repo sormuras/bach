@@ -18,6 +18,7 @@
 // default package
 
 import java.io.*;
+import java.lang.annotation.*;
 import java.net.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
@@ -26,6 +27,8 @@ import java.time.format.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.spi.*;
+import java.util.stream.*;
 
 /** JShell Builder. */
 @SuppressWarnings({
@@ -47,6 +50,9 @@ public interface Bach {
     link();
     Util.log.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
   }
+
+  /** Create and execute command. */
+  int call(String executable, Object... arguments);
 
   default void clean() {
     Util.log.warning("not implemented, yet");
@@ -82,7 +88,7 @@ public interface Bach {
   }
 
   class Builder implements Configuration {
-    Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
+    final Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
     Map<Folder, Path> folders = buildFolders(Collections.emptyMap());
     Handler handler = new Util.ConsoleHandler(System.out, Level.ALL);
     Level level = Level.FINE;
@@ -168,10 +174,179 @@ public interface Bach {
     }
   }
 
+  class Command {
+    final List<String> arguments = new ArrayList<>();
+    int dumpLimit = Integer.MAX_VALUE;
+    int dumpOffset = Integer.MAX_VALUE;
+    final String executable;
+    final Logger logger;
+
+    public Command(String executable) {
+      this.executable = executable;
+      this.logger = Logger.getLogger("Command");
+    }
+
+    /** Conditionally add argument. */
+    public Command add(boolean condition, Object argument) {
+      if (condition) {
+        add(argument);
+      }
+      return this;
+    }
+
+    /** Add single argument with implicit null pointer check. */
+    public Command add(Object argument) {
+      arguments.add(argument.toString());
+      return this;
+    }
+
+    /** Add all stream elements joined to a single argument. */
+    public Command add(Stream<?> stream, String separator) {
+      return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
+    }
+
+    /** Add all specified folders joined to a single argument using {@link File#pathSeparator}. */
+    public Command add(Function<Bach.Folder, Path> mapper, Bach.Folder... folders) {
+      return add(Arrays.stream(folders).map(mapper), File.pathSeparator);
+    }
+
+    /** Add all arguments from the array. */
+    public Command addAll(Object... arguments) {
+      for (Object argument : arguments) {
+        add(argument);
+      }
+      return this;
+    }
+
+    /** Add all arguments from the stream. */
+    public Command addAll(Stream<?> stream) {
+      // FIXME "try (stream)" is blocked by https://github.com/google/google-java-format/issues/155
+      try {
+        stream.forEach(this::add);
+      } finally {
+        stream.close();
+      }
+      return this;
+    }
+
+    /** Add all files visited by walking specified path recursively. */
+    public Command addAll(Path path, Predicate<Path> predicate) {
+      try {
+        addAll(Files.walk(path).filter(predicate));
+      } catch (IOException e) {
+        throw new Error("walking path `" + path + "` failed", e);
+      }
+      return this;
+    }
+
+    private void addOption(Object options, java.lang.reflect.Field field) throws Exception {
+      // custom generator available?
+      try {
+        Object result = options.getClass().getDeclaredMethod(field.getName()).invoke(options);
+        if (result instanceof List) {
+          ((List<?>) result).forEach(this::add);
+          return;
+        }
+      } catch (NoSuchMethodException e) {
+        // fall-through
+      }
+      // additional arguments?
+      String name = field.getName();
+      Object value = field.get(options);
+      if ("additionalArguments".equals(name) && value instanceof List) {
+        ((List<?>) value).forEach(this::add);
+        return;
+      }
+      // get (or guess) name and value
+      String optionName = "-" + name;
+      if (field.isAnnotationPresent(Bach.Util.OptionName.class)) {
+        optionName = field.getAnnotation(Bach.Util.OptionName.class).value();
+      }
+      // just a flag?
+      if (field.getType() == boolean.class) {
+        if (field.getBoolean(options)) {
+          add(optionName);
+        }
+        return;
+      }
+      // as-is
+      add(optionName);
+      add(Objects.toString(value));
+    }
+
+    private void addOptionUnchecked(Object options, java.lang.reflect.Field field) {
+      try {
+        addOption(options, field);
+      } catch (Exception e) {
+        throw new Error("reflecting options failed for " + options, e);
+      }
+    }
+
+    /** Reflect and add all options. */
+    public Command addOptions(Object options) {
+      if (options == null) {
+        return this;
+      }
+      Arrays.stream(options.getClass().getDeclaredFields())
+          .sorted(Comparator.comparing(java.lang.reflect.Field::getName))
+          .filter(field -> !field.isSynthetic())
+          .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+          .forEach(field -> addOptionUnchecked(options, field));
+      return this;
+    }
+
+    /** Dump command properties to default logging output. */
+    void dump(Level level) {
+      if (logger.isLoggable(level)) {
+        return;
+      }
+      dump(message -> logger.log(level, message));
+    }
+
+    /** Dump command properties using the provided string consumer. */
+    void dump(Consumer<String> consumer) {
+      ListIterator<String> iterator = arguments.listIterator();
+      consumer.accept(executable);
+      while (iterator.hasNext()) {
+        String argument = iterator.next();
+        int nextIndex = iterator.nextIndex();
+        String indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
+        consumer.accept(indent + argument);
+        if (nextIndex >= dumpLimit) {
+          int last = arguments.size() - 1;
+          int diff = last - nextIndex;
+          consumer.accept(indent + "... [omitted " + diff + " arguments]");
+          consumer.accept(indent + arguments.get(last));
+          break;
+        }
+      }
+    }
+
+    /** Set dump offset and limit. */
+    Command mark(int limit) {
+      this.dumpOffset = arguments.size();
+      this.dumpLimit = arguments.size() + limit;
+      return this;
+    }
+
+    /** Create new argument array based on this command's arguments. */
+    public String[] toArgumentsArray() {
+      return arguments.toArray(new String[arguments.size()]);
+    }
+
+    /** Create new {@link ProcessBuilder} instance based on this command setup. */
+    public ProcessBuilder toProcessBuilder() {
+      ArrayList<String> command = new ArrayList<>(1 + arguments.size());
+      command.add(executable);
+      command.addAll(arguments);
+      return new ProcessBuilder(command);
+    }
+  }
+
   interface Configuration {
-    default void dump(Consumer<String> stringConsumer) {
-      stringConsumer.accept(name() + " " + version());
-      stringConsumer.accept("  " + folders());
+    default void dump(Consumer<String> consumer) {
+      consumer.accept(name() + " " + version());
+      consumer.accept("  " + folders());
     }
 
     Map<Folder, Path> folders();
@@ -184,6 +359,9 @@ public interface Bach {
   class Default implements Bach {
 
     final Configuration configuration;
+    final PrintStream streamErr = System.err;
+    final PrintStream streamOut = System.out;
+    final Map<String, ToolProvider> toolProviderMap = new TreeMap<>();
 
     Default(Configuration configuration) {
       this.configuration = configuration;
@@ -192,8 +370,57 @@ public interface Bach {
     }
 
     @Override
+    public int call(String executable, Object... arguments) {
+      return execute(new Command(executable).addAll(arguments));
+    }
+
+    @Override
     public Configuration configuration() {
       return configuration;
+    }
+
+    /** Execute command throwing a runtime exception when the exit value is not zero. */
+    int execute(Command command) {
+      return execute(command, Util::exitValueChecker);
+    }
+
+    /** Execute command with supplied exit value checker. */
+    int execute(Command command, Consumer<Integer> exitValueChecker) {
+      Level level = Level.FINE;
+      command.dump(level);
+      String executable = command.executable;
+      long start = System.currentTimeMillis();
+      Integer exitValue = null;
+      ToolProvider providedTool = toolProviderMap.get(executable);
+      if (providedTool != null) {
+        Util.log.fine(() -> "executing provided `" + executable + "` tool...");
+        exitValue = providedTool.run(streamOut, streamErr, command.toArgumentsArray());
+      }
+      if (exitValue == null) {
+        Optional<ToolProvider> tool = ToolProvider.findFirst(executable);
+        if (tool.isPresent()) {
+          Util.log.fine(() -> "executing loaded `" + executable + "` tool...");
+          exitValue = tool.get().run(streamOut, streamErr, command.toArgumentsArray());
+        }
+      }
+      if (exitValue == null) {
+        Util.log.fine(() -> String.format("executing external `%s` tool...", executable));
+        ProcessBuilder processBuilder = command.toProcessBuilder().redirectErrorStream(true);
+        try {
+          Process process = processBuilder.start();
+          process.getInputStream().transferTo(streamOut);
+          exitValue = process.waitFor();
+        } catch (Exception e) {
+          if (!Util.log.isLoggable(level)) {
+            command.dump(Level.SEVERE);
+          }
+          throw new Error("executing `" + executable + "` failed", e);
+        }
+      }
+      long duration = System.currentTimeMillis() - start;
+      Util.log.fine(() -> executable + " finished after" + duration + " ms");
+      exitValueChecker.accept(exitValue);
+      return exitValue;
     }
   }
 
@@ -250,8 +477,15 @@ public interface Bach {
       }
     }
 
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface OptionName {
+      String value();
+    }
+
     class SingleLineFormatter extends java.util.logging.Formatter {
 
+      @SuppressWarnings("SpellCheckingInspection")
       private final DateTimeFormatter instantFormatter =
           DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss:SSS").withZone(ZoneId.systemDefault());
 
@@ -278,6 +512,14 @@ public interface Bach {
         builder.append(sw.getBuffer());
         return builder.toString();
       }
+    }
+
+    /** Throw an {@link Error} when exit value is not zero. */
+    static void exitValueChecker(int value) {
+      if (value == 0) {
+        return;
+      }
+      throw new Error("exit value " + value + " indicates an error");
     }
 
     /** Maven uri for jar artifact at {@code http://central.maven.org/maven2} repository. */
@@ -353,6 +595,18 @@ public interface Bach {
       Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
       log.warning("path of JDK not found, using: " + fallback);
       return fallback;
+    }
+
+    /** Return {@code true} if the path points to a canonical Java compilation unit. */
+    static boolean isJavaSourceFile(Path path) {
+      if (!Files.isRegularFile(path)) {
+        return false;
+      }
+      String name = path.getFileName().toString();
+      if (name.chars().filter(c -> c == '.').count() != 1) {
+        return false;
+      }
+      return name.endsWith(".java");
     }
 
     static void setHandler(Handler handler) {
