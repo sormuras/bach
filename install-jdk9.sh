@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 JDK9_BUILD=174
 JDK9_ARCHIVE=jdk-9-ea+${JDK9_BUILD}_linux-x64_bin.tar.gz
