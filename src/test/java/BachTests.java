@@ -76,6 +76,6 @@ class BachTests {
     Bach bach = new Bach.Builder().build();
     assertEquals(0, bach.call("java", "--version"));
     assertThrows(Error.class, () -> bach.call("java", "--thisOptionDoesNotExist"));
-    assertThrows(Error.class, () -> bach.call("executable, that does not exist", 1, 2 ,3));
+    assertThrows(Error.class, () -> bach.call("executable, that does not exist", 1, 2, 3));
   }
 }

@@ -392,39 +392,41 @@ public interface Bach {
 
     /** Execute command with supplied exit value checker. */
     int execute(Command command, Consumer<Integer> exitValueChecker) {
-      Level level = Level.FINE;
-      command.dump(level);
+      Level dumpLevel = Level.FINE;
       String executable = command.executable;
       long start = System.currentTimeMillis();
       Integer exitValue = null;
       ToolProvider providedTool = toolProviderMap.get(executable);
       if (providedTool != null) {
         Util.log.fine(() -> "executing provided `" + executable + "` tool...");
+        command.dump(dumpLevel);
         exitValue = providedTool.run(streamOut, streamErr, command.toArgumentsArray());
       }
       if (exitValue == null) {
         Optional<ToolProvider> tool = ToolProvider.findFirst(executable);
         if (tool.isPresent()) {
           Util.log.fine(() -> "executing loaded `" + executable + "` tool...");
+          command.dump(dumpLevel);
           exitValue = tool.get().run(streamOut, streamErr, command.toArgumentsArray());
         }
       }
       if (exitValue == null) {
-        Util.log.fine(() -> String.format("executing external `%s` tool...", executable));
+        Util.log.fine(() -> "executing external `" + executable + "` tool...");
+        command.dump(dumpLevel);
         ProcessBuilder processBuilder = command.toProcessBuilder().redirectErrorStream(true);
         try {
           Process process = processBuilder.start();
           process.getInputStream().transferTo(streamOut);
           exitValue = process.waitFor();
         } catch (Exception e) {
-          if (!Util.log.isLoggable(level)) {
+          if (!Util.log.isLoggable(dumpLevel)) {
             command.dump(Level.SEVERE);
           }
           throw new Error("executing `" + executable + "` failed", e);
         }
       }
       long duration = System.currentTimeMillis() - start;
-      Util.log.fine(() -> executable + " finished after " + duration + " ms");
+      Util.log.info(() -> executable + " finished after " + duration + " ms");
       exitValueChecker.accept(exitValue);
       return exitValue;
     }
@@ -498,12 +500,14 @@ public interface Bach {
       @Override
       public String format(LogRecord record) {
         StringBuilder builder = new StringBuilder();
-        builder.append(instantFormatter.format(record.getInstant()));
-        builder.append(' ');
-        builder.append(record.getSourceClassName());
-        builder.append(' ');
-        builder.append(record.getSourceMethodName());
-        builder.append(' ');
+        if (log.getLevel().intValue() < Level.FINE.intValue()) {
+          builder.append(instantFormatter.format(record.getInstant()));
+          builder.append(' ');
+          builder.append(record.getSourceClassName());
+          builder.append(' ');
+          builder.append(record.getSourceMethodName());
+          builder.append(' ');
+        }
         builder.append(formatMessage(record));
         builder.append(System.lineSeparator());
         if (record.getThrown() == null) {
