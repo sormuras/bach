@@ -64,6 +64,9 @@ public interface Bach {
 
   Configuration configuration();
 
+  /** Execute command throwing a runtime exception when the exit value is not zero. */
+  int execute(Command command);
+
   default void format() {
     Util.log.warning("not implemented, yet");
   }
@@ -183,7 +186,7 @@ public interface Bach {
 
     public Command(String executable) {
       this.executable = executable;
-      this.logger = Logger.getLogger("Command");
+      this.logger = Logger.getLogger("Bach");
     }
 
     /** Conditionally add argument. */
@@ -298,9 +301,8 @@ public interface Bach {
     /** Dump command properties to default logging output. */
     void dump(Level level) {
       if (logger.isLoggable(level)) {
-        return;
+        dump(message -> logger.log(level, message));
       }
-      dump(message -> logger.log(level, message));
     }
 
     /** Dump command properties using the provided string consumer. */
@@ -315,7 +317,11 @@ public interface Bach {
         if (nextIndex >= dumpLimit) {
           int last = arguments.size() - 1;
           int diff = last - nextIndex;
-          consumer.accept(indent + "... [omitted " + diff + " arguments]");
+          if (diff == 1) {
+            consumer.accept(indent + arguments.get(last - 1));
+          } else {
+            consumer.accept(indent + "... [omitted " + diff + " arguments]");
+          }
           consumer.accept(indent + arguments.get(last));
           break;
         }
@@ -380,7 +386,7 @@ public interface Bach {
     }
 
     /** Execute command throwing a runtime exception when the exit value is not zero. */
-    int execute(Command command) {
+    public int execute(Command command) {
       return execute(command, Util::exitValueChecker);
     }
 
@@ -418,7 +424,7 @@ public interface Bach {
         }
       }
       long duration = System.currentTimeMillis() - start;
-      Util.log.fine(() -> executable + " finished after" + duration + " ms");
+      Util.log.fine(() -> executable + " finished after " + duration + " ms");
       exitValueChecker.accept(exitValue);
       return exitValue;
     }
