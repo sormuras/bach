@@ -2,7 +2,7 @@
  
 [![jdk9](https://img.shields.io/badge/jdk-9-blue.svg)](https://docs.oracle.com/javase/9/index.html)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
-[![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](http://github.com/badges/stability-badges)
+[![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
 Use Java source in JShell to build your modular project.
 
@@ -17,16 +17,10 @@ to your needs and launch the build with `jshell build.jsh`
 ```javascript
 /open Bach.java
 
-Bach bach = new Bach()
-bach.call("java", "-version")
-{
-bach.command("javac")
-    .addAll("-d", "target/test")
-    .addAllJavaFiles(Paths.get("bach"))
-    .addAllJavaFiles(Paths.get("test"))
-    .execute();
-}
-bach.call("java", "-ea", "-cp", "target/test", "BachTests")
+Bach bach = new Bach.Builder().build()
+bach.call("java", "--version")
+bach.call("javac", "-d", "target/classes", ...)
+bach.call("java", "-ea", "-cp", "target/classes", "BachTests")
 
 /exit
 ```
@@ -42,7 +36,7 @@ lines to automatically download that latest [Bach.java] -- and use it via
 
 Path bachJava = Paths.get("target/Bach.java")
 if (Files.notExists(bachJava)) {
-  URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/bach/Bach.java");
+  URL bachURL = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
   Files.createDirectories(bachJava.getParent());
   try (InputStream in = bachURL.openStream()) {
     Files.copy(in, bachJava, StandardCopyOption.REPLACE_EXISTING);
@@ -51,14 +45,14 @@ if (Files.notExists(bachJava)) {
 }
 /open target/Bach.java
 
+//
 // place your build commands here
-Bach bach = new Bach()
-bach.call("java", "-version")
+//
+Bach bach = new Bach.Builder().build()
+bach.call("javac", ...)
 ```
 
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[demo]:      https://github.com/sormuras/bach/tree/master/demo
-[Bach.java]: https://github.com/sormuras/bach/blob/master/bach/Bach.java
-[build.jsh]:  https://github.com/sormuras/bach/blob/master/build.jsh
+[Bach.java]: https://github.com/sormuras/bach/blob/master/src/main/java/Bach.java
