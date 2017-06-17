@@ -3,7 +3,7 @@ dist: trusty
 language: java
 
 install:
-- bash install-jdk9.sh
+- . ./install-jdk9.sh
 
 script:
 - ./build.jsh
