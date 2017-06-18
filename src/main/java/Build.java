@@ -56,7 +56,9 @@ class Build {
     command.add(CLASSES);
     command.add("--class-path");
     command.add(CLASSES);
-    bach.execute(command);
+    if (bach.execute(command) != 0) {
+      throw new AssertionError("test run failed");
+    }
   }
 
   public static void main(String... args) throws IOException {

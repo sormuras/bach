@@ -3,6 +3,10 @@
 /open src/main/java/Bach.java
 /open src/main/java/Build.java
 
-Build.main()
+try {
+  Build.main();
+} catch (Throwable t) {
+  Files.createFile(Paths.get("build.jsh.failed"));
+}
 
 /exit

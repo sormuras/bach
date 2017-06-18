@@ -7,5 +7,4 @@ install:
 
 script:
 - ./build.jsh
-#- ./test.jsh
-#- ./demo.jsh
+- test ! -f build.jsh.failed
