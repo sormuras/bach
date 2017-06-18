@@ -40,6 +40,5 @@ class UtilTests {
   void findJdkHome() {
     Assertions.assertNotNull(Bach.Util.findJdkHome());
     Assertions.assertTrue(Bach.Util.findJdkHome().isAbsolute());
-    Assertions.fail("137");
   }
 }
