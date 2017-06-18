@@ -35,9 +35,8 @@ class Build {
     List<String> entries = new ArrayList<>();
     entries.add(CLASSES.toString());
     Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
-        .filter(Files::isRegularFile)
+        .filter(Bach.Util::isJarFile)
         .map(Object::toString)
-        .filter(name -> name.endsWith(".jar"))
         .forEach(entries::add);
     return String.join(File.pathSeparator, entries);
   }

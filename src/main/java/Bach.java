@@ -618,6 +618,14 @@ public interface Bach {
       return fallback;
     }
 
+    /** Return {@code true} if the path points to a canonical jar file. */
+    static boolean isJarFile(Path path) {
+      if (!Files.isRegularFile(path)) {
+        return false;
+      }
+      return path.getFileName().toString().endsWith(".jar");
+    }
+
     /** Return {@code true} if the path points to a canonical Java compilation unit. */
     static boolean isJavaSourceFile(Path path) {
       if (!Files.isRegularFile(path)) {
