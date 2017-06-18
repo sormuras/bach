@@ -194,6 +194,10 @@ public interface Bach {
     final String executable;
     final Logger logger;
 
+    public Command(Path executable) {
+      this(executable.toString());
+    }
+
     public Command(String executable) {
       this.executable = executable;
       this.logger = Logger.getLogger("Bach");
@@ -446,6 +450,7 @@ public interface Bach {
   enum Folder {
     JDK_HOME(Location.of(Util.findJdkHome())),
     AUXILIARY(Location.of(Paths.get(".bach"))),
+    TOOLS(Location.of(List.of(AUXILIARY), Paths.get("tools"))),
     DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies")));
 
     public static class Location {

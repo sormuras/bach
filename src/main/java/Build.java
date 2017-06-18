@@ -41,6 +41,24 @@ class Build {
     return String.join(File.pathSeparator, entries);
   }
 
+  private static void test(Bach bach) {
+    String repo = "http://central.maven.org/maven2/";
+    String group = "org/junit/platform/";
+    String name = "junit-platform-console-standalone";
+    String version = "1.0.0-M4";
+    URI uri = URI.create(repo + group + name + "/" + version + "/" + name + "-" + version + ".jar");
+    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name));
+    Bach.Command command = new Bach.Command(bach.path(Bach.Folder.JDK_HOME).resolve("bin/java"));
+    command.add("-ea");
+    command.add("-jar");
+    command.add(jar);
+    command.add("--scan-classpath");
+    command.add(CLASSES);
+    command.add("--class-path");
+    command.add(CLASSES);
+    bach.execute(command);
+  }
+
   public static void main(String... args) throws IOException {
     Bach.Builder builder = new Bach.Builder();
     Bach bach = builder.build();
@@ -75,5 +93,7 @@ class Build {
         "Bach.java");
     bach.call(
         "jar", "--create", "--file=" + ARTIFACTS.resolve("bach-javadoc.jar"), "-C", JAVADOC, ".");
+
+    test(bach);
   }
 }
