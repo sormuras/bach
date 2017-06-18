@@ -91,19 +91,20 @@ class CommandTests {
   void addOptionsWithAnonymousClass() {
     Object options =
         new Object() {
+          @Bach.Util.OptionName("--ZETA")
+          boolean z = true;
+
           Boolean flag1 = Boolean.TRUE;
-          Boolean flag2 = Boolean.FALSE;
           byte hex = 13;
+          int value = 42;
+          Boolean flag2 = Boolean.FALSE;
+
           List<String> hex() {
             return List.of("--prime-as-hex", "0x" + Integer.toHexString(hex));
           }
-          int value = 42;
-
-          @Bach.Util.OptionName("--ZETA")
-          boolean z = true;
         };
     Bach.Command command = new Bach.Command("executable");
-    command.addOptions(options);
+    command.addOptions(options).add("final");
     assertAll(
         "Options are reflected, ordered by name and added to the command instance",
         () -> assertEquals("-flag1", command.arguments.get(0)),
@@ -114,7 +115,8 @@ class CommandTests {
         () -> assertEquals("0xd", command.arguments.get(5)),
         () -> assertEquals("-value", command.arguments.get(6)),
         () -> assertEquals("42", command.arguments.get(7)),
-        () -> assertEquals("--ZETA", command.arguments.get(8)));
+        () -> assertEquals("--ZETA", command.arguments.get(8)),
+        () -> assertEquals("final", command.arguments.get(9)));
   }
 
   //  void toolJavacOptions() {

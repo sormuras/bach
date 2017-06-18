@@ -20,8 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.PrintWriter;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.logging.Level;
+import java.util.spi.ToolProvider;
+
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -59,6 +63,7 @@ class BachTests {
     builder.level(Level.WARNING);
     builder.folder(Bach.Folder.AUXILIARY, Paths.get("aux"));
     builder.folder(Bach.Folder.DEPENDENCIES, Bach.Folder.Location.of(Paths.get("mods")));
+    builder.tool(new CustomTool());
     Bach bach = builder.build();
     assertNotNull(bach.toString());
     Bach.Configuration custom = bach.configuration();
@@ -69,6 +74,7 @@ class BachTests {
     for (Bach.Folder folder : Bach.Folder.values()) {
       assertEquals(bach.path(folder), custom.folders().get(folder));
     }
+    assertEquals(CustomTool.class, custom.tools().get("custom").getClass());
   }
 
   @Test
@@ -77,5 +83,19 @@ class BachTests {
     assertEquals(0, bach.call("java", "--version"));
     assertThrows(Error.class, () -> bach.call("java", "--thisOptionDoesNotExist"));
     assertThrows(Error.class, () -> bach.call("executable, that does not exist", 1, 2, 3));
+  }
+
+  static class CustomTool implements ToolProvider {
+
+    @Override
+    public String name() {
+      return "custom";
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      out.println("CustomTool with " + Arrays.toString(args));
+      return 0;
+    }
   }
 }

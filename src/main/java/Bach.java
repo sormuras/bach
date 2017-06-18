@@ -30,14 +30,12 @@ import java.util.logging.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
-/** JShell Builder. */
-@SuppressWarnings({
-  "WeakerAccess",
-  "RedundantIfStatement",
-  "UnusedReturnValue",
-  "SameParameterValue",
-  "SimplifiableIfStatement"
-})
+/**
+ * Java Shell Builder - Use jshell to build your modular project.
+ *
+ * @see <a href="https://docs.oracle.com/javase/9/tools/jshell.htm">jshell</a>
+ */
+@SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
 public interface Bach {
 
   default void build() {
@@ -96,11 +94,13 @@ public interface Bach {
     Handler handler = new Util.ConsoleHandler(System.out, Level.ALL);
     Level level = Level.FINE;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
+    Map<String, ToolProvider> tools = new TreeMap<>();
     String version = "1.0.0-SNAPSHOT";
 
     public Bach build() {
       Builder configuration = new Builder();
       configuration.folders = buildFolders(customFolderLocations);
+      configuration.tools = Collections.unmodifiableMap(new TreeMap<>(tools));
       configuration.handler = handler;
       configuration.level = level;
       configuration.name = name;
@@ -163,6 +163,16 @@ public interface Bach {
 
     public Builder name(String name) {
       this.name = name;
+      return this;
+    }
+
+    @Override
+    public Map<String, ToolProvider> tools() {
+      return tools;
+    }
+
+    public Builder tool(ToolProvider toolProvider) {
+      tools.put(toolProvider.name(), toolProvider);
       return this;
     }
 
@@ -359,6 +369,8 @@ public interface Bach {
 
     String name();
 
+    Map<String, ToolProvider> tools();
+
     String version();
   }
 
@@ -367,7 +379,6 @@ public interface Bach {
     final Configuration configuration;
     final PrintStream streamErr = System.err;
     final PrintStream streamOut = System.out;
-    final Map<String, ToolProvider> toolProviderMap = new TreeMap<>();
 
     Default(Configuration configuration) {
       this.configuration = configuration;
@@ -396,7 +407,7 @@ public interface Bach {
       String executable = command.executable;
       long start = System.currentTimeMillis();
       Integer exitValue = null;
-      ToolProvider providedTool = toolProviderMap.get(executable);
+      ToolProvider providedTool = configuration.tools().get(executable);
       if (providedTool != null) {
         Util.log.fine(() -> "executing provided `" + executable + "` tool...");
         command.dump(dumpLevel);
