@@ -3,15 +3,12 @@
 //
 // download "Bach.java"
 //
+URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
 Path target = Paths.get("target")
-Path source = target.resolve("Bach.java")
-if (Files.notExists(source)) {
+Path script = target.resolve("Bach.java")
+if (Files.notExists(script)) {
   Files.createDirectories(target);
-  URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
-  try (InputStream in = url.openStream()) {
-    Files.copy(in, source, StandardCopyOption.REPLACE_EXISTING);
-  }
-  System.out.printf("created %s [%s]%n", source, url);
+  try (InputStream stream = url.openStream()) { Files.copy(stream, script); }
 }
 
 //
