@@ -1,6 +1,10 @@
-install:
+before_install:
 - . ./install-jdk9.sh
+
+install:
 - ./build.jsh
-- JARS=target/build/artifacts
-- find $JARS
-- mvn install:install-file -Dfile=$JARS/bach.jar -Dsources=$JARS/bach-sources.jar -Djavadoc=$JARS/bach-javadoc.jar -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+- test ! -f build.jsh.failed
+- ARTIFACTS=target/build/artifacts
+- JARS=-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar
+- find $ARTIFACTS
+- mvn install:install-file $JARS -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
