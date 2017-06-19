@@ -24,6 +24,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class CommandTests {
@@ -54,9 +55,7 @@ class CommandTests {
 
   @Test
   void addConditional() {
-    Bach.Command command = new Bach.Command("executable");
-    command.add(true, "true");
-    command.add(false, "false");
+    Bach.Command command = new Bach.Command("executable").add(true, "true").add(false, "false");
     List<String> arguments = List.of(command.toArgumentsArray());
     assertEquals(1, arguments.size());
     assertEquals("true", arguments.get(0));
@@ -64,8 +63,10 @@ class CommandTests {
 
   @Test
   void addFolders() {
-    Bach.Command command = new Bach.Command("executable");
-    command.add(folder -> folder.location.path, Bach.Folder.AUXILIARY, Bach.Folder.DEPENDENCIES);
+    Bach.Command command =
+        new Bach.Command("executable")
+            .add(folder -> folder.location.path, Bach.Folder.AUXILIARY, Bach.Folder.DEPENDENCIES)
+            .addAll(Stream.empty());
     List<String> arguments = List.of(command.toArgumentsArray());
     assertEquals(1, arguments.size());
     assertEquals(".bach" + File.pathSeparator + "dependencies", arguments.get(0));

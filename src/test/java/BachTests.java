@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.spi.ToolProvider;
-
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -56,14 +55,15 @@ class BachTests {
 
   @Test
   void customConfiguration() {
-    Bach.Builder builder = new Bach.Builder();
-    builder.name("kernel");
-    builder.version("4.12-rc5");
-    builder.handler(null);
-    builder.level(Level.WARNING);
-    builder.folder(Bach.Folder.AUXILIARY, Paths.get("aux"));
-    builder.folder(Bach.Folder.DEPENDENCIES, Bach.Folder.Location.of(Paths.get("mods")));
-    builder.tool(new CustomTool());
+    Bach.Builder builder =
+        new Bach.Builder()
+            .name("kernel")
+            .version("4.12-rc5")
+            .handler(null)
+            .level(Level.WARNING)
+            .folder(Bach.Folder.AUXILIARY, Paths.get("aux"))
+            .folder(Bach.Folder.DEPENDENCIES, Bach.Folder.Location.of(Paths.get("mods")))
+            .tool(new CustomTool());
     Bach bach = builder.build();
     assertNotNull(bach.toString());
     Bach.Configuration custom = bach.configuration();
