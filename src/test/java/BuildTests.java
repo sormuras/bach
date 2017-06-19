@@ -29,11 +29,11 @@ class BuildTests {
     System.setProperty("BuildTests.running", "true");
     bach.resolve(
         "org.junit.jupiter.api",
-        Bach.Util.maven("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"));
+        Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"));
     bach.resolve(
         "org.junit.platform.commons",
-        Bach.Util.maven("org.junit.platform", "junit-platform-commons", "1.0.0-M4"));
-    bach.resolve("org.opentest4j", Bach.Util.maven("org.opentest4j", "opentest4j", "1.0.0-M2"));
+        Bach.Util.jcenter("org.junit.platform", "junit-platform-commons", "1.0.0-M4"));
+    bach.resolve("org.opentest4j", Bach.Util.jcenter("org.opentest4j", "opentest4j", "1.0.0-M2"));
     bach.build();
     // TODO assert artifacts...
   }

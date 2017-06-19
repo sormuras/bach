@@ -548,9 +548,9 @@ public interface Bach {
       throw new Error("exit value " + value + " indicates an error");
     }
 
-    /** Maven uri for jar artifact at {@code http://central.maven.org/maven2} repository. */
-    static URI maven(String group, String artifact, String version) {
-      return maven("http://central.maven.org/maven2", group, artifact, version, "jar");
+    /** Maven uri for jar artifact at {@code https://jcenter.bintray.com} repository. */
+    static URI jcenter(String group, String artifact, String version) {
+      return maven("https://jcenter.bintray.com", group, artifact, version, "jar");
     }
 
     /** Maven uri for specified coordinates. */

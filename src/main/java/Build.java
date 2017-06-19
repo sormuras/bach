@@ -42,12 +42,9 @@ class Build {
   }
 
   private static void test(Bach bach) {
-    String repo = "http://central.maven.org/maven2/";
-    String group = "org/junit/platform/";
-    String name = "junit-platform-console-standalone";
-    String version = "1.0.0-M4";
-    URI uri = URI.create(repo + group + name + "/" + version + "/" + name + "-" + version + ".jar");
-    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name));
+    String artifact = "junit-platform-console-standalone";
+    URI uri = Bach.Util.jcenter("org.junit.platform", artifact, "1.0.0-M4");
+    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(artifact));
     Bach.Command command = new Bach.Command(bach.path(Bach.Folder.JDK_HOME).resolve("bin/java"));
     command.add("-ea");
     command.add("-jar");
@@ -65,9 +62,9 @@ class Build {
     Bach.Builder builder = new Bach.Builder();
     Bach bach = builder.build();
     {
-      URI uriJupiter = Bach.Util.maven("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4");
-      URI uriCommons = Bach.Util.maven("org.junit.platform", "junit-platform-commons", "1.0.0-M4");
-      URI uriOpenTest4J = Bach.Util.maven("org.opentest4j", "opentest4j", "1.0.0-M2");
+      URI uriJupiter = Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4");
+      URI uriCommons = Bach.Util.jcenter("org.junit.platform", "junit-platform-commons", "1.0.0-M4");
+      URI uriOpenTest4J = Bach.Util.jcenter("org.opentest4j", "opentest4j", "1.0.0-M2");
       bach.resolve("org.junit.jupiter.api", uriJupiter);
       bach.resolve("org.junit.platform.commons", uriCommons);
       bach.resolve("org.opentest4j", uriOpenTest4J);
