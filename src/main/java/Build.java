@@ -31,7 +31,7 @@ class Build {
   private static final Path JAVADOC = TARGET.resolve("javadoc");
   private static final Path ARTIFACTS = TARGET.resolve("artifacts");
 
-  private static String testClassPath(Bach bach) throws IOException {
+  private static String compileTestsClassPath(Bach bach) throws IOException {
     List<String> entries = new ArrayList<>();
     entries.add(CLASSES.toString());
     Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
@@ -74,7 +74,7 @@ class Build {
     bach.execute(
         new Bach.Command("javac")
             .addAll("-d", CLASSES)
-            .addAll("--class-path", testClassPath(bach))
+            .addAll("--class-path", compileTestsClassPath(bach))
             .mark(1)
             .addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaSourceFile));
 
