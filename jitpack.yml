@@ -4,7 +4,7 @@ before_install:
 install:
 - ./build.jsh
 - test ! -f build.jsh.failed
-- ARTIFACTS=target/build/artifacts
-- JARS=-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar
+- ARTIFACTS="target/build/artifacts"
+- JARS="-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar"
 - find $ARTIFACTS
 - mvn install:install-file $JARS -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
