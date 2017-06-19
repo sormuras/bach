@@ -44,7 +44,7 @@ class BachTests {
   @Test
   void defaultConfiguration() {
     Bach.Configuration configuration = new Bach.Builder().build().configuration();
-    assertEquals("bach", configuration.name());
+    assertTrue(System.getProperty("user.dir").endsWith(configuration.name()), configuration.name());
     assertEquals("1.0.0-SNAPSHOT", configuration.version());
   }
 
