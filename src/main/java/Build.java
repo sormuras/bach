@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 class Build {
 
@@ -31,32 +33,59 @@ class Build {
   private static final Path JAVADOC = TARGET.resolve("javadoc");
   private static final Path ARTIFACTS = TARGET.resolve("artifacts");
 
-  public static void main(String... args) throws IOException {
+  public static void main(String... args) throws Exception {
+    new Build().build();
+  }
+
+  private final Bach bach;
+
+  private Build() {
     Bach.Builder builder = new Bach.Builder();
-    Bach bach = builder.build();
+    this.bach = builder.build();
+  }
 
-    mainFormat(bach, Paths.get("src"));
+  private void build() throws IOException {
+    format(Paths.get("src"));
+    resolve();
+    compile();
+    bach.call("javadoc", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
+    jar();
+    test();
+  }
 
-    {
-      URI uriJupiter = Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4");
-      URI uriCommons =
-          Bach.Util.jcenter("org.junit.platform", "junit-platform-commons", "1.0.0-M4");
-      URI uriOpenTest4J = Bach.Util.jcenter("org.opentest4j", "opentest4j", "1.0.0-M2");
-      bach.resolve("org.junit.jupiter.api", uriJupiter);
-      bach.resolve("org.junit.platform.commons", uriCommons);
-      bach.resolve("org.opentest4j", uriOpenTest4J);
-    }
-    bach.call("java", "--version");
+  private URI uri(String group, String artifact, String version) {
+    return Bach.Util.jcenter(group, artifact, version);
+  }
+
+  private void resolve() {
+    Map<String, URI> map = new TreeMap<>();
+    map.put("org.junit.jupiter.api", uri("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"));
+    map.put(
+        "org.junit.platform.commons",
+        uri("org.junit.platform", "junit-platform-commons", "1.0.0-M4"));
+    map.put("org.opentest4j", uri("org.opentest4j", "opentest4j", "1.0.0-M2"));
+    map.forEach(bach::resolve);
+  }
+
+  private void compile() throws IOException {
+    // main
     bach.call("javac", "-d", CLASSES, "src/main/java/Bach.java");
+    // test
+    List<String> entries = new ArrayList<>();
+    entries.add(CLASSES.toString());
+    Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
+        .filter(Bach.Util::isJarFile)
+        .map(Object::toString)
+        .forEach(entries::add);
     bach.execute(
         new Bach.Command("javac")
             .addAll("-d", CLASSES)
-            .addAll("--class-path", mainCompileTestsClassPath(bach))
+            .addAll("--class-path", String.join(File.pathSeparator, entries))
             .mark(1)
             .addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaSourceFile));
+  }
 
-    bach.call("javadoc", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
-
+  private void jar() throws IOException {
     Files.createDirectories(ARTIFACTS);
     bach.call(
         "jar", "--create", "--file=" + ARTIFACTS.resolve("bach.jar"), "-C", CLASSES, "Bach.class");
@@ -69,11 +98,9 @@ class Build {
         "Bach.java");
     bach.call(
         "jar", "--create", "--file=" + ARTIFACTS.resolve("bach-javadoc.jar"), "-C", JAVADOC, ".");
-
-    mainTestWithJUnitPlatform(bach);
   }
 
-  private static void mainFormat(Bach bach, Path... paths) throws IOException {
+  private void format(Path... paths) throws IOException {
     String mode = Boolean.getBoolean("bach.format.replace") ? "replace" : "validate";
     URI uri =
         URI.create(
@@ -83,7 +110,7 @@ class Build {
                 + "google-java-format-validate-SNAPSHOT-all-deps.jar");
     Path jar =
         Bach.Util.download(
-            uri, bach.path(Bach.Folder.TOOLS).resolve("google-java-format-validate"));
+            uri, bach.path(Bach.Folder.TOOLS).resolve("google-java-format-validate-all-deps"));
     Bach.Command command =
         new Bach.Command(bach.path(Bach.Folder.JDK_HOME).resolve("bin/java"))
             .add("-jar")
@@ -99,17 +126,7 @@ class Build {
     }
   }
 
-  private static String mainCompileTestsClassPath(Bach bach) throws IOException {
-    List<String> entries = new ArrayList<>();
-    entries.add(CLASSES.toString());
-    Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
-        .filter(Bach.Util::isJarFile)
-        .map(Object::toString)
-        .forEach(entries::add);
-    return String.join(File.pathSeparator, entries);
-  }
-
-  private static void mainTestWithJUnitPlatform(Bach bach) {
+  private void test() {
     String artifact = "junit-platform-console-standalone";
     URI uri = Bach.Util.jcenter("org.junit.platform", artifact, "1.0.0-M4");
     Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(artifact));

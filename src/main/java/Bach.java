@@ -33,10 +33,13 @@ import java.util.stream.*;
 /**
  * Java Shell Builder - Use jshell to build your modular project.
  *
+ * @see <a href="https://github.com/sormuras/bach">bach</a>
  * @see <a href="https://docs.oracle.com/javase/9/tools/jshell.htm">jshell</a>
  */
 @SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
 public interface Bach {
+
+  String VERSION = "1.0.0-SNAPSHOT";
 
   default void build() {
     long start = System.currentTimeMillis();
@@ -387,7 +390,7 @@ public interface Bach {
     Default(Configuration configuration) {
       this.configuration = configuration;
       configuration.dump(Util.log::config);
-      Util.log.info("initialized");
+      Util.log.info(getClass() + " (bach-" + Bach.VERSION + ") initialized");
     }
 
     @Override
@@ -550,12 +553,20 @@ public interface Bach {
 
     /** Maven uri for jar artifact at {@code https://jcenter.bintray.com} repository. */
     static URI jcenter(String group, String artifact, String version) {
-      return maven("https://jcenter.bintray.com", group, artifact, version, "jar");
+      return maven("https://jcenter.bintray.com", group, artifact, version, "", "jar");
+    }
+
+    /** Maven uri for jar artifact at {@code https://jitpack.io} repository. */
+    static URI jitpack(String group, String artifact, String version) {
+      return maven("https://jitpack.io", group, artifact, version, "", "jar");
     }
 
     /** Maven uri for specified coordinates. */
-    static URI maven(String repo, String group, String artifact, String version, String kind) {
-      String path = artifact + '/' + version + '/' + artifact + '-' + version + '.' + kind;
+    static URI maven(String repo, String group, String artifact, String version, String... args) {
+      String classifier = args[0];
+      String kind = args[1];
+      String versifier = isBlank(classifier) ? version : version + '-' + classifier;
+      String path = artifact + '/' + version + '/' + artifact + '-' + versifier + '.' + kind;
       return URI.create(repo + '/' + group.replace('.', '/') + '/' + path);
     }
 
@@ -596,6 +607,17 @@ public interface Bach {
       }
     }
 
+    static boolean exists(URI uri) {
+      // TODO Upgrade to HttpClient
+      try {
+        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+        connection.setRequestMethod("HEAD");
+        return connection.getResponseCode() == HttpURLConnection.HTTP_OK;
+      } catch (IOException e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
     /** Extract the file name from the uri. */
     static String extractFileName(URI uri) {
       String urlString = uri.getPath();
@@ -621,6 +643,11 @@ public interface Bach {
       Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
       log.warning("path of JDK not found, using: " + fallback);
       return fallback;
+    }
+
+    /** Return {@code true} if the string is {@code null} or empty. */
+    static boolean isBlank(String string) {
+      return string == null || string.isEmpty() || string.trim().isEmpty();
     }
 
     /** Return {@code true} if the path points to a canonical jar file. */

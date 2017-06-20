@@ -15,12 +15,20 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 class UtilTests {
 
@@ -32,13 +40,30 @@ class UtilTests {
     Path tempPath = Files.createTempDirectory("download-");
     Bach.Util.download(tempFile.toUri(), tempPath);
     Path actual = tempPath.resolve(tempFile.getFileName().toString());
-    Assertions.assertTrue(Files.exists(actual));
-    Assertions.assertLinesMatch(expectedLines, Files.readAllLines(actual));
+    assertTrue(Files.exists(actual));
+    assertLinesMatch(expectedLines, Files.readAllLines(actual));
+  }
+
+  @TestFactory
+  Stream<DynamicTest> uriExists() throws IOException {
+    Stream<URI> uris =
+        Stream.of(
+            Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"),
+            Bach.Util.jitpack("com.github.sormuras", "bach", "1.0.0-M0"),
+            Bach.Util.jitpack("com.github.jlink", "jqwik", "0.3.0"));
+    return uris.map(uri -> dynamicTest(uri.toString(), () -> assertTrue(Bach.Util.exists(uri))));
+  }
+
+  @Test
+  void blank() {
+    assertTrue(Bach.Util.isBlank(null));
+    assertTrue(Bach.Util.isBlank(""));
+    assertTrue(Bach.Util.isBlank(" "));
   }
 
   @Test
   void findJdkHome() {
-    Assertions.assertNotNull(Bach.Util.findJdkHome());
-    Assertions.assertTrue(Bach.Util.findJdkHome().isAbsolute());
+    assertNotNull(Bach.Util.findJdkHome());
+    assertTrue(Bach.Util.findJdkHome().isAbsolute());
   }
 }
