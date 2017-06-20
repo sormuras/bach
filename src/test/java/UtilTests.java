@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -33,6 +35,35 @@ import org.junit.jupiter.api.TestFactory;
 class UtilTests {
 
   @Test
+  void blank() {
+    assertTrue(Bach.Util.isBlank(null));
+    assertTrue(Bach.Util.isBlank(""));
+    assertTrue(Bach.Util.isBlank(" "));
+  }
+
+  @Test
+  void cleanTreeDeleteRoot() throws IOException {
+    Path deleteRoot = Files.createTempDirectory("cleanTree-deleteRoot-");
+    Path deleteMe = Files.createFile(deleteRoot.resolve("delete.me"));
+    assertTrue(Files.exists(deleteRoot));
+    assertTrue(Files.exists(deleteMe));
+    assertSame(deleteRoot, Bach.Util.cleanTree(deleteRoot, false));
+    assertFalse(Files.exists(deleteRoot));
+    assertFalse(Files.exists(deleteMe));
+  }
+
+  @Test
+  void cleanTreeKeepRoot() throws IOException {
+    Path keepRoot = Files.createTempDirectory("cleanTree-keepRoot-");
+    Path deleteMe = Files.createFile(keepRoot.resolve("delete.me"));
+    assertTrue(Files.exists(keepRoot));
+    assertTrue(Files.exists(deleteMe));
+    assertSame(keepRoot, Bach.Util.cleanTree(keepRoot, true));
+    assertTrue(Files.exists(keepRoot));
+    assertFalse(Files.exists(deleteMe));
+  }
+
+  @Test
   void download() throws IOException {
     List<String> expectedLines = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
     Path tempFile = Files.createTempFile("download-", ".txt");
@@ -45,20 +76,13 @@ class UtilTests {
   }
 
   @TestFactory
-  Stream<DynamicTest> uriExists() throws IOException {
+  Stream<DynamicTest> exists() throws IOException {
     Stream<URI> uris =
         Stream.of(
             Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"),
             Bach.Util.jitpack("com.github.sormuras", "bach", "1.0.0-M0"),
             Bach.Util.jitpack("com.github.jlink", "jqwik", "0.3.0"));
     return uris.map(uri -> dynamicTest(uri.toString(), () -> assertTrue(Bach.Util.exists(uri))));
-  }
-
-  @Test
-  void blank() {
-    assertTrue(Bach.Util.isBlank(null));
-    assertTrue(Bach.Util.isBlank(""));
-    assertTrue(Bach.Util.isBlank(" "));
   }
 
   @Test

@@ -56,7 +56,7 @@ public interface Bach {
   int call(String executable, Object... arguments);
 
   default void clean() {
-    Util.log.warning("not implemented, yet");
+    Bach.Util.cleanTree(path(Folder.TARGET), false);
   }
 
   default void compile() {
@@ -452,9 +452,12 @@ public interface Bach {
 
   enum Folder {
     JDK_HOME(Location.of(Util.findJdkHome())),
+    //
     AUXILIARY(Location.of(Paths.get(".bach"))),
     TOOLS(Location.of(List.of(AUXILIARY), Paths.get("tools"))),
-    DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies")));
+    DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies"))),
+    //
+    TARGET(Location.of(Paths.get("target/bach")));
 
     public static class Location {
       final List<Folder> parents;
@@ -540,6 +543,34 @@ public interface Bach {
         pw.close();
         builder.append(sw.getBuffer());
         return builder.toString();
+      }
+    }
+
+    static Path cleanTree(Path root, boolean keepRoot) {
+      return cleanTree(root, keepRoot, path -> true);
+    }
+
+    static Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) {
+      try {
+        if (Files.notExists(root)) {
+          if (keepRoot) {
+            Files.createDirectories(root);
+          }
+          return root;
+        }
+        List<Path> paths =
+            Files.walk(root)
+                .filter(p -> !(keepRoot && root.equals(p)))
+                .filter(filter)
+                .sorted((p, q) -> -p.compareTo(q))
+                .collect(Collectors.toList());
+        for (Path path : paths) {
+          Files.deleteIfExists(path);
+        }
+        log.fine(() -> "deleted tree `" + root + "`");
+        return root;
+      } catch (IOException e) {
+        throw new Error("should not happen", e);
       }
     }
 
