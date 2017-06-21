@@ -48,7 +48,7 @@ class Build {
     format(Paths.get("src"));
     resolve();
     compile();
-    bach.call("javadoc", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
+    bach.call("javadoc", "-quiet", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
     jar();
     test();
   }
