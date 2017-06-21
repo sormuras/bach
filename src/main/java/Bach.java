@@ -20,11 +20,13 @@
 import java.io.*;
 import java.lang.annotation.*;
 import java.net.*;
+import java.nio.charset.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
@@ -469,6 +471,49 @@ public interface Bach {
 
     Folder(Location location) {
       this.location = location;
+    }
+  }
+
+  /** Source directory module tree layout/scheme. */
+  enum Layout {
+    /** Auto-detect at configuration time. */
+    AUTO,
+    /** Module folder first, no tests: {@code src/<module>} */
+    BASIC,
+    /** Module folders first: {@code src/<module>/[main|test]/[java|resources]} */
+    FIRST,
+    /** Module folders last: {@code src/[main|test]/[java|resources]/<module>} */
+    TRAIL,
+    ;
+
+    static Layout of(Path root) {
+      if (Files.notExists(root)) {
+        return AUTO;
+      }
+      try {
+        Path path =
+            Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                .map(root::relativize)
+                .findFirst()
+                .orElseThrow(() -> new Error("no module descriptor found in " + root));
+        // trivial case: <module>/module-info.java
+        if (path.getNameCount() == 2) {
+          return BASIC;
+        }
+        // nested case: extract module name and check whether the relative path starts with it
+        String moduleSource =
+            new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
+        Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+        Matcher nameMatcher = namePattern.matcher(moduleSource);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "expected java module descriptor unit, but got: \n" + moduleSource);
+        }
+        String moduleName = nameMatcher.group(2).trim();
+        return path.startsWith(moduleName) ? FIRST : TRAIL;
+      } catch (Exception e) {
+        throw new Error("detection failed " + e, e);
+      }
     }
   }
 

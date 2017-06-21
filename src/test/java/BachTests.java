@@ -97,4 +97,12 @@ class BachTests {
       return 0;
     }
   }
+
+  @Test
+  void layout() {
+    assertEquals(Bach.Layout.AUTO, Bach.Layout.of(Paths.get("non/existing/path")));
+    assertEquals(Bach.Layout.BASIC, Bach.Layout.of(Paths.get("deprecated/demo/basic")));
+    assertEquals(Bach.Layout.FIRST, Bach.Layout.of(Paths.get("deprecated/demo/idea")));
+    assertEquals(Bach.Layout.TRAIL, Bach.Layout.of(Paths.get("deprecated/demo/common")));
+  }
 }
