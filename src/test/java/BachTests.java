@@ -59,7 +59,6 @@ class BachTests {
         new Bach.Builder()
             .name("kernel")
             .version("4.12-rc5")
-            .handler(null)
             .level(Level.WARNING)
             .folder(Bach.Folder.AUXILIARY, Paths.get("aux"))
             .folder(Bach.Folder.DEPENDENCIES, Bach.Folder.Location.of(Paths.get("mods")))

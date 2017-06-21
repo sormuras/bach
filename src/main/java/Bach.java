@@ -22,8 +22,6 @@ import java.lang.annotation.*;
 import java.net.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
-import java.time.*;
-import java.time.format.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
@@ -94,7 +92,6 @@ public interface Bach {
   class Builder implements Configuration {
     final Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
     Map<Folder, Path> folders = buildFolders(Collections.emptyMap());
-    Handler handler = new Util.ConsoleHandler(System.out, Level.ALL);
     Level level = Level.FINE;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     Map<String, ToolProvider> tools = new TreeMap<>();
@@ -104,11 +101,9 @@ public interface Bach {
       Builder configuration = new Builder();
       configuration.folders = buildFolders(customFolderLocations);
       configuration.tools = Collections.unmodifiableMap(new TreeMap<>(tools));
-      configuration.handler = handler;
       configuration.level = level;
       configuration.name = name;
       configuration.version = version;
-      Util.setHandler(handler);
       Util.log.setLevel(level);
       return new Default(configuration);
     }
@@ -147,11 +142,6 @@ public interface Bach {
     @Override
     public Map<Folder, Path> folders() {
       return folders;
-    }
-
-    public Builder handler(Handler handler) {
-      this.handler = handler;
-      return this;
     }
 
     public Builder level(Level level) {
@@ -488,62 +478,10 @@ public interface Bach {
 
     Logger log = Logger.getLogger("Bach");
 
-    class ConsoleHandler extends StreamHandler {
-
-      public ConsoleHandler(OutputStream stream, Level level) {
-        super(stream, new SingleLineFormatter());
-        setLevel(level);
-      }
-
-      @Override
-      public void publish(LogRecord record) {
-        super.publish(record);
-        flush();
-      }
-
-      @Override
-      public void close() {
-        flush();
-      }
-    }
-
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     @interface OptionName {
       String value();
-    }
-
-    class SingleLineFormatter extends java.util.logging.Formatter {
-
-      @SuppressWarnings("SpellCheckingInspection")
-      private final DateTimeFormatter instantFormatter =
-          DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss:SSS").withZone(ZoneId.systemDefault());
-
-      @Override
-      public String format(LogRecord record) {
-        StringBuilder builder = new StringBuilder();
-        if (log.getLevel().intValue() < Level.FINE.intValue()) {
-          builder.append(instantFormatter.format(record.getInstant()));
-          builder.append(' ');
-          builder.append(record.getSourceClassName());
-          builder.append(' ');
-          builder.append(record.getSourceMethodName());
-          builder.append(' ');
-        }
-        builder.append(formatMessage(record));
-        builder.append(System.lineSeparator());
-        if (record.getThrown() == null) {
-          return builder.toString();
-        }
-        builder.append(System.lineSeparator());
-        builder.append('-');
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        record.getThrown().printStackTrace(pw);
-        pw.close();
-        builder.append(sw.getBuffer());
-        return builder.toString();
-      }
     }
 
     static Path cleanTree(Path root, boolean keepRoot) {
@@ -699,18 +637,6 @@ public interface Bach {
         return false;
       }
       return name.endsWith(".java");
-    }
-
-    static void setHandler(Handler handler) {
-      for (Handler remove : log.getHandlers()) {
-        log.removeHandler(remove);
-      }
-      if (handler == null) {
-        log.setUseParentHandlers(true);
-        return;
-      }
-      log.addHandler(handler);
-      log.setUseParentHandlers(false);
     }
   }
 }
