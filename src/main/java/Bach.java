@@ -41,13 +41,13 @@ public interface Bach {
 
   default void build() {
     long start = System.currentTimeMillis();
-    Util.log.fine("building...");
+    Util.log(Level.FINE, "building...");
     clean();
     format();
     compile();
     test();
     link();
-    Util.log.info("finished after " + (System.currentTimeMillis() - start) + " ms");
+    Util.log(Level.INFO, "finished after %d ms", System.currentTimeMillis() - start);
   }
 
   /** Create and execute command. */
@@ -58,7 +58,7 @@ public interface Bach {
   }
 
   default void compile() {
-    Util.log.warning("(javac, javadoc, jar) not implemented, yet");
+    Util.log(Level.WARNING, "compile [javac, javadoc, jar] not implemented, yet");
   }
 
   Configuration configuration();
@@ -67,11 +67,11 @@ public interface Bach {
   int execute(Command command);
 
   default void format() {
-    Util.log.warning("not implemented, yet");
+    Util.log(Level.WARNING, "format not implemented, yet");
   }
 
   default void link() {
-    Util.log.warning("not implemented, yet");
+    Util.log(Level.WARNING, "link not implemented, yet");
   }
 
   /** Get path for the specified folder. Same as: {@code configuration().folders().get(folder)} */
@@ -86,13 +86,13 @@ public interface Bach {
   }
 
   default void test() {
-    Util.log.warning("not implemented, yet");
+    Util.log(Level.WARNING, "test not implemented, yet");
   }
 
   class Builder implements Configuration {
     final Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
     Map<Folder, Path> folders = buildFolders(Collections.emptyMap());
-    Level level = Level.FINE;
+    Level level = Util.log.getLevel();
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     Map<String, ToolProvider> tools = new TreeMap<>();
     String version = "1.0.0-SNAPSHOT";
@@ -306,7 +306,7 @@ public interface Bach {
     /** Dump command properties to default logging output. */
     void dump(Level level) {
       if (Util.log.isLoggable(level)) {
-        dump(message -> Util.log.log(level, message));
+        dump(message -> Util.log(level, message));
       }
     }
 
@@ -377,8 +377,8 @@ public interface Bach {
 
     Default(Configuration configuration) {
       this.configuration = configuration;
-      configuration.dump(Util.log::config);
-      Util.log.info(getClass() + " (bach-" + Bach.VERSION + ") initialized");
+      configuration.dump(message -> Util.log(Level.CONFIG, message));
+      Util.log(Level.INFO, "%s (bach-%s) initialized", getClass(), VERSION);
     }
 
     @Override
@@ -404,20 +404,20 @@ public interface Bach {
       Integer exitValue = null;
       ToolProvider providedTool = configuration.tools().get(executable);
       if (providedTool != null) {
-        Util.log.fine("executing provided `" + executable + "` tool...");
+        Util.log(Level.FINE, "executing provided `" + executable + "` tool...");
         command.dump(dumpLevel);
         exitValue = providedTool.run(streamOut, streamErr, command.toArgumentsArray());
       }
       if (exitValue == null) {
         Optional<ToolProvider> tool = ToolProvider.findFirst(executable);
         if (tool.isPresent()) {
-          Util.log.fine("executing loaded `" + executable + "` tool...");
+          Util.log(Level.FINE, "executing loaded `" + executable + "` tool...");
           command.dump(dumpLevel);
           exitValue = tool.get().run(streamOut, streamErr, command.toArgumentsArray());
         }
       }
       if (exitValue == null) {
-        Util.log.fine("executing external `" + executable + "` tool...");
+        Util.log(Level.FINE, "executing external `" + executable + "` tool...");
         command.dump(dumpLevel);
         ProcessBuilder processBuilder = command.toProcessBuilder().redirectErrorStream(true);
         try {
@@ -432,7 +432,7 @@ public interface Bach {
         }
       }
       long duration = System.currentTimeMillis() - start;
-      Util.log.info(executable + " finished after " + duration + " ms");
+      Util.log(Level.INFO, executable + " finished after " + duration + " ms");
       exitValueChecker.accept(exitValue);
       return exitValue;
     }
@@ -503,7 +503,7 @@ public interface Bach {
         for (Path path : paths) {
           Files.deleteIfExists(path);
         }
-        log.fine("deleted tree `" + root + "`");
+        Util.log(Level.FINE, "deleted tree `" + root + "`");
         return root;
       } catch (IOException e) {
         throw new Error("should not happen", e);
@@ -526,6 +526,12 @@ public interface Bach {
     /** Maven uri for jar artifact at {@code https://jitpack.io} repository. */
     static URI jitpack(String group, String artifact, String version) {
       return maven("https://jitpack.io", group, artifact, version, "", "jar");
+    }
+
+    static void log(Level level, String format, Object... args) {
+      if (log.isLoggable(level)) {
+        System.out.println(String.format(format, args));
+      }
     }
 
     /** Maven uri for specified coordinates. */
@@ -554,20 +560,20 @@ public interface Bach {
           if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
             if (Files.size(target) == urlConnection.getContentLengthLong()) {
               if (skip.test(target)) {
-                log.fine("skipped, using `" + target + "`");
+                log(Level.FINE, "skipped, using `" + target + "`");
                 return target;
               }
             }
           }
           Files.delete(target);
         }
-        log.fine("transferring `" + uri + "`...");
+        log(Level.FINE, "transferring `" + uri + "`...");
         try (InputStream sourceStream = url.openStream();
             OutputStream targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
         }
         Files.setLastModifiedTime(target, urlLastModifiedTime);
-        log.info("stored `" + target + "` [" + urlLastModifiedTime + "]");
+        log(Level.FINE, "stored `" + target + "` [" + urlLastModifiedTime + "]");
         return target;
       } catch (IOException e) {
         throw new Error("should not happen", e);
@@ -608,7 +614,7 @@ public interface Bach {
         return Paths.get(javaHome).toAbsolutePath();
       }
       Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
-      log.warning("path of JDK not found, using: " + fallback);
+      log(Level.WARNING, "path of JDK not found, using: " + fallback);
       return fallback;
     }
 
