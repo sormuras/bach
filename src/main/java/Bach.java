@@ -72,6 +72,11 @@ public interface Bach {
     Util.log(Level.WARNING, "format not implemented, yet");
   }
 
+  /** Get command instance pointing to {@code java} executable. */
+  default Command java(Object... arguments) {
+    return new Command(path(Folder.JDK_HOME).resolve("bin/java")).addAll((Object[]) arguments);
+  }
+
   default void link() {
     Util.log(Level.WARNING, "link not implemented, yet");
   }
@@ -446,6 +451,8 @@ public interface Bach {
     AUXILIARY(Location.of(Paths.get(".bach"))),
     TOOLS(Location.of(List.of(AUXILIARY), Paths.get("tools"))),
     DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies"))),
+    //
+    SOURCE(Location.of(Paths.get("src"))),
     //
     TARGET(Location.of(Paths.get("target/bach")));
 

@@ -71,16 +71,16 @@ class Build {
     // main
     bach.call("javac", "-d", CLASSES, "src/main/java/Bach.java");
     // test
-    List<String> entries = new ArrayList<>();
-    entries.add(CLASSES.toString());
+    List<Object> classPathEntries = new ArrayList<>();
+    classPathEntries.add(CLASSES);
     Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
         .filter(Bach.Util::isJarFile)
-        .map(Object::toString)
-        .forEach(entries::add);
+        .forEach(classPathEntries::add);
     bach.execute(
         new Bach.Command("javac")
             .addAll("-d", CLASSES)
-            .addAll("--class-path", String.join(File.pathSeparator, entries))
+            .add("--class-path")
+            .add(classPathEntries.stream(), File.pathSeparator)
             .mark(1)
             .addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaSourceFile));
   }
@@ -102,26 +102,16 @@ class Build {
 
   private void format(Path... paths) throws IOException {
     String mode = Boolean.getBoolean("bach.format.replace") ? "replace" : "validate";
-    URI uri =
-        URI.create(
-            "https://jitpack.io/com/"
-                + "github/sormuras/google-java-format/"
-                + "google-java-format/validate-SNAPSHOT/"
-                + "google-java-format-validate-SNAPSHOT-all-deps.jar");
-    Path jar =
-        Bach.Util.download(
-            uri, bach.path(Bach.Folder.TOOLS).resolve("google-java-format-validate-all-deps"));
-    Bach.Command command =
-        new Bach.Command(bach.path(Bach.Folder.JDK_HOME).resolve("bin/java"))
-            .add("-jar")
-            .add(jar)
-            .add("--" + mode)
-            .mark(10);
+    String repo = "https://jitpack.io";
+    String user = "com/github/sormuras";
+    String name = "google-java-format";
+    String version = "validate-SNAPSHOT";
+    String file = name + "-" + version + "-all-deps.jar";
+    URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
+    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name + version));
+    Bach.Command command = bach.java("-jar", jar, "--" + mode).mark(10);
     for (Path path : paths) {
-      Files.walk(path)
-          .filter(Bach.Util::isJavaSourceFile)
-          .map(Path::toString)
-          .forEach(command::add);
+      command.addAll(path, Bach.Util::isJavaSourceFile);
       bach.execute(command);
     }
   }
@@ -130,16 +120,9 @@ class Build {
     String artifact = "junit-platform-console-standalone";
     URI uri = Bach.Util.jcenter("org.junit.platform", artifact, "1.0.0-M4");
     Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(artifact));
-    Bach.Command command = new Bach.Command(bach.path(Bach.Folder.JDK_HOME).resolve("bin/java"));
-    command.add("-ea");
-    command.add("-jar");
-    command.add(jar);
-    command.add("--scan-classpath");
-    command.add(CLASSES);
-    command.add("--class-path");
-    command.add(CLASSES);
-    if (bach.execute(command) != 0) {
-      throw new AssertionError("test run failed");
-    }
+    Bach.Command command = bach.java("-ea", "-jar", jar);
+    command.add("--scan-classpath").add(CLASSES);
+    command.add("--class-path").add(CLASSES);
+    bach.execute(command);
   }
 }
