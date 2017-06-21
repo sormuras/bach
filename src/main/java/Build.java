@@ -108,7 +108,7 @@ class Build {
     String version = "validate-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
-    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name + version));
+    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name));
     Bach.Command command = bach.java("-jar", jar, "--" + mode).mark(10);
     for (Path path : paths) {
       command.addAll(path, Bach.Util::isJavaSourceFile);
