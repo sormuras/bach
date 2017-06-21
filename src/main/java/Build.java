@@ -87,17 +87,17 @@ class Build {
 
   private void jar() throws IOException {
     Files.createDirectories(ARTIFACTS);
-    bach.call(
-        "jar", "--create", "--file=" + ARTIFACTS.resolve("bach.jar"), "-C", CLASSES, "Bach.class");
-    bach.call(
-        "jar",
-        "--create",
-        "--file=" + ARTIFACTS.resolve("bach-sources.jar"),
-        "-C",
-        "src/main/java",
-        "Bach.java");
-    bach.call(
-        "jar", "--create", "--file=" + ARTIFACTS.resolve("bach-javadoc.jar"), "-C", JAVADOC, ".");
+    jar("bach", CLASSES, "Bach.class");
+    jar("bach-sources", "src/main/java", "Bach.java");
+    jar("bach-javadoc", JAVADOC, ".");
+  }
+
+  private void jar(String artifact, Object... contents) {
+    Bach.Command jar = new Bach.Command("jar");
+    Path file = ARTIFACTS.resolve(artifact + ".jar");
+    jar.addAll("--create", "--file=" + file);
+    jar.add("-C").addAll(contents);
+    bach.execute(jar);
   }
 
   private void format(Path... paths) throws IOException {
