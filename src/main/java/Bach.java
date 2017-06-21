@@ -47,7 +47,7 @@ public interface Bach {
     compile();
     test();
     link();
-    Util.log.info(() -> "finished after " + (System.currentTimeMillis() - start) + " ms");
+    Util.log.info("finished after " + (System.currentTimeMillis() - start) + " ms");
   }
 
   /** Create and execute command. */
@@ -185,7 +185,6 @@ public interface Bach {
     int dumpLimit = Integer.MAX_VALUE;
     int dumpOffset = Integer.MAX_VALUE;
     final String executable;
-    final Logger logger;
 
     public Command(Path executable) {
       this(executable.toString());
@@ -193,7 +192,6 @@ public interface Bach {
 
     public Command(String executable) {
       this.executable = executable;
-      this.logger = Logger.getLogger("Bach");
     }
 
     /** Conditionally add argument. */
@@ -307,8 +305,8 @@ public interface Bach {
 
     /** Dump command properties to default logging output. */
     void dump(Level level) {
-      if (logger.isLoggable(level)) {
-        dump(message -> logger.log(level, message));
+      if (Util.log.isLoggable(level)) {
+        dump(message -> Util.log.log(level, message));
       }
     }
 
@@ -406,20 +404,20 @@ public interface Bach {
       Integer exitValue = null;
       ToolProvider providedTool = configuration.tools().get(executable);
       if (providedTool != null) {
-        Util.log.fine(() -> "executing provided `" + executable + "` tool...");
+        Util.log.fine("executing provided `" + executable + "` tool...");
         command.dump(dumpLevel);
         exitValue = providedTool.run(streamOut, streamErr, command.toArgumentsArray());
       }
       if (exitValue == null) {
         Optional<ToolProvider> tool = ToolProvider.findFirst(executable);
         if (tool.isPresent()) {
-          Util.log.fine(() -> "executing loaded `" + executable + "` tool...");
+          Util.log.fine("executing loaded `" + executable + "` tool...");
           command.dump(dumpLevel);
           exitValue = tool.get().run(streamOut, streamErr, command.toArgumentsArray());
         }
       }
       if (exitValue == null) {
-        Util.log.fine(() -> "executing external `" + executable + "` tool...");
+        Util.log.fine("executing external `" + executable + "` tool...");
         command.dump(dumpLevel);
         ProcessBuilder processBuilder = command.toProcessBuilder().redirectErrorStream(true);
         try {
@@ -434,7 +432,7 @@ public interface Bach {
         }
       }
       long duration = System.currentTimeMillis() - start;
-      Util.log.info(() -> executable + " finished after " + duration + " ms");
+      Util.log.info(executable + " finished after " + duration + " ms");
       exitValueChecker.accept(exitValue);
       return exitValue;
     }
@@ -505,7 +503,7 @@ public interface Bach {
         for (Path path : paths) {
           Files.deleteIfExists(path);
         }
-        log.fine(() -> "deleted tree `" + root + "`");
+        log.fine("deleted tree `" + root + "`");
         return root;
       } catch (IOException e) {
         throw new Error("should not happen", e);
@@ -556,20 +554,20 @@ public interface Bach {
           if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
             if (Files.size(target) == urlConnection.getContentLengthLong()) {
               if (skip.test(target)) {
-                log.fine(() -> "skipped, using `" + target + "`");
+                log.fine("skipped, using `" + target + "`");
                 return target;
               }
             }
           }
           Files.delete(target);
         }
-        log.fine(() -> "transferring `" + uri + "`...");
+        log.fine("transferring `" + uri + "`...");
         try (InputStream sourceStream = url.openStream();
             OutputStream targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
         }
         Files.setLastModifiedTime(target, urlLastModifiedTime);
-        log.info(() -> "stored `" + target + "` [" + urlLastModifiedTime + "]");
+        log.info("stored `" + target + "` [" + urlLastModifiedTime + "]");
         return target;
       } catch (IOException e) {
         throw new Error("should not happen", e);
