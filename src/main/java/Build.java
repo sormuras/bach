@@ -41,12 +41,13 @@ class Build {
   private final Bach bach;
 
   private Build() {
-    this.bach = new Bach.Builder().level(Level.FINE).build();
+    this.bach = new Bach.Builder().folder(Bach.Folder.TARGET, TARGET).level(Level.FINE).build();
   }
 
   private void build() throws IOException {
     format(Paths.get("src"));
     resolve();
+    bach.clean();
     compile();
     bach.call("javadoc", "-quiet", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
     jar();
