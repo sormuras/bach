@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
 
 class Build {
 
@@ -40,8 +41,7 @@ class Build {
   private final Bach bach;
 
   private Build() {
-    Bach.Builder builder = new Bach.Builder();
-    this.bach = builder.build();
+    this.bach = new Bach.Builder().level(Level.FINE).build();
   }
 
   private void build() throws IOException {
