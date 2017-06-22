@@ -55,7 +55,7 @@ class Build {
   }
 
   private URI uri(String group, String artifact, String version) {
-    return Bach.Util.jcenter(group, artifact, version);
+    return Bach.Util.maven(group, artifact, version);
   }
 
   private void resolve() {
@@ -112,7 +112,8 @@ class Build {
     Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name));
     Bach.Command command = bach.java("-jar", jar, "--" + mode).mark(10);
     for (Path path : paths) {
-      command.addAll(path, Bach.Util::isJavaSourceFile);
+      command.addAll(
+          path, unit -> Bach.Util.isJavaSourceFile(unit) && !unit.endsWith("module-info.java"));
       bach.execute(command);
     }
   }

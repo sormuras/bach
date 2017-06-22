@@ -92,7 +92,7 @@ class CommandTests {
   void addOptionsWithAnonymousClass() {
     Object options =
         new Object() {
-          @Bach.Util.OptionName("--ZETA")
+          @Bach.Command.OptionName("--ZETA")
           boolean z = true;
 
           Boolean flag1 = Boolean.TRUE;

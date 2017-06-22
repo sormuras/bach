@@ -79,6 +79,7 @@ class UtilTests {
   Stream<DynamicTest> exists() throws IOException {
     Stream<URI> uris =
         Stream.of(
+            Bach.Util.maven("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"),
             Bach.Util.jcenter("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"),
             Bach.Util.jitpack("com.github.sormuras", "bach", "1.0.0-M0"),
             Bach.Util.jitpack("com.github.jlink", "jqwik", "0.3.0"));

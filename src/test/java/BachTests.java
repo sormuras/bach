@@ -49,12 +49,14 @@ class BachTests {
     Bach.Configuration configuration = new Bach.Builder().level(Level.OFF).build().configuration();
     assertTrue(System.getProperty("user.dir").endsWith(configuration.name()), configuration.name());
     assertEquals("1.0.0-SNAPSHOT", configuration.version());
+    assertEquals(Bach.Layout.VINTAGE, configuration.layout());
   }
 
   @Test
   void configurationPropertiesAreImmutable() {
     Bach.Configuration configuration = new Bach.Builder().level(Level.OFF).build().configuration();
     assertThrows(UnsupportedOperationException.class, () -> configuration.folders().clear());
+    assertThrows(UnsupportedOperationException.class, () -> configuration.tools().clear());
   }
 
   @Test
@@ -113,9 +115,10 @@ class BachTests {
 
   @Test
   void layout() {
-    assertEquals(Bach.Layout.AUTO, Bach.Layout.of(Paths.get("non/existing/path")));
+    assertEquals(Bach.Layout.VINTAGE, Bach.Layout.of(Paths.get("src")));
     assertEquals(Bach.Layout.BASIC, Bach.Layout.of(Paths.get("deprecated/demo/basic")));
-    assertEquals(Bach.Layout.FIRST, Bach.Layout.of(Paths.get("deprecated/demo/idea")));
-    assertEquals(Bach.Layout.TRAIL, Bach.Layout.of(Paths.get("deprecated/demo/common")));
+    assertEquals(Bach.Layout.MAVEN, Bach.Layout.of(Paths.get("deprecated/demo/idea")));
+    assertEquals(Bach.Layout.JIGSAW, Bach.Layout.of(Paths.get("deprecated/demo/common")));
+    assertThrows(Error.class, () -> Bach.Layout.of(Paths.get("non/existing/path")));
   }
 }

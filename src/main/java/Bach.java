@@ -43,13 +43,13 @@ public interface Bach {
 
   default void build() {
     long start = System.currentTimeMillis();
-    log(Level.FINE, "building...");
+    log(Level.FINE, "building %s-%s...", configuration().name(), configuration().version());
     clean();
     format();
     compile();
     test();
     link();
-    log(Level.INFO, "finished after %d ms", System.currentTimeMillis() - start);
+    log(Level.INFO, "build finished after %d ms", System.currentTimeMillis() - start);
   }
 
   /** Create and execute command. */
@@ -60,7 +60,7 @@ public interface Bach {
   }
 
   default void compile() {
-    log(Level.WARNING, "compile [javac, javadoc, jar] not implemented, yet");
+    configuration().layout().compile(this);
   }
 
   Configuration configuration();
@@ -76,6 +76,9 @@ public interface Bach {
   default Command java(Object... arguments) {
     return new Command(path(Folder.JDK_HOME).resolve("bin/java")).addAll((Object[]) arguments);
   }
+
+  /** Read Java class and interface definitions and compile them into bytecode and class files. */
+  void javac(Folder moduleSourceFolder, Folder destinationFolder);
 
   default void link() {
     log(Level.WARNING, "link not implemented, yet");
@@ -107,6 +110,7 @@ public interface Bach {
   class Builder implements Configuration {
     final Map<Folder, Folder.Location> customFolderLocations = new TreeMap<>();
     Map<Folder, Path> folders = buildFolders(Collections.emptyMap());
+    Layout layout = Layout.AUTO;
     Level level = Level.INFO;
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     PrintStream streamErr = System.err;
@@ -118,12 +122,20 @@ public interface Bach {
       Builder configuration = new Builder();
       configuration.folders = buildFolders(customFolderLocations);
       configuration.tools = Collections.unmodifiableMap(new TreeMap<>(tools));
+      configuration.layout = buildLayout(configuration.folders);
       configuration.level = level;
       configuration.name = name;
       configuration.streamErr = streamErr;
       configuration.streamOut = streamOut;
       configuration.version = version;
       return new Default(configuration);
+    }
+
+    private Layout buildLayout(Map<Folder, Path> folders) {
+      if (layout != Layout.AUTO) {
+        return layout;
+      }
+      return Layout.of(folders.get(Folder.SOURCE));
     }
 
     private Map<Folder, Path> buildFolders(Map<Folder, Folder.Location> locations) {
@@ -160,6 +172,16 @@ public interface Bach {
     @Override
     public Map<Folder, Path> folders() {
       return folders;
+    }
+
+    @Override
+    public Layout layout() {
+      return layout;
+    }
+
+    public Builder layout(Layout layout) {
+      this.layout = layout;
+      return this;
     }
 
     @Override
@@ -224,6 +246,13 @@ public interface Bach {
   }
 
   class Command {
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface OptionName {
+      String value();
+    }
+
     final List<String> arguments = new ArrayList<>();
     int dumpLimit = Integer.MAX_VALUE;
     int dumpOffset = Integer.MAX_VALUE;
@@ -310,8 +339,8 @@ public interface Bach {
       }
       // get (or guess) name and value
       String optionName = "-" + name;
-      if (field.isAnnotationPresent(Bach.Util.OptionName.class)) {
-        optionName = field.getAnnotation(Bach.Util.OptionName.class).value();
+      if (field.isAnnotationPresent(OptionName.class)) {
+        optionName = field.getAnnotation(OptionName.class).value();
       }
       // just a flag?
       if (field.getType() == boolean.class) {
@@ -392,11 +421,16 @@ public interface Bach {
 
   interface Configuration {
     default void dump(Consumer<String> consumer) {
-      consumer.accept(name() + " " + version());
-      consumer.accept("  " + folders());
+      consumer.accept("  name = " + name());
+      consumer.accept("  version = " + version());
+      consumer.accept("  folders = " + folders());
+      consumer.accept("  layout = " + layout());
+      consumer.accept("  tools = " + tools());
     }
 
     Map<Folder, Path> folders();
+
+    Layout layout();
 
     Level level();
 
@@ -417,8 +451,9 @@ public interface Bach {
 
     Default(Configuration configuration) {
       this.configuration = configuration;
+      log(Level.INFO, "%s-%s initialized", configuration.name(), configuration.version());
+      log(Level.FINE, "  bach = bach-%s [%s]", VERSION, getClass().getName());
       configuration.dump(message -> log(Level.CONFIG, message));
-      log(Level.INFO, "%s (bach-%s) initialized", getClass(), VERSION);
     }
 
     @Override
@@ -429,6 +464,26 @@ public interface Bach {
     @Override
     public Configuration configuration() {
       return configuration;
+    }
+
+    @Override
+    public void javac(Folder moduleSourceFolder, Folder destinationFolder) {
+      log(Level.FINE, "javac");
+      Path moduleSourcePath = path(moduleSourceFolder);
+      Path destinationPath = path(destinationFolder);
+      // TODO log.check(Files.exists(moduleSourcePath), "path `%s` does not exist",
+      // moduleSourcePath);
+      Command javac = new Command("javac");
+      // TODO command.addOptions(options);
+      // sets the destination directory for class files
+      javac.add("-d");
+      javac.add(destinationPath);
+      // specify where to find input source files for multiple modules
+      javac.add("--module-source-path");
+      javac.add(moduleSourcePath);
+      javac.mark(10);
+      javac.addAll(moduleSourcePath, Util::isJavaSourceFile);
+      execute(javac);
     }
 
     /** Execute command throwing a runtime exception when the exit value is not zero. */
@@ -482,12 +537,14 @@ public interface Bach {
     JDK_HOME(Location.of(Util.findJdkHome())),
     //
     AUXILIARY(Location.of(Paths.get(".bach"))),
-    TOOLS(Location.of(List.of(AUXILIARY), Paths.get("tools"))),
-    DEPENDENCIES(Location.of(List.of(AUXILIARY), Paths.get("dependencies"))),
+    TOOLS(Location.of(AUXILIARY, Paths.get("tools"))),
+    DEPENDENCIES(Location.of(AUXILIARY, Paths.get("dependencies"))),
     //
     SOURCE(Location.of(Paths.get("src"))),
     //
-    TARGET(Location.of(Paths.get("target/bach")));
+    TARGET(Location.of(Paths.get("target/bach"))),
+    TARGET_MAIN_COMPILE(Location.of(TARGET, Paths.get("main/compile"))),
+    ;
 
     public static class Location {
       final List<Folder> parents;
@@ -500,6 +557,10 @@ public interface Bach {
 
       public static Location of(List<Folder> parents, Path path) {
         return new Location(parents, path);
+      }
+
+      public static Location of(Folder parent, Path path) {
+        return new Location(List.of(parent), path);
       }
 
       public static Location of(Path path) {
@@ -518,24 +579,39 @@ public interface Bach {
   enum Layout {
     /** Auto-detect at configuration time. */
     AUTO,
-    /** Module folder first, no tests: {@code src/<module>} */
-    BASIC,
-    /** Module folders first: {@code src/<module>/[main|test]/[java|resources]} */
-    FIRST,
+    /**
+     * Module folder can be used as module-source-path, tests are not separated: {@code
+     * src/<module>}
+     */
+    BASIC {
+      @Override
+      void compile(Bach bach) {
+        bach.log(Level.INFO, "compile (BASIC)");
+        bach.javac(Folder.SOURCE, Folder.TARGET_MAIN_COMPILE);
+        // TODO exclude .java files?
+        Util.copyTree(bach.path(Folder.SOURCE), bach.path(Folder.TARGET_MAIN_COMPILE));
+      }
+    },
     /** Module folders last: {@code src/[main|test]/[java|resources]/<module>} */
-    TRAIL,
-    ;
+    JIGSAW,
+    /** Module folders first: {@code src/<module>/[main|test]/[java|resources]} */
+    MAVEN,
+    /** No module definition(s) available. */
+    VINTAGE;
 
     static Layout of(Path root) {
-      if (Files.notExists(root)) {
-        return AUTO;
+      if (!Files.isDirectory(root)) {
+        throw new Error("expected valid directory, but got: `" + root + "`");
       }
       try {
-        Path path =
+        Optional<Path> moduleInfo =
             Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
                 .map(root::relativize)
-                .findFirst()
-                .orElseThrow(() -> new Error("no module descriptor found in " + root));
+                .findFirst();
+        if (!moduleInfo.isPresent()) {
+          return VINTAGE;
+        }
+        Path path = moduleInfo.get();
         // trivial case: <module>/module-info.java
         if (path.getNameCount() == 2) {
           return BASIC;
@@ -550,22 +626,20 @@ public interface Bach {
               "expected java module descriptor unit, but got: \n" + moduleSource);
         }
         String moduleName = nameMatcher.group(2).trim();
-        return path.startsWith(moduleName) ? FIRST : TRAIL;
-      } catch (Exception e) {
+        return path.startsWith(moduleName) ? MAVEN : JIGSAW;
+      } catch (IOException e) {
         throw new Error("detection failed " + e, e);
       }
+    }
+
+    void compile(Bach bach) {
+      bach.log(Level.FINE, "compile");
     }
   }
 
   interface Util {
 
     Logger logger = Logger.getLogger("Bach");
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.FIELD)
-    @interface OptionName {
-      String value();
-    }
 
     static Path cleanTree(Path root, boolean keepRoot) {
       return cleanTree(root, keepRoot, path -> true);
@@ -595,6 +669,46 @@ public interface Bach {
       }
     }
 
+    static void copyTree(Path source, Path target) {
+      if (!Files.exists(source)) {
+        return;
+      }
+      logger.fine("copy `" + source + "` to `" + target + "`");
+      try {
+        SimpleFileVisitor<Path> copier =
+            new SimpleFileVisitor<>() {
+              @Override
+              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes bfa)
+                  throws IOException {
+                Path directory = target.resolve(source.relativize(dir));
+                try {
+                  Files.copy(dir, directory);
+                } catch (FileAlreadyExistsException e) {
+                  if (!Files.isDirectory(directory)) {
+                    throw new Error(e);
+                  }
+                }
+                return FileVisitResult.CONTINUE;
+              }
+
+              @Override
+              public FileVisitResult visitFile(Path file, BasicFileAttributes bfa)
+                  throws IOException {
+                Files.copy(
+                    file,
+                    target.resolve(source.relativize(file)),
+                    StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+              }
+            };
+        Files.createDirectories(target);
+        Files.walkFileTree(
+            source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, copier);
+      } catch (IOException e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
     /** Throw an {@link Error} when exit value is not zero. */
     static void exitValueChecker(int value) {
       if (value == 0) {
@@ -605,18 +719,22 @@ public interface Bach {
 
     /** Maven uri for jar artifact at {@code https://jcenter.bintray.com} repository. */
     static URI jcenter(String group, String artifact, String version) {
-      return maven("https://jcenter.bintray.com", group, artifact, version, "", "jar");
+      return maven("https://jcenter.bintray.com", group, artifact, version);
     }
 
     /** Maven uri for jar artifact at {@code https://jitpack.io} repository. */
     static URI jitpack(String group, String artifact, String version) {
-      return maven("https://jitpack.io", group, artifact, version, "", "jar");
+      return maven("https://jitpack.io", group, artifact, version);
+    }
+
+    static URI maven(String group, String artifact, String version) {
+      return maven("http://repo1.maven.org/maven2", group, artifact, version);
     }
 
     /** Maven uri for specified coordinates. */
     static URI maven(String repo, String group, String artifact, String version, String... args) {
-      String classifier = args[0];
-      String kind = args[1];
+      String classifier = args.length < 1 ? "" : args[0];
+      String kind = args.length < 2 ? "jar" : args[1];
       String versifier = isBlank(classifier) ? version : version + '-' + classifier;
       String path = artifact + '/' + version + '/' + artifact + '-' + versifier + '.' + kind;
       return URI.create(repo + '/' + group.replace('.', '/') + '/' + path);
