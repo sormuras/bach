@@ -20,14 +20,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class CommandTests {
+
+  private Bach bach = new Bach();
 
   @Test
   void dump() {
@@ -42,48 +45,22 @@ class CommandTests {
             "4",
             "... [omitted 4 arguments]",
             "9");
-    Bach.Command command = new Bach.Command("executable");
-    command.add("--some-option").add("value");
+    Bach.Command command = bach.new Command("executable");
+    command.add("--some-option");
+    command.add("value");
     command.add("-single-flag-without-values");
     command.mark(5);
-    command.addAll("0", "1", "2", "3", "4");
-    command.addAll("5", "6", "7", "8", "9");
+    List.of("0", "1", "2", "3", "4").forEach(command::add);
+    List.of("5", "6", "7", "8", "9").forEach(command::add);
     List<String> actualLines = new ArrayList<>();
     command.dump(actualLines::add);
     assertLinesMatch(expectedLines, actualLines);
   }
 
   @Test
-  void addConditional() {
-    Bach.Command command = new Bach.Command("executable").add(true, "true").add(false, "false");
-    List<String> arguments = List.of(command.toArgumentsArray());
-    assertEquals(1, arguments.size());
-    assertEquals("true", arguments.get(0));
-  }
-
-  @Test
-  void addFolders() {
-    Bach.Command command =
-        new Bach.Command("executable")
-            .add(folder -> folder.location.path, Bach.Folder.AUXILIARY, Bach.Folder.DEPENDENCIES)
-            .addAll(Stream.empty());
-    List<String> arguments = List.of(command.toArgumentsArray());
-    assertEquals(1, arguments.size());
-    assertEquals(".bach" + File.pathSeparator + "dependencies", arguments.get(0));
-  }
-
-  @Test
-  void addJavaSourceFiles() {
-    Bach.Command command = new Bach.Command("executable");
-    command.addAll(Paths.get("src"), Bach.Util::isJavaSourceFile);
-    List<String> arguments = List.of(command.toArgumentsArray());
-    assertTrue(arguments.size() > 4);
-  }
-
-  @Test
   void addOptionsWithEmptyClass() {
-    Bach.Command command = new Bach.Command("executable");
-    command.addOptions(new Object());
+    Bach.Command command = bach.new Command("executable");
+    command.addAllOptions(new Object());
     assertTrue(command.arguments.isEmpty());
   }
 
@@ -92,7 +69,7 @@ class CommandTests {
   void addOptionsWithAnonymousClass() {
     Object options =
         new Object() {
-          @Bach.Command.OptionName("--ZETA")
+          @Bach.OptionName("--ZETA")
           boolean z = true;
 
           Boolean flag1 = Boolean.TRUE;
@@ -100,12 +77,14 @@ class CommandTests {
           int value = 42;
           Boolean flag2 = Boolean.FALSE;
 
-          List<String> hex() {
-            return List.of("--prime-as-hex", "0x" + Integer.toHexString(hex));
+          void hex(Bach.Command command) {
+            command.add("--prime-as-hex");
+            command.add("0x" + Integer.toHexString(hex));
           }
         };
-    Bach.Command command = new Bach.Command("executable");
-    command.addOptions(options).add("final");
+    Bach.Command command = bach.new Command("executable");
+    command.addAllOptions(options, fields -> fields.sorted(Comparator.comparing(Field::getName)));
+    command.add("final");
     assertAll(
         "Options are reflected, ordered by name and added to the command instance",
         () -> assertEquals("-flag1", command.arguments.get(0)),
@@ -120,33 +99,36 @@ class CommandTests {
         () -> assertEquals("final", command.arguments.get(9)));
   }
 
-  //  void toolJavacOptions() {
-  //    List<String> strings = new ArrayList<>();
-  //    Bach bach = new Bach();
-  //    Bach.Tool.JavacOptions options = bach.tool.new JavacOptions();
-  //    options.additionalArguments = List.of("-J-Da=b");
-  //    options.deprecation = true;
-  //    options.encoding = StandardCharsets.US_ASCII;
-  //    options.failOnWarnings = true;
-  //    options.parameters = true;
-  //    options.verbose = true;
-  //    assert options.encoding().size() == 2;
-  //    assert options.modulePaths().size() == 2;
-  //    Bach.Command command = bach.command("javac");
-  //    command.addOptions(options);
-  //    command.dumpToPrinter((format, args) -> strings.add(String.format('|' + format,
-  // args).trim()));
-  //    assert Objects.equals("|javac", strings.get(0));
-  //    assert Objects.equals("|-J-Da=b", strings.get(1));
-  //    assert Objects.equals("|-deprecation", strings.get(2));
-  //    assert Objects.equals("|-encoding", strings.get(3));
-  //    assert Objects.equals("|  US-ASCII", strings.get(4));
-  //    assert Objects.equals("|-Werror", strings.get(5));
-  //    assert Objects.equals("|--module-path", strings.get(6));
-  //    assert Objects.equals("|  .bach" + File.separator + "dependencies", strings.get(7));
-  //    assert Objects.equals("|-parameters", strings.get(8));
-  //    assert Objects.equals("|-verbose", strings.get(9));
-  //  }
+  @Test
+  void dumpJavacOptions() {
+    Bach bach = new Bach();
+    Bach.JavacOptions options = bach.new JavacOptions();
+    //  options.additionalArguments = List.of("-J-Da=b");
+    options.deprecation = true;
+    options.encoding = StandardCharsets.US_ASCII;
+    options.failOnWarnings = true;
+    options.parameters = true;
+    options.verbose = true;
+
+    List<String> expectedLines =
+        List.of(
+            "|javac",
+            "|-deprecation",
+            "|-d",
+            "|  " + Paths.get("target", "jshell"),
+            "|-encoding",
+            "|  US-ASCII",
+            "|-Werror",
+            "|--module-source-path",
+            "|  " + Paths.get("src", "main", "java"),
+            "|-parameters",
+            "|-verbose");
+    List<String> actualLines = new ArrayList<>();
+    Bach.Command command = bach.new Command("javac");
+    command.addAllOptions(options);
+    command.dump(message -> actualLines.add('|' + message));
+    assertLinesMatch(expectedLines, actualLines);
+  }
 
   //  void toolJavadocOptions() {
   //    List<String> strings = new ArrayList<>();

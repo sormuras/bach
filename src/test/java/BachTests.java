@@ -16,87 +16,40 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.logging.Level;
+import java.util.List;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
   @Test
-  void isInterface() {
-    assertTrue(Bach.class.isInterface());
-  }
-
-  @Test
-  void builder() {
-    assertNotNull(new Bach.Builder().toString());
-    assertNotNull(new Bach.Builder().level(Level.OFF).build());
-  }
-
-  @Test
-  void defaultConfiguration() {
-    Bach.Configuration configuration = new Bach.Builder().level(Level.OFF).build().configuration();
-    assertTrue(System.getProperty("user.dir").endsWith(configuration.name()), configuration.name());
-    assertEquals("1.0.0-SNAPSHOT", configuration.version());
-    assertEquals(Bach.Layout.VINTAGE, configuration.layout());
-  }
-
-  @Test
-  void configurationPropertiesAreImmutable() {
-    Bach.Configuration configuration = new Bach.Builder().level(Level.OFF).build().configuration();
-    assertThrows(UnsupportedOperationException.class, () -> configuration.folders().clear());
-    assertThrows(UnsupportedOperationException.class, () -> configuration.tools().clear());
-  }
-
-  @Test
-  void customConfiguration() {
-    Bach.Builder builder =
-        new Bach.Builder()
-            .name("kernel")
-            .version("4.12-rc5")
-            .level(Level.WARNING)
-            .folder(Bach.Folder.AUXILIARY, Paths.get("aux"))
-            .folder(Bach.Folder.DEPENDENCIES, Bach.Folder.Location.of(Paths.get("mods")))
-            .streamErr(System.err)
-            .streamOut(System.out)
-            .tool(new CustomTool());
-    Bach bach = builder.build();
-    assertNotNull(bach.toString());
-    Bach.Configuration custom = bach.configuration();
-    assertEquals("kernel", custom.name());
-    assertEquals("4.12-rc5", custom.version());
-    assertSame(Level.WARNING, custom.level());
-    assertEquals(Paths.get("aux"), custom.folders().get(Bach.Folder.AUXILIARY));
-    assertEquals(Paths.get("mods"), custom.folders().get(Bach.Folder.DEPENDENCIES));
-    for (Bach.Folder folder : Bach.Folder.values()) {
-      assertEquals(bach.path(folder), custom.folders().get(folder));
-    }
-    assertEquals(System.err, custom.streamErr());
-    assertEquals(System.out, custom.streamOut());
-    assertEquals(CustomTool.class, custom.tools().get("custom").getClass());
+  void customTool() {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    Bach bach = new Bach();
+    bach.streamOut = new PrintStream(out);
+    bach.tools.put("custom", new CustomTool());
+    bach.call("custom", 1, 2, 3);
+    assertLinesMatch(
+        List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
+        List.of(out.toString().split(System.lineSeparator())));
   }
 
   @Test
   void call() {
-    OutputStream out = new ByteArrayOutputStream(2000);
-    Bach bach = new Bach.Builder().streamOut(new PrintStream(out)).build();
-    assertEquals(0, bach.call("java", "--version"));
-    assertThrows(Error.class, () -> bach.call("java", "--thisOptionDoesNotExist"));
-    assertThrows(Error.class, () -> bach.call("executable, that does not exist", 1, 2, 3));
-    String result = out.toString();
-    assertTrue(result.contains("--thisOptionDoesNotExist"));
-    assertTrue(result.contains("executable, that does not exist"));
+    Bach bach = new Bach();
+    bach.streamOut = new PrintStream(new ByteArrayOutputStream(2000));
+    bach.call("java", "--version");
+    Error e1 = assertThrows(Error.class, () -> bach.call("java", "--thisOptionDoesNotExist"));
+    assertEquals("execution failed with unexpected error code: 1", e1.getMessage());
+    Error e2 = assertThrows(Error.class, () -> bach.call("executable, that doesn't exist", 123));
+    assertEquals("executing `executable, that doesn't exist` failed", e2.getMessage());
   }
 
   static class CustomTool implements ToolProvider {
@@ -111,14 +64,5 @@ class BachTests {
       out.println("CustomTool with " + Arrays.toString(args));
       return 0;
     }
-  }
-
-  @Test
-  void layout() {
-    assertEquals(Bach.Layout.VINTAGE, Bach.Layout.of(Paths.get("src")));
-    assertEquals(Bach.Layout.BASIC, Bach.Layout.of(Paths.get("deprecated/demo/basic")));
-    assertEquals(Bach.Layout.MAVEN, Bach.Layout.of(Paths.get("deprecated/demo/idea")));
-    assertEquals(Bach.Layout.JIGSAW, Bach.Layout.of(Paths.get("deprecated/demo/common")));
-    assertThrows(Error.class, () -> Bach.Layout.of(Paths.get("non/existing/path")));
   }
 }

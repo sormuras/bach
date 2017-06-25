@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.logging.Level;
 
 class Build {
 
@@ -41,49 +38,53 @@ class Build {
   private final Bach bach;
 
   private Build() {
-    this.bach = new Bach.Builder().folder(Bach.Folder.TARGET, TARGET).level(Level.FINE).build();
+    this.bach = new Bach();
   }
 
   private void build() throws IOException {
-    format(Paths.get("src"));
+    format();
     resolve();
-    bach.clean();
+    // TODO bach.clean();
     compile();
-    bach.call("javadoc", "-quiet", "-Xdoclint:none", "-d", JAVADOC, "src/main/java/Bach.java");
     jar();
     test();
   }
 
-  private URI uri(String group, String artifact, String version) {
-    return Bach.Util.maven(group, artifact, version);
-  }
-
   private void resolve() {
-    Map<String, URI> map = new TreeMap<>();
-    map.put("org.junit.jupiter.api", uri("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M4"));
-    map.put(
-        "org.junit.platform.commons",
-        uri("org.junit.platform", "junit-platform-commons", "1.0.0-M4"));
-    map.put("org.opentest4j", uri("org.opentest4j", "opentest4j", "1.0.0-M2"));
-    map.forEach(bach::resolve);
+    bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-SNAPSHOT");
+    bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-SNAPSHOT");
+    bach.resolve("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT");
   }
 
   private void compile() throws IOException {
     // main
     bach.call("javac", "-d", CLASSES, "src/main/java/Bach.java");
+    // javadoc
+    bach.call(
+        "javadoc",
+        "-quiet",
+        "-Xdoclint:all,-missing",
+        "-package",
+        "-linksource",
+        "-link",
+        "http://download.java.net/java/jdk9/docs/api",
+        "-d",
+        JAVADOC,
+        "src/main/java/Bach.java");
     // test
-    List<Object> classPathEntries = new ArrayList<>();
+    List<Path> classPathEntries = new ArrayList<>();
     classPathEntries.add(CLASSES);
-    Files.walk(bach.path(Bach.Folder.DEPENDENCIES))
+    Files.walk(Paths.get(".bach/resolved"))
         .filter(Bach.Util::isJarFile)
         .forEach(classPathEntries::add);
-    bach.execute(
-        new Bach.Command("javac")
-            .addAll("-d", CLASSES)
-            .add("--class-path")
-            .add(classPathEntries.stream(), File.pathSeparator)
-            .mark(1)
-            .addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaSourceFile));
+    Bach.Command javac = bach.new Command("javac");
+    javac.add("-d");
+    javac.add(CLASSES);
+    javac.add("--class-path");
+    javac.add(classPathEntries);
+    javac.mark(1);
+    javac.addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaFile);
+    bach.execute(javac);
   }
 
   private void jar() throws IOException {
@@ -94,14 +95,16 @@ class Build {
   }
 
   private void jar(String artifact, Object... contents) {
-    Bach.Command jar = new Bach.Command("jar");
+    Bach.Command jar = bach.new Command("jar");
     Path file = ARTIFACTS.resolve(artifact + ".jar");
-    jar.addAll("--create", "--file=" + file);
-    jar.add("-C").addAll(contents);
+    jar.add("--create");
+    jar.add("--file=" + file);
+    jar.add("-C");
+    Arrays.stream(contents).forEach(jar::add);
     bach.execute(jar);
   }
 
-  private void format(Path... paths) throws IOException {
+  private void format() throws IOException {
     String mode = Boolean.getBoolean("bach.format.replace") ? "replace" : "validate";
     String repo = "https://jitpack.io";
     String user = "com/github/sormuras";
@@ -109,22 +112,25 @@ class Build {
     String version = "validate-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
-    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(name));
-    Bach.Command command = bach.java("-jar", jar, "--" + mode).mark(10);
-    for (Path path : paths) {
-      command.addAll(
-          path, unit -> Bach.Util.isJavaSourceFile(unit) && !unit.endsWith("module-info.java"));
-      bach.execute(command);
-    }
+    Path jar = Bach.Util.download(uri, Paths.get(".bach/tools").resolve(name));
+    Bach.Command format = bach.new Command("java");
+    format.add("-jar");
+    format.add(jar);
+    format.add("--" + mode);
+    format.mark(10);
+    Path root = Paths.get("src");
+    format.addAll(root, unit -> Bach.Util.isJavaFile(unit) && !unit.endsWith("module-info.java"));
+    bach.execute(format);
   }
 
-  private void test() {
-    String artifact = "junit-platform-console-standalone";
-    URI uri = Bach.Util.jcenter("org.junit.platform", artifact, "1.0.0-M4");
-    Path jar = Bach.Util.download(uri, bach.path(Bach.Folder.TOOLS).resolve(artifact));
-    Bach.Command command = bach.java("-ea", "-jar", jar);
-    command.add("--scan-classpath").add(CLASSES);
-    command.add("--class-path").add(CLASSES);
-    bach.execute(command);
+  private void test() throws IOException {
+    String repo = "https://oss.sonatype.org/content/repositories/snapshots";
+    String user = "org/junit/platform";
+    String name = "junit-platform-console-standalone";
+    String version = "1.0.0-SNAPSHOT";
+    String file = name + "-1.0.0-20170624.111938-249.jar";
+    URI uri = URI.create(String.join("/", repo, user, name, version, file));
+    Path jar = Bach.Util.download(uri, Paths.get(".bach/tools").resolve(name));
+    bach.call("java", "-ea", "-jar", jar, "--scan-classpath", CLASSES, "--class-path", CLASSES);
   }
 }

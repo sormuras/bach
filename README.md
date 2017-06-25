@@ -17,7 +17,7 @@ target paths to your needs and launch the build with `jshell build.jsh`.
 ```javascript
 /open Bach.java
 
-Bach bach = new Bach.Builder().build()
+Bach bach = new Bach()
 bach.call("javac", "-d", "target/classes", "App.java", ...)
 bach.call("java", "-ea", "-cp", "target/classes", "App")
 
@@ -42,7 +42,8 @@ if (Files.notExists(script)) {
 
 /open target/Bach.java
 
-new Bach.Builder().build().call("java", "--version")
+Bach bach = new Bach()
+bach.call("java", "--version")
 
 /exit
 ```

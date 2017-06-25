@@ -16,6 +16,6 @@ if (Files.notExists(script)) {
 //
 /open target/Bach.java
 
-new Bach.Builder().build().call("java", "--version")
+new Bach().call("java", "--version")
 
 /exit
