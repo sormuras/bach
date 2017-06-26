@@ -44,7 +44,7 @@ class Build {
   private void build() throws IOException {
     format();
     resolve();
-    // TODO bach.clean();
+    Bach.Util.cleanTree(TARGET, true);
     compile();
     jar();
     test();

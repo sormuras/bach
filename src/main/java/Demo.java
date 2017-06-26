@@ -21,30 +21,10 @@ import java.util.List;
 class Demo {
 
   public static void main(String... args) throws Exception {
-    new Demo().jsb();
     new Demo().basic();
   }
 
   private void basic() {
-    //    if (!Boolean.getBoolean("basic")) return;
-    //    Bach bach =
-    //        new Bach.Builder()
-    //            .name("basic")
-    //            .version("0.9")
-    //            .level(Level.FINE)
-    //            .folder(Bach.Folder.SOURCE, Paths.get("demo/basic"))
-    //            .folder(Bach.Folder.TARGET, Paths.get("target/demo/basic"))
-    //            .build();
-    //    bach.build();
-    //
-    //    // run
-    //    String module = "com.greetings";
-    //    String main = "com.greetings.Main";
-    //    Path modulePath = bach.path(Bach.Folder.TARGET_MAIN_COMPILE);
-    //    bach.call("java", "--module-path", modulePath, "--module", module + "/" + main);
-  }
-
-  private void jsb() {
     StackWalker.getInstance().forEach(System.out::println);
     Bach builder = new Bach();
     builder.call("java", "--version");

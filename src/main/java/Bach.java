@@ -347,6 +347,34 @@ class Bach {
 
     Logger logger = Logger.getLogger("Bach");
 
+    static Path cleanTree(Path root, boolean keepRoot) {
+      return cleanTree(root, keepRoot, path -> true);
+    }
+
+    static Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) {
+      try {
+        if (Files.notExists(root)) {
+          if (keepRoot) {
+            Files.createDirectories(root);
+          }
+          return root;
+        }
+        List<Path> paths =
+            Files.walk(root)
+                .filter(p -> !(keepRoot && root.equals(p)))
+                .filter(filter)
+                .sorted((p, q) -> -p.compareTo(q))
+                .collect(Collectors.toList());
+        for (Path path : paths) {
+          Files.deleteIfExists(path);
+        }
+        logger.log(Level.FINE, "deleted tree `" + root + "`");
+        return root;
+      } catch (IOException e) {
+        throw new Error("should not happen", e);
+      }
+    }
+
     /** Download the resource specified by its URI to the target directory. */
     static Path download(URI uri, Path targetDirectory) throws IOException {
       return Util.download(uri, targetDirectory, fileName(uri), path -> true);
@@ -381,6 +409,37 @@ class Bach {
       return target;
     }
 
+    /** Extract the file name from the uri. */
+    static String fileName(URI uri) {
+      String urlString = uri.getPath();
+      int begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    }
+
+    /** Return {@code true} if the string is {@code null} or empty. */
+    static boolean isBlank(String string) {
+      return string == null || string.isEmpty() || string.trim().isEmpty();
+    }
+
+    /** Return {@code true} if the path points to a canonical jar file. */
+    static boolean isJarFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        return path.getFileName().toString().endsWith(".jar");
+      }
+      return false;
+    }
+
+    /** Return {@code true} if the path points to a canonical Java compilation unit. */
+    static boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        String name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.chars().filter(c -> c == '.').count() == 1;
+        }
+      }
+      return false;
+    }
+
     /** Get uri for specified maven coordinates. */
     static URI uri(String repo, String group, String artifact, String version, String... args) {
       group = group.replace('.', '/');
@@ -411,37 +470,6 @@ class Bach {
         }
       }
       return URI.create(repo + '/' + group + '/' + path + '/' + file);
-    }
-
-    /** Extract the file name from the uri. */
-    static String fileName(URI uri) {
-      String urlString = uri.getPath();
-      int begin = urlString.lastIndexOf('/') + 1;
-      return urlString.substring(begin).split("\\?")[0].split("#")[0];
-    }
-
-    /** Return {@code true} if the string is {@code null} or empty. */
-    static boolean isBlank(String string) {
-      return string == null || string.isEmpty() || string.trim().isEmpty();
-    }
-
-    /** Return {@code true} if the path points to a canonical jar file. */
-    static boolean isJarFile(Path path) {
-      if (Files.isRegularFile(path)) {
-        return path.getFileName().toString().endsWith(".jar");
-      }
-      return false;
-    }
-
-    /** Return {@code true} if the path points to a canonical Java compilation unit. */
-    static boolean isJavaFile(Path path) {
-      if (Files.isRegularFile(path)) {
-        String name = path.getFileName().toString();
-        if (name.endsWith(".java")) {
-          return name.chars().filter(c -> c == '.').count() == 1;
-        }
-      }
-      return false;
     }
   }
 }
