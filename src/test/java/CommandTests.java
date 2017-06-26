@@ -119,8 +119,6 @@ class CommandTests {
             "|-encoding",
             "|  US-ASCII",
             "|-Werror",
-            "|--module-source-path",
-            "|  " + Paths.get("src", "main", "java"),
             "|-parameters",
             "|-verbose");
     List<String> actualLines = new ArrayList<>();

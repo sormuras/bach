@@ -20,7 +20,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,24 +41,33 @@ class Build {
   }
 
   private void build() throws IOException {
-    format();
-    resolve();
     Bach.Util.cleanTree(TARGET, true);
+    format();
     compile();
+    javadoc();
     jar();
     test();
-  }
-
-  private void resolve() {
-    bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-SNAPSHOT");
-    bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-SNAPSHOT");
-    bach.resolve("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT");
   }
 
   private void compile() throws IOException {
     // main
     bach.call("javac", "-d", CLASSES, "src/main/java/Bach.java");
-    // javadoc
+    // test
+    bach.javac(
+        options -> {
+          options.destinationPath = CLASSES;
+          options.classPaths =
+              List.of(
+                  CLASSES,
+                  bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-SNAPSHOT"),
+                  bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-SNAPSHOT"),
+                  bach.resolve("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT"));
+          options.classSourcePaths = List.of(Paths.get("src/test/java"));
+          return options;
+        });
+  }
+
+  private void javadoc() throws IOException {
     Files.createDirectories(JAVADOC);
     bach.call(
         "javadoc",
@@ -72,20 +80,6 @@ class Build {
         "-d",
         JAVADOC,
         "src/main/java/Bach.java");
-    // test
-    List<Path> classPathEntries = new ArrayList<>();
-    classPathEntries.add(CLASSES);
-    Files.walk(Paths.get(".bach/resolved"))
-        .filter(Bach.Util::isJarFile)
-        .forEach(classPathEntries::add);
-    Bach.Command javac = bach.new Command("javac");
-    javac.add("-d");
-    javac.add(CLASSES);
-    javac.add("--class-path");
-    javac.add(classPathEntries);
-    javac.mark(1);
-    javac.addAll(Paths.get("src", "test", "java"), Bach.Util::isJavaFile);
-    bach.execute(javac);
   }
 
   private void jar() throws IOException {

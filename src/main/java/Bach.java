@@ -87,6 +87,7 @@ class Bach {
     UnaryOperator<Command> addAllSourceFiles =
         command -> {
           command.mark(10);
+          command.addAll(options.classSourcePaths, Util::isJavaFile);
           command.addAll(options.moduleSourcePaths, Util::isJavaFile);
           return command;
         };
@@ -95,7 +96,7 @@ class Bach {
 
   /** Resolve maven artifact. */
   Path resolve(String group, String artifact, String version, String... more) {
-    Path targetDirectory = Paths.get(".bach", "resolved"); // TODO path(Folder.DEPENDENCIES)
+    Path targetDirectory = Paths.get(".bach", "resolved");
     for (String repo : repositories) {
       URI uri = Util.uri(repo, group, artifact, version, more);
       try {
@@ -158,7 +159,8 @@ class Bach {
       Stream<java.lang.reflect.Field> stream =
           Arrays.stream(options.getClass().getDeclaredFields())
               .filter(field -> !field.isSynthetic())
-              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()));
+              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+              .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
       stream = operator.apply(stream);
       stream.forEach(field -> addOptionUnchecked(options, field));
     }
@@ -267,6 +269,12 @@ class Bach {
   /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
   @SuppressWarnings("unused")
   class JavacOptions {
+    /** (Legacy) class path. */
+    public List<Path> classPaths = List.of();
+
+    /** (Legacy) locations where to find Java source files. */
+    transient List<Path> classSourcePaths = List.of();
+
     /** Output source locations where deprecated APIs are used. */
     boolean deprecation = true;
 
@@ -282,16 +290,23 @@ class Bach {
     boolean failOnWarnings = true;
 
     /** Specify where to find application modules. */
-    List<Path> modulePaths = List.of(); // TODO List.of(path(Folder.DEPENDENCIES));
+    List<Path> modulePaths = List.of();
 
     /** Where to find input source files for multiple modules. */
-    List<Path> moduleSourcePaths = List.of(Paths.get("src/main/java"));
+    List<Path> moduleSourcePaths = List.of();
 
     /** Generate metadata for reflection on method parameters. */
     boolean parameters = true;
 
     /** Output messages about what the compiler is doing. */
     boolean verbose = false; // log.isLevelActive(Level.FINEST);
+
+    void classPaths(Command command) {
+      if (!classPaths.isEmpty()) {
+        command.add("--class-path");
+        command.add(classPaths);
+      }
+    }
 
     void encoding(Command command) {
       if (Charset.defaultCharset().equals(encoding)) {
@@ -320,7 +335,7 @@ class Bach {
   @SuppressWarnings("unused")
   class JavaOptions {
     /** Where to find application modules. */
-    List<Path> modulePaths = List.of(); // TODO List.of(path(Folder.DEPENDENCIES));
+    List<Path> modulePaths = List.of();
 
     /** Initial module to resolve and the name of the main class to execute. */
     @OptionName("--module")
