@@ -215,9 +215,7 @@ class Bach {
         if (nextIndex >= dumpLimit) {
           int last = arguments.size() - 1;
           int diff = last - nextIndex;
-          if (diff == 1) {
-            consumer.accept(indent + arguments.get(last - 1));
-          } else {
+          if (diff > 1) {
             consumer.accept(indent + "... [omitted " + diff + " arguments]");
           }
           consumer.accept(indent + arguments.get(last));

@@ -60,6 +60,7 @@ class Build {
     // main
     bach.call("javac", "-d", CLASSES, "src/main/java/Bach.java");
     // javadoc
+    Files.createDirectories(JAVADOC);
     bach.call(
         "javadoc",
         "-quiet",
