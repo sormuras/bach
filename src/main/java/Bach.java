@@ -99,8 +99,13 @@ class Bach {
     Path targetDirectory = Paths.get(".bach", "resolved");
     for (String repo : repositories) {
       URI uri = Util.uri(repo, group, artifact, version, more);
+      String fileName = Util.fileName(uri);
+      // revert local filename with constant version attribute
+      if (version.contains("SNAPSHOT")) {
+        fileName = Util.fileName(artifact, version, more);
+      }
       try {
-        return Util.download(uri, targetDirectory);
+        return Util.download(uri, targetDirectory, fileName, path -> true);
       } catch (IOException e) {
         // continue
       }
@@ -399,6 +404,12 @@ class Bach {
       URL url = uri.toURL();
       Files.createDirectories(directory);
       Path target = directory.resolve(fileName);
+      if (Boolean.getBoolean("bach.offline")) {
+        if (Files.exists(target)) {
+          return target;
+        }
+        throw new Error("offline mode is active -- missing file " + target);
+      }
       URLConnection urlConnection = url.openConnection();
       FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
       if (Files.exists(target)) {
@@ -420,6 +431,13 @@ class Bach {
       Files.setLastModifiedTime(target, urlLastModifiedTime);
       logger.log(Level.FINE, "stored `" + target + "` [" + urlLastModifiedTime + "]");
       return target;
+    }
+
+    static String fileName(String artifact, String version, String... more) {
+      String classifier = more.length < 1 ? "" : more[0];
+      String kind = more.length < 2 ? "jar" : more[1];
+      String versifier = isBlank(classifier) ? version : version + '-' + classifier;
+      return artifact + '-' + versifier + '.' + kind;
     }
 
     /** Extract the file name from the uri. */
@@ -454,13 +472,10 @@ class Bach {
     }
 
     /** Get uri for specified maven coordinates. */
-    static URI uri(String repo, String group, String artifact, String version, String... args) {
+    static URI uri(String repo, String group, String artifact, String version, String... more) {
       group = group.replace('.', '/');
-      String classifier = args.length < 1 ? "" : args[0];
-      String kind = args.length < 2 ? "jar" : args[1];
       String path = artifact + '/' + version;
-      String versifier = isBlank(classifier) ? version : version + '-' + classifier;
-      String file = artifact + '-' + versifier + '.' + kind;
+      String file = fileName(artifact, version, more);
       if (version.endsWith("SNAPSHOT")) {
         try {
           URI metaUri = URI.create(repo + '/' + group + '/' + path + '/' + "maven-metadata.xml");

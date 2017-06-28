@@ -123,9 +123,10 @@ class Build {
     String user = "org/junit/platform";
     String name = "junit-platform-console-standalone";
     String version = "1.0.0-SNAPSHOT";
-    String file = name + "-1.0.0-20170624.111938-249.jar";
-    URI uri = URI.create(String.join("/", repo, user, name, version, file));
-    Path jar = Bach.Util.download(uri, Paths.get(".bach/tools").resolve(name));
+    String file = Bach.Util.fileName(name, version, "", "jar");
+    URI uri = Bach.Util.uri(repo, user, name, version);
+    Path path = Paths.get(".bach/tools").resolve(name);
+    Path jar = Bach.Util.download(uri, path, file, p -> true);
     bach.call("java", "-ea", "-jar", jar, "--scan-classpath", CLASSES, "--class-path", CLASSES);
   }
 }
