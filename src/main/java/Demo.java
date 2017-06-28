@@ -22,25 +22,42 @@ class Demo {
 
   public static void main(String... args) throws Exception {
     new Demo().basic();
+    new Demo().common();
   }
 
   private void basic() {
     StackWalker.getInstance().forEach(System.out::println);
-    Bach builder = new Bach();
-    builder.call("java", "--version");
-    builder.javac(
+    Bach bach = new Bach();
+    bach.call("java", "--version");
+    bach.javac(
         option -> {
           option.moduleSourcePaths =
               List.of(Paths.get("demo/basic/greetings"), Paths.get("demo/basic/hello"));
           option.destinationPath = Paths.get("target/jshell/demo/basic");
           return option;
         });
-    builder.java(
+    bach.java(
         option -> {
           option.modulePaths = List.of(Paths.get("target/jshell/demo/basic"));
           option.module = "com.greetings/com.greetings.Main";
           return option;
         });
     StackWalker.getInstance().forEach(System.out::println);
+  }
+
+  private void common() {
+    Bach bach = new Bach();
+    bach.javac(
+        options -> {
+          options.moduleSourcePaths = List.of(Paths.get("deprecated/demo/common/main/java"));
+          options.destinationPath = Paths.get("target/jshell/demo/common");
+          return options;
+        });
+    bach.java(
+        option -> {
+          option.modulePaths = List.of(Paths.get("target/jshell/demo/common"));
+          option.module = "com.greetings/com.greetings.Main";
+          return option;
+        });
   }
 }
