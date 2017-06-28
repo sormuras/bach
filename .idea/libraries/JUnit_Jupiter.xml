@@ -1,9 +1,9 @@
 <component name="libraryTable">
   <library name="JUnit Jupiter">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.junit.jupiter.api.jar!/" />
-      <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.junit.platform.commons.jar!/" />
-      <root url="jar://$PROJECT_DIR$/.bach/dependencies/org.opentest4j.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/resolved/junit-jupiter-api-5.0.0-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/resolved/junit-platform-commons-1.0.0-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/resolved/opentest4j-1.0.0-SNAPSHOT.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
