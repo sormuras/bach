@@ -30,90 +30,11 @@ import java.util.logging.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
-/**
- * Bach - Use jshell to build your modular project.
- *
- * @see <a href="https://github.com/sormuras/bach">bach</a>
- * @see <a href="https://docs.oracle.com/javase/9/tools/jshell.htm">jshell</a>
- */
+/** Common properties and utilities. */
 @SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
-class Bach {
+class Common {
 
-  List<String> repositories =
-      new ArrayList<>(
-          List.of(
-              "https://oss.sonatype.org/content/repositories/snapshots",
-              "http://repo1.maven.org/maven2",
-              "https://jcenter.bintray.com",
-              "https://jitpack.io"));
-
-  /** Standard error stream. */
-  PrintStream streamErr = System.err;
-
-  /** Standard out stream. */
-  PrintStream streamOut = System.out;
-
-  /** Map of custom tool providers. */
-  Map<String, ToolProvider> tools = new TreeMap<>();
-
-  void call(String tool, Object options, UnaryOperator<Command> operator) {
-    Command command = new Command(tool);
-    command.addAllOptions(options);
-    execute(operator.apply(command));
-  }
-
-  void call(String tool, Object... arguments) {
-    Command command = new Command(tool);
-    Arrays.stream(arguments).forEach(command::add);
-    execute(command);
-  }
-
-  /** Execute. */
-  void execute(Command command) {
-    int actual = command.execute();
-    if (actual != 0) {
-      throw new Error("execution failed with unexpected error code: " + actual);
-    }
-  }
-
-  /** Use the {@code java} command to launch a Java application. */
-  void java(UnaryOperator<JavaOptions> operator) {
-    call("java", operator.apply(new JavaOptions()), UnaryOperator.identity());
-  }
-
-  /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
-  void javac(UnaryOperator<JavacOptions> operator) {
-    JavacOptions options = operator.apply(new JavacOptions());
-    UnaryOperator<Command> addAllSourceFiles =
-        command -> {
-          command.mark(10);
-          command.addAll(options.classSourcePaths, Util::isJavaFile);
-          command.addAll(options.moduleSourcePaths, Util::isJavaFile);
-          return command;
-        };
-    call("javac", options, addAllSourceFiles);
-  }
-
-  /** Resolve maven artifact. */
-  Path resolve(String group, String artifact, String version, String... more) {
-    Path targetDirectory = Paths.get(".bach", "resolved");
-    for (String repo : repositories) {
-      URI uri = Util.uri(repo, group, artifact, version, more);
-      String fileName = Util.fileName(uri);
-      // revert local filename with constant version attribute
-      if (version.contains("SNAPSHOT")) {
-        fileName = Util.fileName(artifact, version, more);
-      }
-      try {
-        return Util.download(uri, targetDirectory, fileName, path -> true);
-      } catch (IOException e) {
-        // continue
-      }
-    }
-    throw new Error("could not resolve artifact: " + group + artifact + version);
-  }
-
-  /** Command builder. */
+  /** Command-line executable builder. */
   class Command {
 
     final List<String> arguments = new ArrayList<>();
@@ -271,11 +192,235 @@ class Bach {
     }
   }
 
+  /** Command option name annotation. */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface OptionName {
+    String value();
+  }
+
+  /** Logger instance. */
+  Logger logger = Logger.getLogger("Bach");
+
+  /** Maven 2 repositories. */
+  List<String> repositories =
+      new ArrayList<>(
+          List.of(
+              "https://oss.sonatype.org/content/repositories/snapshots",
+              "http://repo1.maven.org/maven2",
+              "https://jcenter.bintray.com",
+              "https://jitpack.io"));
+
+  /** Standard error stream. */
+  PrintStream streamErr = System.err;
+
+  /** Standard out stream. */
+  PrintStream streamOut = System.out;
+
+  /** Map of custom tool providers. */
+  Map<String, ToolProvider> tools = new TreeMap<>();
+
+  void call(String tool, Object options, UnaryOperator<Command> operator) {
+    Command command = new Command(tool);
+    command.addAllOptions(options);
+    execute(operator.apply(command));
+  }
+
+  void call(String tool, Object... arguments) {
+    Command command = new Command(tool);
+    Arrays.stream(arguments).forEach(command::add);
+    execute(command);
+  }
+
+  Path cleanTree(Path root, boolean keepRoot) {
+    return cleanTree(root, keepRoot, path -> true);
+  }
+
+  Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) {
+    try {
+      if (Files.notExists(root)) {
+        if (keepRoot) {
+          Files.createDirectories(root);
+        }
+        return root;
+      }
+      List<Path> paths =
+          Files.walk(root)
+              .filter(p -> !(keepRoot && root.equals(p)))
+              .filter(filter)
+              .sorted((p, q) -> -p.compareTo(q))
+              .collect(Collectors.toList());
+      for (Path path : paths) {
+        Files.deleteIfExists(path);
+      }
+      logger.log(Level.FINE, "deleted tree `" + root + "`");
+      return root;
+    } catch (IOException e) {
+      throw new Error("should not happen", e);
+    }
+  }
+
+  /** Download the resource specified by its URI to the target directory. */
+  Path download(URI uri, Path targetDirectory) throws IOException {
+    return download(uri, targetDirectory, fileName(uri), path -> true);
+  }
+
+  /** Download the resource from URI to the target directory using the provided file name. */
+  Path download(URI uri, Path directory, String fileName, Predicate<Path> skip) throws IOException {
+    URL url = uri.toURL();
+    Files.createDirectories(directory);
+    Path target = directory.resolve(fileName);
+    if (Boolean.getBoolean("bach.offline")) {
+      if (Files.exists(target)) {
+        return target;
+      }
+      throw new Error("offline mode is active -- missing file " + target);
+    }
+    URLConnection urlConnection = url.openConnection();
+    FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+    if (Files.exists(target)) {
+      if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
+        if (Files.size(target) == urlConnection.getContentLengthLong()) {
+          if (skip.test(target)) {
+            logger.log(Level.FINE, "skipped, using `" + target + "`");
+            return target;
+          }
+        }
+      }
+      Files.delete(target);
+    }
+    logger.log(Level.FINE, "transferring `" + uri + "`...");
+    try (InputStream sourceStream = url.openStream();
+        OutputStream targetStream = Files.newOutputStream(target)) {
+      sourceStream.transferTo(targetStream);
+    }
+    Files.setLastModifiedTime(target, urlLastModifiedTime);
+    logger.log(Level.FINE, "stored `" + target + "` [" + urlLastModifiedTime + "]");
+    return target;
+  }
+
+  /** Execute command expecting an exit code of zero. */
+  void execute(Command command) {
+    int actual = command.execute();
+    if (actual != 0) {
+      throw new Error("execution failed with unexpected error code: " + actual);
+    }
+  }
+
+  String fileName(String artifact, String version, String... more) {
+    String classifier = more.length < 1 ? "" : more[0];
+    String kind = more.length < 2 ? "jar" : more[1];
+    String versifier = isBlank(classifier) ? version : version + '-' + classifier;
+    return artifact + '-' + versifier + '.' + kind;
+  }
+
+  /** Extract the file name from the uri. */
+  String fileName(URI uri) {
+    String urlString = uri.getPath();
+    int begin = urlString.lastIndexOf('/') + 1;
+    return urlString.substring(begin).split("\\?")[0].split("#")[0];
+  }
+
+  /** Return {@code true} if the string is {@code null} or empty. */
+  boolean isBlank(String string) {
+    return string == null || string.isEmpty() || string.trim().isEmpty();
+  }
+
+  /** Return {@code true} if the path points to a canonical Java archive file. */
+  boolean isJarFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      return path.getFileName().toString().endsWith(".jar");
+    }
+    return false;
+  }
+
+  /** Return {@code true} if the path points to a canonical Java compilation unit. */
+  boolean isJavaFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      String unit = path.getFileName().toString();
+      if (unit.endsWith(".java")) {
+        return unit.indexOf('.') == unit.length() - 5; // single dot in filename
+      }
+    }
+    return false;
+  }
+
+  /** Resolve maven artifact. */
+  Path resolve(String group, String artifact, String version, String... more) {
+    Path targetDirectory = Paths.get(".bach", "resolved");
+    for (String repo : repositories) {
+      URI uri = uri(repo, group, artifact, version, more);
+      String fileName = fileName(uri);
+      // revert local filename with constant version attribute
+      if (version.contains("SNAPSHOT")) {
+        fileName = fileName(artifact, version, more);
+      }
+      try {
+        return download(uri, targetDirectory, fileName, path -> true);
+      } catch (IOException e) {
+        // e.printStackTrace();
+      }
+    }
+    throw new Error("could not resolve artifact: " + group + artifact + version);
+  }
+
+  /** Get uri for specified maven coordinates. */
+  URI uri(String repo, String group, String artifact, String version, String... more) {
+    group = group.replace('.', '/');
+    String path = artifact + '/' + version;
+    String file = fileName(artifact, version, more);
+    if (version.endsWith("SNAPSHOT")) {
+      try {
+        URI metaUri = URI.create(repo + '/' + group + '/' + path + '/' + "maven-metadata.xml");
+        try (InputStream sourceStream = metaUri.toURL().openStream();
+            ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
+          sourceStream.transferTo(targetStream);
+          String meta = targetStream.toString("UTF-8");
+          UnaryOperator<String> extract =
+              key -> {
+                int begin = meta.indexOf(key) + key.length();
+                int end = meta.indexOf('<', begin);
+                return meta.substring(begin, end).trim();
+              };
+          String timestamp = extract.apply("<timestamp>");
+          String buildNumber = extract.apply("<buildNumber>");
+          file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
+        }
+      } catch (IOException e) {
+        // fall-through and return with "SNAPSHOT" literal
+      }
+    }
+    return URI.create(repo + '/' + group + '/' + path + '/' + file);
+  }
+}
+
+/** JDK Tools and Commands. */
+@SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
+class JdkTool extends Common {
+
+  /** Use the {@code java} command to launch a Java application. */
+  void java(UnaryOperator<JavaOptions> operator) {
+    call("java", operator.apply(new JavaOptions()), UnaryOperator.identity());
+  }
+
+  /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
+  void javac(UnaryOperator<JavacOptions> operator) {
+    JavacOptions options = operator.apply(new JavacOptions());
+    UnaryOperator<Command> addAllSourceFiles =
+        command -> {
+          command.mark(10);
+          command.addAll(options.classSourcePaths, this::isJavaFile);
+          command.addAll(options.moduleSourcePaths, this::isJavaFile);
+          return command;
+        };
+    call("javac", options, addAllSourceFiles);
+  }
+
   /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
   @SuppressWarnings("unused")
   class JavacOptions {
     /** (Legacy) class path. */
-    public List<Path> classPaths = List.of();
+    List<Path> classPaths = List.of();
 
     /** (Legacy) locations where to find Java source files. */
     transient List<Path> classSourcePaths = List.of();
@@ -353,151 +498,46 @@ class Bach {
       }
     }
   }
+}
 
-  /** Command option name annotation. */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  @interface OptionName {
-    String value();
+/**
+ * Bach - Use {@code jshell} to build your modular project.
+ *
+ * @see <a href="https://github.com/sormuras/bach">bach</a>
+ * @see <a href="https://docs.oracle.com/javase/9/tools/jshell.htm">jshell</a>
+ */
+@SuppressWarnings("WeakerAccess")
+class Bach extends JdkTool {
+
+  enum Folder {
+    TARGET
   }
 
-  interface Util {
+  Map<Folder, Path> folders = new EnumMap<>(Folder.class);
 
-    Logger logger = Logger.getLogger("Bach");
-
-    static Path cleanTree(Path root, boolean keepRoot) {
-      return cleanTree(root, keepRoot, path -> true);
-    }
-
-    static Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) {
-      try {
-        if (Files.notExists(root)) {
-          if (keepRoot) {
-            Files.createDirectories(root);
-          }
-          return root;
-        }
-        List<Path> paths =
-            Files.walk(root)
-                .filter(p -> !(keepRoot && root.equals(p)))
-                .filter(filter)
-                .sorted((p, q) -> -p.compareTo(q))
-                .collect(Collectors.toList());
-        for (Path path : paths) {
-          Files.deleteIfExists(path);
-        }
-        logger.log(Level.FINE, "deleted tree `" + root + "`");
-        return root;
-      } catch (IOException e) {
-        throw new Error("should not happen", e);
-      }
-    }
-
-    /** Download the resource specified by its URI to the target directory. */
-    static Path download(URI uri, Path targetDirectory) throws IOException {
-      return Util.download(uri, targetDirectory, fileName(uri), path -> true);
-    }
-
-    /** Download the resource from URI to the target directory using the provided file name. */
-    static Path download(URI uri, Path directory, String fileName, Predicate<Path> skip)
-        throws IOException {
-      URL url = uri.toURL();
-      Files.createDirectories(directory);
-      Path target = directory.resolve(fileName);
-      if (Boolean.getBoolean("bach.offline")) {
-        if (Files.exists(target)) {
-          return target;
-        }
-        throw new Error("offline mode is active -- missing file " + target);
-      }
-      URLConnection urlConnection = url.openConnection();
-      FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
-      if (Files.exists(target)) {
-        if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
-          if (Files.size(target) == urlConnection.getContentLengthLong()) {
-            if (skip.test(target)) {
-              logger.log(Level.FINE, "skipped, using `" + target + "`");
-              return target;
-            }
-          }
-        }
-        Files.delete(target);
-      }
-      logger.log(Level.FINE, "transferring `" + uri + "`...");
-      try (InputStream sourceStream = url.openStream();
-          OutputStream targetStream = Files.newOutputStream(target)) {
-        sourceStream.transferTo(targetStream);
-      }
-      Files.setLastModifiedTime(target, urlLastModifiedTime);
-      logger.log(Level.FINE, "stored `" + target + "` [" + urlLastModifiedTime + "]");
-      return target;
-    }
-
-    static String fileName(String artifact, String version, String... more) {
-      String classifier = more.length < 1 ? "" : more[0];
-      String kind = more.length < 2 ? "jar" : more[1];
-      String versifier = isBlank(classifier) ? version : version + '-' + classifier;
-      return artifact + '-' + versifier + '.' + kind;
-    }
-
-    /** Extract the file name from the uri. */
-    static String fileName(URI uri) {
-      String urlString = uri.getPath();
-      int begin = urlString.lastIndexOf('/') + 1;
-      return urlString.substring(begin).split("\\?")[0].split("#")[0];
-    }
-
-    /** Return {@code true} if the string is {@code null} or empty. */
-    static boolean isBlank(String string) {
-      return string == null || string.isEmpty() || string.trim().isEmpty();
-    }
-
-    /** Return {@code true} if the path points to a canonical jar file. */
-    static boolean isJarFile(Path path) {
-      if (Files.isRegularFile(path)) {
-        return path.getFileName().toString().endsWith(".jar");
-      }
-      return false;
-    }
-
-    /** Return {@code true} if the path points to a canonical Java compilation unit. */
-    static boolean isJavaFile(Path path) {
-      if (Files.isRegularFile(path)) {
-        String name = path.getFileName().toString();
-        if (name.endsWith(".java")) {
-          return name.chars().filter(c -> c == '.').count() == 1;
-        }
-      }
-      return false;
-    }
-
-    /** Get uri for specified maven coordinates. */
-    static URI uri(String repo, String group, String artifact, String version, String... more) {
-      group = group.replace('.', '/');
-      String path = artifact + '/' + version;
-      String file = fileName(artifact, version, more);
-      if (version.endsWith("SNAPSHOT")) {
-        try {
-          URI metaUri = URI.create(repo + '/' + group + '/' + path + '/' + "maven-metadata.xml");
-          try (InputStream sourceStream = metaUri.toURL().openStream();
-              ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
-            sourceStream.transferTo(targetStream);
-            String meta = targetStream.toString("UTF-8");
-            UnaryOperator<String> extract =
-                key -> {
-                  int begin = meta.indexOf(key) + key.length();
-                  int end = meta.indexOf('<', begin);
-                  return meta.substring(begin, end).trim();
-                };
-            String timestamp = extract.apply("<timestamp>");
-            String buildNumber = extract.apply("<buildNumber>");
-            file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
-          }
-        } catch (IOException e) {
-          // fall-through and return with "SNAPSHOT" literal
-        }
-      }
-      return URI.create(repo + '/' + group + '/' + path + '/' + file);
-    }
+  Bach() {
+    folders.put(Folder.TARGET, Paths.get("target/bach"));
   }
+
+  /** Perform all steps, from {@code clean} to {@code test}. */
+  void build() {
+    clean();
+    check();
+    compile();
+    test();
+  }
+
+  /** Remove all generated compilation artifacts. */
+  void clean() {
+    cleanTree(folders.get(Folder.TARGET), false);
+  }
+
+  /** Perform (static) pre checks: {@code format, checkstyle...} */
+  void check() {}
+
+  /** Generate compilation artifacts: {@code javac, javadoc, jar...} */
+  void compile() {}
+
+  /** Perform tests on compilation results. */
+  void test() {}
 }

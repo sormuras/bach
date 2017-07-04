@@ -41,7 +41,7 @@ class Build {
   }
 
   private void build() throws IOException {
-    Bach.Util.cleanTree(TARGET, true);
+    bach.cleanTree(TARGET, true);
     format();
     compile();
     javadoc();
@@ -59,8 +59,8 @@ class Build {
           options.classPaths =
               List.of(
                   CLASSES,
-                  bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-SNAPSHOT"),
-                  bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-SNAPSHOT"),
+                  bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M5"),
+                  bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-M5"),
                   bach.resolve("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT"));
           options.classSourcePaths = List.of(Paths.get("src/test/java"));
           return options;
@@ -107,26 +107,26 @@ class Build {
     String version = "validate-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
-    Path jar = Bach.Util.download(uri, Paths.get(".bach/tools").resolve(name));
+    Path jar = bach.download(uri, Paths.get(".bach/tools").resolve(name));
     Bach.Command format = bach.new Command("java");
     format.add("-jar");
     format.add(jar);
     format.add("--" + mode);
     format.mark(10);
     Path root = Paths.get("src");
-    format.addAll(root, unit -> Bach.Util.isJavaFile(unit) && !unit.endsWith("module-info.java"));
+    format.addAll(root, unit -> bach.isJavaFile(unit) && !unit.endsWith("module-info.java"));
     bach.execute(format);
   }
 
   private void test() throws IOException {
-    String repo = "https://oss.sonatype.org/content/repositories/snapshots";
+    String repo = "http://repo1.maven.org/maven2";
     String user = "org/junit/platform";
     String name = "junit-platform-console-standalone";
-    String version = "1.0.0-SNAPSHOT";
-    String file = Bach.Util.fileName(name, version, "", "jar");
-    URI uri = Bach.Util.uri(repo, user, name, version);
+    String version = "1.0.0-M5";
+    String file = bach.fileName(name, version, "", "jar");
+    URI uri = bach.uri(repo, user, name, version);
     Path path = Paths.get(".bach/tools").resolve(name);
-    Path jar = Bach.Util.download(uri, path, file, p -> true);
+    Path jar = bach.download(uri, path, file, p -> true);
     bach.call("java", "-ea", "-jar", jar, "--scan-classpath", CLASSES, "--class-path", CLASSES);
   }
 }

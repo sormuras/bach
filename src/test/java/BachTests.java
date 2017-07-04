@@ -16,12 +16,15 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.spi.ToolProvider;
@@ -50,6 +53,14 @@ class BachTests {
     assertEquals("execution failed with unexpected error code: 1", e1.getMessage());
     Error e2 = assertThrows(Error.class, () -> bach.call("executable, that doesn't exist", 123));
     assertEquals("executing `executable, that doesn't exist` failed", e2.getMessage());
+  }
+
+  @Test
+  void isJavaFile() {
+    Bach bach = new Bach();
+    assertFalse(bach.isJavaFile(Paths.get("")));
+    assertFalse(bach.isJavaFile(Paths.get("a/b")));
+    assertTrue(bach.isJavaFile(Paths.get("src/test/java/BachTests.java")));
   }
 
   static class CustomTool implements ToolProvider {
