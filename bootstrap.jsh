@@ -1,4 +1,4 @@
-//$JAVA_HOME/bin/jshell --show-version $0 $@; exit $?
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 //
 // download "Bach.java"
