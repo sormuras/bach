@@ -127,6 +127,6 @@ class Build {
     URI uri = bach.uri(repo, user, name, version);
     Path path = Paths.get(".bach/tools").resolve(name);
     Path jar = bach.download(uri, path, file, p -> true);
-    bach.call("java", "-ea", "-jar", jar, "--scan-classpath", CLASSES, "--class-path", CLASSES);
+    bach.call("java", "-ea", "-jar", jar, "--class-path", CLASSES, "--scan-classpath");
   }
 }
