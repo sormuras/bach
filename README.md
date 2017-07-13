@@ -15,9 +15,12 @@ following [jshell] script in file called `build.jsh`. Edit the source and
 target paths to your needs and launch the build with `jshell build.jsh`.
 
 ```javascript
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+
 /open Bach.java
 
 Bach bach = new Bach()
+bach.call("java", "--version")
 bach.call("javac", "-d", "target/classes", "App.java", ...)
 bach.call("java", "-ea", "-cp", "target/classes", "App")
 
@@ -30,7 +33,7 @@ You may want to mark your build script executable and use [bootstrap.jsh] to
 automatically download that latest [Bach.java].
 
 ```javascript
-//$JAVA_HOME/bin/jshell --show-version $0 $@; exit $?
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
 Path target = Paths.get("target")
@@ -44,6 +47,7 @@ if (Files.notExists(script)) {
 
 Bach bach = new Bach()
 bach.call("java", "--version")
+// ...
 
 /exit
 ```
