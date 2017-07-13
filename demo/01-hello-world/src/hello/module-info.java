@@ -1,0 +1,3 @@
+module hello {
+  requires world;
+}
