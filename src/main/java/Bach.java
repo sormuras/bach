@@ -161,15 +161,15 @@ class Bach {
 
   /** Resolve maven jar artifact. */
   Path resolve(String group, String artifact, String version) {
-    return resolver.resolve(new ResolverArtifact(group, artifact, version, "", "jar"));
+    return resolver.resolve(new ResolverArtifact(group, artifact, version));
   }
 
   /** Command-line executable builder. */
   class Command {
 
     final List<String> arguments = new ArrayList<>();
-    int dumpLimit = Integer.MAX_VALUE;
-    int dumpOffset = Integer.MAX_VALUE;
+    private int dumpLimit = Integer.MAX_VALUE;
+    private int dumpOffset = Integer.MAX_VALUE;
     final String executable;
 
     Command(String executable) {
@@ -178,8 +178,6 @@ class Bach {
 
     /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
     Command add(Collection<Path> paths) {
-      // List<String> names = paths.stream().map(Object::toString).collect(Collectors.toList());
-      // return add(String.join(File.pathSeparator, names));
       return add(paths.stream(), File.pathSeparator);
     }
 
@@ -517,20 +515,19 @@ class Bach {
     }
   }
 
-  static class ResolverArtifact {
+  class ResolverArtifact {
     String group;
     String artifact;
     String version;
-    String classifier = "";
-    String kind = "jar";
+    String classifier;
+    String kind;
 
-    ResolverArtifact(
-        String group, String artifact, String version, String classifier, String kind) {
+    ResolverArtifact(String group, String artifact, String version) {
       this.group = group;
       this.artifact = artifact;
       this.version = version;
-      this.classifier = classifier;
-      this.kind = kind;
+      this.classifier = "";
+      this.kind = "jar";
     }
 
     String fileName() {
