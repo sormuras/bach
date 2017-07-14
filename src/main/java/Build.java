@@ -34,14 +34,10 @@ class Build {
     new Build().build();
   }
 
-  private final Bach bach;
-
-  private Build() {
-    this.bach = new Bach();
-  }
+  private final Bach bach = new Bach();
 
   private void build() throws IOException {
-    bach.cleanTree(TARGET, true);
+    // TODO bach.cleanTree(TARGET, true);
     format();
     compile();
     javadoc();
@@ -96,7 +92,7 @@ class Build {
     jar.add("--file=" + file);
     jar.add("-C");
     Arrays.stream(contents).forEach(jar::add);
-    bach.execute(jar);
+    bach.call(jar);
   }
 
   private void format() throws IOException {
@@ -115,7 +111,7 @@ class Build {
     format.mark(10);
     Path root = Paths.get("src");
     format.addAll(root, unit -> bach.isJavaFile(unit) && !unit.endsWith("module-info.java"));
-    bach.execute(format);
+    bach.call(format);
   }
 
   private void test() throws IOException {
@@ -123,8 +119,8 @@ class Build {
     String user = "org/junit/platform";
     String name = "junit-platform-console-standalone";
     String version = "1.0.0-M5";
-    String file = bach.fileName(name, version, "", "jar");
-    URI uri = bach.uri(repo, user, name, version);
+    String file = name + "-" + version + ".jar";
+    URI uri = URI.create(String.join("/", repo, user, name, version, file));
     Path path = Paths.get(".bach/tools").resolve(name);
     Path jar = bach.download(uri, path, file, p -> true);
     bach.call("java", "-ea", "-jar", jar, "--class-path", CLASSES, "--scan-classpath");

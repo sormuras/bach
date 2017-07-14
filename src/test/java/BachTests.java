@@ -27,6 +27,7 @@ import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -37,8 +38,8 @@ class BachTests {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Bach bach = new Bach();
     bach.streamOut = new PrintStream(out);
-    bach.tools.put("custom", new CustomTool());
-    bach.call("custom", 1, 2, 3);
+    bach.tools.put("custom tool", new CustomTool());
+    bach.call("custom tool", 1, 2, 3);
     assertLinesMatch(
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(out.toString().split(System.lineSeparator())));
@@ -51,8 +52,10 @@ class BachTests {
     bach.call("java", "--version");
     Error e1 = assertThrows(Error.class, () -> bach.call("java", "--thisOptionDoesNotExist"));
     assertEquals("execution failed with unexpected error code: 1", e1.getMessage());
-    Error e2 = assertThrows(Error.class, () -> bach.call("executable, that doesn't exist", 123));
-    assertEquals("executing `executable, that doesn't exist` failed", e2.getMessage());
+    Error e2 = assertThrows(Error.class, () -> bach.call("java", 0, UnaryOperator.identity()));
+    assertEquals("execution failed with unexpected error code: 1", e2.getMessage());
+    Error e3 = assertThrows(Error.class, () -> bach.call("executable, that doesn't exist", 123));
+    assertEquals("executing `executable, that doesn't exist` failed", e3.getMessage());
   }
 
   @Test
@@ -67,7 +70,7 @@ class BachTests {
 
     @Override
     public String name() {
-      return "custom";
+      return "custom tool";
     }
 
     @Override

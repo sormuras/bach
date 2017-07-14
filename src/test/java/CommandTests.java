@@ -20,8 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,15 +55,30 @@ class CommandTests {
     command.mark(5);
     List.of("0", "1", "2", "3", "4").forEach(command::add);
     List.of("5", "6", "7", "8", "9").forEach(command::add);
-    List<String> actualLines = new ArrayList<>();
-    command.dump(actualLines::add);
-    assertLinesMatch(expectedLines, actualLines);
+    assertLinesMatch(expectedLines, command.dump());
+  }
+
+  @Test
+  void addPathsAsSingleOption() {
+    Bach.Command command = bach.new Command("paths");
+    List<String> expected = List.of("paths", "-p", "  a" + File.pathSeparator + "b");
+    List<String> actual = command.add("-p").add(List.of(Paths.get("a"), Paths.get("b"))).dump();
+    assertLinesMatch(expected, actual);
+  }
+
+  @Test
+  void addAllSourceFiles() {
+    Bach.Command command = bach.new Command("sources").mark(99);
+    List<Path> roots = List.of(Paths.get("src/main"), Paths.get("src/test"));
+    String actual = String.join("\n", command.addAll(roots, Files::isRegularFile).dump());
+    assertTrue(actual.contains("Bach.java"));
+    assertTrue(actual.contains("BachTests.java"));
   }
 
   @Test
   void addOptionsWithEmptyClass() {
     Bach.Command command = bach.new Command("executable");
-    command.addAllOptions(new Object());
+    command.addAllOptions(new Object()).dump();
     assertTrue(command.arguments.isEmpty());
   }
 
@@ -69,13 +87,16 @@ class CommandTests {
   void addOptionsWithAnonymousClass() {
     Object options =
         new Object() {
-          @Bach.OptionName("--ZETA")
+          @Bach.CommandOption("--ZETA")
           boolean z = true;
 
           Boolean flag1 = Boolean.TRUE;
           byte hex = 13;
           int value = 42;
           Boolean flag2 = Boolean.FALSE;
+
+          transient String unused = "hidden";
+          private Byte hidden = Byte.valueOf("123");
 
           void hex(Bach.Command command) {
             command.add("--prime-as-hex");
@@ -101,26 +122,24 @@ class CommandTests {
 
   @Test
   void dumpJavacOptions() {
-    Bach bach = new Bach();
-    Bach.JavacOptions options = bach.new JavacOptions();
-    //  options.additionalArguments = List.of("-J-Da=b");
-    options.deprecation = true;
-    options.encoding = StandardCharsets.US_ASCII;
-    options.failOnWarnings = true;
-    options.parameters = true;
-    options.verbose = true;
-
     List<String> expectedLines =
         List.of(
             "|javac",
             "|-deprecation",
             "|-d",
-            "|  " + Paths.get("target", "jshell"),
+            "|  " + Paths.get("target", "bach"),
             "|-encoding",
             "|  US-ASCII",
             "|-Werror",
             "|-parameters",
             "|-verbose");
+    Bach bach = new Bach();
+    Bach.JavacOptions options = bach.new JavacOptions();
+    options.deprecation = true;
+    options.encoding = StandardCharsets.US_ASCII;
+    options.failOnWarnings = true;
+    options.parameters = true;
+    options.verbose = true;
     List<String> actualLines = new ArrayList<>();
     Bach.Command command = bach.new Command("javac");
     command.addAllOptions(options);

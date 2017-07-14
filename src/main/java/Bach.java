@@ -30,186 +30,14 @@ import java.util.logging.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
-/** Common properties and utilities. */
-@SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
-class Common {
-
-  /** Command-line executable builder. */
-  class Command {
-
-    final List<String> arguments = new ArrayList<>();
-    int dumpLimit = Integer.MAX_VALUE;
-    int dumpOffset = Integer.MAX_VALUE;
-    final String executable;
-
-    Command(String executable) {
-      this.executable = executable;
-    }
-
-    /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
-    void add(Collection<Path> paths) {
-      List<String> names = paths.stream().map(Object::toString).collect(Collectors.toList());
-      add(String.join(File.pathSeparator, names));
-    }
-
-    /** Add single non-null argument. */
-    void add(Object argument) {
-      arguments.add(argument.toString());
-    }
-
-    //    /** Add all stream elements joined to a single argument. */
-    //    void add(Stream<?> stream, String separator) {
-    //      add(stream.map(Object::toString).collect(Collectors.joining(separator)));
-    //    }
-
-    /** Add all files visited by walking specified root paths recursively. */
-    void addAll(Collection<Path> roots, Predicate<Path> predicate) {
-      roots.forEach(root -> addAll(root, predicate));
-    }
-
-    /** Add all files visited by walking specified root path recursively. */
-    void addAll(Path root, Predicate<Path> predicate) {
-      try (Stream<Path> stream = Files.walk(root).filter(predicate)) {
-        stream.forEach(this::add);
-      } catch (IOException e) {
-        throw new Error("walking path `" + root + "` failed", e);
-      }
-    }
-
-    /** Add all reflected options. */
-    void addAllOptions(Object options) {
-      addAllOptions(options, UnaryOperator.identity());
-    }
-
-    void addAllOptions(Object options, UnaryOperator<Stream<java.lang.reflect.Field>> operator) {
-      Stream<java.lang.reflect.Field> stream =
-          Arrays.stream(options.getClass().getDeclaredFields())
-              .filter(field -> !field.isSynthetic())
-              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
-              .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
-      stream = operator.apply(stream);
-      stream.forEach(field -> addOptionUnchecked(options, field));
-    }
-
-    private void addOption(Object options, Field field) {
-      String name = field.getName();
-      // custom option visitor method declared?
-      try {
-        try {
-          options.getClass().getDeclaredMethod(name, Command.class).invoke(options, this);
-          return;
-        } catch (NoSuchMethodException e) {
-          // fall-through
-        } catch (InvocationTargetException e) {
-          throw new Error(e);
-        }
-        // (guess) option name
-        String optionName = "-" + name.replace('_', '-');
-        if (field.isAnnotationPresent(OptionName.class)) {
-          optionName = field.getAnnotation(OptionName.class).value();
-        }
-        // is it an omissible boolean flag?
-        if (field.getType() == boolean.class) {
-          if (field.getBoolean(options)) {
-            add(optionName);
-          }
-          return;
-        }
-        // as-is
-        add(optionName);
-        add(Objects.toString(field.get(options)));
-      } catch (IllegalAccessException e) {
-        throw new Error(e);
-      }
-    }
-
-    private void addOptionUnchecked(Object options, java.lang.reflect.Field field) {
-      try {
-        addOption(options, field);
-      } catch (Exception e) {
-        throw new Error("reflecting options failed for " + options, e);
-      }
-    }
-
-    /** Dump command properties using the provided string consumer. */
-    void dump(Consumer<String> consumer) {
-      ListIterator<String> iterator = arguments.listIterator();
-      consumer.accept(executable);
-      while (iterator.hasNext()) {
-        String argument = iterator.next();
-        int nextIndex = iterator.nextIndex();
-        String indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
-        consumer.accept(indent + argument);
-        if (nextIndex >= dumpLimit) {
-          int last = arguments.size() - 1;
-          int diff = last - nextIndex;
-          if (diff > 1) {
-            consumer.accept(indent + "... [omitted " + diff + " arguments]");
-          }
-          consumer.accept(indent + arguments.get(last));
-          break;
-        }
-      }
-    }
-
-    /** Execute. */
-    int execute() {
-      streamOut.println();
-      dump(streamOut::println);
-      ToolProvider defaultTool = ToolProvider.findFirst(executable).orElse(null);
-      ToolProvider tool = tools.getOrDefault(executable, defaultTool);
-      if (tool != null) {
-        return tool.run(streamOut, streamErr, toArgumentsArray());
-      }
-      ProcessBuilder processBuilder = toProcessBuilder();
-      processBuilder.redirectErrorStream(true);
-      try {
-        Process process = processBuilder.start();
-        process.getInputStream().transferTo(streamOut);
-        return process.waitFor();
-      } catch (IOException | InterruptedException e) {
-        throw new Error("executing `" + executable + "` failed", e);
-      }
-    }
-
-    /** Set dump offset and limit. */
-    void mark(int limit) {
-      this.dumpOffset = arguments.size();
-      this.dumpLimit = arguments.size() + limit;
-    }
-
-    /** Create new argument array based on this command's arguments. */
-    String[] toArgumentsArray() {
-      return arguments.toArray(new String[arguments.size()]);
-    }
-
-    /** Create new {@link ProcessBuilder} instance based on this command setup. */
-    ProcessBuilder toProcessBuilder() {
-      ArrayList<String> command = new ArrayList<>(1 + arguments.size());
-      command.add(executable);
-      command.addAll(arguments);
-      return new ProcessBuilder(command);
-    }
-  }
-
-  /** Command option name annotation. */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  @interface OptionName {
-    String value();
-  }
+@SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess", "unused"})
+class Bach {
 
   /** Logger instance. */
   Logger logger = Logger.getLogger("Bach");
 
-  /** Maven 2 repositories. */
-  List<String> repositories =
-      new ArrayList<>(
-          List.of(
-              "https://oss.sonatype.org/content/repositories/snapshots",
-              "http://repo1.maven.org/maven2",
-              "https://jcenter.bintray.com",
-              "https://jitpack.io"));
+  /** Resolver instance. */
+  Resolver resolver = new Resolver();
 
   /** Standard error stream. */
   PrintStream streamErr = System.err;
@@ -220,49 +48,29 @@ class Common {
   /** Map of custom tool providers. */
   Map<String, ToolProvider> tools = new TreeMap<>();
 
-  void call(String tool, Object options, UnaryOperator<Command> operator) {
-    Command command = new Command(tool);
-    command.addAllOptions(options);
-    execute(operator.apply(command));
+  /** Execute command expecting an exit code of zero. */
+  void call(Command command) {
+    int actual = command.execute(streamOut, streamErr, tools);
+    if (actual != 0) {
+      throw new Error("execution failed with unexpected error code: " + actual);
+    }
   }
 
+  /** Execute tool expecting an exit code of zero. */
+  void call(String tool, Object options, UnaryOperator<Command> operator) {
+    call(operator.apply(new Command(tool).addAllOptions(options)));
+  }
+
+  /** Execute tool with arbitrary arguments expecting an exit code of zero. */
   void call(String tool, Object... arguments) {
     Command command = new Command(tool);
     Arrays.stream(arguments).forEach(command::add);
-    execute(command);
-  }
-
-  Path cleanTree(Path root, boolean keepRoot) {
-    return cleanTree(root, keepRoot, path -> true);
-  }
-
-  Path cleanTree(Path root, boolean keepRoot, Predicate<Path> filter) {
-    try {
-      if (Files.notExists(root)) {
-        if (keepRoot) {
-          Files.createDirectories(root);
-        }
-        return root;
-      }
-      List<Path> paths =
-          Files.walk(root)
-              .filter(p -> !(keepRoot && root.equals(p)))
-              .filter(filter)
-              .sorted((p, q) -> -p.compareTo(q))
-              .collect(Collectors.toList());
-      for (Path path : paths) {
-        Files.deleteIfExists(path);
-      }
-      logger.log(Level.FINE, "deleted tree `" + root + "`");
-      return root;
-    } catch (IOException e) {
-      throw new Error("should not happen", e);
-    }
+    call(command);
   }
 
   /** Download the resource specified by its URI to the target directory. */
   Path download(URI uri, Path targetDirectory) throws IOException {
-    return download(uri, targetDirectory, fileName(uri), path -> true);
+    return download(uri, targetDirectory, resolver.fileName(uri), path -> true);
   }
 
   /** Download the resource from URI to the target directory using the provided file name. */
@@ -299,33 +107,6 @@ class Common {
     return target;
   }
 
-  /** Execute command expecting an exit code of zero. */
-  void execute(Command command) {
-    int actual = command.execute();
-    if (actual != 0) {
-      throw new Error("execution failed with unexpected error code: " + actual);
-    }
-  }
-
-  String fileName(String artifact, String version, String... more) {
-    String classifier = more.length < 1 ? "" : more[0];
-    String kind = more.length < 2 ? "jar" : more[1];
-    String versifier = isBlank(classifier) ? version : version + '-' + classifier;
-    return artifact + '-' + versifier + '.' + kind;
-  }
-
-  /** Extract the file name from the uri. */
-  String fileName(URI uri) {
-    String urlString = uri.getPath();
-    int begin = urlString.lastIndexOf('/') + 1;
-    return urlString.substring(begin).split("\\?")[0].split("#")[0];
-  }
-
-  /** Return {@code true} if the string is {@code null} or empty. */
-  boolean isBlank(String string) {
-    return string == null || string.isEmpty() || string.trim().isEmpty();
-  }
-
   /** Return {@code true} if the path points to a canonical Java archive file. */
   boolean isJarFile(Path path) {
     if (Files.isRegularFile(path)) {
@@ -334,7 +115,7 @@ class Common {
     return false;
   }
 
-  /** Return {@code true} if the path points to a canonical Java compilation unit. */
+  /** Return {@code true} if the path points to a canonical Java compilation unit file. */
   boolean isJavaFile(Path path) {
     if (Files.isRegularFile(path)) {
       String unit = path.getFileName().toString();
@@ -344,59 +125,6 @@ class Common {
     }
     return false;
   }
-
-  /** Resolve maven artifact. */
-  Path resolve(String group, String artifact, String version, String... more) {
-    Path targetDirectory = Paths.get(".bach", "resolved");
-    for (String repo : repositories) {
-      URI uri = uri(repo, group, artifact, version, more);
-      String fileName = fileName(uri);
-      // revert local filename with constant version attribute
-      if (version.contains("SNAPSHOT")) {
-        fileName = fileName(artifact, version, more);
-      }
-      try {
-        return download(uri, targetDirectory, fileName, path -> true);
-      } catch (IOException e) {
-        // e.printStackTrace();
-      }
-    }
-    throw new Error("could not resolve artifact: " + group + artifact + version);
-  }
-
-  /** Get uri for specified maven coordinates. */
-  URI uri(String repo, String group, String artifact, String version, String... more) {
-    group = group.replace('.', '/');
-    String path = artifact + '/' + version;
-    String file = fileName(artifact, version, more);
-    if (version.endsWith("SNAPSHOT")) {
-      try {
-        URI metaUri = URI.create(repo + '/' + group + '/' + path + '/' + "maven-metadata.xml");
-        try (InputStream sourceStream = metaUri.toURL().openStream();
-            ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
-          sourceStream.transferTo(targetStream);
-          String meta = targetStream.toString("UTF-8");
-          UnaryOperator<String> extract =
-              key -> {
-                int begin = meta.indexOf(key) + key.length();
-                int end = meta.indexOf('<', begin);
-                return meta.substring(begin, end).trim();
-              };
-          String timestamp = extract.apply("<timestamp>");
-          String buildNumber = extract.apply("<buildNumber>");
-          file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
-        }
-      } catch (IOException e) {
-        // fall-through and return with "SNAPSHOT" literal
-      }
-    }
-    return URI.create(repo + '/' + group + '/' + path + '/' + file);
-  }
-}
-
-/** JDK Tools and Commands. */
-@SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess"})
-class JdkTool extends Common {
 
   /** Use the {@code java} command to launch a Java application. */
   void java(UnaryOperator<JavaOptions> operator) {
@@ -416,8 +144,190 @@ class JdkTool extends Common {
     call("javac", options, addAllSourceFiles);
   }
 
+  /** Resolve maven jar artifact. */
+  Path resolve(String group, String artifact, String version) {
+    return resolver.resolve(new ResolverArtifact(group, artifact, version, "", "jar"));
+  }
+
+  /** Command-line executable builder. */
+  class Command {
+
+    final List<String> arguments = new ArrayList<>();
+    int dumpLimit = Integer.MAX_VALUE;
+    int dumpOffset = Integer.MAX_VALUE;
+    final String executable;
+
+    Command(String executable) {
+      this.executable = executable;
+    }
+
+    /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
+    Command add(Collection<Path> paths) {
+      // List<String> names = paths.stream().map(Object::toString).collect(Collectors.toList());
+      // return add(String.join(File.pathSeparator, names));
+      return add(paths.stream(), File.pathSeparator);
+    }
+
+    /** Add single non-null argument. */
+    Command add(Object argument) {
+      arguments.add(argument.toString());
+      return this;
+    }
+
+    /** Add single argument composed of all stream elements joined by specified separator. */
+    Command add(Stream<?> stream, String separator) {
+      return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
+    }
+
+    /** Add all files visited by walking specified root paths recursively. */
+    Command addAll(Collection<Path> roots, Predicate<Path> predicate) {
+      roots.forEach(root -> addAll(root, predicate));
+      return this;
+    }
+
+    /** Add all files visited by walking specified root path recursively. */
+    Command addAll(Path root, Predicate<Path> predicate) {
+      try (Stream<Path> stream = Files.walk(root).filter(predicate)) {
+        stream.forEach(this::add);
+      } catch (IOException e) {
+        throw new Error("walking path `" + root + "` failed", e);
+      }
+      return this;
+    }
+
+    /** Add all reflected options. */
+    Command addAllOptions(Object options) {
+      return addAllOptions(options, UnaryOperator.identity());
+    }
+
+    Command addAllOptions(Object options, UnaryOperator<Stream<java.lang.reflect.Field>> operator) {
+      Stream<java.lang.reflect.Field> stream =
+          Arrays.stream(options.getClass().getDeclaredFields())
+              .filter(field -> !field.isSynthetic())
+              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+              .filter(field -> !java.lang.reflect.Modifier.isPrivate(field.getModifiers()))
+              .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
+      stream = operator.apply(stream);
+      stream.forEach(field -> addOptionUnchecked(options, field));
+      return this;
+    }
+
+    private void addOption(Object options, Field field) {
+      String name = field.getName();
+      // custom option visitor method declared?
+      try {
+        try {
+          options.getClass().getDeclaredMethod(name, Command.class).invoke(options, this);
+          return;
+        } catch (NoSuchMethodException e) {
+          // fall-through
+        } catch (InvocationTargetException e) {
+          throw new Error(e);
+        }
+        // (guess) option name
+        String optionName = "-" + name.replace('_', '-');
+        if (field.isAnnotationPresent(CommandOption.class)) {
+          optionName = field.getAnnotation(CommandOption.class).value();
+        }
+        // is it an omissible boolean flag?
+        if (field.getType() == boolean.class) {
+          if (field.getBoolean(options)) {
+            add(optionName);
+          }
+          return;
+        }
+        // as-is
+        add(optionName);
+        add(Objects.toString(field.get(options)));
+      } catch (IllegalAccessException e) {
+        throw new Error(e);
+      }
+    }
+
+    private void addOptionUnchecked(Object options, java.lang.reflect.Field field) {
+      try {
+        addOption(options, field);
+      } catch (Exception e) {
+        throw new Error("reflecting options failed for " + options, e);
+      }
+    }
+
+    List<String> dump() {
+      List<String> lines = new ArrayList<>();
+      dump(lines::add);
+      return lines;
+    }
+
+    /** Dump command properties using the provided string consumer. */
+    void dump(Consumer<String> consumer) {
+      ListIterator<String> iterator = arguments.listIterator();
+      consumer.accept(executable);
+      while (iterator.hasNext()) {
+        String argument = iterator.next();
+        int nextIndex = iterator.nextIndex();
+        String indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
+        consumer.accept(indent + argument);
+        if (nextIndex >= dumpLimit) {
+          int last = arguments.size() - 1;
+          int diff = last - nextIndex;
+          if (diff > 1) {
+            consumer.accept(indent + "... [omitted " + diff + " arguments]");
+          }
+          consumer.accept(indent + arguments.get(last));
+          break;
+        }
+      }
+    }
+
+    /** Execute. */
+    int execute(PrintStream out, PrintStream err, Map<String, ToolProvider> tools) {
+      out.println();
+      dump(out::println);
+      ToolProvider defaultTool = ToolProvider.findFirst(executable).orElse(null);
+      ToolProvider tool = tools.getOrDefault(executable, defaultTool);
+      if (tool != null) {
+        return tool.run(out, err, toArgumentsArray());
+      }
+      ProcessBuilder processBuilder = toProcessBuilder();
+      processBuilder.redirectErrorStream(true);
+      try {
+        Process process = processBuilder.start();
+        process.getInputStream().transferTo(out);
+        return process.waitFor();
+      } catch (IOException | InterruptedException e) {
+        throw new Error("executing `" + executable + "` failed", e);
+      }
+    }
+
+    /** Set dump offset and limit. */
+    Command mark(int limit) {
+      this.dumpOffset = arguments.size();
+      this.dumpLimit = arguments.size() + limit;
+      return this;
+    }
+
+    /** Create new argument array based on this command's arguments. */
+    String[] toArgumentsArray() {
+      return arguments.toArray(new String[arguments.size()]);
+    }
+
+    /** Create new {@link ProcessBuilder} instance based on this command setup. */
+    ProcessBuilder toProcessBuilder() {
+      ArrayList<String> command = new ArrayList<>(1 + arguments.size());
+      command.add(executable);
+      command.addAll(arguments);
+      return new ProcessBuilder(command);
+    }
+  }
+
+  /** Command option annotation. */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface CommandOption {
+    String value();
+  }
+
   /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
-  @SuppressWarnings("unused")
   class JavacOptions {
     /** (Legacy) class path. */
     List<Path> classPaths = List.of();
@@ -429,14 +339,14 @@ class JdkTool extends Common {
     boolean deprecation = true;
 
     /** The destination directory for class files. */
-    @OptionName("-d")
-    Path destinationPath = Paths.get("target/jshell");
+    @CommandOption("-d")
+    Path destinationPath = Paths.get("target/bach");
 
     /** Specify character encoding used by source files. */
     Charset encoding = StandardCharsets.UTF_8;
 
     /** Terminate compilation if warnings occur. */
-    @OptionName("-Werror")
+    @CommandOption("-Werror")
     boolean failOnWarnings = true;
 
     /** Specify where to find application modules. */
@@ -449,7 +359,7 @@ class JdkTool extends Common {
     boolean parameters = true;
 
     /** Output messages about what the compiler is doing. */
-    boolean verbose = false; // log.isLevelActive(Level.FINEST);
+    boolean verbose = logger.isLoggable(Level.FINEST);
 
     void classPaths(Command command) {
       if (!classPaths.isEmpty()) {
@@ -482,13 +392,12 @@ class JdkTool extends Common {
   }
 
   /** You can use the {@code java} command to launch a Java application. */
-  @SuppressWarnings("unused")
   class JavaOptions {
     /** Where to find application modules. */
     List<Path> modulePaths = List.of();
 
     /** Initial module to resolve and the name of the main class to execute. */
-    @OptionName("--module")
+    @CommandOption("--module")
     String module = null;
 
     void modulePaths(Command command) {
@@ -498,46 +407,95 @@ class JdkTool extends Common {
       }
     }
   }
-}
 
-/**
- * Bach - Use {@code jshell} to build your modular project.
- *
- * @see <a href="https://github.com/sormuras/bach">bach</a>
- * @see <a href="https://docs.oracle.com/javase/9/tools/jshell.htm">jshell</a>
- */
-@SuppressWarnings("WeakerAccess")
-class Bach extends JdkTool {
+  /** Maven artifact resolver. */
+  class Resolver {
 
-  enum Folder {
-    TARGET
+    List<String> repositories =
+        List.of(
+            "https://oss.sonatype.org/content/repositories/snapshots",
+            "http://repo1.maven.org/maven2",
+            "https://jcenter.bintray.com",
+            "https://jitpack.io");
+
+    /** Extract the file name from the uri. */
+    String fileName(URI uri) {
+      String urlString = uri.getPath();
+      int begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    }
+
+    Path resolve(ResolverArtifact ra) {
+      Path targetDirectory = Paths.get(".bach", "resolved");
+      for (String repo : repositories) {
+        URI uri = uri(repo, ra);
+        String fileName = fileName(uri);
+        // revert local filename with constant version attribute
+        if (ra.isSnapshot()) {
+          fileName = ra.fileName();
+        }
+        try {
+          return download(uri, targetDirectory, fileName, path -> true);
+        } catch (IOException e) {
+          // e.printStackTrace();
+        }
+      }
+      throw new Error("could not resolve artifact: " + ra);
+    }
+
+    /** Create uri for specified maven coordinates. */
+    URI uri(String repo, ResolverArtifact ra) {
+      ra.group = ra.group.replace('.', '/');
+      String path = ra.artifact + '/' + ra.version;
+      String file = ra.fileName();
+      if (ra.isSnapshot()) {
+        try {
+          URI metaUri = URI.create(repo + '/' + ra.group + '/' + path + '/' + "maven-metadata.xml");
+          try (InputStream sourceStream = metaUri.toURL().openStream();
+              ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
+            sourceStream.transferTo(targetStream);
+            String meta = targetStream.toString("UTF-8");
+            UnaryOperator<String> extractor =
+                key -> {
+                  int begin = meta.indexOf(key) + key.length();
+                  int end = meta.indexOf('<', begin);
+                  return meta.substring(begin, end).trim();
+                };
+            String timestamp = extractor.apply("<timestamp>");
+            String buildNumber = extractor.apply("<buildNumber>");
+            file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
+          }
+        } catch (IOException e) {
+          // fall-through and return with "SNAPSHOT" literal
+        }
+      }
+      return URI.create(repo + '/' + ra.group + '/' + path + '/' + file);
+    }
   }
 
-  Map<Folder, Path> folders = new EnumMap<>(Folder.class);
+  static class ResolverArtifact {
+    String group;
+    String artifact;
+    String version;
+    String classifier = "";
+    String kind = "jar";
 
-  Bach() {
-    folders.put(Folder.TARGET, Paths.get("target/bach"));
+    ResolverArtifact(
+        String group, String artifact, String version, String classifier, String kind) {
+      this.group = group;
+      this.artifact = artifact;
+      this.version = version;
+      this.classifier = classifier;
+      this.kind = kind;
+    }
+
+    String fileName() {
+      String versifier = classifier.isEmpty() ? version : version + '-' + classifier;
+      return artifact + '-' + versifier + '.' + kind;
+    }
+
+    boolean isSnapshot() {
+      return version.endsWith("SNAPSHOT");
+    }
   }
-
-  /** Perform all steps, from {@code clean} to {@code test}. */
-  void build() {
-    clean();
-    check();
-    compile();
-    test();
-  }
-
-  /** Remove all generated compilation artifacts. */
-  void clean() {
-    cleanTree(folders.get(Folder.TARGET), false);
-  }
-
-  /** Perform (static) pre checks: {@code format, checkstyle...} */
-  void check() {}
-
-  /** Generate compilation artifacts: {@code javac, javadoc, jar...} */
-  void compile() {}
-
-  /** Perform tests on compilation results. */
-  void test() {}
 }
