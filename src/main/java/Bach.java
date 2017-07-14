@@ -144,6 +144,21 @@ class Bach {
     call("javac", options, addAllSourceFiles);
   }
 
+  /** Generate HTML pages of API documentation from Java source files. */
+  void javadoc(UnaryOperator<JavadocOptions> operator) {
+    call("javadoc", operator.apply(new JavadocOptions()), UnaryOperator.identity());
+  }
+
+  /** Create an archive for classes and resources. */
+  void jar(UnaryOperator<JarOptions> operator) {
+    call("jar", operator.apply(new JarOptions()), UnaryOperator.identity());
+  }
+
+  /** Assemble and optimize a set of modules and their dependencies into a custom runtime image. */
+  void jlink(UnaryOperator<JlinkOptions> operator) {
+    call("jlink", operator.apply(new JlinkOptions()), UnaryOperator.identity());
+  }
+
   /** Resolve maven jar artifact. */
   Path resolve(String group, String artifact, String version) {
     return resolver.resolve(new ResolverArtifact(group, artifact, version, "", "jar"));
@@ -327,7 +342,6 @@ class Bach {
     String value();
   }
 
-  /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
   class JavacOptions {
     /** (Legacy) class path. */
     List<Path> classPaths = List.of();
@@ -391,7 +405,6 @@ class Bach {
     }
   }
 
-  /** You can use the {@code java} command to launch a Java application. */
   class JavaOptions {
     /** Where to find application modules. */
     List<Path> modulePaths = List.of();
@@ -399,6 +412,37 @@ class Bach {
     /** Initial module to resolve and the name of the main class to execute. */
     @CommandOption("--module")
     String module = null;
+
+    void modulePaths(Command command) {
+      if (!modulePaths.isEmpty()) {
+        command.add("--module-path");
+        command.add(modulePaths);
+      }
+    }
+  }
+
+  class JavadocOptions {
+    /** Shuts off messages so that only the warnings and errors appear. */
+    boolean quiet = true;
+  }
+
+  class JarOptions {
+    /** Stores without using ZIP compression. */
+    @CommandOption("--no-compress")
+    boolean noCompress = false;
+
+    /** Sends or prints verbose output to standard output. */
+    @CommandOption("--verbose")
+    boolean verbose = logger.isLoggable(Level.FINEST);
+  }
+
+  class JlinkOptions {
+    /** Where to find application modules. */
+    List<Path> modulePaths = List.of();
+
+    /** The directory that contains the resulting runtime image. */
+    @CommandOption("--output")
+    Path output = Paths.get("target", "bach", "jlink");
 
     void modulePaths(Command command) {
       if (!modulePaths.isEmpty()) {

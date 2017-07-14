@@ -147,32 +147,50 @@ class CommandTests {
     assertLinesMatch(expectedLines, actualLines);
   }
 
-  //  void toolJavadocOptions() {
-  //    List<String> strings = new ArrayList<>();
-  //    Bach bach = new Bach();
-  //    Bach.Tool.JavadocOptions options = bach.tool.new JavadocOptions();
-  //    options.quiet = true;
-  //    Bach.Command command = bach.command("javadoc");
-  //    command.addOptions(options);
-  //    command.dumpToPrinter((format, args) -> strings.add(String.format('|' + format,
-  // args).trim()));
-  //    assert Objects.equals("|javadoc", strings.get(0));
-  //    assert Objects.equals("|-quiet", strings.get(1));
-  //  }
+  @Test
+  void toolJavadocOptions() {
+    List<String> expectedLines = List.of("|javadoc", "|-quiet");
+    Bach bach = new Bach();
+    Bach.JavadocOptions options = bach.new JavadocOptions();
+    options.quiet = true;
+    List<String> actualLines = new ArrayList<>();
+    Bach.Command command = bach.new Command("javadoc");
+    command.addAllOptions(options);
+    command.dump(message -> actualLines.add('|' + message));
+    assertLinesMatch(expectedLines, actualLines);
+  }
 
-  //  void toolJarOptions() {
-  //    List<String> strings = new ArrayList<>();
-  //    Bach bach = new Bach();
-  //    Bach.Tool.JarOptions options = bach.tool.new JarOptions();
-  //    options.noCompress = true;
-  //    options.verbose = true;
-  //    Bach.Command command = bach.command("jar");
-  //    command.addOptions(options);
-  //    command.dumpToPrinter((format, args) -> strings.add(String.format('|' + format,
-  // args).trim()));
-  //    assert Objects.equals("|jar", strings.get(0));
-  //    assert Objects.equals("|--no-compress", strings.get(1));
-  //    assert Objects.equals("|--verbose", strings.get(2));
-  //  }
+  @Test
+  void toolJarOptions() {
+    List<String> expectedLines = List.of("|jar", "|--no-compress", "|--verbose");
+    Bach bach = new Bach();
+    Bach.JarOptions options = bach.new JarOptions();
+    options.noCompress = true;
+    options.verbose = true;
+    List<String> actualLines = new ArrayList<>();
+    Bach.Command command = bach.new Command("jar");
+    command.addAllOptions(options);
+    command.dump(message -> actualLines.add('|' + message));
+    assertLinesMatch(expectedLines, actualLines);
+  }
 
+  @Test
+  void toolJlinkOptions() {
+    List<String> expectedLines =
+        List.of(
+            "|jlink",
+            "|--module-path",
+            "|  mods",
+            "|--output",
+            "|  target" + File.separator + "image");
+    Bach bach = new Bach();
+    Bach.JlinkOptions options = bach.new JlinkOptions();
+    options.modulePaths = List.of(Paths.get("mods"));
+    options.output = Paths.get("target", "image");
+    List<String> actualLines = new ArrayList<>();
+    Bach.Command command = bach.new Command("jlink");
+    command.addAllOptions(options);
+    command.dump(message -> actualLines.add('|' + message));
+    assertLinesMatch(expectedLines, actualLines);
+  }
 }
