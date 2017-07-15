@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 class Build {
 
@@ -80,12 +81,14 @@ class Build {
 
   private void jar() throws IOException {
     Files.createDirectories(ARTIFACTS);
-    jar("bach", CLASSES, "Bach.class");
+    Path main = jar("bach", CLASSES, "Bach.class");
     jar("bach-sources", "src/main/java", "Bach.java");
     jar("bach-javadoc", JAVADOC, ".");
+
+    bach.jdeps(UnaryOperator.identity(), main);
   }
 
-  private void jar(String artifact, Object... contents) {
+  private Path jar(String artifact, Object... contents) {
     Bach.Command jar = bach.new Command("jar");
     Path file = ARTIFACTS.resolve(artifact + ".jar");
     jar.add("--create");
@@ -93,6 +96,7 @@ class Build {
     jar.add("-C");
     Arrays.stream(contents).forEach(jar::add);
     bach.call(jar);
+    return file;
   }
 
   private void format() throws IOException {

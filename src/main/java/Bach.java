@@ -26,15 +26,14 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.function.*;
-import java.util.logging.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
 @SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess", "unused"})
 class Bach {
 
-  /** Logger instance. */
-  Logger logger = Logger.getLogger("Bach");
+  /** Offline mode. */
+  boolean offline = Boolean.getBoolean("bach.offline");
 
   /** Resolver instance. */
   Resolver resolver = new Resolver();
@@ -47,6 +46,9 @@ class Bach {
 
   /** Map of custom tool providers. */
   Map<String, ToolProvider> tools = new TreeMap<>();
+
+  /** Output messages about what Bach is doing. */
+  boolean verbose = true;
 
   /** Execute command expecting an exit code of zero. */
   void call(Command command) {
@@ -78,7 +80,7 @@ class Bach {
     URL url = uri.toURL();
     Files.createDirectories(directory);
     Path target = directory.resolve(fileName);
-    if (Boolean.getBoolean("bach.offline")) {
+    if (offline) {
       if (Files.exists(target)) {
         return target;
       }
@@ -86,24 +88,28 @@ class Bach {
     }
     URLConnection urlConnection = url.openConnection();
     FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+    if (urlLastModifiedTime.toMillis() == 0) {
+      throw new IOException("last-modified header field not available");
+    }
+    log(1, "downloading `%s` [%s]...", url, urlLastModifiedTime);
     if (Files.exists(target)) {
       if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
         if (Files.size(target) == urlConnection.getContentLengthLong()) {
           if (skip.test(target)) {
-            logger.log(Level.FINE, "skipped, using `" + target + "`");
+            log(2, "skipped, using `%s`", target);
             return target;
           }
         }
       }
       Files.delete(target);
     }
-    logger.log(Level.FINE, "transferring `" + uri + "`...");
+    log(2, "transferring `%s`...", uri);
     try (InputStream sourceStream = url.openStream();
         OutputStream targetStream = Files.newOutputStream(target)) {
       sourceStream.transferTo(targetStream);
     }
     Files.setLastModifiedTime(target, urlLastModifiedTime);
-    logger.log(Level.FINE, "stored `" + target + "` [" + urlLastModifiedTime + "]");
+    log(1, "stored `%s` [%s]", target, urlLastModifiedTime);
     return target;
   }
 
@@ -154,9 +160,21 @@ class Bach {
     call("jar", operator.apply(new JarOptions()), UnaryOperator.identity());
   }
 
+  /** launch the Java class dependency analyzer. */
+  void jdeps(UnaryOperator<JdepsOptions> operator, Object... classes) {
+    call("jdeps", operator.apply(new JdepsOptions()), command -> command.addAll(List.of(classes)));
+  }
+
   /** Assemble and optimize a set of modules and their dependencies into a custom runtime image. */
   void jlink(UnaryOperator<JlinkOptions> operator) {
     call("jlink", operator.apply(new JlinkOptions()), UnaryOperator.identity());
+  }
+
+  /** Print information to out stream. */
+  void log(int level, String format, Object... args) {
+    if (verbose) {
+      streamOut.println(String.format(format, args));
+    }
   }
 
   /** Resolve maven jar artifact. */
@@ -195,6 +213,11 @@ class Bach {
     /** Add all files visited by walking specified root paths recursively. */
     Command addAll(Collection<Path> roots, Predicate<Path> predicate) {
       roots.forEach(root -> addAll(root, predicate));
+      return this;
+    }
+
+    Command addAll(Iterable<?> arguments) {
+      arguments.forEach(this::add);
       return this;
     }
 
@@ -294,8 +317,10 @@ class Bach {
 
     /** Execute. */
     int execute(PrintStream out, PrintStream err, Map<String, ToolProvider> tools) {
-      out.println();
-      dump(out::println);
+      if (verbose) {
+        out.println();
+        dump(out::println);
+      }
       ToolProvider defaultTool = ToolProvider.findFirst(executable).orElse(null);
       ToolProvider tool = tools.getOrDefault(executable, defaultTool);
       if (tool != null) {
@@ -371,7 +396,7 @@ class Bach {
     boolean parameters = true;
 
     /** Output messages about what the compiler is doing. */
-    boolean verbose = logger.isLoggable(Level.FINEST);
+    boolean verbose = false;
 
     void classPaths(Command command) {
       if (!classPaths.isEmpty()) {
@@ -431,7 +456,34 @@ class Bach {
 
     /** Sends or prints verbose output to standard output. */
     @CommandOption("--verbose")
-    boolean verbose = logger.isLoggable(Level.FINEST);
+    boolean verbose = false;
+  }
+
+  class JdepsOptions {
+    /** Specifies where to find class files. */
+    List<Path> classPaths = List.of();
+
+    /** Recursively traverses all dependencies. */
+    boolean recursive = true;
+
+    /** Shows profile or the file containing a package. */
+    boolean profile = false;
+
+    /** Restricts analysis to APIs, like deps from the signature of public and protected members. */
+    boolean apionly = false;
+
+    /** Prints dependency summary only. */
+    boolean summary = false;
+
+    /** Prints all class-level dependencies. */
+    boolean verbose = false;
+
+    void classPaths(Command command) {
+      if (!classPaths.isEmpty()) {
+        command.add("-classpath");
+        command.add(classPaths);
+      }
+    }
   }
 
   class JlinkOptions {
