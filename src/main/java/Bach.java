@@ -377,7 +377,7 @@ class Bach {
 
     /** The destination directory for class files. */
     @CommandOption("-d")
-    Path destinationPath = Paths.get("target/bach");
+    Path destinationPath = Paths.get("target", "bach", "mods");
 
     /** Specify character encoding used by source files. */
     Charset encoding = StandardCharsets.UTF_8;
@@ -430,7 +430,7 @@ class Bach {
 
   class JavaOptions {
     /** Where to find application modules. */
-    List<Path> modulePaths = List.of();
+    List<Path> modulePaths = List.of(Paths.get("target", "bach", "mods"));
 
     /** Initial module to resolve and the name of the main class to execute. */
     @CommandOption("--module")

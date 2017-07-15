@@ -127,7 +127,7 @@ class CommandTests {
             "|javac",
             "|-deprecation",
             "|-d",
-            "|  " + Paths.get("target", "bach"),
+            "|  " + Paths.get("target", "bach", "mods"),
             "|-encoding",
             "|  US-ASCII",
             "|-Werror",
