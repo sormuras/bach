@@ -1,9 +1,7 @@
 sudo: false
 dist: trusty
 language: java
-
-install:
-- . ./install-jdk9.sh
+jdk: oraclejdk9
 
 script:
 - ./build.jsh
