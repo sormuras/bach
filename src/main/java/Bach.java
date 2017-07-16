@@ -32,8 +32,14 @@ import java.util.stream.*;
 @SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess", "unused"})
 class Bach {
 
+  /** Folder configuration. */
+  Folder folder = new Folder();
+
   /** Offline mode. */
   boolean offline = Boolean.getBoolean("bach.offline");
+
+  /** Silent mode. */
+  boolean silent = Boolean.getBoolean("bach.silent");
 
   /** Resolver instance. */
   Resolver resolver = new Resolver();
@@ -46,9 +52,6 @@ class Bach {
 
   /** Map of custom tool providers. */
   Map<String, ToolProvider> tools = new TreeMap<>();
-
-  /** Output messages about what Bach is doing. */
-  boolean verbose = true;
 
   /** Execute command expecting an exit code of zero. */
   void call(Command command) {
@@ -91,25 +94,25 @@ class Bach {
     if (urlLastModifiedTime.toMillis() == 0) {
       throw new IOException("last-modified header field not available");
     }
-    log(1, "downloading `%s` [%s]...", url, urlLastModifiedTime);
+    log("downloading `%s` [%s]...", url, urlLastModifiedTime);
     if (Files.exists(target)) {
       if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
         if (Files.size(target) == urlConnection.getContentLengthLong()) {
           if (skip.test(target)) {
-            log(2, "skipped, using `%s`", target);
+            log("skipped, using `%s`", target);
             return target;
           }
         }
       }
       Files.delete(target);
     }
-    log(2, "transferring `%s`...", uri);
+    log("transferring `%s`...", uri);
     try (InputStream sourceStream = url.openStream();
         OutputStream targetStream = Files.newOutputStream(target)) {
       sourceStream.transferTo(targetStream);
     }
     Files.setLastModifiedTime(target, urlLastModifiedTime);
-    log(1, "stored `%s` [%s]", target, urlLastModifiedTime);
+    log("stored `%s` [%s]", target, urlLastModifiedTime);
     return target;
   }
 
@@ -171,10 +174,11 @@ class Bach {
   }
 
   /** Print information to out stream. */
-  void log(int level, String format, Object... args) {
-    if (verbose) {
-      streamOut.println(String.format(format, args));
+  void log(String format, Object... args) {
+    if (silent) {
+      return;
     }
+    streamOut.println(String.format(format, args));
   }
 
   /** Resolve maven jar artifact. */
@@ -317,7 +321,7 @@ class Bach {
 
     /** Execute. */
     int execute(PrintStream out, PrintStream err, Map<String, ToolProvider> tools) {
-      if (verbose) {
+      if (!silent) {
         out.println();
         dump(out::println);
       }
@@ -365,6 +369,60 @@ class Bach {
     String value();
   }
 
+  class Folder {
+    Path getRoot() {
+      return Paths.get(".");
+    }
+
+    Path getAuxiliary() {
+      return Paths.get(".bach");
+    }
+
+    Path getAuxResolved() {
+      return Paths.get("resolved");
+    }
+
+    Path getAuxTools() {
+      return Paths.get("tools");
+    }
+
+    Path getTarget() {
+      return Paths.get("target", "bach");
+    }
+
+    Path getTargetLinked() {
+      return Paths.get("linked");
+    }
+
+    Path getTargetMods() {
+      return Paths.get("mods");
+    }
+
+    Path resolveAuxiliary() {
+      return getRoot().resolve(getAuxiliary()).normalize();
+    }
+
+    Path resolveAuxResolved() {
+      return resolveAuxiliary().resolve(getAuxResolved()).normalize();
+    }
+
+    Path resolveAuxTools() {
+      return resolveAuxiliary().resolve(getAuxTools()).normalize();
+    }
+
+    Path resolveTarget() {
+      return getRoot().resolve(getTarget()).normalize();
+    }
+
+    Path resolveTargetLinked() {
+      return resolveTarget().resolve(getTargetLinked()).normalize();
+    }
+
+    Path resolveTargetMods() {
+      return resolveTarget().resolve(getTargetMods()).normalize();
+    }
+  }
+
   class JavacOptions {
     /** (Legacy) class path. */
     List<Path> classPaths = List.of();
@@ -377,7 +435,7 @@ class Bach {
 
     /** The destination directory for class files. */
     @CommandOption("-d")
-    Path destinationPath = Paths.get("target", "bach", "mods");
+    Path destinationPath = folder.resolveTargetMods();
 
     /** Specify character encoding used by source files. */
     Charset encoding = StandardCharsets.UTF_8;
@@ -430,7 +488,7 @@ class Bach {
 
   class JavaOptions {
     /** Where to find application modules. */
-    List<Path> modulePaths = List.of(Paths.get("target", "bach", "mods"));
+    List<Path> modulePaths = List.of(folder.resolveTargetMods());
 
     /** Initial module to resolve and the name of the main class to execute. */
     @CommandOption("--module")
@@ -492,7 +550,7 @@ class Bach {
 
     /** The directory that contains the resulting runtime image. */
     @CommandOption("--output")
-    Path output = Paths.get("target", "bach", "jlink");
+    Path output = folder.resolveTargetLinked();
 
     void modulePaths(Command command) {
       if (!modulePaths.isEmpty()) {
@@ -520,7 +578,7 @@ class Bach {
     }
 
     Path resolve(ResolverArtifact ra) {
-      Path targetDirectory = Paths.get(".bach", "resolved");
+      Path targetDirectory = folder.resolveAuxResolved();
       for (String repo : repositories) {
         URI uri = uri(repo, ra);
         String fileName = fileName(uri);
