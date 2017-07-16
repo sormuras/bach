@@ -58,7 +58,7 @@ class Build {
                   CLASSES,
                   bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M5"),
                   bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-M5"),
-                  bach.resolve("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT"));
+                  bach.resolve("org.opentest4j", "opentest4j", "1.0.0-M3"));
           options.classSourcePaths = List.of(Paths.get("src/test/java"));
           return options;
         });

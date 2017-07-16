@@ -35,6 +35,12 @@ class CommandTests {
 
   private Bach bach = new Bach();
 
+  private List<String> dump(Bach.Command command) {
+    List<String> lines = new ArrayList<>();
+    command.dump(lines::add);
+    return lines;
+  }
+
   @Test
   void dump() {
     List<String> expectedLines =
@@ -44,9 +50,9 @@ class CommandTests {
             "  value",
             "-single-flag-without-values",
             "0",
-            ">> 1..3 >>",
-            "4",
-            "... [omitted 4 arguments]",
+            ">> 1..4 >>",
+            "5",
+            "... [omitted 3 arguments]",
             "9");
     Bach.Command command = bach.new Command("executable");
     command.add("--some-option");
@@ -55,14 +61,14 @@ class CommandTests {
     command.mark(5);
     List.of("0", "1", "2", "3", "4").forEach(command::add);
     List.of("5", "6", "7", "8", "9").forEach(command::add);
-    assertLinesMatch(expectedLines, command.dump());
+    assertLinesMatch(expectedLines, dump(command));
   }
 
   @Test
   void addPathsAsSingleOption() {
     Bach.Command command = bach.new Command("paths");
     List<String> expected = List.of("paths", "-p", "  a" + File.pathSeparator + "b");
-    List<String> actual = command.add("-p").add(List.of(Paths.get("a"), Paths.get("b"))).dump();
+    List<String> actual = dump(command.add("-p").add(List.of(Paths.get("a"), Paths.get("b"))));
     assertLinesMatch(expected, actual);
   }
 
@@ -70,7 +76,7 @@ class CommandTests {
   void addAllSourceFiles() {
     Bach.Command command = bach.new Command("sources").mark(99);
     List<Path> roots = List.of(Paths.get("src/main"), Paths.get("src/test"));
-    String actual = String.join("\n", command.addAll(roots, Files::isRegularFile).dump());
+    String actual = String.join("\n", dump(command.addAll(roots, Files::isRegularFile)));
     assertTrue(actual.contains("Bach.java"));
     assertTrue(actual.contains("BachTests.java"));
   }
@@ -78,7 +84,7 @@ class CommandTests {
   @Test
   void addOptionsWithEmptyClass() {
     Bach.Command command = bach.new Command("executable");
-    command.addAllOptions(new Object()).dump();
+    command.addAllOptions(new Object()).mark(12);
     assertTrue(command.arguments.isEmpty());
   }
 
@@ -127,7 +133,7 @@ class CommandTests {
             "|javac",
             "|-deprecation",
             "|-d",
-            "|  " + Paths.get("target", "bach", "mods"),
+            "|  out",
             "|-encoding",
             "|  US-ASCII",
             "|-Werror",
@@ -136,6 +142,7 @@ class CommandTests {
     Bach bach = new Bach();
     Bach.JavacOptions options = bach.new JavacOptions();
     options.deprecation = true;
+    options.destinationPath = Paths.get("out");
     options.encoding = StandardCharsets.US_ASCII;
     options.failOnWarnings = true;
     options.parameters = true;
@@ -162,14 +169,35 @@ class CommandTests {
 
   @Test
   void toolJarOptions() {
-    List<String> expectedLines = List.of("|jar", "|--no-compress", "|--verbose");
+    List<String> expectedLines =
+        List.of(
+            "|jar",
+            "|--list",
+            "|--file",
+            "|  fleet.jar",
+            "|--main-class",
+            "|  uss.Enterprise",
+            "|--module-version",
+            "|  1701",
+            "|--no-compress",
+            "|--verbose",
+            "|-C",
+            "|  classes",
+            "|.");
     Bach bach = new Bach();
     Bach.JarOptions options = bach.new JarOptions();
+    options.mode = "--list";
+    options.file = Paths.get("fleet.jar");
+    options.main = "uss.Enterprise";
+    options.version = "1701";
     options.noCompress = true;
     options.verbose = true;
+    options.path = Paths.get("classes");
     List<String> actualLines = new ArrayList<>();
     Bach.Command command = bach.new Command("jar");
     command.addAllOptions(options);
+    command.mark(1);
+    command.add(".");
     command.dump(message -> actualLines.add('|' + message));
     assertLinesMatch(expectedLines, actualLines);
   }

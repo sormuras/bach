@@ -159,8 +159,8 @@ class Bach {
   }
 
   /** Create an archive for classes and resources. */
-  void jar(UnaryOperator<JarOptions> operator) {
-    call("jar", operator.apply(new JarOptions()), UnaryOperator.identity());
+  void jar(UnaryOperator<JarOptions> operator, Object... files) {
+    call("jar", operator.apply(new JarOptions()), command -> command.addAll(List.of(files)));
   }
 
   /** launch the Java class dependency analyzer. */
@@ -276,9 +276,17 @@ class Bach {
           }
           return;
         }
-        // as-is
-        add(optionName);
-        add(Objects.toString(field.get(options)));
+        // skip null field value
+        Object value = field.get(options);
+        if (value == null) {
+          return;
+        }
+        // add option name only if it is not empty
+        if (!optionName.isEmpty()) {
+          add(optionName);
+        }
+        // add string representation of the value
+        add(value.toString());
       } catch (IllegalAccessException e) {
         throw new Error(e);
       }
@@ -292,12 +300,6 @@ class Bach {
       }
     }
 
-    List<String> dump() {
-      List<String> lines = new ArrayList<>();
-      dump(lines::add);
-      return lines;
-    }
-
     /** Dump command properties using the provided string consumer. */
     void dump(Consumer<String> consumer) {
       ListIterator<String> iterator = arguments.listIterator();
@@ -307,7 +309,7 @@ class Bach {
         int nextIndex = iterator.nextIndex();
         String indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
         consumer.accept(indent + argument);
-        if (nextIndex >= dumpLimit) {
+        if (nextIndex > dumpLimit) {
           int last = arguments.size() - 1;
           int diff = last - nextIndex;
           if (diff > 1) {
@@ -343,6 +345,9 @@ class Bach {
 
     /** Set dump offset and limit. */
     Command mark(int limit) {
+      if (limit < 0) {
+        throw new IllegalArgumentException("limit must be greater then zero: " + limit);
+      }
       this.dumpOffset = arguments.size();
       this.dumpLimit = arguments.size() + limit;
       return this;
@@ -508,6 +513,22 @@ class Bach {
   }
 
   class JarOptions {
+    /** Specify the operation mode for the jar command. */
+    @CommandOption("")
+    String mode = "--create";
+
+    /** Specifies the archive file name. */
+    @CommandOption("--file")
+    Path file = folder.resolveTarget().resolve("out.jar");
+
+    /** Specifies the application entry point for stand-alone applications. */
+    @CommandOption("--main-class")
+    String main = null;
+
+    /** Specifies the module version, when creating a modular JAR file. */
+    @CommandOption("--module-version")
+    String version = "1.0.0-SNAPSHOT";
+
     /** Stores without using ZIP compression. */
     @CommandOption("--no-compress")
     boolean noCompress = false;
@@ -515,6 +536,10 @@ class Bach {
     /** Sends or prints verbose output to standard output. */
     @CommandOption("--verbose")
     boolean verbose = false;
+
+    /** Changes to the specified directory and includes the files at the end of the command. */
+    @CommandOption("-C")
+    Path path = folder.resolveTargetMods();
   }
 
   class JdepsOptions {
