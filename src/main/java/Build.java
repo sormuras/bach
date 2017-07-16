@@ -113,8 +113,8 @@ class Build {
     format.add(jar);
     format.add("--" + mode);
     format.mark(10);
-    Path root = Paths.get("src");
-    format.addAll(root, unit -> bach.isJavaFile(unit) && !unit.endsWith("module-info.java"));
+    List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));
+    format.addAll(roots, unit -> bach.isJavaFile(unit) && !unit.endsWith("module-info.java"));
     bach.call(format);
   }
 
