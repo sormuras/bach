@@ -2,6 +2,5 @@ package com.greetings;
 
 public interface Greeter {
 
-    String greet(String name);
-
+  String greet(String name);
 }
