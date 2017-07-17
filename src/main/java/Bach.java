@@ -142,12 +142,16 @@ class Bach {
 
   /** Use the {@code javac} tool to read compilation units and compile them into bytecode. */
   void javac(UnaryOperator<JavacOptions> operator) {
+    javac(operator, this::isJavaFile);
+  }
+
+  void javac(UnaryOperator<JavacOptions> operator, Predicate<Path> addSource) {
     JavacOptions options = operator.apply(new JavacOptions());
     UnaryOperator<Command> addAllSourceFiles =
         command -> {
           command.mark(10);
-          command.addAll(options.classSourcePaths, this::isJavaFile);
-          command.addAll(options.moduleSourcePaths, this::isJavaFile);
+          command.addAll(options.classSourcePaths, addSource);
+          command.addAll(options.moduleSourcePaths, addSource);
           return command;
         };
     call("javac", options, addAllSourceFiles);
