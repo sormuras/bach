@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="JUnit Jupiter">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/.bach/tools/junit-platform-console-standalone/junit-platform-console-standalone-1.0.0-M5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/tools/junit-platform-console-standalone/junit-platform-console-standalone-1.0.0-M6.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
