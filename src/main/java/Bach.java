@@ -550,6 +550,13 @@ class Bach {
     /** Specifies where to find class files. */
     List<Path> classPaths = List.of();
 
+    /** Where to find application modules. */
+    List<Path> modulePaths = List.of(folder.resolveTargetMods());
+
+    /** Initial module to resolve and the name of the main class to execute. */
+    @CommandOption("--module")
+    String module = null;
+
     /** Recursively traverses all dependencies. */
     boolean recursive = true;
 
@@ -569,6 +576,13 @@ class Bach {
       if (!classPaths.isEmpty()) {
         command.add("-classpath");
         command.add(classPaths);
+      }
+    }
+
+    void modulePaths(Command command) {
+      if (!modulePaths.isEmpty()) {
+        command.add("--module-path");
+        command.add(modulePaths);
       }
     }
   }
