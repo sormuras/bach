@@ -3,27 +3,17 @@
 /open ../../src/main/java/Bach.java
 
 Bach bach = new Bach()
+bach.project.mains.put("world", "com.greetings.Main")
+bach.project.versions.put("hallo", "1.2.3")
+bach.project.versions.put("hello", "2.3")
 
 bach.javac(options -> {
   options.moduleSourcePaths = List.of(Paths.get("src"), Paths.get("src-de"), Paths.get("src-fr"));
   return options;
 })
 
-// jar --create --file foo.jar --main-class com.foo.Main --module-version 1.0 -C foo/classes resources
-Path jarred = Paths.get("target", "jarred")
-Files.createDirectories(jarred)
-bach.jar(options -> {
-  options.file = jarred.resolve("world.jar");
-  options.main = "com.greetings.Main";
-  options.version = "1.0";
-  options.path = bach.folder.resolveTargetMods().resolve("world");
-  return options;
-}, ".")
+bach.worker.buildJarForEachModule()
 
-bach.java(options -> {
-  options.modulePaths = List.of(jarred);
-  options.module = "world";
-  return options;
-})
+bach.call("java", "--module-path", bach.project.resolveTargetJarred(), "--module", "world")
 
 /exit

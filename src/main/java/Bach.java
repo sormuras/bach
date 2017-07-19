@@ -38,6 +38,9 @@ class Bach {
   /** Project configuration. */
   Project project;
 
+  /** Worker instance. */
+  Worker worker;
+
   /** Offline mode. */
   boolean offline = Boolean.getBoolean("bach.offline");
 
@@ -65,6 +68,7 @@ class Bach {
     this.project = new Project();
     this.resolver = new Resolver();
     this.tools = new TreeMap<>();
+    this.worker = new Worker();
   }
 
   /** Execute command expecting an exit code of zero. */
@@ -215,8 +219,11 @@ class Bach {
     /** Module name to main entry-point map. */
     Map<String, String> mains = new TreeMap<>();
 
-    /** Version defaults to {@code "SNAPSHOT"}. */
-    String version = "SNAPSHOT";
+    /** Version defaults to {@code "1.0.0-SNAPSHOT"}. */
+    String version = "1.0.0-SNAPSHOT";
+
+    /** Module name to version map. */
+    Map<String, String> versions = new TreeMap<>();
 
     Path pathAuxiliary = Paths.get(".bach");
 
@@ -229,6 +236,8 @@ class Bach {
     Path pathTargetLinked = Paths.get(name);
 
     Path pathTargetMods = Paths.get("mods");
+
+    Path pathTargetJarred = Paths.get("jarred");
 
     /** {@code Paths.get(".bach")} */
     Path resolveAuxiliary() {
@@ -258,6 +267,11 @@ class Bach {
     /** {@code Paths.get("target", "bach", "mods")} */
     Path resolveTargetMods() {
       return resolveTarget().resolve(pathTargetMods).normalize();
+    }
+
+    /** {@code Paths.get("target", "bach", "jarred")} */
+    Path resolveTargetJarred() {
+      return resolveTarget().resolve(pathTargetJarred).normalize();
     }
 
     /** Return path to JDK installation directory. */
@@ -727,6 +741,32 @@ class Bach {
 
     boolean isSnapshot() {
       return version.endsWith("SNAPSHOT");
+    }
+  }
+
+  class Worker {
+    void buildJarForEachModule() {
+      try {
+        Files.createDirectories(project.resolveTargetJarred());
+
+        Path modules = project.resolveTargetMods();
+
+        Files.walk(modules, 1).forEach(path -> {
+          if (modules.equals(path)) {
+            return;
+          }
+          String moduleName = path.getFileName().toString();
+          jar(options -> {
+            options.file = project.resolveTargetJarred().resolve(moduleName + ".jar");
+            options.main = project.mains.get(moduleName); // null is okay
+            options.version = project.versions.getOrDefault(moduleName, project.version);
+            options.path = path;
+            return options;
+          }, ".");
+        });
+      } catch (IOException e) {
+        throw new Error("building jar for each module failed", e);
+      }
     }
   }
 }
