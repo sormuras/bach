@@ -134,6 +134,19 @@ class Bach {
     return target;
   }
 
+  Stream<Path> findDirectories(Path root) {
+    try {
+      return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
+          .filter(path -> !root.equals(path));
+    } catch (Exception e) {
+      throw new Error("should not happen", e);
+    }
+  }
+
+  Stream<String> findDirectoryNames(Path root) {
+    return findDirectories(root).map(root::relativize).map(Path::toString);
+  }
+
   /** Return {@code true} if the path points to a canonical Java archive file. */
   boolean isJarFile(Path path) {
     if (Files.isRegularFile(path)) {
@@ -748,25 +761,22 @@ class Bach {
     void buildJarForEachModule() {
       try {
         Files.createDirectories(project.resolveTargetJarred());
-
-        Path modules = project.resolveTargetMods();
-
-        Files.walk(modules, 1).forEach(path -> {
-          if (modules.equals(path)) {
-            return;
-          }
-          String moduleName = path.getFileName().toString();
-          jar(options -> {
-            options.file = project.resolveTargetJarred().resolve(moduleName + ".jar");
-            options.main = project.mains.get(moduleName); // null is okay
-            options.version = project.versions.getOrDefault(moduleName, project.version);
-            options.path = path;
-            return options;
-          }, ".");
-        });
+        findDirectoryNames(project.resolveTargetMods()).forEach(this::buildJarForModuleName);
       } catch (IOException e) {
         throw new Error("building jar for each module failed", e);
       }
+    }
+
+    void buildJarForModuleName(String moduleName) {
+      UnaryOperator<JarOptions> operator =
+          options -> {
+            options.file = project.resolveTargetJarred().resolve(moduleName + ".jar");
+            options.main = project.mains.get(moduleName); // null is okay
+            options.version = project.versions.getOrDefault(moduleName, project.version);
+            options.path = project.resolveTargetMods().resolve(moduleName);
+            return options;
+          };
+      jar(operator, ".");
     }
   }
 }

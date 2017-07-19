@@ -41,7 +41,7 @@ class BachTests {
   void defaultProjectProperties() {
     Bach bach = new Bach();
     assertEquals("bach", bach.project.name);
-    assertEquals("SNAPSHOT", bach.project.version);
+    assertEquals("1.0.0-SNAPSHOT", bach.project.version);
     assertNotNull(bach.project.charset);
     assertTrue(bach.project.mains.isEmpty());
   }
