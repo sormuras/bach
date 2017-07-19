@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -32,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -57,7 +57,7 @@ class BachTests {
     assertEquals(Paths.get("target", "bach", "bach"), bach.project.resolveTargetLinked());
     assertEquals(Paths.get("target", "bach", "mods"), bach.project.resolveTargetMods());
     assertTrue(bach.project.resolveJdkHome().isAbsolute());
-    Assumptions.assumeTrue(Files.exists(bach.project.resolveJdkHome()));
+    assumeTrue(Files.exists(bach.project.resolveJdkHome()));
   }
 
   @Test

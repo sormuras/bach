@@ -209,7 +209,7 @@ class Bach {
     /** Charset defaults to system property {@code "file.encoding"}. */
     Charset charset = Charset.forName(System.getProperty("file.encoding", "UTF-8"));
 
-    /** Name of the project defaults to current directory's name. */
+    /** The project name defaults to the name of the current directory. */
     String name = Bach.this.root.toAbsolutePath().normalize().getFileName().toString();
 
     /** Module name to main entry-point map. */
