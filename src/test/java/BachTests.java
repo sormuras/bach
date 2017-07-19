@@ -24,12 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -44,6 +46,8 @@ class BachTests {
     assertEquals(Paths.get("target", "bach"), bach.folder.resolveTarget());
     assertEquals(Paths.get("target", "bach", "linked"), bach.folder.resolveTargetLinked());
     assertEquals(Paths.get("target", "bach", "mods"), bach.folder.resolveTargetMods());
+    assertTrue(bach.folder.resolveJdkHome().isAbsolute());
+    Assumptions.assumeTrue(Files.exists(bach.folder.resolveJdkHome()));
   }
 
   @Test

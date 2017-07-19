@@ -407,28 +407,54 @@ class Bach {
       return Paths.get("mods");
     }
 
+    /** {@code Paths.get(".bach")} */
     Path resolveAuxiliary() {
       return getRoot().resolve(getAuxiliary()).normalize();
     }
 
+    /** {@code Paths.get(".bach", "resolved")} */
     Path resolveAuxResolved() {
       return resolveAuxiliary().resolve(getAuxResolved()).normalize();
     }
 
+    /** {@code Paths.get(".bach", "tools")} */
     Path resolveAuxTools() {
       return resolveAuxiliary().resolve(getAuxTools()).normalize();
     }
 
+    /** {@code Paths.get("target", "bach")} */
     Path resolveTarget() {
       return getRoot().resolve(getTarget()).normalize();
     }
 
+    /** {@code Paths.get("target", "bach", "linked")} */
     Path resolveTargetLinked() {
       return resolveTarget().resolve(getTargetLinked()).normalize();
     }
 
+    /** {@code Paths.get("target", "bach", "mods")} */
     Path resolveTargetMods() {
       return resolveTarget().resolve(getTargetMods()).normalize();
+    }
+
+    /** Return path to JDK installation directory. */
+    Path resolveJdkHome() {
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null && executable.getNameCount() > 2) {
+        // noinspection ConstantConditions -- count is 3 or higher: "<JDK_HOME>/bin/java[.exe]"
+        return executable.getParent().getParent().toAbsolutePath();
+      }
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome).toAbsolutePath();
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome).toAbsolutePath();
+      }
+      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
+      log("JDK home path not found, using: `%s`", fallback);
+      return fallback;
     }
   }
 
