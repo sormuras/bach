@@ -38,9 +38,6 @@ class Bach {
   /** Project configuration. */
   Project project;
 
-  /** Folder configuration. */
-  Folder folder;
-
   /** Offline mode. */
   boolean offline = Boolean.getBoolean("bach.offline");
 
@@ -66,7 +63,6 @@ class Bach {
   Bach(Path root) {
     this.root = root;
     this.project = new Project();
-    this.folder = new Folder();
     this.resolver = new Resolver();
     this.tools = new TreeMap<>();
   }
@@ -221,6 +217,80 @@ class Bach {
 
     /** Version defaults to {@code "SNAPSHOT"}. */
     String version = "SNAPSHOT";
+
+    Path getAuxiliary() {
+      return Paths.get(".bach");
+    }
+
+    Path getAuxResolved() {
+      return Paths.get("resolved");
+    }
+
+    Path getAuxTools() {
+      return Paths.get("tools");
+    }
+
+    Path getTarget() {
+      return Paths.get("target", "bach");
+    }
+
+    Path getTargetLinked() {
+      return Paths.get(project.name);
+    }
+
+    Path getTargetMods() {
+      return Paths.get("mods");
+    }
+
+    /** {@code Paths.get(".bach")} */
+    Path resolveAuxiliary() {
+      return Bach.this.root.resolve(getAuxiliary()).normalize();
+    }
+
+    /** {@code Paths.get(".bach", "resolved")} */
+    Path resolveAuxResolved() {
+      return resolveAuxiliary().resolve(getAuxResolved()).normalize();
+    }
+
+    /** {@code Paths.get(".bach", "tools")} */
+    Path resolveAuxTools() {
+      return resolveAuxiliary().resolve(getAuxTools()).normalize();
+    }
+
+    /** {@code Paths.get("target", "bach")} */
+    Path resolveTarget() {
+      return Bach.this.root.resolve(getTarget()).normalize();
+    }
+
+    /** {@code Paths.get("target", "bach", "${project.name}")} */
+    Path resolveTargetLinked() {
+      return resolveTarget().resolve(getTargetLinked()).normalize();
+    }
+
+    /** {@code Paths.get("target", "bach", "mods")} */
+    Path resolveTargetMods() {
+      return resolveTarget().resolve(getTargetMods()).normalize();
+    }
+
+    /** Return path to JDK installation directory. */
+    Path resolveJdkHome() {
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null && executable.getNameCount() > 2) {
+        // noinspection ConstantConditions -- count is 3 or higher: "<JDK_HOME>/bin/java[.exe]"
+        return executable.getParent().getParent().toAbsolutePath();
+      }
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome).toAbsolutePath();
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome).toAbsolutePath();
+      }
+      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
+      log("JDK home path not found, using: `%s`", fallback);
+      return fallback;
+    }
   }
 
   /** Command-line executable builder. */
@@ -411,83 +481,6 @@ class Bach {
     String value();
   }
 
-  class Folder {
-
-    Path getAuxiliary() {
-      return Paths.get(".bach");
-    }
-
-    Path getAuxResolved() {
-      return Paths.get("resolved");
-    }
-
-    Path getAuxTools() {
-      return Paths.get("tools");
-    }
-
-    Path getTarget() {
-      return Paths.get("target", "bach");
-    }
-
-    Path getTargetLinked() {
-      return Paths.get(project.name);
-    }
-
-    Path getTargetMods() {
-      return Paths.get("mods");
-    }
-
-    /** {@code Paths.get(".bach")} */
-    Path resolveAuxiliary() {
-      return Bach.this.root.resolve(getAuxiliary()).normalize();
-    }
-
-    /** {@code Paths.get(".bach", "resolved")} */
-    Path resolveAuxResolved() {
-      return resolveAuxiliary().resolve(getAuxResolved()).normalize();
-    }
-
-    /** {@code Paths.get(".bach", "tools")} */
-    Path resolveAuxTools() {
-      return resolveAuxiliary().resolve(getAuxTools()).normalize();
-    }
-
-    /** {@code Paths.get("target", "bach")} */
-    Path resolveTarget() {
-      return Bach.this.root.resolve(getTarget()).normalize();
-    }
-
-    /** {@code Paths.get("target", "bach", "${project.name}")} */
-    Path resolveTargetLinked() {
-      return resolveTarget().resolve(getTargetLinked()).normalize();
-    }
-
-    /** {@code Paths.get("target", "bach", "mods")} */
-    Path resolveTargetMods() {
-      return resolveTarget().resolve(getTargetMods()).normalize();
-    }
-
-    /** Return path to JDK installation directory. */
-    Path resolveJdkHome() {
-      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
-      if (executable != null && executable.getNameCount() > 2) {
-        // noinspection ConstantConditions -- count is 3 or higher: "<JDK_HOME>/bin/java[.exe]"
-        return executable.getParent().getParent().toAbsolutePath();
-      }
-      String jdkHome = System.getenv("JDK_HOME");
-      if (jdkHome != null) {
-        return Paths.get(jdkHome).toAbsolutePath();
-      }
-      String javaHome = System.getenv("JAVA_HOME");
-      if (javaHome != null) {
-        return Paths.get(javaHome).toAbsolutePath();
-      }
-      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
-      log("JDK home path not found, using: `%s`", fallback);
-      return fallback;
-    }
-  }
-
   class JavacOptions {
     /** (Legacy) class path. */
     List<Path> classPaths = List.of();
@@ -500,7 +493,7 @@ class Bach {
 
     /** The destination directory for class files. */
     @CommandOption("-d")
-    Path destinationPath = folder.resolveTargetMods();
+    Path destinationPath = project.resolveTargetMods();
 
     /** Specify character encoding used by source files. */
     Charset encoding = StandardCharsets.UTF_8;
@@ -553,7 +546,7 @@ class Bach {
 
   class JavaOptions {
     /** Where to find application modules. */
-    List<Path> modulePaths = List.of(folder.resolveTargetMods());
+    List<Path> modulePaths = List.of(project.resolveTargetMods());
 
     /** Initial module to resolve and the name of the main class to execute. */
     @CommandOption("--module")
@@ -579,7 +572,7 @@ class Bach {
 
     /** Specifies the archive file name. */
     @CommandOption("--file")
-    Path file = folder.resolveTarget().resolve("out.jar");
+    Path file = project.resolveTarget().resolve("out.jar");
 
     /** Specifies the application entry point for stand-alone applications. */
     @CommandOption("--main-class")
@@ -599,7 +592,7 @@ class Bach {
 
     /** Changes to the specified directory and includes the files at the end of the command. */
     @CommandOption("-C")
-    Path path = folder.resolveTargetMods();
+    Path path = project.resolveTargetMods();
   }
 
   class JdepsOptions {
@@ -607,7 +600,7 @@ class Bach {
     List<Path> classPaths = List.of();
 
     /** Where to find application modules. */
-    List<Path> modulePaths = List.of(folder.resolveTargetMods());
+    List<Path> modulePaths = List.of(project.resolveTargetMods());
 
     /** Initial module to resolve and the name of the main class to execute. */
     @CommandOption("--module")
@@ -649,7 +642,7 @@ class Bach {
 
     /** The directory that contains the resulting runtime image. */
     @CommandOption("--output")
-    Path output = folder.resolveTargetLinked();
+    Path output = project.resolveTargetLinked();
 
     void modulePaths(Command command) {
       if (!modulePaths.isEmpty()) {
@@ -677,7 +670,7 @@ class Bach {
     }
 
     Path resolve(ResolverArtifact ra) {
-      Path targetDirectory = folder.resolveAuxResolved();
+      Path targetDirectory = project.resolveAuxResolved();
       for (String repo : repositories) {
         URI uri = uri(repo, ra);
         String fileName = fileName(uri);

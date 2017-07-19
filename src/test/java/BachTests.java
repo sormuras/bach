@@ -50,22 +50,22 @@ class BachTests {
   void resolveDefaultPaths() {
     Bach bach = new Bach();
     assertEquals(Paths.get("."), bach.root);
-    assertEquals(Paths.get(".bach"), bach.folder.resolveAuxiliary());
-    assertEquals(Paths.get(".bach", "resolved"), bach.folder.resolveAuxResolved());
-    assertEquals(Paths.get(".bach", "tools"), bach.folder.resolveAuxTools());
-    assertEquals(Paths.get("target", "bach"), bach.folder.resolveTarget());
-    assertEquals(Paths.get("target", "bach", "bach"), bach.folder.resolveTargetLinked());
-    assertEquals(Paths.get("target", "bach", "mods"), bach.folder.resolveTargetMods());
-    assertTrue(bach.folder.resolveJdkHome().isAbsolute());
-    Assumptions.assumeTrue(Files.exists(bach.folder.resolveJdkHome()));
+    assertEquals(Paths.get(".bach"), bach.project.resolveAuxiliary());
+    assertEquals(Paths.get(".bach", "resolved"), bach.project.resolveAuxResolved());
+    assertEquals(Paths.get(".bach", "tools"), bach.project.resolveAuxTools());
+    assertEquals(Paths.get("target", "bach"), bach.project.resolveTarget());
+    assertEquals(Paths.get("target", "bach", "bach"), bach.project.resolveTargetLinked());
+    assertEquals(Paths.get("target", "bach", "mods"), bach.project.resolveTargetMods());
+    assertTrue(bach.project.resolveJdkHome().isAbsolute());
+    Assumptions.assumeTrue(Files.exists(bach.project.resolveJdkHome()));
   }
 
   @Test
   void resolvePathsWithCustomRoot() {
     Bach bach = new Bach(Paths.get("demo", "01-hello-world"));
     assertEquals("01-hello-world", bach.project.name);
-    bach.folder =
-        bach.new Folder() {
+    bach.project =
+        bach.new Project() {
           @Override
           Path getTarget() {
             return Paths.get("out");
@@ -76,8 +76,8 @@ class BachTests {
             return Paths.get("classes");
           }
         };
-    assertEquals(bach.root.resolve(".bach/tools"), bach.folder.resolveAuxTools());
-    assertEquals(bach.root.resolve("out/classes"), bach.folder.resolveTargetMods());
+    assertEquals(bach.root.resolve(".bach/tools"), bach.project.resolveAuxTools());
+    assertEquals(bach.root.resolve("out/classes"), bach.project.resolveTargetMods());
   }
 
   @Test
