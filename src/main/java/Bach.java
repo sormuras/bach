@@ -218,58 +218,46 @@ class Bach {
     /** Version defaults to {@code "SNAPSHOT"}. */
     String version = "SNAPSHOT";
 
-    Path getAuxiliary() {
-      return Paths.get(".bach");
-    }
+    Path pathAuxiliary = Paths.get(".bach");
 
-    Path getAuxResolved() {
-      return Paths.get("resolved");
-    }
+    Path pathAuxResolved = Paths.get("resolved");
 
-    Path getAuxTools() {
-      return Paths.get("tools");
-    }
+    Path pathAuxTools = Paths.get("tools");
 
-    Path getTarget() {
-      return Paths.get("target", "bach");
-    }
+    Path pathTarget = Paths.get("target", "bach");
 
-    Path getTargetLinked() {
-      return Paths.get(project.name);
-    }
+    Path pathTargetLinked = Paths.get(name);
 
-    Path getTargetMods() {
-      return Paths.get("mods");
-    }
+    Path pathTargetMods = Paths.get("mods");
 
     /** {@code Paths.get(".bach")} */
     Path resolveAuxiliary() {
-      return Bach.this.root.resolve(getAuxiliary()).normalize();
+      return Bach.this.root.resolve(pathAuxiliary).normalize();
     }
 
     /** {@code Paths.get(".bach", "resolved")} */
     Path resolveAuxResolved() {
-      return resolveAuxiliary().resolve(getAuxResolved()).normalize();
+      return resolveAuxiliary().resolve(pathAuxResolved).normalize();
     }
 
     /** {@code Paths.get(".bach", "tools")} */
     Path resolveAuxTools() {
-      return resolveAuxiliary().resolve(getAuxTools()).normalize();
+      return resolveAuxiliary().resolve(pathAuxTools).normalize();
     }
 
     /** {@code Paths.get("target", "bach")} */
     Path resolveTarget() {
-      return Bach.this.root.resolve(getTarget()).normalize();
+      return Bach.this.root.resolve(pathTarget).normalize();
     }
 
     /** {@code Paths.get("target", "bach", "${project.name}")} */
     Path resolveTargetLinked() {
-      return resolveTarget().resolve(getTargetLinked()).normalize();
+      return resolveTarget().resolve(pathTargetLinked).normalize();
     }
 
     /** {@code Paths.get("target", "bach", "mods")} */
     Path resolveTargetMods() {
-      return resolveTarget().resolve(getTargetMods()).normalize();
+      return resolveTarget().resolve(pathTargetMods).normalize();
     }
 
     /** Return path to JDK installation directory. */

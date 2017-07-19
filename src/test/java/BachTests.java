@@ -66,18 +66,16 @@ class BachTests {
     assertEquals("01-hello-world", bach.project.name);
     bach.project =
         bach.new Project() {
-          @Override
-          Path getTarget() {
-            return Paths.get("out");
-          }
 
           @Override
-          Path getTargetMods() {
-            return Paths.get("classes");
+          Path resolveTargetMods() {
+            return bach.root.resolve("modules");
           }
         };
+    bach.project.pathTarget = Paths.get("out");
     assertEquals(bach.root.resolve(".bach/tools"), bach.project.resolveAuxTools());
-    assertEquals(bach.root.resolve("out/classes"), bach.project.resolveTargetMods());
+    assertEquals(bach.root.resolve("modules"), bach.project.resolveTargetMods());
+    assertEquals(bach.root.resolve("out/01-hello-world"), bach.project.resolveTargetLinked());
   }
 
   @Test
