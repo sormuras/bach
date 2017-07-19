@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,14 +38,23 @@ import org.junit.jupiter.api.Test;
 class BachTests {
 
   @Test
+  void defaultProjectProperties() {
+    Bach bach = new Bach();
+    assertEquals("bach", bach.project.name);
+    assertEquals("SNAPSHOT", bach.project.version);
+    assertNotNull(bach.project.charset);
+    assertTrue(bach.project.mains.isEmpty());
+  }
+
+  @Test
   void resolveDefaultPaths() {
     Bach bach = new Bach();
-    assertEquals(Paths.get("."), bach.folder.getRoot());
+    assertEquals(Paths.get("."), bach.root);
     assertEquals(Paths.get(".bach"), bach.folder.resolveAuxiliary());
     assertEquals(Paths.get(".bach", "resolved"), bach.folder.resolveAuxResolved());
     assertEquals(Paths.get(".bach", "tools"), bach.folder.resolveAuxTools());
     assertEquals(Paths.get("target", "bach"), bach.folder.resolveTarget());
-    assertEquals(Paths.get("target", "bach", "linked"), bach.folder.resolveTargetLinked());
+    assertEquals(Paths.get("target", "bach", "bach"), bach.folder.resolveTargetLinked());
     assertEquals(Paths.get("target", "bach", "mods"), bach.folder.resolveTargetMods());
     assertTrue(bach.folder.resolveJdkHome().isAbsolute());
     Assumptions.assumeTrue(Files.exists(bach.folder.resolveJdkHome()));
@@ -52,15 +62,10 @@ class BachTests {
 
   @Test
   void resolvePathsWithCustomRoot() {
-    Bach bach = new Bach();
-    Path root = Paths.get("demo", "01-hello-world");
+    Bach bach = new Bach(Paths.get("demo", "01-hello-world"));
+    assertEquals("01-hello-world", bach.project.name);
     bach.folder =
         bach.new Folder() {
-          @Override
-          Path getRoot() {
-            return root;
-          }
-
           @Override
           Path getTarget() {
             return Paths.get("out");
@@ -71,9 +76,8 @@ class BachTests {
             return Paths.get("classes");
           }
         };
-    assertEquals(root, bach.folder.getRoot());
-    assertEquals(root.resolve(".bach/tools"), bach.folder.resolveAuxTools());
-    assertEquals(root.resolve("out/classes"), bach.folder.resolveTargetMods());
+    assertEquals(bach.root.resolve(".bach/tools"), bach.folder.resolveAuxTools());
+    assertEquals(bach.root.resolve("out/classes"), bach.folder.resolveTargetMods());
   }
 
   @Test

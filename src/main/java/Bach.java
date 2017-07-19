@@ -32,8 +32,14 @@ import java.util.stream.*;
 @SuppressWarnings({"SimplifiableIfStatement", "WeakerAccess", "unused"})
 class Bach {
 
+  /** Root path defaults to relative {@code Paths.get(".")} current directory. */
+  final Path root;
+
+  /** Project configuration. */
+  Project project;
+
   /** Folder configuration. */
-  Folder folder = new Folder();
+  Folder folder;
 
   /** Offline mode. */
   boolean offline = Boolean.getBoolean("bach.offline");
@@ -42,7 +48,7 @@ class Bach {
   boolean silent = Boolean.getBoolean("bach.silent");
 
   /** Resolver instance. */
-  Resolver resolver = new Resolver();
+  Resolver resolver;
 
   /** Standard error stream. */
   PrintStream streamErr = System.err;
@@ -51,7 +57,19 @@ class Bach {
   PrintStream streamOut = System.out;
 
   /** Map of custom tool providers. */
-  Map<String, ToolProvider> tools = new TreeMap<>();
+  Map<String, ToolProvider> tools;
+
+  Bach() {
+    this(Paths.get("."));
+  }
+
+  Bach(Path root) {
+    this.root = root;
+    this.project = new Project();
+    this.folder = new Folder();
+    this.resolver = new Resolver();
+    this.tools = new TreeMap<>();
+  }
 
   /** Execute command expecting an exit code of zero. */
   void call(Command command) {
@@ -188,6 +206,21 @@ class Bach {
   /** Resolve maven jar artifact. */
   Path resolve(String group, String artifact, String version) {
     return resolver.resolve(new ResolverArtifact(group, artifact, version));
+  }
+
+  /** Project configuration. */
+  class Project {
+    /** Charset defaults to system property {@code "file.encoding"}. */
+    Charset charset = Charset.forName(System.getProperty("file.encoding", "UTF-8"));
+
+    /** Name of the project defaults to current directory's name. */
+    String name = Bach.this.root.toAbsolutePath().normalize().getFileName().toString();
+
+    /** Module name to main entry-point map. */
+    Map<String, String> mains = new TreeMap<>();
+
+    /** Version defaults to {@code "SNAPSHOT"}. */
+    String version = "SNAPSHOT";
   }
 
   /** Command-line executable builder. */
@@ -379,9 +412,6 @@ class Bach {
   }
 
   class Folder {
-    Path getRoot() {
-      return Paths.get(".");
-    }
 
     Path getAuxiliary() {
       return Paths.get(".bach");
@@ -400,7 +430,7 @@ class Bach {
     }
 
     Path getTargetLinked() {
-      return Paths.get("linked");
+      return Paths.get(project.name);
     }
 
     Path getTargetMods() {
@@ -409,7 +439,7 @@ class Bach {
 
     /** {@code Paths.get(".bach")} */
     Path resolveAuxiliary() {
-      return getRoot().resolve(getAuxiliary()).normalize();
+      return Bach.this.root.resolve(getAuxiliary()).normalize();
     }
 
     /** {@code Paths.get(".bach", "resolved")} */
@@ -424,10 +454,10 @@ class Bach {
 
     /** {@code Paths.get("target", "bach")} */
     Path resolveTarget() {
-      return getRoot().resolve(getTarget()).normalize();
+      return Bach.this.root.resolve(getTarget()).normalize();
     }
 
-    /** {@code Paths.get("target", "bach", "linked")} */
+    /** {@code Paths.get("target", "bach", "${project.name}")} */
     Path resolveTargetLinked() {
       return resolveTarget().resolve(getTargetLinked()).normalize();
     }
