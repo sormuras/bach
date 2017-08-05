@@ -56,9 +56,9 @@ class Build {
           options.classPaths =
               List.of(
                   CLASSES,
-                  bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-M6"),
-                  bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-M6"),
-                  bach.resolve("org.opentest4j", "opentest4j", "1.0.0-M3"));
+                  bach.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-RC2"),
+                  bach.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-RC2"),
+                  bach.resolve("org.opentest4j", "opentest4j", "1.0.0-RC1"));
           options.classSourcePaths = List.of(Paths.get("src/test/java"));
           return options;
         });
@@ -122,7 +122,7 @@ class Build {
     String repo = "http://repo1.maven.org/maven2";
     String user = "org/junit/platform";
     String name = "junit-platform-console-standalone";
-    String version = "1.0.0-M6";
+    String version = "1.0.0-RC2";
     String file = name + "-" + version + ".jar";
     URI uri = URI.create(String.join("/", repo, user, name, version, file));
     Path path = Paths.get(".bach/tools").resolve(name);
