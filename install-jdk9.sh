@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-JDK9_BUILD=178
+JDK9_BUILD=181
 JDK9_ARCHIVE=jdk-9+${JDK9_BUILD}_linux-x64_bin.tar.gz
 
 cd ~
