@@ -1,13 +1,10 @@
 //usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
-/open src/main/java/Bach.java
-/open src/main/java/Build.java
+/open src/main/java/JdkTool.java
+/open src/main/java/JdkUtil.java
 
-try {
-  Build.main();
-} catch (Throwable throwable) {
-  throwable.printStackTrace();
-  System.exit(1);
-}
+/open src/build/java/Build.java
+
+Build.main()
 
 /exit
