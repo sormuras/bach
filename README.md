@@ -15,27 +15,25 @@ following [jshell] script in file called `build.jsh`. Edit the source and
 target paths to your needs and launch the build with `jshell build.jsh`.
 
 ```javascript
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
-
 /open Bach.java
 
-Bach bach = new Bach()
-bach.call("java", "--version")
-bach.call("javac", "-d", "target/classes", "App.java", ...)
-bach.call("java", "-ea", "-cp", "target/classes", "App")
+JdkTool.execute("java", "--version")
 
 /exit
 ```
 
 ## bootstrap on-the-fly
 
-You may want to mark your build script executable and use [bootstrap.jsh] to
-automatically download that latest [Bach.java].
+You may want to mark your build script executable and copy [bootstrap.jsh] to
+automatically download that latest [Bach.java] version.
 
 ```javascript
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
-URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
+/*
+ * Download "Bach.java" from github to local "target" directory.
+ */
+URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/Bach.java");
 Path target = Paths.get("target")
 Path script = target.resolve("Bach.java")
 if (Files.notExists(script)) {
@@ -43,11 +41,15 @@ if (Files.notExists(script)) {
   try (InputStream stream = url.openStream()) { Files.copy(stream, script); }
 }
 
+/*
+ * Source "Bach.java" into this jshell environment.
+ */
 /open target/Bach.java
 
-Bach bach = new Bach()
-bach.call("java", "--version")
-// ...
+/*
+ * Use it!
+ */
+JdkTool.execute("java", "--version")
 
 /exit
 ```
@@ -56,5 +58,5 @@ bach.call("java", "--version")
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [jshell]: https://docs.oracle.com/javase/9/tools/jshell.htm
-[Bach.java]: https://github.com/sormuras/bach/blob/master/src/main/java/Bach.java
+[Bach.java]: https://github.com/sormuras/bach/blob/master/Bach.java
 [bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/bootstrap.jsh

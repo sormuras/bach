@@ -1,9 +1,9 @@
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
-//
-// download "Bach.java"
-//
-URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/main/java/Bach.java");
+/*
+ * Download "Bach.java" from github to local "target" directory.
+ */
+URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/Bach.java");
 Path target = Paths.get("target")
 Path script = target.resolve("Bach.java")
 if (Files.notExists(script)) {
@@ -11,11 +11,14 @@ if (Files.notExists(script)) {
   try (InputStream stream = url.openStream()) { Files.copy(stream, script); }
 }
 
-//
-// source "Bach.java" into this jshell environment and build
-//
+/*
+ * Source "Bach.java" into this jshell environment.
+ */
 /open target/Bach.java
 
-new Bach().call("java", "--version")
+/*
+ * Use it!
+ */
+JdkTool.execute("java", "--version")
 
 /exit
