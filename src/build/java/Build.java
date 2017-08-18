@@ -120,7 +120,7 @@ interface Build {
     generated.add("");
     generate(generated, SOURCE_MAIN.resolve("JdkUtil.java"), imports);
     generated.add("");
-    generated.add("class Bach {}");
+    generate(generated, SOURCE_MAIN.resolve("Bach.java"), imports);
     generated.addAll(indexOfImports, imports);
 
     // write generated lines to temporary file

@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-17T22:17:14.041345500Z */
+/* THIS FILE IS GENERATED -- 2017-08-18T11:01:40.854643600Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -645,4 +645,15 @@ interface JdkUtil {
   }
 }
 
-class Bach {}
+class Bach {
+
+  static void generateJShellScript(Path directory, String name) throws Exception {
+    Path file = directory.resolve(name);
+    List<String> script =
+        List.of(
+            "void java(Object... args) { JdkTool.execute(\"java\", args); }",
+            "void javac(Object... args) { JdkTool.execute(\"javac\", args); }");
+    Files.createDirectories(directory);
+    Files.write(file, script);
+  }
+}
