@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-18T11:01:40.854643600Z */
+/* THIS FILE IS GENERATED -- 2017-08-18T14:04:39.103174900Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -543,6 +543,13 @@ interface JdkUtil {
         .resolve(Paths.get(".bach", "resolved"), Resolvable.REPOSITORIES);
   }
 
+  /** Extract substring between begin and end tags. */
+  static String substring(String string, String beginTag, String endTag) {
+    int beginIndex = string.indexOf(beginTag) + beginTag.length();
+    int endIndex = string.indexOf(endTag, beginIndex);
+    return string.substring(beginIndex, endIndex).trim();
+  }
+
   static void treeDelete(Path root) throws IOException {
     treeDelete(root, path -> true);
   }
@@ -579,18 +586,17 @@ interface JdkUtil {
     final String version;
     final String classifier;
     final String kind;
+    final String file;
 
     Resolvable(String group, String artifact, String version) {
-      this.group = group;
+      this.group = group.replace('.', '/');
       this.artifact = artifact;
       this.version = version;
       this.classifier = "";
       this.kind = "jar";
-    }
-
-    String fileName() {
+      // assemble file name
       String versifier = classifier.isEmpty() ? version : version + '-' + classifier;
-      return artifact + '-' + versifier + '.' + kind;
+      this.file = artifact + '-' + versifier + '.' + kind;
     }
 
     boolean isSnapshot() {
@@ -598,15 +604,9 @@ interface JdkUtil {
     }
 
     Path resolve(Path targetDirectory, List<String> repositories) {
-      for (String repo : repositories) {
-        URI uri = toUri(repo);
-        String fileName = JdkUtil.fileName(uri);
-        // revert local filename with constant version attribute
-        if (isSnapshot()) {
-          fileName = fileName();
-        }
+      for (String repository : repositories) {
         try {
-          return download(uri, targetDirectory, fileName, path -> true);
+          return resolve(targetDirectory, repository);
         } catch (IOException e) {
           // e.printStackTrace();
         }
@@ -614,43 +614,55 @@ interface JdkUtil {
       throw new Error("could not resolve: " + this);
     }
 
-    /** Create uri for specified maven coordinates. */
-    URI toUri(String repository) {
-      String group = this.group.replace('.', '/');
-      String path = artifact + '/' + version;
-      String file = fileName();
+    Path resolve(Path targetDirectory, String repository) throws IOException {
+      URI uri = resolveUri(repository);
+      String fileName = JdkUtil.fileName(uri);
+      // revert local filename with constant version attribute
       if (isSnapshot()) {
-        try {
-          URI xml = URI.create(repository + '/' + group + '/' + path + '/' + "maven-metadata.xml");
-          try (InputStream sourceStream = xml.toURL().openStream();
-              ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
-            sourceStream.transferTo(targetStream);
-            String meta = targetStream.toString("UTF-8");
-            UnaryOperator<String> extractor =
-                key -> {
-                  int begin = meta.indexOf(key) + key.length();
-                  int end = meta.indexOf('<', begin);
-                  return meta.substring(begin, end).trim();
-                };
-            String timestamp = extractor.apply("<timestamp>");
-            String buildNumber = extractor.apply("<buildNumber>");
-            file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
-          }
-        } catch (IOException e) {
-          // fall-through and return with "SNAPSHOT" literal
+        fileName = this.file;
+      }
+      return download(uri, targetDirectory, fileName, path -> true);
+    }
+
+    /** Create uri for specified maven coordinates. */
+    URI resolveUri(String repository) {
+      String base = repository + '/' + group + '/' + artifact + '/' + version + '/';
+      String file = this.file;
+      if (isSnapshot()) {
+        URI xml = URI.create(base + "maven-metadata.xml");
+        try (InputStream sourceStream = xml.toURL().openStream();
+            ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
+          sourceStream.transferTo(targetStream);
+          String meta = targetStream.toString("UTF-8");
+          String timestamp = JdkUtil.substring(meta, "<timestamp>", "<");
+          String buildNumber = JdkUtil.substring(meta, "<buildNumber>", "<");
+          file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
+        } catch (Exception exception) {
+          // use file name with "SNAPSHOT" literal
         }
       }
-      return URI.create(repository + '/' + group + '/' + path + '/' + file);
+      return URI.create(base + file);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("Resolvable{%s %s %s}", group.replace('/', '.'), artifact, version);
     }
   }
 }
 
+/**
+ * Java Shell Builder.
+ *
+ * @see <a href="https://github.com/sormuras/bach">https://github.com/sormuras/bach</a>
+ */
 class Bach {
 
   static void generateJShellScript(Path directory, String name) throws Exception {
     Path file = directory.resolve(name);
     List<String> script =
         List.of(
+            "// JdkTool",
             "void java(Object... args) { JdkTool.execute(\"java\", args); }",
             "void javac(Object... args) { JdkTool.execute(\"javac\", args); }");
     Files.createDirectories(directory);

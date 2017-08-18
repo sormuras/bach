@@ -29,4 +29,18 @@ class JdkUtilTests {
     assertFalse(JdkUtil.isJavaFile(Paths.get("a/b")));
     assertTrue(JdkUtil.isJavaFile(Paths.get("src/test/java/JdkUtilTests.java")));
   }
+
+  @Test
+  void isJarFile() {
+    assertFalse(JdkUtil.isJarFile(Paths.get("")));
+    assertFalse(JdkUtil.isJarFile(Paths.get("a/b")));
+  }
+
+  @Test
+  void resolve() {
+    new JdkUtil.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
+        .resolve(Paths.get("target"), JdkUtil.Resolvable.REPOSITORIES);
+    new JdkUtil.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
+        .resolve(Paths.get("target"), JdkUtil.Resolvable.REPOSITORIES);
+  }
 }

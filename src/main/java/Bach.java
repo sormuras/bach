@@ -21,12 +21,18 @@ import java.nio.file.*;
 import java.util.*;
 
 // Bach.java
+/**
+ * Java Shell Builder.
+ *
+ * @see <a href="https://github.com/sormuras/bach">https://github.com/sormuras/bach</a>
+ */
 class Bach {
 
   static void generateJShellScript(Path directory, String name) throws Exception {
     Path file = directory.resolve(name);
     List<String> script =
         List.of(
+            "// JdkTool",
             "void java(Object... args) { JdkTool.execute(\"java\", args); }",
             "void javac(Object... args) { JdkTool.execute(\"javac\", args); }");
     Files.createDirectories(directory);
