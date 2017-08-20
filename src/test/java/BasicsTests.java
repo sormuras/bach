@@ -18,29 +18,33 @@
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 
-class JdkUtilTests {
+class BasicsTests {
 
   @Test
   void isJavaFile() {
-    assertFalse(JdkUtil.isJavaFile(Paths.get("")));
-    assertFalse(JdkUtil.isJavaFile(Paths.get("a/b")));
-    assertTrue(JdkUtil.isJavaFile(Paths.get("src/test/java/JdkUtilTests.java")));
+    assertFalse(Basics.isJavaFile(Paths.get("")));
+    assertFalse(Basics.isJavaFile(Paths.get("a/b")));
+    assertTrue(Basics.isJavaFile(Paths.get("src/test/java/BasicsTests.java")));
   }
 
   @Test
   void isJarFile() {
-    assertFalse(JdkUtil.isJarFile(Paths.get("")));
-    assertFalse(JdkUtil.isJarFile(Paths.get("a/b")));
+    assertFalse(Basics.isJarFile(Paths.get("")));
+    assertFalse(Basics.isJarFile(Paths.get("a/b")));
   }
 
   @Test
-  void resolve() {
-    new JdkUtil.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
-        .resolve(Paths.get("target"), JdkUtil.Resolvable.REPOSITORIES);
-    new JdkUtil.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
-        .resolve(Paths.get("target"), JdkUtil.Resolvable.REPOSITORIES);
+  void resolve() throws IOException {
+    Path temp = Files.createTempDirectory("resolve-");
+    new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
+        .resolve(temp, Basics.Resolvable.REPOSITORIES);
+    new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
+        .resolve(temp, Basics.Resolvable.REPOSITORIES);
   }
 }

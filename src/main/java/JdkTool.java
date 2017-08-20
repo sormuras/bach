@@ -47,11 +47,15 @@ interface JdkTool {
   /** Command builder and tool executor support. */
   class Command {
 
+    final String executable;
     final List<String> arguments = new ArrayList<>();
     private int dumpLimit = Integer.MAX_VALUE;
     private int dumpOffset = Integer.MAX_VALUE;
-    final String executable;
+    private PrintStream out = System.out;
+    private PrintStream err = System.err;
+    private Map<String, ToolProvider> tools = Collections.emptyMap();
 
+    /** Initialize this command instance. */
     Command(String executable) {
       this.executable = executable;
     }
@@ -195,7 +199,7 @@ interface JdkTool {
       return defaultName.toString();
     }
 
-    /** Dump command properties using the provided string consumer. */
+    /** Dump command executables and arguments using the provided string consumer. */
     Command dump(Consumer<String> consumer) {
       ListIterator<String> iterator = arguments.listIterator();
       consumer.accept(executable);
@@ -217,16 +221,13 @@ interface JdkTool {
       return this;
     }
 
-    int execute() {
-      return execute(System.out);
-    }
-
-    int execute(PrintStream out) {
-      return execute(out, out, Collections.emptyMap());
-    }
-
     /** Execute. */
-    int execute(PrintStream out, PrintStream err, Map<String, ToolProvider> tools) {
+    int execute() {
+      if (Boolean.getBoolean("bach.verbose")) {
+        out.println(" . ");
+        dump(line -> out.println(" | " + line));
+        out.println(" ' ");
+      }
       ToolProvider defaultTool = ToolProvider.findFirst(executable).orElse(null);
       ToolProvider tool = tools.getOrDefault(executable, defaultTool);
       if (tool != null) {
@@ -253,6 +254,20 @@ interface JdkTool {
       return this;
     }
 
+    Command setStandardStreams(PrintStream out, PrintStream err) {
+      this.out = out;
+      this.err = err;
+      return this;
+    }
+
+    Command setToolProvider(ToolProvider tool) {
+      if (tools == Collections.EMPTY_MAP) {
+        tools = new TreeMap<>();
+      }
+      tools.put(tool.name(), tool);
+      return this;
+    }
+
     /** Create new argument array based on this command's arguments. */
     String[] toArgumentsArray() {
       return arguments.toArray(new String[arguments.size()]);
@@ -260,7 +275,7 @@ interface JdkTool {
 
     /** Create new {@link ProcessBuilder} instance based on this command setup. */
     ProcessBuilder toProcessBuilder() {
-      ArrayList<String> command = new ArrayList<>(1 + arguments.size());
+      List<String> command = new ArrayList<>(1 + arguments.size());
       command.add(executable);
       command.addAll(arguments);
       return new ProcessBuilder(command);
@@ -279,7 +294,7 @@ interface JdkTool {
 
     /** (Legacy) locations where to find Java source files. */
     @Option("--source-path")
-    transient List<Path> classSourcePaths = List.of();
+    transient List<Path> classSourcePath = List.of();
 
     /** Generates all debugging information, including local variables. */
     @Option("-g")
@@ -310,6 +325,16 @@ interface JdkTool {
 
     /** Output messages about what the compiler is doing. */
     boolean verbose = false;
+
+    /** Create javac command with options and source files added. */
+    @Override
+    public Command toCommand() {
+      Command command = JdkTool.super.toCommand();
+      command.mark(10);
+      command.addAll(classSourcePath, Basics::isJavaFile);
+      command.addAll(moduleSourcePath, Basics::isJavaFile);
+      return command;
+    }
   }
 
   /**
@@ -421,29 +446,43 @@ interface JdkTool {
     Path output = null;
   }
 
-  static Command command(String executable, Object... arguments) {
-    return new Command(executable).addAll(List.of(arguments));
-  }
-
-  static void execute(String executable, Object... arguments) {
-    execute(System.out, executable, arguments);
-  }
-
-  static void execute(PrintStream out, String executable, Object... arguments) {
-    int error = command(executable, arguments).execute(out);
-    if (error == 0) {
-      return;
-    }
-    throw new Error("execution failed with error code: " + error);
-  }
-
+  /** Name of this tool, like {@code javac} or {@code jar}. */
   default String name() {
     return getClass().getSimpleName().toLowerCase();
   }
 
+  /**
+   * Execute the command.
+   *
+   * @throws AssertionError if the execution result is not zero
+   */
+  static void run(Command command) {
+    int code = command.execute();
+    if (code != 0) {
+      throw new AssertionError("expected an exit code of zero, but got: " + code);
+    }
+  }
+
+  /**
+   * Call any executable tool by its name and add all arguments as single elements.
+   *
+   * @throws AssertionError if the execution result is not zero
+   */
+  static void run(String executable, Object... arguments) {
+    run(new Command(executable).addAll(List.of(arguments)));
+  }
+
+  /**
+   * Execute this tool with all options and arguments applied.
+   *
+   * @throws AssertionError if the execution result is not zero
+   */
+  default void run() {
+    run(toCommand());
+  }
+
+  /** Create command instance based on this tool's options. */
   default Command toCommand() {
-    Command command = command(name());
-    command.addAllOptions(this);
-    return command;
+    return new Command(name()).addAllOptions(this);
   }
 }

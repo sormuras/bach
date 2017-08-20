@@ -44,6 +44,7 @@ interface Build {
   String OPENTEST4J_VERSION = "1.0.0-RC1";
 
   static void main(String... args) {
+    System.setProperty("bach.verbose", "true");
     try {
       format();
       clean();
@@ -70,22 +71,21 @@ interface Build {
     String version = "validate-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
-    Path jar = JdkUtil.download(uri, TOOLS.resolve(name));
-    JdkTool.Command format = JdkTool.command("java");
+    Path jar = Basics.download(uri, TOOLS.resolve(name));
+    JdkTool.Command format = new JdkTool.Java().toCommand();
     format.add("-jar");
     format.add(jar);
     format.add("--" + mode);
-    format.mark(10);
+    format.mark(5);
     List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));
-    format.addAll(roots, unit -> JdkUtil.isJavaFile(unit) && !unit.endsWith("module-info.java"));
-    format.dump(System.out::println);
+    format.addAll(roots, unit -> Basics.isJavaFile(unit) && !unit.endsWith("module-info.java"));
     format.execute();
   }
 
   static void clean() throws IOException {
     System.out.printf("%n[clean]%n%n");
 
-    JdkUtil.treeDelete(TARGET);
+    Basics.treeDelete(TARGET);
     System.out.println("deleted " + TARGET);
   }
 
@@ -116,9 +116,9 @@ interface Build {
     generated.add("");
     int indexOfImports = generated.size();
     generated.add("");
-    generate(generated, SOURCE_MAIN.resolve("JdkTool.java"), imports);
+    generate(generated, SOURCE_MAIN.resolve("Basics.java"), imports);
     generated.add("");
-    generate(generated, SOURCE_MAIN.resolve("JdkUtil.java"), imports);
+    generate(generated, SOURCE_MAIN.resolve("JdkTool.java"), imports);
     generated.add("");
     generate(generated, SOURCE_MAIN.resolve("Bach.java"), imports);
     generated.addAll(indexOfImports, imports);
@@ -143,8 +143,6 @@ interface Build {
       Files.copy(generatedPath, publishedPath, StandardCopyOption.REPLACE_EXISTING);
       System.err.println("copied new Bach.java version - don't forget to publish (commit/push)");
     }
-    System.out.flush();
-    System.err.flush();
   }
 
   static void generate(List<String> target, Path source, Set<String> imports) throws IOException {
@@ -171,24 +169,25 @@ interface Build {
     JdkTool.Javac javac = new JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.destinationPath = TARGET_MAIN;
-    javac.toCommand().add(TARGET.resolve("Bach.java")).dump(System.out::println).execute();
+    javac.toCommand().add(TARGET.resolve("Bach.java")).execute();
 
     // test
     javac.destinationPath = TARGET_TEST;
+    javac.classSourcePath = List.of(SOURCE_TEST);
     javac.classPath =
         List.of(
             TARGET_MAIN,
-            JdkUtil.resolve("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER_VERSION),
-            JdkUtil.resolve("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM_VERSION),
-            JdkUtil.resolve("org.opentest4j", "opentest4j", OPENTEST4J_VERSION));
-    javac.toCommand().addAll(SOURCE_TEST, JdkUtil::isJavaFile).dump(System.out::println).execute();
+            Basics.resolve("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER_VERSION),
+            Basics.resolve("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM_VERSION),
+            Basics.resolve("org.opentest4j", "opentest4j", OPENTEST4J_VERSION));
+    javac.run();
   }
 
   static void javadoc() throws IOException {
     System.out.printf("%n[javadoc]%n%n");
 
     Files.createDirectories(JAVADOC);
-    JdkTool.execute(
+    JdkTool.run(
         "javadoc",
         "-quiet",
         "-Xdoclint:all,-missing",
@@ -217,7 +216,6 @@ interface Build {
     JdkTool.Command command = jar.toCommand();
     command.mark(5);
     Arrays.stream(contents).forEach(command::add);
-    command.dump(System.out::println);
     command.execute();
   }
 
@@ -238,8 +236,8 @@ interface Build {
     String name = "junit-platform-console-standalone";
     String file = name + "-" + JUNIT_PLATFORM_VERSION + ".jar";
     URI uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM_VERSION, file));
-    Path jar = JdkUtil.download(uri, TOOLS.resolve(name), file, p -> true);
-    JdkTool.execute(
+    Path jar = Basics.download(uri, TOOLS.resolve(name), file, p -> true);
+    JdkTool.run(
         "java",
         "-ea",
         "-jar",

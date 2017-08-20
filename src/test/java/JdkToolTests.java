@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +59,7 @@ class JdkToolTests {
             "5",
             "... [omitted 3 arguments]",
             "9");
-    JdkTool.Command command = JdkTool.command("executable");
+    JdkTool.Command command = new JdkTool.Command("executable");
     command.add("--some-option");
     command.add("value");
     command.add("-single-flag-without-values");
@@ -72,7 +71,7 @@ class JdkToolTests {
 
   @Test
   void addPathsAsSingleOption() {
-    JdkTool.Command command = JdkTool.command("paths");
+    JdkTool.Command command = new JdkTool.Command("paths");
     assertSame(command, command.add("-p"));
     assertSame(command, command.add(List.of(Paths.get("a"), Paths.get("b"))));
     List<String> expected = List.of("paths", "-p", "  a" + File.pathSeparator + "b");
@@ -83,7 +82,7 @@ class JdkToolTests {
   @Test
   void addAllSourceFiles() {
     List<Path> roots = List.of(Paths.get("src/main"), Paths.get("src/test"));
-    JdkTool.Command command = JdkTool.command("sources").mark(99);
+    JdkTool.Command command = new JdkTool.Command("sources").mark(99);
     assertSame(command, command.addAll(roots, Files::isRegularFile));
     String actual = String.join("\n", dump(command));
     assertTrue(actual.contains("JdkTool.java"));
@@ -92,7 +91,7 @@ class JdkToolTests {
 
   @Test
   void addAllOptionsUsingInstanceOfObject() {
-    JdkTool.Command command = JdkTool.command("executable");
+    JdkTool.Command command = new JdkTool.Command("executable");
     command.addAllOptions(new Object()).mark(0);
     assertEquals("executable", command.executable);
     assertTrue(command.arguments.isEmpty());
@@ -119,7 +118,7 @@ class JdkToolTests {
             command.add("0x" + Integer.toHexString(hex));
           }
         };
-    JdkTool.Command command = JdkTool.command("executable");
+    JdkTool.Command command = new JdkTool.Command("executable");
     command.addAllOptions(options, fields -> fields.sorted(Comparator.comparing(Field::getName)));
     command.add("final");
     assertAll(
@@ -137,12 +136,31 @@ class JdkToolTests {
   }
 
   @Test
-  void executeFailuresArePrinted() {
-    PrintStream out = new PrintStream(new ByteArrayOutputStream(2000));
-    JdkTool.command("java", "--version").execute(out);
-    Error e = assertThrows(Error.class, () -> JdkTool.execute(out, "java", "--optionDoesNotExist"));
-    assertEquals("execution failed with error code: 1", e.getMessage());
-    Error f = assertThrows(Error.class, () -> JdkTool.execute(out, "tool, that doesn't exist", 1));
+  void runJavaWithVersion() {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
+    PrintStream out = new PrintStream(bytes);
+    JdkTool.run(new JdkTool.Command("java").add("--version").setStandardStreams(out, out));
+    assertTrue(bytes.toString().contains("java"));
+  }
+
+  @Test
+  void runJavaWithOptionThatDoesNotExist() {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
+    PrintStream out = new PrintStream(bytes);
+    AssertionError error =
+        assertThrows(
+            AssertionError.class,
+            () ->
+                JdkTool.run(
+                    new JdkTool.Command("java")
+                        .add("--optionDoesNotExist")
+                        .setStandardStreams(out, out)));
+    assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
+  }
+
+  @Test
+  void runToolThatDoesNotExist() {
+    Error f = assertThrows(Error.class, () -> JdkTool.run("tool, that doesn't exist", 1, 2, 3));
     assertEquals("executing `tool, that doesn't exist` failed", f.getMessage());
   }
 
@@ -165,7 +183,8 @@ class JdkToolTests {
             "--module-source-path",
             "  src",
             "-parameters",
-            "-verbose");
+            "-verbose",
+            ">> many .java files >>");
     JdkTool.Javac javac = new JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.deprecation = true;
@@ -175,7 +194,7 @@ class JdkToolTests {
     javac.parameters = true;
     javac.verbose = true;
     javac.classPath = List.of(Paths.get("classes"));
-    javac.classSourcePaths = List.of(Paths.get("transient"));
+    javac.classSourcePath = List.of(Paths.get("src/build/java"));
     javac.moduleSourcePath = List.of(Paths.get("src"));
     javac.modulePath = List.of(Paths.get("mods"));
     assertLinesMatch(expectedLines, dump(javac.toCommand()));
@@ -274,11 +293,14 @@ class JdkToolTests {
 
   @Test
   void customTool() {
-    JdkTool.Command command = JdkTool.command("custom tool", 1, 2, 3);
     ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
     PrintStream out = new PrintStream(bytes);
-    command.dump(out::println);
-    command.execute(out, System.err, Map.of("custom tool", new CustomTool()));
+    new JdkTool.Command("custom tool")
+        .addAll(List.of(1, 2, 3))
+        .setStandardStreams(out, out)
+        .setToolProvider(new CustomTool())
+        .dump(out::println)
+        .execute();
     assertLinesMatch(
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(bytes.toString().split(System.lineSeparator())));

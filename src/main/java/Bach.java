@@ -33,8 +33,8 @@ class Bach {
     List<String> script =
         List.of(
             "// JdkTool",
-            "void java(Object... args) { JdkTool.execute(\"java\", args); }",
-            "void javac(Object... args) { JdkTool.execute(\"javac\", args); }");
+            "void java(Object... args) { JdkTool.run(\"java\", args); }",
+            "void javac(Object... args) { JdkTool.run(\"javac\", args); }");
     Files.createDirectories(directory);
     Files.write(file, script);
   }

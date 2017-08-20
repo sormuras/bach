@@ -27,7 +27,7 @@ import java.util.stream.*;
 
 // Bach.java
 /** Common utilities and helpers. */
-interface JdkUtil {
+interface Basics {
 
   /** Download the resource specified by its URI to the target directory. */
   static Path download(URI uri, Path targetDirectory) throws IOException {
@@ -191,7 +191,7 @@ interface JdkUtil {
 
     Path resolve(Path targetDirectory, String repository) throws IOException {
       URI uri = resolveUri(repository);
-      String fileName = JdkUtil.fileName(uri);
+      String fileName = Basics.fileName(uri);
       // revert local filename with constant version attribute
       if (isSnapshot()) {
         fileName = this.file;
@@ -209,8 +209,8 @@ interface JdkUtil {
             ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
           sourceStream.transferTo(targetStream);
           String meta = targetStream.toString("UTF-8");
-          String timestamp = JdkUtil.substring(meta, "<timestamp>", "<");
-          String buildNumber = JdkUtil.substring(meta, "<buildNumber>", "<");
+          String timestamp = Basics.substring(meta, "<timestamp>", "<");
+          String buildNumber = Basics.substring(meta, "<buildNumber>", "<");
           file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
         } catch (Exception exception) {
           // use file name with "SNAPSHOT" literal
