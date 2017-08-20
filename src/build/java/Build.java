@@ -209,7 +209,7 @@ interface Build {
     jar("bach-javadoc.jar", JAVADOC, ".");
   }
 
-  private static void jar(String artifact, Path path, Object... contents) {
+  static void jar(String artifact, Path path, Object... contents) {
     JdkTool.Jar jar = new JdkTool.Jar();
     jar.file = ARTIFACTS.resolve(artifact);
     jar.path = path;
