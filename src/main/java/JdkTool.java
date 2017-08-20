@@ -221,29 +221,6 @@ interface JdkTool {
       return this;
     }
 
-    /** Execute. */
-    int execute() {
-      if (Boolean.getBoolean("bach.verbose")) {
-        out.println(" . ");
-        dump(line -> out.println(" | " + line));
-        out.println(" ' ");
-      }
-      ToolProvider defaultTool = ToolProvider.findFirst(executable).orElse(null);
-      ToolProvider tool = tools.getOrDefault(executable, defaultTool);
-      if (tool != null) {
-        return tool.run(out, err, toArgumentsArray());
-      }
-      ProcessBuilder processBuilder = toProcessBuilder();
-      processBuilder.redirectErrorStream(true);
-      try {
-        Process process = processBuilder.start();
-        process.getInputStream().transferTo(out);
-        return process.waitFor();
-      } catch (IOException | InterruptedException e) {
-        throw new Error("executing `" + executable + "` failed", e);
-      }
-    }
-
     /** Set dump offset and limit. */
     Command mark(int limit) {
       if (limit < 0) {
@@ -275,10 +252,44 @@ interface JdkTool {
 
     /** Create new {@link ProcessBuilder} instance based on this command setup. */
     ProcessBuilder toProcessBuilder() {
-      List<String> command = new ArrayList<>(1 + arguments.size());
-      command.add(executable);
-      command.addAll(arguments);
-      return new ProcessBuilder(command);
+      List<String> strings = new ArrayList<>(1 + arguments.size());
+      strings.add(executable);
+      strings.addAll(arguments);
+      ProcessBuilder processBuilder = new ProcessBuilder(strings);
+      processBuilder.redirectErrorStream(true);
+      return processBuilder;
+    }
+
+    /** Run this command. */
+    void run() {
+      int result = run(UnaryOperator.identity(), this::toProcessBuilder);
+      boolean successful = result == 0;
+      if (successful) {
+        return;
+      }
+      throw new AssertionError("expected an exit code of zero, but got: " + result);
+    }
+
+    /** Run this command. */
+    int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
+      if (Boolean.getBoolean("bach.verbose")) {
+        out.println(" . ");
+        dump(line -> out.println(" | " + line));
+        out.println(" ' ");
+      }
+      ToolProvider systemTool = ToolProvider.findFirst(executable).orElse(null);
+      ToolProvider tool = tools.getOrDefault(executable, systemTool);
+      if (tool != null) {
+        return operator.apply(tool).run(out, err, toArgumentsArray());
+      }
+      ProcessBuilder processBuilder = supplier.get();
+      try {
+        Process process = processBuilder.start();
+        process.getInputStream().transferTo(out);
+        return process.waitFor();
+      } catch (IOException | InterruptedException e) {
+        throw new Error("executing `" + executable + "` failed", e);
+      }
     }
   }
 
@@ -452,24 +463,12 @@ interface JdkTool {
   }
 
   /**
-   * Execute the command.
-   *
-   * @throws AssertionError if the execution result is not zero
-   */
-  static void run(Command command) {
-    int code = command.execute();
-    if (code != 0) {
-      throw new AssertionError("expected an exit code of zero, but got: " + code);
-    }
-  }
-
-  /**
    * Call any executable tool by its name and add all arguments as single elements.
    *
    * @throws AssertionError if the execution result is not zero
    */
   static void run(String executable, Object... arguments) {
-    run(new Command(executable).addAll(List.of(arguments)));
+    new Command(executable).addAll(List.of(arguments)).run();
   }
 
   /**
@@ -478,7 +477,7 @@ interface JdkTool {
    * @throws AssertionError if the execution result is not zero
    */
   default void run() {
-    run(toCommand());
+    toCommand().run();
   }
 
   /** Create command instance based on this tool's options. */

@@ -79,7 +79,7 @@ interface Build {
     format.mark(5);
     List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));
     format.addAll(roots, unit -> Basics.isJavaFile(unit) && !unit.endsWith("module-info.java"));
-    format.execute();
+    format.run();
   }
 
   static void clean() throws IOException {
@@ -169,7 +169,7 @@ interface Build {
     JdkTool.Javac javac = new JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.destinationPath = TARGET_MAIN;
-    javac.toCommand().add(TARGET.resolve("Bach.java")).execute();
+    javac.toCommand().add(TARGET.resolve("Bach.java")).run();
 
     // test
     javac.destinationPath = TARGET_TEST;
@@ -216,7 +216,7 @@ interface Build {
     JdkTool.Command command = jar.toCommand();
     command.mark(5);
     Arrays.stream(contents).forEach(command::add);
-    command.execute();
+    command.run();
   }
 
   static void jdeps() throws IOException {
@@ -225,7 +225,7 @@ interface Build {
     JdkTool.Jdeps jdeps = new JdkTool.Jdeps();
     jdeps.summary = true;
     jdeps.recursive = true;
-    jdeps.toCommand().add(ARTIFACTS.resolve("bach.jar")).execute();
+    jdeps.toCommand().add(ARTIFACTS.resolve("bach.jar")).run();
   }
 
   static void test() throws IOException {

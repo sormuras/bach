@@ -46,6 +46,13 @@ class JdkToolTests {
     return lines;
   }
 
+  private String dump(String executable, Object... arguments) {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
+    PrintStream out = new PrintStream(bytes);
+    new JdkTool.Command(executable).addAll(List.of(arguments)).setStandardStreams(out, out).run();
+    return bytes.toString();
+  }
+
   @Test
   void addSingleArguments() {
     List<String> expectedLines =
@@ -137,30 +144,19 @@ class JdkToolTests {
 
   @Test
   void runJavaWithVersion() {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
-    PrintStream out = new PrintStream(bytes);
-    JdkTool.run(new JdkTool.Command("java").add("--version").setStandardStreams(out, out));
-    assertTrue(bytes.toString().contains("java"));
+    assertTrue(dump("java", "-version").contains(Runtime.version().toString()));
+    assertTrue(dump("java", "--version").contains(Runtime.version().toString()));
   }
 
   @Test
   void runJavaWithOptionThatDoesNotExist() {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
-    PrintStream out = new PrintStream(bytes);
-    AssertionError error =
-        assertThrows(
-            AssertionError.class,
-            () ->
-                JdkTool.run(
-                    new JdkTool.Command("java")
-                        .add("--optionDoesNotExist")
-                        .setStandardStreams(out, out)));
+    AssertionError error = assertThrows(AssertionError.class, () -> dump("java", "--foo"));
     assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
   }
 
   @Test
   void runToolThatDoesNotExist() {
-    Error f = assertThrows(Error.class, () -> JdkTool.run("tool, that doesn't exist", 1, 2, 3));
+    Error f = assertThrows(Error.class, () -> dump("tool, that doesn't exist", 1, 2, 3));
     assertEquals("executing `tool, that doesn't exist` failed", f.getMessage());
   }
 
@@ -300,7 +296,7 @@ class JdkToolTests {
         .setStandardStreams(out, out)
         .setToolProvider(new CustomTool())
         .dump(out::println)
-        .execute();
+        .run();
     assertLinesMatch(
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(bytes.toString().split(System.lineSeparator())));
