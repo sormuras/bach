@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-21T14:20:34.129798700Z */
+/* THIS FILE IS GENERATED -- 2017-08-21T15:10:50.174855300Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -152,7 +152,7 @@ interface Basics {
       return;
     }
     out.accept(root.toString());
-    try (Stream<Path> stream = Files.walk(root)) {
+    try (Stream<Path> stream = Files.walk(root).sorted()) {
       for (Path path : stream.collect(Collectors.toList())) {
         String string = root.relativize(path).toString();
         String prefix = string.isEmpty() ? "" : File.separator;

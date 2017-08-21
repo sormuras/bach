@@ -147,7 +147,7 @@ interface Basics {
       return;
     }
     out.accept(root.toString());
-    try (Stream<Path> stream = Files.walk(root)) {
+    try (Stream<Path> stream = Files.walk(root).sorted()) {
       for (Path path : stream.collect(Collectors.toList())) {
         String string = root.relativize(path).toString();
         String prefix = string.isEmpty() ? "" : File.separator;
