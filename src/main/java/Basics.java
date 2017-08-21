@@ -21,7 +21,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
-import java.util.List;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
@@ -125,10 +125,45 @@ interface Basics {
     return string.substring(beginIndex, endIndex).trim();
   }
 
+  /** Copy source directory to target directory. */
+  static void treeCopy(Path source, Path target) throws IOException {
+    // log.fine("copy `%s` to `%s`%n", source, target);
+    if (!Files.exists(source)) {
+      return;
+    }
+    if (!Files.isDirectory(source)) {
+      throw new IllegalArgumentException("source must be a directory: " + source);
+    }
+    if (Files.exists(target)) {
+      if (Files.isSameFile(source, target)) {
+        return;
+      }
+      if (!Files.isDirectory(target)) {
+        throw new IllegalArgumentException("target must be a directory: " + target);
+      }
+    }
+    try (Stream<Path> stream = Files.walk(source).sorted()) {
+      List<Path> paths = stream.collect(Collectors.toList());
+      // log("copying %s elements...%n", paths.size());
+      for (Path path : paths) {
+        Path destination = target.resolve(source.relativize(path));
+        if (Files.isDirectory(path)) {
+          Files.createDirectories(destination);
+          continue;
+        }
+        Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } catch (IOException e) {
+      throw new AssertionError("dumpTree failed", e);
+    }
+  }
+
+  /** Delete directory. */
   static void treeDelete(Path root) throws IOException {
     treeDelete(root, path -> true);
   }
 
+  /** Delete selected files and directories from the root directory. */
   static void treeDelete(Path root, Predicate<Path> filter) throws IOException {
     if (Files.notExists(root)) {
       return;
@@ -141,6 +176,7 @@ interface Basics {
     }
   }
 
+  /** Dump directory tree structure. */
   static void treeDump(Path root, Consumer<String> out) {
     if (Files.notExists(root)) {
       out.accept("dumpTree failed: path '" + root + "' does not exist");

@@ -135,6 +135,46 @@ class BasicsTests {
         "./x/file-1",
         "./x/file-2");
 
+    Basics.treeCopy(root.resolve("x"), root.resolve("a/b/c"));
+    assertEquals(1 + 4 + 4 * 2, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/b",
+        "./a/b/c",
+        "./a/b/c/file-1",
+        "./a/b/c/file-2",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2");
+
+    Basics.treeCopy(root.resolve("x"), root.resolve("x/y"));
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/b",
+        "./a/b/c",
+        "./a/b/c/file-1",
+        "./a/b/c/file-2",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2",
+        "./x/y",
+        "./x/y/file-1",
+        "./x/y/file-2");
+
     Basics.treeDelete(root);
     assertTrue(Files.notExists(root));
     assertTreeDumpMatches(root, "dumpTree failed: path '" + root + "' does not exist");
