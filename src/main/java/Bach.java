@@ -17,25 +17,10 @@
 
 // default package
 
-import java.nio.file.*;
-import java.util.*;
-
 // Bach.java
 /**
  * Java Shell Builder.
  *
  * @see <a href="https://github.com/sormuras/bach">https://github.com/sormuras/bach</a>
  */
-class Bach {
-
-  static void generateJShellScript(Path directory, String name) throws Exception {
-    Path file = directory.resolve(name);
-    List<String> script =
-        List.of(
-            "// JdkTool",
-            "void java(Object... args) { JdkTool.run(\"java\", args); }",
-            "void javac(Object... args) { JdkTool.run(\"javac\", args); }");
-    Files.createDirectories(directory);
-    Files.write(file, script);
-  }
-}
+class Bach {}

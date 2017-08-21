@@ -10,46 +10,54 @@ Use Java source in [jshell] to build your modular project.
 
 ## simple usage
 
-Download a copy of [Bach.java] to your project's root directory and put the
-following [jshell] script in file called `build.jsh`. Edit the source and
-target paths to your needs and launch the build with `jshell build.jsh`.
+Download a copy of [Bach.java] to your project's root directory and put the following [jshell] script in file called `build.jsh`.
+Launch the build with `jshell build.jsh`.
 
 ```javascript
 /open Bach.java
 
-JdkTool.execute("java", "--version")
+JdkTool.run("java", "--version")
 
 /exit
 ```
 
-## bootstrap on-the-fly
+## make it executable
 
-You may want to mark your build script executable and copy [bootstrap.jsh] to
-automatically download that latest [Bach.java] version.
+Just want to call `./build` to launch the build?
+Add `//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?` as the first line to `build.jsh`.
+Don't forget to mark your build script executable, i.e. `chmod u+x build.jsh`.
+
+See **bootstrap** section below for an example.
+
+## bootstrap on-the-fly
+ 
+Copy and paste the source of [bootstrap.jsh] to automatically download that latest revisions of [Bach.java] and [Bach.jsh].
 
 ```javascript
 //usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
 /*
- * Download "Bach.java" from github to local "target" directory.
+ * Download "Bach.java" and "Bach.jsh" from github to local "target" directory.
  */
-URL url = new URL("https://raw.githubusercontent.com/sormuras/bach/master/Bach.java");
-Path target = Paths.get("target")
-Path script = target.resolve("Bach.java")
-if (Files.notExists(script)) {
-  Files.createDirectories(target);
-  try (InputStream stream = url.openStream()) { Files.copy(stream, script); }
+Path target = Files.createDirectories(Paths.get("target"))
+URL context = new URL("https://raw.githubusercontent.com/sormuras/bach/master/")
+for (Path script : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
+  // if (Files.exists(script)) continue; // uncomment to preserve existing files
+  try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
+    Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
+  }
 }
 
 /*
- * Source "Bach.java" into this jshell environment.
+ * Source "Bach.java" and "Bach.jsh" into this jshell session.
  */
 /open target/Bach.java
+/open target/Bach.jsh
 
 /*
  * Use it!
  */
-JdkTool.execute("java", "--version")
+java("--version")
 
 /exit
 ```
@@ -59,4 +67,5 @@ JdkTool.execute("java", "--version")
 
 [jshell]: https://docs.oracle.com/javase/9/tools/jshell.htm
 [Bach.java]: https://github.com/sormuras/bach/blob/master/Bach.java
-[bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/bootstrap.jsh
+[Bach.jsh]: https://github.com/sormuras/bach/blob/master/Bach.jsh
+[bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/demo/00-bootstrap/bootstrap.jsh
