@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-21T05:52:02.065397200Z */
+/* THIS FILE IS GENERATED -- 2017-08-21T12:32:18.183674400Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -139,14 +139,8 @@ interface Basics {
       return;
     }
     try (Stream<Path> stream = Files.walk(root)) {
-
-      List<Path> paths =
-          stream
-              .filter(p -> !root.equals(p))
-              .filter(filter)
-              .sorted((p, q) -> -p.compareTo(q))
-              .collect(Collectors.toList());
-      for (Path path : paths) {
+      Stream<Path> selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (Path path : selected.collect(Collectors.toList())) {
         Files.deleteIfExists(path);
       }
     }

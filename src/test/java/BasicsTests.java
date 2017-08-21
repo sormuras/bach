@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,5 +47,27 @@ class BasicsTests {
         .resolve(temp, Basics.Resolvable.REPOSITORIES);
     new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
         .resolve(temp, Basics.Resolvable.REPOSITORIES);
+  }
+
+  private void createFiles(Path directory, int count) throws IOException {
+    for (int i = 0; i < count; i++) {
+      Files.createFile(directory.resolve("file-" + i));
+    }
+  }
+
+  @Test
+  void treeDelete() throws IOException {
+    Path root = Files.createTempDirectory("tree-delete-");
+    assertTrue(Files.exists(root));
+    assertEquals(1, Files.walk(root).count());
+    createFiles(root, 3);
+    assertEquals(1 + 3, Files.walk(root).count());
+    createFiles(Files.createDirectory(root.resolve("a")), 3);
+    createFiles(Files.createDirectory(root.resolve("b")), 3);
+    createFiles(Files.createDirectory(root.resolve("c")), 3);
+    assertTrue(Files.exists(root));
+    assertEquals(1 + 3 + 4 * 3, Files.walk(root).count());
+    Basics.treeDelete(root);
+    assertTrue(Files.notExists(root));
   }
 }

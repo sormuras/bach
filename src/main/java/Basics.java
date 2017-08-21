@@ -134,14 +134,8 @@ interface Basics {
       return;
     }
     try (Stream<Path> stream = Files.walk(root)) {
-
-      List<Path> paths =
-          stream
-              .filter(p -> !root.equals(p))
-              .filter(filter)
-              .sorted((p, q) -> -p.compareTo(q))
-              .collect(Collectors.toList());
-      for (Path path : paths) {
+      Stream<Path> selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (Path path : selected.collect(Collectors.toList())) {
         Files.deleteIfExists(path);
       }
     }
