@@ -141,6 +141,23 @@ interface Basics {
     }
   }
 
+  static void treeDump(Path root, Consumer<String> out) {
+    if (Files.notExists(root)) {
+      out.accept("dumpTree failed: path '" + root + "' does not exist");
+      return;
+    }
+    out.accept(root.toString());
+    try (Stream<Path> stream = Files.walk(root)) {
+      for (Path path : stream.collect(Collectors.toList())) {
+        String string = root.relativize(path).toString();
+        String prefix = string.isEmpty() ? "" : File.separator;
+        out.accept("." + prefix + string);
+      }
+    } catch (IOException e) {
+      throw new AssertionError("dumpTree failed", e);
+    }
+  }
+
   class Resolvable {
 
     static final List<String> REPOSITORIES =

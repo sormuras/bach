@@ -17,12 +17,16 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BasicsTests {
@@ -55,19 +59,84 @@ class BasicsTests {
     }
   }
 
+  private void assertTreeDumpMatches(Path root, String... expected) {
+    expected[0] = expected[0].replace(File.separatorChar, '/');
+    List<String> dumpedLines = new ArrayList<>();
+    Basics.treeDump(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
+    assertLinesMatch(List.of(expected), dumpedLines);
+  }
+
   @Test
-  void treeDelete() throws IOException {
+  void tree() throws IOException {
     Path root = Files.createTempDirectory("tree-delete-");
     assertTrue(Files.exists(root));
     assertEquals(1, Files.walk(root).count());
+    assertTreeDumpMatches(root, root.toString(), ".");
+
     createFiles(root, 3);
     assertEquals(1 + 3, Files.walk(root).count());
+    assertTreeDumpMatches(root, root.toString(), ".", "./file-0", "./file-1", "./file-2");
+
     createFiles(Files.createDirectory(root.resolve("a")), 3);
     createFiles(Files.createDirectory(root.resolve("b")), 3);
-    createFiles(Files.createDirectory(root.resolve("c")), 3);
+    createFiles(Files.createDirectory(root.resolve("x")), 3);
     assertTrue(Files.exists(root));
     assertEquals(1 + 3 + 4 * 3, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-0",
+        "./a/file-1",
+        "./a/file-2",
+        "./b",
+        "./b/file-0",
+        "./b/file-1",
+        "./b/file-2",
+        "./file-0",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-0",
+        "./x/file-1",
+        "./x/file-2");
+
+    Basics.treeDelete(root, path -> path.startsWith(root.resolve("b")));
+    assertEquals(1 + 2 + 3 * 3, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-0",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-0",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-0",
+        "./x/file-1",
+        "./x/file-2");
+
+    Basics.treeDelete(root, path -> path.endsWith("file-0"));
+    assertEquals(1 + 2 + 3 * 2, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2");
+
     Basics.treeDelete(root);
     assertTrue(Files.notExists(root));
+    assertTreeDumpMatches(root, "dumpTree failed: path '" + root + "' does not exist");
   }
 }

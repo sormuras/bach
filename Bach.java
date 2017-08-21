@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-21T12:32:18.183674400Z */
+/* THIS FILE IS GENERATED -- 2017-08-21T14:20:34.129798700Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -143,6 +143,23 @@ interface Basics {
       for (Path path : selected.collect(Collectors.toList())) {
         Files.deleteIfExists(path);
       }
+    }
+  }
+
+  static void treeDump(Path root, Consumer<String> out) {
+    if (Files.notExists(root)) {
+      out.accept("dumpTree failed: path '" + root + "' does not exist");
+      return;
+    }
+    out.accept(root.toString());
+    try (Stream<Path> stream = Files.walk(root)) {
+      for (Path path : stream.collect(Collectors.toList())) {
+        String string = root.relativize(path).toString();
+        String prefix = string.isEmpty() ? "" : File.separator;
+        out.accept("." + prefix + string);
+      }
+    } catch (IOException e) {
+      throw new AssertionError("dumpTree failed", e);
     }
   }
 

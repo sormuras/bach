@@ -35,6 +35,8 @@ class BachTests {
       // if (Files.exists(script)) continue; // uncomment to preserve existing files
       try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
         Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
+      } catch (IOException e) {
+        System.err.println("bootstrap('" + script + "'): " + e.toString());
       }
     }
   }
