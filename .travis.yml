@@ -7,9 +7,5 @@ script:
 - ./build.jsh
 
 after_success:
-- cd demo/00-bootstrap
-- jshell --show-version --execution local bootstrap.jsh
-- cd -
-- cd demo/01-hello-world
-- jshell --show-version --execution local build-01-hello-world.jsh
-- cd -
+- cd demo/00-bootstrap   & ./bootstrap.jsh            & cd -
+- cd demo/01-hello-world & ./build-01-hello-world.jsh & cd -
