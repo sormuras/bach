@@ -23,11 +23,14 @@ JdkTool.run("java", "--version")
 
 ## make it executable
 
-Just want to call `./build` to launch the build?
-Add `//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?` as the first line to `build.jsh`.
-Don't forget to mark your build script executable, i.e. `chmod u+x build.jsh`.
+Want to call just `./build` to launch the build?
 
-See **bootstrap** section below for an example.
+Add the following pseudo-shebang as the first line to `build.jsh`:
+
+  `//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?`
+
+Don't forget to mark your build script executable, i.e. `chmod u+x build.jsh`.
+See **bootstrap on-the-fly** section below for an example.
 
 ## bootstrap on-the-fly
  
