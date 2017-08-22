@@ -78,7 +78,7 @@ interface Build {
     format.add("--" + mode);
     format.mark(5);
     List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));
-    format.addAll(roots, unit -> Basics.isJavaFile(unit) && !unit.endsWith("module-info.java"));
+    format.addAll(roots, Basics::isJavaFile);
     format.run();
   }
 

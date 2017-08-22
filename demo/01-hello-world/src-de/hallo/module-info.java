@@ -1,4 +1,6 @@
 module hallo {
   requires world;
-  provides com.greetings.Greeter with hallo.Hallo;
+
+  provides com.greetings.Greeter with
+      hallo.Hallo;
 }
