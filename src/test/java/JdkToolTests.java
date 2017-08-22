@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -174,6 +175,8 @@ class JdkToolTests {
             "-encoding",
             "  US-ASCII",
             "-Werror",
+            "--patch-module",
+            "  foo=bar",
             "--module-path",
             "  mods",
             "--module-source-path",
@@ -193,6 +196,7 @@ class JdkToolTests {
     javac.classSourcePath = List.of(Paths.get("src/build/java"));
     javac.moduleSourcePath = List.of(Paths.get("src"));
     javac.modulePath = List.of(Paths.get("mods"));
+    javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
     assertLinesMatch(expectedLines, dump(javac.toCommand()));
   }
 
@@ -202,12 +206,15 @@ class JdkToolTests {
         List.of(
             "java",
             "--dry-run",
+            "--patch-module",
+            "  com.greetings=xxx",
             "--module-path",
             "  mods",
             "--module",
             "  com.greetings/com.greetings.Main");
     JdkTool.Java java = new JdkTool.Java();
     java.dryRun = true;
+    java.patchModule = Map.of("com.greetings", List.of(Paths.get("xxx")));
     java.modulePath = List.of(Paths.get("mods"));
     java.module = "com.greetings/com.greetings.Main";
     assertLinesMatch(expectedLines, dump(java.toCommand()));

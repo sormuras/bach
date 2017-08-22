@@ -47,8 +47,27 @@ interface JdkTool {
   /** Command builder and tool executor support. */
   class Command {
 
+    /** Type-safe helper for adding common options. */
+    class Helper {
+
+      @SuppressWarnings("unused")
+      void patchModule(Map<String, List<Path>> patchModule) {
+        patchModule.forEach(this::addPatchModule);
+      }
+
+      private void addPatchModule(String module, List<Path> paths) {
+        if (paths.isEmpty()) {
+          throw new AssertionError("expected at least one patch path entry for " + module);
+        }
+        List<String> names = paths.stream().map(Path::toString).collect(Collectors.toList());
+        add("--patch-module");
+        add(module + "=" + String.join(File.pathSeparator, names));
+      }
+    }
+
     final String executable;
     final List<String> arguments = new ArrayList<>();
+    private final Helper helper = new Helper();
     private int dumpLimit = Integer.MAX_VALUE;
     private int dumpOffset = Integer.MAX_VALUE;
     private PrintStream out = System.out;
@@ -116,15 +135,30 @@ interface JdkTool {
       return this;
     }
 
-    private void addOption(Object options, Field field) throws IllegalAccessException {
+    private void addOption(Object options, Field field) throws ReflectiveOperationException {
       // custom option visitor method declared?
       try {
         options.getClass().getDeclaredMethod(field.getName(), Command.class).invoke(options, this);
         return;
       } catch (NoSuchMethodException e) {
         // fall-through
-      } catch (InvocationTargetException e) {
-        throw new Error(e);
+      }
+      // get the field's value
+      Object value = field.get(options);
+      // skip null field value
+      if (value == null) {
+        return;
+      }
+      // skip empty collections
+      if (value instanceof Collection && ((Collection) value).isEmpty()) {
+        return;
+      }
+      // common add helper available?
+      try {
+        Helper.class.getDeclaredMethod(field.getName(), field.getType()).invoke(helper, value);
+        return;
+      } catch (NoSuchMethodException e) {
+        // fall-through
       }
       // get or generate option name
       Optional<Option> optional = Optional.ofNullable(field.getAnnotation(Option.class));
@@ -134,15 +168,6 @@ interface JdkTool {
         if (field.getBoolean(options)) {
           add(optionName);
         }
-        return;
-      }
-      Object value = field.get(options);
-      // skip null field value
-      if (value == null) {
-        return;
-      }
-      // skip empty collections
-      if (value instanceof Collection && ((Collection) value).isEmpty()) {
         return;
       }
       // add option name only if it is not empty
@@ -155,6 +180,7 @@ interface JdkTool {
           @SuppressWarnings("unchecked")
           Collection<Path> path = (Collection<Path>) value;
           add(path);
+          // TODO log(field + " treated as Collection<Path>");
           return;
         } catch (ClassCastException e) {
           // fall-through
@@ -325,6 +351,9 @@ interface JdkTool {
     @Option("-Werror")
     boolean failOnWarnings = true;
 
+    /** Overrides or augments a module with classes and resources in JAR files or directories. */
+    Map<String, List<Path>> patchModule = Map.of();
+
     /** Specify where to find application modules. */
     List<Path> modulePath = List.of();
 
@@ -361,6 +390,9 @@ interface JdkTool {
      * as the module system configuration.
      */
     boolean dryRun = false;
+
+    /** Overrides or augments a module with classes and resources in JAR files or directories. */
+    Map<String, List<Path>> patchModule = Map.of();
 
     /** Where to find application modules. */
     List<Path> modulePath = List.of();
