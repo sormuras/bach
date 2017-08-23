@@ -39,8 +39,8 @@ interface Build {
   Path JAVADOC = TARGET.resolve("javadoc");
   Path ARTIFACTS = TARGET.resolve("artifacts");
 
-  String JUNIT_JUPITER_VERSION = "5.0.0-RC2";
-  String JUNIT_PLATFORM_VERSION = "1.0.0-RC2";
+  String JUNIT_JUPITER_VERSION = "5.0.0-RC3";
+  String JUNIT_PLATFORM_VERSION = "1.0.0-RC3";
   String OPENTEST4J_VERSION = "1.0.0-RC1";
 
   static void main(String... args) {
