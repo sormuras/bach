@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-22T05:16:40.360009700Z */
+/* THIS FILE IS GENERATED -- 2017-08-23T07:47:09.857890500Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -25,6 +25,7 @@ import java.net.*;
 import java.nio.charset.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.time.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.spi.*;
@@ -322,6 +323,7 @@ interface JdkTool {
     private PrintStream out = System.out;
     private PrintStream err = System.err;
     private Map<String, ToolProvider> tools = Collections.emptyMap();
+    private boolean executableSupportsArgumentFile = false;
 
     /** Initialize this command instance. */
     Command(String executable) {
@@ -429,7 +431,6 @@ interface JdkTool {
           @SuppressWarnings("unchecked")
           Collection<Path> path = (Collection<Path>) value;
           add(path);
-          // TODO log(field + " treated as Collection<Path>");
           return;
         } catch (ClassCastException e) {
           // fall-through
@@ -506,6 +507,11 @@ interface JdkTool {
       return this;
     }
 
+    Command setExecutableSupportsArgumentFile(boolean executableSupportsArgumentFile) {
+      this.executableSupportsArgumentFile = executableSupportsArgumentFile;
+      return this;
+    }
+
     Command setStandardStreams(PrintStream out, PrintStream err) {
       this.out = out;
       this.err = err;
@@ -530,6 +536,24 @@ interface JdkTool {
       List<String> strings = new ArrayList<>(1 + arguments.size());
       strings.add(executable);
       strings.addAll(arguments);
+      int commandLineLength = String.join(" ", strings).length();
+      if (commandLineLength > 32000) {
+        if (executableSupportsArgumentFile) {
+          String timestamp = Instant.now().toString().replace("-", "").replace(":", "");
+          String prefix = executable + "-arguments-" + timestamp + "-";
+          try {
+            Path tempFile = Files.createTempFile(prefix, ".txt");
+            strings = List.of(executable, "@" + Files.write(tempFile, arguments));
+          } catch (IOException e) {
+            throw new Error("creating temporary arguments file failed", e);
+          }
+        } else {
+          err.println(
+              String.format(
+                  "large command line (%s) detected, but %s does not support @argument file",
+                  commandLineLength, executable));
+        }
+      }
       ProcessBuilder processBuilder = new ProcessBuilder(strings);
       processBuilder.redirectErrorStream(true);
       return processBuilder;
@@ -622,6 +646,7 @@ interface JdkTool {
       command.mark(10);
       command.addAll(classSourcePath, Basics::isJavaFile);
       command.addAll(moduleSourcePath, Basics::isJavaFile);
+      command.setExecutableSupportsArgumentFile(true);
       return command;
     }
   }
@@ -649,6 +674,14 @@ interface JdkTool {
     /** Initial module to resolve and the name of the main class to execute. */
     @Option("--module")
     String module = null;
+
+    /** Create java command with options and source files added. */
+    @Override
+    public Command toCommand() {
+      Command command = JdkTool.super.toCommand();
+      command.setExecutableSupportsArgumentFile(true);
+      return command;
+    }
   }
 
   /**

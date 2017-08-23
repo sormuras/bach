@@ -47,11 +47,15 @@ class JdkToolTests {
     return lines;
   }
 
-  private String dump(String executable, Object... arguments) {
+  private String run(JdkTool.Command command) {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
     PrintStream out = new PrintStream(bytes);
-    new JdkTool.Command(executable).addAll(List.of(arguments)).setStandardStreams(out, out).run();
+    command.setStandardStreams(out, out).run();
     return bytes.toString();
+  }
+
+  private String run(String executable, Object... arguments) {
+    return run(new JdkTool.Command(executable).addAll(List.of(arguments)));
   }
 
   @Test
@@ -145,20 +149,30 @@ class JdkToolTests {
 
   @Test
   void runJavaWithVersion() {
-    assertTrue(dump("java", "-version").contains(Runtime.version().toString()));
-    assertTrue(dump("java", "--version").contains(Runtime.version().toString()));
+    assertTrue(run("java", "-version").contains(Runtime.version().toString()));
+    assertTrue(run("java", "--version").contains(Runtime.version().toString()));
   }
 
   @Test
   void runJavaWithOptionThatDoesNotExist() {
-    AssertionError error = assertThrows(AssertionError.class, () -> dump("java", "--foo"));
+    AssertionError error = assertThrows(AssertionError.class, () -> run("java", "--foo"));
     assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
   }
 
   @Test
   void runToolThatDoesNotExist() {
-    Error f = assertThrows(Error.class, () -> dump("tool, that doesn't exist", 1, 2, 3));
+    Error f = assertThrows(Error.class, () -> run("tool, that doesn't exist", 1, 2, 3));
     assertEquals("executing `tool, that doesn't exist` failed", f.getMessage());
+  }
+
+  @Test
+  void runJavaWithLongCommandLine() {
+    JdkTool.Command command = new JdkTool.Java().toCommand();
+    command.add("-version");
+    for (int i = 0; i <= 4000; i++) {
+      command.add(String.format("arg-%04d", i));
+    }
+    assertTrue(run(command).contains(Runtime.version().toString()));
   }
 
   @Test
