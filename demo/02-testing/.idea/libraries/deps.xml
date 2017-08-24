@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="deps">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/.bach/resolved" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/.bach/resolved" recursive="false" />
+  </library>
+</component>
