@@ -1,14 +1,8 @@
 import java.io.IOException;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Stream;
 
 @SuppressWarnings("all")
 class BuildDemo02Testing {
@@ -60,7 +54,7 @@ class BuildDemo02Testing {
     javac.destinationPath = TEST;
     javac.modulePath = List.of(DEPS);
     javac.moduleSourcePath = List.of(tests);
-    javac.patchModule = createPatchMap(tests, Paths.get("src", "main", "java"));
+    javac.patchModule = Basics.getPatchMap(tests, Paths.get("src", "main", "java"));
     javac.run();
   }
 
@@ -74,7 +68,7 @@ class BuildDemo02Testing {
   void testOnClassPath() throws IOException {
     new JdkTool.Command("java")
         .add("--class-path")
-        .add(createClassPath(List.of(TEST), List.of(DEPS)))
+        .add(Basics.getClassPath(List.of(TEST), List.of(DEPS)))
         .add("org.junit.platform.console.ConsoleLauncher")
         .add("--scan-class-path")
         .run();
@@ -86,42 +80,9 @@ class BuildDemo02Testing {
     java.module = "org.junit.platform.console";
     JdkTool.Command command = java.toCommand();
     command.add("--scan-class-path");
-    ModuleFinder.of(TEST).findAll().forEach(mr -> command.add("--class-path").add(asPath(mr)));
+    ModuleFinder.of(TEST)
+        .findAll()
+        .forEach(reference -> command.add("--class-path").add(Basics.getPath(reference)));
     command.run();
-  }
-
-  // TODO Move to Basics
-  Path asPath(ModuleReference moduleReference) {
-    return Paths.get(moduleReference.location().orElseThrow(AssertionError::new));
-  }
-
-  // TODO Move to Basics
-  List<Path> createClassPath(List<Path> modulePaths, List<Path> depsPaths) {
-    List<Path> classPath = new ArrayList<>();
-    for (Path path : modulePaths) {
-      ModuleFinder.of(path).findAll().forEach(this::asPath);
-    }
-    for (Path path : depsPaths) {
-      try (Stream<Path> paths = Files.walk(path, 1)) {
-        paths.filter(Basics::isJarFile).forEach(classPath::add);
-      } catch (IOException e) {
-        throw new AssertionError("failed adding jar(s) from " + path + " to the classpath", e);
-      }
-    }
-    return classPath;
-  }
-
-  // TODO Move to Basics
-  Map<String, List<Path>> createPatchMap(Path testModuleSourcePath, Path mainModuleSourcePath) {
-    Map<String, List<Path>> map = new TreeMap<>();
-    Basics.findDirectoryNames(testModuleSourcePath)
-        .forEach(
-            name -> {
-              Path mainModule = mainModuleSourcePath.resolve(name);
-              if (Files.exists(mainModule)) {
-                map.put(name, List.of(mainModule));
-              }
-            });
-    return map;
   }
 }

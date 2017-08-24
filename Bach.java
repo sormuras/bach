@@ -1,4 +1,4 @@
-/* THIS FILE IS GENERATED -- 2017-08-23T07:47:09.857890500Z */
+/* THIS FILE IS GENERATED -- 2017-08-24T09:58:50.497730100Z */
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2017 Christian Stein
@@ -20,6 +20,7 @@
 
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.module.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.charset.*;
@@ -36,7 +37,7 @@ interface Basics {
 
   /** Download the resource specified by its URI to the target directory. */
   static Path download(URI uri, Path targetDirectory) throws IOException {
-    return download(uri, targetDirectory, fileName(uri), path -> true);
+    return download(uri, targetDirectory, getFileName(uri), path -> true);
   }
 
   /** Download the resource from URI to the target directory using the provided file name. */
@@ -78,13 +79,6 @@ interface Basics {
     return target;
   }
 
-  /** Extract the file name from the uri. */
-  static String fileName(URI uri) {
-    String urlString = uri.getPath();
-    int begin = urlString.lastIndexOf('/') + 1;
-    return urlString.substring(begin).split("\\?")[0].split("#")[0];
-  }
-
   static Stream<Path> findDirectories(Path root) {
     try {
       return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
@@ -96,6 +90,45 @@ interface Basics {
 
   static Stream<String> findDirectoryNames(Path root) {
     return findDirectories(root).map(root::relativize).map(Path::toString);
+  }
+
+  /** Extract the file name from the uri. */
+  static String getFileName(URI uri) {
+    String urlString = uri.getPath();
+    int begin = urlString.lastIndexOf('/') + 1;
+    return urlString.substring(begin).split("\\?")[0].split("#")[0];
+  }
+
+  static Path getPath(ModuleReference moduleReference) {
+    return Paths.get(moduleReference.location().orElseThrow(AssertionError::new));
+  }
+
+  static List<Path> getClassPath(List<Path> modulePaths, List<Path> depsPaths) {
+    List<Path> classPath = new ArrayList<>();
+    for (Path path : modulePaths) {
+      ModuleFinder.of(path).findAll().stream().map(Basics::getPath).forEach(classPath::add);
+    }
+    for (Path path : depsPaths) {
+      try (Stream<Path> paths = Files.walk(path, 1)) {
+        paths.filter(Basics::isJarFile).forEach(classPath::add);
+      } catch (IOException e) {
+        throw new AssertionError("failed adding jar(s) from " + path + " to the classpath", e);
+      }
+    }
+    return classPath;
+  }
+
+  static Map<String, List<Path>> getPatchMap(Path testModuleSourcePath, Path mainModuleSourcePath) {
+    Map<String, List<Path>> map = new TreeMap<>();
+    findDirectoryNames(testModuleSourcePath)
+        .forEach(
+            name -> {
+              Path mainModule = mainModuleSourcePath.resolve(name);
+              if (Files.exists(mainModule)) {
+                map.put(name, List.of(mainModule));
+              }
+            });
+    return map;
   }
 
   /** Return {@code true} if the path points to a canonical Java archive file. */
@@ -243,7 +276,7 @@ interface Basics {
 
     Path resolve(Path targetDirectory, String repository) throws IOException {
       URI uri = resolveUri(repository);
-      String fileName = Basics.fileName(uri);
+      String fileName = getFileName(uri);
       // revert local filename with constant version attribute
       if (isSnapshot()) {
         fileName = this.file;
@@ -261,8 +294,8 @@ interface Basics {
             ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
           sourceStream.transferTo(targetStream);
           String meta = targetStream.toString("UTF-8");
-          String timestamp = Basics.substring(meta, "<timestamp>", "<");
-          String buildNumber = Basics.substring(meta, "<buildNumber>", "<");
+          String timestamp = substring(meta, "<timestamp>", "<");
+          String buildNumber = substring(meta, "<buildNumber>", "<");
           file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
         } catch (Exception exception) {
           // use file name with "SNAPSHOT" literal
