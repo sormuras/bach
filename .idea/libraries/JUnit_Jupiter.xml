@@ -4,6 +4,7 @@
       <root url="jar://$PROJECT_DIR$/.bach/resolved/junit-jupiter-api-5.0.0-RC3.jar!/" />
       <root url="jar://$PROJECT_DIR$/.bach/resolved/junit-platform-commons-1.0.0-RC3.jar!/" />
       <root url="jar://$PROJECT_DIR$/.bach/resolved/opentest4j-1.0.0-RC1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.bach/resolved/junit-jupiter-engine-5.0.0-RC3.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -47,6 +47,7 @@ interface Build {
     System.setProperty("bach.verbose", "true");
     try {
       format();
+      Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", JUNIT_JUPITER_VERSION);
       clean();
       generate();
       compile();
