@@ -30,6 +30,8 @@ import java.util.stream.*;
 /** Common utilities and helpers. */
 interface Basics {
 
+  Log log = new Log();
+
   /** Download the resource specified by its URI to the target directory. */
   static Path download(URI uri, Path targetDirectory) throws IOException {
     return download(uri, targetDirectory, getFileName(uri), path -> true);
@@ -38,6 +40,7 @@ interface Basics {
   /** Download the resource from URI to the target directory using the provided file name. */
   static Path download(URI uri, Path directory, String fileName, Predicate<Path> skip)
       throws IOException {
+    log.info("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
     URL url = uri.toURL();
     Files.createDirectories(directory);
     Path target = directory.resolve(fileName);
@@ -52,25 +55,25 @@ interface Basics {
     if (urlLastModifiedTime.toMillis() == 0) {
       throw new IOException("last-modified header field not available");
     }
-    // TODO log("downloading `%s` [%s]...", url, urlLastModifiedTime);
     if (Files.exists(target)) {
+      log.verbose("compare last modified time [%s] of local file...", urlLastModifiedTime);
       if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
         if (Files.size(target) == urlConnection.getContentLengthLong()) {
           if (skip.test(target)) {
-            // TODO log("skipped, using `%s`", target);
+            log.verbose("skipped, using `%s`", target);
             return target;
           }
         }
       }
       Files.delete(target);
     }
-    // TODO log("transferring `%s`...", uri);
+    log.verbose("transferring `%s`...", uri);
     try (InputStream sourceStream = url.openStream();
         OutputStream targetStream = Files.newOutputStream(target)) {
       sourceStream.transferTo(targetStream);
     }
     Files.setLastModifiedTime(target, urlLastModifiedTime);
-    // TODO log("stored `%s` [%s]", target, urlLastModifiedTime);
+    log.verbose("stored `%s` [%s]", target, urlLastModifiedTime);
     return target;
   }
 
@@ -147,6 +150,7 @@ interface Basics {
 
   /** Resolve maven jar artifact. */
   static Path resolve(String group, String artifact, String version) {
+    log.info("resolve(group:%s, artifact:%s, version:%s)", group, artifact, version);
     return new Resolvable(group, artifact, version)
         .resolve(Paths.get(".bach", "resolved"), Resolvable.REPOSITORIES);
   }
@@ -227,12 +231,39 @@ interface Basics {
     }
   }
 
+  class Log {
+    enum Level {
+      OFF,
+      INFO,
+      VERBOSE
+    }
+
+    Level level = Boolean.getBoolean("bach.verbose") ? Level.VERBOSE : Level.INFO;
+    Locale locale = Locale.getDefault();
+    Consumer<String> out = System.out::println;
+
+    void log(Level level, String format, Object... args) {
+      if (this.level.ordinal() < level.ordinal()) {
+        return;
+      }
+      out.accept(String.format(locale, format, args));
+    }
+
+    void info(String format, Object... args) {
+      log(Level.INFO, format, args);
+    }
+
+    void verbose(String format, Object... args) {
+      log(Level.VERBOSE, format, args);
+    }
+  }
+
   class Resolvable {
 
     static final List<String> REPOSITORIES =
         List.of(
-            "https://oss.sonatype.org/content/repositories/snapshots",
             "http://repo1.maven.org/maven2",
+            "https://oss.sonatype.org/content/repositories/snapshots",
             "https://jcenter.bintray.com",
             "https://jitpack.io");
 
@@ -285,13 +316,16 @@ interface Basics {
       String file = this.file;
       if (isSnapshot()) {
         URI xml = URI.create(base + "maven-metadata.xml");
+        Basics.log.verbose("resolving SNAPSHOT version from " + xml);
         try (InputStream sourceStream = xml.toURL().openStream();
             ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
           sourceStream.transferTo(targetStream);
           String meta = targetStream.toString("UTF-8");
           String timestamp = substring(meta, "<timestamp>", "<");
           String buildNumber = substring(meta, "<buildNumber>", "<");
-          file = file.replace("SNAPSHOT", timestamp + '-' + buildNumber);
+          String replacement = timestamp + '-' + buildNumber;
+          Basics.log.verbose("resolved SNAPSHOT as: " + replacement);
+          file = file.replace("SNAPSHOT", replacement);
         } catch (Exception exception) {
           // use file name with "SNAPSHOT" literal
         }

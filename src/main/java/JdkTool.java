@@ -323,9 +323,10 @@ interface JdkTool {
     /** Run this command. */
     int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
       if (Boolean.getBoolean("bach.verbose")) {
-        out.println(" . ");
-        dump(line -> out.println(" | " + line));
-        out.println(" ' ");
+        List<String> lines = new ArrayList<>();
+        dump(lines::add);
+        Basics.log.info("running %s with %d argument(s)", executable, arguments.size());
+        Basics.log.verbose("%s", String.join("\n", lines));
       }
       ToolProvider systemTool = ToolProvider.findFirst(executable).orElse(null);
       ToolProvider tool = tools.getOrDefault(executable, systemTool);

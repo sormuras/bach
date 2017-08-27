@@ -133,6 +133,9 @@ interface Build {
 
     // only copy if content changed - ignoring initial line, which contains the generation date
     Path publishedPath = Paths.get("Bach.java");
+    if (Files.notExists(publishedPath)) {
+      throw new AssertionError(publishedPath + " does not exist?!");
+    }
     List<String> published = Files.readAllLines(publishedPath);
     published.set(0, "");
     generated.set(0, "");
@@ -141,8 +144,10 @@ interface Build {
     System.out.println("generated hash code is 0x" + Integer.toHexString(temporaryHash));
     System.out.println("published hash code is 0x" + Integer.toHexString(publishedHash));
     if (publishedHash != temporaryHash) {
+      publishedPath.toFile().setWritable(true);
       Files.copy(generatedPath, publishedPath, StandardCopyOption.REPLACE_EXISTING);
-      System.err.println("copied new Bach.java version - don't forget to publish (commit/push)");
+      publishedPath.toFile().setWritable(false);
+      System.out.println("new version of Bach.java generated - don't forget to publish it!");
     }
   }
 

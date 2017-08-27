@@ -46,11 +46,17 @@ class BasicsTests {
 
   @Test
   void resolve() throws IOException {
+    StringBuilder builder = new StringBuilder();
+    Basics.log.out = builder::append;
+    Basics.log.level = Basics.Log.Level.VERBOSE;
     Path temp = Files.createTempDirectory("resolve-");
     new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
         .resolve(temp, Basics.Resolvable.REPOSITORIES);
     new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
         .resolve(temp, Basics.Resolvable.REPOSITORIES);
+    assertTrue(builder.toString().contains("resolved"));
+    assertTrue(builder.toString().contains("stored"));
+    Basics.log.out = System.out::println;
   }
 
   private void createFiles(Path directory, int count) throws IOException {
