@@ -1,5 +1,4 @@
-before_install:
-- . ./install-jdk9.sh
+jdk: oraclejdk9
 
 install:
 - ./build.jsh
