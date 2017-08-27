@@ -33,30 +33,30 @@ class BasicsTests {
 
   @Test
   void isJavaFile() {
-    assertFalse(Basics.isJavaFile(Paths.get("")));
-    assertFalse(Basics.isJavaFile(Paths.get("a/b")));
-    assertTrue(Basics.isJavaFile(Paths.get("src/test/java/BasicsTests.java")));
+    assertFalse(Bach.Basics.isJavaFile(Paths.get("")));
+    assertFalse(Bach.Basics.isJavaFile(Paths.get("a/b")));
+    assertTrue(Bach.Basics.isJavaFile(Paths.get("src/test/BasicsTests.java")));
   }
 
   @Test
   void isJarFile() {
-    assertFalse(Basics.isJarFile(Paths.get("")));
-    assertFalse(Basics.isJarFile(Paths.get("a/b")));
+    assertFalse(Bach.Basics.isJarFile(Paths.get("")));
+    assertFalse(Bach.Basics.isJarFile(Paths.get("a/b")));
   }
 
   @Test
   void resolve() throws IOException {
     StringBuilder builder = new StringBuilder();
-    Basics.log.out = builder::append;
-    Basics.log.level = Basics.Log.Level.VERBOSE;
+    Bach.log.out = builder::append;
+    Bach.log.level = Bach.Log.Level.VERBOSE;
     Path temp = Files.createTempDirectory("resolve-");
-    new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
-        .resolve(temp, Basics.Resolvable.REPOSITORIES);
-    new Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
-        .resolve(temp, Basics.Resolvable.REPOSITORIES);
+    new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
+        .resolve(temp, Bach.Basics.Resolvable.REPOSITORIES);
+    new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
+        .resolve(temp, Bach.Basics.Resolvable.REPOSITORIES);
     assertTrue(builder.toString().contains("resolved"));
     assertTrue(builder.toString().contains("stored"));
-    Basics.log.out = System.out::println;
+    Bach.log.out = System.out::println;
   }
 
   private void createFiles(Path directory, int count) throws IOException {
@@ -68,7 +68,7 @@ class BasicsTests {
   private void assertTreeDumpMatches(Path root, String... expected) {
     expected[0] = expected[0].replace(File.separatorChar, '/');
     List<String> dumpedLines = new ArrayList<>();
-    Basics.treeDump(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
+    Bach.Basics.treeDump(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
     assertLinesMatch(List.of(expected), dumpedLines);
   }
 
@@ -108,7 +108,7 @@ class BasicsTests {
         "./x/file-1",
         "./x/file-2");
 
-    Basics.treeDelete(root, path -> path.startsWith(root.resolve("b")));
+    Bach.Basics.treeDelete(root, path -> path.startsWith(root.resolve("b")));
     assertEquals(1 + 2 + 3 * 3, Files.walk(root).count());
     assertTreeDumpMatches(
         root,
@@ -126,7 +126,7 @@ class BasicsTests {
         "./x/file-1",
         "./x/file-2");
 
-    Basics.treeDelete(root, path -> path.endsWith("file-0"));
+    Bach.Basics.treeDelete(root, path -> path.endsWith("file-0"));
     assertEquals(1 + 2 + 3 * 2, Files.walk(root).count());
     assertTreeDumpMatches(
         root,
@@ -141,7 +141,7 @@ class BasicsTests {
         "./x/file-1",
         "./x/file-2");
 
-    Basics.treeCopy(root.resolve("x"), root.resolve("a/b/c"));
+    Bach.Basics.treeCopy(root.resolve("x"), root.resolve("a/b/c"));
     assertEquals(1 + 4 + 4 * 2, Files.walk(root).count());
     assertTreeDumpMatches(
         root,
@@ -160,7 +160,7 @@ class BasicsTests {
         "./x/file-1",
         "./x/file-2");
 
-    Basics.treeCopy(root.resolve("x"), root.resolve("x/y"));
+    Bach.Basics.treeCopy(root.resolve("x"), root.resolve("x/y"));
     assertTreeDumpMatches(
         root,
         root.toString(),
@@ -181,7 +181,7 @@ class BasicsTests {
         "./x/y/file-1",
         "./x/y/file-2");
 
-    Basics.treeDelete(root);
+    Bach.Basics.treeDelete(root);
     assertTrue(Files.notExists(root));
     assertTreeDumpMatches(root, "dumpTree failed: path '" + root + "' does not exist");
   }

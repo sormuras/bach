@@ -17,6 +17,7 @@
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,7 +29,6 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -41,13 +41,13 @@ import org.junit.jupiter.api.Test;
 
 class JdkToolTests {
 
-  private List<String> dump(JdkTool.Command command) {
+  private List<String> dump(Bach.Command command) {
     List<String> lines = new ArrayList<>();
     command.dump(lines::add);
     return lines;
   }
 
-  private String run(JdkTool.Command command) {
+  private String run(Bach.Command command) {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
     PrintStream out = new PrintStream(bytes);
     command.setStandardStreams(out, out).run();
@@ -55,7 +55,7 @@ class JdkToolTests {
   }
 
   private String run(String executable, Object... arguments) {
-    return run(new JdkTool.Command(executable).addAll(List.of(arguments)));
+    return run(new Bach.Command(executable).addAll(List.of(arguments)));
   }
 
   @Test
@@ -71,7 +71,7 @@ class JdkToolTests {
             "5",
             "... [omitted 3 arguments]",
             "9");
-    JdkTool.Command command = new JdkTool.Command("executable");
+    Bach.Command command = new Bach.Command("executable");
     command.add("--some-option");
     command.add("value");
     command.add("-single-flag-without-values");
@@ -83,7 +83,7 @@ class JdkToolTests {
 
   @Test
   void addPathsAsSingleOption() {
-    JdkTool.Command command = new JdkTool.Command("paths");
+    Bach.Command command = new Bach.Command("paths");
     assertSame(command, command.add("-p"));
     assertSame(command, command.add(List.of(Paths.get("a"), Paths.get("b"))));
     List<String> expected = List.of("paths", "-p", "  a" + File.pathSeparator + "b");
@@ -93,17 +93,18 @@ class JdkToolTests {
 
   @Test
   void addAllSourceFiles() {
-    List<Path> roots = List.of(Paths.get("src/main"), Paths.get("src/test"));
-    JdkTool.Command command = new JdkTool.Command("sources").mark(99);
-    assertSame(command, command.addAll(roots, Files::isRegularFile));
+    List<Path> roots = List.of(Paths.get("src/bach"), Paths.get("src/test"));
+    Bach.Command command = new Bach.Command("sources").mark(99);
+    assertSame(command, command.addAll(roots, Bach.Basics::isJavaFile));
     String actual = String.join("\n", dump(command));
-    assertTrue(actual.contains("JdkTool.java"));
+    assertTrue(actual.contains("Bach.java"));
+    assertFalse(actual.contains("Bach.jsh"));
     assertTrue(actual.contains("JdkToolTests.java"));
   }
 
   @Test
   void addAllOptionsUsingInstanceOfObject() {
-    JdkTool.Command command = new JdkTool.Command("executable");
+    Bach.Command command = new Bach.Command("executable");
     command.addAllOptions(new Object()).mark(0);
     assertEquals("executable", command.executable);
     assertTrue(command.arguments.isEmpty());
@@ -114,7 +115,7 @@ class JdkToolTests {
   void addOptionsWithAnonymousClass() {
     Object options =
         new Object() {
-          @JdkTool.Option("--ZETA")
+          @Bach.Command.Option("--ZETA")
           boolean z = true;
 
           Boolean flag1 = Boolean.TRUE;
@@ -125,12 +126,12 @@ class JdkToolTests {
           transient String unused = "hidden";
           private Byte hidden = Byte.valueOf("123");
 
-          void hex(JdkTool.Command command) {
+          void hex(Bach.Command command) {
             command.add("--prime-as-hex");
             command.add("0x" + Integer.toHexString(hex));
           }
         };
-    JdkTool.Command command = new JdkTool.Command("executable");
+    Bach.Command command = new Bach.Command("executable");
     command.addAllOptions(options, fields -> fields.sorted(Comparator.comparing(Field::getName)));
     command.add("final");
     assertAll(
@@ -167,7 +168,7 @@ class JdkToolTests {
 
   @Test
   void runJavaWithLongCommandLine() {
-    JdkTool.Command command = new JdkTool.Java().toCommand();
+    Bach.Command command = new Bach.JdkTool.Java().toCommand();
     command.add("-version");
     for (int i = 0; i <= 4000; i++) {
       command.add(String.format("arg-%04d", i));
@@ -198,7 +199,7 @@ class JdkToolTests {
             "-parameters",
             "-verbose",
             ">> many .java files >>");
-    JdkTool.Javac javac = new JdkTool.Javac();
+    Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.deprecation = true;
     javac.destinationPath = Paths.get("out");
@@ -207,7 +208,7 @@ class JdkToolTests {
     javac.parameters = true;
     javac.verbose = true;
     javac.classPath = List.of(Paths.get("classes"));
-    javac.classSourcePath = List.of(Paths.get("src/build/java"));
+    javac.classSourcePath = List.of(Paths.get("src/build"));
     javac.moduleSourcePath = List.of(Paths.get("src"));
     javac.modulePath = List.of(Paths.get("mods"));
     javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
@@ -226,7 +227,7 @@ class JdkToolTests {
             "  mods",
             "--module",
             "  com.greetings/com.greetings.Main");
-    JdkTool.Java java = new JdkTool.Java();
+    Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.dryRun = true;
     java.patchModule = Map.of("com.greetings", List.of(Paths.get("xxx")));
     java.modulePath = List.of(Paths.get("mods"));
@@ -237,7 +238,7 @@ class JdkToolTests {
   @Test
   void dumpJavadocOptions() {
     List<String> expectedLines = List.of("javadoc", "-quiet");
-    JdkTool.Javadoc javadoc = new JdkTool.Javadoc();
+    Bach.JdkTool.Javadoc javadoc = new Bach.JdkTool.Javadoc();
     javadoc.quiet = true;
     assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
   }
@@ -259,7 +260,7 @@ class JdkToolTests {
             "-C",
             "  classes",
             ".");
-    JdkTool.Jar jar = new JdkTool.Jar();
+    Bach.JdkTool.Jar jar = new Bach.JdkTool.Jar();
     jar.mode = "--list";
     jar.file = Paths.get("fleet.jar");
     jar.mainClass = "uss.Enterprise";
@@ -267,7 +268,7 @@ class JdkToolTests {
     jar.noCompress = true;
     jar.verbose = true;
     jar.path = Paths.get("classes");
-    JdkTool.Command command = jar.toCommand();
+    Bach.Command command = jar.toCommand();
     command.mark(1);
     command.add(".");
     assertLinesMatch(expectedLines, dump(command));
@@ -275,7 +276,7 @@ class JdkToolTests {
 
   @Test
   void dumpJdepsOptions() {
-    JdkTool.Jdeps jdeps = new JdkTool.Jdeps();
+    Bach.JdkTool.Jdeps jdeps = new Bach.JdkTool.Jdeps();
     jdeps.classpath = List.of(Paths.get("classes"));
     jdeps.jdkInternals = true;
     jdeps.recursive = true;
@@ -299,7 +300,7 @@ class JdkToolTests {
 
   @Test
   void dumpJlinkOptions() {
-    JdkTool.Jlink jlink = new JdkTool.Jlink();
+    Bach.JdkTool.Jlink jlink = new Bach.JdkTool.Jlink();
     jlink.modulePath = List.of(Paths.get("mods"));
     jlink.output = Paths.get("target", "image");
     assertLinesMatch(
@@ -312,7 +313,7 @@ class JdkToolTests {
   void customTool() {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
     PrintStream out = new PrintStream(bytes);
-    new JdkTool.Command("custom tool")
+    new Bach.Command("custom tool")
         .addAll(List.of(1, 2, 3))
         .setStandardStreams(out, out)
         .setToolProvider(new CustomTool())

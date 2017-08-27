@@ -1,11 +1,11 @@
 //usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
-/open Bach.java
-/open Bach.jsh
+/open src/bach/Bach.java
+/open src/bach/Bach.jsh
 
 java("--version")
 
-/open src/build/java/Build.java
+/open src/build/Build.java
 
 Build.main()
 

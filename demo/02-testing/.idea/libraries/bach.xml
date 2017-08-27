@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="bach">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../target/idea/production/bach" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/02-testing.iml" filepath="$PROJECT_DIR$/.idea/02-testing.iml" />
-      <module fileurl="file://$PROJECT_DIR$/src/sandbox/org.junit.platform.launcher.nine/org.junit.platform.launcher.nine.iml" filepath="$PROJECT_DIR$/src/sandbox/org.junit.platform.launcher.nine/org.junit.platform.launcher.nine.iml" />
     </modules>
   </component>
 </project>

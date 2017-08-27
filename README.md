@@ -16,7 +16,7 @@ Launch the build with `jshell build.jsh`.
 ```javascript
 /open Bach.java
 
-JdkTool.run("java", "--version")
+Bach.run("java", "--version")
 
 /exit
 ```
@@ -45,7 +45,7 @@ Copy and paste the source of [bootstrap.jsh] to automatically download that late
  * Download "Bach.java" and "Bach.jsh" from github to local "target" directory.
  */
 Path target = Files.createDirectories(Paths.get("target"))
-URL context = new URL("https://raw.githubusercontent.com/sormuras/bach/master/")
+URL context = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/bach/")
 for (Path script : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
   // if (Files.exists(script)) continue; // uncomment to preserve existing files
   try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
@@ -71,6 +71,6 @@ java("--version")
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [jshell]: https://docs.oracle.com/javase/9/tools/jshell.htm
-[Bach.java]: https://github.com/sormuras/bach/blob/master/Bach.java
-[Bach.jsh]: https://github.com/sormuras/bach/blob/master/Bach.jsh
+[Bach.java]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.java
+[Bach.jsh]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.jsh
 [bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/demo/00-bootstrap/bootstrap.jsh

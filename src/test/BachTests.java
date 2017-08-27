@@ -22,21 +22,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
   @Test
+  @Disabled("while not pushed")
   void bootstrap() throws IOException {
     // Path target = Files.createDirectories(Paths.get("target"));
     Path target = Files.createTempDirectory("bach-bootstrap-");
-    URL context = new URL("https://raw.githubusercontent.com/sormuras/bach/master/");
+    URL context = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/bach/");
     for (Path script : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
       // if (Files.exists(script)) continue; // uncomment to preserve existing files
       try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
         Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
       } catch (IOException e) {
-        System.err.println("bootstrap('" + script + "'): " + e.toString());
+        System.err.println("bootstrap('" + script + "') failed: " + e.toString());
       }
     }
   }
