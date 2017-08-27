@@ -22,13 +22,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
   @Test
-  @Disabled("while not pushed")
   void bootstrap() throws IOException {
     // Path target = Files.createDirectories(Paths.get("target"));
     Path target = Files.createTempDirectory("bach-bootstrap-");
