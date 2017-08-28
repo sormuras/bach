@@ -42,7 +42,7 @@ interface Bach {
   Log log = new Log();
 
   /**
-   * Call any executable tool by its name and add all arguments as single elements.
+   * Run executable tool by its name and add all arguments as single elements.
    *
    * @throws AssertionError if the execution result is not zero
    */
@@ -176,7 +176,7 @@ interface Bach {
       }
       // get or generate option name
       Optional<Option> optional = Optional.ofNullable(field.getAnnotation(Option.class));
-      String optionName = optional.map(Option::value).orElse(generateName(field.getName()));
+      String optionName = optional.map(Option::value).orElse(getOptionName(field.getName()));
       // is it an omissible boolean flag?
       if (field.getType() == boolean.class) {
         if (field.getBoolean(options)) {
@@ -216,12 +216,13 @@ interface Bach {
       }
     }
 
-    static String generateName(String name) {
-      boolean hasUppercase = !name.equals(name.toLowerCase());
+    private String getOptionName(String fieldName) {
+      boolean hasUppercase = !fieldName.equals(fieldName.toLowerCase());
       StringBuilder defaultName = new StringBuilder();
       if (hasUppercase) {
         defaultName.append("--");
-        name.chars()
+        fieldName
+            .chars()
             .forEach(
                 i -> {
                   if (Character.isUpperCase(i)) {
@@ -233,7 +234,7 @@ interface Bach {
                 });
       } else {
         defaultName.append('-');
-        defaultName.append(name.replace('_', '-'));
+        defaultName.append(fieldName.replace('_', '-'));
       }
       return defaultName.toString();
     }
@@ -270,17 +271,20 @@ interface Bach {
       return this;
     }
 
+    /** Set argument file support. */
     Command setExecutableSupportsArgumentFile(boolean executableSupportsArgumentFile) {
       this.executableSupportsArgumentFile = executableSupportsArgumentFile;
       return this;
     }
 
+    /** Set standard output and error streams. */
     Command setStandardStreams(PrintStream out, PrintStream err) {
       this.out = out;
       this.err = err;
       return this;
     }
 
+    /** Put the tool into the internal map of tools. */
     Command setToolProvider(ToolProvider tool) {
       if (tools == Collections.EMPTY_MAP) {
         tools = new TreeMap<>();
@@ -322,7 +326,11 @@ interface Bach {
       return processBuilder;
     }
 
-    /** Run this command. */
+    /**
+     * Run this command.
+     *
+     * @throws AssertionError if the execution result is not zero
+     */
     void run() {
       int result = run(UnaryOperator.identity(), this::toProcessBuilder);
       boolean successful = result == 0;
@@ -332,9 +340,15 @@ interface Bach {
       throw new AssertionError("expected an exit code of zero, but got: " + result);
     }
 
-    /** Run this command. */
+    /**
+     * Runs an instance of the tool, returning zero for a successful run.
+     *
+     * @return the result of executing the tool. A return value of 0 means the tool did not
+     *     encounter any errors; any other value indicates that at least one error occurred during
+     *     execution.
+     */
     int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-      if (Boolean.getBoolean("bach.verbose")) {
+      if (log.isEnabled()) {
         List<String> lines = new ArrayList<>();
         dump(lines::add);
         log.info("running %s with %d argument(s)", executable, arguments.size());
@@ -652,6 +666,10 @@ interface Bach {
     Level level = Boolean.getBoolean("bach.verbose") ? Level.VERBOSE : Level.INFO;
     Locale locale = Locale.getDefault();
     Consumer<String> out = System.out::println;
+
+    boolean isEnabled() {
+      return level != Level.OFF;
+    }
 
     void log(Level level, String format, Object... args) {
       if (this.level.ordinal() < level.ordinal()) {
