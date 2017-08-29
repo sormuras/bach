@@ -1,0 +1,3 @@
+// default package
+
+interface Empty {}
