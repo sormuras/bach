@@ -418,17 +418,23 @@ interface Bach {
       return target;
     }
 
-    static Stream<Path> findDirectories(Path root) {
-      try {
-        return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
-            .filter(path -> !root.equals(path));
-      } catch (Exception e) {
+    static List<Path> findDirectories(Path root) {
+      if (Files.notExists(root)) {
+        return Collections.emptyList();
+      }
+      try (Stream<Path> paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+        return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+      } catch (IOException e) {
         throw new Error("should not happen", e);
       }
     }
 
-    static Stream<String> findDirectoryNames(Path root) {
-      return findDirectories(root).map(root::relativize).map(Path::toString);
+    static List<String> findDirectoryNames(Path root) {
+      return findDirectories(root)
+          .stream()
+          .map(root::relativize)
+          .map(Path::toString)
+          .collect(Collectors.toList());
     }
 
     /** Extract the file name from the uri. */
@@ -669,6 +675,10 @@ interface Bach {
 
     boolean isEnabled() {
       return level != Level.OFF;
+    }
+
+    boolean isDisabled() {
+      return level == Level.OFF;
     }
 
     void log(Level level, String format, Object... args) {

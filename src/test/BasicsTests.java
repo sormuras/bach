@@ -27,9 +27,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BasicsTests {
+
+  @BeforeEach
+  void clear() {
+    Bach.log.level = Bach.Log.Level.OFF;
+  }
 
   @Test
   void isJavaFile() {
@@ -57,6 +64,17 @@ class BasicsTests {
     assertTrue(builder.toString().contains("resolved"));
     assertTrue(builder.toString().contains("stored"));
     Bach.log.out = System.out::println;
+  }
+
+  @Test
+  void patchMap() throws IOException {
+    Path main = Paths.get("demo/02-testing/src/main/java");
+    Path test = Paths.get("demo/02-testing/src/test/java");
+
+    Map<String, List<Path>> map = Bach.Basics.getPatchMap(test, main);
+
+    assertEquals(List.of(main.resolve("application")), map.get("application"));
+    assertEquals(List.of(main.resolve("application.api")), map.get("application.api"));
   }
 
   private void createFiles(Path directory, int count) throws IOException {

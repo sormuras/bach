@@ -22,9 +22,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
+
+  @BeforeEach
+  void clear() {
+    Bach.log.level = Bach.Log.Level.OFF;
+  }
 
   @Test
   void bootstrap() throws IOException {

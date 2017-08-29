@@ -37,9 +37,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.spi.ToolProvider;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JdkToolTests {
+
+  @BeforeEach
+  void clear() {
+    Bach.log.level = Bach.Log.Level.OFF;
+  }
 
   private List<String> dump(Bach.Command command) {
     List<String> lines = new ArrayList<>();
