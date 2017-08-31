@@ -68,9 +68,10 @@ interface Build {
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
     Path jar = Bach.Basics.download(uri, TOOLS.resolve(name));
-    Bach.Command format = new Bach.JdkTool.Java().toCommand();
-    format.add("-jar");
-    format.add(jar);
+    Bach.JdkTool.Java java = new Bach.JdkTool.Java();
+    java.jar = jar;
+    java.toCommand().add("--version").run();
+    Bach.Command format = java.toCommand();
     format.add("--" + mode);
     format.mark(5);
     List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));

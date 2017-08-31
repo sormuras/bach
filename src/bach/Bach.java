@@ -512,7 +512,7 @@ interface Bach {
 
     /** Copy source directory to target directory. */
     static void treeCopy(Path source, Path target) throws IOException {
-      // log.fine("copy `%s` to `%s`%n", source, target);
+      log.verbose("treeCopy(source:`%s`, target:`%s`)%n", source, target);
       if (!Files.exists(source)) {
         return;
       }
@@ -529,7 +529,6 @@ interface Bach {
       }
       try (Stream<Path> stream = Files.walk(source).sorted()) {
         List<Path> paths = stream.collect(Collectors.toList());
-        // log("copying %s elements...%n", paths.size());
         for (Path path : paths) {
           Path destination = target.resolve(source.relativize(path));
           if (Files.isDirectory(path)) {
@@ -538,8 +537,9 @@ interface Bach {
           }
           Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
         }
+        log.verbose("copied %s elements...%n", paths.size());
       } catch (IOException e) {
-        throw new AssertionError("dumpTree failed", e);
+        throw new AssertionError("treeCopy failed", e);
       }
     }
 
@@ -550,6 +550,7 @@ interface Bach {
 
     /** Delete selected files and directories from the root directory. */
     static void treeDelete(Path root, Predicate<Path> filter) throws IOException {
+      log.info("treeDelete(root:'%s')", root);
       if (Files.notExists(root)) {
         return;
       }
@@ -575,7 +576,7 @@ interface Bach {
           out.accept("." + prefix + string);
         }
       } catch (IOException e) {
-        throw new AssertionError("dumpTree failed", e);
+        throw new AssertionError("treeDump failed", e);
       }
     }
 
@@ -615,7 +616,7 @@ interface Bach {
           try {
             return resolve(targetDirectory, repository);
           } catch (IOException e) {
-            // e.printStackTrace();
+            log.verbose("resolve(repository:'%s') failed: %s", repository, e);
           }
         }
         throw new Error("could not resolve: " + this);
@@ -777,6 +778,9 @@ interface Bach {
        * as the module system configuration.
        */
       boolean dryRun = false;
+
+      /** The name of the Java Archive (JAR) file to be called. */
+      Path jar = null;
 
       /** Overrides or augments a module with classes and resources in JAR files or directories. */
       Map<String, List<Path>> patchModule = Map.of();
