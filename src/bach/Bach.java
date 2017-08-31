@@ -137,8 +137,8 @@ interface Bach {
     }
 
     /** Add all reflected options after a custom stream operator did its work. */
-    Command addAllOptions(Object options, UnaryOperator<Stream<java.lang.reflect.Field>> operator) {
-      Stream<java.lang.reflect.Field> stream =
+    Command addAllOptions(Object options, UnaryOperator<Stream<Field>> operator) {
+      Stream<Field> stream =
           Arrays.stream(options.getClass().getDeclaredFields())
               .filter(field -> !field.isSynthetic())
               .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
@@ -208,7 +208,7 @@ interface Bach {
       add(value.toString());
     }
 
-    private void addOptionUnchecked(Object options, java.lang.reflect.Field field) {
+    private void addOptionUnchecked(Object options, Field field) {
       try {
         addOption(options, field);
       } catch (ReflectiveOperationException e) {
