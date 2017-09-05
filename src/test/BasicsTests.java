@@ -52,6 +52,7 @@ class BasicsTests {
   }
 
   @Test
+  @AssumeOnline
   void resolve() throws IOException {
     StringBuilder builder = new StringBuilder();
     Bach.log.out = builder::append;

@@ -38,6 +38,7 @@ class BachTests {
   }
 
   @Test
+  @AssumeOnline
   void bootstrap() throws IOException {
     // Path target = Files.createDirectories(Paths.get("target"));
     Path target = Files.createTempDirectory("bach-bootstrap-");
