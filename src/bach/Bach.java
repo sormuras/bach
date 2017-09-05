@@ -28,6 +28,7 @@ import java.nio.file.attribute.*;
 import java.time.*;
 import java.util.*;
 import java.util.function.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
@@ -506,7 +507,11 @@ interface Bach {
 
     /** Extract substring between begin and end tags. */
     static String substring(String string, String beginTag, String endTag) {
-      int beginIndex = string.indexOf(beginTag) + beginTag.length();
+      int initialIndex = string.indexOf(beginTag);
+      if (initialIndex < 0) {
+        throw new NoSuchElementException("no '" + beginTag + "' in: " + string);
+      }
+      int beginIndex = initialIndex + beginTag.length();
       int endIndex = string.indexOf(endTag, beginIndex);
       return string.substring(beginIndex, endIndex).trim();
     }
@@ -578,6 +583,63 @@ interface Bach {
         }
       } catch (IOException e) {
         throw new AssertionError("treeDump failed", e);
+      }
+    }
+
+    class ModuleInfo {
+
+      static Pattern namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
+      static Pattern requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+      static ModuleInfo of(Path path) {
+        if (Files.isDirectory(path)) {
+          path = path.resolve("module-info.java");
+        }
+        if (Files.notExists(path)) {
+          throw new IllegalArgumentException("expected module-info.java file, but got: " + path);
+        }
+        try {
+          return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+          throw new AssertionError("reading '" + path + "' failed", e);
+        }
+      }
+
+      static ModuleInfo of(List<String> lines) {
+        return of(String.join("\n", lines));
+      }
+
+      static ModuleInfo of(String source) {
+        // extract module name
+        Matcher nameMatcher = namePattern.matcher(source);
+        if (!nameMatcher.find()) {
+          throw new AssertionError("expected java module descriptor unit, but got: " + source);
+        }
+        String name = nameMatcher.group(1).trim();
+        // extract required module names
+        Set<String> requires = new TreeSet<>();
+        Matcher requiresMatcher = requiresPattern.matcher(source);
+        while (requiresMatcher.find()) {
+          String[] split = requiresMatcher.group(1).trim().split("\\s+");
+          requires.add(split[split.length - 1]);
+        }
+        return new ModuleInfo(name, requires);
+      }
+
+      final String name;
+      final Set<String> requires;
+
+      ModuleInfo(String name, Set<String> requires) {
+        this.name = name;
+        this.requires = Set.of(requires.toArray(new String[requires.size()]));
+      }
+
+      String getName() {
+        return name;
+      }
+
+      Set<String> getRequires() {
+        return requires;
       }
     }
 

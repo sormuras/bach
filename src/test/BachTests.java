@@ -15,12 +15,17 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,5 +50,34 @@ class BachTests {
         System.err.println("bootstrap('" + script + "') failed: " + e.toString());
       }
     }
+  }
+
+  @Test
+  void moduleInfoEmpty() {
+    Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(List.of("module foo {}"));
+    assertEquals("foo", info.getName());
+    assertTrue(info.getRequires().isEmpty());
+  }
+
+  @Test
+  void moduleInfoRequiresBarAndBaz() {
+    Bach.Basics.ModuleInfo info =
+        Bach.Basics.ModuleInfo.of(
+            "module   foo{requires a; requires static b; requires any modifier c;}");
+    assertEquals("foo", info.getName());
+    assertEquals(3, info.getRequires().size());
+    assertTrue(info.getRequires().contains("a"));
+    assertTrue(info.getRequires().contains("b"));
+    assertTrue(info.getRequires().contains("c"));
+  }
+
+  @Test
+  void moduleInfoFromFile() {
+    Bach.Basics.ModuleInfo info =
+        Bach.Basics.ModuleInfo.of(Paths.get("demo/02-testing/src/test/java/application"));
+    assertEquals("application", info.getName());
+    assertEquals(2, info.getRequires().size());
+    assertTrue(info.getRequires().contains("application.api"));
+    assertTrue(info.getRequires().contains("org.junit.jupiter.api"));
   }
 }
