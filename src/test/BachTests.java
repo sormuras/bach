@@ -17,6 +17,7 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,5 +81,20 @@ class BachTests {
     assertEquals(2, info.getRequires().size());
     assertTrue(info.getRequires().contains("application.api"));
     assertTrue(info.getRequires().contains("org.junit.jupiter.api"));
+  }
+
+  @Test
+  void moduleInfoFromM1() throws Exception {
+    ClassLoader loader = getClass().getClassLoader();
+    URL resource = loader.getResource("data/M1.txt");
+    if (resource == null) {
+      fail("resource not found!");
+    }
+    Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(Paths.get(resource.toURI()));
+    assertEquals("com.google.m", info.getName());
+    assertEquals(3, info.getRequires().size());
+    assertTrue(info.getRequires().contains("com.google.r1"));
+    assertTrue(info.getRequires().contains("com.google.r2"));
+    assertTrue(info.getRequires().contains("com.google.r3"));
   }
 }

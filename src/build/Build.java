@@ -105,6 +105,8 @@ interface Build {
             Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
             Bach.Basics.resolve("org.opentest4j", "opentest4j", OPENTEST4J));
     javac.run();
+    // TODO exclude .java files
+    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST);
   }
 
   static void javadoc() throws IOException {
