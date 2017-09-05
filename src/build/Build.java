@@ -164,6 +164,7 @@ interface Build {
     Bach.run(
         "java",
         "-ea",
+        "-Dbach.offline=" + System.getProperty("bach.offline", "false"),
         "-jar",
         jar,
         "--class-path",
