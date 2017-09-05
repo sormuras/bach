@@ -48,13 +48,14 @@ class BuildDemo02Testing {
   }
 
   void compileTest() {
-    Path tests = Paths.get("src", "test", "java");
+    List<Path> tests = List.of(Paths.get("src", "test", "java"));
+    List<Path> mains = List.of(Paths.get("src", "main", "java"));
 
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
     javac.destinationPath = TEST;
     javac.modulePath = List.of(DEPS);
-    javac.moduleSourcePath = List.of(tests);
-    javac.patchModule = Bach.Basics.getPatchMap(tests, Paths.get("src", "main", "java"));
+    javac.moduleSourcePath = tests;
+    javac.patchModule = Bach.Basics.getPatchMap(tests, mains);
     javac.run();
   }
 

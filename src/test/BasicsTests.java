@@ -71,7 +71,7 @@ class BasicsTests {
     Path main = Paths.get("demo/02-testing/src/main/java");
     Path test = Paths.get("demo/02-testing/src/test/java");
 
-    Map<String, List<Path>> map = Bach.Basics.getPatchMap(test, main);
+    Map<String, List<Path>> map = Bach.Basics.getPatchMap(List.of(test), List.of(main));
 
     assertEquals(List.of(main.resolve("application")), map.get("application"));
     assertEquals(List.of(main.resolve("application.api")), map.get("application.api"));

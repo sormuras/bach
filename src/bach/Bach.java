@@ -463,17 +463,18 @@ interface Bach {
       return classPath;
     }
 
-    static Map<String, List<Path>> getPatchMap(
-        Path testModuleSourcePath, Path mainModuleSourcePath) {
+    static Map<String, List<Path>> getPatchMap(List<Path> basePaths, List<Path> patchPaths) {
       Map<String, List<Path>> map = new TreeMap<>();
-      findDirectoryNames(testModuleSourcePath)
-          .forEach(
-              name -> {
-                Path mainModule = mainModuleSourcePath.resolve(name);
-                if (Files.exists(mainModule)) {
-                  map.put(name, List.of(mainModule));
-                }
-              });
+      for (Path basePath : basePaths) {
+        for (String baseName : findDirectoryNames(basePath)) {
+          for (Path patchPath : patchPaths) {
+            Path candidate = patchPath.resolve(baseName);
+            if (Files.isDirectory(candidate)) {
+              map.computeIfAbsent(baseName, key -> new ArrayList<>()).add(candidate);
+            }
+          }
+        }
+      }
       return map;
     }
 
