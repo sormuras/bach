@@ -59,12 +59,33 @@ class BasicsTests {
     Bach.log.level = Bach.Log.Level.VERBOSE;
     Path temp = Files.createTempDirectory("resolve-");
     new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-SNAPSHOT")
-        .resolve(temp, Bach.Basics.Resolvable.REPOSITORIES);
+        .resolve(temp, List.of("https://oss.sonatype.org/content/repositories/snapshots"));
     new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "1.0.0-ALPHA")
-        .resolve(temp, Bach.Basics.Resolvable.REPOSITORIES);
+        .resolve(temp, List.of("http://repo1.maven.org/maven2"));
+    new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "LATEST")
+        .resolve(temp, List.of("http://repo1.maven.org/maven2"));
+    new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "RELEASE")
+        .resolve(temp, List.of("http://repo1.maven.org/maven2"));
     assertTrue(builder.toString().contains("resolved"));
     assertTrue(builder.toString().contains("stored"));
     Bach.log.out = System.out::println;
+  }
+
+  @Test
+  void createResolvableFromCoordinates() {
+    String group = "group";
+    String artifact = "artifact";
+    String joined = String.join(":", group, artifact);
+    Bach.Basics.Resolvable resolvable = Bach.Basics.Resolvable.of(joined);
+    assertEquals(group, resolvable.group);
+    assertEquals(artifact, resolvable.artifact);
+    assertEquals(Bach.Default.RESOLVABLE_VERSION, resolvable.version);
+    String version = "1.2.3";
+    joined = String.join(":", group, artifact, version);
+    resolvable = Bach.Basics.Resolvable.of(joined);
+    assertEquals(group, resolvable.group);
+    assertEquals(artifact, resolvable.artifact);
+    assertEquals(version, resolvable.version);
   }
 
   @Test

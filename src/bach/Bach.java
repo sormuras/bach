@@ -51,6 +51,11 @@ interface Bach {
     new Command(executable).addAll(List.of(arguments)).run();
   }
 
+  class Default {
+    static boolean VERBOSE = Boolean.getBoolean("bach.verbose");
+    static String RESOLVABLE_VERSION = System.getProperty("bach.resolvable.version", "RELEASE");
+  }
+
   /** Command builder and tool executor support. */
   class Command {
 
@@ -652,6 +657,17 @@ interface Bach {
               "https://jcenter.bintray.com",
               "https://jitpack.io");
 
+      static Resolvable of(String source) {
+        String[] split = source.split(":");
+        if (split.length == 2) {
+          return new Resolvable(split[0].trim(), split[1].trim(), Default.RESOLVABLE_VERSION);
+        }
+        if (split.length == 3) {
+          return new Resolvable(split[0].trim(), split[1].trim(), split[2].trim());
+        }
+        throw new IllegalArgumentException("expected 1 or 2 ':' in source, but got: " + source);
+      }
+
       final String group;
       final String artifact;
       final String version;
@@ -668,6 +684,14 @@ interface Bach {
         // assemble file name
         String versifier = classifier.isEmpty() ? version : version + '-' + classifier;
         this.file = artifact + '-' + versifier + '.' + kind;
+      }
+
+      boolean isLatest() {
+        return version.equals("LATEST");
+      }
+
+      boolean isRelease() {
+        return version.equals("RELEASE");
       }
 
       boolean isSnapshot() {
@@ -695,27 +719,51 @@ interface Bach {
         return download(uri, targetDirectory, fileName, path -> true);
       }
 
+      Optional<String> resolveFromMetaData(URI xml, UnaryOperator<String> operator) {
+        log.verbose("resolving version from " + xml);
+        try (InputStream input = xml.toURL().openStream();
+            ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+          input.transferTo(output);
+          String meta = output.toString("UTF-8");
+          return Optional.of(operator.apply(meta));
+        } catch (Exception exception) {
+          return Optional.empty();
+        }
+      }
+
       /** Create uri for specified maven coordinates. */
       URI resolveUri(String repository) {
-        String base = repository + '/' + group + '/' + artifact + '/' + version + '/';
-        String file = this.file;
+        URI base = URI.create(repository + '/' + group + '/' + artifact + '/');
         if (isSnapshot()) {
-          URI xml = URI.create(base + "maven-metadata.xml");
-          log.verbose("resolving SNAPSHOT version from " + xml);
-          try (InputStream sourceStream = xml.toURL().openStream();
-              ByteArrayOutputStream targetStream = new ByteArrayOutputStream()) {
-            sourceStream.transferTo(targetStream);
-            String meta = targetStream.toString("UTF-8");
-            String timestamp = substring(meta, "<timestamp>", "<");
-            String buildNumber = substring(meta, "<buildNumber>", "<");
-            String replacement = timestamp + '-' + buildNumber;
-            log.verbose("resolved SNAPSHOT as: " + replacement);
-            file = file.replace("SNAPSHOT", replacement);
-          } catch (Exception exception) {
-            // use file name with "SNAPSHOT" literal
-          }
+          String replacement =
+              resolveFromMetaData(
+                      base.resolve(version + "/" + "maven-metadata.xml"),
+                      meta -> {
+                        String timestamp = substring(meta, "<timestamp>", "<");
+                        String buildNumber = substring(meta, "<buildNumber>", "<");
+                        return timestamp + '-' + buildNumber;
+                      })
+                  .orElse(version);
+          log.verbose("resolved SNAPSHOT as: " + replacement);
+          return base.resolve(version + "/" + file.replace("SNAPSHOT", replacement));
         }
-        return URI.create(base + file);
+        if (isLatest()) {
+          String replacement =
+              resolveFromMetaData(
+                      base.resolve("maven-metadata.xml"), meta -> substring(meta, "<latest>", "<"))
+                  .orElse(version);
+          log.verbose("resolved LATEST as: " + replacement);
+          return base.resolve(replacement + "/" + file.replace("LATEST", replacement));
+        }
+        if (isRelease()) {
+          String replacement =
+              resolveFromMetaData(
+                      base.resolve("maven-metadata.xml"), meta -> substring(meta, "<release>", "<"))
+                  .orElse(version);
+          log.verbose("resolved RELEASE as: " + replacement);
+          return base.resolve(replacement + "/" + file.replace("RELEASE", replacement));
+        }
+        return base.resolve(version + "/" + file);
       }
 
       @Override
@@ -733,7 +781,7 @@ interface Bach {
       VERBOSE
     }
 
-    Level level = Boolean.getBoolean("bach.verbose") ? Level.VERBOSE : Level.INFO;
+    Level level = Default.VERBOSE ? Level.VERBOSE : Level.INFO;
     Locale locale = Locale.getDefault();
     Consumer<String> out = System.out::println;
 
