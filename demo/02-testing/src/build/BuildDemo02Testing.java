@@ -7,13 +7,14 @@ import java.util.List;
 @SuppressWarnings("all")
 class BuildDemo02Testing {
 
-  final Path DEPS = Paths.get(".bach", "resolved");
-  final Path MAIN = Paths.get("target", "bach", "main");
-  final Path TEST = Paths.get("target", "bach", "test");
+  static final Path ROOT = Paths.get(".").normalize().toAbsolutePath();
+  static final Path DEPS = Paths.get(".bach", "resolved");
+  static final Path MAIN = Paths.get("target", "bach", "main");
+  static final Path TEST = Paths.get("target", "bach", "test");
 
   public static void main(String... args) throws IOException {
     System.out.println("BuildDemo02Testing.main");
-    System.out.println(Paths.get(".").normalize().toAbsolutePath());
+    System.out.println(ROOT);
     System.setProperty("bach.verbose", "true");
     BuildDemo02Testing demo = new BuildDemo02Testing();
     demo.resolveRequiredModules();
@@ -83,7 +84,7 @@ class BuildDemo02Testing {
     command.add("--scan-class-path");
     ModuleFinder.of(TEST)
         .findAll()
-        .forEach(reference -> command.add("--class-path").add(Bach.Basics.getPath(reference)));
+        .forEach(mr -> command.add("--class-path").add(ROOT.relativize(Bach.Basics.getPath(mr))));
     command.run();
   }
 }
