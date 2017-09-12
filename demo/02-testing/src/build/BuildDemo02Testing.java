@@ -31,13 +31,14 @@ class BuildDemo02Testing {
   }
 
   void resolveRequiredModules() {
-    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0-RC3");
-    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", "5.0.0-RC3");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-console", "1.0.0-RC3");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", "1.0.0-RC3");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", "1.0.0-RC3");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", "1.0.0-RC3");
-    Bach.Basics.resolve("org.opentest4j", "opentest4j", "1.0.0-RC1");
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0");
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", "5.0.0");
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-console", "1.0.0");
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", "1.0.0");
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", "1.0.0");
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", "1.0.0");
+    Bach.Basics.resolve("org.opentest4j", "opentest4j", "1.0.0");
+    Bach.Basics.resolve("org.apiguardian", "apiguardian-api", "1.0.0");
   }
 
   void compileMain() {

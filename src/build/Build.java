@@ -35,9 +35,10 @@ interface Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.0.0-RC3";
-  String JUNIT_PLATFORM = "1.0.0-RC3";
-  String OPENTEST4J = "1.0.0-RC1";
+  String JUNIT_JUPITER = "5.0.0";
+  String JUNIT_PLATFORM = "1.0.0";
+  String OPENTEST4J = "1.0.0";
+  String API_GUARDIAN = "1.0.0";
 
   static void main(String... args) {
     System.setProperty("bach.verbose", "true");
@@ -103,6 +104,7 @@ interface Build {
             TARGET_MAIN,
             Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER),
             Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
+            Bach.Basics.resolve("org.apiguardian", "apiguardian-api", API_GUARDIAN),
             Bach.Basics.resolve("org.opentest4j", "opentest4j", OPENTEST4J));
     javac.run();
     // TODO exclude .java files
