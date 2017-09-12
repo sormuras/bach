@@ -53,6 +53,7 @@ interface Bach {
 
   class Default {
     static boolean VERBOSE = Boolean.getBoolean("bach.verbose");
+    static Path RESOLVE_PATH = Paths.get(System.getProperty("bach.resolve.path", ".bach/resolved"));
     static String RESOLVABLE_VERSION = System.getProperty("bach.resolvable.version", "RELEASE");
   }
 
@@ -506,8 +507,9 @@ interface Bach {
     /** Resolve maven jar artifact. */
     static Path resolve(String group, String artifact, String version) {
       log.info("resolve(group:%s, artifact:%s, version:%s)", group, artifact, version);
-      return new Resolvable(group, artifact, version)
-          .resolve(Paths.get(".bach", "resolved"), Resolvable.REPOSITORIES);
+      Path destination = Default.RESOLVE_PATH;
+      List<String> repositories = Resolvable.REPOSITORIES;
+      return new Resolvable(group, artifact, version).resolve(destination, repositories);
     }
 
     /** Extract substring between begin and end tags. */
