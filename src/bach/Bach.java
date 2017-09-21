@@ -51,10 +51,16 @@ interface Bach {
     new Command(executable).addAll(List.of(arguments)).run();
   }
 
+  /** Default Bach settings. */
   class Default {
     static boolean VERBOSE = Boolean.getBoolean("bach.verbose");
-    static Path RESOLVE_PATH = Paths.get(System.getProperty("bach.resolve.path", ".bach/resolved"));
-    static String RESOLVABLE_VERSION = System.getProperty("bach.resolvable.version", "RELEASE");
+    static Path BACH_PATH = Paths.get(sys("bach.path", ".bach"));
+    static Path RESOLVE_PATH = Paths.get(sys("bach.resolve.path", BACH_PATH.resolve("resolved")));
+    static String RESOLVABLE_VERSION = sys("bach.resolvable.version", "RELEASE");
+
+    private static String sys(String key, Object def) {
+      return System.getProperty(key, def.toString());
+    }
   }
 
   /** Command builder and tool executor support. */
