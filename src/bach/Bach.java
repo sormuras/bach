@@ -878,7 +878,7 @@ interface Bach {
 
       /** The destination directory for class files. */
       @Command.Option("-d")
-      Path destinationPath = null;
+      Path destination = null;
 
       /** Specify character encoding used by source files. */
       Charset encoding = StandardCharsets.UTF_8;
@@ -998,6 +998,16 @@ interface Bach {
       /** Changes to the specified directory and includes the files at the end of the command. */
       @Command.Option("-C")
       Path path = null;
+
+      @Override
+      public Command toCommand() {
+        Command command = JdkTool.super.toCommand();
+        if (path != null) {
+          command.mark(1);
+          command.add(".");
+        }
+        return command;
+      }
     }
 
     /**

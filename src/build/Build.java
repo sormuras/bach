@@ -20,7 +20,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 
 interface Build {
@@ -92,12 +91,12 @@ interface Build {
     // main
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
-    javac.destinationPath = TARGET_MAIN;
+    javac.destination = TARGET_MAIN;
     javac.classSourcePath = List.of(SOURCE_BACH);
     javac.run();
 
     // test
-    javac.destinationPath = TARGET_TEST;
+    javac.destination = TARGET_TEST;
     javac.classSourcePath = List.of(SOURCE_TEST);
     javac.classPath =
         List.of(
@@ -132,19 +131,16 @@ interface Build {
     System.out.printf("%n[jar]%n%n");
 
     Files.createDirectories(ARTIFACTS);
-    jar("bach.jar", TARGET_MAIN, ".");
-    jar("bach-sources.jar", SOURCE_BACH, ".");
-    jar("bach-javadoc.jar", JAVADOC, ".");
+    jar("bach.jar", TARGET_MAIN);
+    jar("bach-sources.jar", SOURCE_BACH);
+    jar("bach-javadoc.jar", JAVADOC);
   }
 
-  static void jar(String artifact, Path path, Object... contents) {
+  static void jar(String artifact, Path path) {
     Bach.JdkTool.Jar jar = new Bach.JdkTool.Jar();
     jar.file = ARTIFACTS.resolve(artifact);
     jar.path = path;
-    Bach.Command command = jar.toCommand();
-    command.mark(5);
-    Arrays.stream(contents).forEach(command::add);
-    command.run();
+    jar.run();
   }
 
   static void jdeps() throws IOException {

@@ -43,7 +43,7 @@ class BuildDemo02Testing {
 
   void compileMain() {
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
-    javac.destinationPath = MAIN;
+    javac.destination = MAIN;
     javac.modulePath = List.of(DEPS);
     javac.moduleSourcePath = List.of(Paths.get("src", "main", "java"));
     javac.run();
@@ -54,7 +54,7 @@ class BuildDemo02Testing {
     List<Path> mains = List.of(Paths.get("src", "main", "java"));
 
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
-    javac.destinationPath = TEST;
+    javac.destination = TEST;
     javac.modulePath = List.of(DEPS);
     javac.moduleSourcePath = tests;
     javac.patchModule = Bach.Basics.getPatchMap(tests, mains);

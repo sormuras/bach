@@ -208,7 +208,7 @@ class JdkToolTests {
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.deprecation = true;
-    javac.destinationPath = Paths.get("out");
+    javac.destination = Paths.get("out");
     javac.encoding = StandardCharsets.US_ASCII;
     javac.failOnWarnings = true;
     javac.parameters = true;
@@ -274,10 +274,7 @@ class JdkToolTests {
     jar.noCompress = true;
     jar.verbose = true;
     jar.path = Paths.get("classes");
-    Bach.Command command = jar.toCommand();
-    command.mark(1);
-    command.add(".");
-    assertLinesMatch(expectedLines, dump(command));
+    assertLinesMatch(expectedLines, dump(jar.toCommand()));
   }
 
   @Test
