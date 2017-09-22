@@ -139,7 +139,7 @@ interface Bach {
       try (Stream<Path> stream = Files.walk(root).filter(predicate)) {
         stream.forEach(this::add);
       } catch (IOException e) {
-        throw new Error("walking path `" + root + "` failed", e);
+        throw new UncheckedIOException("walking path `" + root + "` failed", e);
       }
       return this;
     }
@@ -325,7 +325,7 @@ interface Bach {
             Path tempFile = Files.createTempFile(prefix, ".txt");
             strings = List.of(executable, "@" + Files.write(tempFile, arguments));
           } catch (IOException e) {
-            throw new Error("creating temporary arguments file failed", e);
+            throw new UncheckedIOException("creating temporary arguments file failed", e);
           }
         } else {
           err.println(
@@ -438,7 +438,7 @@ interface Bach {
       try (Stream<Path> paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
         return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
       } catch (IOException e) {
-        throw new Error("should not happen", e);
+        throw new UncheckedIOException("findDirectories failed for root: " + root, e);
       }
     }
 
@@ -448,6 +448,27 @@ interface Bach {
           .map(root::relativize)
           .map(Path::toString)
           .collect(Collectors.toList());
+    }
+
+    static Set<String> findExternalModuleNames(Path... roots) {
+      Set<String> declaredModules = new TreeSet<>();
+      Set<String> requiredModules = new TreeSet<>();
+      List<Path> paths = new ArrayList<>();
+      for (Path root : roots) {
+        try (Stream<Path> stream = Files.walk(root)) {
+          stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
+        } catch (IOException e) {
+          throw new UncheckedIOException("findExternalModuleNames failed for root: " + root, e);
+        }
+      }
+      for (Path path : paths) {
+        Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(path);
+        declaredModules.add(info.getName());
+        requiredModules.addAll(info.getRequires());
+      }
+      Set<String> externalModules = new TreeSet<>(requiredModules);
+      externalModules.removeAll(declaredModules);
+      return externalModules;
     }
 
     /** Extract the file name from the uri. */
@@ -470,7 +491,7 @@ interface Bach {
         try (Stream<Path> paths = Files.walk(path, 1)) {
           paths.filter(Basics::isJarFile).forEach(classPath::add);
         } catch (IOException e) {
-          throw new AssertionError("failed adding jar(s) from " + path + " to the classpath", e);
+          throw new UncheckedIOException("failed adding jars from " + path + " to classpath", e);
         }
       }
       return classPath;
@@ -531,6 +552,11 @@ interface Bach {
 
     /** Copy source directory to target directory. */
     static void treeCopy(Path source, Path target) throws IOException {
+      treeCopy(source, target, __ -> true);
+    }
+
+    /** Copy source directory to target directory. */
+    static void treeCopy(Path source, Path target, Predicate<Path> filter) throws IOException {
       log.verbose("treeCopy(source:`%s`, target:`%s`)%n", source, target);
       if (!Files.exists(source)) {
         return;
@@ -547,6 +573,7 @@ interface Bach {
         }
       }
       try (Stream<Path> stream = Files.walk(source).sorted()) {
+        int counter = 0;
         List<Path> paths = stream.collect(Collectors.toList());
         for (Path path : paths) {
           Path destination = target.resolve(source.relativize(path));
@@ -554,11 +581,14 @@ interface Bach {
             Files.createDirectories(destination);
             continue;
           }
-          Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+          if (filter.test(path)) {
+            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+            counter++;
+          }
         }
-        log.verbose("copied %s elements...%n", paths.size());
+        log.verbose("copied %d file(s) of %d elements...%n", counter, paths.size());
       } catch (IOException e) {
-        throw new AssertionError("treeCopy failed", e);
+        throw new UncheckedIOException("treeCopy failed", e);
       }
     }
 
@@ -595,7 +625,7 @@ interface Bach {
           out.accept("." + prefix + string);
         }
       } catch (IOException e) {
-        throw new AssertionError("treeDump failed", e);
+        throw new UncheckedIOException("treeDump failed", e);
       }
     }
 
@@ -614,7 +644,7 @@ interface Bach {
         try {
           return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
         } catch (IOException e) {
-          throw new AssertionError("reading '" + path + "' failed", e);
+          throw new UncheckedIOException("reading '" + path + "' failed", e);
         }
       }
 
@@ -866,6 +896,10 @@ interface Bach {
       /** Where to find input source files for multiple modules. */
       List<Path> moduleSourcePath = List.of();
 
+      /** Compiles only the specified module and checks timestamps. */
+      @Command.Option("--module")
+      String module = null;
+
       /** Generate metadata for reflection on method parameters. */
       boolean parameters = true;
 
@@ -878,7 +912,9 @@ interface Bach {
         Command command = JdkTool.super.toCommand();
         command.mark(10);
         command.addAll(classSourcePath, Basics::isJavaFile);
-        command.addAll(moduleSourcePath, Basics::isJavaFile);
+        if (module == null) {
+          command.addAll(moduleSourcePath, Basics::isJavaFile);
+        }
         command.setExecutableSupportsArgumentFile(true);
         return command;
       }

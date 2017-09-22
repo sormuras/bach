@@ -16,6 +16,7 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -63,9 +64,8 @@ class BachTests {
 
   @Test
   void moduleInfoRequiresBarAndBaz() {
-    Bach.Basics.ModuleInfo info =
-        Bach.Basics.ModuleInfo.of(
-            "module   foo{requires a; requires static b; requires any modifier c;}");
+    String source = "module   foo{requires a; requires static b; requires any modifier c;}";
+    Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(source);
     assertEquals("foo", info.getName());
     assertEquals(3, info.getRequires().size());
     assertTrue(info.getRequires().contains("a"));
@@ -75,8 +75,8 @@ class BachTests {
 
   @Test
   void moduleInfoFromFile() {
-    Bach.Basics.ModuleInfo info =
-        Bach.Basics.ModuleInfo.of(Paths.get("demo/02-testing/src/test/java/application"));
+    Path source = Paths.get("demo/02-testing/src/test/java/application");
+    Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(source);
     assertEquals("application", info.getName());
     assertEquals(2, info.getRequires().size());
     assertTrue(info.getRequires().contains("application.api"));
@@ -96,5 +96,13 @@ class BachTests {
     assertTrue(info.getRequires().contains("com.google.r1"));
     assertTrue(info.getRequires().contains("com.google.r2"));
     assertTrue(info.getRequires().contains("com.google.r3"));
+  }
+
+  @Test
+  void findExternalModuleNames() {
+    Set<String> names = Bach.Basics.findExternalModuleNames(Paths.get("demo"));
+    assertTrue(names.contains("org.junit.jupiter.api"));
+    assertFalse(names.contains("hello"));
+    assertFalse(names.contains("world"));
   }
 }

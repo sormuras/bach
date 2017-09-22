@@ -93,7 +93,8 @@ interface Build {
     Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
     javac.generateAllDebuggingInformation = true;
     javac.destinationPath = TARGET_MAIN;
-    javac.toCommand().add(BACH_JAVA).run();
+    javac.classSourcePath = List.of(SOURCE_BACH);
+    javac.run();
 
     // test
     javac.destinationPath = TARGET_TEST;
@@ -107,7 +108,7 @@ interface Build {
             Bach.Basics.resolve("org.opentest4j", "opentest4j", OPENTEST4J));
     javac.run();
     // TODO exclude .java files
-    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST);
+    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
   }
 
   static void javadoc() throws IOException {
