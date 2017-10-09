@@ -58,6 +58,7 @@ interface Bach {
     static Path RESOLVE_PATH = Paths.get(sys("bach.resolve.path", BACH_PATH.resolve("resolved")));
     static String RESOLVABLE_VERSION = sys("bach.resolvable.version", "RELEASE");
     static Path JDK_HOME = Basics.resolveJdkHome();
+    static List<String> JDK_TOOL_SUFFIXES = List.of("", ".exe");
 
     private static String sys(String key, Object def) {
       return System.getProperty(key, def.toString());
@@ -315,13 +316,7 @@ interface Bach {
     /** Create new {@link ProcessBuilder} instance based on this command setup. */
     ProcessBuilder toProcessBuilder() {
       List<String> strings = new ArrayList<>(1 + arguments.size());
-      Optional<Path> jdkTool = Basics.resolveJdkTool(executable);
-      if (jdkTool.isPresent()) {
-        log.verbose("replacing %s with jdk tool %s", executable, jdkTool.get().toAbsolutePath());
-        strings.add(jdkTool.get().toAbsolutePath().toString());
-      } else {
-        strings.add(executable);
-      }
+      strings.add(Basics.resolveJdkTool(executable).map(Path::toString).orElse(executable));
       strings.addAll(arguments);
       int commandLineLength = String.join(" ", strings).length();
       if (commandLineLength > 32000) {
@@ -380,6 +375,12 @@ interface Bach {
         return operator.apply(tool).run(out, err, toArgumentsArray());
       }
       ProcessBuilder processBuilder = supplier.get();
+      if (log.isEnabled()) {
+        String actual = processBuilder.command().get(0);
+        if (!executable.equals(actual)) {
+          log.info("replaced %s with %s", executable, actual);
+        }
+      }
       try {
         Process process = processBuilder.start();
         process.getInputStream().transferTo(out);
@@ -500,13 +501,11 @@ interface Bach {
 
     static Optional<Path> resolveJdkTool(String name) {
       Path bin = Default.JDK_HOME.resolve("bin");
-      Path exe = bin.resolve(name);
-      if (Files.isExecutable(exe)) {
-        return Optional.of(exe);
-      }
-      exe = bin.resolve(name + ".exe");
-      if (Files.isExecutable(exe)) {
-        return Optional.of(exe);
+      for (String suffix : Default.JDK_TOOL_SUFFIXES) {
+        Path tool = bin.resolve(name + suffix);
+        if (Files.isExecutable(tool)) {
+          return Optional.of(tool);
+        }
       }
       return Optional.empty();
     }
