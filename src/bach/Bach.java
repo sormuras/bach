@@ -57,6 +57,7 @@ interface Bach {
     static Path BACH_PATH = Paths.get(sys("bach.path", ".bach"));
     static Path RESOLVE_PATH = Paths.get(sys("bach.resolve.path", BACH_PATH.resolve("resolved")));
     static String RESOLVABLE_VERSION = sys("bach.resolvable.version", "RELEASE");
+    static Path JDK_HOME = Basics.resolveJdkHome();
 
     private static String sys(String key, Object def) {
       return System.getProperty(key, def.toString());
@@ -314,7 +315,13 @@ interface Bach {
     /** Create new {@link ProcessBuilder} instance based on this command setup. */
     ProcessBuilder toProcessBuilder() {
       List<String> strings = new ArrayList<>(1 + arguments.size());
-      strings.add(executable);
+      Optional<Path> jdkTool = Basics.resolveJdkTool(executable);
+      if (jdkTool.isPresent()) {
+        log.verbose("replacing %s with jdk tool %s", executable, jdkTool.get().toAbsolutePath());
+        strings.add(jdkTool.get().toAbsolutePath().toString());
+      } else {
+        strings.add(executable);
+      }
       strings.addAll(arguments);
       int commandLineLength = String.join(" ", strings).length();
       if (commandLineLength > 32000) {
@@ -469,6 +476,39 @@ interface Bach {
       Set<String> externalModules = new TreeSet<>(requiredModules);
       externalModules.removeAll(declaredModules);
       return externalModules;
+    }
+
+    /** Return path to JDK installation directory. */
+    static Path resolveJdkHome() {
+      Path executable = ProcessHandle.current().info().command().map(Paths::get).orElse(null);
+      if (executable != null && executable.getNameCount() > 2) {
+        // noinspection ConstantConditions -- count is 3 or higher: "<JDK_HOME>/bin/java[.exe]"
+        return executable.getParent().getParent().toAbsolutePath();
+      }
+      String jdkHome = System.getenv("JDK_HOME");
+      if (jdkHome != null) {
+        return Paths.get(jdkHome).toAbsolutePath();
+      }
+      String javaHome = System.getenv("JAVA_HOME");
+      if (javaHome != null) {
+        return Paths.get(javaHome).toAbsolutePath();
+      }
+      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
+      log.info("JDK home path not found, using: `%s`", fallback);
+      return fallback;
+    }
+
+    static Optional<Path> resolveJdkTool(String name) {
+      Path bin = Default.JDK_HOME.resolve("bin");
+      Path exe = bin.resolve(name);
+      if (Files.isExecutable(exe)) {
+        return Optional.of(exe);
+      }
+      exe = bin.resolve(name + ".exe");
+      if (Files.isExecutable(exe)) {
+        return Optional.of(exe);
+      }
+      return Optional.empty();
     }
 
     /** Extract the file name from the uri. */
