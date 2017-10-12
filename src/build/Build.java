@@ -59,11 +59,10 @@ interface Build {
   static void format() throws IOException {
     System.out.printf("%n[format]%n%n");
 
-    String mode = Boolean.getBoolean("bach.format.replace") ? "replace" : "validate";
     String repo = "https://jitpack.io";
-    String user = "com/github/sormuras";
+    String user = "com/github/google";
     String name = "google-java-format";
-    String version = "validate-SNAPSHOT";
+    String version = "master-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
     Path jar = Bach.Basics.download(uri, TOOLS.resolve(name));
@@ -71,7 +70,12 @@ interface Build {
     java.jar = jar;
     java.toCommand().add("--version").run();
     Bach.Command format = java.toCommand();
-    format.add("--" + mode);
+    if (Boolean.getBoolean("bach.format.replace")) {
+      format.add("--replace");
+    } else {
+      format.add("--dry-run");
+      format.add("--set-exit-if-changed");
+    }
     format.mark(5);
     List<Path> roots = List.of(Paths.get("src"), Paths.get("demo"));
     format.addAll(roots, Bach.Basics::isJavaFile);
