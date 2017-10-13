@@ -56,6 +56,15 @@ class BachTests {
   }
 
   @Test
+  void commandVisitor() {
+    Bach.Command.Visitor visitor =
+        command -> command.addAll(Paths.get("."), Bach.Basics::isJavaFile);
+    Bach.Command command = new Bach.Command("test").add(visitor);
+    assertFalse(command.arguments.isEmpty());
+    assertTrue(command.arguments.contains(Paths.get("./src/bach/Bach.java").toString()));
+  }
+
+  @Test
   void moduleInfoEmpty() {
     Bach.Basics.ModuleInfo info = Bach.Basics.ModuleInfo.of(List.of("module foo {}"));
     assertEquals("foo", info.getName());

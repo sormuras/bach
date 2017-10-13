@@ -68,6 +68,8 @@ interface Bach {
   /** Command builder and tool executor support. */
   class Command {
 
+    interface Visitor extends Consumer<Command> {}
+
     /** Command option annotation. */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
@@ -115,6 +117,10 @@ interface Bach {
 
     /** Add single non-null argument. */
     Command add(Object argument) {
+      if (argument instanceof Visitor) {
+        ((Visitor) argument).accept(this);
+        return this;
+      }
       arguments.add(argument.toString());
       return this;
     }
