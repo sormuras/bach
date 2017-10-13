@@ -6,8 +6,12 @@ import org.junit.jupiter.api.Test;
 class IntegrationTests {
 
   @Test
-  void usage() {
-    Assertions.assertNotNull(new application.Main());
+  void deepReflectionWorks() throws Exception {
+    Assertions.assertNotNull(Class.forName("application.Main").getConstructor().newInstance());
+  }
+
+  @Test
+  void useExportedTypes() throws Exception {
     Assertions.assertNotNull(application.api.Plugin.load());
     Assertions.assertNotNull(application.api.Version.VERSION);
   }
