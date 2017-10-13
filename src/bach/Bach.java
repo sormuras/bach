@@ -997,6 +997,9 @@ interface Bach {
       /** Where to find application modules. */
       List<Path> modulePath = List.of();
 
+      /** Add modules. */
+      List<String> addModules = List.of();
+
       /** Initial module to resolve and the name of the main class to execute. */
       @Command.Option("--module")
       String module = null;

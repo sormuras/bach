@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -31,12 +30,25 @@ class BuildDemo02Testing {
   }
 
   void resolveRequiredModules() {
+    // official coordinates of released artifacts
+    /*
     Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0");
     Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", "5.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-console", "1.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", "1.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", "1.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", "1.0.0");
+    */
+    // jitpack.io coordinates of not-even-snapshot artifacts
+    String group = "com.github.junit-team.junit5";
+    String version = "jigsaw-SNAPSHOT";
+    Bach.Basics.resolve(group, "junit-jupiter-api", version);
+    Bach.Basics.resolve(group, "junit-jupiter-engine", version);
+    Bach.Basics.resolve(group, "junit-platform-console", version);
+    Bach.Basics.resolve(group, "junit-platform-commons", version);
+    Bach.Basics.resolve(group, "junit-platform-engine", version);
+    Bach.Basics.resolve(group, "junit-platform-launcher", version);
+    // 3rd-party modules
     Bach.Basics.resolve("org.opentest4j", "opentest4j", "1.0.0");
     Bach.Basics.resolve("org.apiguardian", "apiguardian-api", "1.0.0");
   }
@@ -80,12 +92,10 @@ class BuildDemo02Testing {
   void testOnModulePath() throws IOException {
     Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.modulePath = List.of(TEST, DEPS);
+    java.addModules = List.of("ALL-MODULE-PATH");
     java.module = "org.junit.platform.console";
     Bach.Command command = java.toCommand();
-    command.add("--scan-class-path");
-    ModuleFinder.of(TEST)
-        .findAll()
-        .forEach(mr -> command.add("--class-path").add(ROOT.relativize(Bach.Basics.getPath(mr))));
+    command.add("--scan-module-path");
     command.run();
   }
 }

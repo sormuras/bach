@@ -7,6 +7,7 @@ class PluginTests {
 
   @Test
   void load() {
-    Assertions.assertEquals(0, Plugin.load().size());
+    int expected = getClass().getModule().isNamed() ? 1 : 0;
+    Assertions.assertEquals(expected, Plugin.load().size());
   }
 }
