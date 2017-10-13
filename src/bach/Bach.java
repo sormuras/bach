@@ -152,6 +152,11 @@ interface Bach {
       return this;
     }
 
+    /** Add all .java source files by walking specified root path recursively. */
+    Command addAllJavaFiles(Path root) {
+      return addAll(root, Basics::isJavaFile);
+    }
+
     /** Add all reflected options. */
     Command addAllOptions(Object options) {
       return addAllOptions(options, UnaryOperator.identity());
