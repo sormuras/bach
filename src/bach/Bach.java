@@ -70,6 +70,10 @@ interface Bach {
 
     interface Visitor extends Consumer<Command> {}
 
+    static Visitor visit(Consumer<Command> consumer) {
+      return consumer::accept;
+    }
+
     /** Command option annotation. */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
