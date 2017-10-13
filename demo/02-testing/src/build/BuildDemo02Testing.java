@@ -18,9 +18,11 @@ class BuildDemo02Testing {
     BuildDemo02Testing demo = new BuildDemo02Testing();
     demo.resolveRequiredModules();
     demo.clean();
+    // main
     demo.compileMain();
-    demo.compileTest();
     demo.run();
+    // test
+    demo.compileTest();
     demo.testOnClassPath();
     demo.testOnModulePath();
   }

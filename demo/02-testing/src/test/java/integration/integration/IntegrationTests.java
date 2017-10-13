@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 class IntegrationTests {
 
   @Test
-  void deepReflectionWorks() throws Exception {
+  void deepReflectionWorks() throws ReflectiveOperationException {
     Assertions.assertNotNull(Class.forName("application.Main").getConstructor().newInstance());
   }
 
