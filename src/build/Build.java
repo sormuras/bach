@@ -147,7 +147,7 @@ interface Build {
     jar.run();
   }
 
-  static void jdeps() throws IOException {
+  static void jdeps() {
     System.out.printf("%n[jdeps]%n%n");
 
     Bach.JdkTool.Jdeps jdeps = new Bach.JdkTool.Jdeps();
