@@ -57,7 +57,7 @@ class BachTests {
 
   @Test
   void commandVisitor() {
-    Bach.Command.Visitor visitor = command -> command.addAllJavaFiles(Paths.get("."));
+    Bach.Command.Visitor visitor = Bach.Command.visit(cmd -> cmd.addAllJavaFiles(Paths.get(".")));
     Bach.Command command = new Bach.Command("test").add(visitor);
     assertFalse(command.arguments.isEmpty());
     assertTrue(command.arguments.contains(Paths.get("./src/bach/Bach.java").toString()));

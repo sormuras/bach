@@ -232,12 +232,16 @@ class JdkToolTests {
             "--module-path",
             "  mods",
             "--module",
-            "  com.greetings/com.greetings.Main");
+            "  com.greetings/com.greetings.Main",
+            "1",
+            "2",
+            "NEW");
     Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.dryRun = true;
     java.patchModule = Map.of("com.greetings", List.of(Paths.get("xxx")));
     java.modulePath = List.of(Paths.get("mods"));
     java.module = "com.greetings/com.greetings.Main";
+    java.args = List.of(1, "2", Thread.State.NEW);
     assertLinesMatch(expectedLines, dump(java.toCommand()));
   }
 

@@ -1004,11 +1004,16 @@ interface Bach {
       @Command.Option("--module")
       String module = null;
 
+      /** Arguments passed to the main entry-point. */
+      transient List<Object> args = List.of();
+
       /** Create java command with options and source files added. */
       @Override
       public Command toCommand() {
         Command command = JdkTool.super.toCommand();
         command.setExecutableSupportsArgumentFile(true);
+        command.mark(9);
+        command.addAll(args);
         return command;
       }
     }
