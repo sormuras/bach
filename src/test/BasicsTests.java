@@ -66,8 +66,13 @@ class BasicsTests {
         .resolve(temp, List.of("http://repo1.maven.org/maven2"));
     new Bach.Basics.Resolvable("org.opentest4j", "opentest4j", "RELEASE")
         .resolve(temp, List.of("http://repo1.maven.org/maven2"));
-    assertTrue(builder.toString().contains("resolved"));
-    assertTrue(builder.toString().contains("stored"));
+    new Bach.Basics.Resolvable(
+            "com.github.google.google-java-format", "google-java-format", "master-SNAPSHOT")
+        .resolve(temp, List.of("https://jitpack.io"));
+    String out = builder.toString();
+    assertTrue(out.contains("resolved"));
+    assertTrue(out.contains("stored"));
+    assertTrue(out.contains(temp.resolve("google-java-format-master-SNAPSHOT.jar").toString()));
     Bach.log.out = System.out::println;
   }
 
