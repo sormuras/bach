@@ -393,7 +393,7 @@ interface Bach {
       if (log.isEnabled()) {
         String actual = processBuilder.command().get(0);
         if (!executable.equals(actual)) {
-          log.info("replaced %s with %s", executable, actual);
+          log.verbose("replaced %s with %s", executable, actual);
         }
       }
       try {
