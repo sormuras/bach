@@ -32,8 +32,8 @@ class BuildDemo02Testing {
   }
 
   void resolveRequiredModules() {
-    // official coordinates of released artifacts
     /*
+    // official coordinates of released artifacts
     Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0");
     Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", "5.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-console", "1.0.0");
@@ -41,6 +41,16 @@ class BuildDemo02Testing {
     Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", "1.0.0");
     Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", "1.0.0");
     */
+    // official coordinates of snapshot artifacts
+    String jupiterVersion = "5.1.0-SNAPSHOT";
+    String platformVersion = "1.1.0-SNAPSHOT";
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", jupiterVersion);
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", jupiterVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-console", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", platformVersion);
+    /*
     // jitpack.io coordinates of not-even-snapshot artifacts
     String group = "com.github.junit-team.junit5";
     String version = "jigsaw-SNAPSHOT";
@@ -50,6 +60,7 @@ class BuildDemo02Testing {
     Bach.Basics.resolve(group, "junit-platform-commons", version);
     Bach.Basics.resolve(group, "junit-platform-engine", version);
     Bach.Basics.resolve(group, "junit-platform-launcher", version);
+    */
     // 3rd-party modules
     Bach.Basics.resolve("org.opentest4j", "opentest4j", "1.0.0");
     Bach.Basics.resolve("org.apiguardian", "apiguardian-api", "1.0.0");
@@ -96,8 +107,7 @@ class BuildDemo02Testing {
     java.modulePath = List.of(TEST, DEPS);
     java.addModules = List.of("ALL-MODULE-PATH");
     java.module = "org.junit.platform.console";
-    Bach.Command command = java.toCommand();
-    command.add("--scan-module-path");
-    command.run();
+    java.args = List.of("--scan-module-path");
+    java.run();
   }
 }
