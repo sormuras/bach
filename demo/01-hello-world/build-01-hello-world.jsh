@@ -4,10 +4,10 @@
 /open ../../src/bach/Bach.jsh
 
 Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac()
-javac.destinationPath = Paths.get("target", "mods")
+javac.destination = Paths.get("target", "mods")
 javac.moduleSourcePath = List.of(Paths.get("src"), Paths.get("src-de"), Paths.get("src-fr"))
 javac.run()
 
-java("--module-path", javac.destinationPath, "--module", "world/com.greetings.Main")
+java("--module-path", javac.destination, "--module", "world/com.greetings.Main")
 
 /exit
