@@ -34,8 +34,8 @@ interface Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.0.0";
-  String JUNIT_PLATFORM = "1.0.0";
+  String JUNIT_JUPITER = "5.1.0-SNAPSHOT";
+  String JUNIT_PLATFORM = "1.1.0-SNAPSHOT";
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
 
@@ -165,12 +165,17 @@ interface Build {
   static void test() throws IOException {
     System.out.printf("%n[test]%n%n");
 
+    String name = "junit-platform-console-standalone";
+    /*
     String repo = "http://repo1.maven.org/maven2";
     String user = "org/junit/platform";
-    String name = "junit-platform-console-standalone";
     String file = name + "-" + JUNIT_PLATFORM + ".jar";
     URI uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
     Path jar = Bach.Basics.download(uri, TOOLS.resolve(name), file, p -> true);
+    */
+    Path jar =
+        new Bach.Basics.Resolvable("org.junit.platform", name, JUNIT_PLATFORM)
+            .resolve(TOOLS.resolve(name), Bach.Basics.Resolvable.REPOSITORIES);
     Bach.run(
         "java",
         "-ea",
