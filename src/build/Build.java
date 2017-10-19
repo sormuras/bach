@@ -58,13 +58,19 @@ interface Build {
 
   static void format() throws IOException {
     System.out.printf("%n[format]%n%n");
-
+    /*
     String repo = "https://jitpack.io";
     String user = "com/github/google";
     String name = "google-java-format";
     String version = "master-SNAPSHOT";
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
+    */
+    String version = "1.5";
+    String base = "https://github.com/google/";
+    String name = "google-java-format";
+    String file = name + "-" + version + "-all-deps.jar";
+    URI uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
     Path jar = Bach.Basics.download(uri, TOOLS.resolve(name));
     Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.jar = jar;
