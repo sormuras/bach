@@ -1,7 +1,10 @@
 sudo: false
 dist: trusty
 language: java
-jdk: oraclejdk9
+# jdk: oraclejdk9 -- install and use jdk-10-ea
+
+install:
+- . ./install-jdk.sh
 
 script:
 - ./build.jsh
