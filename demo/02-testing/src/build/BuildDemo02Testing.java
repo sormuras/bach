@@ -107,7 +107,7 @@ class BuildDemo02Testing {
     java.modulePath = List.of(TEST, DEPS);
     java.addModules = List.of("ALL-MODULE-PATH");
     java.module = "org.junit.platform.console";
-    java.args = List.of("--scan-module-path");
+    java.args = List.of("--scan-modules");
     java.run();
   }
 }

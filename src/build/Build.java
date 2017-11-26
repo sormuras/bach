@@ -131,7 +131,7 @@ interface Build {
         "-package",
         "-linksource",
         "-link",
-        "http://download.java.net/java/jdk9/docs/api",
+        "https://docs.oracle.com/javase/9/docs/api",
         "-d",
         JAVADOC,
         BACH_JAVA);

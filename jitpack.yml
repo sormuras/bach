@@ -1,6 +1,5 @@
-jdk: oraclejdk9
-
 install:
+- . ./install-jdk.sh
 - ./build.jsh
 - ARTIFACTS="target/build/artifacts"
 - JARS="-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar"

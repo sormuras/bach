@@ -1,6 +1,6 @@
 # bach - Java Shell Builder
  
-[![jdk9](https://img.shields.io/badge/jdk-9-blue.svg)](https://docs.oracle.com/javase/9/index.html)
+[![jdk10](https://img.shields.io/badge/jdk-10-blue.svg)](http://jdk.java.net/10/)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
 [![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
