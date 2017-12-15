@@ -6,8 +6,8 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.lang.module.FindException;
+import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
@@ -57,6 +56,7 @@ public class GenerateModuleProperties {
   }
 
   private void scanGroup(String fragment, String source) {
+    System.out.println("  [*] group");
     for (var line : source.split("\\R")) {
       if (line.startsWith("<a href=") && line.contains("title")) {
         var name = substring(line, ">", "</a>");
@@ -98,39 +98,26 @@ public class GenerateModuleProperties {
   }
 
   private void scanJar(Path path, String group, String artifact) {
-    var jar = ToolProvider.findFirst("jar").orElseThrow(Error::new);
-    var out = new StringWriter(8000);
-    jar.run(
-        new PrintWriter(out),
-        new PrintWriter(System.err),
-        "--describe-module",
-        "--file",
-        path.toString());
-    var lines = out.toString().split("\\R");
-    var empty = false;
-    for (var line : lines) {
-      if (empty) {
-        var module = line.trim().split("\\s+")[0];
-        if (module.contains("@")) {
-          module = line.substring(0, line.indexOf('@'));
-        }
-        var value = group + ":" + artifact;
-        var old = map.put(module, value);
-        System.out.println("\n\t" + module + " = " + value + "\n");
-        if (old == null) {
-          return;
-        }
-        if (old.equals(value)) {
-          System.err.println("  [!] already mapped " + module + " to " + value);
-        }
-        System.err.println("  [!] non-unique module name found: " + module);
+    try {
+      var all = ModuleFinder.of(path).findAll();
+      if (all.size() != 1) {
+        System.out.println("  [!] expected single module, but got: " + all);
         return;
       }
-      if (line.trim().isEmpty()) {
-        empty = true;
+      var module = all.iterator().next().descriptor().name();
+      var value = group + ":" + artifact;
+      var old = map.put(module, value);
+      System.out.println("  [o] " + module + " = " + value);
+      if (old == null) {
+        return;
       }
+      if (old.equals(value)) {
+        System.err.println("  [!] already mapped " + module + " to " + value);
+      }
+      System.err.println("  [!] non-unique module name found: " + module);
+    } catch (FindException e) {
+      System.out.println("  [!] " + e);
     }
-    System.out.println("  [!] not a modular jar: " + path);
   }
 
   static Optional<String> read(URI uri) {
@@ -174,16 +161,14 @@ public class GenerateModuleProperties {
     // org/kordamp/
     // org/junit/
     // org/springframework/
-    new GenerateModuleProperties(map, URI.create("org/apache/commons/")).run();
+    // com/squareup/
+    new GenerateModuleProperties(map, URI.create("org/junit/")).run();
     var lines =
         map.entrySet()
             .stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.toList());
     Files.write(
-        Paths.get("target/module-maven-apache-commons.properties"),
-        lines,
-        CREATE,
-        TRUNCATE_EXISTING);
+        Paths.get("target/module-maven-junit.properties"), lines, CREATE, TRUNCATE_EXISTING);
   }
 }
