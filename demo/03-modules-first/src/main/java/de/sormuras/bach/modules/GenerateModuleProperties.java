@@ -86,7 +86,7 @@ public class GenerateModuleProperties {
         // TODO load .pom and assume "jar" packaging
         var jar = load(uri.resolve(version + "/" + artifact + "-" + version + ".jar"));
         if (Files.exists(jar) && Files.size(jar) > 0) {
-          scanJar(jar, group, artifact);
+          scanJar(jar, group, artifact, version);
         }
         Files.deleteIfExists(jar);
       } catch (Exception e) {
@@ -97,17 +97,36 @@ public class GenerateModuleProperties {
     return false;
   }
 
-  private void scanJar(Path path, String group, String artifact) {
+  private void scanJar(Path path, String group, String artifact, String version) {
     try {
       var all = ModuleFinder.of(path).findAll();
       if (all.size() != 1) {
         System.out.println("  [!] expected single module, but got: " + all);
         return;
       }
-      var module = all.iterator().next().descriptor().name();
-      var value = group + ":" + artifact;
+      var descriptor = all.iterator().next().descriptor();
+      var module = descriptor.name();
+      var value = group + "\t" + artifact;
       var old = map.put(module, value);
-      System.out.println("  [o] " + module + " = " + value);
+      System.out.println("  [o] " + path);
+      System.out.println(
+          "  [o] " + module + " = " + value + " (" + descriptor.rawVersion().orElse("?") + ")");
+      System.out.println(
+          "| "
+              + offset
+              + " | ["
+              + group
+              + ":"
+              + artifact
+              + "](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22"
+              + group
+              + "%22%20AND%20a%3A%22"
+              + artifact
+              + "%22) | **"
+              + module
+              + "** | "
+              + version
+              + " |");
       if (old == null) {
         return;
       }
@@ -162,13 +181,14 @@ public class GenerateModuleProperties {
     // org/junit/
     // org/springframework/
     // com/squareup/
-    new GenerateModuleProperties(map, URI.create("org/junit/")).run();
+    // org/lwjgl/
+    new GenerateModuleProperties(map, URI.create("io/netty/")).run();
     var lines =
         map.entrySet()
             .stream()
-            .map(e -> e.getKey() + "=" + e.getValue())
+            .map(e -> e.getKey() + "\t" + e.getValue())
             .collect(Collectors.toList());
     Files.write(
-        Paths.get("target/module-maven-junit.properties"), lines, CREATE, TRUNCATE_EXISTING);
+        Paths.get("target/module-maven-netty.properties"), lines, CREATE, TRUNCATE_EXISTING);
   }
 }
