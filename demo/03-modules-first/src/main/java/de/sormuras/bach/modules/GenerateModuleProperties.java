@@ -41,11 +41,11 @@ public class GenerateModuleProperties {
     read(uri)
         .ifPresent(
             source -> {
-                if (source.contains("maven-metadata.xml") && !fragment.isEmpty()) {
-                  scanMetadata(uri);
-                  return;
-                }
-                scanDirectory(fragment, source);
+              if (source.contains("maven-metadata.xml") && !fragment.isEmpty()) {
+                scanMetadata(uri);
+                return;
+              }
+              scanDirectory(fragment, source);
             });
   }
 
@@ -143,17 +143,23 @@ public class GenerateModuleProperties {
 
   public static void main(String... args) throws IOException {
     Map<String, String> map = new TreeMap<>();
-    //new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/apache/commons/"), map).run();
-    //new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/kordamp/"), map).run();
-    //new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/junit/"), map).run();
-    //new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/springframework/"), map).run();
-    new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/joda/"), map).run();
+    // new
+    // GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/apache/commons/"),
+    // map).run();
+    // new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/kordamp/"),
+    // map).run();
+    // new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/junit/"),
+    // map).run();
+    // new
+    // GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/springframework/"),
+    // map).run();
+    new GenerateModuleProperties(URI.create("http://central.maven.org/maven2/org/joda/"), map)
+        .run();
     var lines =
         map.entrySet()
             .stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.toList());
-    Files.write(
-        Paths.get("module-version-joda.properties"), lines, CREATE, TRUNCATE_EXISTING);
+    Files.write(Paths.get("module-version-joda.properties"), lines, CREATE, TRUNCATE_EXISTING);
   }
 }
