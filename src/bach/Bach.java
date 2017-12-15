@@ -509,7 +509,7 @@ interface Bach {
       if (javaHome != null) {
         return Paths.get(javaHome).toAbsolutePath();
       }
-      Path fallback = Paths.get("jdk-" + Runtime.version().major()).toAbsolutePath();
+      Path fallback = Paths.get("jdk-" + Runtime.version().feature()).toAbsolutePath();
       log.info("JDK home path not found, using: `%s`", fallback);
       return fallback;
     }
