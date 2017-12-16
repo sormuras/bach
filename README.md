@@ -67,6 +67,13 @@ java("--version")
 /exit
 ```
 
+## `module-maven.properties`
+
+List of modules found in `central.maven.org/maven2`
+represented in format consumable by `java.util.Properties#load`.
+
+`module = group:artifact`
+
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
