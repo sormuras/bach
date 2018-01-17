@@ -429,9 +429,9 @@ interface Bach {
       }
       URLConnection urlConnection = url.openConnection();
       FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
-      if (urlLastModifiedTime.toMillis() == 0) {
-        throw new IOException("last-modified header field not available");
-      }
+      //if (urlLastModifiedTime.toMillis() == 0) {
+      //  throw new IOException("last-modified header field not available");
+      //}
       if (Files.exists(target)) {
         log.verbose("compare last modified time [%s] of local file...", urlLastModifiedTime);
         if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
