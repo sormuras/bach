@@ -6,10 +6,10 @@ matrix:
   include:
 # OpenJDK 10
     - env: JDK_RELEASE='OpenJDK 10'
-      install: . ./install-jdk.sh -f 10 -l GPL
+      install: . ./install-jdk.sh -F 10 -L GPL
 # OracleJDK 10
     - env: JDK_RELEASE='OracleJDK 10'
-      install: . ./install-jdk.sh -f 10 -l BCL
+      install: . ./install-jdk.sh -F 10 -L BCL
 
 script:
 - ./build.jsh
