@@ -2,8 +2,14 @@ sudo: false
 dist: trusty
 language: java
 
-install:
-- . ./install-jdk.sh
+matrix:
+  include:
+# OpenJDK 10
+    - env: JDK_RELEASE='OpenJDK 10'
+      install: . ./install-jdk.sh -f 10 -l GPL
+# OracleJDK 10
+    - env: JDK_RELEASE='OracleJDK 10'
+      install: . ./install-jdk.sh -f 10 -l BCL
 
 script:
 - ./build.jsh
