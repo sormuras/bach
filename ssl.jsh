@@ -7,12 +7,15 @@ printf("uri: %s%n", uri)
 
 var url = uri.toURL()
 var connection = url.openConnection()
-printf("length: %d bytes%n", connection.getContentLengthLong())
+var length = connection.getContentLength()
+printf("length: %d bytes%n", length)
 
 var target = Paths.get("downloaded.jar")
 try (var sourceStream = url.openStream(); var targetStream = Files.newOutputStream(target)) {
   sourceStream.transferTo(targetStream);
 }
-printf("loaded: %d bytes%n", Files.size(target))
+var size = 0
+if (Files.exists(target)) size = (int) Files.size(target)
+printf("loaded: %d bytes%n", size)
 
-/exit
+/exit length - size

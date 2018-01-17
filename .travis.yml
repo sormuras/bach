@@ -12,4 +12,4 @@ matrix:
       install: . ./install-jdk.sh -F 10 -L BCL
 
 script:
-- /usr/bin/env jshell --show-version --execution local ssl.jsh
+- jshell --show-version --execution local ssl.jsh
