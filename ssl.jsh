@@ -2,8 +2,7 @@
 
 /open PRINTING
 
-var uri = URI.create("https://oss.sonatype.org/content/repositories/releases/org/apiguardian/apiguardian-api/1.0.0/apiguardian-api-1.0.0.jar")
-// ✔ var uri = URI.create("https://docs.oracle.com/javase/9/docs/api/java.base-graph.png")
+var uri = URI.create(System.getProperty("uri", "https://docs.oracle.com/javase/9/docs/api/java.base-graph.png"))
 printf("uri: %s%n", uri)
 
 var url = uri.toURL()
