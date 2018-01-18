@@ -2,7 +2,8 @@
 
 /open PRINTING
 
-var uri = URI.create("https://docs.oracle.com/en/java/")
+// var uri = URI.create("https://oss.sonatype.org/content/repositories/snapshots/")
+var uri = URI.create("https://docs.oracle.com/javase/9/docs/api/java.base-graph.png")
 printf("uri: %s%n", uri)
 
 var url = uri.toURL()
