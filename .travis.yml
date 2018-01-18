@@ -13,5 +13,5 @@ matrix:
 
 script:
 - java --version
-- jshell --show-version --execution local ssl.jsh
-- jshell --show-version --execution local -J-Duri="https://oss.sonatype.org/content/repositories/releases/org/apiguardian/apiguardian-api/1.0.0/apiguardian-api-1.0.0.jar" ssl.jsh
+- jshell --show-version --execution local -J-Djavax.net.debug=ssl:handshake:verbose ssl.jsh
+- jshell --show-version --execution local -J-Djavax.net.debug=ssl:handshake:verbose -J-Duri="https://oss.sonatype.org/content/repositories/releases/org/apiguardian/apiguardian-api/1.0.0/apiguardian-api-1.0.0.jar" ssl.jsh
