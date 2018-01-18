@@ -2,7 +2,7 @@
 
 /open PRINTING
 
-var uri = URI.create("https://oss.sonatype.org/content/repositories/snapshots/org/junit/jupiter/junit-jupiter-api/5.1.0-SNAPSHOT/junit-jupiter-api-5.1.0-20180117.153202-279.jar")
+var uri = URI.create("https://docs.oracle.com/en/java/")
 printf("uri: %s%n", uri)
 
 var url = uri.toURL()
