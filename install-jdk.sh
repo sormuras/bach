@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
-JDK_FEATURE=10
+JDK_FEATURE='10'
 
 TMP=$(curl -L jdk.java.net/${JDK_FEATURE})
 TMP="${TMP#*Most recent build: jdk-${JDK_FEATURE}-ea+}" # remove everything before the number
 TMP="${TMP%%<*}"                                        # remove everything after the number
 JDK_BUILD="$(echo -e "${TMP}" | tr -d '[:space:]')"     # remove all whitespace
 
-JDK_LICENSE=GPL
+JDK_LICENSE='GPL'
 
 while getopts F:B:L: option
 do
@@ -21,7 +21,7 @@ do
 done
 
 JDK_BASENAME='jdk'
-if [ "${JDK_LICENSE}" == "GPL" ]; then
+if [ "${JDK_LICENSE}" == 'GPL' ]; then
   JDK_BASENAME='openjdk'
 fi
 
