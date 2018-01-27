@@ -126,6 +126,7 @@ interface Build {
     Files.createDirectories(JAVADOC);
     Bach.run(
         "javadoc",
+        "-html5",
         "-quiet",
         "-Xdoclint:all,-missing",
         "-package",
