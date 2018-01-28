@@ -744,7 +744,7 @@ interface Bach {
 
       static final List<String> REPOSITORIES =
           List.of(
-              "http://repo1.maven.org/maven2",
+              "http://central.maven.org/maven2",
               "https://oss.sonatype.org/content/repositories/snapshots",
               "https://jcenter.bintray.com",
               "https://jitpack.io");
