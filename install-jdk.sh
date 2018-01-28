@@ -9,8 +9,16 @@
 #
 # Exported environment variables
 #
-#   JAVA_HOME is set to the extracted JDK
+#   JAVA_HOME is set to the extracted JDK directory
 #   PATH is prepended with ${JAVA_HOME}/bin
+#
+# Example usage
+#
+#   install-jdk.sh                 | install most recent early-access JDK
+#   install-jdk.sh -W /usr/opt     | install most recent early-access JDK to /usr/opt
+#   install-jdk.sh -F 9            | install most recent OpenJDK 9
+#   install-jdk.sh -F 10           | install most recent OpenJDK 10
+#   install-jdk.sh -F 10 -L BCL    | install most recent OracleJDK 10
 #
 
 set -e
@@ -62,12 +70,18 @@ if [ "${JDK_FEATURE}" == '10' ]; then
   JDK_HOME=jdk-${JDK_FEATURE}
 fi
 
-# TODO Let user override target directory
+#
+# Switch to workspace, download, unpack, switch back. update environment and test-drive.
+#
 cd ${JDK_WORKSPACE}
 wget ${JDK_URL}
 tar -xzf ${JDK_ARCHIVE}
+cd -
+
+#
+# Update environment and test-drive.
+#
 export JAVA_HOME=${JDK_WORKSPACE}/${JDK_HOME}
 export PATH=${JAVA_HOME}/bin:$PATH
-cd -
 
 java --version
