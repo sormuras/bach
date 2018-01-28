@@ -18,13 +18,15 @@ set -e
 JDK_FEATURE='10'
 JDK_BUILD='?'
 JDK_LICENSE='GPL'
+JDK_WORKSPACE=${HOME}
 
-while getopts F:B:L: option
+while getopts F:B:L:W: option
 do
   case "${option}" in
     F) JDK_FEATURE=${OPTARG};;
     B) JDK_BUILD=${OPTARG};;
     L) JDK_LICENSE=${OPTARG};;
+    W) JDK_WORKSPACE=${OPTARG};;
  esac
 done
 
@@ -61,10 +63,10 @@ if [ "${JDK_FEATURE}" == '10' ]; then
 fi
 
 # TODO Let user override target directory
-cd ~
+cd ${JDK_WORKSPACE}
 wget ${JDK_URL}
 tar -xzf ${JDK_ARCHIVE}
-export JAVA_HOME=~/${JDK_HOME}
+export JAVA_HOME=${JDK_WORKSPACE}/${JDK_HOME}
 export PATH=${JAVA_HOME}/bin:$PATH
 cd -
 

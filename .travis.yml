@@ -8,11 +8,6 @@ before_install:
 
 matrix:
   include:
-# 7
-    - env: JDK_RELEASE='OracleJDK 7'
-      jdk: oraclejdk7
-    - env: JDK_RELEASE='OpenJDK 7'
-      jdk: openjdk7
 # 8
     - env: JDK_RELEASE='OracleJDK 8'
       jdk: oraclejdk8
