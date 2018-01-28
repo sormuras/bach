@@ -44,6 +44,7 @@ if [ "${JDK_FEATURE}" == '9' ]; then
 
   JDK_ARCHIVE=${JDK_BASENAME}-${JDK_BUILD}_linux-x64_bin.tar.gz
   JDK_URL=${JDK_DOWNLOAD}/GA/jdk${JDK_FEATURE}/${JDK_BUILD}/binaries/${JDK_ARCHIVE}
+  JDK_HOME=jdk-${JDK_BUILD}
 fi
 
 if [ "${JDK_FEATURE}" == '10' ]; then
@@ -56,13 +57,14 @@ if [ "${JDK_FEATURE}" == '10' ]; then
 
   JDK_ARCHIVE=${JDK_BASENAME}-${JDK_FEATURE}-ea+${JDK_BUILD}_linux-x64_bin.tar.gz
   JDK_URL=${JDK_DOWNLOAD}/jdk${JDK_FEATURE}/archive/${JDK_BUILD}/${JDK_LICENSE}/${JDK_ARCHIVE}
+  JDK_HOME=jdk-${JDK_FEATURE}
 fi
 
 # TODO Let user override target directory
 cd ~
 wget ${JDK_URL}
 tar -xzf ${JDK_ARCHIVE}
-export JAVA_HOME=~/jdk-${JDK_FEATURE}
+export JAVA_HOME=~/${JDK_HOME}
 export PATH=${JAVA_HOME}/bin:$PATH
 cd -
 
