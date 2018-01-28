@@ -34,8 +34,8 @@ interface Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.1.0-M1";
-  String JUNIT_PLATFORM = "1.1.0-M1";
+  String JUNIT_JUPITER = "5.1.0-M2";
+  String JUNIT_PLATFORM = "1.1.0-M2";
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
 
