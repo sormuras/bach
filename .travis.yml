@@ -8,23 +8,16 @@ before_install:
 
 matrix:
   include:
-# OpenJDK 10
+    - env: JDK_RELEASE='JDK 8 (Travis CI)'
+      jdk: oraclejdk8
+    - env: JDK_RELEASE='JDK 9 (Travis CI)'
+      jdk: oraclejdk9
+    - env: JDK_RELEASE='OpenJDK 9'
+      install: . ./install-jdk.sh -F 9
     - env: JDK_RELEASE='OpenJDK 10'
       install: . ./install-jdk.sh -F 10 -L GPL
-# OracleJDK 10
     - env: JDK_RELEASE='OracleJDK 10'
       install: . ./install-jdk.sh -F 10 -L BCL
 
 script:
 - java --version
-- ./build.jsh
-
-after_success:
-- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-- ./bootstrap.jsh
-
-- cd $TRAVIS_BUILD_DIR/demo/01-hello-world
-- ./build-01-hello-world.jsh
-
-- cd $TRAVIS_BUILD_DIR/demo/02-testing
-- ./build-demo-02-testing.jsh
