@@ -32,15 +32,16 @@ class BuildDemo02Testing {
   }
 
   void resolveRequiredModules() {
-    /*
     // official coordinates of released artifacts
-    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", "5.0.0");
-    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", "5.0.0");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-console", "1.0.0");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", "1.0.0");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", "1.0.0");
-    Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", "1.0.0");
-    */
+    String jupiterVersion = "5.1.0-M1";
+    String platformVersion = "1.1.0-M1";
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", jupiterVersion);
+    Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-engine", jupiterVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-console", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", platformVersion);
+    Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", platformVersion);
+    /*
     // official coordinates of snapshot artifacts
     String jupiterVersion = "5.1.0-SNAPSHOT";
     String platformVersion = "1.1.0-SNAPSHOT";
@@ -50,6 +51,7 @@ class BuildDemo02Testing {
     Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", platformVersion);
     Bach.Basics.resolve("org.junit.platform", "junit-platform-engine", platformVersion);
     Bach.Basics.resolve("org.junit.platform", "junit-platform-launcher", platformVersion);
+    */
     /*
     // jitpack.io coordinates of not-even-snapshot artifacts
     String group = "com.github.junit-team.junit5";
