@@ -127,4 +127,32 @@ class Project {
 
     Bach.run("jar", "--describe-module", "--file", jar.file);
   }
+  /*
+    void resolve() throws IOException {
+      List<String> declaredModules = new ArrayList<>();
+      Set<String> requiredModules = new TreeSet<>();
+      List<Path> paths =
+          Files.find(getSourcePath(), Integer.MAX_VALUE, (p, a) -> p.endsWith("module-info.java"))
+              .collect(Collectors.toList());
+      for (Path path : paths) {
+        Basics.ModuleInfo info = new Basics.ModuleInfo(path);
+        declaredModules.add(info.getName());
+        requiredModules.addAll(info.getRequires());
+      }
+      System.out.println("declared modules: " + declaredModules);
+      System.out.println("required modules: " + requiredModules);
+      Set<String> externalModules = new TreeSet<>(requiredModules);
+      externalModules.removeAll(declaredModules);
+      System.out.println("external modules: " + externalModules);
+      Properties modules = new Properties();
+      try (InputStream stream = getClass().getResourceAsStream("modules.properties")) {
+        modules.load(stream);
+      }
+      modules.entrySet().forEach(System.out::println);
+      for (String required : externalModules) {
+        Basics.Resolvable resolvable = Basics.Resolvable.of(modules.getProperty(required));
+        resolvable.resolve(getModulePaths("main").get(0), getRepositories());
+      }
+    }
+   */
 }
