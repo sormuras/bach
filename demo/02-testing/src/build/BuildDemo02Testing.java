@@ -107,7 +107,7 @@ class BuildDemo02Testing {
   void testOnModulePath() throws IOException {
     Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.modulePath = List.of(TEST, DEPS);
-    java.addModules = List.of("ALL-MODULE-PATH");
+    java.addModules = List.of("ALL-MODULE-PATH", "ALL-DEFAULT");
     java.module = "org.junit.platform.console";
     java.args = List.of("--scan-modules");
     java.run();

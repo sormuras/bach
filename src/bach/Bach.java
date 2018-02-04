@@ -1000,6 +1000,14 @@ interface Bach {
       /** Add modules. */
       List<String> addModules = List.of();
 
+      void addModules(Bach.Command command) {
+        if (addModules.isEmpty()) {
+          return;
+        }
+        command.add("--add-modules");
+        command.add(String.join(",", addModules));
+      }
+
       /** Initial module to resolve and the name of the main class to execute. */
       @Command.Option("--module")
       String module = null;

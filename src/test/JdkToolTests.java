@@ -231,6 +231,8 @@ class JdkToolTests {
             "  com.greetings=xxx",
             "--module-path",
             "  mods",
+            "--add-modules",
+            "  mod.A,ALL-MODULE-PATH,mod.B",
             "--module",
             "  com.greetings/com.greetings.Main",
             "1",
@@ -238,6 +240,7 @@ class JdkToolTests {
             "NEW");
     Bach.JdkTool.Java java = new Bach.JdkTool.Java();
     java.dryRun = true;
+    java.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
     java.patchModule = Map.of("com.greetings", List.of(Paths.get("xxx")));
     java.modulePath = List.of(Paths.get("mods"));
     java.module = "com.greetings/com.greetings.Main";
