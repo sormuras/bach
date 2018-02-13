@@ -1,6 +1,6 @@
 /*
  * Bach - Java Shell Builder
- * Copyright (C) 2017 Christian Stein
+ * Copyright (C) 2018 Christian Stein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
 /*
  * Define convenient short names for the foundation JDK tools and commands.
  */
-void java(Object... args) { Bach.run("java", args); }
-void javac(Object... args) { Bach.run("javac", args); }
-void javadoc(Object... args) { Bach.run("javadoc", args); }
-void jar(Object... args) { Bach.run("jar", args); }
-void jlink(Object... args) { Bach.run("jlink", args); }
-void jmod(Object... args) { Bach.run("jmod", args); }
-void jdeps(Object... args) { Bach.run("jdeps", args); }
-void jdeprscan(Object... args) { Bach.run("jdeprscan", args); }
-void javah(Object... args) { Bach.run("javah", args); }
-void javap(Object... args) { Bach.run("javap", args); }
+void java(Object... args) { new Bach().run("java", args); }
+void javac(Object... args) { new Bach().run("javac", args); }
+void javadoc(Object... args) { new Bach().run("javadoc", args); }
+void jar(Object... args) { new Bach().run("jar", args); }
+void jlink(Object... args) { new Bach().run("jlink", args); }
+void jmod(Object... args) { new Bach().run("jmod", args); }
+void jdeps(Object... args) { new Bach().run("jdeps", args); }
+void jdeprscan(Object... args) { new Bach().run("jdeprscan", args); }
+void javah(Object... args) { new Bach().run("javah", args); }
+void javap(Object... args) { new Bach().run("javap", args); }
