@@ -43,21 +43,23 @@ class Bach {
     }
   }
 
-  /** Run executable with given arguments. */
+  /** Run named executable with given arguments. */
   int run(String executable, Object... arguments) {
     log("[run] %s %s", executable, List.of(arguments));
     return 1;
   }
 
-  /** Run tasks */
+  /** Run tasks in parallel. */
+  @SafeVarargs
+  final int run(String caption, Supplier<Integer>... tasks) {
+    return run(caption, Stream.of(tasks).parallel());
+  }
+
+  /** Run stream of tasks. */
   int run(String caption, Stream<Supplier<Integer>> stream) {
     log("[run] %s...", caption);
-    var result =
-        stream
-            .map(CompletableFuture::supplyAsync)
-            .map(CompletableFuture::join)
-            .mapToInt(t -> t)
-            .sum();
+    var results = stream.map(CompletableFuture::supplyAsync).map(CompletableFuture::join);
+    var result = results.reduce(0, Integer::sum);
     log("[run] %s done.", caption);
     if (result != 0) {
       throw new IllegalStateException("0 expected, but got: " + result);

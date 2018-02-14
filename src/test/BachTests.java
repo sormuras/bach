@@ -53,36 +53,55 @@ class BachTests {
   }
 
   @Test
-  void runSequentially() {
+  void runStreamSequentially() {
     Stream<Supplier<Integer>> tasks = Stream.of(() -> task("1"), () -> task("2"), () -> task("3"));
-    bach.run("run task sequentially", tasks);
+    var result = bach.run("run stream sequentially", tasks);
+    assertEquals(0, result);
     var expected =
         List.of(
-            "[run] run task sequentially...",
+            "[run] run stream sequentially...",
             "1 begin",
             "1 done. .+",
             "2 begin",
             "2 done. .+",
             "3 begin",
             "3 done. .+",
-            "[run] run task sequentially done.");
+            "[run] run stream sequentially done.");
     assertLinesMatch(expected, actualLogLines);
   }
 
   @Test
-  void runParallel() {
+  void runStreamParallel() {
     Stream<Supplier<Integer>> tasks = Stream.of(() -> task("1"), () -> task("2"), () -> task("3"));
-    bach.run("run task in parallel", tasks.parallel());
+    var result = bach.run("run stream in parallel", tasks.parallel());
+    assertEquals(0, result);
     var expected =
         List.of(
-            "[run] run task in parallel...",
+            "[run] run stream in parallel...",
             ". begin",
             ". begin",
             ". begin",
             ". done. .+",
             ". done. .+",
             ". done. .+",
-            "[run] run task in parallel done.");
+            "[run] run stream in parallel done.");
+    assertLinesMatch(expected, actualLogLines);
+  }
+
+  @Test
+  void runVarArgs() {
+    var result = bach.run("run varargs", () -> task("4"), () -> task("5"), () -> task("6"));
+    assertEquals(0, result);
+    var expected =
+        List.of(
+            "[run] run varargs...",
+            ". begin",
+            ". begin",
+            ". begin",
+            ". done. .+",
+            ". done. .+",
+            ". done. .+",
+            "[run] run varargs done.");
     assertLinesMatch(expected, actualLogLines);
   }
 

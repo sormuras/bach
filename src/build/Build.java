@@ -61,9 +61,13 @@ interface Build {
 
   /** Download the resource from URI to the target directory using the provided file name. */
   static Path download(URI uri, Path directory, String fileName) throws IOException {
-      var url = uri.toURL();
-      Files.createDirectories(directory);
       var target = directory.resolve(fileName);
+      if (Files.exists(target)) {
+        return target;
+      }
+      Files.createDirectories(directory);
+      var url = uri.toURL();
+      System.out.printf("loading %s...%n", fileName);
       try (var sourceStream = url.openStream(); var targetStream = Files.newOutputStream(target)) {
         sourceStream.transferTo(targetStream);
       }
@@ -88,6 +92,7 @@ interface Build {
     var jar = download(uri, TOOLS.resolve(name), file);
     // version
     var java = new ProcessBuilder("java", "-jar", jar.toString(), "--version");
+    System.out.println(java.command());
     java.redirectErrorStream(true);
     var process = java.start();
     process.getInputStream().transferTo(System.out);
@@ -103,6 +108,7 @@ interface Build {
     // TODO Scan "src" and "demo" folders...
     java.command().add(BACH_JAVA.toString());
     java.command().add(SOURCE_TEST.resolve("BachTests.java").toString());
+    System.out.println(java.command());
     process = java.start();
     process.getInputStream().transferTo(System.out);
     process.waitFor();
