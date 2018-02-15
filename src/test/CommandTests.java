@@ -182,6 +182,12 @@ class CommandTests {
   }
 
   @Test
+  void markWithNegativeLimitFails() {
+    var e = assertThrows(IllegalArgumentException.class, () -> new Command("nine").mark(-9));
+    assertEquals("limit must be greater then zero: -9", e.getMessage());
+  }
+
+  @Test
   void customTool() {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
@@ -196,6 +202,14 @@ class CommandTests {
     assertLinesMatch(
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(bytes.toString().split(System.lineSeparator())));
+    // now "overflow" command line
+    for (var i = 0; i <= 4000; i++) {
+      custom.add(String.format("arg-%04d", i));
+    }
+    bytes.reset();
+    custom.toProcessBuilder();
+    assertTrue(bytes.toString().startsWith("large command line (36026) detected"));
+    assertTrue(bytes.toString().contains("but custom tool does not support @argument file"));
   }
 
   private class CustomTool implements ToolProvider {
