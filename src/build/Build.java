@@ -107,7 +107,12 @@ interface Build {
     }
     // TODO Scan "src" and "demo" folders...
     java.command().add(BACH_JAVA.toString());
+    java.command().add(SOURCE_BACH.resolve("Command.java").toString());
+    java.command().add(SOURCE_BACH.resolve("JdkTool.java").toString());
+    //
     java.command().add(SOURCE_TEST.resolve("BachTests.java").toString());
+    java.command().add(SOURCE_TEST.resolve("CommandTests.java").toString());
+    java.command().add(SOURCE_TEST.resolve("JdkToolTests.java").toString());
     System.out.println(java.command());
     process = java.start();
     process.getInputStream().transferTo(System.out);
