@@ -47,6 +47,15 @@ class Command {
   class Helper {
 
     @SuppressWarnings("unused")
+    void addModules(List<String> addModules) {
+      if (addModules.isEmpty()) {
+        return;
+      }
+      add("--add-modules");
+      add(String.join(",", addModules));
+    }
+
+    @SuppressWarnings("unused")
     void patchModule(Map<String, List<Path>> patchModule) {
       patchModule.forEach(this::addPatchModule);
     }

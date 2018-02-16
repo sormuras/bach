@@ -71,6 +71,9 @@ interface JdkTool {
     /** Where to find input source files for multiple modules. */
     List<Path> moduleSourcePath = List.of();
 
+    /** Specifies root modules to resolve in addition to the initial modules. */
+    List<String> addModules = List.of();
+
     /** Compiles only the specified module and checks timestamps. */
     @Command.Option("--module")
     String module = null;
@@ -119,16 +122,8 @@ interface JdkTool {
     /** Where to find application modules. */
     List<Path> modulePath = List.of();
 
-    /** Add modules. */
+    /** Specifies root modules to resolve in addition to the initial modules. */
     List<String> addModules = List.of();
-
-    void addModules(Command command) {
-      if (addModules.isEmpty()) {
-        return;
-      }
-      command.add("--add-modules");
-      command.add(String.join(",", addModules));
-    }
 
     /** Initial module to resolve and the name of the main class to execute. */
     @Command.Option("--module")

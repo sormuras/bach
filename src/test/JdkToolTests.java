@@ -51,6 +51,8 @@ class JdkToolTests {
             "  mods",
             "--module-source-path",
             "  src",
+            "--add-modules",
+            "  mod.A,ALL-MODULE-PATH,mod.B",
             "-parameters",
             "-verbose",
             ">> many .java files >>");
@@ -66,6 +68,7 @@ class JdkToolTests {
     javac.classSourcePath = List.of(Paths.get("src/build"));
     javac.moduleSourcePath = List.of(Paths.get("src"));
     javac.modulePath = List.of(Paths.get("mods"));
+    javac.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
     javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
     assertLinesMatch(expectedLines, dump(javac.toCommand()));
   }
@@ -76,6 +79,8 @@ class JdkToolTests {
         List.of(
             "java",
             "--dry-run",
+            "-jar",
+            "  application.jar",
             "--patch-module",
             "  com.greetings=xxx",
             "--module-path",
@@ -89,6 +94,7 @@ class JdkToolTests {
             "NEW");
     var java = new JdkTool.Java();
     java.dryRun = true;
+    java.jar = Paths.get("application.jar");
     java.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
     java.patchModule = Map.of("com.greetings", List.of(Paths.get("xxx")));
     java.modulePath = List.of(Paths.get("mods"));
