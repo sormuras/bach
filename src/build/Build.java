@@ -186,7 +186,7 @@ interface Build {
     Files.createDirectories(ARTIFACTS);
     jar("bach.jar", TARGET_MAIN);
     jar("bach-sources.jar", SOURCE_BACH);
-    //    jar("bach-javadoc.jar", JAVADOC);
+    jar("bach-javadoc.jar", JAVADOC);
   }
 
   static void jar(String artifact, Path path) {
