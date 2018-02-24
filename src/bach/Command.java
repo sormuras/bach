@@ -349,7 +349,7 @@ class Command {
    *     any errors; any other value indicates that at least one error occurred during execution.
    */
   int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-    //        if (log.isEnabled()) {
+    // TODO   if (log.isEnabled()) {
     //            List<String> lines = new ArrayList<>();
     //            dump(lines::add);
     //            log.info("running %s with %d argument(s)", executable, arguments.size());
@@ -361,7 +361,7 @@ class Command {
       return operator.apply(tool).run(out, err, toArgumentsArray());
     }
     var processBuilder = supplier.get();
-    //        if (log.isEnabled()) {
+    // TODO   if (log.isEnabled()) {
     //            String actual = processBuilder.command().get(0);
     //            if (!executable.equals(actual)) {
     //                log.verbose("replaced %s with %s", executable, actual);

@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +24,7 @@ import java.util.List;
 interface Build {
 
   Path TOOLS = Paths.get(".bach", "tools");
+  Path MAVEN = Paths.get(".bach", "resolved");
   Path SOURCE_BACH = Paths.get("src", "bach");
   Path SOURCE_TEST = Paths.get("src", "test");
   Path TARGET = Paths.get("target", "build");
@@ -36,8 +34,8 @@ interface Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.1.0-RC1";
-  String JUNIT_PLATFORM = "1.1.0-RC1";
+  String JUNIT_JUPITER = "5.1.0";
+  String JUNIT_PLATFORM = "1.1.0";
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
 
@@ -59,19 +57,27 @@ interface Build {
     }
   }
 
+  static Path maven(String group, String artifact, String version) throws Exception {
+    var repo = "http://central.maven.org/maven2";
+    var file = artifact + "-" + version + ".jar";
+    var uri = URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
+    return download(uri, MAVEN, file);
+  }
+
   /** Download the resource from URI to the target directory using the provided file name. */
-  static Path download(URI uri, Path directory, String fileName) throws IOException {
-      var target = directory.resolve(fileName);
-      if (Files.exists(target)) {
-        return target;
-      }
-      Files.createDirectories(directory);
-      var url = uri.toURL();
-      System.out.printf("loading %s...%n", fileName);
-      try (var sourceStream = url.openStream(); var targetStream = Files.newOutputStream(target)) {
-        sourceStream.transferTo(targetStream);
-      }
+  static Path download(URI uri, Path directory, String fileName) throws Exception {
+    var target = directory.resolve(fileName);
+    if (Files.exists(target)) {
       return target;
+    }
+    Files.createDirectories(directory);
+    var url = uri.toURL();
+    System.out.printf("loading %s...%n", fileName);
+    try (var sourceStream = url.openStream();
+        var targetStream = Files.newOutputStream(target)) {
+      sourceStream.transferTo(targetStream);
+    }
+    return target;
   }
 
   static void format() throws Exception {
@@ -106,6 +112,8 @@ interface Build {
       java.command().add("--set-exit-if-changed");
     }
     // TODO Scan "src" and "demo" folders...
+    java.command().add(Paths.get("src", "build", "Build.java").toString());
+    //
     java.command().add(BACH_JAVA.toString());
     java.command().add(SOURCE_BACH.resolve("Command.java").toString());
     java.command().add(SOURCE_BACH.resolve("JdkTool.java").toString());
@@ -119,105 +127,101 @@ interface Build {
     process.waitFor();
   }
 
-  static void clean() throws IOException {
+  static void clean() throws Exception {
     System.out.printf("%n[clean]%n%n");
 
-//    Bach.Basics.treeDelete(TARGET);
-//    System.out.println("deleted " + TARGET);
+    //    Bach.Basics.treeDelete(TARGET);
+    //    System.out.println("deleted " + TARGET);
   }
 
-  static void compile() throws IOException {
+  static void compile() throws Exception {
     System.out.printf("%n[compile]%n%n");
 
-//    // main
-//    Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac();
-//    javac.generateAllDebuggingInformation = true;
-//    javac.destination = TARGET_MAIN;
-//    javac.classSourcePath = List.of(SOURCE_BACH);
-//    javac.run();
-//
-//    // test
-//    javac.destination = TARGET_TEST;
-//    javac.classSourcePath = List.of(SOURCE_TEST);
-//    javac.classPath =
-//        List.of(
-//            TARGET_MAIN,
-//            Bach.Basics.resolve("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER),
-//            Bach.Basics.resolve("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
-//            Bach.Basics.resolve("org.apiguardian", "apiguardian-api", API_GUARDIAN),
-//            Bach.Basics.resolve("org.opentest4j", "opentest4j", OPENTEST4J));
-//    javac.run();
-//    // TODO exclude .java files
-//    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
+    // main
+    var javac = new JdkTool.Javac();
+    javac.generateAllDebuggingInformation = true;
+    javac.destination = TARGET_MAIN;
+    javac.classSourcePath = List.of(SOURCE_BACH);
+    javac.run();
+
+    // test
+    javac.destination = TARGET_TEST;
+    javac.classSourcePath = List.of(SOURCE_TEST);
+    javac.classPath =
+        List.of(
+            TARGET_MAIN,
+            maven("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER),
+            maven("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
+            maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
+            maven("org.opentest4j", "opentest4j", OPENTEST4J));
+    javac.run();
+    //    // TODO exclude .java files
+    //    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
   }
 
-  static void javadoc() throws IOException {
+  static void javadoc() throws Exception {
     System.out.printf("%n[javadoc]%n%n");
 
-//    Files.createDirectories(JAVADOC);
-//    Bach.run(
-//        "javadoc",
-//        "-html5",
-//        "-quiet",
-//        "-Xdoclint:all,-missing",
-//        "-package",
-//        "-linksource",
-//        "-link",
-//        "https://docs.oracle.com/javase/9/docs/api",
-//        "-d",
-//        JAVADOC,
-//        BACH_JAVA);
+    Files.createDirectories(JAVADOC);
+    var javadoc = new JdkTool.Javadoc();
+    javadoc.destination = JAVADOC;
+    javadoc.quiet = true;
+    javadoc
+        .toCommand()
+        .add("-html5")
+        .add("-Xdoclint:all,-missing")
+        .add("-package")
+        .add("-linksource")
+        .add("-link")
+        .add("https://docs.oracle.com/javase/9/docs/api")
+        .add(BACH_JAVA)
+        .add(SOURCE_BACH.resolve("Command.java"))
+        .add(SOURCE_BACH.resolve("JdkTool.java"))
+        .run();
   }
 
-  static void jar() throws IOException {
+  static void jar() throws Exception {
     System.out.printf("%n[jar]%n%n");
 
-//    Files.createDirectories(ARTIFACTS);
-//    jar("bach.jar", TARGET_MAIN);
-//    jar("bach-sources.jar", SOURCE_BACH);
-//    jar("bach-javadoc.jar", JAVADOC);
+    Files.createDirectories(ARTIFACTS);
+    jar("bach.jar", TARGET_MAIN);
+    jar("bach-sources.jar", SOURCE_BACH);
+    //    jar("bach-javadoc.jar", JAVADOC);
   }
 
   static void jar(String artifact, Path path) {
-//    Bach.JdkTool.Jar jar = new Bach.JdkTool.Jar();
-//    jar.file = ARTIFACTS.resolve(artifact);
-//    jar.path = path;
-//    jar.run();
+    var jar = new JdkTool.Jar();
+    jar.file = ARTIFACTS.resolve(artifact);
+    jar.path = path;
+    jar.run();
   }
 
   static void jdeps() {
     System.out.printf("%n[jdeps]%n%n");
 
-//    Bach.JdkTool.Jdeps jdeps = new Bach.JdkTool.Jdeps();
-//    jdeps.summary = true;
-//    jdeps.recursive = true;
-//    jdeps.toCommand().add(ARTIFACTS.resolve("bach.jar")).run();
+    var jdeps = new JdkTool.Jdeps();
+    jdeps.summary = true;
+    jdeps.recursive = true;
+    jdeps.toCommand().add(ARTIFACTS.resolve("bach.jar")).run();
   }
 
-  static void test() throws IOException {
+  static void test() throws Exception {
     System.out.printf("%n[test]%n%n");
 
-    String name = "junit-platform-console-standalone";
-    /*
-    String repo = "http://repo1.maven.org/maven2";
-    String user = "org/junit/platform";
-    String file = name + "-" + JUNIT_PLATFORM + ".jar";
-    URI uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
-    Path jar = Bach.Basics.download(uri, TOOLS.resolve(name), file, p -> true);
-    */
-//    Path jar =
-//        new Bach.Basics.Resolvable("org.junit.platform", name, JUNIT_PLATFORM)
-//            .resolve(TOOLS.resolve(name), Bach.Basics.Resolvable.REPOSITORIES);
-//    Bach.run(
-//        "java",
-//        "-ea",
-//        "-Dbach.offline=" + System.getProperty("bach.offline", "false"),
-//        "-jar",
-//        jar,
-//        "--class-path",
-//        TARGET_TEST,
-//        "--class-path",
-//        TARGET_MAIN,
-//        "--scan-classpath");
+    var name = "junit-platform-console-standalone";
+    var repo = "http://central.maven.org/maven2";
+    var user = "org/junit/platform";
+    var file = name + "-" + JUNIT_PLATFORM + ".jar";
+    var uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
+    var jar = download(uri, TOOLS.resolve(name), file);
+
+    var java = new Command("java");
+    java.add("-ea");
+    // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
+    java.add("-jar").add(jar);
+    java.add("--class-path").add(TARGET_TEST);
+    java.add("--class-path").add(TARGET_MAIN);
+    java.add("--scan-classpath");
+    java.run();
   }
 }

@@ -150,6 +150,10 @@ interface JdkTool {
    * @see <a href="https://docs.oracle.com/javase/9/tools/javadoc.htm">javadoc</a>
    */
   class Javadoc implements JdkTool {
+    /** The destination directory for generated files. */
+    @Command.Option("-d")
+    Path destination = null;
+
     /** Shuts off messages so that only the warnings and errors appear. */
     boolean quiet = true;
   }
