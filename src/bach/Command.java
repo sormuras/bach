@@ -36,12 +36,16 @@ class Command {
     return consumer::accept;
   }
 
-  /** Command option annotation. */
+  /** Command option annotation, aka its "name". */
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.FIELD)
   @interface Option {
     String value();
   }
+  /** Indicate that an option may be used multiple times. */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.FIELD)
+  @interface Repeatable {}
 
   /** Type-safe helper for adding common options. */
   class Helper {
@@ -191,9 +195,19 @@ class Command {
     if (!optionName.isEmpty()) {
       add(optionName);
     }
-    // is value a collection of paths?
+    // is value a collection?
     if (value instanceof Collection) {
-      if (((Collection) value).iterator().next() instanceof Path) {
+      var iterator = ((Collection) value).iterator();
+      var head = iterator.next();
+      if (field.isAnnotationPresent(Repeatable.class)) {
+        add(head);
+        while (iterator.hasNext()) {
+          add(optionName);
+          add(iterator.next());
+        }
+        return;
+      }
+      if (head instanceof Path) {
         @SuppressWarnings("unchecked")
         var path = (Collection<Path>) value;
         add(path);
