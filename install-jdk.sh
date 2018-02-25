@@ -103,7 +103,7 @@ if [ "${JDK_FEATURE}" == '11' ]; then
   fi
 
   JDK_ARCHIVE=${JDK_BASENAME}-${JDK_FEATURE}-ea+${JDK_BUILD}_linux-x64_bin.tar.gz
-  JDK_URL=${JDK_DOWNLOAD}/jdk${JDK_FEATURE}/archive/${JDK_BUILD}/${JDK_LICENSE}/${JDK_ARCHIVE}
+  JDK_URL=${JDK_DOWNLOAD}/early_access/jdk${JDK_FEATURE}/${JDK_BUILD}/${JDK_LICENSE}/${JDK_ARCHIVE}
   JDK_HOME=jdk-${JDK_FEATURE}
 fi
 
