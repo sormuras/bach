@@ -41,7 +41,7 @@ interface Build {
 
   static void main(String... args) {
     System.out.printf("%n[main]%n%n");
-    System.setProperty("bach.verbose", "true");
+    System.setProperty("bach.quiet", "false");
     try {
       format();
       clean();

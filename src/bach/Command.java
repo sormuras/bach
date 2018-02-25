@@ -84,6 +84,7 @@ class Command {
   private PrintStream err = System.err;
   private Map<String, ToolProvider> tools = Collections.emptyMap();
   private boolean executableSupportsArgumentFile = false;
+  private Consumer<String> logger = System.out::println;
 
   /** Initialize this command instance. */
   Command(String executable) {
@@ -308,6 +309,11 @@ class Command {
     return this;
   }
 
+  Command setLogger(Consumer<String> logger) {
+    this.logger = logger;
+    return this;
+  }
+
   /** Create new argument array based on this command's arguments. */
   String[] toArgumentsArray() {
     return arguments.toArray(new String[0]);
@@ -363,24 +369,24 @@ class Command {
    *     any errors; any other value indicates that at least one error occurred during execution.
    */
   int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-    // TODO   if (log.isEnabled()) {
-    //            List<String> lines = new ArrayList<>();
-    //            dump(lines::add);
-    //            log.info("running %s with %d argument(s)", executable, arguments.size());
-    //            log.verbose("%s", String.join("\n", lines));
-    //        }
+    if (logger != null) {
+      List<String> lines = new ArrayList<>();
+      dump(lines::add);
+      logger.accept(String.format("running %s with %d argument(s)", executable, arguments.size()));
+      logger.accept(String.format("%s", String.join("\n", lines)));
+    }
     var systemTool = ToolProvider.findFirst(executable).orElse(null);
     var tool = tools.getOrDefault(executable, systemTool);
     if (tool != null) {
       return operator.apply(tool).run(out, err, toArgumentsArray());
     }
     var processBuilder = supplier.get();
-    // TODO   if (log.isEnabled()) {
-    //            String actual = processBuilder.command().get(0);
-    //            if (!executable.equals(actual)) {
-    //                log.verbose("replaced %s with %s", executable, actual);
-    //            }
-    //        }
+    if (logger != null) {
+      var actual = processBuilder.command().get(0);
+      if (!executable.equals(actual)) {
+        logger.accept(String.format("replaced %s with %s", executable, actual));
+      }
+    }
     try {
       var process = processBuilder.start();
       process.getInputStream().transferTo(out);
