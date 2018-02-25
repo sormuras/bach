@@ -8,10 +8,14 @@ before_install:
 
 matrix:
   include:
-    - env: JDK_RELEASE='OracleJDK 10'
+    - env: JDK_RELEASE='Oracle JDK 10'
       install: . ./install-jdk.sh -F 10 -L BCL
     - env: JDK_RELEASE='OpenJDK 10'
       install: . ./install-jdk.sh -F 10 -L GPL
+    - env: JDK_RELEASE='Oracle JDK 11'
+      install: . ./install-jdk.sh -F 11 -L BCL
+    - env: JDK_RELEASE='OpenJDK 11'
+      install: . ./install-jdk.sh -F 11 -L GPL
 
 script:
 - java --version
