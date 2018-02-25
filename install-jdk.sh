@@ -19,7 +19,7 @@
 #
 # Options
 #
-#   -F f | Feature number of the JDK release, [9|10|...]
+#   -F f | Feature number of the JDK release  [9|10|...]
 #   -B b | Build number of the JDK release    [?|1|2...]
 #   -L l | License of the JDK                 [GPL|BCL]
 #   -W w | Working directory and install path [${HOME}]
