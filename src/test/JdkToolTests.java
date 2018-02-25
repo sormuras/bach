@@ -120,9 +120,31 @@ class JdkToolTests {
 
   @Test
   void javadoc() {
-    var expectedLines = List.of("javadoc", "-quiet");
+    var expectedLines =
+        List.of(
+            "javadoc",
+            "-quiet",
+            "-html5",
+            "-keywords",
+            "-link",
+            "  one",
+            "-link",
+            "  two",
+            "-linksource",
+            "-Xdoclint:all,-missing",
+            "--show-members",
+            "  private",
+            "--show-types",
+            "  public");
     var javadoc = new JdkTool.Javadoc();
     javadoc.quiet = true;
+    javadoc.html5 = true;
+    javadoc.link = List.of("one", "two");
+    javadoc.linksource = true;
+    javadoc.keywords = true;
+    javadoc.doclint = "all,-missing";
+    javadoc.showTypes = JdkTool.Javadoc.Visibility.PUBLIC;
+    javadoc.showMembers = JdkTool.Javadoc.Visibility.PRIVATE;
     assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
   }
 

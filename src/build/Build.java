@@ -165,15 +165,13 @@ interface Build {
     Files.createDirectories(JAVADOC);
     var javadoc = new JdkTool.Javadoc();
     javadoc.destination = JAVADOC;
-    javadoc.quiet = true;
+    javadoc.doclint = "all,-missing";
+    javadoc.link = List.of("https://docs.oracle.com/javase/9/docs/api");
+    javadoc.linksource = true;
+    javadoc.showTypes = JdkTool.Javadoc.Visibility.PACKAGE;
+    javadoc.showMembers = JdkTool.Javadoc.Visibility.PACKAGE;
     javadoc
         .toCommand()
-        .add("-html5")
-        .add("-Xdoclint:all,-missing")
-        .add("-package")
-        .add("-linksource")
-        .add("-link")
-        .add("https://docs.oracle.com/javase/9/docs/api")
         .add(BACH_JAVA)
         .add(SOURCE_BACH.resolve("Command.java"))
         .add(SOURCE_BACH.resolve("JdkTool.java"))

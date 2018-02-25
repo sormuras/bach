@@ -150,12 +150,73 @@ interface JdkTool {
    * @see <a href="https://docs.oracle.com/javase/9/tools/javadoc.htm">javadoc</a>
    */
   class Javadoc implements JdkTool {
+
+    enum Visibility {
+      /** Shows only public elements. */
+      PUBLIC,
+      /** Shows public and protected elements. This is the default. */
+      PROTECTED,
+      /** Shows public, protected, and package elements. */
+      PACKAGE,
+      /** Shows all elements. */
+      PRIVATE
+    }
+
     /** The destination directory for generated files. */
     @Command.Option("-d")
     Path destination = null;
 
     /** Shuts off messages so that only the warnings and errors appear. */
     boolean quiet = true;
+
+    /** Generates HTML5 output. */
+    boolean html5 = true;
+
+    /** Adds HTML keyword {@code <META>} tags to the generated file for each class. */
+    boolean keywords = true;
+
+    /** Creates links to existing documentation of externally referenced classes. */
+    @Command.Repeatable List<String> link = List.of();
+
+    /** Creates an HTML version of each source file. */
+    boolean linksource = false;
+
+    /** Enables recommended checks for problems in javadoc comments. */
+    String doclint = "";
+
+    void doclint(Command command) {
+      if (doclint == null) {
+        return;
+      }
+      if (doclint.isEmpty()) {
+        command.add("-Xdoclint");
+        return;
+      }
+      // Enable or disable specific checks for problems in javadoc
+      // comments, where <group> is one of accessibility, html,
+      // missing, reference, or syntax.
+      command.add("-Xdoclint:" + doclint); // all,-missing,-reference...
+    }
+
+    /** Specifies which declarations (fields or methods) are documented. */
+    Visibility showMembers = Visibility.PROTECTED;
+
+    void showMembers(Command command) {
+      if (showMembers == Visibility.PROTECTED) {
+        return;
+      }
+      command.add("--show-members").add(showMembers.name().toLowerCase());
+    }
+
+    /** Specifies which declarations (interfaces or classes) are documented. */
+    Visibility showTypes = Visibility.PROTECTED;
+
+    void showTypes(Command command) {
+      if (showTypes == Visibility.PROTECTED) {
+        return;
+      }
+      command.add("--show-types").add(showTypes.name().toLowerCase());
+    }
   }
 
   /**
