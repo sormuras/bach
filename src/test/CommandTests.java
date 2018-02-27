@@ -192,11 +192,13 @@ class CommandTests {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
     var custom = new Command("custom tool");
+    var logger = new ArrayList<String>();
     custom
         .addAll(List.of(1, 2, 3))
         .setStandardStreams(out, out)
         .setExecutableSupportsArgumentFile(false)
         .setToolProvider(new CustomTool())
+        .setLogger(logger::add)
         .dump(out::println)
         .run(UnaryOperator.identity(), custom::toProcessBuilder);
     assertLinesMatch(
@@ -210,6 +212,9 @@ class CommandTests {
     custom.toProcessBuilder();
     assertTrue(bytes.toString().startsWith("large command line (36026) detected"));
     assertTrue(bytes.toString().contains("but custom tool does not support @argument file"));
+    assertLinesMatch(
+        List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"),
+        logger);
   }
 
   private class CustomTool implements ToolProvider {
