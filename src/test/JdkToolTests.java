@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class JdkToolTests {
@@ -118,34 +119,64 @@ class JdkToolTests {
     }
   }
 
-  @Test
-  void javadoc() {
-    var expectedLines =
-        List.of(
-            "javadoc",
-            "-quiet",
-            "-html5",
-            "-keywords",
-            "-link",
-            "  one",
-            "-link",
-            "  two",
-            "-linksource",
-            "-Xdoclint:all,-missing",
-            "--show-members",
-            "  private",
-            "--show-types",
-            "  public");
-    var javadoc = new JdkTool.Javadoc();
-    javadoc.quiet = true;
-    javadoc.html5 = true;
-    javadoc.link = List.of("one", "two");
-    javadoc.linksource = true;
-    javadoc.keywords = true;
-    javadoc.doclint = "all,-missing";
-    javadoc.showTypes = JdkTool.Javadoc.Visibility.PUBLIC;
-    javadoc.showMembers = JdkTool.Javadoc.Visibility.PRIVATE;
-    assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
+  @Nested
+  class Javadoc {
+
+    @Test
+    void basic() {
+      var expectedLines = List.of("javadoc");
+      var javadoc = new JdkTool.Javadoc();
+      javadoc.quiet = false;
+      javadoc.html5 = false;
+      javadoc.keywords = false;
+      javadoc.doclint = null;
+      assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
+    }
+
+    @Test
+    void defaults() {
+      var expectedLines = List.of("javadoc", "-quiet", "-html5", "-keywords", "-Xdoclint");
+      assertLinesMatch(expectedLines, dump(new JdkTool.Javadoc().toCommand()));
+    }
+
+    @Test
+    void customized() {
+      var expectedLines =
+          List.of(
+              "javadoc",
+              "-quiet",
+              "-html5",
+              "-keywords",
+              "-link",
+              "  one",
+              "-link",
+              "  two",
+              "-linksource",
+              "-Xdoclint:all,-missing",
+              "--show-members",
+              "  private",
+              "--show-types",
+              "  public");
+      var javadoc = new JdkTool.Javadoc();
+      javadoc.quiet = true;
+      javadoc.html5 = true;
+      javadoc.link = List.of("one", "two");
+      javadoc.linksource = true;
+      javadoc.keywords = true;
+      javadoc.doclint = "all,-missing";
+      javadoc.showTypes = JdkTool.Javadoc.Visibility.PUBLIC;
+      javadoc.showMembers = JdkTool.Javadoc.Visibility.PRIVATE;
+      assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
+    }
+
+    @Test
+    void suppressUnusedWarnings() {
+      var command = new Command("suppressor");
+      var javadoc = new JdkTool.Javadoc();
+      javadoc.doclint(command);
+      javadoc.showMembers(command);
+      javadoc.showTypes(command);
+    }
   }
 
   @Test

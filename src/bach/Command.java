@@ -28,7 +28,7 @@ import java.util.function.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
-class Command {
+class Command implements Supplier<Integer> {
 
   interface Visitor extends Consumer<Command> {}
 
@@ -349,12 +349,23 @@ class Command {
   }
 
   /**
+   * Run this command, returning zero for a successful run.
+   *
+   * @return the result of executing the tool. A return value of 0 means the tool did not encounter
+   *     any errors; any other value indicates that at least one error occurred during execution.
+   */
+  @Override
+  public Integer get() {
+    return run(UnaryOperator.identity(), this::toProcessBuilder);
+  }
+
+  /**
    * Run this command.
    *
    * @throws AssertionError if the execution result is not zero
    */
   void run() {
-    var result = run(UnaryOperator.identity(), this::toProcessBuilder);
+    var result = get();
     var successful = result == 0;
     if (successful) {
       return;
@@ -363,7 +374,7 @@ class Command {
   }
 
   /**
-   * Runs an instance of the tool, returning zero for a successful run.
+   * Run this command, returning zero for a successful run.
    *
    * @return the result of executing the tool. A return value of 0 means the tool did not encounter
    *     any errors; any other value indicates that at least one error occurred during execution.

@@ -18,7 +18,10 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.IntSupplier;
@@ -110,6 +113,25 @@ class BachTests {
     Executable executable = () -> bach.run("23", Stream.of(() -> task("42", () -> 9)));
     Exception exception = assertThrows(IllegalStateException.class, executable);
     assertEquals("0 expected, but got: 9", exception.getMessage());
+  }
+
+  @Test
+  void runCommand() {
+    var bytes = new ByteArrayOutputStream(2000);
+    var out = new PrintStream(bytes);
+    var command = new JdkTool.Java().toCommand().add("--version");
+    command.setStandardStreams(out, out);
+    command.setLogger(actualLogLines::add);
+    var result = bach.run("java --version", command);
+    assertEquals(0, result);
+    assertTrue(bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] java --version...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "[run] java --version done.");
+    assertLinesMatch(expected, actualLogLines);
   }
 
   private int task(String name) {

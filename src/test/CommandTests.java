@@ -32,6 +32,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -188,6 +190,17 @@ class CommandTests {
   }
 
   @Test
+  void helperMethodsCheckArguments() {
+    var command = new Command("helper");
+    assertEquals(List.of(), command.arguments);
+    var helper = command.new Helper();
+    assertEquals("Helper", helper.getClass().getSimpleName());
+    helper.addModules(List.of());
+    assertEquals(List.of(), command.arguments);
+    assertThrows(AssertionError.class, () -> helper.patchModule(Map.of("abc", List.of())));
+  }
+
+  @Test
   void customTool() {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
@@ -204,6 +217,8 @@ class CommandTests {
     assertLinesMatch(
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(bytes.toString().split(System.lineSeparator())));
+    assertLinesMatch(
+        List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"), logger);
     // now "overflow" command line
     for (var i = 0; i <= 4000; i++) {
       custom.add(String.format("arg-%04d", i));
@@ -212,9 +227,6 @@ class CommandTests {
     custom.toProcessBuilder();
     assertTrue(bytes.toString().startsWith("large command line (36026) detected"));
     assertTrue(bytes.toString().contains("but custom tool does not support @argument file"));
-    assertLinesMatch(
-        List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"),
-        logger);
   }
 
   private class CustomTool implements ToolProvider {
@@ -238,9 +250,13 @@ class CommandTests {
   }
 
   private String run(Command command) {
+    return run(command, new ArrayList<String>()::add);
+  }
+
+  private String run(Command command, Consumer<String> logger) {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
-    command.setStandardStreams(out, out).run();
+    command.setStandardStreams(out, out).setLogger(logger).run();
     return bytes.toString();
   }
 
