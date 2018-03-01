@@ -8,12 +8,6 @@ before_install:
 
 matrix:
   include:
-    - env: CURLED='install-jdk.sh'
-      install: wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh && . ./install-jdk.sh -F 9
-    - env: JDK_RELEASE='Oracle JDK 10'
-      install: . ./install-jdk.sh -F 10 -L BCL
-    - env: JDK_RELEASE='OpenJDK 10'
-      install: . ./install-jdk.sh -F 10 -L GPL
     - env: JDK_RELEASE='Oracle JDK 11'
       install: . ./install-jdk.sh -F 11 -L BCL
     - env: JDK_RELEASE='OpenJDK 11'
