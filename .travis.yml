@@ -9,7 +9,7 @@ before_install:
 matrix:
   include:
     - env: CURLED='install-jdk.sh'
-      install: curl https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh | bash -s -F 11 -L GPL
+      install: curl https://git.io/vAMzJ | bash -s "-F 11" "-L GPL"
     - env: JDK_RELEASE='Oracle JDK 10'
       install: . ./install-jdk.sh -F 10 -L BCL
     - env: JDK_RELEASE='OpenJDK 10'
