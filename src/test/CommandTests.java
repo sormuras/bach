@@ -316,6 +316,6 @@ class CommandTests {
   }
 
   private String run(String executable, Object... arguments) {
-    return run(new Command(executable).addAll(List.of(arguments)));
+    return run(new Command(executable).addAll(arguments));
   }
 }

@@ -53,10 +53,7 @@ class Bach {
   /** Run named executable with given arguments. */
   int run(String executable, Object... arguments) {
     log("[run] %s %s", executable, List.of(arguments));
-    return new Command(executable)
-        .setLogger(quiet ? null : logger)
-        .addAll(List.of(arguments))
-        .get();
+    return new Command(executable).setLogger(quiet ? null : logger).addAll(arguments).get();
   }
 
   /** Run tasks in parallel. */
@@ -161,6 +158,14 @@ class Command implements Supplier<Integer> {
   /** Add single argument composed of all stream elements joined by specified separator. */
   Command add(Stream<?> stream, String separator) {
     return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
+  }
+
+  /** Add all arguments by invoking {@link #add(Object)} for each element. */
+  Command addAll(Object... arguments) {
+    for (var argument : arguments) {
+      add(argument);
+    }
+    return this;
   }
 
   /** Add all arguments by invoking {@link #add(Object)} for each element. */
