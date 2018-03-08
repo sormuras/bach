@@ -84,7 +84,9 @@ class Command implements Supplier<Integer> {
   private PrintStream err = System.err;
   private Map<String, ToolProvider> tools = Collections.emptyMap();
   private boolean executableSupportsArgumentFile = false;
+  private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
   private Consumer<String> logger = System.out::println;
+  private Path temporaryDirectory = Paths.get(System.getProperty("java.io.tmpdir"));
 
   /** Initialize this command instance. */
   Command(String executable) {
@@ -314,6 +316,16 @@ class Command implements Supplier<Integer> {
     return this;
   }
 
+  Command setTemporaryDirectory(Path temporaryDirectory) {
+    this.temporaryDirectory = temporaryDirectory;
+    return this;
+  }
+
+  Command setExecutableToProgramOperator(UnaryOperator<String> executableToProgramOperator) {
+    this.executableToProgramOperator = executableToProgramOperator;
+    return this;
+  }
+
   /** Create new argument array based on this command's arguments. */
   String[] toArgumentsArray() {
     return arguments.toArray(new String[0]);
@@ -322,8 +334,8 @@ class Command implements Supplier<Integer> {
   /** Create new {@link ProcessBuilder} instance based on this command setup. */
   ProcessBuilder toProcessBuilder() {
     List<String> strings = new ArrayList<>(1 + arguments.size());
-    // TODO strings.add(Basics.resolveJdkTool(executable).map(Path::toString).orElse(executable));
-    strings.add(executable);
+    var program = executableToProgramOperator.apply(executable);
+    strings.add(program);
     strings.addAll(arguments);
     var commandLineLength = String.join(" ", strings).length();
     if (commandLineLength > 32000) {
@@ -331,8 +343,8 @@ class Command implements Supplier<Integer> {
         var timestamp = Instant.now().toString().replace("-", "").replace(":", "");
         var prefix = executable + "-arguments-" + timestamp + "-";
         try {
-          var tempFile = Files.createTempFile(prefix, ".txt");
-          strings = List.of(executable, "@" + Files.write(tempFile, arguments));
+          var tempFile = Files.createTempFile(temporaryDirectory, prefix, ".txt");
+          strings = List.of(program, "@" + Files.write(tempFile, arguments));
         } catch (IOException e) {
           throw new UncheckedIOException("creating temporary arguments file failed", e);
         }
@@ -393,9 +405,10 @@ class Command implements Supplier<Integer> {
     }
     var processBuilder = supplier.get();
     if (logger != null) {
-      var actual = processBuilder.command().get(0);
-      if (!executable.equals(actual)) {
-        logger.accept(String.format("replaced %s with %s", executable, actual));
+      var program = processBuilder.command().get(0);
+      if (!executable.equals(program)) {
+        logger.accept(
+            String.format("replaced executable `%s` with program `%s`", executable, program));
       }
     }
     try {

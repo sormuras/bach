@@ -27,9 +27,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -174,6 +177,48 @@ class CommandTests {
     }
     var out = run(command);
     assertTrue(out.contains(Runtime.version().toString()));
+
+    command.setTemporaryDirectory(Paths.get("does-not-exist"));
+    var e = assertThrows(UncheckedIOException.class, command::toProcessBuilder);
+    assertEquals("creating temporary arguments file failed", e.getMessage());
+    assertEquals(NoSuchFileException.class, e.getCause().getClass());
+    assertTrue(e.getCause().getMessage().contains("does-not-exist"));
+  }
+
+  @Test
+  void runCommandWithCustomExecutableToProgramOperator() {
+    var command = new Command("executable");
+    command.add("--version");
+    command.setExecutableToProgramOperator(__ -> "java");
+    var lines = new ArrayList<String>();
+    assertTrue(run(command, lines::add).contains(Runtime.version().toString()));
+    assertLinesMatch(
+        List.of(
+            "running executable with 1 argument(s)",
+            "executable\n--version",
+            "replaced executable `executable` with program `java`"),
+        lines);
+  }
+
+  @Test
+  void addAllUsingNonExistentFileAsRootFails() {
+    var command = new Command("error");
+    var e =
+        assertThrows(
+            UncheckedIOException.class, () -> command.addAll(Paths.get("error"), __ -> true));
+    assertEquals("walking path `error` failed", e.getMessage());
+  }
+
+  @Test
+  void addOptionsWithIllegalProperties() {
+    var command = new Command("error");
+    var options = new ClassWithPrivateField();
+    var fields = Arrays.stream(ClassWithPrivateField.class.getDeclaredFields());
+    var error = assertThrows(Error.class, () -> command.addAllOptions(options, __ -> fields));
+    assertTrue(error.getMessage().startsWith("reflecting option from field 'private int"));
+    var cause = error.getCause();
+    assertTrue(cause.getMessage().startsWith("class Command cannot access a member of class"));
+    assertTrue(cause.getMessage().endsWith("with modifiers \"private\""));
   }
 
   @Test
@@ -210,8 +255,10 @@ class CommandTests {
         .addAll(List.of(1, 2, 3))
         .setStandardStreams(out, out)
         .setExecutableSupportsArgumentFile(false)
+        .setExecutableToProgramOperator(exe -> "/usr/bin/env " + exe)
         .setToolProvider(new CustomTool())
         .setLogger(logger::add)
+        .setTemporaryDirectory(Paths.get("any"))
         .dump(out::println)
         .run(UnaryOperator.identity(), custom::toProcessBuilder);
     assertLinesMatch(
@@ -225,8 +272,9 @@ class CommandTests {
     }
     bytes.reset();
     custom.toProcessBuilder();
-    assertTrue(bytes.toString().startsWith("large command line (36026) detected"));
-    assertTrue(bytes.toString().contains("but custom tool does not support @argument file"));
+    var actual = bytes.toString();
+    assertTrue(actual.startsWith("large command line (36039) detected"));
+    assertTrue(actual.contains("but custom tool does not support @argument file"));
   }
 
   private class CustomTool implements ToolProvider {
@@ -240,6 +288,16 @@ class CommandTests {
     public int run(PrintWriter out, PrintWriter err, String... args) {
       out.println("CustomTool with " + List.of(args));
       return 0;
+    }
+  }
+
+  private static class ClassWithPrivateField {
+
+    private int x = 3;
+
+    @Override
+    public String toString() {
+      return "ClassWithPrivateField [x=" + x + "]";
     }
   }
 
