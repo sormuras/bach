@@ -115,8 +115,6 @@ interface Build {
     java.command().add(Paths.get("src", "build", "Build.java").toString());
     //
     java.command().add(BACH_JAVA.toString());
-    java.command().add(SOURCE_BACH.resolve("Command.java").toString());
-    java.command().add(SOURCE_BACH.resolve("JdkTool.java").toString());
     //
     java.command().add(SOURCE_TEST.resolve("BachTests.java").toString());
     java.command().add(SOURCE_TEST.resolve("CommandTests.java").toString());
@@ -170,12 +168,7 @@ interface Build {
     javadoc.linksource = true;
     javadoc.showTypes = JdkTool.Javadoc.Visibility.PACKAGE;
     javadoc.showMembers = JdkTool.Javadoc.Visibility.PACKAGE;
-    javadoc
-        .toCommand()
-        .add(BACH_JAVA)
-        .add(SOURCE_BACH.resolve("Command.java"))
-        .add(SOURCE_BACH.resolve("JdkTool.java"))
-        .run();
+    javadoc.toCommand().add(BACH_JAVA).run();
   }
 
   static void jar() throws Exception {

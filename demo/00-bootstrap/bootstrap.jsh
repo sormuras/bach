@@ -5,9 +5,10 @@
  */
 var target = Files.createDirectories(Paths.get("target"))
 var remote = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/bach/")
-for (var script : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
+for (var name : Set.of("Bach.java", "Bach.jsh")) {
+  var script = target.resolve(name);
   // if (Files.exists(script)) continue; // uncomment to preserve existing files
-  try (var stream = new URL(remote, script.getFileName().toString()).openStream()) {
+  try (var stream = new URL(remote, name).openStream()) {
     Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
   }
 }

@@ -3,7 +3,7 @@
 /open ../../src/bach/Bach.java
 /open ../../src/bach/Bach.jsh
 
-Bach.JdkTool.Javac javac = new Bach.JdkTool.Javac()
+var javac = new JdkTool.Javac()
 javac.destination = Paths.get("target", "mods")
 javac.moduleSourcePath = List.of(Paths.get("src"), Paths.get("src-de"), Paths.get("src-fr"))
 javac.run()

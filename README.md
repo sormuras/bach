@@ -1,6 +1,6 @@
 # bach - Java Shell Builder
  
-[![jdk10](https://img.shields.io/badge/jdk-10-blue.svg)](http://jdk.java.net/10/)
+[![jdk11](https://img.shields.io/badge/jdk-11-blue.svg)](http://jdk.java.net/11/)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
 [![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
@@ -16,7 +16,7 @@ Launch the build with `jshell build.jsh`.
 ```javascript
 /open Bach.java
 
-Bach.run("java", "--version")
+new Bach().run("java", "--version")
 
 /exit
 ```
@@ -46,9 +46,10 @@ Copy and paste the source of [bootstrap.jsh] to automatically download that late
  */
 var target = Files.createDirectories(Paths.get("target"))
 var remote = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/bach/")
-for (var script : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
+for (var name : Set.of("Bach.java", "Bach.jsh")) {
+  var script = target.resolve(name);
   // if (Files.exists(script)) continue; // uncomment to preserve existing files
-  try (var stream = new URL(remote, script.getFileName().toString()).openStream()) {
+  try (var stream = new URL(remote, name).openStream()) {
     Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
   }
 }

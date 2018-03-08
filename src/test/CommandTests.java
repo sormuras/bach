@@ -51,7 +51,6 @@ class CommandTests {
     assertEquals("test", command.executable);
     assertFalse(command.arguments.isEmpty());
     assertTrue(command.arguments.contains(Paths.get("./src/bach/Bach.java").toString()));
-    assertTrue(command.arguments.contains(Paths.get("./src/bach/Command.java").toString()));
   }
 
   @Test
@@ -102,7 +101,6 @@ class CommandTests {
     assertSame(command, command.addAllJavaFiles(roots));
     var actual = String.join("\n", dump(command));
     assertTrue(actual.contains("Bach.java"));
-    assertTrue(actual.contains("Command.java"));
     assertTrue(actual.contains("CommandTests.java"));
     assertFalse(actual.contains("Bach.jsh"));
   }
@@ -203,9 +201,8 @@ class CommandTests {
   @Test
   void addAllUsingNonExistentFileAsRootFails() {
     var command = new Command("error");
-    var e =
-        assertThrows(
-            UncheckedIOException.class, () -> command.addAll(Paths.get("error"), __ -> true));
+    var path = Paths.get("error");
+    var e = assertThrows(UncheckedIOException.class, () -> command.addAll(path, __ -> true));
     assertEquals("walking path `error` failed", e.getMessage());
   }
 

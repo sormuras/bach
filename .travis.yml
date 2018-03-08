@@ -16,3 +16,10 @@ matrix:
 script:
 - java --version
 - ./build.jsh
+
+after_success:
+- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
+- ./bootstrap.jsh
+
+- cd $TRAVIS_BUILD_DIR/demo/01-hello-world
+- ./build-01-hello-world.jsh

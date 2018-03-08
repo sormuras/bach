@@ -50,8 +50,7 @@ class BachTests {
 
   @Test
   void runExecutable() {
-    var result = bach.run("command", "a", "b", "3");
-    assertEquals(1, result);
+    assertThrows(Error.class, () -> bach.run("command", "a", "b", "3"));
     assertEquals("[run] command [a, b, 3]", actualLogLines.get(0));
   }
 
