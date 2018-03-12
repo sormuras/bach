@@ -18,6 +18,7 @@
 // default package
 
 import java.nio.file.*;
+import java.util.*;
 
 /** Project build support. */
 class Project {
@@ -30,12 +31,14 @@ class Project {
   final Path target;
   final Path libs;
   final String version;
+  final Map<String, ModuleSource> moduleSourceMap;
 
   private Project(Builder builder) {
     this.name = builder.name;
     this.version = builder.version;
     this.target = builder.target;
     this.libs = builder.libs;
+    this.moduleSourceMap = Map.copyOf(builder.moduleSourceMap);
   }
 
   @Override
@@ -48,14 +51,39 @@ class Project {
             '}';
   }
 
+  static class ModuleSource {
+    final String name;
+    Path destination;
+    List<Path> modulePath;
+    List<Path> moduleSourcePath;
+
+    ModuleSource(String name) {
+      this.name = name;
+      this.destination = Paths.get("bin", name, "mods");
+      this.modulePath = List.of(Paths.get(".bach", "resolved"));
+      this.moduleSourcePath = List.of(Paths.get("src", name, "java"));
+    }
+  }
+
   static class Builder {
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
     Path target = Paths.get("target", "bach");
     Path libs = target.resolve("libs");
     String version = "1.0.0-SNAPSHOT";
 
+    Map<String, ModuleSource> moduleSourceMap = new TreeMap<>();
+
+    Builder() {
+       moduleSourceMap.put("main", new ModuleSource("main"));
+       moduleSourceMap.put("test", new ModuleSource("test"));
+    }
+
     Project build() {
       return new Project(this);
+    }
+
+    ModuleSource moduleSource(String name) {
+      return moduleSourceMap.get(name);
     }
   }
 }
