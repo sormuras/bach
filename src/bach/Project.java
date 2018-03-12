@@ -43,12 +43,18 @@ class Project {
 
   @Override
   public String toString() {
-    return "Project{" +
-            "name='" + name + '\'' +
-            ", version='" + version + '\'' +
-            ", target=" + target +
-            ", libs=" + libs +
-            '}';
+    return "Project{"
+        + "name='"
+        + name
+        + '\''
+        + ", version='"
+        + version
+        + '\''
+        + ", target="
+        + target
+        + ", libs="
+        + libs
+        + '}';
   }
 
   static class ModuleGroup {
@@ -59,7 +65,7 @@ class Project {
 
     ModuleGroup(String name) {
       this.name = name;
-      this.destination = Paths.get("target","bach", "project", name, "mods");
+      this.destination = Paths.get("target", "bach", "project", name, "mods");
       this.modulePath = List.of(Paths.get(".bach", "resolved"));
       this.moduleSourcePath = List.of(Paths.get("src", name, "java"));
     }
@@ -74,8 +80,8 @@ class Project {
     Map<String, ModuleGroup> moduleGroupMap = new TreeMap<>();
 
     Builder() {
-       moduleGroupMap.put("main", new ModuleGroup("main"));
-       moduleGroupMap.put("test", new ModuleGroup("test"));
+      moduleGroupMap.put("main", new ModuleGroup("main"));
+      moduleGroupMap.put("test", new ModuleGroup("test"));
     }
 
     Project build() {

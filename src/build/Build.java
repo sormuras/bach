@@ -96,33 +96,20 @@ interface Build {
     var file = name + "-" + version + "-all-deps.jar";
     var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
     var jar = download(uri, TOOLS.resolve(name), file);
-    // version
-    var java = new ProcessBuilder("java", "-jar", jar.toString(), "--version");
-    System.out.println(java.command());
-    java.redirectErrorStream(true);
-    var process = java.start();
-    process.getInputStream().transferTo(System.out);
-    process.waitFor();
-    //
-    java = new ProcessBuilder("java", "-jar", jar.toString());
+    var java = new JdkTool.Java();
+    java.jar = jar;
+    java.toCommand().add("--version").run();
+    // format
+    Command format = java.toCommand();
     if (Boolean.getBoolean("bach.format.replace")) {
-      java.command().add("--replace");
+      format.add("--replace");
     } else {
-      java.command().add("--dry-run");
-      java.command().add("--set-exit-if-changed");
+      format.add("--dry-run");
+      format.add("--set-exit-if-changed");
     }
-    // TODO Scan "src" and "demo" folders...
-    java.command().add(Paths.get("src", "build", "Build.java").toString());
-    //
-    java.command().add(BACH_JAVA.toString());
-    //
-    java.command().add(SOURCE_TEST.resolve("BachTests.java").toString());
-    java.command().add(SOURCE_TEST.resolve("CommandTests.java").toString());
-    java.command().add(SOURCE_TEST.resolve("JdkToolTests.java").toString());
-    System.out.println(java.command());
-    process = java.start();
-    process.getInputStream().transferTo(System.out);
-    process.waitFor();
+    format.mark(5);
+    format.addAllJavaFiles(List.of(Paths.get("src"), Paths.get("demo")));
+    format.run();
   }
 
   static void clean() throws Exception {
