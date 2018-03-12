@@ -1,23 +1,16 @@
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.function.Supplier;
 
-class BuildDemo03Project {
+class BuildDemo02Project {
 
     public static void main(String... args) {
-        var builder = Project.builder();
-        builder.name = "Demo3";
-        builder.version = "III";
-        builder.libs = Paths.get(".bach/libs");
+        var project = Project.builder();
+        project.name = "Demo2";
+        project.version = "II";
+        project.libs = Paths.get(".bach/resolved");
 
-        var world = Paths.get(".bach/junit5-samples-master/junit5-modular-world");
-        builder.moduleSource("main").moduleSourcePath = List.of(world.resolve("src/main"));
-        builder.moduleSource("test").moduleSourcePath = List.of(world.resolve("src/test"));
-        builder.moduleSourceMap.values().forEach(it -> it.modulePath = List.of(builder.libs));
-
-        var project = builder.build();
         var bach = new Bach();
-        bach.run("project", new CompilerTask(bach, project));
+        bach.run("project", new CompilerTask(bach, project.build()));
     }
 
     static class CompilerTask implements Supplier<Integer> {
@@ -29,7 +22,7 @@ class BuildDemo03Project {
             this.project = project;
         }
 
-        int compile(Project.ModuleSource source) {
+        int compile(Project.ModuleGroup source) {
             bach.log("[compile] %s", source.name);
             var javac = new JdkTool.Javac();
             javac.destination = source.destination;
@@ -41,7 +34,7 @@ class BuildDemo03Project {
         @Override
         public Integer get() {
             bach.log("[compiler] %s", project);
-            return compile(project.moduleSourceMap.get("main"));
+            return compile(project.moduleGroupMap.get("main"));
         }
     }
 

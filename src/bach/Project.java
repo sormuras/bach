@@ -31,14 +31,14 @@ class Project {
   final Path target;
   final Path libs;
   final String version;
-  final Map<String, ModuleSource> moduleSourceMap;
+  final Map<String, ModuleGroup> moduleGroupMap;
 
   private Project(Builder builder) {
     this.name = builder.name;
     this.version = builder.version;
     this.target = builder.target;
     this.libs = builder.libs;
-    this.moduleSourceMap = Map.copyOf(builder.moduleSourceMap);
+    this.moduleGroupMap = Map.copyOf(builder.moduleGroupMap);
   }
 
   @Override
@@ -51,15 +51,15 @@ class Project {
             '}';
   }
 
-  static class ModuleSource {
+  static class ModuleGroup {
     final String name;
     Path destination;
     List<Path> modulePath;
     List<Path> moduleSourcePath;
 
-    ModuleSource(String name) {
+    ModuleGroup(String name) {
       this.name = name;
-      this.destination = Paths.get("bin", name, "mods");
+      this.destination = Paths.get("target","bach", "project", name, "mods");
       this.modulePath = List.of(Paths.get(".bach", "resolved"));
       this.moduleSourcePath = List.of(Paths.get("src", name, "java"));
     }
@@ -67,23 +67,23 @@ class Project {
 
   static class Builder {
     String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
-    Path target = Paths.get("target", "bach");
-    Path libs = target.resolve("libs");
     String version = "1.0.0-SNAPSHOT";
+    Path libs = Paths.get(".bach", "resolved");
+    Path target = Paths.get("target", "bach");
 
-    Map<String, ModuleSource> moduleSourceMap = new TreeMap<>();
+    Map<String, ModuleGroup> moduleGroupMap = new TreeMap<>();
 
     Builder() {
-       moduleSourceMap.put("main", new ModuleSource("main"));
-       moduleSourceMap.put("test", new ModuleSource("test"));
+       moduleGroupMap.put("main", new ModuleGroup("main"));
+       moduleGroupMap.put("test", new ModuleGroup("test"));
     }
 
     Project build() {
       return new Project(this);
     }
 
-    ModuleSource moduleSource(String name) {
-      return moduleSourceMap.get(name);
+    ModuleGroup group(String name) {
+      return moduleGroupMap.get(name);
     }
   }
 }
