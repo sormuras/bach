@@ -36,6 +36,8 @@ import java.util.stream.*;
  */
 class Bach {
 
+  static Predicate<Path> IS_JAVA_FILE = path -> path.getFileName().toString().endsWith(".java");
+
   /** Quiet mode switch. */
   boolean quiet = Boolean.getBoolean("bach.quiet");
 
@@ -75,6 +77,7 @@ class Bach {
   }
 }
 
+/** Command line program and in-process tool abstraction. */
 class Command implements Supplier<Integer> {
 
   interface Visitor extends Consumer<Command> {}
@@ -192,8 +195,7 @@ class Command implements Supplier<Integer> {
 
   /** Add all .java source files by walking specified root paths recursively. */
   Command addAllJavaFiles(List<Path> roots) {
-    Predicate<Path> java = path -> path.getFileName().toString().endsWith(".java");
-    return addAll(roots, java);
+    return addAll(roots, Bach.IS_JAVA_FILE);
   }
 
   /** Add all reflected options. */
@@ -540,13 +542,12 @@ interface JdkTool {
 
     /** Create javac command with options and source files added. */
     @Override
-    public Command toCommand() {
-      Predicate<Path> isJavaFile = path -> path.getFileName().toString().endsWith(".java");
-      var command = JdkTool.super.toCommand();
+    public Command toCommand(Object... extras) {
+      var command = JdkTool.super.toCommand(extras);
       command.mark(10);
-      command.addAll(classSourcePath, isJavaFile);
+      command.addAll(classSourcePath, Bach.IS_JAVA_FILE);
       if (module == null) {
-        command.addAll(moduleSourcePath, isJavaFile);
+        command.addAll(moduleSourcePath, Bach.IS_JAVA_FILE);
       }
       command.setExecutableSupportsArgumentFile(true);
       return command;
@@ -588,8 +589,8 @@ interface JdkTool {
 
     /** Create java command with options and source files added. */
     @Override
-    public Command toCommand() {
-      Command command = JdkTool.super.toCommand();
+    public Command toCommand(Object... extras) {
+      Command command = JdkTool.super.toCommand(extras);
       command.setExecutableSupportsArgumentFile(true);
       command.mark(9);
       command.addAll(args);
@@ -706,8 +707,8 @@ interface JdkTool {
     Path path = null;
 
     @Override
-    public Command toCommand() {
-      Command command = JdkTool.super.toCommand();
+    public Command toCommand(Object... extras) {
+      Command command = JdkTool.super.toCommand(extras);
       if (path != null) {
         command.mark(1);
         command.add(".");
@@ -774,7 +775,7 @@ interface JdkTool {
   }
 
   /** Create command instance based on this tool's options. */
-  default Command toCommand() {
-    return new Command(name()).addAllOptions(this);
+  default Command toCommand(Object... extras) {
+    return new Command(name()).addAllOptions(this).addAll(extras);
   }
 }

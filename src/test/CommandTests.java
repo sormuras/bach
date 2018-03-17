@@ -167,12 +167,14 @@ class CommandTests {
 
   @Test
   void runJavaWithLongCommandLine() {
-    var command = new JdkTool.Java().toCommand();
+    var command = new JdkTool.Java().toCommand("--dry-run");
     command.add("--version");
     command.addAll(Paths.get("src/bach"), __ -> true);
     for (var i = 0; i <= 4000; i++) {
       command.add(String.format("arg-%04d", i));
     }
+    assertLinesMatch(List.of("--dry-run", "--version", ">> files and args >>"), command.arguments);
+
     var out = run(command);
     assertTrue(out.contains(Runtime.version().toString()));
 
