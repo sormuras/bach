@@ -6,7 +6,7 @@
 // remove after merge
 /open ../../src/bach/Project.java
 
-/open build/BuildDemo03Project.java
+/open build/BuildDemo02Project.java
 
 BuildDemo03Project.main()
 
