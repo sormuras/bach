@@ -9,8 +9,13 @@ class BuildDemo02Project {
     project.version = "II";
     project.libs = Paths.get(".bach/resolved");
 
-    var bach = new Bach();
-    bach.run("project", new CompilerTask(bach, project.build()));
+    build(new Bach(), project.build());
+  }
+
+  static void build(Bach bach, Project project) {
+    Supplier<Integer> printer = () -> new PrinterFunction().apply(bach, project);
+    Supplier<Integer> compiler = new CompilerTask(bach, project);
+    bach.run("build", printer, compiler);
   }
 
   static class CompilerTask implements Supplier<Integer> {
