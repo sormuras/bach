@@ -1,15 +1,41 @@
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 class BuildDemo02Project {
 
   public static void main(String... args) {
-    var project = Project.builder();
-    project.name = "Demo2";
-    project.version = "II";
-    project.libs = Paths.get(".bach/resolved");
+    var dependencies = Paths.get(".bach", "resolved");
+    var target = Paths.get("target", "bach", "project");
+    var mainDestination = target.resolve(Paths.get("main", "mods"));
+    var testDestination = target.resolve(Paths.get("test", "mods"));
+    var project =
+        Project.builder()
+            .name("Demo2")
+            .version("II")
+            .target(target)
+            // main
+            .newModuleGroup("main")
+            .destination(mainDestination)
+            .moduleSourcePath(List.of(Paths.get("src", "main", "java")))
+            .end()
+            // test
+            .newModuleGroup("test")
+            .destination(testDestination)
+            .moduleSourcePath(List.of(Paths.get("src", "test", "java")))
+            .modulePath(List.of(mainDestination, dependencies))
+            .patchModule(
+                Map.of(
+                    "application",
+                    List.of(Paths.get("src/main/java/application")),
+                    "application.api",
+                    List.of(Paths.get("src/main/java/application.api"))))
+            .end()
+            // done
+            .build();
 
-    build(new Bach(), project.build());
+    build(new Bach(), project);
   }
 
   static void build(Bach bach, Project project) {
@@ -27,19 +53,22 @@ class BuildDemo02Project {
       this.project = project;
     }
 
-    int compile(Project.ModuleGroup source) {
-      bach.log("[compile] %s", source.name);
+    int compile(Project.ModuleGroup group) {
+      bach.log("[compile] %s", group.name());
       var javac = new JdkTool.Javac();
-      javac.destination = source.destination;
-      javac.moduleSourcePath = source.moduleSourcePath;
-      javac.modulePath = source.modulePath;
+      javac.destination = group.destination();
+      javac.moduleSourcePath = group.moduleSourcePath();
+      javac.modulePath = group.modulePath();
+      javac.patchModule = group.patchModule();
       return javac.toCommand().get();
     }
 
     @Override
     public Integer get() {
       bach.log("[compiler] %s", project);
-      return compile(project.moduleGroupMap.get("main"));
+      compile(project.moduleGroup("main"));
+      compile(project.moduleGroup("test"));
+      return 0;
     }
   }
 }
