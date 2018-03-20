@@ -13,12 +13,9 @@ for (var name : Set.of("Bach.java", "Project.java", "PrinterFunction.java")) {
 /open target/Project.java
 /open target/PrinterFunction.java
 
-var project = Project.builder()
-project.name = "Bootstrap"
-project.version = "00"
-
 var bach = new Bach()
+var project = Project.builder().name("Bootstrap").version("00").build()
 
-bach.run("project", () -> new PrinterFunction().apply(bach, project.build()))
+bach.run("boot", () -> new PrinterFunction().apply(bach, project))
 
 /exit
