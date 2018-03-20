@@ -13,7 +13,6 @@
 #   install-jdk.sh -W /usr/opt     | install most recent (early-access) JDK to /usr/opt
 #   install-jdk.sh -F 9            | install most recent OpenJDK 9
 #   install-jdk.sh -F 10           | install most recent OpenJDK 10
-#   install-jdk.sh -F 10 -L BCL    | install most recent Oracle JDK 10
 #   install-jdk.sh -F 11           | install most recent OpenJDK 11
 #   install-jdk.sh -F 11 -L BCL    | install most recent Oracle JDK 11
 #
@@ -60,9 +59,9 @@ if [ "${JDK_LICENSE}" != 'GPL' ]; then
 fi
 
 #
-# 9
+# 9 or 10
 #
-if [ "${JDK_FEATURE}" == '9' ]; then
+if [ "${JDK_FEATURE}" == '9' ] || [ "${JDK_FEATURE}" = "10" ]; then
   if [ "${JDK_BUILD}" == '?' ]; then
     TMP=$(curl -L jdk.java.net/${JDK_FEATURE})
     TMP="${TMP#*<h1>JDK}"                                   # remove everything before the number
@@ -73,22 +72,6 @@ if [ "${JDK_FEATURE}" == '9' ]; then
   JDK_ARCHIVE=${JDK_BASENAME}-${JDK_BUILD}_linux-x64_bin.tar.gz
   JDK_URL=${JDK_DOWNLOAD}/GA/jdk${JDK_FEATURE}/${JDK_BUILD}/binaries/${JDK_ARCHIVE}
   JDK_HOME=jdk-${JDK_BUILD}
-fi
-
-#
-# 10
-#
-if [ "${JDK_FEATURE}" == '10' ]; then
-  if [ "${JDK_BUILD}" == '?' ]; then
-    TMP=$(curl -L jdk.java.net/${JDK_FEATURE})
-    TMP="${TMP#*Most recent build: jdk-${JDK_FEATURE}+}"    # remove everything before the number
-    TMP="${TMP%%<*}"                                        # remove everything after the number
-    JDK_BUILD="$(echo -e "${TMP}" | tr -d '[:space:]')"     # remove all whitespace
-  fi
-
-  JDK_ARCHIVE=${JDK_BASENAME}-${JDK_FEATURE}+${JDK_BUILD}_linux-x64_bin.tar.gz
-  JDK_URL=${JDK_DOWNLOAD}/jdk${JDK_FEATURE}/archive/${JDK_BUILD}/${JDK_LICENSE}/${JDK_ARCHIVE}
-  JDK_HOME=jdk-${JDK_FEATURE}
 fi
 
 #
