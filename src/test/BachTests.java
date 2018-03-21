@@ -39,6 +39,7 @@ class BachTests {
   private Bach createBach(List<String> lines) {
     var bach = new Bach();
     bach.quiet = false;
+    bach.offline = false;
     bach.logger = lines::add;
     return bach;
   }
@@ -152,21 +153,48 @@ class BachTests {
 
   @Test
   void download() throws Exception {
-    var expectedLines = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
+    var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
     var tempFile = Files.createTempFile("download-", ".txt");
-    Files.write(tempFile, expectedLines);
+    Files.write(tempFile, content);
     var tempPath = Files.createTempDirectory("download-");
-    bach.download(tempFile.toUri(), tempPath);
+    var first = bach.download(tempFile.toUri(), tempPath);
     var actual = tempPath.resolve(tempFile.getFileName().toString());
+    assertEquals(actual, first);
     assertTrue(Files.exists(actual));
-    assertLinesMatch(expectedLines, Files.readAllLines(actual));
+    assertLinesMatch(content, Files.readAllLines(actual));
     assertLinesMatch(
         List.of("download.*", "transferring `" + tempFile.toUri().toString() + "`...", "stored .*"),
         actualLogLines);
+    // reload
     actualLogLines.clear();
-    bach.download(tempFile.toUri(), tempPath);
+    var second = bach.download(tempFile.toUri(), tempPath);
+    assertEquals(first, second);
     assertLinesMatch(
-            List.of("download.*", "compare last modified time .* of local file...", "skipped, using .*"),
-            actualLogLines);
+        List.of(
+            "download.*", "compare last modified time .* of local file...", "skipped, using .*"),
+        actualLogLines);
+    // offline mode
+    actualLogLines.clear();
+    bach.offline = true;
+    var third = bach.download(tempFile.toUri(), tempPath);
+    assertEquals(second, third);
+    assertLinesMatch(List.of("download.*"), actualLogLines);
+    // offline mode with error
+    Files.delete(actual);
+    assertThrows(Error.class, () -> bach.download(tempFile.toUri(), tempPath));
+    // online but different file
+    actualLogLines.clear();
+    bach.offline = false;
+    Files.write(actual, List.of("Hello world!"));
+    var forth = bach.download(tempFile.toUri(), tempPath);
+    assertEquals(actual, forth);
+    assertLinesMatch(content, Files.readAllLines(actual));
+    assertLinesMatch(
+        List.of(
+            "download.*",
+            "compare last modified time .* of local file...",
+            "transferring `" + tempFile.toUri().toString() + "`...",
+            "stored .*"),
+        actualLogLines);
   }
 }

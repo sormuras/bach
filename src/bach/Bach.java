@@ -42,6 +42,9 @@ class Bach {
   /** Quiet mode switch. */
   boolean quiet = Boolean.getBoolean("bach.quiet");
 
+  /** Offline mode switch. */
+  boolean offline = Boolean.getBoolean("bach.offline");
+
   /** Logger function. */
   Consumer<String> logger = System.out::println;
 
@@ -88,7 +91,7 @@ class Bach {
     URL url = uri.toURL();
     Files.createDirectories(directory);
     Path target = directory.resolve(fileName);
-    if (Boolean.getBoolean("bach.offline")) {
+    if (offline) {
       if (Files.exists(target)) {
         return target;
       }
