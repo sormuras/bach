@@ -19,9 +19,12 @@
 
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.module.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.nio.charset.*;
 import java.nio.file.*;
+import java.nio.file.attribute.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -35,8 +38,6 @@ import java.util.stream.*;
  * @see <a href="https://github.com/sormuras/bach">https://github.com/sormuras/bach</a>
  */
 class Bach {
-
-  static Predicate<Path> IS_JAVA_FILE = path -> path.getFileName().toString().endsWith(".java");
 
   /** Quiet mode switch. */
   boolean quiet = Boolean.getBoolean("bach.quiet");
@@ -74,6 +75,49 @@ class Bach {
       throw new IllegalStateException("0 expected, but got: " + result);
     }
     return result;
+  }
+
+  /** Download the resource specified by its URI to the target directory. */
+  Path download(URI uri, Path targetDirectory) throws IOException {
+    return download(uri, targetDirectory, Util.getFileName(uri), path -> true);
+  }
+
+  /** Download the resource from URI to the target directory using the provided file name. */
+  Path download(URI uri, Path directory, String fileName, Predicate<Path> skip) throws IOException {
+    log("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
+    URL url = uri.toURL();
+    Files.createDirectories(directory);
+    Path target = directory.resolve(fileName);
+    if (Boolean.getBoolean("bach.offline")) {
+      if (Files.exists(target)) {
+        return target;
+      }
+      throw new Error("offline mode is active -- missing file " + target);
+    }
+    URLConnection urlConnection = url.openConnection();
+    FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+    if (Files.exists(target)) {
+      log("compare last modified time [%s] of local file...", urlLastModifiedTime);
+      if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
+        if (Files.size(target) == urlConnection.getContentLengthLong()) {
+          if (skip.test(target)) {
+            log("skipped, using `%s`", target);
+            return target;
+          }
+        }
+      }
+      Files.delete(target);
+    }
+    log("transferring `%s`...", uri);
+    try (InputStream sourceStream = url.openStream();
+        OutputStream targetStream = Files.newOutputStream(target)) {
+      sourceStream.transferTo(targetStream);
+    }
+    if (urlLastModifiedTime.toMillis() != 0) {
+      Files.setLastModifiedTime(target, urlLastModifiedTime);
+    }
+    log("stored `%s` [%s]", target, urlLastModifiedTime);
+    return target;
   }
 }
 
@@ -195,7 +239,7 @@ class Command implements Supplier<Integer> {
 
   /** Add all .java source files by walking specified root paths recursively. */
   Command addAllJavaFiles(List<Path> roots) {
-    return addAll(roots, Bach.IS_JAVA_FILE);
+    return addAll(roots, Util::isJavaFile);
   }
 
   /** Add all reflected options. */
@@ -545,9 +589,9 @@ interface JdkTool {
     public Command toCommand(Object... extras) {
       var command = JdkTool.super.toCommand(extras);
       command.mark(10);
-      command.addAll(classSourcePath, Bach.IS_JAVA_FILE);
+      command.addAll(classSourcePath, Util::isJavaFile);
       if (module == null) {
-        command.addAll(moduleSourcePath, Bach.IS_JAVA_FILE);
+        command.addAll(moduleSourcePath, Util::isJavaFile);
       }
       command.setExecutableSupportsArgumentFile(true);
       return command;
@@ -777,5 +821,93 @@ interface JdkTool {
   /** Create command instance based on this tool's options. */
   default Command toCommand(Object... extras) {
     return new Command(name()).addAllOptions(this).addAll(extras);
+  }
+}
+
+/** Static utilities and helpers. */
+class Util {
+
+  /** Return {@code true} if the path points to a canonical Java archive file. */
+  static boolean isJarFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      return path.getFileName().toString().endsWith(".jar");
+    }
+    return false;
+  }
+
+  /** Return {@code true} if the path points to a canonical Java compilation unit file. */
+  static boolean isJavaFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      var name = path.getFileName().toString();
+      if (name.endsWith(".java")) {
+        return name.indexOf('.') == name.length() - 5; // single dot in filename
+      }
+    }
+    return false;
+  }
+
+  /** Return list of child directories directly present in {@code root} path. */
+  static List<Path> findDirectories(Path root) {
+    if (Files.notExists(root)) {
+      return Collections.emptyList();
+    }
+    try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+      return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new UncheckedIOException("findDirectories failed for root: " + root, e);
+    }
+  }
+
+  /** Return list of child directory names directly present in {@code root} path. */
+  static List<String> findDirectoryNames(Path root) {
+    return findDirectories(root)
+        .stream()
+        .map(root::relativize)
+        .map(Path::toString)
+        .collect(Collectors.toList());
+  }
+
+  /** Return the file name of the uri. */
+  static String getFileName(URI uri) {
+    var urlString = uri.getPath();
+    var begin = urlString.lastIndexOf('/') + 1;
+    return urlString.substring(begin).split("\\?")[0].split("#")[0];
+  }
+
+  /** Return the location path of the module reference. */
+  static Path getPath(ModuleReference moduleReference) {
+    return Paths.get(moduleReference.location().orElseThrow());
+  }
+
+  /** Collect all Java archives ({@code .jar} files) into a list. */
+  static List<Path> getClassPath(List<Path> modulePath, List<Path> depsPath) {
+    List<Path> classPath = new ArrayList<>();
+    for (var path : modulePath) {
+      ModuleFinder.of(path).findAll().stream().map(Util::getPath).forEach(classPath::add);
+    }
+    for (var path : depsPath) {
+      try (Stream<Path> paths = Files.walk(path, 1)) {
+        paths.filter(Util::isJarFile).forEach(classPath::add);
+      } catch (IOException e) {
+        throw new UncheckedIOException("failed adding jars from " + path + " to classpath", e);
+      }
+    }
+    return classPath;
+  }
+
+  /** Return patch map using two lists of paths. */
+  static Map<String, List<Path>> getPatchMap(List<Path> basePath, List<Path> patchPath) {
+    var map = new TreeMap<String, List<Path>>();
+    for (var base : basePath) {
+      for (var name : findDirectoryNames(base)) {
+        for (var patch : patchPath) {
+          var candidate = patch.resolve(name);
+          if (Files.isDirectory(candidate)) {
+            map.computeIfAbsent(name, __ -> new ArrayList<>()).add(candidate);
+          }
+        }
+      }
+    }
+    return map;
   }
 }
