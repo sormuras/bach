@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.IntSupplier;
@@ -147,5 +148,25 @@ class BachTests {
     }
     bach.log("%s done. %d", name, millis);
     return result.getAsInt();
+  }
+
+  @Test
+  void download() throws Exception {
+    var expectedLines = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
+    var tempFile = Files.createTempFile("download-", ".txt");
+    Files.write(tempFile, expectedLines);
+    var tempPath = Files.createTempDirectory("download-");
+    bach.download(tempFile.toUri(), tempPath);
+    var actual = tempPath.resolve(tempFile.getFileName().toString());
+    assertTrue(Files.exists(actual));
+    assertLinesMatch(expectedLines, Files.readAllLines(actual));
+    assertLinesMatch(
+        List.of("download.*", "transferring `" + tempFile.toUri().toString() + "`...", "stored .*"),
+        actualLogLines);
+    actualLogLines.clear();
+    bach.download(tempFile.toUri(), tempPath);
+    assertLinesMatch(
+            List.of("download.*", "compare last modified time .* of local file...", "skipped, using .*"),
+            actualLogLines);
   }
 }
