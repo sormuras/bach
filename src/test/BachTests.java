@@ -38,6 +38,7 @@ class BachTests {
 
   private Bach createBach(List<String> lines) {
     var bach = new Bach();
+    bach.debug = true;
     bach.quiet = false;
     bach.offline = false;
     bach.logger = lines::add;
@@ -46,8 +47,20 @@ class BachTests {
 
   @Test
   void log() {
-    bach.log("log %s", "test");
-    assertEquals("log test", actualLogLines.get(0));
+    bach.log("log %s", "1");
+    bach.quiet = true;
+    bach.log("log %s", "2");
+    assertEquals(1, actualLogLines.size());
+    assertEquals("log 1", actualLogLines.get(0));
+  }
+
+  @Test
+  void debug() {
+    bach.debug("debug %s", "1");
+    bach.quiet = true;
+    bach.debug("debug %s", "2");
+    assertEquals(1, actualLogLines.size());
+    assertEquals("debug 1", actualLogLines.get(0));
   }
 
   @Test
@@ -158,12 +171,16 @@ class BachTests {
     Files.write(tempFile, content);
     var tempPath = Files.createTempDirectory("download-");
     var first = bach.download(tempFile.toUri(), tempPath);
-    var actual = tempPath.resolve(tempFile.getFileName().toString());
+    var name = tempFile.getFileName().toString();
+    var actual = tempPath.resolve(name);
     assertEquals(actual, first);
     assertTrue(Files.exists(actual));
     assertLinesMatch(content, Files.readAllLines(actual));
     assertLinesMatch(
-        List.of("download.*", "transferring `" + tempFile.toUri().toString() + "`...", "stored .*"),
+        List.of(
+            "download.*",
+            "transferring `" + tempFile.toUri().toString() + "`...",
+            "`" + name + "` downloaded .*"),
         actualLogLines);
     // reload
     actualLogLines.clear();
@@ -171,7 +188,9 @@ class BachTests {
     assertEquals(first, second);
     assertLinesMatch(
         List.of(
-            "download.*", "compare last modified time .* of local file...", "skipped, using .*"),
+            "download.*",
+            "local file already exists -- comparing properties to remote file...",
+            "local and remote file properties seem to match, using .*"),
         actualLogLines);
     // offline mode
     actualLogLines.clear();
@@ -192,9 +211,10 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "download.*",
-            "compare last modified time .* of local file...",
+            "local file already exists -- comparing properties to remote file...",
+            "local file `.*` differs from remote one -- deleting it",
             "transferring `" + tempFile.toUri().toString() + "`...",
-            "stored .*"),
+            "`" + name + "` downloaded .*"),
         actualLogLines);
   }
 }

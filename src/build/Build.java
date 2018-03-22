@@ -66,18 +66,7 @@ interface Build {
 
   /** Download the resource from URI to the target directory using the provided file name. */
   static Path download(URI uri, Path directory, String fileName) throws Exception {
-    var target = directory.resolve(fileName);
-    if (Files.exists(target)) {
-      return target;
-    }
-    Files.createDirectories(directory);
-    var url = uri.toURL();
-    System.out.printf("loading %s...%n", fileName);
-    try (var sourceStream = url.openStream();
-        var targetStream = Files.newOutputStream(target)) {
-      sourceStream.transferTo(targetStream);
-    }
-    return target;
+    return new Bach().download(uri, directory, fileName);
   }
 
   static void format() throws Exception {

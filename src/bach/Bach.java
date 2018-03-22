@@ -42,6 +42,9 @@ class Bach {
   /** Quiet mode switch. */
   boolean quiet = Boolean.getBoolean("bach.quiet");
 
+  /** Debug mode switch. */
+  boolean debug = Boolean.getBoolean("bach.debug");
+
   /** Offline mode switch. */
   boolean offline = Boolean.getBoolean("bach.offline");
 
@@ -53,6 +56,13 @@ class Bach {
     if (!quiet) {
       var message = String.format(format, arguments);
       logger.accept(message);
+    }
+  }
+
+  /** Log debug level statement, if not quiet. */
+  void debug(String format, Object... arguments) {
+    if (debug) {
+      log(format, arguments);
     }
   }
 
@@ -82,44 +92,49 @@ class Bach {
 
   /** Download the resource specified by its URI to the target directory. */
   Path download(URI uri, Path targetDirectory) throws IOException {
-    return download(uri, targetDirectory, Util.getFileName(uri), path -> true);
+    return download(uri, targetDirectory, Util.getFileName(uri));
   }
 
   /** Download the resource from URI to the target directory using the provided file name. */
-  Path download(URI uri, Path directory, String fileName, Predicate<Path> skip) throws IOException {
-    log("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
-    URL url = uri.toURL();
+  Path download(URI uri, Path directory, String fileName) throws IOException {
+    debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
+    var url = uri.toURL();
     Files.createDirectories(directory);
-    Path target = directory.resolve(fileName);
+    var target = directory.resolve(fileName);
     if (offline) {
       if (Files.exists(target)) {
         return target;
       }
       throw new Error("offline mode is active -- missing file " + target);
     }
-    URLConnection urlConnection = url.openConnection();
-    FileTime urlLastModifiedTime = FileTime.fromMillis(urlConnection.getLastModified());
+    var urlConnection = url.openConnection();
+    var urlLastModifiedMillis = urlConnection.getLastModified();
+    var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
     if (Files.exists(target)) {
-      log("compare last modified time [%s] of local file...", urlLastModifiedTime);
-      if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime)) {
+      debug("local file already exists -- comparing properties to remote file...");
+      var unknownTime = urlLastModifiedMillis == 0L;
+      if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
         if (Files.size(target) == urlConnection.getContentLengthLong()) {
-          if (skip.test(target)) {
-            log("skipped, using `%s`", target);
-            return target;
-          }
+          debug("local and remote file properties seem to match, using `%s`", target);
+          return target;
         }
       }
-      Files.delete(target);
+      debug("local file `%s` differs from remote one -- deleting it", target);
+      try {
+        Files.delete(target);
+      } catch (IOException e) {
+        // fall-though
+      }
     }
-    log("transferring `%s`...", uri);
+    debug("transferring `%s`...", uri);
     try (InputStream sourceStream = url.openStream();
         OutputStream targetStream = Files.newOutputStream(target)) {
       sourceStream.transferTo(targetStream);
     }
-    if (urlLastModifiedTime.toMillis() != 0) {
+    if (urlLastModifiedMillis != 0L) {
       Files.setLastModifiedTime(target, urlLastModifiedTime);
     }
-    log("stored `%s` [%s]", target, urlLastModifiedTime);
+    log("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
     return target;
   }
 }
