@@ -8,10 +8,16 @@ before_install:
 
 matrix:
   include:
-    - env: JDK_RELEASE='Oracle JDK 11'
+    - env: JDK='OpenJDK 10'
+      install: . ./install-jdk.sh -F 10 -L GPL
+    - env: JDK='Oracle JDK 11'
       install: . ./install-jdk.sh -F 11 -L BCL
-    - env: JDK_RELEASE='OpenJDK 11'
+    - env: JDK='OpenJDK 11'
       install: . ./install-jdk.sh -F 11 -L GPL
+  allow_failures:
+    # JaCoCo is not yet working on JDK 11
+    - env: JDK='Oracle JDK 11'
+    - env: JDK='OpenJDK 11'
 
 script:
 - java --version
