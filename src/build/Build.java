@@ -192,15 +192,35 @@ interface Build {
     var jar = download(uri, TOOLS.resolve(name), file);
 
     var jacoco = maven("org.jacoco", "org.jacoco.agent", "0.8.1", "runtime");
+    var jacoexec = JACOCO.resolve("jacoco.exec");
 
     var java = new Command("java");
     java.add("-ea");
     // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
-    java.add("-javaagent:" + jacoco + "=destfile=" + JACOCO.resolve("jacoco.exec"));
+    java.add(
+        "-javaagent:" + jacoco + "=destfile=" + jacoexec + ",includes=Bach:Command:JdkTool:Util");
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
     java.add("--scan-classpath");
     java.run();
+
+    var jacocli = new JdkTool.Java();
+    jacocli.jar = maven("org.jacoco", "org.jacoco.cli", "0.8.1", "nodeps");
+    jacocli.args =
+        List.of(
+            "report",
+            JACOCO.resolve("jacoco.exec"),
+            "--sourcefiles",
+            SOURCE_BACH,
+            "--classfiles",
+            TARGET_MAIN,
+            "--xml",
+            JACOCO.resolve("jacoco.xml"),
+            "--html",
+            JACOCO.resolve("html")
+            //
+            );
+    jacocli.run();
   }
 }
