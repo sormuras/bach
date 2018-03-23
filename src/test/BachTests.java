@@ -212,7 +212,7 @@ class BachTests {
         List.of(
             "download.*",
             "local file already exists -- comparing properties to remote file...",
-            "local file `.*` differs from remote one -- deleting it",
+            "local file `.*` differs from remote one -- replacing it",
             "transferring `" + tempFile.toUri().toString() + "`...",
             "`" + name + "` downloaded .*"),
         actualLogLines);

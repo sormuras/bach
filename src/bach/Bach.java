@@ -119,17 +119,11 @@ class Bach {
           return target;
         }
       }
-      debug("local file `%s` differs from remote one -- deleting it", target);
-      try {
-        Files.delete(target);
-      } catch (IOException e) {
-        // fall-though
-      }
+      debug("local file `%s` differs from remote one -- replacing it", target);
     }
     debug("transferring `%s`...", uri);
-    try (InputStream sourceStream = url.openStream();
-        OutputStream targetStream = Files.newOutputStream(target)) {
-      sourceStream.transferTo(targetStream);
+    try (var stream = url.openStream()) {
+      Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
     }
     if (urlLastModifiedMillis != 0L) {
       Files.setLastModifiedTime(target, urlLastModifiedTime);
