@@ -18,6 +18,8 @@ script:
 - ./build.jsh
 
 after_success:
+- bash <(curl -s https://codecov.io/bash)
+
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 - ./bootstrap.jsh
 

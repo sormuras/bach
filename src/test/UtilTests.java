@@ -69,7 +69,7 @@ class UtilTests {
     assertEquals(List.of(), Util.getClassPath(List.of(), List.of()));
     var mods = List.of(Paths.get(".bach/resolved"));
     var deps = List.of(Paths.get(".bach/tools/google-java-format"));
-    assertEquals(5, Util.getClassPath(mods, deps).size());
+    assertEquals(6, Util.getClassPath(mods, deps).size());
   }
 
   @Test

@@ -32,6 +32,7 @@ interface Build {
   Path TARGET_TEST = TARGET.resolve("classes/test");
   Path JAVADOC = TARGET.resolve("javadoc");
   Path ARTIFACTS = TARGET.resolve("artifacts");
+  Path JACOCO = TARGET.resolve("jacoco");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
   String JUNIT_JUPITER = "5.1.0";
@@ -58,8 +59,16 @@ interface Build {
   }
 
   static Path maven(String group, String artifact, String version) throws Exception {
+    return maven(group, artifact, version, "");
+  }
+
+  static Path maven(String group, String artifact, String version, String classifier)
+      throws Exception {
+    if (!classifier.isEmpty() && !classifier.startsWith("-")) {
+      classifier = "-" + classifier;
+    }
     var repo = "http://central.maven.org/maven2";
-    var file = artifact + "-" + version + ".jar";
+    var file = artifact + "-" + version + classifier + ".jar";
     var uri = URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
     return download(uri, MAVEN, file);
   }
@@ -182,9 +191,12 @@ interface Build {
     var uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
     var jar = download(uri, TOOLS.resolve(name), file);
 
+    var jacoco = maven("org.jacoco", "org.jacoco.agent", "0.8.1", "runtime");
+
     var java = new Command("java");
     java.add("-ea");
     // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
+    java.add("-javaagent:" + jacoco + "=destfile=" + JACOCO.resolve("jacoco.exec"));
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
