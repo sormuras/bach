@@ -1,9 +1,15 @@
-# Bach!
+# What is JUnit 5?
 
-Begin
+JUnit 5 = ...
  
 ---
  
- End
+# What is JUnit 5?
+
+JUnit 5 = JUnit Platform + ... 
+
+---
  
- ## End.
+# What is JUnit 5?
+
+JUnit 5 = JUnit Platform + _JUnit Jupiter_ + _JUnit Vintage_
