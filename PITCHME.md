@@ -30,6 +30,7 @@ class FirstJUnit5Tests {
 
 }
 ```
+
 [@1](Import JUnit Jupiter API)
-[@3](Use 'package-private' modifier)
-[@5-@8](@Test-annotated method, also 'package-private')
+[@3,6](Use 'package-private' modifier)
+[@5-8](@Test-annotated method, also 'package-private')
