@@ -2,14 +2,20 @@
 
 ---
  
-# JUnit 5 = *JUnit Platform* + ...
+### JUnit 5
+##### includes
+# JUnit Platform
+##### _and ..._
 
-- Foundation for launching testing frameworks on the JVM
+- Foundation for launching testing frameworks
 - Defines and uses `TestEngine` interface
 
 ---
  
-# JUnit 5 = ... + *JUnit Jupiter* + ...
+### JUnit 5
+##### includes
+# JUnit Jupiter
+##### _and ..._
 
 - New programming model for writing tests 
 - New extension model for writing extensions
@@ -17,18 +23,55 @@
 
 ---
  
-# JUnit 5 = ... + *JUnit Vintage*
+### JUnit 5
+##### includes
+# JUnit Vintage
+### _and ..._
+
 
 - Enables running JUnit 3 and JUnit 4 tests
 - `VintageTestEngine implements TestEngine`
 
 ---
- 
-# JUnit 5 = ... + *Your Testing Framework*
+
+### JUnit 5 
+##### supports
+# Your Testing Framework
 
 - What is a test? You define it!
 - How is a test evaluated? You define it!
-- `FooTestEngine implements TestEngine`
+- `YourTestEngine implements TestEngine`
+- Get tooling support for granted.
+
+---
+
+# This is JUnit 5
+
+// big picture from PDF
+
+// now into the red box "Jupiter"
+
+---
+
+# Jupiter
+
+- First Jupiter Test
+- Annotations
+- Standard Test Class
+- Display Names
+- Assertions
+- Assumptions
+- Disabling Tests
+- Conditional Test Execution
+- Tagging and Filtering
+- Test Instance Lifecycle
+- Nested Tests
+- Dependency Injection for Constructors and Methods
+- Test Interfaces and Default Methods
+- Repeated Tests
+- Parameterized Tests
+- Test Templates
+- Dynamic Tests
 
 ---
 
