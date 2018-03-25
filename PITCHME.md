@@ -1,18 +1,34 @@
 # What is JUnit 5?
 
-JUnit 5 = ...
- 
 ---
  
-# What is JUnit 5?
+# JUnit 5 = *JUnit Platform* + ...
 
-JUnit 5 = JUnit Platform + ... 
+- Foundation for launching testing frameworks on the JVM
+- Defines and uses `TestEngine` interface
 
 ---
  
-# What is JUnit 5?
+# JUnit 5 = ... + *JUnit Jupiter* + ...
 
-JUnit 5 = JUnit Platform + _JUnit Jupiter_ + _JUnit Vintage_
+- New programming model for writing tests 
+- New extension model for writing extensions
+- `JupiterTestEngine implements TestEngine`
+
+---
+ 
+# JUnit 5 = ... + *JUnit Vintage*
+
+- Enables running JUnit 3 and JUnit 4 tests
+- `VintageTestEngine implements TestEngine`
+
+---
+ 
+# JUnit 5 = ... + *Your Testing Framework*
+
+- What is a test? You define it!
+- How is a test evaluated? You define it!
+- `FooTestEngine implements TestEngine`
 
 ---
 
