@@ -2,34 +2,34 @@
 
 ---
  
-##### JUnit 5 = JUnit Platform + ...
+#### JUnit 5 = JUnit Platform + ...
 
-- Foundation for launching testing frameworks |
+- Foundation for launching testing frameworks
 - Defines and uses `TestEngine` interface     |
 
 ---
  
-##### JUnit 5 = ... JUnit Jupiter + ...
+#### JUnit 5 = ... JUnit Jupiter + ...
 
 - New programming model for writing tests
-- New extension model for writing extensions
-- `JupiterTestEngine implements TestEngine`
+- New extension model for writing extensions |
+- `JupiterTestEngine implements TestEngine`  |
 
 ---
  
-##### JUnit 5 = ... JUnit Vintage + ...
+#### JUnit 5 = ... JUnit Vintage + ...
 
 - Enables running JUnit 3 and JUnit 4 tests
-- `VintageTestEngine implements TestEngine`
+- `VintageTestEngine implements TestEngine` |
 
 ---
 
-##### JUnit 5 = ... + Your Testing Framework
+#### JUnit 5 = ... + Your Testing Framework
 
 - What is a test? You define it!
-- How is a test evaluated? You define it!
-- `YourTestEngine implements TestEngine`
-- Get tooling support for granted.
+- How is a test evaluated? You define it! |
+- `YourTestEngine implements TestEngine`  |
+- Get tooling support for granted.        |
 
 ---
 
@@ -41,25 +41,30 @@
 
 ---
 
-# Jupiter
+#### Jupiter
 
 - First Jupiter Test
-- Annotations
-- Standard Test Class
-- Display Names
-- Assertions
-- Assumptions
-- Disabling Tests
-- Conditional Test Execution
-- Tagging and Filtering
+- Annotations |
+- Standard Test Class |
+- Display Names |
+- Assertions |
+- Assumptions |
+- Disabling Tests |
+- Conditional Test Execution |
+- Tagging and Filtering |
+
+---
+
+#### Jupiter
+
 - Test Instance Lifecycle
-- Nested Tests
-- Dependency Injection for Constructors and Methods
-- Test Interfaces and Default Methods
-- Repeated Tests
-- Parameterized Tests
-- Test Templates
-- Dynamic Tests
+- Nested Tests |
+- Dependency Injection |
+- Test Interfaces |
+- Repeated Tests |
+- Parameterized Tests |
+- Test Templates |
+- Dynamic Tests |
 
 ---
 
@@ -81,3 +86,31 @@ class FirstJUnit5Tests {
 @[1](Import JUnit Jupiter API)
 @[3,6](Use 'package-private' modifier)
 @[5-8](@Test-annotated method, also 'package-private')
+
+---
+
+### More Core Annotations
+
+
+---
+
+### Meta-Annotations
+
+Definition
+
+```java
+@Tag("fast")
+@Tag("system")
+@Test
+public @interface FastSystemTest {}
+```
+
+@[1-2](Multiple tags)
+@[3](Mark as test)
+
+Usage
+```java
+@FastSystemTest
+void holodeckTest() {...}
+```
+@[1](Use your meta-annotation)
