@@ -4,14 +4,14 @@
  
 #### JUnit 5 = JUnit Platform + ...
 
-- Foundation for launching testing frameworks
+- Foundation for launching testing frameworks |
 - Defines and uses `TestEngine` interface     |
 
 ---
  
 #### JUnit 5 = ... JUnit Jupiter + ...
 
-- New programming model for writing tests
+- New programming model for writing tests    |
 - New extension model for writing extensions |
 - `JupiterTestEngine implements TestEngine`  |
 
@@ -19,14 +19,14 @@
  
 #### JUnit 5 = ... JUnit Vintage + ...
 
-- Enables running JUnit 3 and JUnit 4 tests
+- Enables running JUnit 3 and JUnit 4 tests |
 - `VintageTestEngine implements TestEngine` |
 
 ---
 
 #### JUnit 5 = ... + Your Testing Framework
 
-- What is a test? You define it!
+- What is a test? You define it!          |
 - How is a test evaluated? You define it! |
 - `YourTestEngine implements TestEngine`  |
 - Get tooling support for granted.        |
@@ -91,26 +91,60 @@ class FirstJUnit5Tests {
 
 ### More Core Annotations
 
-
 ---
 
 ### Meta-Annotations
-
-Definition
 
 ```java
 @Tag("fast")
 @Tag("system")
 @Test
 public @interface FastSystemTest {}
+
+// ---
+
+@FastSystemTest
+void mySecondTest() {...} 
 ```
 
 @[1-2](Multiple tags)
 @[3](Mark as test)
+@[4,8](Use your meta-annotation)
 
-Usage
+---
+
+# JPMS
+
+[Modules] are named, self-describing program components consisting of code and data. A module must be able to contain Java classes and interfaces, as organized into packages, and also native code, in the form of dynamically-loadable libraries. A module’s data must be able to contain static resource files and user-editable configuration files.
+[http://openjdk.java.net/projects/jigsaw/spec/reqs/02#modules]
+
+---
+
+# What is a module?
+- Named
+- Set of packages (code and data)
+- Module Metadata (module-info.class)
+
+---
+
+# Modular Jar
+
+- com.example.tool.jar
+-   com.example.tool
+-   com.example.tool.internal
+
+module-info.java
 ```java
-@FastSystemTest
-void holodeckTest() {...}
+module com.example.tool {
+  exports com.example.tool;
+}
 ```
-@[1](Use your meta-annotation)
+
+- com.example.tool.jar
+- + module-info.class
+-   com.example.tool
+-   ~com.example.tool.internal~
+
+# Modular World
+
+https://github.com/junit-team/junit5-samples/blob/master/README.md
