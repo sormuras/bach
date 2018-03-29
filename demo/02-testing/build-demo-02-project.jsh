@@ -4,7 +4,6 @@
 /open ../../src/bach/Bach.jsh
 
 // remove after merge
-/open ../../src/bach/Project.java
 /open ../../src/bach/PrinterFunction.java
 
 /open src/build/BuildDemo02Project.java

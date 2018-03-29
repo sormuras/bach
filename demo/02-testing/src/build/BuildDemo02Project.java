@@ -66,9 +66,7 @@ class BuildDemo02Project {
     @Override
     public Integer get() {
       bach.log("[compiler] %s", project);
-      compile(project.moduleGroup("main"));
-      compile(project.moduleGroup("test"));
-      return 0;
+      return project.moduleGroups().stream().mapToInt(this::compile).sum();
     }
   }
 }
