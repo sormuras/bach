@@ -7,7 +7,7 @@
 - Foundation for launching testing frameworks |
 - Defines and uses `TestEngine` interface     |
 
----
++++
  
 #### JUnit 5 = ... JUnit Jupiter + ...
 
@@ -15,14 +15,14 @@
 - New extension model for writing extensions |
 - `JupiterTestEngine implements TestEngine`  |
 
----
++++
  
 #### JUnit 5 = ... JUnit Vintage + ...
 
 - Enables running JUnit 3 and JUnit 4 tests |
 - `VintageTestEngine implements TestEngine` |
 
----
++++
 
 #### JUnit 5 = ... + Your Testing Framework
 
@@ -39,7 +39,7 @@
 
 // now into the red box "Jupiter"
 
----
++++
 
 #### Jupiter
 
@@ -53,7 +53,7 @@
 - Conditional Test Execution |
 - Tagging and Filtering |
 
----
++++
 
 #### Jupiter
 
@@ -87,11 +87,11 @@ class FirstJUnit5Tests {
 @[3,6](Use 'package-private' modifier)
 @[5-8](@Test-annotated method, also 'package-private')
 
----
++++
 
 ### More Core Annotations
 
----
++++
 
 ### Meta-Annotations
 
@@ -99,9 +99,7 @@ class FirstJUnit5Tests {
 @Tag("fast")
 @Tag("system")
 @Test
-public @interface FastSystemTest {}
-
-// ---
+@interface FastSystemTest {}
 
 @FastSystemTest
 void mySecondTest() {...} 
@@ -125,13 +123,17 @@ void mySecondTest() {...}
 - Set of packages (code and data)
 - Module Metadata (module-info.class)
 
----
++++
 
-# Modular Jar
+# Simple Jar
 
 - com.example.tool.jar
 -   com.example.tool
 -   com.example.tool.internal
+
++++
+
+# Module Descriptor
 
 module-info.java
 ```java
@@ -139,6 +141,10 @@ module com.example.tool {
   exports com.example.tool;
 }
 ```
+
++++
+
+# Modular Jar
 
 - com.example.tool.jar
 - + module-info.class
