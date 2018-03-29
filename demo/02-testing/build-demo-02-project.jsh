@@ -5,9 +5,10 @@
 
 // remove after merge
 /open ../../src/bach/Project.java
+/open ../../src/bach/PrinterFunction.java
 
-/open build/BuildDemo02Project.java
+/open src/build/BuildDemo02Project.java
 
-BuildDemo03Project.main()
+BuildDemo02Project.main()
 
 /exit
