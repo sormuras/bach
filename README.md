@@ -68,11 +68,15 @@ java("--version")
 /exit
 ```
 
+When [/open URI](https://bugs.openjdk.java.net/browse/JDK-8199912) is implemented in [jshell] 11 or later the bootstrap
+commands for loading [Bach.java] boil down to:
+
+`/open https://raw.githubusercontent.com/sormuras/bach/master/src/bach//Bach.java`.
 
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[jshell]: https://docs.oracle.com/javase/9/tools/jshell.htm
+[jshell]: https://docs.oracle.com/javase/10/tools/jshell.htm
 [Bach.java]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.java
 [Bach.jsh]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.jsh
 [bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/demo/00-bootstrap/bootstrap.jsh
