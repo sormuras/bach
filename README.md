@@ -45,7 +45,7 @@ Copy and paste the source of [bootstrap.jsh] to automatically download that late
  * Download "Bach.java" and "Bach.jsh" from github to local "target" directory.
  */
 var target = Files.createDirectories(Paths.get("target"))
-var remote = new URL("https://raw.githubusercontent.com/sormuras/bach/master/src/bach/")
+var remote = new URL("https://github.com/sormuras/bach/raw/master/src/bach/")
 for (var name : Set.of("Bach.java", "Bach.jsh")) {
   var script = target.resolve(name);
   // if (Files.exists(script)) continue; // uncomment to preserve existing files
