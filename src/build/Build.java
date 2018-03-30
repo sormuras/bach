@@ -32,15 +32,12 @@ interface Build {
   Path TARGET_TEST = TARGET.resolve("classes/test");
   Path JAVADOC = TARGET.resolve("javadoc");
   Path ARTIFACTS = TARGET.resolve("artifacts");
-  Path JACOCO = TARGET.resolve("jacoco");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
   String JUNIT_JUPITER = "5.1.0";
   String JUNIT_PLATFORM = "1.1.0";
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
-
-  boolean IS_JACOCO_SUPPORTED = Runtime.version().feature() <= 10;
 
   static void main(String... args) {
     System.out.printf("%n[main]%n%n");
@@ -50,9 +47,6 @@ interface Build {
       clean();
       compile();
       test();
-      if (IS_JACOCO_SUPPORTED) {
-        jacoco();
-      }
       javadoc();
       jar();
       jdeps();
@@ -196,40 +190,14 @@ interface Build {
     var uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
     var jar = download(uri, TOOLS.resolve(name), file);
 
-    var jacoco = maven("org.jacoco", "org.jacoco.agent", "0.8.1", "runtime");
-    var jacoexec = JACOCO.resolve("jacoco.exec");
-
     var java = new Command("java");
     java.add("-ea");
-    // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
-    if (IS_JACOCO_SUPPORTED) {
-      java.add("-javaagent:" + jacoco + "=destfile=" + jacoexec);
-    }
+    java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
     java.add("--class-path").add(Paths.get("src/test-resources"));
     java.add("--scan-classpath");
     java.run();
-  }
-
-  static void jacoco() throws Exception {
-    System.out.printf("%n[jacoco]%n%n");
-
-    var jacocli = new JdkTool.Java();
-    jacocli.jar = maven("org.jacoco", "org.jacoco.cli", "0.8.1", "nodeps");
-    jacocli.args =
-        List.of(
-            "report",
-            JACOCO.resolve("jacoco.exec"),
-            "--sourcefiles",
-            SOURCE_BACH,
-            "--classfiles",
-            TARGET_MAIN,
-            "--xml",
-            JACOCO.resolve("jacoco.xml"),
-            "--html",
-            JACOCO.resolve("html"));
-    jacocli.run();
   }
 }

@@ -20,8 +20,6 @@ script:
 - ./build.jsh
 
 after_success:
-- test "${JDK}" = "OpenJDK 10" && bash <(curl -s https://codecov.io/bash) || true
-
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 - ./bootstrap.jsh
 
