@@ -32,46 +32,68 @@ import org.junit.jupiter.api.Test;
 
 class JdkToolTests {
 
-  @Test
-  void javac() {
-    var expectedLines =
-        List.of(
-            "javac",
-            "--class-path",
-            "  classes",
-            "-g",
-            "-deprecation",
-            "-d",
-            "  out",
-            "-encoding",
-            "  US-ASCII",
-            "-Werror",
-            "--patch-module",
-            "  foo=bar",
-            "--module-path",
-            "  mods",
-            "--module-source-path",
-            "  src",
-            "--add-modules",
-            "  mod.A,ALL-MODULE-PATH,mod.B",
-            "-parameters",
-            "-verbose",
-            ">> many .java files >>");
-    var javac = new JdkTool.Javac();
-    javac.generateAllDebuggingInformation = true;
-    javac.deprecation = true;
-    javac.destination = Paths.get("out");
-    javac.encoding = StandardCharsets.US_ASCII;
-    javac.failOnWarnings = true;
-    javac.parameters = true;
-    javac.verbose = true;
-    javac.classPath = List.of(Paths.get("classes"));
-    javac.classSourcePath = List.of(Paths.get("src/build"));
-    javac.moduleSourcePath = List.of(Paths.get("src"));
-    javac.modulePath = List.of(Paths.get("mods"));
-    javac.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
-    javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
-    assertLinesMatch(expectedLines, dump(javac.toCommand()));
+  @Nested
+  class Javac {
+    @Test
+    void defaults() {
+      var expectedLines =
+          List.of("javac", "-deprecation", "-encoding", "  UTF-8", "-Werror", "-parameters");
+      assertLinesMatch(expectedLines, dump(new JdkTool.Javac().toCommand()));
+    }
+
+    @Test
+    void basic() {
+      var expectedLines = List.of("javac", "--module", "  foo");
+      var javac = new JdkTool.Javac();
+      javac.deprecation = false;
+      javac.encoding = null;
+      javac.failOnWarnings = false;
+      javac.parameters = false;
+      javac.module = "foo";
+      assertLinesMatch(expectedLines, dump(javac.toCommand()));
+    }
+
+    @Test
+    void customized() {
+      var expectedLines =
+          List.of(
+              "javac",
+              "--class-path",
+              "  classes",
+              "-g",
+              "-deprecation",
+              "-d",
+              "  out",
+              "-encoding",
+              "  US-ASCII",
+              "-Werror",
+              "--patch-module",
+              "  foo=bar",
+              "--module-path",
+              "  mods",
+              "--module-source-path",
+              "  src",
+              "--add-modules",
+              "  mod.A,ALL-MODULE-PATH,mod.B",
+              "-parameters",
+              "-verbose",
+              ">> many .java files >>");
+      var javac = new JdkTool.Javac();
+      javac.generateAllDebuggingInformation = true;
+      javac.deprecation = true;
+      javac.destination = Paths.get("out");
+      javac.encoding = StandardCharsets.US_ASCII;
+      javac.failOnWarnings = true;
+      javac.parameters = true;
+      javac.verbose = true;
+      javac.classPath = List.of(Paths.get("classes"));
+      javac.classSourcePath = List.of(Paths.get("src/build"));
+      javac.moduleSourcePath = List.of(Paths.get("src"));
+      javac.modulePath = List.of(Paths.get("mods"));
+      javac.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
+      javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
+      assertLinesMatch(expectedLines, dump(javac.toCommand()));
+    }
   }
 
   @Test
@@ -179,32 +201,41 @@ class JdkToolTests {
     }
   }
 
-  @Test
-  void jar() {
-    var expectedLines =
-        List.of(
-            "jar",
-            "--list",
-            "--file",
-            "  fleet.jar",
-            "--main-class",
-            "  uss.Enterprise",
-            "--module-version",
-            "  1701",
-            "--no-compress",
-            "--verbose",
-            "-C",
-            "  classes",
-            ".");
-    var jar = new JdkTool.Jar();
-    jar.mode = "--list";
-    jar.file = Paths.get("fleet.jar");
-    jar.mainClass = "uss.Enterprise";
-    jar.moduleVersion = "1701";
-    jar.noCompress = true;
-    jar.verbose = true;
-    jar.path = Paths.get("classes");
-    assertLinesMatch(expectedLines, dump(jar.toCommand()));
+  @Nested
+  class Jar {
+    @Test
+    void defaults() {
+      var expectedLines = List.of("jar", "--create", "--file", "  out.jar");
+      assertLinesMatch(expectedLines, dump(new JdkTool.Jar().toCommand()));
+    }
+
+    @Test
+    void customized() {
+      var expectedLines =
+          List.of(
+              "jar",
+              "--list",
+              "--file",
+              "  fleet.jar",
+              "--main-class",
+              "  uss.Enterprise",
+              "--module-version",
+              "  1701",
+              "--no-compress",
+              "--verbose",
+              "-C",
+              "  classes",
+              ".");
+      var jar = new JdkTool.Jar();
+      jar.mode = "--list";
+      jar.file = Paths.get("fleet.jar");
+      jar.mainClass = "uss.Enterprise";
+      jar.moduleVersion = "1701";
+      jar.noCompress = true;
+      jar.verbose = true;
+      jar.path = Paths.get("classes");
+      assertLinesMatch(expectedLines, dump(jar.toCommand()));
+    }
   }
 
   @Test

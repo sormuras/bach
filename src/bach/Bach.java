@@ -91,8 +91,8 @@ class Bach {
   }
 
   /** Download the resource specified by its URI to the target directory. */
-  Path download(URI uri, Path targetDirectory) throws IOException {
-    return download(uri, targetDirectory, Util.getFileName(uri));
+  Path download(URI uri, Path directory) throws IOException {
+    return download(uri, directory, Util.getFileName(uri));
   }
 
   /** Download the resource from URI to the target directory using the provided file name. */

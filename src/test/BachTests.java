@@ -59,6 +59,9 @@ class BachTests {
     bach.debug("debug %s", "1");
     bach.quiet = true;
     bach.debug("debug %s", "2");
+    bach.quiet = false;
+    bach.debug = false;
+    bach.debug("debug %s", "3");
     assertEquals(1, actualLogLines.size());
     assertEquals("debug 1", actualLogLines.get(0));
   }
@@ -67,6 +70,13 @@ class BachTests {
   void runExecutable() {
     assertThrows(Error.class, () -> bach.run("command", "a", "b", "3"));
     assertEquals("[run] command [a, b, 3]", actualLogLines.get(0));
+  }
+
+  @Test
+  void runExecutableInQuietMode() {
+    bach.quiet = true;
+    assertThrows(Error.class, () -> bach.run("command", "a", "b", "3"));
+    assertTrue(actualLogLines.isEmpty());
   }
 
   @Test

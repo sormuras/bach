@@ -40,6 +40,8 @@ interface Build {
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
 
+  boolean IS_JACOCO_SUPPORTED = Runtime.version().feature() <= 10;
+
   static void main(String... args) {
     System.out.printf("%n[main]%n%n");
     System.setProperty("bach.quiet", "false");
@@ -48,6 +50,9 @@ interface Build {
       clean();
       compile();
       test();
+      if (IS_JACOCO_SUPPORTED) {
+        jacoco();
+      }
       javadoc();
       jar();
       jdeps();
@@ -197,13 +202,19 @@ interface Build {
     var java = new Command("java");
     java.add("-ea");
     // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
-    java.add("-javaagent:" + jacoco + "=destfile=" + jacoexec);
+    if (IS_JACOCO_SUPPORTED) {
+      java.add("-javaagent:" + jacoco + "=destfile=" + jacoexec);
+    }
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
     java.add("--class-path").add(Paths.get("src/test-resources"));
     java.add("--scan-classpath");
     java.run();
+  }
+
+  static void jacoco() throws Exception {
+    System.out.printf("%n[jacoco]%n%n");
 
     var jacocli = new JdkTool.Java();
     jacocli.jar = maven("org.jacoco", "org.jacoco.cli", "0.8.1", "nodeps");
@@ -218,9 +229,7 @@ interface Build {
             "--xml",
             JACOCO.resolve("jacoco.xml"),
             "--html",
-            JACOCO.resolve("html")
-            //
-            );
+            JACOCO.resolve("html"));
     jacocli.run();
   }
 }
