@@ -14,17 +14,13 @@ matrix:
       install: . ./install-jdk.sh -F 11 -L BCL
     - env: JDK='OpenJDK 11'
       install: . ./install-jdk.sh -F 11 -L GPL
-  allow_failures:
-    # JaCoCo is not yet working on JDK 11
-    - env: JDK='Oracle JDK 11'
-    - env: JDK='OpenJDK 11'
 
 script:
 - java --version
 - ./build.jsh
 
 after_success:
-- bash <(curl -s https://codecov.io/bash)
+- test "${JDK}" = "OpenJDK 10" && bash <(curl -s https://codecov.io/bash) || true
 
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 - ./bootstrap.jsh
