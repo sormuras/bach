@@ -1,2 +1,8 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 1
+
 fixes:
 - "::src/bach/"
