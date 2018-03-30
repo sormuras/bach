@@ -44,6 +44,7 @@ class UtilTests {
     assertFalse(Util.isJavaFile(Paths.get("")));
     assertFalse(Util.isJavaFile(Paths.get("a/b")));
     assertTrue(Util.isJavaFile(Paths.get("src/test/UtilTests.java")));
+    assertFalse(Util.isJavaFile(Paths.get("src/test-resources/Util.isJavaFile.java")));
   }
 
   @Test

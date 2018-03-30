@@ -120,6 +120,9 @@ class CommandTests {
 
           transient String unused = "hidden";
           private Byte hidden = Byte.valueOf("123");
+          // static Number ignored = Short.valueOf("456");
+
+          List<String> collection = List.of("a", "b", "c");
 
           void hex(Command command) {
             command.add("--prime-as-hex");
@@ -131,26 +134,30 @@ class CommandTests {
     command.add(Stream.of(1, 2, 3), "+");
     command.add("final");
     var array = command.toArgumentsArray();
-    assertEquals(11, array.length);
+    assertEquals(13, array.length);
     assertAll(
         "Options are reflected, ordered by name and added to the command instance",
-        () -> assertEquals("-flag1", array[0]),
-        () -> assertEquals("true", array[1]),
-        () -> assertEquals("-flag2", array[2]),
-        () -> assertEquals("false", array[3]),
-        () -> assertEquals("--prime-as-hex", array[4]),
-        () -> assertEquals("0xd", array[5]),
-        () -> assertEquals("-value", array[6]),
-        () -> assertEquals("42", array[7]),
-        () -> assertEquals("--ZETA", array[8]),
-        () -> assertEquals("1+2+3", array[9]),
-        () -> assertEquals("final", array[10]));
+        () -> assertEquals("-collection", array[0]),
+        () -> assertEquals("[a, b, c]", array[1]),
+        () -> assertEquals("-flag1", array[2]),
+        () -> assertEquals("true", array[3]),
+        () -> assertEquals("-flag2", array[4]),
+        () -> assertEquals("false", array[5]),
+        () -> assertEquals("--prime-as-hex", array[6]),
+        () -> assertEquals("0xd", array[7]),
+        () -> assertEquals("-value", array[8]),
+        () -> assertEquals("42", array[9]),
+        () -> assertEquals("--ZETA", array[10]),
+        () -> assertEquals("1+2+3", array[11]),
+        () -> assertEquals("final", array[12]));
   }
 
   @Test
   void runJavaWithVersion() {
     assertTrue(run("java", "-version").contains(Runtime.version().toString()));
     assertTrue(run("java", "--version").contains(Runtime.version().toString()));
+    assertTrue(
+        run(new Command("java").add("-version"), null).contains(Runtime.version().toString()));
   }
 
   @Test
@@ -209,7 +216,7 @@ class CommandTests {
   }
 
   @Test
-  void addOptionsWithIllegalProperties() {
+  void addAllOptionsWithIllegalProperties() {
     var command = new Command("error");
     var options = new ClassWithPrivateField();
     var fields = Arrays.stream(ClassWithPrivateField.class.getDeclaredFields());
@@ -218,6 +225,13 @@ class CommandTests {
     var cause = error.getCause();
     assertTrue(cause.getMessage().startsWith("class Command cannot access a member of class"));
     assertTrue(cause.getMessage().endsWith("with modifiers \"private\""));
+  }
+
+  @Test
+  void addAllOptionsIgnoresStaticFields() {
+    var command = new Command("ignore-b");
+    var options = new ClassWithStaticField();
+    assertLinesMatch(List.of("ignore-b", "-a", "  0"), dump(command.addAllOptions(options)));
   }
 
   @Test
@@ -256,6 +270,7 @@ class CommandTests {
         .setExecutableSupportsArgumentFile(false)
         .setExecutableToProgramOperator(exe -> "/usr/bin/env " + exe)
         .setToolProvider(new CustomTool())
+        .setToolProvider(new CustomTool()) // twice to hit all branches
         .setLogger(logger::add)
         .setTemporaryDirectory(Paths.get("any"))
         .dump(out::println)
@@ -297,6 +312,17 @@ class CommandTests {
     @Override
     public String toString() {
       return "ClassWithPrivateField [x=" + x + "]";
+    }
+  }
+
+  private static class ClassWithStaticField {
+
+    int a = 0;
+    static int b = 0;
+
+    @Override
+    public String toString() {
+      return "ClassWithStaticField [a=" + a + ", b=" + b + "]";
     }
   }
 

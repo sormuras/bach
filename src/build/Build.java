@@ -201,6 +201,7 @@ interface Build {
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
+    java.add("--class-path").add(Paths.get("src/test-resources"));
     java.add("--scan-classpath");
     java.run();
 

@@ -40,11 +40,12 @@ class TaskTests {
   void compiler() {
     var project =
         Project.builder()
-            .newModuleGroup("xxx")
-            .moduleSourcePath(List.of(Paths.get(".bach")))
+            .target(Paths.get("target/test/task/compiler"))
+            .newModuleGroup("01-hello-world")
+            .moduleSourcePath(List.of(Paths.get("demo/01-hello-world/src")))
             .end()
             .build();
     var compiler = new Task.CompilerTask(bach, project);
-    assertEquals(Integer.valueOf(2), compiler.get());
+    assertEquals(0, (int) compiler.get());
   }
 }

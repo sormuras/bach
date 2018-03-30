@@ -7,6 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/bach" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/demo/02-testing/src/build" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test-resources" type="java-test-resource" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
