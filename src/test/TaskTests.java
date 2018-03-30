@@ -17,11 +17,10 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.junit.jupiter.api.Test;
 
 class TaskTests {
 
@@ -39,7 +38,12 @@ class TaskTests {
 
   @Test
   void compiler() {
-    var project = Project.builder().newModuleGroup("xxx").moduleSourcePath(List.of(Paths.get(".bach"))).end().build();
+    var project =
+        Project.builder()
+            .newModuleGroup("xxx")
+            .moduleSourcePath(List.of(Paths.get(".bach")))
+            .end()
+            .build();
     var compiler = new Task.CompilerTask(bach, project);
     assertEquals(Integer.valueOf(2), compiler.get());
   }
