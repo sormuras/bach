@@ -197,8 +197,7 @@ interface Build {
     var java = new Command("java");
     java.add("-ea");
     // java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
-    java.add(
-        "-javaagent:" + jacoco + "=destfile=" + jacoexec + ",includes=Bach:Command:JdkTool:Util");
+    java.add("-javaagent:" + jacoco + "=destfile=" + jacoexec);
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);

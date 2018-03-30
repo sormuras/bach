@@ -83,7 +83,7 @@ class BuildDemo02Testing {
     javac.destination = TEST;
     javac.modulePath = List.of(DEPS);
     javac.moduleSourcePath = tests;
-    // TODO javac.patchModule = Bach.Basics.getPatchMap(tests, mains);
+    javac.patchModule = Util.getPatchMap(tests, mains);
     javac.run();
   }
 
@@ -96,8 +96,8 @@ class BuildDemo02Testing {
 
   void testOnClassPath() throws IOException {
     new Command("java")
-        // TODO .add("--class-path")
-        // TODO .add(Bach.Basics.getClassPath(List.of(TEST), List.of(DEPS)))
+        .add("--class-path")
+        .add(Util.getClassPath(List.of(TEST), List.of(DEPS)))
         .add("org.junit.platform.console.ConsoleLauncher")
         .add("--scan-class-path")
         .run();

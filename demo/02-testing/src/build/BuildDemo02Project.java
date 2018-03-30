@@ -1,6 +1,7 @@
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 class BuildDemo02Project {
@@ -40,33 +41,15 @@ class BuildDemo02Project {
 
   static void build(Bach bach, Project project) {
     Supplier<Integer> printer = () -> new PrinterFunction().apply(bach, project);
-    Supplier<Integer> compiler = new CompilerTask(bach, project);
+    var compiler = new Task.CompilerTask(bach, project);
     bach.run("build", printer, compiler);
   }
 
-  static class CompilerTask implements Supplier<Integer> {
-    final Bach bach;
-    final Project project;
-
-    CompilerTask(Bach bach, Project project) {
-      this.bach = bach;
-      this.project = project;
-    }
-
-    int compile(Project.ModuleGroup group) {
-      bach.log("[compile] %s", group.name());
-      var javac = new JdkTool.Javac();
-      javac.destination = group.destination();
-      javac.moduleSourcePath = group.moduleSourcePath();
-      javac.modulePath = group.modulePath();
-      javac.patchModule = group.patchModule();
-      return javac.toCommand().get();
-    }
-
+  static class PrinterFunction implements BiFunction<Bach, Project, Integer> {
     @Override
-    public Integer get() {
-      bach.log("[compiler] %s", project);
-      return project.moduleGroups().stream().mapToInt(this::compile).sum();
+    public Integer apply(Bach bach, Project project) {
+      bach.log("%s %s", project.name(), project.version());
+      return 0;
     }
   }
 }

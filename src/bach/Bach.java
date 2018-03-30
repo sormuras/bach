@@ -136,6 +136,7 @@ class Bach {
 /** Command line program and in-process tool abstraction. */
 class Command implements Supplier<Integer> {
 
+  /** Inspects or modifies the passed command instance. */
   interface Visitor extends Consumer<Command> {}
 
   static Visitor visit(Consumer<Command> consumer) {
@@ -922,6 +923,8 @@ class Util {
     }
     return map;
   }
+
+  private Util() {}
 }
 
 /** Project build support. */
@@ -958,6 +961,7 @@ class Project {
     return moduleGroups.values();
   }
 
+  /** A mutable project. */
   static class ProjectBuilder {
 
     private Project project = new Project();
@@ -991,6 +995,7 @@ class Project {
     }
   }
 
+  /** Source set, like {@code main} or {@code test}. */
   static class ModuleGroup {
 
     private final String name;
@@ -1024,6 +1029,7 @@ class Project {
     }
   }
 
+  /** A mutable source set. */
   static class ModuleGroupBuilder {
 
     private final ProjectBuilder projectBuilder;
@@ -1060,6 +1066,37 @@ class Project {
     ModuleGroupBuilder patchModule(Map<String, List<Path>> patchModule) {
       group.patchModule = patchModule;
       return this;
+    }
+  }
+}
+
+/** A task is a piece of code that can be executed. */
+interface Task extends Supplier<Integer> {
+
+  /** Execute {@code javac} for all module groups. */
+  class CompilerTask implements Task {
+    final Bach bach;
+    final Project project;
+
+    public CompilerTask(Bach bach, Project project) {
+      this.bach = bach;
+      this.project = project;
+    }
+
+    int compile(Project.ModuleGroup group) {
+      bach.log("[compile] %s", group.name());
+      var javac = new JdkTool.Javac();
+      javac.destination = group.destination();
+      javac.moduleSourcePath = group.moduleSourcePath();
+      javac.modulePath = group.modulePath();
+      javac.patchModule = group.patchModule();
+      return javac.toCommand().setLogger(bach.logger).get();
+    }
+
+    @Override
+    public Integer get() {
+      bach.log("[compiler] %s", project);
+      return project.moduleGroups().stream().mapToInt(this::compile).sum();
     }
   }
 }

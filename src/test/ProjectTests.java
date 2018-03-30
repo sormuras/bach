@@ -34,9 +34,11 @@ class ProjectTests {
 
   @Test
   void creatingModuleGroupWithSameNameFails() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> Project.builder().newModuleGroup("1").end().newModuleGroup("1"));
+    Exception e =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> Project.builder().newModuleGroup("name").end().newModuleGroup("name"));
+    assertEquals("name already defined", e.getMessage());
   }
 
   @Test
@@ -56,12 +58,7 @@ class ProjectTests {
             .destination(testDestination)
             .moduleSourcePath(List.of(Paths.get("src", "test", "java")))
             .modulePath(List.of(mainDestination, dependencies))
-            .patchModule(
-                Map.of(
-                    "application",
-                    List.of(Paths.get("src/main/java/application")),
-                    "application.api",
-                    List.of(Paths.get("src/main/java/application.api"))))
+            .patchModule(Map.of("hello", List.of(Paths.get("src/main/java/hello"))))
             .end()
             // done
             .build();
@@ -72,10 +69,7 @@ class ProjectTests {
     assertEquals("test", project.moduleGroup("test").name());
     assertEquals(2, project.moduleGroups().size());
 
-    assertMainModuleGroup(project.moduleGroup("main"));
-  }
-
-  private void assertMainModuleGroup(Project.ModuleGroup main) {
+    var main = project.moduleGroup("main");
     assertEquals("main", main.name());
     assertEquals(mainDestination, main.destination());
     assertEquals(List.of(Paths.get("src", "main", "java")), main.moduleSourcePath());
