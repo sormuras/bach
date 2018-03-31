@@ -145,4 +145,10 @@ class UtilTests {
     var moduleReference = ModuleFinder.ofSystem().find("java.base").orElseThrow();
     assertEquals(URI.create("jrt:/java.base"), Util.getPath(moduleReference).toUri());
   }
+
+  @Test
+  void findJdkCommandPath() {
+    assertTrue(Util.findJdkCommandPath("java").isPresent());
+    assertFalse(Util.findJdkCommandPath("does not exist").isPresent());
+  }
 }

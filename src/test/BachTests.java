@@ -154,6 +154,7 @@ class BachTests {
             "[run] java --version...",
             "running java with 1 argument(s)",
             "java\n--version",
+            "replaced executable `java` with program `" + Util.getJdkCommand("java") + "`",
             "[run] java --version done.");
     assertLinesMatch(expected, actualLogLines);
   }

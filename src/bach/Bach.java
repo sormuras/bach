@@ -512,8 +512,8 @@ class Command implements Supplier<Integer> {
       logger.accept(String.format("running %s with %d argument(s)", executable, arguments.size()));
       logger.accept(String.format("%s", String.join("\n", lines)));
     }
-    var systemTool = ToolProvider.findFirst(executable).orElse(null);
-    var tool = tools.getOrDefault(executable, systemTool);
+    var foundationTool = ToolProvider.findFirst(executable).orElse(null);
+    var tool = tools.getOrDefault(executable, foundationTool);
     if (tool != null) {
       return operator.apply(tool).run(out, err, toArgumentsArray());
     }
@@ -649,6 +649,7 @@ interface JdkTool {
     public Command toCommand(Object... extras) {
       Command command = JdkTool.super.toCommand(extras);
       command.setExecutableSupportsArgumentFile(true);
+      command.setExecutableToProgramOperator(Util::getJdkCommand);
       command.mark(9);
       command.addAll(args);
       return command;
@@ -922,6 +923,23 @@ class Util {
       }
     }
     return map;
+  }
+
+  /** Find foundation JDK command by its name. */
+  static Optional<Path> findJdkCommandPath(String name) {
+    var bin = Paths.get(System.getProperty("java.home")).toAbsolutePath().resolve("bin");
+    for (var suffix : List.of("", ".exe")) {
+      var tool = bin.resolve(name + suffix);
+      if (Files.isExecutable(tool)) {
+        return Optional.of(tool);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /** Find foundation JDK command by its name. */
+  static String getJdkCommand(String name) {
+    return findJdkCommandPath(name).map(Object::toString).orElseThrow();
   }
 
   private Util() {}

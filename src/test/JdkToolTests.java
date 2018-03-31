@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -25,10 +26,15 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 class JdkToolTests {
 
@@ -271,6 +277,21 @@ class JdkToolTests {
         List.of(
             "jlink", "--module-path", "  mods", "--output", "  target" + File.separator + "image"),
         dump(jlink.toCommand()));
+  }
+
+  @TestFactory
+  Stream<DynamicTest> checkFoundationJdkCommands() {
+    return Arrays.stream(JdkTool.class.getDeclaredClasses())
+        .map(type -> type.getSimpleName().toLowerCase())
+        .map(name -> dynamicTest(name, () -> Util.getJdkCommand(name)));
+  }
+
+  @TestFactory
+  Stream<DynamicTest> checkFoundationJdkTools() {
+    return Arrays.stream(JdkTool.class.getDeclaredClasses())
+        .map(type -> type.getSimpleName().toLowerCase())
+        .filter(name -> !name.equals("java"))
+        .map(name -> dynamicTest(name, () -> ToolProvider.findFirst(name).orElseThrow()));
   }
 
   private List<String> dump(Command command) {
