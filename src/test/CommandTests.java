@@ -154,10 +154,10 @@ class CommandTests {
 
   @Test
   void runJavaWithVersion() {
-    assertTrue(run("java", "-version").contains(Runtime.version().toString()));
-    assertTrue(run("java", "--version").contains(Runtime.version().toString()));
-    assertTrue(
-        run(new Command("java").add("-version"), null).contains(Runtime.version().toString()));
+    var version = Runtime.version().toString();
+    assertTrue(run("java", "-version").contains(version));
+    assertTrue(run("java", "--version").contains(version));
+    assertTrue(run(new Command("java").add("--version"), null).contains(version));
   }
 
   @Test

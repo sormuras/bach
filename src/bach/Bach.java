@@ -29,6 +29,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
@@ -942,7 +943,85 @@ class Util {
     return findJdkCommandPath(name).map(Object::toString).orElseThrow();
   }
 
+  /** Calculate external module names. */
+  static Set<String> getExternalModuleNames(Path... roots) {
+    var declaredModules = new TreeSet<String>();
+    var requiredModules = new TreeSet<String>();
+    var paths = new ArrayList<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
+      } catch (IOException e) {
+        throw new UncheckedIOException("walking path failed for: " + root, e);
+      }
+    }
+    for (var path : paths) {
+      var info = ModuleInfo.of(path);
+      declaredModules.add(info.getName());
+      requiredModules.addAll(info.getRequires());
+    }
+    var externalModules = new TreeSet<>(requiredModules);
+    externalModules.removeAll(declaredModules);
+    return externalModules;
+  }
+
   private Util() {}
+
+  /** Simple module information collector. */
+  static class ModuleInfo {
+
+    static Pattern namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
+    static Pattern requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+    static ModuleInfo of(Path path) {
+      if (Files.isDirectory(path)) {
+        path = path.resolve("module-info.java");
+      }
+      try {
+        return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        throw new UncheckedIOException("reading '" + path + "' failed", e);
+      }
+    }
+
+    static ModuleInfo of(List<String> lines) {
+      return of(String.join("\n", lines));
+    }
+
+    static ModuleInfo of(String source) {
+      // extract module name
+      var nameMatcher = namePattern.matcher(source);
+      if (!nameMatcher.find()) {
+        throw new IllegalArgumentException(
+            "expected java module descriptor unit, but got: " + source);
+      }
+      var name = nameMatcher.group(1).trim();
+      // extract required module names
+      var requires = new TreeSet<String>();
+      var requiresMatcher = requiresPattern.matcher(source);
+      while (requiresMatcher.find()) {
+        var split = requiresMatcher.group(1).trim().split("\\s+");
+        requires.add(split[split.length - 1]);
+      }
+      return new ModuleInfo(name, requires);
+    }
+
+    final String name;
+    final Set<String> requires;
+
+    ModuleInfo(String name, Set<String> requires) {
+      this.name = name;
+      this.requires = Set.copyOf(requires);
+    }
+
+    String getName() {
+      return name;
+    }
+
+    Set<String> getRequires() {
+      return requires;
+    }
+  }
 }
 
 /** Project build support. */

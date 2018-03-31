@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleFinder;
@@ -150,5 +151,76 @@ class UtilTests {
   void findJdkCommandPath() {
     assertTrue(Util.findJdkCommandPath("java").isPresent());
     assertFalse(Util.findJdkCommandPath("does not exist").isPresent());
+  }
+
+  @Test
+  void moduleInfoEmpty() {
+    var info = Util.ModuleInfo.of(List.of("module foo {}"));
+    assertEquals("foo", info.getName());
+    assertTrue(info.getRequires().isEmpty());
+  }
+
+  @Test
+  void moduleInfoFromModuleWithoutNameFails() {
+    var source = "module { no name }";
+    Exception e = assertThrows(IllegalArgumentException.class, () -> Util.ModuleInfo.of(source));
+    assertEquals("expected java module descriptor unit, but got: " + source, e.getMessage());
+  }
+
+  @Test
+  void moduleInfoFromNonExistingFileFails() {
+    var source = Paths.get(".", "module-info.java");
+    var exception = assertThrows(UncheckedIOException.class, () -> Util.ModuleInfo.of(source));
+    assertEquals("reading '" + source + "' failed", exception.getMessage());
+  }
+
+  @Test
+  void moduleInfoRequiresBarAndBaz() {
+    var source = "module   foo{requires a; requires static b; requires any modifier c;}";
+    var info = Util.ModuleInfo.of(source);
+    assertEquals("foo", info.getName());
+    assertEquals(3, info.getRequires().size());
+    assertTrue(info.getRequires().contains("a"));
+    assertTrue(info.getRequires().contains("b"));
+    assertTrue(info.getRequires().contains("c"));
+  }
+
+  @Test
+  void moduleInfoFromFile() {
+    var source = Paths.get("demo/02-testing/src/test/java/application");
+    var info = Util.ModuleInfo.of(source);
+    assertEquals("application", info.getName());
+    assertEquals(2, info.getRequires().size());
+    assertTrue(info.getRequires().contains("application.api"));
+    assertTrue(info.getRequires().contains("org.junit.jupiter.api"));
+  }
+
+  @Test
+  void moduleInfoFromM1() throws Exception {
+    var loader = getClass().getClassLoader();
+    var resource = loader.getResource("UtilTests.module-info.java");
+    if (resource == null) {
+      fail("resource not found!");
+    }
+    var info = Util.ModuleInfo.of(Paths.get(resource.toURI()));
+    assertEquals("com.google.m", info.getName());
+    assertEquals(3, info.getRequires().size());
+    assertTrue(info.getRequires().contains("com.google.r1"));
+    assertTrue(info.getRequires().contains("com.google.r2"));
+    assertTrue(info.getRequires().contains("com.google.r3"));
+  }
+
+  @Test
+  void getExternalModuleNames() {
+    var names = Util.getExternalModuleNames(Paths.get("demo"));
+    assertTrue(names.contains("org.junit.jupiter.api"));
+    assertFalse(names.contains("hello"));
+    assertFalse(names.contains("world"));
+  }
+
+  @Test
+  void getExternalModuleNamesForNonExistingPathFails() {
+    var path = Paths.get("does not exist");
+    var e = assertThrows(UncheckedIOException.class, () -> Util.getExternalModuleNames(path));
   }
 }

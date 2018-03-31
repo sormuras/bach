@@ -165,7 +165,7 @@ class BachTests {
 
   private int task(String name, IntSupplier result) {
     bach.log("%s begin", name);
-    var millis = (long) (Math.random() * 500 + 100);
+    var millis = (long) (Math.random() * 200 + 50);
     try {
       Thread.sleep(millis);
     } catch (InterruptedException e) {
