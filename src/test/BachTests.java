@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -176,8 +177,15 @@ class BachTests {
   }
 
   @Test
-  void download() throws Exception {
-    var tempRoot = Files.createTempDirectory("BachTests.download-");
+  void downloadUsingHttps() throws Exception {
+    var temporary = Files.createTempDirectory("BachTests.downloadUsingHttps-");
+    bach.download(URI.create("https://junit.org/junit5/index.html"), temporary);
+    Util.removeTree(temporary);
+  }
+
+  @Test
+  void downloadUsingLocalFileSystem() throws Exception {
+    var tempRoot = Files.createTempDirectory("BachTests.downloadUsingLocalFileSystem-");
     var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
     var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
     Files.write(tempFile, content);

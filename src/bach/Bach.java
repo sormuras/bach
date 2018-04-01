@@ -99,7 +99,6 @@ class Bach {
   /** Download the resource from URI to the target directory using the provided file name. */
   Path download(URI uri, Path directory, String fileName) throws IOException {
     debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
-    Files.createDirectories(directory);
     var target = directory.resolve(fileName);
     if (offline) {
       if (Files.exists(target)) {
@@ -107,16 +106,16 @@ class Bach {
       }
       throw new Error("offline mode is active -- missing file " + target);
     }
-    var url = uri.toURL();
-    var urlConnection = url.openConnection();
-    try (var ignored = urlConnection.getInputStream()) {
-      var urlLastModifiedMillis = urlConnection.getLastModified();
+    Files.createDirectories(directory);
+    var connection = uri.toURL().openConnection();
+    try (var sourceStream = connection.getInputStream()) {
+      var urlLastModifiedMillis = connection.getLastModified();
       var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
       if (Files.exists(target)) {
         debug("local file already exists -- comparing properties to remote file...");
         var unknownTime = urlLastModifiedMillis == 0L;
         if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-          if (Files.size(target) == urlConnection.getContentLengthLong()) {
+          if (Files.size(target) == connection.getContentLengthLong()) {
             debug("local and remote file properties seem to match, using `%s`", target);
             return target;
           }
@@ -124,8 +123,8 @@ class Bach {
         debug("local file `%s` differs from remote one -- replacing it", target);
       }
       debug("transferring `%s`...", uri);
-      try (var stream = url.openStream()) {
-        Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
+      try (var targetStream = Files.newOutputStream(target)) {
+        sourceStream.transferTo(targetStream);
       }
       if (urlLastModifiedMillis != 0L) {
         Files.setLastModifiedTime(target, urlLastModifiedTime);
