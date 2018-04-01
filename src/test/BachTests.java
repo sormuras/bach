@@ -177,10 +177,11 @@ class BachTests {
 
   @Test
   void download() throws Exception {
+    var tempRoot = Files.createTempDirectory("BachTests.download-");
     var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
-    var tempFile = Files.createTempFile("download-", ".txt");
+    var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
     Files.write(tempFile, content);
-    var tempPath = Files.createTempDirectory("download-");
+    var tempPath = Files.createDirectory(tempRoot.resolve("target"));
     var first = bach.download(tempFile.toUri(), tempPath);
     var name = tempFile.getFileName().toString();
     var actual = tempPath.resolve(name);
@@ -227,5 +228,6 @@ class BachTests {
             "transferring `" + tempFile.toUri().toString() + "`...",
             "`" + name + "` downloaded .*"),
         actualLogLines);
+    Util.removeTree(tempRoot);
   }
 }

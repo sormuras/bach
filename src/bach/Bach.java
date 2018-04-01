@@ -109,33 +109,47 @@ class Bach {
     }
     var url = uri.toURL();
     var urlConnection = url.openConnection();
-    var urlLastModifiedMillis = urlConnection.getLastModified();
-    var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
-    if (Files.exists(target)) {
-      debug("local file already exists -- comparing properties to remote file...");
-      var unknownTime = urlLastModifiedMillis == 0L;
-      if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-        if (Files.size(target) == urlConnection.getContentLengthLong()) {
-          debug("local and remote file properties seem to match, using `%s`", target);
-          return target;
+    try (var ignored = urlConnection.getInputStream()) {
+      var urlLastModifiedMillis = urlConnection.getLastModified();
+      var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
+      if (Files.exists(target)) {
+        debug("local file already exists -- comparing properties to remote file...");
+        var unknownTime = urlLastModifiedMillis == 0L;
+        if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
+          if (Files.size(target) == urlConnection.getContentLengthLong()) {
+            debug("local and remote file properties seem to match, using `%s`", target);
+            return target;
+          }
         }
+        debug("local file `%s` differs from remote one -- replacing it", target);
       }
-      debug("local file `%s` differs from remote one -- replacing it", target);
+      debug("transferring `%s`...", uri);
+      try (var stream = url.openStream()) {
+        Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
+      }
+      if (urlLastModifiedMillis != 0L) {
+        Files.setLastModifiedTime(target, urlLastModifiedTime);
+      }
+      log("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
     }
-    debug("transferring `%s`...", uri);
-    try (var stream = url.openStream()) {
-      Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
-    }
-    if (urlLastModifiedMillis != 0L) {
-      Files.setLastModifiedTime(target, urlLastModifiedTime);
-    }
-    log("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
     return target;
   }
 }
 
 /** Command line program and in-process tool abstraction. */
 class Command implements Supplier<Integer> {
+
+  static final Path TEMP =
+      Paths.get(
+          System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
+
+  static {
+    try {
+      Files.createDirectories(TEMP);
+    } catch (IOException e) {
+      throw new UncheckedIOException("creating temporary directories failed: " + TEMP, e);
+    }
+  }
 
   /** Inspects or modifies the passed command instance. */
   interface Visitor extends Consumer<Command> {}
@@ -194,7 +208,7 @@ class Command implements Supplier<Integer> {
   private boolean executableSupportsArgumentFile = false;
   private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
   private Consumer<String> logger = System.out::println;
-  private Path temporaryDirectory = Paths.get(System.getProperty("java.io.tmpdir"));
+  private Path temporaryDirectory = TEMP;
 
   /** Initialize this command instance. */
   Command(String executable) {
@@ -456,7 +470,7 @@ class Command implements Supplier<Integer> {
     if (commandLineLength > 32000) {
       if (executableSupportsArgumentFile) {
         var timestamp = Instant.now().toString().replace("-", "").replace(":", "");
-        var prefix = executable + "-arguments-" + timestamp + "-";
+        var prefix = "bach-" + executable + "-arguments-" + timestamp + "-";
         try {
           var tempFile = Files.createTempFile(temporaryDirectory, prefix, ".txt");
           strings = List.of(program, "@" + Files.write(tempFile, arguments));
@@ -972,6 +986,15 @@ class Util {
 
   /** Delete selected files and directories from the root directory. */
   static void removeTree(Path root, Predicate<Path> filter) {
+    // trivial case: delete existing single file or empty directory right away
+    try {
+      if (Files.deleteIfExists(root)) {
+        return;
+      }
+    } catch (IOException ignored) {
+      // fall-through
+    }
+    // default case: walk the tree...
     try (var stream = Files.walk(root)) {
       var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
       for (var path : selected.collect(Collectors.toList())) {

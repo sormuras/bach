@@ -113,6 +113,7 @@ class UtilTests {
     denyListing(root);
     assertThrows(UncheckedIOException.class, () -> Util.findDirectories(root));
     assertThrows(UncheckedIOException.class, () -> Util.findDirectoryNames(root));
+    Util.removeTree(root);
   }
 
   private void denyListing(Path path) throws Exception {
@@ -227,13 +228,6 @@ class UtilTests {
     var path = Paths.get("does not exist");
     var e = assertThrows(UncheckedIOException.class, () -> Util.getExternalModuleNames(path));
     assertEquals("walking path failed for: does not exist", e.getMessage());
-  }
-
-  @Test
-  void removeTree() {
-    var path = Paths.get("does not exist");
-    var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
-    assertEquals("removing tree failed: does not exist", e.getMessage());
   }
 
   @Test
