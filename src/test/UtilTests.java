@@ -17,10 +17,13 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -32,6 +35,7 @@ import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -222,5 +226,114 @@ class UtilTests {
   void getExternalModuleNamesForNonExistingPathFails() {
     var path = Paths.get("does not exist");
     var e = assertThrows(UncheckedIOException.class, () -> Util.getExternalModuleNames(path));
+    assertEquals("walking path failed for: does not exist", e.getMessage());
+  }
+
+  @Test
+  void removeTree() {
+    var path = Paths.get("does not exist");
+    var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
+    assertEquals("removing tree failed: does not exist", e.getMessage());
+  }
+
+  @Test
+  void removeTreeForNonExistingPathFails() {
+    var path = Paths.get("does not exist");
+    var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
+    assertEquals("removing tree failed: does not exist", e.getMessage());
+  }
+
+  @Test
+  void dumpTreeForNonExistingPathFails() {
+    var path = Paths.get("does not exist");
+    var e =
+        assertThrows(UncheckedIOException.class, () -> Util.dumpTree(path, System.out::println));
+    assertEquals("dumping tree failed: does not exist", e.getMessage());
+  }
+
+  private void createFiles(Path directory, int count) throws IOException {
+    for (int i = 0; i < count; i++) {
+      Files.createFile(directory.resolve("file-" + i));
+    }
+  }
+
+  private void assertTreeDumpMatches(Path root, String... expected) {
+    expected[0] = expected[0].replace(File.separatorChar, '/');
+    List<String> dumpedLines = new ArrayList<>();
+    Util.dumpTree(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
+    assertLinesMatch(List.of(expected), dumpedLines);
+  }
+
+  @Test
+  void tree() throws IOException {
+    Path root = Files.createTempDirectory("tree-root-");
+    assertTrue(Files.exists(root));
+    assertEquals(1, Files.walk(root).count());
+    assertTreeDumpMatches(root, root.toString(), ".");
+
+    createFiles(root, 3);
+    assertEquals(1 + 3, Files.walk(root).count());
+    assertTreeDumpMatches(root, root.toString(), ".", "./file-0", "./file-1", "./file-2");
+
+    createFiles(Files.createDirectory(root.resolve("a")), 3);
+    createFiles(Files.createDirectory(root.resolve("b")), 3);
+    createFiles(Files.createDirectory(root.resolve("x")), 3);
+    assertTrue(Files.exists(root));
+    assertEquals(1 + 3 + 4 * 3, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-0",
+        "./a/file-1",
+        "./a/file-2",
+        "./b",
+        "./b/file-0",
+        "./b/file-1",
+        "./b/file-2",
+        "./file-0",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-0",
+        "./x/file-1",
+        "./x/file-2");
+
+    Util.removeTree(root, path -> path.startsWith(root.resolve("b")));
+    assertEquals(1 + 2 + 3 * 3, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-0",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-0",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-0",
+        "./x/file-1",
+        "./x/file-2");
+
+    Util.removeTree(root, path -> path.endsWith("file-0"));
+    assertEquals(1 + 2 + 3 * 2, Files.walk(root).count());
+    assertTreeDumpMatches(
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2");
+
+    Util.removeTree(root);
+    assertTrue(Files.notExists(root));
   }
 }

@@ -99,7 +99,6 @@ class Bach {
   /** Download the resource from URI to the target directory using the provided file name. */
   Path download(URI uri, Path directory, String fileName) throws IOException {
     debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
-    var url = uri.toURL();
     Files.createDirectories(directory);
     var target = directory.resolve(fileName);
     if (offline) {
@@ -108,6 +107,7 @@ class Bach {
       }
       throw new Error("offline mode is active -- missing file " + target);
     }
+    var url = uri.toURL();
     var urlConnection = url.openConnection();
     var urlLastModifiedMillis = urlConnection.getLastModified();
     var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
@@ -963,6 +963,39 @@ class Util {
     var externalModules = new TreeSet<>(requiredModules);
     externalModules.removeAll(declaredModules);
     return externalModules;
+  }
+
+  /** Delete directory. */
+  static void removeTree(Path root) {
+    removeTree(root, path -> true);
+  }
+
+  /** Delete selected files and directories from the root directory. */
+  static void removeTree(Path root, Predicate<Path> filter) {
+    try (var stream = Files.walk(root)) {
+      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (var path : selected.collect(Collectors.toList())) {
+        Files.deleteIfExists(path);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("removing tree failed: " + root, e);
+    }
+  }
+
+  /** Dump directory tree structure. */
+  static void dumpTree(Path root, Consumer<String> out) {
+    if (Files.exists(root)) {
+      out.accept(root.toString());
+    }
+    try (Stream<Path> stream = Files.walk(root).sorted()) {
+      for (Path path : stream.collect(Collectors.toList())) {
+        String string = root.relativize(path).toString();
+        String prefix = string.isEmpty() ? "" : File.separator;
+        out.accept("." + prefix + string);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("dumping tree failed: " + root, e);
+    }
   }
 
   private Util() {}
