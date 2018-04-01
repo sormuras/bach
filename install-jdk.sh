@@ -11,6 +11,7 @@
 #
 #   install-jdk.sh                 | install most recent (early-access) JDK
 #   install-jdk.sh -W /usr/opt     | install most recent (early-access) JDK to /usr/opt
+#   install-jdk.sh -C              | install most recent (early-access) JDK with linked system CA certificates
 #   install-jdk.sh -F 9            | install most recent OpenJDK 9
 #   install-jdk.sh -F 10           | install most recent OpenJDK 10
 #   install-jdk.sh -F 11           | install most recent OpenJDK 11
@@ -22,6 +23,7 @@
 #   -B b | Build number of the JDK release    [?|1|2...]
 #   -L l | License of the JDK                 [GPL|BCL]
 #   -W w | Working directory and install path [${HOME}]
+#   -C c | Use system CA certificates (currently only Debian/Ubuntu is supported)
 #
 # Exported environment variables
 #
@@ -38,14 +40,16 @@ JDK_FEATURE='11'
 JDK_BUILD='?'
 JDK_LICENSE='GPL'
 JDK_WORKSPACE=${HOME}
+JDK_SYSTEM_CACERTS='0'
 
-while getopts F:B:L:W: option
+while getopts F:B:L:W:C option
 do
   case "${option}" in
     F) JDK_FEATURE=${OPTARG};;
     B) JDK_BUILD=${OPTARG};;
     L) JDK_LICENSE=${OPTARG};;
     W) JDK_WORKSPACE=${OPTARG};;
+    C) JDK_SYSTEM_CACERTS="1";;
  esac
 done
 
@@ -104,5 +108,15 @@ cd -
 #
 export JAVA_HOME=${JDK_WORKSPACE}/${JDK_HOME}
 export PATH=${JAVA_HOME}/bin:$PATH
+
+#
+# Link to system certificates to prevent:
+# SunCertPathBuilderException: unable to find valid certification path to requested target
+#
+if [ "${JDK_SYSTEM_CACERTS}" == '1' ]; then
+  mv "${JAVA_HOME}/lib/security/cacerts" "${JAVA_HOME}/lib/security/cacerts.jdk"
+  # TODO: Support for other distros than Debian/Ubuntu could be provided
+  ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+fi
 
 java --version
