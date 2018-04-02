@@ -138,18 +138,6 @@ class Bach {
 /** Command line program and in-process tool abstraction. */
 class Command implements Supplier<Integer> {
 
-  static final Path TEMP =
-      Paths.get(
-          System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
-
-  static {
-    try {
-      Files.createDirectories(TEMP);
-    } catch (IOException e) {
-      throw new UncheckedIOException("creating temporary directories failed: " + TEMP, e);
-    }
-  }
-
   /** Inspects or modifies the passed command instance. */
   interface Visitor extends Consumer<Command> {}
 
@@ -207,11 +195,19 @@ class Command implements Supplier<Integer> {
   private boolean executableSupportsArgumentFile = false;
   private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
   private Consumer<String> logger = System.out::println;
-  private Path temporaryDirectory = TEMP;
+  private Path temporaryDirectory =
+      Paths.get(
+          System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
 
   /** Initialize this command instance. */
   Command(String executable) {
     this.executable = executable;
+    try {
+      Files.createDirectories(temporaryDirectory);
+    } catch (IOException e) {
+      throw new UncheckedIOException(
+          "creating temporary directories failed: " + temporaryDirectory, e);
+    }
   }
 
   /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
