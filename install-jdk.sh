@@ -65,17 +65,24 @@ fi
 #
 # 9 or 10
 #
-if [ "${JDK_FEATURE}" == '9' ] || [ "${JDK_FEATURE}" = "10" ]; then
-  if [ "${JDK_BUILD}" == '?' ]; then
-    TMP=$(curl -L jdk.java.net/${JDK_FEATURE})
-    TMP="${TMP#*<h1>JDK}"                                   # remove everything before the number
-    TMP="${TMP%%General-Availability Release*}"             # remove everything after the number
-    JDK_BUILD="$(echo -e "${TMP}" | tr -d '[:space:]')"     # remove all whitespace
+if [ "${JDK_FEATURE}" == '9' ] || [ "${JDK_FEATURE}" = '10' ]; then
+  if [ "${JDK_LICENSE}" == 'GPL' ]; then
+    if [ "${JDK_BUILD}" == '?' ]; then
+      TMP=$(curl -L jdk.java.net/${JDK_FEATURE})
+      TMP="${TMP#*<h1>JDK}"                                   # remove everything before the number
+      TMP="${TMP%%General-Availability Release*}"             # remove everything after the number
+      JDK_BUILD="$(echo -e "${TMP}" | tr -d '[:space:]')"     # remove all whitespace
+    fi
+    JDK_ARCHIVE=${JDK_BASENAME}-${JDK_BUILD}_linux-x64_bin.tar.gz
+    JDK_URL=${JDK_DOWNLOAD}/GA/jdk${JDK_FEATURE}/${JDK_BUILD}/binaries/${JDK_ARCHIVE}
+    JDK_HOME=jdk-${JDK_BUILD}
   fi
-
-  JDK_ARCHIVE=${JDK_BASENAME}-${JDK_BUILD}_linux-x64_bin.tar.gz
-  JDK_URL=${JDK_DOWNLOAD}/GA/jdk${JDK_FEATURE}/${JDK_BUILD}/binaries/${JDK_ARCHIVE}
-  JDK_HOME=jdk-${JDK_BUILD}
+  # TODO: Support Oracle JDK 9?
+  if [ "${JDK_LICENSE}" == 'BCL' ] && [ "${JDK_FEATURE}" == '10' ]; then
+    JDK_ARCHIVE=jdk-10_linux-x64_bin.tar.gz
+    JDK_URL=http://download.oracle.com/otn-pub/java/jdk/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.tar.gz
+    JDK_HOME=jdk-10
+  fi
 fi
 
 #
@@ -99,7 +106,7 @@ fi
 #
 mkdir -p ${JDK_WORKSPACE}
 cd ${JDK_WORKSPACE}
-wget ${JDK_URL}
+wget --continue --header "Cookie: oraclelicense=accept-securebackup-cookie" ${JDK_URL}
 tar -xzf ${JDK_ARCHIVE}
 cd -
 
