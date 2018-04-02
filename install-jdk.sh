@@ -107,7 +107,8 @@ fi
 mkdir -p ${JDK_WORKSPACE}
 cd ${JDK_WORKSPACE}
 wget --continue --header "Cookie: oraclelicense=accept-securebackup-cookie" ${JDK_URL}
-tar -xzf ${JDK_ARCHIVE}
+file ${JDK_ARCHIVE}
+tar xf ${JDK_ARCHIVE}
 cd -
 
 #
