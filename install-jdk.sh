@@ -36,6 +36,8 @@
 #
 set -e
 
+VERSION=2018-04-03
+
 JDK_FEATURE='11'
 JDK_BUILD='?'
 JDK_LICENSE='GPL'
@@ -52,6 +54,11 @@ do
     C) JDK_SYSTEM_CACERTS="1";;
  esac
 done
+
+echo "install-jdk.sh (${VERSION})"
+echo "  FEATURE = ${JDK_FEATURE}"
+echo "  LICENSE = ${JDK_LICENSE}"
+echo
 
 #
 # Other constants
@@ -77,7 +84,11 @@ if [ "${JDK_FEATURE}" == '9' ] || [ "${JDK_FEATURE}" = '10' ]; then
     JDK_URL=${JDK_DOWNLOAD}/GA/jdk${JDK_FEATURE}/${JDK_BUILD}/binaries/${JDK_ARCHIVE}
     JDK_HOME=jdk-${JDK_BUILD}
   fi
-  # TODO: Support Oracle JDK 9?
+  if [ "${JDK_LICENSE}" == 'BCL' ] && [ "${JDK_FEATURE}" == '9' ]; then
+    JDK_ARCHIVE=jdk-9.0.4_linux-x64_bin.tar.gz
+    JDK_URL=http://download.oracle.com/otn-pub/java/jdk/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz
+    JDK_HOME=jdk-9.0.4
+  fi
   if [ "${JDK_LICENSE}" == 'BCL' ] && [ "${JDK_FEATURE}" == '10' ]; then
     JDK_ARCHIVE=jdk-10_linux-x64_bin.tar.gz
     JDK_URL=http://download.oracle.com/otn-pub/java/jdk/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.tar.gz
