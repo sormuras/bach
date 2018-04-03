@@ -195,19 +195,11 @@ class Command implements Supplier<Integer> {
   private boolean executableSupportsArgumentFile = false;
   private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
   private Consumer<String> logger = System.out::println;
-  private Path temporaryDirectory =
-      Paths.get(
-          System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
+  private Path temporaryDirectory = Util.temporaryPath();
 
   /** Initialize this command instance. */
   Command(String executable) {
     this.executable = executable;
-    try {
-      Files.createDirectories(temporaryDirectory);
-    } catch (IOException e) {
-      throw new UncheckedIOException(
-          "creating temporary directories failed: " + temporaryDirectory, e);
-    }
   }
 
   /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
@@ -851,6 +843,18 @@ interface JdkTool {
 /** Static utilities and helpers. */
 class Util {
 
+  static Path temporaryPath() {
+    var tmpdir = System.getProperty("java.io.tmpdir");
+    var tmpbach = System.getProperty("bach.temporary", ".bach");
+    var temporaryDirectory = Paths.get(tmpdir, tmpbach);
+    try {
+      Files.createDirectories(temporaryDirectory);
+    } catch (IOException e) {
+      throw new UncheckedIOException("creating directories failed: " + temporaryDirectory, e);
+    }
+    return temporaryDirectory;
+  }
+
   /** Return {@code true} if the path points to a canonical Java archive file. */
   static boolean isJarFile(Path path) {
     if (Files.isRegularFile(path)) {
@@ -1226,7 +1230,7 @@ interface Task extends Supplier<Integer> {
     final Bach bach;
     final Project project;
 
-    public CompilerTask(Bach bach, Project project) {
+    CompilerTask(Bach bach, Project project) {
       this.bach = bach;
       this.project = project;
     }
