@@ -26,5 +26,4 @@ void jlink(Object... args) { new Bach().run("jlink", args); }
 void jmod(Object... args) { new Bach().run("jmod", args); }
 void jdeps(Object... args) { new Bach().run("jdeps", args); }
 void jdeprscan(Object... args) { new Bach().run("jdeprscan", args); }
-void javah(Object... args) { new Bach().run("javah", args); }
 void javap(Object... args) { new Bach().run("javap", args); }
