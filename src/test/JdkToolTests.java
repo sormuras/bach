@@ -35,8 +35,16 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BachContext.class)
 class JdkToolTests {
+
+  private final Bach bach;
+
+  JdkToolTests(Bach bach) {
+    this.bach = bach;
+  }
 
   @Nested
   class Javac {
@@ -44,7 +52,7 @@ class JdkToolTests {
     void defaults() {
       var expectedLines =
           List.of("javac", "-deprecation", "-encoding", "  UTF-8", "-Werror", "-parameters");
-      assertLinesMatch(expectedLines, dump(new JdkTool.Javac().toCommand()));
+      assertLinesMatch(expectedLines, dump(new JdkTool.Javac().toCommand(bach)));
     }
 
     @Test
@@ -56,7 +64,7 @@ class JdkToolTests {
       javac.failOnWarnings = false;
       javac.parameters = false;
       javac.module = "foo";
-      assertLinesMatch(expectedLines, dump(javac.toCommand()));
+      assertLinesMatch(expectedLines, dump(javac.toCommand(bach)));
     }
 
     @Test
@@ -98,7 +106,7 @@ class JdkToolTests {
       javac.modulePath = List.of(Paths.get("mods"));
       javac.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");
       javac.patchModule = Map.of("foo", List.of(Paths.get("bar")));
-      assertLinesMatch(expectedLines, dump(javac.toCommand()));
+      assertLinesMatch(expectedLines, dump(javac.toCommand(bach)));
     }
   }
 
@@ -129,7 +137,7 @@ class JdkToolTests {
     java.modulePath = List.of(Paths.get("mods"));
     java.module = "com.greetings/com.greetings.Main";
     java.args = List.of(1, "2", Thread.State.NEW);
-    assertLinesMatch(expectedLines, dump(java.toCommand()));
+    assertLinesMatch(expectedLines, dump(java.toCommand(bach)));
   }
 
   @Test
@@ -140,7 +148,7 @@ class JdkToolTests {
       System.setOut(new PrintStream(bytes));
       var java = new JdkTool.Java();
       java.args = List.of("--version");
-      java.run();
+      java.run(bach);
       assertTrue(bytes.toString().contains(Runtime.version().toString()));
     } finally {
       System.setOut(out);
@@ -158,13 +166,13 @@ class JdkToolTests {
       javadoc.html5 = false;
       javadoc.keywords = false;
       javadoc.doclint = null;
-      assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
+      assertLinesMatch(expectedLines, dump(javadoc.toCommand(bach)));
     }
 
     @Test
     void defaults() {
       var expectedLines = List.of("javadoc", "-quiet", "-html5", "-keywords", "-Xdoclint");
-      assertLinesMatch(expectedLines, dump(new JdkTool.Javadoc().toCommand()));
+      assertLinesMatch(expectedLines, dump(new JdkTool.Javadoc().toCommand(bach)));
     }
 
     @Test
@@ -194,12 +202,12 @@ class JdkToolTests {
       javadoc.doclint = "all,-missing";
       javadoc.showTypes = JdkTool.Javadoc.Visibility.PUBLIC;
       javadoc.showMembers = JdkTool.Javadoc.Visibility.PRIVATE;
-      assertLinesMatch(expectedLines, dump(javadoc.toCommand()));
+      assertLinesMatch(expectedLines, dump(javadoc.toCommand(bach)));
     }
 
     @Test
     void suppressUnusedWarnings() {
-      var command = new Command("suppressor");
+      var command = bach.command("suppressor");
       var javadoc = new JdkTool.Javadoc();
       javadoc.doclint(command);
       javadoc.showMembers(command);
@@ -212,7 +220,7 @@ class JdkToolTests {
     @Test
     void defaults() {
       var expectedLines = List.of("jar", "--create", "--file", "  out.jar");
-      assertLinesMatch(expectedLines, dump(new JdkTool.Jar().toCommand()));
+      assertLinesMatch(expectedLines, dump(new JdkTool.Jar().toCommand(bach)));
     }
 
     @Test
@@ -240,7 +248,7 @@ class JdkToolTests {
       jar.noCompress = true;
       jar.verbose = true;
       jar.path = Paths.get("classes");
-      assertLinesMatch(expectedLines, dump(jar.toCommand()));
+      assertLinesMatch(expectedLines, dump(jar.toCommand(bach)));
     }
   }
 
@@ -265,7 +273,7 @@ class JdkToolTests {
             "-apionly",
             "-summary",
             "-verbose"),
-        dump(jdeps.toCommand()));
+        dump(jdeps.toCommand(bach)));
   }
 
   @Test
@@ -276,14 +284,14 @@ class JdkToolTests {
     assertLinesMatch(
         List.of(
             "jlink", "--module-path", "  mods", "--output", "  target" + File.separator + "image"),
-        dump(jlink.toCommand()));
+        dump(jlink.toCommand(bach)));
   }
 
   @TestFactory
   Stream<DynamicTest> checkFoundationJdkCommands() {
     return Arrays.stream(JdkTool.class.getDeclaredClasses())
         .map(type -> type.getSimpleName().toLowerCase())
-        .map(name -> dynamicTest(name, () -> Util.getJdkCommand(name)));
+        .map(name -> dynamicTest(name, () -> bach.util.getJdkCommand(name)));
   }
 
   @TestFactory
@@ -294,7 +302,7 @@ class JdkToolTests {
         .map(name -> dynamicTest(name, () -> ToolProvider.findFirst(name).orElseThrow()));
   }
 
-  private List<String> dump(Command command) {
+  private List<String> dump(Bach.Command command) {
     var lines = new ArrayList<String>();
     assertSame(command, command.dump(lines::add));
     return lines;

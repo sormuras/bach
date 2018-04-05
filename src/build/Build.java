@@ -21,7 +21,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-interface Build {
+class Build {
+
+  public static void main(String... args) {
+    try {
+      new Build().build();
+    } catch (Throwable throwable) {
+      System.err.println("build failed due to: " + throwable);
+      throwable.printStackTrace();
+      System.exit(1);
+    }
+  }
 
   Path TOOLS = Paths.get(".bach", "tools");
   Path MAVEN = Paths.get(".bach", "resolved");
@@ -39,30 +49,23 @@ interface Build {
   String OPENTEST4J = "1.0.0";
   String API_GUARDIAN = "1.0.0";
 
-  static void main(String... args) {
-    System.out.printf("%n[main]%n%n");
-    System.setProperty("bach.quiet", "false");
-    try {
-      format();
-      clean();
-      compile();
-      test();
-      javadoc();
-      jar();
-      jdeps();
-    } catch (Throwable throwable) {
-      System.err.println("build failed due to: " + throwable);
-      throwable.printStackTrace();
-      System.exit(1);
-    }
+  final Bach bach = new Bach();
+
+  void build() throws Exception {
+    format();
+    clean();
+    compile();
+    test();
+    javadoc();
+    jar();
+    jdeps();
   }
 
-  static Path maven(String group, String artifact, String version) throws Exception {
+  Path maven(String group, String artifact, String version) throws Exception {
     return maven(group, artifact, version, "");
   }
 
-  static Path maven(String group, String artifact, String version, String classifier)
-      throws Exception {
+  Path maven(String group, String artifact, String version, String classifier) throws Exception {
     if (!classifier.isEmpty() && !classifier.startsWith("-")) {
       classifier = "-" + classifier;
     }
@@ -73,11 +76,11 @@ interface Build {
   }
 
   /** Download the resource from URI to the target directory using the provided file name. */
-  static Path download(URI uri, Path directory, String fileName) throws Exception {
-    return new Bach().download(uri, directory, fileName);
+  Path download(URI uri, Path directory, String fileName) throws Exception {
+    return bach.util.download(uri, directory, fileName);
   }
 
-  static void format() throws Exception {
+  void format() throws Exception {
     System.out.printf("%n[format]%n%n");
     /*
     String repo = "https://jitpack.io";
@@ -95,9 +98,9 @@ interface Build {
     var jar = download(uri, TOOLS.resolve(name), file);
     var java = new JdkTool.Java();
     java.jar = jar;
-    java.toCommand().add("--version").run();
+    java.toCommand(bach).add("--version").run();
     // format
-    Command format = java.toCommand();
+    var format = java.toCommand(bach);
     if (Boolean.getBoolean("bach.format.replace")) {
       format.add("--replace");
     } else {
@@ -109,14 +112,14 @@ interface Build {
     format.run();
   }
 
-  static void clean() throws Exception {
+  void clean() throws Exception {
     System.out.printf("%n[clean]%n%n");
 
     //    Bach.Basics.treeDelete(TARGET);
     //    System.out.println("deleted " + TARGET);
   }
 
-  static void compile() throws Exception {
+  void compile() throws Exception {
     System.out.printf("%n[compile]%n%n");
 
     // main
@@ -124,7 +127,7 @@ interface Build {
     javac.generateAllDebuggingInformation = true;
     javac.destination = TARGET_MAIN;
     javac.classSourcePath = List.of(SOURCE_BACH);
-    javac.run();
+    javac.run(bach);
 
     // test
     javac.destination = TARGET_TEST;
@@ -136,12 +139,12 @@ interface Build {
             maven("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
             maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
             maven("org.opentest4j", "opentest4j", OPENTEST4J));
-    javac.run();
+    javac.run(bach);
     //    // TODO exclude .java files
     //    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
   }
 
-  static void javadoc() throws Exception {
+  void javadoc() throws Exception {
     System.out.printf("%n[javadoc]%n%n");
 
     Files.createDirectories(JAVADOC);
@@ -152,10 +155,10 @@ interface Build {
     javadoc.linksource = true;
     javadoc.showTypes = JdkTool.Javadoc.Visibility.PACKAGE;
     javadoc.showMembers = JdkTool.Javadoc.Visibility.PACKAGE;
-    javadoc.toCommand().add(BACH_JAVA).run();
+    javadoc.toCommand(bach).add(BACH_JAVA).run();
   }
 
-  static void jar() throws Exception {
+  void jar() throws Exception {
     System.out.printf("%n[jar]%n%n");
 
     Files.createDirectories(ARTIFACTS);
@@ -164,23 +167,23 @@ interface Build {
     jar("bach-javadoc.jar", JAVADOC);
   }
 
-  static void jar(String artifact, Path path) {
+  void jar(String artifact, Path path) {
     var jar = new JdkTool.Jar();
     jar.file = ARTIFACTS.resolve(artifact);
     jar.path = path;
-    jar.run();
+    jar.run(bach);
   }
 
-  static void jdeps() {
+  void jdeps() {
     System.out.printf("%n[jdeps]%n%n");
 
     var jdeps = new JdkTool.Jdeps();
     jdeps.summary = true;
     jdeps.recursive = true;
-    jdeps.toCommand().add(ARTIFACTS.resolve("bach.jar")).run();
+    jdeps.toCommand(bach).add(ARTIFACTS.resolve("bach.jar")).run();
   }
 
-  static void test() throws Exception {
+  void test() throws Exception {
     System.out.printf("%n[test]%n%n");
 
     var name = "junit-platform-console-standalone";
@@ -190,7 +193,7 @@ interface Build {
     var uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
     var jar = download(uri, TOOLS.resolve(name), file);
 
-    var java = new Command("java");
+    var java = bach.command("java");
     java.add("-ea");
     java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
     java.add("-jar").add(jar);

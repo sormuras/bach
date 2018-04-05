@@ -19,25 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BachContext.class)
 class TaskTests {
 
-  private final List<String> actualLogLines = new CopyOnWriteArrayList<>();
-  private final Bach bach = createBach(actualLogLines);
-
-  private Bach createBach(List<String> lines) {
-    var bach = new Bach();
-    bach.debug = true;
-    bach.quiet = false;
-    bach.offline = false;
-    bach.logger = lines::add;
-    return bach;
-  }
-
   @Test
-  void compiler() {
+  void compiler(Bach bach) {
     var project =
         Project.builder()
             .target(Paths.get("target/test/task/compiler"))

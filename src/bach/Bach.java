@@ -17,6 +17,8 @@
 
 // default package
 
+import static java.lang.System.Logger.Level;
+
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.module.*;
@@ -40,38 +42,50 @@ import java.util.stream.*;
  */
 class Bach {
 
-  /** Quiet mode switch. */
-  boolean quiet = Boolean.getBoolean("bach.quiet");
+  final Util util;
+  final Variables vars;
 
-  /** Debug mode switch. */
-  boolean debug = Boolean.getBoolean("bach.debug");
+  Bach() {
+    this.vars = new Variables();
+    this.util = new Util();
 
-  /** Offline mode switch. */
-  boolean offline = Boolean.getBoolean("bach.offline");
-
-  /** Logger function. */
-  Consumer<String> logger = System.out::println;
-
-  /** Log statement, if not quiet. */
-  void log(String format, Object... arguments) {
-    if (!quiet) {
-      var message = String.format(format, arguments);
-      logger.accept(message);
+    try {
+      Files.createDirectories(vars.temporary);
+    } catch (IOException e) {
+      throw new UncheckedIOException("creating directories failed: " + vars.temporary, e);
     }
   }
 
-  /** Log debug level statement, if not quiet. */
+  /** Create command for executable name and any arguments. */
+  Command command(String executable, Object... arguments) {
+    return new Command(executable).addAll(arguments);
+  }
+
+  /** Return {@code true} if debugging is enabled. */
+  boolean debug() {
+    return vars.level.getSeverity() <= Level.DEBUG.getSeverity();
+  }
+
+  /** Log debug level message. */
   void debug(String format, Object... arguments) {
-    if (debug) {
-      log(format, arguments);
-    }
+    util.log(Level.DEBUG, format, arguments);
+  }
+
+  /** Log info level message. */
+  void info(String format, Object... arguments) {
+    util.log(Level.INFO, format, arguments);
   }
 
   /** Run named executable with given arguments. */
   int run(String executable, Object... arguments) {
-    log("[run] %s %s", executable, List.of(arguments));
-    return new Command(executable).setLogger(quiet ? null : logger).addAll(arguments).get();
+    info("[run] %s %s", executable, List.of(arguments));
+    return command(executable, arguments).get();
   }
+
+//  /** Run tools sequentially. */
+//  final int run(String caption, JdkTool... tools) {
+//    return run(caption, Stream.of(tools).map(tool -> tool.toCommand(this)));
+//  }
 
   /** Run tasks in parallel. */
   @SafeVarargs
@@ -81,68 +95,14 @@ class Bach {
 
   /** Run stream of tasks. */
   int run(String caption, Stream<Supplier<Integer>> stream) {
-    log("[run] %s...", caption);
+    info("[run] %s...", caption);
     var results = stream.map(CompletableFuture::supplyAsync).map(CompletableFuture::join);
     var result = results.reduce(0, Integer::sum);
-    log("[run] %s done.", caption);
+    info("[run] %s done.", caption);
     if (result != 0) {
       throw new IllegalStateException("0 expected, but got: " + result);
     }
     return result;
-  }
-
-  /** Download the resource specified by its URI to the target directory. */
-  Path download(URI uri, Path directory) throws IOException {
-    return download(uri, directory, Util.getFileName(uri));
-  }
-
-  /** Download the resource from URI to the target directory using the provided file name. */
-  Path download(URI uri, Path directory, String fileName) throws IOException {
-    debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
-    var target = directory.resolve(fileName);
-    if (offline) {
-      if (Files.exists(target)) {
-        return target;
-      }
-      throw new Error("offline mode is active -- missing file " + target);
-    }
-    Files.createDirectories(directory);
-    var connection = uri.toURL().openConnection();
-    try (var sourceStream = connection.getInputStream()) {
-      var urlLastModifiedMillis = connection.getLastModified();
-      var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
-      if (Files.exists(target)) {
-        debug("local file already exists -- comparing properties to remote file...");
-        var unknownTime = urlLastModifiedMillis == 0L;
-        if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-          if (Files.size(target) == connection.getContentLengthLong()) {
-            debug("local and remote file properties seem to match, using `%s`", target);
-            return target;
-          }
-        }
-        debug("local file `%s` differs from remote one -- replacing it", target);
-      }
-      debug("transferring `%s`...", uri);
-      try (var targetStream = Files.newOutputStream(target)) {
-        sourceStream.transferTo(targetStream);
-      }
-      if (urlLastModifiedMillis != 0L) {
-        Files.setLastModifiedTime(target, urlLastModifiedTime);
-      }
-      log("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
-    }
-    return target;
-  }
-}
-
-/** Command line program and in-process tool abstraction. */
-class Command implements Supplier<Integer> {
-
-  /** Inspects or modifies the passed command instance. */
-  interface Visitor extends Consumer<Command> {}
-
-  static Visitor visit(Consumer<Command> consumer) {
-    return consumer::accept;
   }
 
   /** Command option annotation, aka its "name". */
@@ -156,383 +116,616 @@ class Command implements Supplier<Integer> {
   @Target(ElementType.FIELD)
   @interface Repeatable {}
 
-  /** Type-safe helper for adding common options. */
-  class Helper {
+  /** Command line program and in-process tool abstraction. */
+  class Command implements Supplier<Integer> {
 
-    @SuppressWarnings("unused")
-    void addModules(List<String> addModules) {
-      if (addModules.isEmpty()) {
-        return;
+    /** Type-safe helper for adding common options. */
+    class Helper {
+
+      @SuppressWarnings("unused")
+      void addModules(List<String> addModules) {
+        if (addModules.isEmpty()) {
+          return;
+        }
+        add("--add-modules");
+        add(String.join(",", addModules));
       }
-      add("--add-modules");
-      add(String.join(",", addModules));
-    }
 
-    @SuppressWarnings("unused")
-    void patchModule(Map<String, List<Path>> patchModule) {
-      patchModule.forEach(this::addPatchModule);
-    }
-
-    private void addPatchModule(String module, List<Path> paths) {
-      if (paths.isEmpty()) {
-        throw new AssertionError("expected at least one patch path entry for " + module);
+      @SuppressWarnings("unused")
+      void patchModule(Map<String, List<Path>> patchModule) {
+        patchModule.forEach(this::addPatchModule);
       }
-      var patches =
-          paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-      add("--patch-module");
-      add(module + "=" + patches);
+
+      private void addPatchModule(String module, List<Path> paths) {
+        if (paths.isEmpty()) {
+          throw new AssertionError("expected at least one patch path entry for " + module);
+        }
+        var patches =
+            paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+        add("--patch-module");
+        add(module + "=" + patches);
+      }
     }
-  }
 
-  final String executable;
-  final List<String> arguments = new ArrayList<>();
-  private final Helper helper = new Helper();
-  private int dumpLimit = Integer.MAX_VALUE;
-  private int dumpOffset = Integer.MAX_VALUE;
-  private PrintStream out = System.out;
-  private PrintStream err = System.err;
-  private Map<String, ToolProvider> tools = Collections.emptyMap();
-  private boolean executableSupportsArgumentFile = false;
-  private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
-  private Consumer<String> logger = System.out::println;
-  private Path temporaryDirectory = Util.temporaryPath();
+    final String executable;
+    final List<String> arguments = new ArrayList<>();
+    private final Helper helper = new Helper();
+    private int dumpLimit = Integer.MAX_VALUE;
+    private int dumpOffset = Integer.MAX_VALUE;
+    private PrintStream out = System.out;
+    private PrintStream err = System.err;
+    private Map<String, ToolProvider> tools = Collections.emptyMap();
+    private boolean executableSupportsArgumentFile = false;
+    private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
+    private Path temporaryDirectory = Bach.this.vars.temporary;
 
-  /** Initialize this command instance. */
-  Command(String executable) {
-    this.executable = executable;
-  }
+    /** Initialize this command instance. */
+    Command(String executable) {
+      this.executable = executable;
+    }
 
-  /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
-  Command add(Collection<Path> paths) {
-    return add(paths.stream(), File.pathSeparator);
-  }
+    /** Add single argument composed of joined path names using {@link File#pathSeparator}. */
+    Command add(Collection<Path> paths) {
+      return add(paths.stream(), File.pathSeparator);
+    }
 
-  /** Add single non-null argument. */
-  Command add(Object argument) {
-    if (argument instanceof Visitor) {
-      ((Visitor) argument).accept(this);
+    /** Add single non-null argument. */
+    Command add(Object argument) {
+      arguments.add(argument.toString());
       return this;
     }
-    arguments.add(argument.toString());
-    return this;
-  }
 
-  /** Add single argument composed of all stream elements joined by specified separator. */
-  Command add(Stream<?> stream, String separator) {
-    return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
-  }
-
-  /** Add all arguments by invoking {@link #add(Object)} for each element. */
-  Command addAll(Object... arguments) {
-    for (var argument : arguments) {
-      add(argument);
+    /** Add single argument composed of all stream elements joined by specified separator. */
+    Command add(Stream<?> stream, String separator) {
+      return add(stream.map(Object::toString).collect(Collectors.joining(separator)));
     }
-    return this;
-  }
 
-  /** Add all arguments by invoking {@link #add(Object)} for each element. */
-  Command addAll(Iterable<?> arguments) {
-    arguments.forEach(this::add);
-    return this;
-  }
-
-  /** Add all files visited by walking specified root path recursively. */
-  Command addAll(Path root, Predicate<Path> predicate) {
-    try (var stream = Files.walk(root).filter(predicate)) {
-      stream.forEach(this::add);
-    } catch (IOException e) {
-      throw new UncheckedIOException("walking path `" + root + "` failed", e);
+    /** Add all arguments by invoking {@link #add(Object)} for each element. */
+    Command addAll(Object... arguments) {
+      for (var argument : arguments) {
+        add(argument);
+      }
+      return this;
     }
-    return this;
-  }
 
-  /** Add all files visited by walking specified root paths recursively. */
-  Command addAll(Collection<Path> roots, Predicate<Path> predicate) {
-    roots.forEach(root -> addAll(root, predicate));
-    return this;
-  }
-
-  /** Add all .java source files by walking specified root paths recursively. */
-  Command addAllJavaFiles(List<Path> roots) {
-    return addAll(roots, Util::isJavaFile);
-  }
-
-  /** Add all reflected options. */
-  Command addAllOptions(Object options) {
-    return addAllOptions(options, UnaryOperator.identity());
-  }
-
-  /** Add all reflected options after a custom stream operator did its work. */
-  Command addAllOptions(Object options, UnaryOperator<Stream<Field>> operator) {
-    var stream =
-        Arrays.stream(options.getClass().getDeclaredFields())
-            .filter(field -> !field.isSynthetic())
-            .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
-            .filter(field -> !java.lang.reflect.Modifier.isPrivate(field.getModifiers()))
-            .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
-    stream = operator.apply(stream);
-    stream.forEach(field -> addOptionUnchecked(options, field));
-    return this;
-  }
-
-  private void addOption(Object options, Field field) throws ReflectiveOperationException {
-    // custom option visitor method declared?
-    try {
-      options.getClass().getDeclaredMethod(field.getName(), Command.class).invoke(options, this);
-      return;
-    } catch (NoSuchMethodException e) {
-      // fall-through
+    /** Add all arguments by invoking {@link #add(Object)} for each element. */
+    Command addAll(Iterable<?> arguments) {
+      arguments.forEach(this::add);
+      return this;
     }
-    // get the field's value
-    var value = field.get(options);
-    // skip null field value
-    if (value == null) {
-      return;
+
+    /** Add all files visited by walking specified root path recursively. */
+    Command addAll(Path root, Predicate<Path> predicate) {
+      try (var stream = Files.walk(root).filter(predicate)) {
+        stream.forEach(this::add);
+      } catch (IOException e) {
+        throw new UncheckedIOException("walking path `" + root + "` failed", e);
+      }
+      return this;
     }
-    // skip empty collections
-    if (value instanceof Collection && ((Collection) value).isEmpty()) {
-      return;
+
+    /** Add all files visited by walking specified root paths recursively. */
+    Command addAll(Collection<Path> roots, Predicate<Path> predicate) {
+      roots.forEach(root -> addAll(root, predicate));
+      return this;
     }
-    // common add helper available?
-    try {
-      Helper.class.getDeclaredMethod(field.getName(), field.getType()).invoke(helper, value);
-      return;
-    } catch (NoSuchMethodException e) {
-      // fall-through
+
+    /** Add all .java source files by walking specified root paths recursively. */
+    Command addAllJavaFiles(List<Path> roots) {
+      return addAll(roots, util::isJavaFile);
     }
-    // get or generate option name
-    var optional = Optional.ofNullable(field.getAnnotation(Option.class));
-    var optionName = optional.map(Option::value).orElse(getOptionName(field.getName()));
-    // is it an omissible boolean flag?
-    if (field.getType() == boolean.class) {
-      if (field.getBoolean(options)) {
+
+    /** Add all reflected options. */
+    Command addAllOptions(Object options) {
+      return addAllOptions(options, UnaryOperator.identity());
+    }
+
+    /** Add all reflected options after a custom stream operator did its work. */
+    Command addAllOptions(Object options, UnaryOperator<Stream<Field>> operator) {
+      var stream =
+          Arrays.stream(options.getClass().getDeclaredFields())
+              .filter(field -> !field.isSynthetic())
+              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+              .filter(field -> !java.lang.reflect.Modifier.isPrivate(field.getModifiers()))
+              .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
+      stream = operator.apply(stream);
+      stream.forEach(field -> addOptionUnchecked(options, field));
+      return this;
+    }
+
+    private void addOption(Object options, Field field) throws ReflectiveOperationException {
+      // custom option visitor method declared?
+      try {
+        options.getClass().getDeclaredMethod(field.getName(), Command.class).invoke(options, this);
+        return;
+      } catch (NoSuchMethodException e) {
+        // fall-through
+      }
+      // get the field's value
+      var value = field.get(options);
+      // skip null field value
+      if (value == null) {
+        return;
+      }
+      // skip empty collections
+      if (value instanceof Collection && ((Collection) value).isEmpty()) {
+        return;
+      }
+      // common add helper available?
+      try {
+        Helper.class.getDeclaredMethod(field.getName(), field.getType()).invoke(helper, value);
+        return;
+      } catch (NoSuchMethodException e) {
+        // fall-through
+      }
+      // get or generate option name
+      var optional = Optional.ofNullable(field.getAnnotation(Option.class));
+      var optionName = optional.map(Option::value).orElse(getOptionName(field.getName()));
+      // is it an omissible boolean flag?
+      if (field.getType() == boolean.class) {
+        if (field.getBoolean(options)) {
+          add(optionName);
+        }
+        return;
+      }
+      // add option name only if it is not empty
+      if (!optionName.isEmpty()) {
         add(optionName);
       }
-      return;
-    }
-    // add option name only if it is not empty
-    if (!optionName.isEmpty()) {
-      add(optionName);
-    }
-    // is value a collection?
-    if (value instanceof Collection) {
-      var iterator = ((Collection) value).iterator();
-      var head = iterator.next();
-      if (field.isAnnotationPresent(Repeatable.class)) {
-        add(head);
-        while (iterator.hasNext()) {
-          add(optionName);
-          add(iterator.next());
+      // is value a collection?
+      if (value instanceof Collection) {
+        var iterator = ((Collection) value).iterator();
+        var head = iterator.next();
+        if (field.isAnnotationPresent(Repeatable.class)) {
+          add(head);
+          while (iterator.hasNext()) {
+            add(optionName);
+            add(iterator.next());
+          }
+          return;
         }
+        if (head instanceof Path) {
+          @SuppressWarnings("unchecked")
+          var path = (Collection<Path>) value;
+          add(path);
+          return;
+        }
+      }
+      // is value a charset?
+      if (value instanceof Charset) {
+        add(((Charset) value).name());
         return;
       }
-      if (head instanceof Path) {
-        @SuppressWarnings("unchecked")
-        var path = (Collection<Path>) value;
-        add(path);
-        return;
+      // finally, add string representation of the value
+      add(value.toString());
+    }
+
+    private void addOptionUnchecked(Object options, Field field) {
+      try {
+        addOption(options, field);
+      } catch (ReflectiveOperationException e) {
+        throw new Error("reflecting option from field '" + field + "' failed for " + options, e);
       }
     }
-    // is value a charset?
-    if (value instanceof Charset) {
-      add(((Charset) value).name());
-      return;
-    }
-    // finally, add string representation of the value
-    add(value.toString());
-  }
 
-  private void addOptionUnchecked(Object options, Field field) {
-    try {
-      addOption(options, field);
-    } catch (ReflectiveOperationException e) {
-      throw new Error("reflecting option from field '" + field + "' failed for " + options, e);
-    }
-  }
-
-  private String getOptionName(String fieldName) {
-    var hasUppercase = !fieldName.equals(fieldName.toLowerCase());
-    var defaultName = new StringBuilder();
-    if (hasUppercase) {
-      defaultName.append("--");
-      fieldName
-          .chars()
-          .forEach(
-              i -> {
-                if (Character.isUpperCase(i)) {
-                  defaultName.append('-');
-                  defaultName.append((char) Character.toLowerCase(i));
-                } else {
-                  defaultName.append((char) i);
-                }
-              });
-    } else {
-      defaultName.append('-');
-      defaultName.append(fieldName.replace('_', '-'));
-    }
-    return defaultName.toString();
-  }
-
-  /** Dump command executables and arguments using the provided string consumer. */
-  Command dump(Consumer<String> consumer) {
-    var iterator = arguments.listIterator();
-    consumer.accept(executable);
-    while (iterator.hasNext()) {
-      var argument = iterator.next();
-      var nextIndex = iterator.nextIndex();
-      var indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
-      consumer.accept(indent + argument);
-      if (nextIndex > dumpLimit) {
-        var last = arguments.size() - 1;
-        var diff = last - nextIndex;
-        if (diff > 1) {
-          consumer.accept(indent + "... [omitted " + diff + " arguments]");
-        }
-        consumer.accept(indent + arguments.get(last));
-        break;
-      }
-    }
-    return this;
-  }
-
-  /** Set dump offset and limit. */
-  Command mark(int limit) {
-    if (limit < 0) {
-      throw new IllegalArgumentException("limit must be greater then zero: " + limit);
-    }
-    this.dumpOffset = arguments.size();
-    this.dumpLimit = arguments.size() + limit;
-    return this;
-  }
-
-  /** Set argument file support. */
-  Command setExecutableSupportsArgumentFile(boolean executableSupportsArgumentFile) {
-    this.executableSupportsArgumentFile = executableSupportsArgumentFile;
-    return this;
-  }
-
-  /** Set standard output and error streams. */
-  Command setStandardStreams(PrintStream out, PrintStream err) {
-    this.out = out;
-    this.err = err;
-    return this;
-  }
-
-  /** Put the tool into the internal map of tools. */
-  Command setToolProvider(ToolProvider tool) {
-    if (tools == Collections.EMPTY_MAP) {
-      tools = new TreeMap<>();
-    }
-    tools.put(tool.name(), tool);
-    return this;
-  }
-
-  Command setLogger(Consumer<String> logger) {
-    this.logger = logger;
-    return this;
-  }
-
-  Command setTemporaryDirectory(Path temporaryDirectory) {
-    this.temporaryDirectory = temporaryDirectory;
-    return this;
-  }
-
-  Command setExecutableToProgramOperator(UnaryOperator<String> executableToProgramOperator) {
-    this.executableToProgramOperator = executableToProgramOperator;
-    return this;
-  }
-
-  /** Create new argument array based on this command's arguments. */
-  String[] toArgumentsArray() {
-    return arguments.toArray(new String[0]);
-  }
-
-  /** Create new {@link ProcessBuilder} instance based on this command setup. */
-  ProcessBuilder toProcessBuilder() {
-    List<String> strings = new ArrayList<>(1 + arguments.size());
-    var program = executableToProgramOperator.apply(executable);
-    strings.add(program);
-    strings.addAll(arguments);
-    var commandLineLength = String.join(" ", strings).length();
-    if (commandLineLength > 32000) {
-      if (executableSupportsArgumentFile) {
-        var timestamp = Instant.now().toString().replace("-", "").replace(":", "");
-        var prefix = "bach-" + executable + "-arguments-" + timestamp + "-";
-        try {
-          var tempFile = Files.createTempFile(temporaryDirectory, prefix, ".txt");
-          strings = List.of(program, "@" + Files.write(tempFile, arguments));
-        } catch (IOException e) {
-          throw new UncheckedIOException("creating temporary arguments file failed", e);
-        }
+    private String getOptionName(String fieldName) {
+      var hasUppercase = !fieldName.equals(fieldName.toLowerCase());
+      var defaultName = new StringBuilder();
+      if (hasUppercase) {
+        defaultName.append("--");
+        fieldName
+            .chars()
+            .forEach(
+                i -> {
+                  if (Character.isUpperCase(i)) {
+                    defaultName.append('-');
+                    defaultName.append((char) Character.toLowerCase(i));
+                  } else {
+                    defaultName.append((char) i);
+                  }
+                });
       } else {
-        err.println(
-            String.format(
-                "large command line (%s) detected, but %s does not support @argument file",
-                commandLineLength, executable));
+        defaultName.append('-');
+        defaultName.append(fieldName.replace('_', '-'));
+      }
+      return defaultName.toString();
+    }
+
+    /** Dump command executables and arguments using the provided string consumer. */
+    Command dump(Consumer<String> consumer) {
+      var iterator = arguments.listIterator();
+      consumer.accept(executable);
+      while (iterator.hasNext()) {
+        var argument = iterator.next();
+        var nextIndex = iterator.nextIndex();
+        var indent = nextIndex > dumpOffset || argument.startsWith("-") ? "" : "  ";
+        consumer.accept(indent + argument);
+        if (nextIndex > dumpLimit) {
+          var last = arguments.size() - 1;
+          var diff = last - nextIndex;
+          if (diff > 1) {
+            consumer.accept(indent + "... [omitted " + diff + " arguments]");
+          }
+          consumer.accept(indent + arguments.get(last));
+          break;
+        }
+      }
+      return this;
+    }
+
+    /** Set dump offset and limit. */
+    Command mark(int limit) {
+      if (limit < 0) {
+        throw new IllegalArgumentException("limit must be greater then zero: " + limit);
+      }
+      this.dumpOffset = arguments.size();
+      this.dumpLimit = arguments.size() + limit;
+      return this;
+    }
+
+    /** Set argument file support. */
+    Command setExecutableSupportsArgumentFile(boolean executableSupportsArgumentFile) {
+      this.executableSupportsArgumentFile = executableSupportsArgumentFile;
+      return this;
+    }
+
+    /** Set standard output and error streams. */
+    Command setStandardStreams(PrintStream out, PrintStream err) {
+      this.out = out;
+      this.err = err;
+      return this;
+    }
+
+    /** Put the tool into the internal map of tools. */
+    Command setToolProvider(ToolProvider tool) {
+      if (tools == Collections.EMPTY_MAP) {
+        tools = new TreeMap<>();
+      }
+      tools.put(tool.name(), tool);
+      return this;
+    }
+
+    Command setTemporaryDirectory(Path temporaryDirectory) {
+      this.temporaryDirectory = temporaryDirectory;
+      return this;
+    }
+
+    Command setExecutableToProgramOperator(UnaryOperator<String> executableToProgramOperator) {
+      this.executableToProgramOperator = executableToProgramOperator;
+      return this;
+    }
+
+    /** Create new argument array based on this command's arguments. */
+    String[] toArgumentsArray() {
+      return arguments.toArray(new String[0]);
+    }
+
+    /** Create new {@link ProcessBuilder} instance based on this command setup. */
+    ProcessBuilder toProcessBuilder() {
+      List<String> strings = new ArrayList<>(1 + arguments.size());
+      var program = executableToProgramOperator.apply(executable);
+      strings.add(program);
+      strings.addAll(arguments);
+      var commandLineLength = String.join(" ", strings).length();
+      if (commandLineLength > 32000) {
+        if (executableSupportsArgumentFile) {
+          var timestamp = Instant.now().toString().replace("-", "").replace(":", "");
+          var prefix = "bach-" + executable + "-arguments-" + timestamp + "-";
+          try {
+            var tempFile = Files.createTempFile(temporaryDirectory, prefix, ".txt");
+            strings = List.of(program, "@" + Files.write(tempFile, arguments));
+          } catch (IOException e) {
+            throw new UncheckedIOException("creating temporary arguments file failed", e);
+          }
+        } else {
+          err.println(
+              String.format(
+                  "large command line (%s) detected, but %s does not support @argument file",
+                  commandLineLength, executable));
+        }
+      }
+      var processBuilder = new ProcessBuilder(strings);
+      processBuilder.redirectErrorStream(true);
+      return processBuilder;
+    }
+
+    /**
+     * Run this command, returning zero for a successful run.
+     *
+     * @return the result of executing the tool. A return value of 0 means the tool did not
+     *     encounter any errors; any other value indicates that at least one error occurred during
+     *     execution.
+     */
+    @Override
+    public Integer get() {
+      return run(UnaryOperator.identity(), this::toProcessBuilder);
+    }
+
+    /**
+     * Run this command.
+     *
+     * @throws AssertionError if the execution result is not zero
+     */
+    void run() {
+      var result = get();
+      var successful = result == 0;
+      if (successful) {
+        return;
+      }
+      throw new AssertionError("expected an exit code of zero, but got: " + result);
+    }
+
+    /**
+     * Run this command, returning zero for a successful run.
+     *
+     * @return the result of executing the tool. A return value of 0 means the tool did not
+     *     encounter any errors; any other value indicates that at least one error occurred during
+     *     execution.
+     */
+    int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
+      if (debug()) {
+        List<String> lines = new ArrayList<>();
+        dump(lines::add);
+        debug("running %s with %d argument(s)", executable, arguments.size());
+        debug("%s", String.join("\n", lines));
+      }
+      var foundationTool = ToolProvider.findFirst(executable).orElse(null);
+      var tool = tools.getOrDefault(executable, foundationTool);
+      if (tool != null) {
+        return operator.apply(tool).run(out, err, toArgumentsArray());
+      }
+      var processBuilder = supplier.get();
+      if (debug()) {
+        var program = processBuilder.command().get(0);
+        if (!executable.equals(program)) {
+          debug("replaced executable `%s` with program `%s`", executable, program);
+        }
+      }
+      try {
+        var process = processBuilder.start();
+        process.getInputStream().transferTo(out);
+        return process.waitFor();
+      } catch (IOException | InterruptedException e) {
+        throw new Error("executing `" + executable + "` failed", e);
       }
     }
-    var processBuilder = new ProcessBuilder(strings);
-    processBuilder.redirectErrorStream(true);
-    return processBuilder;
   }
 
-  /**
-   * Run this command, returning zero for a successful run.
-   *
-   * @return the result of executing the tool. A return value of 0 means the tool did not encounter
-   *     any errors; any other value indicates that at least one error occurred during execution.
-   */
-  @Override
-  public Integer get() {
-    return run(UnaryOperator.identity(), this::toProcessBuilder);
+  /** Mutable runtime properties. */
+  class Variables {
+    /** Logger level. */
+    Level level = Level.valueOf(System.getProperty("bach.level", "ALL"));
+
+    /** Logger function. */
+    BiConsumer<Level, String> logger = (level, text) -> System.out.printf("[%s] %s%n", level, text);
+
+    /** Offline mode switch. */
+    boolean offline = Boolean.getBoolean("bach.offline");
+
+    /** Temporary path. */
+    Path temporary =
+        Paths.get(
+            System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
   }
 
-  /**
-   * Run this command.
-   *
-   * @throws AssertionError if the execution result is not zero
-   */
-  void run() {
-    var result = get();
-    var successful = result == 0;
-    if (successful) {
-      return;
-    }
-    throw new AssertionError("expected an exit code of zero, but got: " + result);
-  }
+  /** Overlay. */
+  class Util {
 
-  /**
-   * Run this command, returning zero for a successful run.
-   *
-   * @return the result of executing the tool. A return value of 0 means the tool did not encounter
-   *     any errors; any other value indicates that at least one error occurred during execution.
-   */
-  int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-    if (logger != null) {
-      List<String> lines = new ArrayList<>();
-      dump(lines::add);
-      logger.accept(String.format("running %s with %d argument(s)", executable, arguments.size()));
-      logger.accept(String.format("%s", String.join("\n", lines)));
+    /** Download the resource specified by its URI to the target directory. */
+    Path download(URI uri, Path directory) throws IOException {
+      return download(uri, directory, fileName(uri));
     }
-    var foundationTool = ToolProvider.findFirst(executable).orElse(null);
-    var tool = tools.getOrDefault(executable, foundationTool);
-    if (tool != null) {
-      return operator.apply(tool).run(out, err, toArgumentsArray());
+
+    /** Download the resource from URI to the target directory using the provided file name. */
+    Path download(URI uri, Path directory, String fileName) throws IOException {
+      debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
+      var target = directory.resolve(fileName);
+      if (vars.offline) {
+        if (Files.exists(target)) {
+          return target;
+        }
+        throw new Error("offline mode is active -- missing file " + target);
+      }
+      Files.createDirectories(directory);
+      var connection = uri.toURL().openConnection();
+      try (var sourceStream = connection.getInputStream()) {
+        var urlLastModifiedMillis = connection.getLastModified();
+        var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
+        if (Files.exists(target)) {
+          debug("local file already exists -- comparing properties to remote file...");
+          var unknownTime = urlLastModifiedMillis == 0L;
+          if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
+            if (Files.size(target) == connection.getContentLengthLong()) {
+              debug("local and remote file properties seem to match, using `%s`", target);
+              return target;
+            }
+          }
+          debug("local file `%s` differs from remote one -- replacing it", target);
+        }
+        debug("transferring `%s`...", uri);
+        try (var targetStream = Files.newOutputStream(target)) {
+          sourceStream.transferTo(targetStream);
+        }
+        if (urlLastModifiedMillis != 0L) {
+          Files.setLastModifiedTime(target, urlLastModifiedTime);
+        }
+        info("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
+      }
+      return target;
     }
-    var processBuilder = supplier.get();
-    if (logger != null) {
-      var program = processBuilder.command().get(0);
-      if (!executable.equals(program)) {
-        logger.accept(
-            String.format("replaced executable `%s` with program `%s`", executable, program));
+
+    /** Return the file name of the uri. */
+    String fileName(URI uri) {
+      var urlString = uri.getPath();
+      var begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    }
+
+    /** Log formatted message at the specified level. */
+    void log(Level level, String format, Object... arguments) {
+      if (level.getSeverity() < vars.level.getSeverity()) {
+        return;
+      }
+      var message = String.format(format, arguments);
+      vars.logger.accept(level, message);
+    }
+
+    /** Return {@code true} if the path points to a canonical Java archive file. */
+    boolean isJarFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        return path.getFileName().toString().endsWith(".jar");
+      }
+      return false;
+    }
+
+    /** Return {@code true} if the path points to a canonical Java compilation unit file. */
+    boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        var name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.indexOf('.') == name.length() - 5; // single dot in filename
+        }
+      }
+      return false;
+    }
+
+    /** Return list of child directories directly present in {@code root} path. */
+    List<Path> findDirectories(Path root) {
+      if (Files.notExists(root)) {
+        return Collections.emptyList();
+      }
+      try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+        return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+      } catch (IOException e) {
+        throw new UncheckedIOException("findDirectories failed for root: " + root, e);
       }
     }
-    try {
-      var process = processBuilder.start();
-      process.getInputStream().transferTo(out);
-      return process.waitFor();
-    } catch (IOException | InterruptedException e) {
-      throw new Error("executing `" + executable + "` failed", e);
+
+    /** Return list of child directory names directly present in {@code root} path. */
+    List<String> findDirectoryNames(Path root) {
+      return findDirectories(root)
+          .stream()
+          .map(root::relativize)
+          .map(Path::toString)
+          .collect(Collectors.toList());
+    }
+
+    /** Return the location path of the module reference. */
+    Path getPath(ModuleReference moduleReference) {
+      return Paths.get(moduleReference.location().orElseThrow());
+    }
+
+    /** Collect all Java archives ({@code .jar} files) into a list. */
+    List<Path> getClassPath(List<Path> modulePath, List<Path> depsPath) {
+      List<Path> classPath = new ArrayList<>();
+      for (var path : modulePath) {
+        ModuleFinder.of(path).findAll().stream().map(this::getPath).forEach(classPath::add);
+      }
+      for (var path : depsPath) {
+        try (Stream<Path> paths = Files.walk(path, 1)) {
+          paths.filter(this::isJarFile).forEach(classPath::add);
+        } catch (IOException e) {
+          throw new UncheckedIOException("failed adding jars from " + path + " to classpath", e);
+        }
+      }
+      return classPath;
+    }
+
+    /** Return patch map using two lists of paths. */
+    Map<String, List<Path>> getPatchMap(List<Path> basePath, List<Path> patchPath) {
+      var map = new TreeMap<String, List<Path>>();
+      for (var base : basePath) {
+        for (var name : findDirectoryNames(base)) {
+          for (var patch : patchPath) {
+            var candidate = patch.resolve(name);
+            if (Files.isDirectory(candidate)) {
+              map.computeIfAbsent(name, __ -> new ArrayList<>()).add(candidate);
+            }
+          }
+        }
+      }
+      return map;
+    }
+
+    /** Find foundation JDK command by its name. */
+    Optional<Path> findJdkCommandPath(String name) {
+      var bin = Paths.get(System.getProperty("java.home")).toAbsolutePath().resolve("bin");
+      for (var suffix : List.of("", ".exe")) {
+        var tool = bin.resolve(name + suffix);
+        if (Files.isExecutable(tool)) {
+          return Optional.of(tool);
+        }
+      }
+      return Optional.empty();
+    }
+
+    /** Find foundation JDK command by its name. */
+    String getJdkCommand(String name) {
+      return findJdkCommandPath(name).map(Object::toString).orElseThrow();
+    }
+
+    /** Calculate external module names. */
+    Set<String> getExternalModuleNames(Path... roots) {
+      var declaredModules = new TreeSet<String>();
+      var requiredModules = new TreeSet<String>();
+      var paths = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
+        } catch (IOException e) {
+          throw new UncheckedIOException("walking path failed for: " + root, e);
+        }
+      }
+      for (var path : paths) {
+        var info = ModuleInfo.of(path);
+        declaredModules.add(info.getName());
+        requiredModules.addAll(info.getRequires());
+      }
+      var externalModules = new TreeSet<>(requiredModules);
+      externalModules.removeAll(declaredModules);
+      return externalModules;
+    }
+
+    /** Delete directory. */
+    void removeTree(Path root) {
+      removeTree(root, path -> true);
+    }
+
+    /** Delete selected files and directories from the root directory. */
+    void removeTree(Path root, Predicate<Path> filter) {
+      // trivial case: delete existing single file or empty directory right away
+      try {
+        if (Files.deleteIfExists(root)) {
+          return;
+        }
+      } catch (IOException ignored) {
+        // fall-through
+      }
+      // default case: walk the tree...
+      try (var stream = Files.walk(root)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException("removing tree failed: " + root, e);
+      }
+    }
+
+    /** Dump directory tree structure. */
+    void dumpTree(Path root, Consumer<String> out) {
+      if (Files.exists(root)) {
+        out.accept(root.toString());
+      }
+      try (Stream<Path> stream = Files.walk(root).sorted()) {
+        for (Path path : stream.collect(Collectors.toList())) {
+          String string = root.relativize(path).toString();
+          String prefix = string.isEmpty() ? "" : File.separator;
+          out.accept("." + prefix + string);
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException("dumping tree failed: " + root, e);
+      }
     }
   }
 }
@@ -556,25 +749,25 @@ interface JdkTool {
     List<Path> classPath = List.of();
 
     /** (Legacy) locations where to find Java source files. */
-    @Command.Option("--source-path")
+    @Bach.Option("--source-path")
     transient List<Path> classSourcePath = List.of();
 
     /** Generates all debugging information, including local variables. */
-    @Command.Option("-g")
+    @Bach.Option("-g")
     boolean generateAllDebuggingInformation = false;
 
     /** Output source locations where deprecated APIs are used. */
     boolean deprecation = true;
 
     /** The destination directory for class files. */
-    @Command.Option("-d")
+    @Bach.Option("-d")
     Path destination = null;
 
     /** Specify character encoding used by source files. */
     Charset encoding = StandardCharsets.UTF_8;
 
     /** Terminate compilation if warnings occur. */
-    @Command.Option("-Werror")
+    @Bach.Option("-Werror")
     boolean failOnWarnings = true;
 
     /** Overrides or augments a module with classes and resources in JAR files or directories. */
@@ -590,7 +783,7 @@ interface JdkTool {
     List<String> addModules = List.of();
 
     /** Compiles only the specified module and checks timestamps. */
-    @Command.Option("--module")
+    @Bach.Option("--module")
     String module = null;
 
     /** Generate metadata for reflection on method parameters. */
@@ -601,12 +794,12 @@ interface JdkTool {
 
     /** Create javac command with options and source files added. */
     @Override
-    public Command toCommand(Object... extras) {
-      var command = JdkTool.super.toCommand(extras);
+    public Bach.Command toCommand(Bach bach, Object... extras) {
+      var command = JdkTool.super.toCommand(bach, extras);
       command.mark(10);
-      command.addAll(classSourcePath, Util::isJavaFile);
+      command.addAll(classSourcePath, bach.util::isJavaFile);
       if (module == null) {
-        command.addAll(moduleSourcePath, Util::isJavaFile);
+        command.addAll(moduleSourcePath, bach.util::isJavaFile);
       }
       command.setExecutableSupportsArgumentFile(true);
       return command;
@@ -640,7 +833,7 @@ interface JdkTool {
     List<String> addModules = List.of();
 
     /** Initial module to resolve and the name of the main class to execute. */
-    @Command.Option("--module")
+    @Bach.Option("--module")
     String module = null;
 
     /** Arguments passed to the main entry-point. */
@@ -648,10 +841,10 @@ interface JdkTool {
 
     /** Create java command with options and source files added. */
     @Override
-    public Command toCommand(Object... extras) {
-      Command command = JdkTool.super.toCommand(extras);
+    public Bach.Command toCommand(Bach bach, Object... extras) {
+      var command = JdkTool.super.toCommand(bach, extras);
       command.setExecutableSupportsArgumentFile(true);
-      command.setExecutableToProgramOperator(Util::getJdkCommand);
+      command.setExecutableToProgramOperator(bach.util::getJdkCommand);
       command.mark(9);
       command.addAll(args);
       return command;
@@ -678,7 +871,7 @@ interface JdkTool {
     }
 
     /** The destination directory for generated files. */
-    @Command.Option("-d")
+    @Bach.Option("-d")
     Path destination = null;
 
     /** Shuts off messages so that only the warnings and errors appear. */
@@ -691,7 +884,7 @@ interface JdkTool {
     boolean keywords = true;
 
     /** Creates links to existing documentation of externally referenced classes. */
-    @Command.Repeatable List<String> link = List.of();
+    @Bach.Repeatable List<String> link = List.of();
 
     /** Creates an HTML version of each source file. */
     boolean linksource = false;
@@ -699,7 +892,7 @@ interface JdkTool {
     /** Enables recommended checks for problems in javadoc comments. */
     String doclint = "";
 
-    void doclint(Command command) {
+    void doclint(Bach.Command command) {
       if (doclint == null) {
         return;
       }
@@ -716,7 +909,7 @@ interface JdkTool {
     /** Specifies which declarations (fields or methods) are documented. */
     Visibility showMembers = Visibility.PROTECTED;
 
-    void showMembers(Command command) {
+    void showMembers(Bach.Command command) {
       if (showMembers == Visibility.PROTECTED) {
         return;
       }
@@ -726,7 +919,7 @@ interface JdkTool {
     /** Specifies which declarations (interfaces or classes) are documented. */
     Visibility showTypes = Visibility.PROTECTED;
 
-    void showTypes(Command command) {
+    void showTypes(Bach.Command command) {
       if (showTypes == Visibility.PROTECTED) {
         return;
       }
@@ -742,11 +935,11 @@ interface JdkTool {
    */
   class Jar implements JdkTool {
     /** Specify the operation mode for the jar command. */
-    @Command.Option("")
+    @Bach.Option("")
     String mode = "--create";
 
     /** Specifies the archive file name. */
-    @Command.Option("--file")
+    @Bach.Option("--file")
     Path file = Paths.get("out.jar");
 
     /** Specifies the application entry point for stand-alone applications. */
@@ -759,16 +952,16 @@ interface JdkTool {
     boolean noCompress = false;
 
     /** Sends or prints verbose output to standard output. */
-    @Command.Option("--verbose")
+    @Bach.Option("--verbose")
     boolean verbose = false;
 
     /** Changes to the specified directory and includes the files at the end of the command. */
-    @Command.Option("-C")
+    @Bach.Option("-C")
     Path path = null;
 
     @Override
-    public Command toCommand(Object... extras) {
-      Command command = JdkTool.super.toCommand(extras);
+    public Bach.Command toCommand(Bach bach, Object... extras) {
+      var command = JdkTool.super.toCommand(bach, extras);
       if (path != null) {
         command.mark(1);
         command.add(".");
@@ -816,7 +1009,7 @@ interface JdkTool {
     List<Path> modulePath = List.of();
 
     /** The directory that contains the resulting runtime image. */
-    @Command.Option("--output")
+    @Bach.Option("--output")
     Path output = null;
   }
 
@@ -830,252 +1023,69 @@ interface JdkTool {
    *
    * @throws AssertionError if the execution result is not zero
    */
-  default void run() {
-    toCommand().run();
+  default void run(Bach bach) {
+    toCommand(bach).run();
   }
 
   /** Create command instance based on this tool's options. */
-  default Command toCommand(Object... extras) {
-    return new Command(name()).addAllOptions(this).addAll(extras);
+  default Bach.Command toCommand(Bach bach, Object... extras) {
+    return bach.command(name()).addAllOptions(this).addAll(extras);
   }
 }
 
-/** Static utilities and helpers. */
-class Util {
+/** Simple module information collector. */
+class ModuleInfo {
 
-  static Path temporaryPath() {
-    var tmpdir = System.getProperty("java.io.tmpdir");
-    var tmpbach = System.getProperty("bach.temporary", ".bach");
-    var temporaryDirectory = Paths.get(tmpdir, tmpbach);
+  private static Pattern namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
+  private static Pattern requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+  static ModuleInfo of(Path path) {
+    if (Files.isDirectory(path)) {
+      path = path.resolve("module-info.java");
+    }
     try {
-      Files.createDirectories(temporaryDirectory);
+      return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
     } catch (IOException e) {
-      throw new UncheckedIOException("creating directories failed: " + temporaryDirectory, e);
-    }
-    return temporaryDirectory;
-  }
-
-  /** Return {@code true} if the path points to a canonical Java archive file. */
-  static boolean isJarFile(Path path) {
-    if (Files.isRegularFile(path)) {
-      return path.getFileName().toString().endsWith(".jar");
-    }
-    return false;
-  }
-
-  /** Return {@code true} if the path points to a canonical Java compilation unit file. */
-  static boolean isJavaFile(Path path) {
-    if (Files.isRegularFile(path)) {
-      var name = path.getFileName().toString();
-      if (name.endsWith(".java")) {
-        return name.indexOf('.') == name.length() - 5; // single dot in filename
-      }
-    }
-    return false;
-  }
-
-  /** Return list of child directories directly present in {@code root} path. */
-  static List<Path> findDirectories(Path root) {
-    if (Files.notExists(root)) {
-      return Collections.emptyList();
-    }
-    try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
-      return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
-    } catch (IOException e) {
-      throw new UncheckedIOException("findDirectories failed for root: " + root, e);
+      throw new UncheckedIOException("reading '" + path + "' failed", e);
     }
   }
 
-  /** Return list of child directory names directly present in {@code root} path. */
-  static List<String> findDirectoryNames(Path root) {
-    return findDirectories(root)
-        .stream()
-        .map(root::relativize)
-        .map(Path::toString)
-        .collect(Collectors.toList());
+  static ModuleInfo of(List<String> lines) {
+    return of(String.join("\n", lines));
   }
 
-  /** Return the file name of the uri. */
-  static String getFileName(URI uri) {
-    var urlString = uri.getPath();
-    var begin = urlString.lastIndexOf('/') + 1;
-    return urlString.substring(begin).split("\\?")[0].split("#")[0];
+  static ModuleInfo of(String source) {
+    // extract module name
+    var nameMatcher = namePattern.matcher(source);
+    if (!nameMatcher.find()) {
+      throw new IllegalArgumentException(
+          "expected java module descriptor unit, but got: " + source);
+    }
+    var name = nameMatcher.group(1).trim();
+    // extract required module names
+    var requires = new TreeSet<String>();
+    var requiresMatcher = requiresPattern.matcher(source);
+    while (requiresMatcher.find()) {
+      var split = requiresMatcher.group(1).trim().split("\\s+");
+      requires.add(split[split.length - 1]);
+    }
+    return new ModuleInfo(name, requires);
   }
 
-  /** Return the location path of the module reference. */
-  static Path getPath(ModuleReference moduleReference) {
-    return Paths.get(moduleReference.location().orElseThrow());
+  final String name;
+  final Set<String> requires;
+
+  private ModuleInfo(String name, Set<String> requires) {
+    this.name = name;
+    this.requires = Set.copyOf(requires);
   }
 
-  /** Collect all Java archives ({@code .jar} files) into a list. */
-  static List<Path> getClassPath(List<Path> modulePath, List<Path> depsPath) {
-    List<Path> classPath = new ArrayList<>();
-    for (var path : modulePath) {
-      ModuleFinder.of(path).findAll().stream().map(Util::getPath).forEach(classPath::add);
-    }
-    for (var path : depsPath) {
-      try (Stream<Path> paths = Files.walk(path, 1)) {
-        paths.filter(Util::isJarFile).forEach(classPath::add);
-      } catch (IOException e) {
-        throw new UncheckedIOException("failed adding jars from " + path + " to classpath", e);
-      }
-    }
-    return classPath;
+  String getName() {
+    return name;
   }
 
-  /** Return patch map using two lists of paths. */
-  static Map<String, List<Path>> getPatchMap(List<Path> basePath, List<Path> patchPath) {
-    var map = new TreeMap<String, List<Path>>();
-    for (var base : basePath) {
-      for (var name : findDirectoryNames(base)) {
-        for (var patch : patchPath) {
-          var candidate = patch.resolve(name);
-          if (Files.isDirectory(candidate)) {
-            map.computeIfAbsent(name, __ -> new ArrayList<>()).add(candidate);
-          }
-        }
-      }
-    }
-    return map;
-  }
-
-  /** Find foundation JDK command by its name. */
-  static Optional<Path> findJdkCommandPath(String name) {
-    var bin = Paths.get(System.getProperty("java.home")).toAbsolutePath().resolve("bin");
-    for (var suffix : List.of("", ".exe")) {
-      var tool = bin.resolve(name + suffix);
-      if (Files.isExecutable(tool)) {
-        return Optional.of(tool);
-      }
-    }
-    return Optional.empty();
-  }
-
-  /** Find foundation JDK command by its name. */
-  static String getJdkCommand(String name) {
-    return findJdkCommandPath(name).map(Object::toString).orElseThrow();
-  }
-
-  /** Calculate external module names. */
-  static Set<String> getExternalModuleNames(Path... roots) {
-    var declaredModules = new TreeSet<String>();
-    var requiredModules = new TreeSet<String>();
-    var paths = new ArrayList<Path>();
-    for (var root : roots) {
-      try (var stream = Files.walk(root)) {
-        stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
-      } catch (IOException e) {
-        throw new UncheckedIOException("walking path failed for: " + root, e);
-      }
-    }
-    for (var path : paths) {
-      var info = ModuleInfo.of(path);
-      declaredModules.add(info.getName());
-      requiredModules.addAll(info.getRequires());
-    }
-    var externalModules = new TreeSet<>(requiredModules);
-    externalModules.removeAll(declaredModules);
-    return externalModules;
-  }
-
-  /** Delete directory. */
-  static void removeTree(Path root) {
-    removeTree(root, path -> true);
-  }
-
-  /** Delete selected files and directories from the root directory. */
-  static void removeTree(Path root, Predicate<Path> filter) {
-    // trivial case: delete existing single file or empty directory right away
-    try {
-      if (Files.deleteIfExists(root)) {
-        return;
-      }
-    } catch (IOException ignored) {
-      // fall-through
-    }
-    // default case: walk the tree...
-    try (var stream = Files.walk(root)) {
-      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-      for (var path : selected.collect(Collectors.toList())) {
-        Files.deleteIfExists(path);
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException("removing tree failed: " + root, e);
-    }
-  }
-
-  /** Dump directory tree structure. */
-  static void dumpTree(Path root, Consumer<String> out) {
-    if (Files.exists(root)) {
-      out.accept(root.toString());
-    }
-    try (Stream<Path> stream = Files.walk(root).sorted()) {
-      for (Path path : stream.collect(Collectors.toList())) {
-        String string = root.relativize(path).toString();
-        String prefix = string.isEmpty() ? "" : File.separator;
-        out.accept("." + prefix + string);
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException("dumping tree failed: " + root, e);
-    }
-  }
-
-  private Util() {}
-
-  /** Simple module information collector. */
-  static class ModuleInfo {
-
-    static Pattern namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
-    static Pattern requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
-
-    static ModuleInfo of(Path path) {
-      if (Files.isDirectory(path)) {
-        path = path.resolve("module-info.java");
-      }
-      try {
-        return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
-      } catch (IOException e) {
-        throw new UncheckedIOException("reading '" + path + "' failed", e);
-      }
-    }
-
-    static ModuleInfo of(List<String> lines) {
-      return of(String.join("\n", lines));
-    }
-
-    static ModuleInfo of(String source) {
-      // extract module name
-      var nameMatcher = namePattern.matcher(source);
-      if (!nameMatcher.find()) {
-        throw new IllegalArgumentException(
-            "expected java module descriptor unit, but got: " + source);
-      }
-      var name = nameMatcher.group(1).trim();
-      // extract required module names
-      var requires = new TreeSet<String>();
-      var requiresMatcher = requiresPattern.matcher(source);
-      while (requiresMatcher.find()) {
-        var split = requiresMatcher.group(1).trim().split("\\s+");
-        requires.add(split[split.length - 1]);
-      }
-      return new ModuleInfo(name, requires);
-    }
-
-    final String name;
-    final Set<String> requires;
-
-    ModuleInfo(String name, Set<String> requires) {
-      this.name = name;
-      this.requires = Set.copyOf(requires);
-    }
-
-    String getName() {
-      return name;
-    }
-
-    Set<String> getRequires() {
-      return requires;
-    }
+  Set<String> getRequires() {
+    return requires;
   }
 }
 
@@ -1236,18 +1246,18 @@ interface Task extends Supplier<Integer> {
     }
 
     int compile(Project.ModuleGroup group) {
-      bach.log("[compile] %s", group.name());
+      bach.info("[compile] %s", group.name());
       var javac = new JdkTool.Javac();
       javac.destination = group.destination();
       javac.moduleSourcePath = group.moduleSourcePath();
       javac.modulePath = group.modulePath();
       javac.patchModule = group.patchModule();
-      return javac.toCommand().setLogger(bach.logger).get();
+      return javac.toCommand(bach).get();
     }
 
     @Override
     public Integer get() {
-      bach.log("[compiler] %s", project);
+      bach.info("[compiler] %s", project);
       return project.moduleGroups().stream().mapToInt(this::compile).sum();
     }
   }

@@ -16,74 +16,62 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
-import java.nio.file.Files;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 
+@ExtendWith(BachContext.class)
 class BachTests {
 
-  private final List<String> actualLogLines = new CopyOnWriteArrayList<>();
-  private final Bach bach = createBach(actualLogLines);
-
-  private Bach createBach(List<String> lines) {
-    var bach = new Bach();
-    bach.debug = true;
-    bach.quiet = false;
-    bach.offline = false;
-    bach.logger = lines::add;
-    return bach;
+  @Test
+  void log(BachContext context) {
+    context.bach.info("log %s", "1");
+    context.bach.vars.level = System.Logger.Level.WARNING;
+    context.bach.info("log %s", "2");
+    assertLinesMatch(List.of("log 1"), context.recorder.all);
   }
 
   @Test
-  void log() {
-    bach.log("log %s", "1");
-    bach.quiet = true;
-    bach.log("log %s", "2");
-    assertEquals(1, actualLogLines.size());
-    assertEquals("log 1", actualLogLines.get(0));
+  void debug(BachContext context) {
+    assertTrue(context.bach.debug());
+    context.bach.debug("debug %s", "1");
+    context.bach.vars.level = System.Logger.Level.OFF;
+    assertFalse(context.bach.debug());
+    context.bach.debug("debug %s", "2");
+    context.bach.vars.level = System.Logger.Level.INFO;
+    assertFalse(context.bach.debug());
+    context.bach.debug("debug %s", "3");
+    assertEquals(1, context.recorder.all.size());
+    assertLinesMatch(List.of("debug 1"), context.recorder.all);
   }
 
   @Test
-  void debug() {
-    bach.debug("debug %s", "1");
-    bach.quiet = true;
-    bach.debug("debug %s", "2");
-    bach.quiet = false;
-    bach.debug = false;
-    bach.debug("debug %s", "3");
-    assertEquals(1, actualLogLines.size());
-    assertEquals("debug 1", actualLogLines.get(0));
+  void runExecutable(BachContext context) {
+    assertThrows(Error.class, () -> context.bach.run("command", "a", "b", "3"));
+    assertEquals("[run] command [a, b, 3]", context.recorder.all.get(0));
   }
 
   @Test
-  void runExecutable() {
-    assertThrows(Error.class, () -> bach.run("command", "a", "b", "3"));
-    assertEquals("[run] command [a, b, 3]", actualLogLines.get(0));
+  void runExecutableInQuietMode(BachContext context) {
+    context.bach.vars.level = System.Logger.Level.OFF;
+    assertThrows(Error.class, () -> context.bach.run("command", "a", "b", "3"));
+    assertTrue(context.recorder.all.isEmpty());
   }
 
   @Test
-  void runExecutableInQuietMode() {
-    bach.quiet = true;
-    assertThrows(Error.class, () -> bach.run("command", "a", "b", "3"));
-    assertTrue(actualLogLines.isEmpty());
-  }
-
-  @Test
-  void runStreamSequentially() {
-    Stream<Supplier<Integer>> tasks = Stream.of(() -> task("1"), () -> task("2"), () -> task("3"));
-    var result = bach.run("run stream sequentially", tasks);
+  void runStreamSequentially(BachContext context) {
+    var tasks = context.tasks(3);
+    var result = context.bach.run("run stream sequentially", tasks);
     assertEquals(0, result);
     var expected =
         List.of(
@@ -95,13 +83,13 @@ class BachTests {
             "3 begin",
             "3 done. .+",
             "[run] run stream sequentially done.");
-    assertLinesMatch(expected, actualLogLines);
+    assertLinesMatch(expected, context.recorder.all);
   }
 
   @Test
-  void runStreamParallel() {
-    Stream<Supplier<Integer>> tasks = Stream.of(() -> task("1"), () -> task("2"), () -> task("3"));
-    var result = bach.run("run stream in parallel", tasks.parallel());
+  void runStreamParallel(BachContext context) {
+    var tasks = context.tasks(3).parallel();
+    var result = context.bach.run("run stream in parallel", tasks);
     assertEquals(0, result);
     var expected =
         List.of(
@@ -113,40 +101,39 @@ class BachTests {
             ". done. .+",
             ". done. .+",
             "[run] run stream in parallel done.");
-    assertLinesMatch(expected, actualLogLines);
+    assertLinesMatch(expected, context.recorder.all);
   }
 
   @Test
-  void runVarArgs() {
-    var result = bach.run("run varargs", () -> task("4"), () -> task("5"), () -> task("6"));
+  void runVarArgs(BachContext context) {
+    var result = context.bach.run("run varargs", () -> context.task("A"), () -> context.task("B"));
     assertEquals(0, result);
     var expected =
         List.of(
             "[run] run varargs...",
             ". begin",
             ". begin",
-            ". begin",
-            ". done. .+",
             ". done. .+",
             ". done. .+",
             "[run] run varargs done.");
-    assertLinesMatch(expected, actualLogLines);
+    assertLinesMatch(expected, context.recorder.all);
   }
 
   @Test
-  void runThrowsIllegalStateExceptionOnNoneZeroResult() {
-    Executable executable = () -> bach.run("23", Stream.of(() -> task("42", () -> 9)));
-    Exception exception = assertThrows(IllegalStateException.class, executable);
+  void runThrowsIllegalStateExceptionOnNoneZeroResult(BachContext context) {
+    Supplier<Integer> nine = () -> context.task("42", () -> 9);
+    Executable executable = () -> context.bach.run("error", Stream.of(nine));
+    var exception = assertThrows(IllegalStateException.class, executable);
     assertEquals("0 expected, but got: 9", exception.getMessage());
   }
 
   @Test
-  void runCommand() {
+  void runCommand(BachContext context) {
+    var bach = context.bach;
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
-    var command = new JdkTool.Java().toCommand().add("--version");
+    var command = new JdkTool.Java().toCommand(bach).add("--version");
     command.setStandardStreams(out, out);
-    command.setLogger(actualLogLines::add);
     var result = bach.run("java --version", command);
     assertEquals(0, result);
     assertTrue(bytes.toString().contains(Runtime.version().toString()));
@@ -155,87 +142,8 @@ class BachTests {
             "[run] java --version...",
             "running java with 1 argument(s)",
             "java\n--version",
-            "replaced executable `java` with program `" + Util.getJdkCommand("java") + "`",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
             "[run] java --version done.");
-    assertLinesMatch(expected, actualLogLines);
-  }
-
-  private int task(String name) {
-    return task(name, () -> 0);
-  }
-
-  private int task(String name, IntSupplier result) {
-    bach.log("%s begin", name);
-    var millis = (long) (Math.random() * 200 + 50);
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      Thread.interrupted();
-    }
-    bach.log("%s done. %d", name, millis);
-    return result.getAsInt();
-  }
-
-  @Test
-  void downloadUsingHttps() throws Exception {
-    var temporary = Files.createTempDirectory("BachTests.downloadUsingHttps-");
-    bach.download(URI.create("https://junit.org/junit5/index.html"), temporary);
-    Util.removeTree(temporary);
-  }
-
-  @Test
-  void downloadUsingLocalFileSystem() throws Exception {
-    var tempRoot = Files.createTempDirectory("BachTests.downloadUsingLocalFileSystem-");
-    var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
-    var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
-    Files.write(tempFile, content);
-    var tempPath = Files.createDirectory(tempRoot.resolve("target"));
-    var first = bach.download(tempFile.toUri(), tempPath);
-    var name = tempFile.getFileName().toString();
-    var actual = tempPath.resolve(name);
-    assertEquals(actual, first);
-    assertTrue(Files.exists(actual));
-    assertLinesMatch(content, Files.readAllLines(actual));
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "transferring `" + tempFile.toUri().toString() + "`...",
-            "`" + name + "` downloaded .*"),
-        actualLogLines);
-    // reload
-    actualLogLines.clear();
-    var second = bach.download(tempFile.toUri(), tempPath);
-    assertEquals(first, second);
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "local file already exists -- comparing properties to remote file...",
-            "local and remote file properties seem to match, using .*"),
-        actualLogLines);
-    // offline mode
-    actualLogLines.clear();
-    bach.offline = true;
-    var third = bach.download(tempFile.toUri(), tempPath);
-    assertEquals(second, third);
-    assertLinesMatch(List.of("download.*"), actualLogLines);
-    // offline mode with error
-    Files.delete(actual);
-    assertThrows(Error.class, () -> bach.download(tempFile.toUri(), tempPath));
-    // online but different file
-    actualLogLines.clear();
-    bach.offline = false;
-    Files.write(actual, List.of("Hello world!"));
-    var forth = bach.download(tempFile.toUri(), tempPath);
-    assertEquals(actual, forth);
-    assertLinesMatch(content, Files.readAllLines(actual));
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "local file already exists -- comparing properties to remote file...",
-            "local file `.*` differs from remote one -- replacing it",
-            "transferring `" + tempFile.toUri().toString() + "`...",
-            "`" + name + "` downloaded .*"),
-        actualLogLines);
-    Util.removeTree(tempRoot);
+    assertLinesMatch(expected, context.recorder.all);
   }
 }

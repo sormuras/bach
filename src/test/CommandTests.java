@@ -36,33 +36,25 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BachContext.class)
 class CommandTests {
 
   @Test
-  void visitor() {
-    var visitor = Command.visit(cmd -> cmd.addAllJavaFiles(List.of(Paths.get("."))));
-    var command = new Command("test").add(visitor);
-    assertEquals("test", command.executable);
-    assertFalse(command.arguments.isEmpty());
-    assertTrue(command.arguments.contains(Paths.get("./src/bach/Bach.java").toString()));
-  }
-
-  @Test
-  void addAllOptionsUsingInstanceOfObject() {
-    var command = new Command("executable");
+  void addAllOptionsUsingInstanceOfObject(Bach bach) {
+    var command = bach.command("executable");
     command.addAllOptions(new Object()).mark(0);
     assertEquals("executable", command.executable);
     assertTrue(command.arguments.isEmpty());
   }
 
   @Test
-  void addSingleArguments() {
+  void addSingleArguments(Bach bach) {
     var expectedLines =
         List.of(
             "executable",
@@ -74,7 +66,7 @@ class CommandTests {
             "5",
             "... [omitted 3 arguments]",
             "9");
-    var command = new Command("executable");
+    var command = bach.command("executable");
     command.add("--some-option");
     command.add("value");
     command.add("-single-flag-without-values");
@@ -85,8 +77,8 @@ class CommandTests {
   }
 
   @Test
-  void addPathsAsSingleOption() {
-    var command = new Command("paths");
+  void addPathsAsSingleOption(Bach bach) {
+    var command = bach.command("paths");
     assertSame(command, command.add("-p"));
     assertSame(command, command.add(List.of(Paths.get("a"), Paths.get("b"))));
     var expected = List.of("paths", "-p", "  a" + File.pathSeparator + "b");
@@ -95,9 +87,9 @@ class CommandTests {
   }
 
   @Test
-  void addAllJavaFiles() {
+  void addAllJavaFiles(Bach bach) {
     var roots = List.of(Paths.get("src/bach"), Paths.get("src/test"));
-    var command = new Command("sources").mark(99);
+    var command = bach.command("sources").mark(99);
     assertSame(command, command.addAllJavaFiles(roots));
     var actual = String.join("\n", dump(command));
     assertTrue(actual.contains("Bach.java"));
@@ -107,10 +99,10 @@ class CommandTests {
 
   @Test
   @SuppressWarnings("unused")
-  void addOptionsWithAnonymousClass() {
+  void addOptionsWithAnonymousClass(Bach bach) {
     Object options =
         new Object() {
-          @Command.Option("--ZETA")
+          @Bach.Option("--ZETA")
           boolean z = true;
 
           Boolean flag1 = Boolean.TRUE;
@@ -124,12 +116,12 @@ class CommandTests {
 
           List<String> collection = List.of("a", "b", "c");
 
-          void hex(Command command) {
+          void hex(Bach.Command command) {
             command.add("--prime-as-hex");
             command.add("0x" + Integer.toHexString(hex));
           }
         };
-    var command = new Command("executable");
+    var command = bach.command("executable");
     command.addAllOptions(options, fields -> fields.sorted(Comparator.comparing(Field::getName)));
     command.add(Stream.of(1, 2, 3), "+");
     command.add("final");
@@ -153,28 +145,27 @@ class CommandTests {
   }
 
   @Test
-  void runJavaWithVersion() {
+  void runJavaWithVersion(Bach bach) {
     var version = Runtime.version().toString();
-    assertTrue(run("java", "-version").contains(version));
-    assertTrue(run("java", "--version").contains(version));
-    assertTrue(run(new Command("java").add("--version"), null).contains(version));
+    assertTrue(run(bach, "java", "-version").contains(version));
+    assertTrue(run(bach, "java", "--version").contains(version));
   }
 
   @Test
-  void runJavaWithOptionThatDoesNotExist() {
-    var error = assertThrows(AssertionError.class, () -> run("java", "--foo"));
+  void runJavaWithOptionThatDoesNotExist(Bach bach) {
+    var error = assertThrows(AssertionError.class, () -> run(bach, "java", "--foo"));
     assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
   }
 
   @Test
-  void runToolThatDoesNotExist() {
-    var error = assertThrows(Error.class, () -> run("tool, that doesn't exist", 1, 2, 3));
+  void runToolThatDoesNotExist(Bach bach) {
+    var error = assertThrows(Error.class, () -> run(bach, "tool, that doesn't exist", 1, 2, 3));
     assertEquals("executing `tool, that doesn't exist` failed", error.getMessage());
   }
 
   @Test
-  void runJavaWithLongCommandLine() {
-    var command = new JdkTool.Java().toCommand("--dry-run");
+  void runJavaWithLongCommandLine(Bach bach) {
+    var command = new JdkTool.Java().toCommand(bach, "--dry-run");
     command.add("--version");
     command.addAll(Paths.get("src/bach"), __ -> true);
     for (var i = 0; i <= 4000; i++) {
@@ -193,63 +184,62 @@ class CommandTests {
   }
 
   @Test
-  void runCommandWithCustomExecutableToProgramOperator() {
-    var command = new Command("executable");
+  void runCommandWithCustomExecutableToProgramOperator(BachContext context) {
+    var command = context.bach.command("executable");
     command.add("--version");
     command.setExecutableToProgramOperator(__ -> "java");
-    var lines = new ArrayList<String>();
-    assertTrue(run(command, lines::add).contains(Runtime.version().toString()));
+    assertTrue(run(command).contains(Runtime.version().toString()));
     assertLinesMatch(
         List.of(
             "running executable with 1 argument(s)",
             "executable\n--version",
             "replaced executable `executable` with program `java`"),
-        lines);
+        context.recorder.all);
   }
 
   @Test
-  void addAllUsingNonExistentFileAsRootFails() {
-    var command = new Command("error");
+  void addAllUsingNonExistentFileAsRootFails(Bach bach) {
+    var command = bach.command("error");
     var path = Paths.get("error");
     var e = assertThrows(UncheckedIOException.class, () -> command.addAll(path, __ -> true));
     assertEquals("walking path `error` failed", e.getMessage());
   }
 
   @Test
-  void addAllOptionsWithIllegalProperties() {
-    var command = new Command("error");
+  void addAllOptionsWithIllegalProperties(Bach bach) {
+    var command = bach.command("error");
     var options = new ClassWithPrivateField();
     var fields = Arrays.stream(ClassWithPrivateField.class.getDeclaredFields());
     var error = assertThrows(Error.class, () -> command.addAllOptions(options, __ -> fields));
     assertTrue(error.getMessage().startsWith("reflecting option from field 'private int"));
     var cause = error.getCause();
-    assertTrue(cause.getMessage().startsWith("class Command cannot access a member of class"));
+    assertTrue(cause.getMessage().startsWith("class Bach$Command cannot access a member of class"));
     assertTrue(cause.getMessage().endsWith("with modifiers \"private\""));
   }
 
   @Test
-  void addAllOptionsIgnoresStaticFields() {
-    var command = new Command("ignore-b");
+  void addAllOptionsIgnoresStaticFields(Bach bach) {
+    var command = bach.command("ignore-b");
     var options = new ClassWithStaticField();
     assertLinesMatch(List.of("ignore-b", "-a", "  0"), dump(command.addAllOptions(options)));
   }
 
   @Test
-  void toProcessBuilder() {
-    var builder = new Command("builder").toProcessBuilder();
+  void toProcessBuilder(Bach bach) {
+    var builder = bach.command("builder").toProcessBuilder();
     assertEquals(1, builder.command().size());
     assertEquals("builder", builder.command().get(0));
   }
 
   @Test
-  void markWithNegativeLimitFails() {
-    var e = assertThrows(IllegalArgumentException.class, () -> new Command("nine").mark(-9));
+  void markWithNegativeLimitFails(Bach bach) {
+    var e = assertThrows(IllegalArgumentException.class, () -> bach.command("nine").mark(-9));
     assertEquals("limit must be greater then zero: -9", e.getMessage());
   }
 
   @Test
-  void helperMethodsCheckArguments() {
-    var command = new Command("helper");
+  void helperMethodsCheckArguments(Bach bach) {
+    var command = bach.command("helper");
     assertEquals(List.of(), command.arguments);
     var helper = command.new Helper();
     assertEquals("Helper", helper.getClass().getSimpleName());
@@ -259,11 +249,10 @@ class CommandTests {
   }
 
   @Test
-  void customTool() {
+  void customTool(BachContext context) {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
-    var custom = new Command("custom tool");
-    var logger = new ArrayList<String>();
+    var custom = context.bach.command("custom tool");
     custom
         .addAll(List.of(1, 2, 3))
         .setStandardStreams(out, out)
@@ -271,7 +260,6 @@ class CommandTests {
         .setExecutableToProgramOperator(exe -> "/usr/bin/env " + exe)
         .setToolProvider(new CustomTool())
         .setToolProvider(new CustomTool()) // twice to hit all branches
-        .setLogger(logger::add)
         .setTemporaryDirectory(Paths.get("any"))
         .dump(out::println)
         .run(UnaryOperator.identity(), custom::toProcessBuilder);
@@ -279,7 +267,8 @@ class CommandTests {
         List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
         List.of(bytes.toString().split(System.lineSeparator())));
     assertLinesMatch(
-        List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"), logger);
+        List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"),
+        context.recorder.all);
     // now "overflow" command line
     for (var i = 0; i <= 4000; i++) {
       custom.add(String.format("arg-%04d", i));
@@ -326,24 +315,20 @@ class CommandTests {
     }
   }
 
-  private List<String> dump(Command command) {
+  private List<String> dump(Bach.Command command) {
     var lines = new ArrayList<String>();
     assertSame(command, command.dump(lines::add));
     return lines;
   }
 
-  private String run(Command command) {
-    return run(command, new ArrayList<String>()::add);
-  }
-
-  private String run(Command command, Consumer<String> logger) {
+  private String run(Bach.Command command) {
     var bytes = new ByteArrayOutputStream(2000);
     var out = new PrintStream(bytes);
-    command.setStandardStreams(out, out).setLogger(logger).run();
+    command.setStandardStreams(out, out).run();
     return bytes.toString();
   }
 
-  private String run(String executable, Object... arguments) {
-    return run(new Command(executable).addAll(arguments));
+  private String run(Bach bach, String executable, Object... arguments) {
+    return run(bach.command(executable).addAll(arguments));
   }
 }

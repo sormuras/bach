@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -41,79 +40,147 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BachContext.class)
 class UtilTests {
 
   @Test
-  void isJavaFile() {
-    assertFalse(Util.isJavaFile(Paths.get("")));
-    assertFalse(Util.isJavaFile(Paths.get("a/b")));
-    assertTrue(Util.isJavaFile(Paths.get("src/test/UtilTests.java")));
-    assertFalse(Util.isJavaFile(Paths.get("src/test-resources/Util.isJavaFile.java")));
+  void downloadUsingHttps(Bach bach) throws Exception {
+    var temporary = Files.createTempDirectory("BachTests.downloadUsingHttps-");
+    bach.util.download(URI.create("https://junit.org/junit5/index.html"), temporary);
+    bach.util.removeTree(temporary);
   }
 
   @Test
-  void isJarFile() {
-    assertFalse(Util.isJarFile(Paths.get("")));
-    assertFalse(Util.isJarFile(Paths.get("a/b")));
+  void downloadUsingLocalFileSystem(BachContext context) throws Exception {
+    var bach = context.bach;
+    var logger = context.recorder;
+
+    var tempRoot = Files.createTempDirectory("BachTests.downloadUsingLocalFileSystem-");
+    var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
+    var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
+    Files.write(tempFile, content);
+    var tempPath = Files.createDirectory(tempRoot.resolve("target"));
+    var first = bach.util.download(tempFile.toUri(), tempPath);
+    var name = tempFile.getFileName().toString();
+    var actual = tempPath.resolve(name);
+    assertEquals(actual, first);
+    assertTrue(Files.exists(actual));
+    assertLinesMatch(content, Files.readAllLines(actual));
+    assertLinesMatch(
+        List.of(
+            "download.*",
+            "transferring `" + tempFile.toUri().toString() + "`...",
+            "`" + name + "` downloaded .*"),
+        logger.all);
+    // reload
+    logger.all.clear();
+    var second = bach.util.download(tempFile.toUri(), tempPath);
+    assertEquals(first, second);
+    assertLinesMatch(
+        List.of(
+            "download.*",
+            "local file already exists -- comparing properties to remote file...",
+            "local and remote file properties seem to match, using .*"),
+        logger.all);
+    // offline mode
+    logger.all.clear();
+    bach.vars.offline = true;
+    var third = bach.util.download(tempFile.toUri(), tempPath);
+    assertEquals(second, third);
+    assertLinesMatch(List.of("download.*"), logger.all);
+    // offline mode with error
+    Files.delete(actual);
+    assertThrows(Error.class, () -> bach.util.download(tempFile.toUri(), tempPath));
+    // online but different file
+    logger.all.clear();
+    bach.vars.offline = false;
+    Files.write(actual, List.of("Hello world!"));
+    var forth = bach.util.download(tempFile.toUri(), tempPath);
+    assertEquals(actual, forth);
+    assertLinesMatch(content, Files.readAllLines(actual));
+    assertLinesMatch(
+        List.of(
+            "download.*",
+            "local file already exists -- comparing properties to remote file...",
+            "local file `.*` differs from remote one -- replacing it",
+            "transferring `" + tempFile.toUri().toString() + "`...",
+            "`" + name + "` downloaded .*"),
+        logger.all);
+    bach.util.removeTree(tempRoot);
   }
 
   @Test
-  void getPatchMap() {
-    assertEquals(Map.of(), Util.getPatchMap(List.of(), List.of()));
+  void isJavaFile(Bach.Util util) {
+    assertFalse(util.isJavaFile(Paths.get("")));
+    assertFalse(util.isJavaFile(Paths.get("a/b")));
+    assertTrue(util.isJavaFile(Paths.get("src/test/UtilTests.java")));
+    assertFalse(util.isJavaFile(Paths.get("src/test-resources/Util.isJavaFile.java")));
+  }
+
+  @Test
+  void isJarFile(Bach.Util util) {
+    assertFalse(util.isJarFile(Paths.get("")));
+    assertFalse(util.isJarFile(Paths.get("a/b")));
+  }
+
+  @Test
+  void getPatchMap(Bach.Util util) {
+    assertEquals(Map.of(), util.getPatchMap(List.of(), List.of()));
     var main = Paths.get("demo/02-testing/src/main/java");
     var test = Paths.get("demo/02-testing/src/test/java");
     assertEquals(
         Map.of(
             "application", List.of(main.resolve("application")),
             "application.api", List.of(main.resolve("application.api"))),
-        Util.getPatchMap(List.of(test), List.of(main)));
+        util.getPatchMap(List.of(test), List.of(main)));
   }
 
   @Test
-  void getClassPath() {
-    assertEquals(List.of(), Util.getClassPath(List.of(), List.of()));
+  void getClassPath(Bach.Util util) {
+    assertEquals(List.of(), util.getClassPath(List.of(), List.of()));
     var mods = List.of(Paths.get(".bach/resolved"));
     var deps = List.of(Paths.get(".bach/tools/google-java-format"));
-    assertTrue(Util.getClassPath(mods, deps).size() >= 5);
+    assertTrue(util.getClassPath(mods, deps).size() >= 5);
   }
 
   @Test
-  void getClassPathFails() {
+  void getClassPathFails(Bach.Util util) {
     var deps = List.of(Paths.get("does", "not", "exist"));
-    assertThrows(UncheckedIOException.class, () -> Util.getClassPath(deps, deps));
+    assertThrows(UncheckedIOException.class, () -> util.getClassPath(deps, deps));
   }
 
   @Test
-  void findDirectories() {
+  void findDirectories(Bach.Util util) {
     var root = Paths.get(".").toAbsolutePath().normalize();
-    var dirs = Util.findDirectories(root);
+    var dirs = util.findDirectories(root);
     assertTrue(dirs.contains(root.resolve("demo")));
     assertTrue(dirs.contains(root.resolve("src")));
   }
 
   @Test
-  void findDirectoryNames() {
+  void findDirectoryNames(Bach.Util util) {
     var root = Paths.get(".").toAbsolutePath().normalize();
-    var dirs = Util.findDirectoryNames(root);
+    var dirs = util.findDirectoryNames(root);
     assertTrue(dirs.contains("demo"));
     assertTrue(dirs.contains("src"));
   }
 
   @Test
-  void findDirectoriesReturnEmptyListWhenRootDoesNotExist() {
+  void findDirectoriesReturnEmptyListWhenRootDoesNotExist(Bach.Util util) {
     var root = Paths.get("does", "not", "exist");
-    assertTrue(Util.findDirectories(root).isEmpty());
-    assertTrue(Util.findDirectoryNames(root).isEmpty());
+    assertTrue(util.findDirectories(root).isEmpty());
+    assertTrue(util.findDirectoryNames(root).isEmpty());
   }
 
   @Test
-  void findDirectoriesFails() throws Exception {
+  void findDirectoriesFails(Bach.Util util) throws Exception {
     var root = Files.createTempDirectory("findDirectoriesFails-");
     denyListing(root);
-    assertThrows(UncheckedIOException.class, () -> Util.findDirectories(root));
-    assertThrows(UncheckedIOException.class, () -> Util.findDirectoryNames(root));
-    Util.removeTree(root);
+    assertThrows(UncheckedIOException.class, () -> util.findDirectories(root));
+    assertThrows(UncheckedIOException.class, () -> util.findDirectoryNames(root));
+    util.removeTree(root);
   }
 
   private void denyListing(Path path) throws Exception {
@@ -147,20 +214,20 @@ class UtilTests {
   }
 
   @Test
-  void getPathOfModuleReference() {
+  void getPathOfModuleReference(Bach.Util util) {
     var moduleReference = ModuleFinder.ofSystem().find("java.base").orElseThrow();
-    assertEquals(URI.create("jrt:/java.base"), Util.getPath(moduleReference).toUri());
+    assertEquals(URI.create("jrt:/java.base"), util.getPath(moduleReference).toUri());
   }
 
   @Test
-  void findJdkCommandPath() {
-    assertTrue(Util.findJdkCommandPath("java").isPresent());
-    assertFalse(Util.findJdkCommandPath("does not exist").isPresent());
+  void findJdkCommandPath(Bach.Util util) {
+    assertTrue(util.findJdkCommandPath("java").isPresent());
+    assertFalse(util.findJdkCommandPath("does not exist").isPresent());
   }
 
   @Test
   void moduleInfoEmpty() {
-    var info = Util.ModuleInfo.of(List.of("module foo {}"));
+    var info = ModuleInfo.of(List.of("module foo {}"));
     assertEquals("foo", info.getName());
     assertTrue(info.getRequires().isEmpty());
   }
@@ -168,21 +235,21 @@ class UtilTests {
   @Test
   void moduleInfoFromModuleWithoutNameFails() {
     var source = "module { no name }";
-    Exception e = assertThrows(IllegalArgumentException.class, () -> Util.ModuleInfo.of(source));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> ModuleInfo.of(source));
     assertEquals("expected java module descriptor unit, but got: " + source, e.getMessage());
   }
 
   @Test
   void moduleInfoFromNonExistingFileFails() {
     var source = Paths.get(".", "module-info.java");
-    var exception = assertThrows(UncheckedIOException.class, () -> Util.ModuleInfo.of(source));
+    var exception = assertThrows(UncheckedIOException.class, () -> ModuleInfo.of(source));
     assertEquals("reading '" + source + "' failed", exception.getMessage());
   }
 
   @Test
   void moduleInfoRequiresBarAndBaz() {
     var source = "module   foo{requires a; requires static b; requires any modifier c;}";
-    var info = Util.ModuleInfo.of(source);
+    var info = ModuleInfo.of(source);
     assertEquals("foo", info.getName());
     assertEquals(3, info.getRequires().size());
     assertTrue(info.getRequires().contains("a"));
@@ -193,7 +260,7 @@ class UtilTests {
   @Test
   void moduleInfoFromFile() {
     var source = Paths.get("demo/02-testing/src/test/java/application");
-    var info = Util.ModuleInfo.of(source);
+    var info = ModuleInfo.of(source);
     assertEquals("application", info.getName());
     assertEquals(2, info.getRequires().size());
     assertTrue(info.getRequires().contains("application.api"));
@@ -207,7 +274,7 @@ class UtilTests {
     if (resource == null) {
       fail("resource not found!");
     }
-    var info = Util.ModuleInfo.of(Paths.get(resource.toURI()));
+    var info = ModuleInfo.of(Paths.get(resource.toURI()));
     assertEquals("com.google.m", info.getName());
     assertEquals(3, info.getRequires().size());
     assertTrue(info.getRequires().contains("com.google.r1"));
@@ -216,58 +283,58 @@ class UtilTests {
   }
 
   @Test
-  void getExternalModuleNames() {
-    var names = Util.getExternalModuleNames(Paths.get("demo"));
+  void getExternalModuleNames(Bach.Util util) {
+    var names = util.getExternalModuleNames(Paths.get("demo"));
     assertTrue(names.contains("org.junit.jupiter.api"));
     assertFalse(names.contains("hello"));
     assertFalse(names.contains("world"));
   }
 
   @Test
-  void getExternalModuleNamesForNonExistingPathFails() {
+  void getExternalModuleNamesForNonExistingPathFails(Bach.Util util) {
     var path = Paths.get("does not exist");
-    var e = assertThrows(UncheckedIOException.class, () -> Util.getExternalModuleNames(path));
+    var e = assertThrows(UncheckedIOException.class, () -> util.getExternalModuleNames(path));
     assertEquals("walking path failed for: does not exist", e.getMessage());
   }
 
   @Test
-  void removeTreeForNonExistingPathFails() {
+  void removeTreeForNonExistingPathFails(Bach.Util util) {
     var path = Paths.get("does not exist");
-    var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
+    var e = assertThrows(UncheckedIOException.class, () -> util.removeTree(path));
     assertEquals("removing tree failed: does not exist", e.getMessage());
   }
 
   @Test
-  void dumpTreeForNonExistingPathFails() {
+  void dumpTreeForNonExistingPathFails(Bach.Util util) {
     var path = Paths.get("does not exist");
     var e =
-        assertThrows(UncheckedIOException.class, () -> Util.dumpTree(path, System.out::println));
+        assertThrows(UncheckedIOException.class, () -> util.dumpTree(path, System.out::println));
     assertEquals("dumping tree failed: does not exist", e.getMessage());
   }
 
-  private void createFiles(Path directory, int count) throws IOException {
+  private void createFiles(Path directory, int count) throws Exception {
     for (int i = 0; i < count; i++) {
       Files.createFile(directory.resolve("file-" + i));
     }
   }
 
-  private void assertTreeDumpMatches(Path root, String... expected) {
+  private void assertTreeDumpMatches(Bach.Util util, Path root, String... expected) {
     expected[0] = expected[0].replace(File.separatorChar, '/');
     List<String> dumpedLines = new ArrayList<>();
-    Util.dumpTree(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
+    util.dumpTree(root, line -> dumpedLines.add(line.replace(File.separatorChar, '/')));
     assertLinesMatch(List.of(expected), dumpedLines);
   }
 
   @Test
-  void tree() throws IOException {
+  void tree(Bach.Util util) throws Exception {
     Path root = Files.createTempDirectory("tree-root-");
     assertTrue(Files.exists(root));
     assertEquals(1, Files.walk(root).count());
-    assertTreeDumpMatches(root, root.toString(), ".");
+    assertTreeDumpMatches(util, root, root.toString(), ".");
 
     createFiles(root, 3);
     assertEquals(1 + 3, Files.walk(root).count());
-    assertTreeDumpMatches(root, root.toString(), ".", "./file-0", "./file-1", "./file-2");
+    assertTreeDumpMatches(util, root, root.toString(), ".", "./file-0", "./file-1", "./file-2");
 
     createFiles(Files.createDirectory(root.resolve("a")), 3);
     createFiles(Files.createDirectory(root.resolve("b")), 3);
@@ -275,6 +342,7 @@ class UtilTests {
     assertTrue(Files.exists(root));
     assertEquals(1 + 3 + 4 * 3, Files.walk(root).count());
     assertTreeDumpMatches(
+        util,
         root,
         root.toString(),
         ".",
@@ -294,9 +362,10 @@ class UtilTests {
         "./x/file-1",
         "./x/file-2");
 
-    Util.removeTree(root, path -> path.startsWith(root.resolve("b")));
+    util.removeTree(root, path -> path.startsWith(root.resolve("b")));
     assertEquals(1 + 2 + 3 * 3, Files.walk(root).count());
     assertTreeDumpMatches(
+        util,
         root,
         root.toString(),
         ".",
@@ -312,9 +381,10 @@ class UtilTests {
         "./x/file-1",
         "./x/file-2");
 
-    Util.removeTree(root, path -> path.endsWith("file-0"));
+    util.removeTree(root, path -> path.endsWith("file-0"));
     assertEquals(1 + 2 + 3 * 2, Files.walk(root).count());
     assertTreeDumpMatches(
+        util,
         root,
         root.toString(),
         ".",
@@ -327,7 +397,7 @@ class UtilTests {
         "./x/file-1",
         "./x/file-2");
 
-    Util.removeTree(root);
+    util.removeTree(root);
     assertTrue(Files.notExists(root));
   }
 }
