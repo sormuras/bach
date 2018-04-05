@@ -134,7 +134,7 @@ wget --continue --header "Cookie: oraclelicense=accept-securebackup-cookie" ${JD
 file ${JDK_ARCHIVE}
 JDK_HOME=$(tar --list --auto-compress --file ${JDK_ARCHIVE} | head -1 | cut -f1 -d"/")
 tar --extract --auto-compress --file ${JDK_ARCHIVE}
-#cd ${OLDPWD}
+cd ${OLDPWD}
 
 #
 # Update environment variables.
