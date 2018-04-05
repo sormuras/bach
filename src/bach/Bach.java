@@ -82,10 +82,10 @@ class Bach {
     return command(executable, arguments).get();
   }
 
-//  /** Run tools sequentially. */
-//  final int run(String caption, JdkTool... tools) {
-//    return run(caption, Stream.of(tools).map(tool -> tool.toCommand(this)));
-//  }
+  //  /** Run tools sequentially. */
+  //  final int run(String caption, JdkTool... tools) {
+  //    return run(caption, Stream.of(tools).map(tool -> tool.toCommand(this)));
+  //  }
 
   /** Run tasks in parallel. */
   @SafeVarargs
