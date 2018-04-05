@@ -48,7 +48,7 @@ JDK_WORKSPACE=${HOME}
 JDK_DOWNLOAD='https://download.java.net/java'
 JDK_ORACLE='http://download.oracle.com/otn-pub/java/jdk'
 
-echo "`basename "$0"` (${VERSION})"
+echo "install-jdk.sh (${VERSION})"
 
 #
 # Parse command line options
@@ -66,7 +66,7 @@ while getopts ':F:L:W:CD' option; do
 done
 
 #
-# Determine latest (early access or release candidate) number
+# Determine latest (early access or release candidate) number.
 #
 LATEST='11'
 TMP=${LATEST}
@@ -81,7 +81,7 @@ do
 done
 
 #
-# Sanity checks
+# Sanity checks.
 #
 if [ "${JDK_FEATURE}" == '?' ]; then
   JDK_FEATURE=${LATEST}
@@ -156,4 +156,12 @@ fi
 #
 # Test-drive.
 #
+echo
 java --version
+echo
+
+#
+# Always print value of JAVA_HOME as last line.
+# Usage from other scripts or shell: JAVA_HOME=$(./install-jdk.sh -L GPL | tail -n 1)
+#
+echo ${JAVA_HOME}
