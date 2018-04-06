@@ -115,7 +115,9 @@ class Build {
 
   void clean() {
     System.out.printf("%n[clean]%n%n");
-    bach.util.removeTree(TARGET);
+    if (Files.exists(TARGET)) {
+      bach.util.removeTree(TARGET);
+    }
     System.out.println("deleted " + TARGET);
   }
 
