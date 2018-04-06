@@ -127,7 +127,7 @@ class Build {
     javac.generateAllDebuggingInformation = true;
     javac.destination = TARGET_MAIN;
     javac.classSourcePath = List.of(SOURCE_BACH);
-    javac.run(bach);
+    bach.run(javac);
 
     // test
     javac.destination = TARGET_TEST;
@@ -139,7 +139,7 @@ class Build {
             maven("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
             maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
             maven("org.opentest4j", "opentest4j", OPENTEST4J));
-    javac.run(bach);
+    bach.run(javac);
     //    // TODO exclude .java files
     //    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
   }

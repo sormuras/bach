@@ -491,14 +491,20 @@ class Bach {
 
     private Path defaultTemporary = Paths.get(System.getProperty("java.io.tmpdir"), ".bach");
 
+    PrintStream printStreamOut = System.out;
+
+    PrintStream printStreamErr = System.err;
+
     /** Logger level. */
     Level level = Level.valueOf(System.getProperty("bach.level", "ALL"));
 
     /** Logger function. */
     BiConsumer<Level, String> logger =
         (level, text) -> {
-          if (level.getSeverity() >= Variables.this.level.getSeverity()) {
-            System.out.printf(defaultFormat, level, text);
+          var severity = level.getSeverity();
+          if (severity >= Variables.this.level.getSeverity()) {
+            var stream = severity >= Level.ERROR.getSeverity() ? printStreamErr : printStreamOut;
+            stream.printf(defaultFormat, level, text);
           }
         };
 
@@ -507,10 +513,6 @@ class Bach {
 
     /** Temporary path. */
     Path temporary = Paths.get(System.getProperty("bach.temporary", defaultTemporary.toString()));
-
-    PrintStream printStreamOut = System.out;
-
-    PrintStream printStreamErr = System.err;
   }
 
   /** Overlay. */
@@ -1018,15 +1020,6 @@ interface JdkTool extends Function<Bach, Integer> {
   /** Name of this tool, like {@code javac} or {@code jar}. */
   default String name() {
     return getClass().getSimpleName().toLowerCase();
-  }
-
-  /**
-   * Execute this tool with all options and arguments applied.
-   *
-   * @throws AssertionError if the execution result is not zero
-   */
-  default void run(Bach bach) {
-    toCommand(bach).run();
   }
 
   /** Create command instance based on this tool's options. */

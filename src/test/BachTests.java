@@ -18,10 +18,16 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -64,6 +70,39 @@ class BachTests {
     assertLinesMatch(List.of("1", "2", "3"), context.recorder.all);
     assertLinesMatch(List.of("1", "2", "3"), context.recorder.level(Level.DEBUG));
     assertLinesMatch(List.of(), context.recorder.level(Level.INFO));
+  }
+
+  @Test
+  void capturingSystemOut() {
+    var out = System.out;
+    try {
+      var bytes = new ByteArrayOutputStream(2000);
+      System.setOut(new PrintStream(bytes));
+      var bach = new Bach(); // pristine instance w/o print stream capturing context
+      bach.debug("d");
+      bach.info("i");
+      var actual = List.of(bytes.toString().split("\\R"));
+      assertLinesMatch(List.of("[DEBUG] d", "[INFO] i"), actual);
+    } finally {
+      System.setOut(out);
+    }
+  }
+
+  @Test
+  void creatingTemporaryDirectoriesFailsWhenFileAlreadyExist() throws Exception {
+    var file = Files.createTempFile("bach-", "-temporary.txt");
+    try {
+      assertNull(System.getProperty("bach.temporary"));
+      System.setProperty("bach.temporary", file.toString());
+      assertEquals(file.toString(), System.getProperty("bach.temporary"));
+      var exception = assertThrows(UncheckedIOException.class, Bach::new);
+      assertTrue(exception.getCause() instanceof FileAlreadyExistsException);
+    } finally {
+      assertEquals(file.toString(), System.getProperty("bach.temporary"));
+      System.getProperties().remove("bach.temporary");
+      assertNull(System.getProperty("bach.temporary"));
+      Files.delete(file);
+    }
   }
 
   @Test
