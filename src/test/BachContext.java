@@ -1,3 +1,5 @@
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
@@ -46,11 +48,14 @@ class BachContext implements ParameterResolver {
   final Bach bach;
   final Recorder recorder;
 
+  ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
+
   BachContext() {
     this.bach = new Bach();
     this.recorder = new Recorder();
 
     bach.vars.logger = recorder;
+    bach.vars.printStreamOut = new PrintStream(bytes);
   }
 
   @Override

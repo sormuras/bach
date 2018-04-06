@@ -82,10 +82,10 @@ class Bach {
     return command(executable, arguments).get();
   }
 
-  //  /** Run tools sequentially. */
-  //  final int run(String caption, JdkTool... tools) {
-  //    return run(caption, Stream.of(tools).map(tool -> tool.toCommand(this)));
-  //  }
+  /** Run function. */
+  int run(Function<Bach, Integer> function) {
+    return run(function.getClass().getSimpleName(), () -> function.apply(this));
+  }
 
   /** Run tasks in parallel. */
   @SafeVarargs
@@ -152,8 +152,7 @@ class Bach {
     private final Helper helper = new Helper();
     private int dumpLimit = Integer.MAX_VALUE;
     private int dumpOffset = Integer.MAX_VALUE;
-    private PrintStream out = System.out;
-    private PrintStream err = System.err;
+
     private Map<String, ToolProvider> tools = Collections.emptyMap();
     private boolean executableSupportsArgumentFile = false;
     private UnaryOperator<String> executableToProgramOperator = UnaryOperator.identity();
@@ -369,13 +368,6 @@ class Bach {
       return this;
     }
 
-    /** Set standard output and error streams. */
-    Command setStandardStreams(PrintStream out, PrintStream err) {
-      this.out = out;
-      this.err = err;
-      return this;
-    }
-
     /** Put the tool into the internal map of tools. */
     Command setToolProvider(ToolProvider tool) {
       if (tools == Collections.EMPTY_MAP) {
@@ -418,10 +410,9 @@ class Bach {
             throw new UncheckedIOException("creating temporary arguments file failed", e);
           }
         } else {
-          err.println(
-              String.format(
-                  "large command line (%s) detected, but %s does not support @argument file",
-                  commandLineLength, executable));
+          info(
+              "large command line (%s) detected, but %s does not support @argument file",
+              commandLineLength, executable);
         }
       }
       var processBuilder = new ProcessBuilder(strings);
@@ -469,6 +460,8 @@ class Bach {
         debug("running %s with %d argument(s)", executable, arguments.size());
         debug("%s", String.join("\n", lines));
       }
+      var out = vars.printStreamOut;
+      var err = vars.printStreamErr;
       var foundationTool = ToolProvider.findFirst(executable).orElse(null);
       var tool = tools.getOrDefault(executable, foundationTool);
       if (tool != null) {
@@ -514,6 +507,10 @@ class Bach {
 
     /** Temporary path. */
     Path temporary = Paths.get(System.getProperty("bach.temporary", defaultTemporary.toString()));
+
+    PrintStream printStreamOut = System.out;
+
+    PrintStream printStreamErr = System.err;
   }
 
   /** Overlay. */
@@ -736,7 +733,7 @@ class Bach {
  *     href="https://docs.oracle.com/javase/9/tools/main-tools-create-and-build-applications.htm">Main
  *     Tools to Create and Build Applications</a>
  */
-interface JdkTool {
+interface JdkTool extends Function<Bach, Integer> {
   /**
    * You can use the javac tool and its options to read Java class and interface definitions and
    * compile them into bytecode and class files.
@@ -1010,6 +1007,12 @@ interface JdkTool {
     /** The directory that contains the resulting runtime image. */
     @Bach.Option("--output")
     Path output = null;
+  }
+
+  /** Execute this tool. */
+  @Override
+  default Integer apply(Bach bach) {
+    return toCommand(bach).get();
   }
 
   /** Name of this tool, like {@code javac} or {@code jar}. */

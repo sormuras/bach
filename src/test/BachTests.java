@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Supplier;
@@ -141,13 +139,10 @@ class BachTests {
   @Test
   void runCommand(BachContext context) {
     var bach = context.bach;
-    var bytes = new ByteArrayOutputStream(2000);
-    var out = new PrintStream(bytes);
     var command = new JdkTool.Java().toCommand(bach).add("--version");
-    command.setStandardStreams(out, out);
     var result = bach.run("java --version", command);
     assertEquals(0, result);
-    assertTrue(bytes.toString().contains(Runtime.version().toString()));
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
     var expected =
         List.of(
             "[run] java --version...",
@@ -155,6 +150,24 @@ class BachTests {
             "java\n--version",
             "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
             "[run] java --version done.");
+    assertLinesMatch(expected, context.recorder.all);
+  }
+
+  @Test
+  void runFunction(BachContext context) {
+    var bach = context.bach;
+    var function = new JdkTool.Java();
+    function.args = List.of("--version");
+    var result = bach.run(function);
+    assertEquals(0, result);
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] Java...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
+            "[run] Java done.");
     assertLinesMatch(expected, context.recorder.all);
   }
 }

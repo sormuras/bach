@@ -17,12 +17,9 @@
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -138,21 +135,6 @@ class JdkToolTests {
     java.module = "com.greetings/com.greetings.Main";
     java.args = List.of(1, "2", Thread.State.NEW);
     assertLinesMatch(expectedLines, dump(java.toCommand(bach)));
-  }
-
-  @Test
-  void runJavaWithVersion() {
-    var bytes = new ByteArrayOutputStream(2000);
-    var out = System.out;
-    try {
-      System.setOut(new PrintStream(bytes));
-      var java = new JdkTool.Java();
-      java.args = List.of("--version");
-      java.run(bach);
-      assertTrue(bytes.toString().contains(Runtime.version().toString()));
-    } finally {
-      System.setOut(out);
-    }
   }
 
   @Nested

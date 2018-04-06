@@ -171,7 +171,7 @@ class Build {
     var jar = new JdkTool.Jar();
     jar.file = ARTIFACTS.resolve(artifact);
     jar.path = path;
-    jar.run(bach);
+    bach.run(jar);
   }
 
   void jdeps() {

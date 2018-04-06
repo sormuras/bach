@@ -23,9 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
@@ -145,37 +143,49 @@ class CommandTests {
   }
 
   @Test
-  void runJavaWithVersion(Bach bach) {
+  void runJavaWithVersionSingleDash(BachContext context) {
     var version = Runtime.version().toString();
-    assertTrue(run(bach, "java", "-version").contains(version));
-    assertTrue(run(bach, "java", "--version").contains(version));
+    assertEquals(0, context.bach.run("java", "-version"));
+    assertTrue(context.bytes.toString().contains(version));
+  }
+
+  @Test
+  void runJavaWithVersionDoubleDash(BachContext context) {
+    var version = Runtime.version().toString();
+    assertEquals(0, context.bach.run("java", "--version"));
+    assertTrue(context.bytes.toString().contains(version));
+  }
+
+  @Test
+  void runJavaWithOptionThatDoesNotExist(BachContext context) {
+    assertEquals(1, context.bach.run("java", "--foo"));
+    assertTrue(context.bytes.toString().contains("Unrecognized option: --foo"));
   }
 
   @Test
   void runJavaWithOptionThatDoesNotExist(Bach bach) {
-    var error = assertThrows(AssertionError.class, () -> run(bach, "java", "--foo"));
+    var error = assertThrows(AssertionError.class, () -> bach.command("java", "--foo").run());
     assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
   }
 
   @Test
   void runToolThatDoesNotExist(Bach bach) {
-    var error = assertThrows(Error.class, () -> run(bach, "tool, that doesn't exist", 1, 2, 3));
+    var error = assertThrows(Error.class, () -> bach.run("tool, that doesn't exist", 1, 2, 3));
     assertEquals("executing `tool, that doesn't exist` failed", error.getMessage());
   }
 
   @Test
-  void runJavaWithLongCommandLine(Bach bach) {
-    var command = new JdkTool.Java().toCommand(bach, "--dry-run");
+  void runJavaWithLongCommandLine(BachContext context) {
+    var command = new JdkTool.Java().toCommand(context.bach, "--dry-run");
     command.add("--version");
     command.addAll(Paths.get("src/bach"), __ -> true);
     for (var i = 0; i <= 4000; i++) {
       command.add(String.format("arg-%04d", i));
     }
+    command.run();
     assertLinesMatch(List.of("--dry-run", "--version", ">> files and args >>"), command.arguments);
-
-    var out = run(command);
-    assertTrue(out.contains(Runtime.version().toString()));
-
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    // fails when temporary directory does not exist
     command.setTemporaryDirectory(Paths.get("does-not-exist"));
     var e = assertThrows(UncheckedIOException.class, command::toProcessBuilder);
     assertEquals("creating temporary arguments file failed", e.getMessage());
@@ -188,7 +198,8 @@ class CommandTests {
     var command = context.bach.command("executable");
     command.add("--version");
     command.setExecutableToProgramOperator(__ -> "java");
-    assertTrue(run(command).contains(Runtime.version().toString()));
+    command.run();
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
     assertLinesMatch(
         List.of(
             "running executable with 1 argument(s)",
@@ -250,22 +261,18 @@ class CommandTests {
 
   @Test
   void customTool(BachContext context) {
-    var bytes = new ByteArrayOutputStream(2000);
-    var out = new PrintStream(bytes);
+    var dumped = new ArrayList<String>();
     var custom = context.bach.command("custom tool");
     custom
         .addAll(List.of(1, 2, 3))
-        .setStandardStreams(out, out)
         .setExecutableSupportsArgumentFile(false)
         .setExecutableToProgramOperator(exe -> "/usr/bin/env " + exe)
         .setToolProvider(new CustomTool())
         .setToolProvider(new CustomTool()) // twice to hit all branches
         .setTemporaryDirectory(Paths.get("any"))
-        .dump(out::println)
+        .dump(dumped::add)
         .run(UnaryOperator.identity(), custom::toProcessBuilder);
-    assertLinesMatch(
-        List.of(">> dump >>", "CustomTool with [1, 2, 3]"),
-        List.of(bytes.toString().split(System.lineSeparator())));
+    assertLinesMatch(List.of("custom tool", "  1", "  2", "  3"), dumped);
     assertLinesMatch(
         List.of("running custom tool with 3 argument(s)", "custom tool\n  1\n  2\n  3"),
         context.recorder.all);
@@ -273,10 +280,9 @@ class CommandTests {
     for (var i = 0; i <= 4000; i++) {
       custom.add(String.format("arg-%04d", i));
     }
-    bytes.reset();
     custom.toProcessBuilder();
-    var actual = bytes.toString();
-    assertTrue(actual.startsWith("large command line (36039) detected"));
+    var actual = String.join("\n", context.recorder.all);
+    assertTrue(actual.contains("large command line (36039) detected"), actual);
     assertTrue(actual.contains("but custom tool does not support @argument file"));
   }
 
@@ -319,16 +325,5 @@ class CommandTests {
     var lines = new ArrayList<String>();
     assertSame(command, command.dump(lines::add));
     return lines;
-  }
-
-  private String run(Bach.Command command) {
-    var bytes = new ByteArrayOutputStream(2000);
-    var out = new PrintStream(bytes);
-    command.setStandardStreams(out, out).run();
-    return bytes.toString();
-  }
-
-  private String run(Bach bach, String executable, Object... arguments) {
-    return run(bach.command(executable).addAll(arguments));
   }
 }
