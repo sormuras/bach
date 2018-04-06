@@ -3,6 +3,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -14,11 +15,31 @@ class BachContext implements ParameterResolver {
 
   class Recorder implements BiConsumer<System.Logger.Level, String> {
 
+    class Entry {
+      final System.Logger.Level level;
+      final String message;
+
+      Entry(System.Logger.Level level, String message) {
+        this.level = level;
+        this.message = message;
+      }
+    }
+
     List<String> all = new CopyOnWriteArrayList<>();
+    List<Entry> entries = new CopyOnWriteArrayList<>();
 
     @Override
     public void accept(System.Logger.Level level, String message) {
       all.add(message);
+      entries.add(new Entry(level, message));
+    }
+
+    List<String> level(System.Logger.Level level) {
+      return entries
+          .stream()
+          .filter(e -> e.level.getSeverity() >= level.getSeverity())
+          .map(e -> e.message)
+          .collect(Collectors.toList());
     }
   }
 

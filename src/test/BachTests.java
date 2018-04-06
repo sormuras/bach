@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -35,37 +36,47 @@ class BachTests {
 
   @Test
   void log(BachContext context) {
-    context.bach.info("log %s", "1");
-    context.bach.vars.level = System.Logger.Level.WARNING;
-    context.bach.info("log %s", "2");
-    assertLinesMatch(List.of("log 1"), context.recorder.all);
+    var logger = context.bach.vars.logger;
+    logger.accept(Level.ALL, "a");
+    logger.accept(Level.TRACE, "t");
+    context.bach.debug("%s", "d"); // same as: logger.accept(Level.DEBUG, "d");
+    context.bach.info("%s", "i"); // same as: logger.accept(Level.INFO, "i");
+    logger.accept(Level.WARNING, "w");
+    logger.accept(Level.ERROR, "e");
+    assertLinesMatch(List.of("a", "t", "d", "i", "w", "e"), context.recorder.all);
+    assertLinesMatch(List.of("a", "t", "d", "i", "w", "e"), context.recorder.level(Level.ALL));
+    assertLinesMatch(List.of("t", "d", "i", "w", "e"), context.recorder.level(Level.TRACE));
+    assertLinesMatch(List.of("d", "i", "w", "e"), context.recorder.level(Level.DEBUG));
+    assertLinesMatch(List.of("i", "w", "e"), context.recorder.level(Level.INFO));
+    assertLinesMatch(List.of("w", "e"), context.recorder.level(Level.WARNING));
+    assertLinesMatch(List.of("e"), context.recorder.level(Level.ERROR));
+    assertLinesMatch(List.of(), context.recorder.level(Level.OFF));
   }
 
   @Test
   void debug(BachContext context) {
     assertTrue(context.bach.debug());
-    context.bach.debug("debug %s", "1");
-    context.bach.vars.level = System.Logger.Level.OFF;
+    context.bach.debug("%s", "1");
+    context.bach.vars.level = Level.OFF;
     assertFalse(context.bach.debug());
-    context.bach.debug("debug %s", "2");
-    context.bach.vars.level = System.Logger.Level.INFO;
+    context.bach.debug("%s", "2");
+    context.bach.vars.level = Level.INFO;
     assertFalse(context.bach.debug());
-    context.bach.debug("debug %s", "3");
-    assertEquals(1, context.recorder.all.size());
-    assertLinesMatch(List.of("debug 1"), context.recorder.all);
+    context.bach.debug("%s", "3");
+    assertLinesMatch(List.of("1", "2", "3"), context.recorder.all);
+    assertLinesMatch(List.of("1", "2", "3"), context.recorder.level(Level.DEBUG));
+    assertLinesMatch(List.of(), context.recorder.level(Level.INFO));
   }
 
   @Test
   void runExecutable(BachContext context) {
-    assertThrows(Error.class, () -> context.bach.run("command", "a", "b", "3"));
-    assertEquals("[run] command [a, b, 3]", context.recorder.all.get(0));
-  }
-
-  @Test
-  void runExecutableInQuietMode(BachContext context) {
-    context.bach.vars.level = System.Logger.Level.OFF;
-    assertThrows(Error.class, () -> context.bach.run("command", "a", "b", "3"));
-    assertTrue(context.recorder.all.isEmpty());
+    assertThrows(Error.class, () -> context.bach.run("executable", "a", "b", "3"));
+    assertLinesMatch(
+        List.of(
+            "[run] executable [a, b, 3]",
+            "running executable with 3 argument(s)",
+            "executable\n" + "  a\n" + "  b\n" + "  3"),
+        context.recorder.all);
   }
 
   @Test

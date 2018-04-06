@@ -68,12 +68,12 @@ class Bach {
 
   /** Log debug level message. */
   void debug(String format, Object... arguments) {
-    util.log(Level.DEBUG, format, arguments);
+    vars.logger.accept(Level.DEBUG, String.format(format, arguments));
   }
 
   /** Log info level message. */
   void info(String format, Object... arguments) {
-    util.log(Level.INFO, format, arguments);
+    vars.logger.accept(Level.INFO, String.format(format, arguments));
   }
 
   /** Run named executable with given arguments. */
@@ -493,19 +493,27 @@ class Bach {
 
   /** Mutable runtime properties. */
   class Variables {
+
+    private String defaultFormat = System.getProperty("bach.format", "[%s] %s%n");
+
+    private Path defaultTemporary = Paths.get(System.getProperty("java.io.tmpdir"), ".bach");
+
     /** Logger level. */
     Level level = Level.valueOf(System.getProperty("bach.level", "ALL"));
 
     /** Logger function. */
-    BiConsumer<Level, String> logger = (level, text) -> System.out.printf("[%s] %s%n", level, text);
+    BiConsumer<Level, String> logger =
+        (level, text) -> {
+          if (level.getSeverity() >= Variables.this.level.getSeverity()) {
+            System.out.printf(defaultFormat, level, text);
+          }
+        };
 
     /** Offline mode switch. */
     boolean offline = Boolean.getBoolean("bach.offline");
 
     /** Temporary path. */
-    Path temporary =
-        Paths.get(
-            System.getProperty("java.io.tmpdir"), System.getProperty("bach.temporary", ".bach"));
+    Path temporary = Paths.get(System.getProperty("bach.temporary", defaultTemporary.toString()));
   }
 
   /** Overlay. */
@@ -559,15 +567,6 @@ class Bach {
       var urlString = uri.getPath();
       var begin = urlString.lastIndexOf('/') + 1;
       return urlString.substring(begin).split("\\?")[0].split("#")[0];
-    }
-
-    /** Log formatted message at the specified level. */
-    void log(Level level, String format, Object... arguments) {
-      if (level.getSeverity() < vars.level.getSeverity()) {
-        return;
-      }
-      var message = String.format(format, arguments);
-      vars.logger.accept(level, message);
     }
 
     /** Return {@code true} if the path points to a canonical Java archive file. */
