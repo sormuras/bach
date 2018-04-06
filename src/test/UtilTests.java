@@ -397,6 +397,48 @@ class UtilTests {
         "./x/file-1",
         "./x/file-2");
 
+    util.copyTree(root.resolve("x"), root.resolve("a/b/c"));
+    assertEquals(1 + 4 + 4 * 2, Files.walk(root).count());
+    assertTreeDumpMatches(
+        util,
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/b",
+        "./a/b/c",
+        "./a/b/c/file-1",
+        "./a/b/c/file-2",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2");
+
+    util.copyTree(root.resolve("x"), root.resolve("x/y"));
+    assertTreeDumpMatches(
+        util,
+        root,
+        root.toString(),
+        ".",
+        "./a",
+        "./a/b",
+        "./a/b/c",
+        "./a/b/c/file-1",
+        "./a/b/c/file-2",
+        "./a/file-1",
+        "./a/file-2",
+        "./file-1",
+        "./file-2",
+        "./x",
+        "./x/file-1",
+        "./x/file-2",
+        "./x/y",
+        "./x/y/file-1",
+        "./x/y/file-2");
+
     util.removeTree(root);
     assertTrue(Files.notExists(root));
   }

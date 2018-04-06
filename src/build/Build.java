@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+@SuppressWarnings("WeakerAccess")
 class Build {
 
   public static void main(String... args) {
@@ -112,11 +113,10 @@ class Build {
     format.run();
   }
 
-  void clean() throws Exception {
+  void clean() {
     System.out.printf("%n[clean]%n%n");
-
-    //    Bach.Basics.treeDelete(TARGET);
-    //    System.out.println("deleted " + TARGET);
+    bach.util.removeTree(TARGET);
+    System.out.println("deleted " + TARGET);
   }
 
   void compile() throws Exception {
@@ -140,8 +140,7 @@ class Build {
             maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
             maven("org.opentest4j", "opentest4j", OPENTEST4J));
     bach.run(javac);
-    //    // TODO exclude .java files
-    //    Bach.Basics.treeCopy(SOURCE_TEST, TARGET_TEST, path -> !Bach.Basics.isJavaFile(path));
+    bach.util.copyTree(Paths.get("src/test-resources"), TARGET_TEST);
   }
 
   void javadoc() throws Exception {
@@ -199,7 +198,6 @@ class Build {
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
-    java.add("--class-path").add(Paths.get("src/test-resources"));
     java.add("--scan-classpath");
     java.run();
   }

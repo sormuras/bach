@@ -725,6 +725,52 @@ class Bach {
         throw new UncheckedIOException("dumping tree failed: " + root, e);
       }
     }
+
+    /** Copy source directory to target directory. */
+    void copyTree(Path source, Path target) {
+      copyTree(source, target, __ -> true);
+    }
+
+    /** Copy source directory to target directory. */
+    void copyTree(Path source, Path target, Predicate<Path> filter) {
+      debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
+      if (!Files.exists(source)) {
+        return;
+      }
+      if (!Files.isDirectory(source)) {
+        throw new IllegalArgumentException("source must be a directory: " + source);
+      }
+      if (Files.exists(target)) {
+        if (!Files.isDirectory(target)) {
+          throw new IllegalArgumentException("target must be a directory: " + target);
+        }
+        try {
+          if (Files.isSameFile(source, target)) {
+            return;
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException("copyTree failed", e);
+        }
+      }
+      try (Stream<Path> stream = Files.walk(source).sorted()) {
+        int counter = 0;
+        List<Path> paths = stream.collect(Collectors.toList());
+        for (Path path : paths) {
+          Path destination = target.resolve(source.relativize(path));
+          if (Files.isDirectory(path)) {
+            Files.createDirectories(destination);
+            continue;
+          }
+          if (filter.test(path)) {
+            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+            counter++;
+          }
+        }
+        debug("copied %d file(s) of %d elements...%n", counter, paths.size());
+      } catch (IOException e) {
+        throw new UncheckedIOException("copyTree failed", e);
+      }
+    }
   }
 }
 
@@ -1067,8 +1113,8 @@ class ModuleInfo {
     return new ModuleInfo(name, requires);
   }
 
-  final String name;
-  final Set<String> requires;
+  private final String name;
+  private final Set<String> requires;
 
   private ModuleInfo(String name, Set<String> requires) {
     this.name = name;
