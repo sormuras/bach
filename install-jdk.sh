@@ -7,26 +7,7 @@
 # downloads the JDK archive to the user home directory and extracts
 # it there.
 #
-# Example usage
-#
-#   install-jdk.sh -D              | only gather and print variable values
-#   install-jdk.sh                 | install most recent (early-access) OpenJDK
-#   install-jdk.sh -W /usr/opt     | install most recent (early-access) OpenJDK to /usr/opt
-#   install-jdk.sh -C              | install most recent (early-access) OpenJDK with linked system CA certificates
-#   install-jdk.sh -F 9            | install most recent OpenJDK 9
-#   install-jdk.sh -F 10           | install most recent OpenJDK 10
-#   install-jdk.sh -F 11           | install most recent OpenJDK 11
-#   install-jdk.sh -F 11 -L BCL    | install most recent Oracle JDK 11
-#
-# Options
-#
-#   -D   | Dry-run, only gather and print variable values
-#   -F f | Feature number of the JDK release  [9|10|...|?]
-#   -L l | License of the JDK                 [GPL|BCL]
-#   -W w | Working directory and install path [${HOME}]
-#   -C   | Use system CA certificates (currently only Debian/Ubuntu is supported)
-#
-# Exported environment variables
+# Exported environment variables (when sourcing this script)
 #
 #   JAVA_HOME is set to the extracted JDK directory
 #   PATH is prepended with ${JAVA_HOME}/bin
@@ -35,133 +16,270 @@
 #
 # https://github.com/sormuras/bach/blob/master/install-jdk.sh
 #
-set -e
 
-VERSION='2018-04-05'
-DRY_RUN='0'
-LINK_SYSTEM_CACERTS='0'
+set -o errexit
+#set -o nounset # https://github.com/travis-ci/travis-ci/issues/5434
+#set -o xtrace
 
-JDK_FEATURE='?'
-JDK_BUILD='?'
-JDK_LICENSE='GPL'
-JDK_WORKSPACE=${HOME}
-JDK_DOWNLOAD='https://download.java.net/java'
-JDK_ORACLE='http://download.oracle.com/otn-pub/java/jdk'
+function initialize() {
+    readonly script_name="$(basename "${BASH_SOURCE[0]}")"
+    readonly script_version='2018-04-08'
 
-echo "install-jdk.sh (${VERSION})"
+    dry=false
+    silent=false
+    verbose=false
+    emit_java_home=false
 
-#
-# Parse command line options
-#
-while getopts ':F:L:W:CD' option; do
-  case "${option}" in
-    D) DRY_RUN='1';;
-    C) LINK_SYSTEM_CACERTS='1';;
-    F) JDK_FEATURE=${OPTARG};;
-    L) JDK_LICENSE=${OPTARG};;
-    W) JDK_WORKSPACE=${OPTARG};;
-    :) echo "Option -${OPTARG} requires an argument."; exit 1;;
-   \?) echo "Invalid option: -${OPTARG}"; exit 1;;
- esac
-done
+    feature='ea'
+    license='GPL'
+    url='?'
+    workspace=${HOME}
+    target='?'
+    cacerts=false
+}
 
-#
-# Determine latest (early access or release candidate) number.
-#
-LATEST='11'
-TMP=${LATEST}
-while [ "${TMP}" != '99' ]
-do
-  CODE=$(curl -o /dev/null --silent --head --write-out %{http_code} http://jdk.java.net/${TMP})
-  if [ "${CODE}" -ge '400' ]; then
-    break
-  fi
-  LATEST=${TMP}
-  TMP=$[${TMP} +1]
-done
+function usage() {
+cat << EOF
+Usage: ${script_name} [OPTION]...
+Download and extract the latest-and-greatest JDK from java.net or Oracle.
 
-#
-# Sanity checks.
-#
-if [ "${JDK_FEATURE}" == '?' ]; then
-  JDK_FEATURE=${LATEST}
-fi
-if [ "${JDK_FEATURE}" -lt '9' ] || [ "${JDK_FEATURE}" -gt "${LATEST}" ]; then
-  echo "Expected JDK_FEATURE number in range of [9..${LATEST}], but got: ${JDK_FEATURE}"
-  exit 1
-fi
+Version: ${script_version}
+Options:
+  -h|--help                 Displays this help
+  -d|--dry-run              Activates dry-run mode
+  -s|--silent               Displays no output
+  -e|--emit-java-home       Print value of "JAVA_HOME" to stdout (ignores silent mode)
+  -v|--verbose              Displays verbose output
 
-#
-# Determine URL...
-#
-JDK_URL=$(wget -qO- http://jdk.java.net/${JDK_FEATURE} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
-if [ "${JDK_FEATURE}" == "${LATEST}" ]; then
-  JDK_URL=$(echo "${JDK_URL}" | grep -Eo "${JDK_DOWNLOAD}/.+/jdk${JDK_FEATURE}/.+/${JDK_LICENSE}/.*jdk-${JDK_FEATURE}.+linux-x64_bin.tar.gz$")
-else
-  JDK_URL=$(echo "${JDK_URL}" | grep -Eo "${JDK_DOWNLOAD}/.+/jdk${JDK_FEATURE}/.+/.*jdk-${JDK_FEATURE}.+linux-x64_bin.tar.gz$")
-  if [ "${JDK_LICENSE}" == 'BCL' ]; then
-    case "${JDK_FEATURE}" in
-      9)  JDK_URL="${JDK_ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz";;
-      10) JDK_URL="${JDK_ORACLE}/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.tar.gz";;
-    esac
-  fi
-fi
+  -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
+  -l|--license GPL|BCL      License defaults to "GPL"
+  -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
+  -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
+  -t|--target PATH          Target directory, defaults to first component of the tarball
+  -c|--cacerts              Link system CA certificates (currently only Debian/Ubuntu is supported)
+EOF
+}
 
-#
-# Inspect URL properties.
-#
-JDK_ARCHIVE=$(basename ${JDK_URL})
-JDK_STATUS=$(curl -o /dev/null --silent --head --write-out %{http_code} ${JDK_URL})
+function script_exit() {
+    if [[ $# -eq 1 ]]; then
+        printf '%s\n' "$1"
+        exit 0
+    fi
 
-#
-# Print variables and exit if dry-run is active.
-#
-echo "  FEATURE = ${JDK_FEATURE}"
-echo "  LICENSE = ${JDK_LICENSE}"
-echo "  ARCHIVE = ${JDK_ARCHIVE}"
-echo "      URL = ${JDK_URL} [${JDK_STATUS}]"
-echo
-if [ "${DRY_RUN}" == '1' ]; then
-  exit 0
-fi
+    if [[ $# -eq 2 && $2 =~ ^[0-9]+$ ]]; then
+        printf '%b\n' "$1"
+        # If we've been provided a non-zero exit code run the error trap
+        if [[ $2 -ne 0 ]]; then
+            script_trap_err "$2"
+        else
+            exit 0
+        fi
+    fi
 
-#
-# Create any missing intermediate paths, switch to workspace, download, unpack, switch back.
-#
-mkdir -p ${JDK_WORKSPACE}
-cd ${JDK_WORKSPACE}
-wget --continue --header "Cookie: oraclelicense=accept-securebackup-cookie" ${JDK_URL}
-file ${JDK_ARCHIVE}
-JDK_HOME=$(tar --list --auto-compress --file ${JDK_ARCHIVE} | head -1 | cut -f1 -d"/")
-tar --extract --auto-compress --file ${JDK_ARCHIVE}
-cd ${OLDPWD}
+    script_exit 'Invalid arguments passed to script_exit()!' 2
+}
 
-#
-# Update environment variables.
-#
-export JAVA_HOME=${JDK_WORKSPACE}/${JDK_HOME}
-export PATH=${JAVA_HOME}/bin:$PATH
+function say() {
+    if [ ${silent} != true ]; then
+        echo "$@"
+    fi
+}
 
-#
-# Link to system certificates.
-#  - http://openjdk.java.net/jeps/319
-#  - https://bugs.openjdk.java.net/browse/JDK-8196141
-#
-if [ "${LINK_SYSTEM_CACERTS}" == '1' ]; then
-  mv "${JAVA_HOME}/lib/security/cacerts" "${JAVA_HOME}/lib/security/cacerts.jdk"
-  # TODO: Support for other distros than Debian/Ubuntu could be provided
-  ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
-fi
+function verbose() {
+    if [ ${verbose} == true ]; then
+        echo "$@"
+    fi
+}
 
-#
-# Test-drive.
-#
-echo
-java --version
-echo
+function parse_options() {
+    local option
+    while [[ $# -gt 0 ]]; do
+        option="$1"
+        shift
+        case ${option} in
+            -h|-H|--help)
+                usage
+                exit 0
+                ;;
+            -v|-V|--verbose)
+                verbose=true
+                ;;
+            -s|-S|--silent)
+                silent=true
+                verbose "Silent mode activated"
+                ;;
+            -d|-D|--dry-run)
+                dry=true
+                verbose "Dry-run mode activated"
+                ;;
+            -e|-E|--emit-java-home)
+                emit_java_home=true
+                verbose "Emitting JAVA_HOME"
+                ;;
+            -f|-F|--feature)
+                feature="$1"
+                verbose "feature=${feature}"
+                shift
+                ;;
+            -l|-L|--license)
+                license="$1"
+                verbose "license=${license}"
+                shift
+                ;;
+            -u|-U|--url)
+                url="$1"
+                verbose "url=${url}"
+                shift
+                ;;
+            -w|-W|--workspace)
+                workspace="$1"
+                verbose "workspace=${workspace}"
+                shift
+                ;;
+            -t|-T|--target)
+                target="$1"
+                verbose "target=${target}"
+                shift
+                ;;
+            -c|-C|--cacerts)
+                cacerts=true
+                verbose "Linking system CA certificates"
+                shift
+                ;;
+            *)
+                script_exit "Invalid argument was provided: ${option}" 2
+                ;;
+        esac
+    done
+}
 
-#
-# Always print value of JAVA_HOME as last line.
-# Usage from other scripts or shell: JAVA_HOME=$(./install-jdk.sh -L GPL | tail -n 1)
-#
-echo ${JAVA_HOME}
+function determine_latest_jdk() {
+    local number
+    local curl_result
+    local url
+
+    verbose "Determine latest JDK feature release number"
+    number=9
+    while [ ${number} != 99 ]
+    do
+      url=http://jdk.java.net/${number}
+      curl_result=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
+      if [ ${curl_result} -ge 400 ]; then
+        break
+      fi
+      verbose "  Found ${url} [${curl_result}]"
+      latest_jdk=${number}
+      number=$[$number +1]
+    done
+
+    verbose "Latest JDK feature release number is: ${latest_jdk}"
+}
+
+function perform_sanity_checks() {
+    if [ ${feature} == '?' ] || [ ${feature} == 'ea' ]; then
+        feature=${latest_jdk}
+    fi
+    if [ ${feature} -lt 9 ] || [ ${feature} -gt ${latest_jdk} ]; then
+        script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
+    fi
+    # if [ -d "$target" ]; then
+    #     script_exit "Target directory must not exist, but it does: rm -rf $feature?" 3
+    # fi
+}
+
+function determine_url() {
+    local JAVA_NET="http://jdk.java.net/${feature}"
+    local DOWNLOAD='https://download.java.net/java'
+    local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
+
+    if [ "${feature}" == "${latest_jdk}" ]; then
+        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
+    else
+        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
+        if [ "${license}" == 'BCL' ]; then
+            local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
+            case "${feature}" in
+                9)  url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz";;
+                10) url="${ORACLE}/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.tar.gz";;
+            esac
+        fi
+    fi
+}
+
+function prepare_variables() {
+    if [ ${url} == '?' ]; then
+      determine_latest_jdk
+      perform_sanity_checks
+      determine_url
+    else
+      feature='<overridden by custom url>'
+      license='<overridden by custom url>'
+    fi
+    archive="${workspace}/$(basename ${url})"
+    status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
+}
+
+function print_variables() {
+cat << EOF
+Variables:
+  feature = ${feature}
+  license = ${license}
+      url = ${url} [${status}]
+  archive = ${archive}
+EOF
+}
+
+function download_and_extract_and_set_target() {
+    local quiet=''; if [ ${silent} == true ]; then quiet='--quiet'; fi
+    local local="--directory-prefix ${workspace}"
+    local remote='--timestamping --continue'
+    local wget_options="${quiet} ${local} ${remote}"
+    local tar_options="--auto-compress --file ${archive}"
+
+    verbose "Using wget options: ${wget_options}"
+
+    if [ ${license} == 'GPL' ]; then
+        wget ${wget_options} ${url}
+    else
+        wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
+    fi
+
+    if [ ${target} == '?' ]; then
+        tar --extract ${tar_options} -C "${workspace}"
+        target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+    else
+        mkdir --parents ${target}
+        tar --extract ${tar_options} -C "${target}" --strip-components=1
+    fi
+
+    # Link to system certificates
+    # http://openjdk.java.net/jeps/319
+    # https://bugs.openjdk.java.net/browse/JDK-8196141
+    # TODO: Provide support for other distributions than Debian/Ubuntu
+    if [ ${cacerts} == true ]; then
+        mv "${target}/lib/security/cacerts" "${target}/lib/security/cacerts.jdk"
+        ln -s /etc/ssl/certs/java/cacerts "${target}/lib/security/cacerts"
+    fi
+}
+
+function main() {
+    initialize
+    parse_options "$@"
+
+    say "$script_name $script_version"
+
+    prepare_variables
+
+    if [ ${silent} == false ]; then print_variables; fi
+    if [ ${dry} == true ]; then exit 0; fi
+
+    download_and_extract_and_set_target
+
+    export JAVA_HOME=$(cd "${target}"; pwd)
+    export PATH=${JAVA_HOME}/bin:$PATH
+
+    if [ ${silent} == false ]; then java --version; fi
+    if [ ${emit_java_home} == true ]; then echo "${JAVA_HOME}"; fi
+}
+
+main "$@"
