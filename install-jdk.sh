@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-04-08'
+    readonly script_version='2018-04-09'
 
     dry=false
     silent=false
@@ -33,7 +33,7 @@ function initialize() {
     feature='ea'
     license='GPL'
     url='?'
-    workspace=${HOME}
+    workspace="${HOME}"
     target='?'
     cacerts=false
 }
@@ -68,25 +68,20 @@ function script_exit() {
 
     if [[ $# -eq 2 && $2 =~ ^[0-9]+$ ]]; then
         printf '%b\n' "$1"
-        # If we've been provided a non-zero exit code run the error trap
-        if [[ $2 -ne 0 ]]; then
-            script_trap_err "$2"
-        else
-            exit 0
-        fi
+        exit "$2"
     fi
 
     script_exit 'Invalid arguments passed to script_exit()!' 2
 }
 
 function say() {
-    if [ ${silent} != true ]; then
+    if [[ ${silent} != true ]]; then
         echo "$@"
     fi
 }
 
 function verbose() {
-    if [ ${verbose} == true ]; then
+    if [[ ${verbose} == true ]]; then
         echo "$@"
     fi
 }
@@ -160,11 +155,11 @@ function determine_latest_jdk() {
 
     verbose "Determine latest JDK feature release number"
     number=9
-    while [ ${number} != 99 ]
+    while [[ ${number} != 99 ]]
     do
       url=http://jdk.java.net/${number}
       curl_result=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
-      if [ ${curl_result} -ge 400 ]; then
+      if [[ ${curl_result} -ge 400 ]]; then
         break
       fi
       verbose "  Found ${url} [${curl_result}]"
@@ -176,15 +171,15 @@ function determine_latest_jdk() {
 }
 
 function perform_sanity_checks() {
-    if [ ${feature} == '?' ] || [ ${feature} == 'ea' ]; then
+    if [[ ${feature} == '?' ]] || [[ ${feature} == 'ea' ]]; then
         feature=${latest_jdk}
     fi
-    if [ ${feature} -lt 9 ] || [ ${feature} -gt ${latest_jdk} ]; then
+    if [[ ${feature} -lt 9 ]] || [[ ${feature} -gt ${latest_jdk} ]]; then
         script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
-    # if [ -d "$target" ]; then
-    #     script_exit "Target directory must not exist, but it does: rm -rf $feature?" 3
-    # fi
+    if [[ -d "$target" ]]; then
+        script_exit "Target directory must not exist, but it does: rm -rf $(du -hs ${target})" 3
+    fi
 }
 
 function determine_url() {
@@ -192,11 +187,11 @@ function determine_url() {
     local DOWNLOAD='https://download.java.net/java'
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
 
-    if [ "${feature}" == "${latest_jdk}" ]; then
+    if [[ "${feature}" == "${latest_jdk}" ]]; then
         url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
     else
         url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
-        if [ "${license}" == 'BCL' ]; then
+        if [[ "${license}" == 'BCL' ]]; then
             local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
             case "${feature}" in
                 9)  url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz";;
@@ -207,7 +202,7 @@ function determine_url() {
 }
 
 function prepare_variables() {
-    if [ ${url} == '?' ]; then
+    if [[ ${url} == '?' ]]; then
       determine_latest_jdk
       perform_sanity_checks
       determine_url
@@ -230,7 +225,7 @@ EOF
 }
 
 function download_and_extract_and_set_target() {
-    local quiet=''; if [ ${silent} == true ]; then quiet='--quiet'; fi
+    local quiet=''; if [[ ${silent} == true ]]; then quiet='--quiet'; fi
     local local="--directory-prefix ${workspace}"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
@@ -238,13 +233,13 @@ function download_and_extract_and_set_target() {
 
     verbose "Using wget options: ${wget_options}"
 
-    if [ ${license} == 'GPL' ]; then
+    if [[ ${license} == 'GPL' ]]; then
         wget ${wget_options} ${url}
     else
         wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
     fi
 
-    if [ ${target} == '?' ]; then
+    if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
         target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
     else
@@ -256,7 +251,7 @@ function download_and_extract_and_set_target() {
     # http://openjdk.java.net/jeps/319
     # https://bugs.openjdk.java.net/browse/JDK-8196141
     # TODO: Provide support for other distributions than Debian/Ubuntu
-    if [ ${cacerts} == true ]; then
+    if [[ ${cacerts} == true ]]; then
         mv "${target}/lib/security/cacerts" "${target}/lib/security/cacerts.jdk"
         ln -s /etc/ssl/certs/java/cacerts "${target}/lib/security/cacerts"
     fi
@@ -270,16 +265,16 @@ function main() {
 
     prepare_variables
 
-    if [ ${silent} == false ]; then print_variables; fi
-    if [ ${dry} == true ]; then exit 0; fi
+    if [[ ${silent} == false ]]; then print_variables; fi
+    if [[ ${dry} == true ]]; then exit 0; fi
 
     download_and_extract_and_set_target
 
     export JAVA_HOME=$(cd "${target}"; pwd)
     export PATH=${JAVA_HOME}/bin:$PATH
 
-    if [ ${silent} == false ]; then java --version; fi
-    if [ ${emit_java_home} == true ]; then echo "${JAVA_HOME}"; fi
+    if [[ ${silent} == false ]]; then java --version; fi
+    if [[ ${emit_java_home} == true ]]; then echo "${JAVA_HOME}"; fi
 }
 
 main "$@"
