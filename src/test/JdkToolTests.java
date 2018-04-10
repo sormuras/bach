@@ -112,6 +112,8 @@ class JdkToolTests {
     var expectedLines =
         List.of(
             "java",
+            "--class-path",
+            "  a.jar",
             "--dry-run",
             "-jar",
             "  application.jar",
@@ -127,6 +129,7 @@ class JdkToolTests {
             "2",
             "NEW");
     var java = new JdkTool.Java();
+    java.classPath = List.of(Paths.get("a.jar"));
     java.dryRun = true;
     java.jar = Paths.get("application.jar");
     java.addModules = List.of("mod.A", "ALL-MODULE-PATH", "mod.B");

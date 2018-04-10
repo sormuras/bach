@@ -856,6 +856,9 @@ interface JdkTool extends Function<Bach, Integer> {
    * @see <a href="https://docs.oracle.com/javase/9/tools/java.htm">java</a>
    */
   class Java implements JdkTool {
+    /** (Legacy) class path. */
+    List<Path> classPath = List.of();
+
     /**
      * Creates the VM but doesn't execute the main method.
      *
