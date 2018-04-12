@@ -558,7 +558,7 @@ class Bach {
       var nameMatcher = namePattern.matcher(source);
       if (!nameMatcher.find()) {
         throw new IllegalArgumentException(
-                "expected java module descriptor unit, but got: " + source);
+            "expected java module descriptor unit, but got: " + source);
       }
       var name = nameMatcher.group(1).trim();
 
@@ -1131,7 +1131,6 @@ interface JdkTool extends Function<Bach, Integer> {
     return bach.command(name()).addAllOptions(this).addAll(extras);
   }
 }
-
 
 /** Project build support. */
 class Project {
