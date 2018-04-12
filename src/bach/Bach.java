@@ -518,6 +518,61 @@ class Bach {
   /** Overlay. */
   class Util {
 
+    /** Simple module information collector. */
+    class ModuleInfo {
+      private final String name;
+      private final Set<String> requires;
+
+      private ModuleInfo(String name, Set<String> requires) {
+        this.name = name;
+        this.requires = Set.copyOf(requires);
+      }
+
+      String getName() {
+        return name;
+      }
+
+      Set<String> getRequires() {
+        return requires;
+      }
+    }
+
+    ModuleInfo moduleInfo(Path path) {
+      if (Files.isDirectory(path)) {
+        path = path.resolve("module-info.java");
+      }
+      try {
+        return moduleInfo(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        throw new UncheckedIOException("reading '" + path + "' failed", e);
+      }
+    }
+
+    ModuleInfo moduleInfo(List<String> lines) {
+      return moduleInfo(String.join("\n", lines));
+    }
+
+    ModuleInfo moduleInfo(String source) {
+      // extract module name
+      var namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
+      var nameMatcher = namePattern.matcher(source);
+      if (!nameMatcher.find()) {
+        throw new IllegalArgumentException(
+                "expected java module descriptor unit, but got: " + source);
+      }
+      var name = nameMatcher.group(1).trim();
+
+      // extract required module names
+      var requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+      var requiresMatcher = requiresPattern.matcher(source);
+      var requires = new TreeSet<String>();
+      while (requiresMatcher.find()) {
+        var split = requiresMatcher.group(1).trim().split("\\s+");
+        requires.add(split[split.length - 1]);
+      }
+      return new ModuleInfo(name, requires);
+    }
+
     /** Download the resource specified by its URI to the target directory. */
     Path download(URI uri, Path directory) throws IOException {
       return download(uri, directory, fileName(uri));
@@ -675,7 +730,7 @@ class Bach {
         }
       }
       for (var path : paths) {
-        var info = ModuleInfo.of(path);
+        var info = moduleInfo(path);
         declaredModules.add(info.getName());
         requiredModules.addAll(info.getRequires());
       }
@@ -1077,61 +1132,6 @@ interface JdkTool extends Function<Bach, Integer> {
   }
 }
 
-/** Simple module information collector. */
-class ModuleInfo {
-
-  private static Pattern namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
-  private static Pattern requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
-
-  static ModuleInfo of(Path path) {
-    if (Files.isDirectory(path)) {
-      path = path.resolve("module-info.java");
-    }
-    try {
-      return of(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
-    } catch (IOException e) {
-      throw new UncheckedIOException("reading '" + path + "' failed", e);
-    }
-  }
-
-  static ModuleInfo of(List<String> lines) {
-    return of(String.join("\n", lines));
-  }
-
-  static ModuleInfo of(String source) {
-    // extract module name
-    var nameMatcher = namePattern.matcher(source);
-    if (!nameMatcher.find()) {
-      throw new IllegalArgumentException(
-          "expected java module descriptor unit, but got: " + source);
-    }
-    var name = nameMatcher.group(1).trim();
-    // extract required module names
-    var requires = new TreeSet<String>();
-    var requiresMatcher = requiresPattern.matcher(source);
-    while (requiresMatcher.find()) {
-      var split = requiresMatcher.group(1).trim().split("\\s+");
-      requires.add(split[split.length - 1]);
-    }
-    return new ModuleInfo(name, requires);
-  }
-
-  private final String name;
-  private final Set<String> requires;
-
-  private ModuleInfo(String name, Set<String> requires) {
-    this.name = name;
-    this.requires = Set.copyOf(requires);
-  }
-
-  String getName() {
-    return name;
-  }
-
-  Set<String> getRequires() {
-    return requires;
-  }
-}
 
 /** Project build support. */
 class Project {

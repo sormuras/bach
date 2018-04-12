@@ -226,30 +226,30 @@ class UtilTests {
   }
 
   @Test
-  void moduleInfoEmpty() {
-    var info = ModuleInfo.of(List.of("module foo {}"));
+  void moduleInfoEmpty(Bach.Util util) {
+    var info = util.moduleInfo(List.of("module foo {}"));
     assertEquals("foo", info.getName());
     assertTrue(info.getRequires().isEmpty());
   }
 
   @Test
-  void moduleInfoFromModuleWithoutNameFails() {
+  void moduleInfoFromModuleWithoutNameFails(Bach.Util util) {
     var source = "module { no name }";
-    Exception e = assertThrows(IllegalArgumentException.class, () -> ModuleInfo.of(source));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> util.moduleInfo(source));
     assertEquals("expected java module descriptor unit, but got: " + source, e.getMessage());
   }
 
   @Test
-  void moduleInfoFromNonExistingFileFails() {
+  void moduleInfoFromNonExistingFileFails(Bach.Util util) {
     var source = Paths.get(".", "module-info.java");
-    var exception = assertThrows(UncheckedIOException.class, () -> ModuleInfo.of(source));
+    var exception = assertThrows(UncheckedIOException.class, () -> util.moduleInfo(source));
     assertEquals("reading '" + source + "' failed", exception.getMessage());
   }
 
   @Test
-  void moduleInfoRequiresBarAndBaz() {
+  void moduleInfoRequiresBarAndBaz(Bach.Util util) {
     var source = "module   foo{requires a; requires static b; requires any modifier c;}";
-    var info = ModuleInfo.of(source);
+    var info = util.moduleInfo(source);
     assertEquals("foo", info.getName());
     assertEquals(3, info.getRequires().size());
     assertTrue(info.getRequires().contains("a"));
@@ -258,9 +258,9 @@ class UtilTests {
   }
 
   @Test
-  void moduleInfoFromFile() {
+  void moduleInfoFromFile(Bach.Util util) {
     var source = Paths.get("demo/02-testing/src/test/java/application");
-    var info = ModuleInfo.of(source);
+    var info = util.moduleInfo(source);
     assertEquals("application", info.getName());
     assertEquals(2, info.getRequires().size());
     assertTrue(info.getRequires().contains("application.api"));
@@ -268,13 +268,13 @@ class UtilTests {
   }
 
   @Test
-  void moduleInfoFromM1() throws Exception {
+  void moduleInfoFromM1(Bach.Util util) throws Exception {
     var loader = getClass().getClassLoader();
     var resource = loader.getResource("UtilTests.module-info.java");
     if (resource == null) {
       fail("resource not found!");
     }
-    var info = ModuleInfo.of(Paths.get(resource.toURI()));
+    var info = util.moduleInfo(Paths.get(resource.toURI()));
     assertEquals("com.google.m", info.getName());
     assertEquals(3, info.getRequires().size());
     assertTrue(info.getRequires().contains("com.google.r1"));
