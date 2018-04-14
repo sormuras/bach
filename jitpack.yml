@@ -1,5 +1,5 @@
 before_install:
-- source install-jdk.sh
+- source install-jdk.sh --feature ea
 
 install:
 - ./build.jsh
