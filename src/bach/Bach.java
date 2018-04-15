@@ -513,6 +513,114 @@ class Bach {
 
     /** Temporary path. */
     Path temporary = Paths.get(System.getProperty("bach.temporary", defaultTemporary.toString()));
+
+    /** List of repositories used for resolving dependencies. */
+    List<URI> repositories =
+        List.of(
+            URI.create("http://central.maven.org/maven2"),
+            URI.create("https://jcenter.bintray.com"),
+            URI.create("https://oss.sonatype.org/content/repositories/snapshots"),
+            URI.create("https://jitpack.io"));
+  }
+
+  static class Resolvable {
+
+    static ResolvableBuilder builder() {
+      return new ResolvableBuilder();
+    }
+
+    private String group;
+    private String artifact;
+    private String version;
+    private String classifier = "";
+    private String kind = "jar";
+    private String file;
+
+    private Resolvable() {}
+
+    String getGroup() {
+      return group;
+    }
+
+    String getArtifact() {
+      return artifact;
+    }
+
+    String getVersion() {
+      return version;
+    }
+
+    String getClassifier() {
+      return classifier;
+    }
+
+    String getKind() {
+      return kind;
+    }
+
+    String getFile() {
+      return file;
+    }
+
+    boolean isLatest() {
+      return version.equals("LATEST");
+    }
+
+    boolean isRelease() {
+      return version.equals("RELEASE");
+    }
+
+    boolean isSnapshot() {
+      return version.endsWith("SNAPSHOT");
+    }
+
+    String toPathString() {
+      return Paths.get(getGroup().replace('.', '/'), getArtifact(), getVersion(), getFile())
+          .toString()
+          .replace('\\', '/');
+    }
+  }
+
+  static class ResolvableBuilder {
+
+    private Resolvable resolvable = new Resolvable();
+
+    Resolvable build() {
+      var result = resolvable;
+      resolvable = new Resolvable();
+      // assemble file name
+      var versifier = result.version;
+      if (!result.classifier.isEmpty()) {
+        versifier = result.version + '-' + result.classifier;
+      }
+      result.file = result.artifact + '-' + versifier + '.' + result.kind;
+      return result;
+    }
+
+    ResolvableBuilder group(String group) {
+      resolvable.group = group;
+      return this;
+    }
+
+    ResolvableBuilder artifact(String artifact) {
+      resolvable.artifact = artifact;
+      return this;
+    }
+
+    ResolvableBuilder version(String version) {
+      resolvable.version = version;
+      return this;
+    }
+
+    ResolvableBuilder classifier(String classifier) {
+      resolvable.classifier = classifier;
+      return this;
+    }
+
+    ResolvableBuilder kind(String kind) {
+      resolvable.kind = kind;
+      return this;
+    }
   }
 
   /** Overlay. */
@@ -825,6 +933,31 @@ class Bach {
       } catch (IOException e) {
         throw new UncheckedIOException("copyTree failed", e);
       }
+    }
+
+    Path resolve(Resolvable resolvable, Path targetDirectory, URI repository) throws Exception {
+      var uri = URI.create(repository.toString() + '/' + resolvable.toPathString());
+      var fileName = fileName(uri);
+      // revert local file name with constant version attribute
+      if (resolvable.isSnapshot()) {
+        fileName = resolvable.getFile();
+      }
+      return download(uri, targetDirectory, fileName);
+    }
+
+    Optional<Path> resolve(Resolvable resolvable, Path targetDirectory) {
+      return resolve(resolvable, targetDirectory, vars.repositories);
+    }
+
+    Optional<Path> resolve(Resolvable resolvable, Path targetDirectory, List<URI> repositories) {
+      for (var repository : repositories) {
+        try {
+          return Optional.of(resolve(resolvable, targetDirectory, repository));
+        } catch (Exception e) {
+          debug("resolve(repository:'%s') failed: %s", repository, e);
+        }
+      }
+      return Optional.empty();
     }
   }
 }
