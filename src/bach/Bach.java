@@ -523,8 +523,10 @@ class Bach {
             URI.create("https://jitpack.io"));
   }
 
+  /** Maven-resolvable data holder. */
   static class Resolvable {
 
+    /** Return a new {@link ResolvableBuilder} instance. */
     static ResolvableBuilder builder() {
       return new ResolvableBuilder();
     }
@@ -538,42 +540,52 @@ class Bach {
 
     private Resolvable() {}
 
+    /** Group identifier. */
     String getGroup() {
       return group;
     }
 
+    /** Artifact identifier. */
     String getArtifact() {
       return artifact;
     }
 
+    /** Version string. */
     String getVersion() {
       return version;
     }
 
+    /** Classifier string. */
     String getClassifier() {
       return classifier;
     }
 
+    /** File extension type. */
     String getKind() {
       return kind;
     }
 
+    /** Name of the file. */
     String getFile() {
       return file;
     }
 
+    /** Return {@code true} iff version is {@code LATEST}, else {@code false}. */
     boolean isLatest() {
       return version.equals("LATEST");
     }
 
+    /** Return {@code true} iff version is {@code RELEASE}, else {@code false}. */
     boolean isRelease() {
       return version.equals("RELEASE");
     }
 
+    /** Return {@code true} iff version is {@code SNAPSHOT}, else {@code false}. */
     boolean isSnapshot() {
       return version.endsWith("SNAPSHOT");
     }
 
+    /** Combine all parts. */
     String toPathString() {
       return Paths.get(getGroup().replace('.', '/'), getArtifact(), getVersion(), getFile())
           .toString()

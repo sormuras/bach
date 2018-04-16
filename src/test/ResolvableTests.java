@@ -16,6 +16,7 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,6 +29,29 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(BachContext.class)
 class ResolvableTests {
+
+  @Test
+  void builder() {
+    var builder = new Bach.ResolvableBuilder();
+    builder
+        .group("group.with.dots")
+        .artifact("artifact")
+        .version("47.11")
+        .classifier("classifier")
+        .kind("kind");
+    var resolvable = builder.build();
+    var file = "artifact-47.11-classifier.kind";
+    assertEquals("group.with.dots", resolvable.getGroup());
+    assertEquals("artifact", resolvable.getArtifact());
+    assertEquals("47.11", resolvable.getVersion());
+    assertEquals("classifier", resolvable.getClassifier());
+    assertEquals("kind", resolvable.getKind());
+    assertEquals(file, resolvable.getFile());
+    assertFalse(resolvable.isSnapshot());
+    assertFalse(resolvable.isLatest());
+    assertFalse(resolvable.isRelease());
+    assertEquals("group/with/dots/artifact/47.11/" + file, resolvable.toPathString());
+  }
 
   @Test
   void resolve(Bach.Util util) throws Exception {
