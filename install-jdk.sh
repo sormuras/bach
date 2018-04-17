@@ -191,6 +191,11 @@ function determine_url() {
         url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
     else
         url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
+        if [[ "${license}" == 'GPL' ]]; then
+            case "${feature}" in
+                9)  url='https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz';;
+            esac
+        fi
         if [[ "${license}" == 'BCL' ]]; then
             local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
             case "${feature}" in
