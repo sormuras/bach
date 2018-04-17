@@ -200,7 +200,7 @@ function determine_url() {
             local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
             case "${feature}" in
                 9)  url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz";;
-                10) url="${ORACLE}/10+46/76eac37278c24557a3c4199677f19b62/jdk-10_linux-x64_bin.tar.gz";;
+                10) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz";;
             esac
         fi
     fi
