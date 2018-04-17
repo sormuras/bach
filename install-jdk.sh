@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-04-09'
+    readonly script_version='2018-04-17'
 
     dry=false
     silent=false
@@ -183,27 +183,24 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    local JAVA_NET="http://jdk.java.net/${feature}"
     local DOWNLOAD='https://download.java.net/java'
-    local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
+    local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
 
+    # Archived feature or official build with BCL license?
+    case "${feature}-${license}" in
+        9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz"; return;;
+        9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz"; return;;
+       10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz"; return;;
+    esac
+
+    # EA, RC or GA build?
+    local JAVA_NET="http://jdk.java.net/${feature}"
+    local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
     if [[ "${feature}" == "${latest_jdk}" ]]; then
         url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
-    else
-        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
-        if [[ "${license}" == 'GPL' ]]; then
-            case "${feature}" in
-                9)  url='https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz';;
-            esac
-        fi
-        if [[ "${license}" == 'BCL' ]]; then
-            local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
-            case "${feature}" in
-                9)  url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz";;
-                10) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz";;
-            esac
-        fi
+        return
     fi
+    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
 }
 
 function prepare_variables() {
