@@ -8,7 +8,7 @@ Use Java source in [jshell] to build your modular project.
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
 
-Fast-forward to [install-jdk.sh](#install-jdk.sh) section.
+Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
 ## simple usage
 
