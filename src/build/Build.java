@@ -152,7 +152,7 @@ class Build {
     var javadoc = new JdkTool.Javadoc();
     javadoc.destination = JAVADOC;
     javadoc.doclint = "all,-missing";
-    javadoc.link = List.of("https://docs.oracle.com/javase/9/docs/api");
+    javadoc.link = List.of("https://docs.oracle.com/javase/10/docs/api");
     javadoc.linksource = true;
     javadoc.showTypes = JdkTool.Javadoc.Visibility.PACKAGE;
     javadoc.showMembers = JdkTool.Javadoc.Visibility.PACKAGE;
