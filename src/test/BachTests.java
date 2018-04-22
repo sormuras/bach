@@ -209,4 +209,22 @@ class BachTests {
             "[run] Java done.");
     assertLinesMatch(expected, context.recorder.all);
   }
+
+  @Test
+  void runFunctionWithCaption(BachContext context) {
+    var bach = context.bach;
+    var function = new JdkTool.Java();
+    function.args = List.of("--version");
+    var result = bach.run("Java Version Function", function);
+    assertEquals(0, result);
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] Java Version Function...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
+            "[run] Java Version Function done.");
+    assertLinesMatch(expected, context.recorder.all);
+  }
 }

@@ -83,8 +83,13 @@ class Bach {
   }
 
   /** Run function. */
+  int run(String caption, Function<Bach, Integer> function) {
+    return run(caption, () -> function.apply(this));
+  }
+
+  /** Run function using its simple class name as the caption. */
   int run(Function<Bach, Integer> function) {
-    return run(function.getClass().getSimpleName(), () -> function.apply(this));
+    return run(function.getClass().getSimpleName(), function);
   }
 
   /** Run tasks in parallel. */
