@@ -16,8 +16,10 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,8 +27,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(BachContext.class)
 class TaskTests {
 
+  private final BachContext context;
+  private final Bach bach;
+
+  TaskTests(BachContext context) {
+    this.context = context;
+    this.bach = context.bach;
+  }
+
   @Test
-  void compiler(Bach bach) {
+  void compiler() {
     var project =
         Project.builder()
             .target(Paths.get("target/test/task/compiler"))
@@ -36,5 +46,26 @@ class TaskTests {
             .build();
     var compiler = new Task.CompilerTask(bach, project);
     assertEquals(0, (int) compiler.get());
+  }
+
+  @Test
+  void runner() {
+    var project =
+        Project.builder()
+            .mainModule("world")
+            .mainClass("com.greetings.Main")
+            .target(Paths.get("target/test/task/runner"))
+            .newModuleGroup("01-hello-world")
+            .moduleSourcePath(List.of(Paths.get("demo/01-hello-world/src")))
+            .end()
+            .build();
+    var runner = new Task.RunnerTask(bach, project);
+    var result = runner.get();
+    assertLinesMatch(
+        List.of(
+            "Error occurred during initialization of boot layer",
+            "java.lang.module.FindException: Module world not found"),
+        Arrays.asList(context.bytes.toString().split("\\R")));
+    assertEquals(1, result.intValue());
   }
 }

@@ -1291,6 +1291,8 @@ class Project {
 
   private String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
   private String version = "1.0.0-SNAPSHOT";
+  private String mainModule = "";
+  private String mainClass = "";
   private Path target = Paths.get("target", "bach");
   private Map<String, ModuleGroup> moduleGroups = new TreeMap<>();
 
@@ -1302,6 +1304,14 @@ class Project {
 
   String version() {
     return version;
+  }
+
+  String mainModule() {
+    return mainModule;
+  }
+
+  String mainClass() {
+    return mainClass;
   }
 
   Path target() {
@@ -1334,6 +1344,16 @@ class Project {
 
     ProjectBuilder version(String version) {
       project.version = version;
+      return this;
+    }
+
+    ProjectBuilder mainModule(String mainModule) {
+      project.mainModule = mainModule;
+      return this;
+    }
+
+    ProjectBuilder mainClass(String mainClass) {
+      project.mainClass = mainClass;
       return this;
     }
 
@@ -1452,6 +1472,30 @@ interface Task extends Supplier<Integer> {
     public Integer get() {
       bach.info("[compiler] %s", project);
       return project.moduleGroups().stream().mapToInt(this::compile).sum();
+    }
+  }
+
+  class RunnerTask implements Task {
+    final Bach bach;
+    final Project project;
+
+    RunnerTask(Bach bach, Project project) {
+      this.bach = bach;
+      this.project = project;
+    }
+
+    @Override
+    public Integer get() {
+      bach.info("[runner] %s", project);
+      var java = new JdkTool.Java();
+      java.modulePath =
+          project
+              .moduleGroups()
+              .stream()
+              .map(Project.ModuleGroup::destination)
+              .collect(Collectors.toList());
+      java.module = project.mainModule() + "/" + project.mainClass();
+      return java.toCommand(bach).get();
     }
   }
 }
