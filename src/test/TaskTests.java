@@ -52,8 +52,7 @@ class TaskTests {
   void runner() {
     var project =
         Project.builder()
-            .mainModule("world")
-            .mainClass("com.greetings.Main")
+            .entryPoint("world", "com.greetings.Main")
             .target(Paths.get("target/test/task/runner"))
             .newModuleGroup("01-hello-world")
             .moduleSourcePath(List.of(Paths.get("demo/01-hello-world/src")))

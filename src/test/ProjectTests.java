@@ -47,8 +47,7 @@ class ProjectTests {
         Project.builder()
             .name("Manual")
             .version("II")
-            .mainModule("main.module")
-            .mainClass("main.module.MainClass")
+            .entryPoint("main.module", "main.module.MainClass")
             .target(target)
             // main
             .newModuleGroup("main")
@@ -66,8 +65,7 @@ class ProjectTests {
             .build();
     assertEquals("Manual", project.name());
     assertEquals("II", project.version());
-    assertEquals("main.module", project.mainModule());
-    assertEquals("main.module.MainClass", project.mainClass());
+    assertEquals("main.module/main.module.MainClass", project.entryPoint());
     assertEquals(Paths.get("target"), project.target());
     assertEquals("main", project.moduleGroup("main").name());
     assertEquals("test", project.moduleGroup("test").name());

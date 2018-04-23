@@ -1291,8 +1291,7 @@ class Project {
 
   private String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
   private String version = "1.0.0-SNAPSHOT";
-  private String mainModule = "";
-  private String mainClass = "";
+  private String entryPoint = "";
   private Path target = Paths.get("target", "bach");
   private Map<String, ModuleGroup> moduleGroups = new TreeMap<>();
 
@@ -1306,12 +1305,8 @@ class Project {
     return version;
   }
 
-  String mainModule() {
-    return mainModule;
-  }
-
-  String mainClass() {
-    return mainClass;
+  String entryPoint() {
+    return entryPoint;
   }
 
   Path target() {
@@ -1347,13 +1342,8 @@ class Project {
       return this;
     }
 
-    ProjectBuilder mainModule(String mainModule) {
-      project.mainModule = mainModule;
-      return this;
-    }
-
-    ProjectBuilder mainClass(String mainClass) {
-      project.mainClass = mainClass;
+    ProjectBuilder entryPoint(String mainModule, String mainClass) {
+      project.entryPoint = mainModule + '/' + mainClass;
       return this;
     }
 
@@ -1494,7 +1484,7 @@ interface Task extends Supplier<Integer> {
               .stream()
               .map(Project.ModuleGroup::destination)
               .collect(Collectors.toList());
-      java.module = project.mainModule() + "/" + project.mainClass();
+      java.module = project.entryPoint();
       return java.toCommand(bach).get();
     }
   }
