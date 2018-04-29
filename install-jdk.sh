@@ -139,7 +139,6 @@ function parse_options() {
             -c|-C|--cacerts)
                 cacerts=true
                 verbose "Linking system CA certificates"
-                shift
                 ;;
             *)
                 script_exit "Invalid argument was provided: ${option}" 2
