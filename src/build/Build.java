@@ -45,9 +45,9 @@ class Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.2.0-RC1";
-  String JUNIT_PLATFORM = "1.2.0-RC1";
-  String OPENTEST4J = "1.0.0";
+  String JUNIT_JUPITER = "5.2.0";
+  String JUNIT_PLATFORM = "1.2.0";
+  String OPENTEST4J = "1.1.0";
   String API_GUARDIAN = "1.0.0";
 
   final Bach bach = new Bach();
