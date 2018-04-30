@@ -138,6 +138,7 @@ class Build {
         List.of(
             TARGET_MAIN,
             maven("org.junit.jupiter", "junit-jupiter-api", JUNIT_JUPITER),
+            maven("org.junit.jupiter", "junit-jupiter-params", JUNIT_JUPITER),
             maven("org.junit.platform", "junit-platform-commons", JUNIT_PLATFORM),
             maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
             maven("org.opentest4j", "opentest4j", OPENTEST4J));

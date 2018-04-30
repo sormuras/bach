@@ -26,6 +26,8 @@ import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(BachContext.class)
 class ResolvableTests {
@@ -53,20 +55,21 @@ class ResolvableTests {
     assertEquals("group/with/dots/artifact/47.11/" + file, resolvable.toPathString());
   }
 
-  @Test
-  void resolve(Bach.Util util) throws Exception {
+  @ParameterizedTest
+  @CsvSource({"1.0.0, 6588", "1.1.0, 6819"})
+  void resolveOpenTest4J(String version, long expectedJarSize, Bach.Util util) throws Exception {
     var resolvable =
         Bach.Resolvable.builder()
             .group("org.opentest4j")
             .artifact("opentest4j")
-            .version("1.0.0")
+            .version(version)
             .classifier("")
             .kind("jar")
             .build();
-    var temp = Files.createTempDirectory("resolve-");
+    var temp = Files.createTempDirectory("resolveOpenTest4J-");
     var jar = util.resolve(resolvable, temp, URI.create("http://central.maven.org/maven2"));
     assertTrue(Files.exists(jar));
-    assertEquals(6588, Files.size(jar));
+    assertEquals(expectedJarSize, Files.size(jar));
     util.removeTree(temp);
   }
 
