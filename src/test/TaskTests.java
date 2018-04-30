@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -48,18 +49,35 @@ class TaskTests {
   }
 
   @Test
-  void runner() {
+  void runner() throws Exception {
+    var temp = Files.createTempDirectory("TaskTests-runner-");
     var project =
         Project.builder()
             .entryPoint("world", "com.greetings.Main")
-            .target(Paths.get("target/test/task/runner"))
+            .target(temp)
             .newModuleGroup("01-hello-world")
-            .moduleSourcePath(List.of(Paths.get("demo/01-hello-world/src")))
+            .moduleSourcePath(
+                List.of(
+                    Paths.get("demo/01-hello-world/src"),
+                    Paths.get("demo/01-hello-world/src-de"),
+                    Paths.get("demo/01-hello-world/src-fr")))
             .end()
             .build();
     var runner = new Task.RunnerTask(bach, project);
-    var result = runner.get();
+    var resultBeforeCompile = runner.get();
+    assertEquals(1, resultBeforeCompile.intValue());
     assertTrue(context.bytes.toString().contains("world not found"));
-    assertEquals(1, result.intValue());
+    context.bytes.reset();
+    var compiler = new Task.CompilerTask(bach, project);
+    assertEquals(0, (int) compiler.get());
+    context.bytes.reset();
+    var resultAfterCompile = runner.get();
+    assertEquals(0, resultAfterCompile.intValue());
+    var output = context.bytes.toString();
+    assertTrue(output.contains("Greetings from 01-hello-world demo!"));
+    assertTrue(output.contains("'Hello world' from class hello.Hello in module hello"));
+    assertTrue(output.contains("'Hallo Welt' from class hallo.Hallo in module hallo"));
+    assertTrue(output.contains("'Salut monde' from class salut.Salut in module bonjour"));
+    bach.util.removeTree(temp);
   }
 }
