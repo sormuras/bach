@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -39,6 +40,18 @@ class ProjectTests {
             IllegalArgumentException.class,
             () -> Project.builder().newModuleGroup("name").end().newModuleGroup("name"));
     assertEquals("name already defined", e.getMessage());
+  }
+
+  @Test
+  void defaults() {
+    var project = Project.builder().build();
+    assertEquals("bach", project.name());
+    assertEquals("1.0.0-SNAPSHOT", project.version());
+    assertEquals("", project.entryPoint());
+    assertEquals(Paths.get("target", "bach"), project.target());
+    assertEquals(0, project.moduleGroups().size());
+    assertThrows(NoSuchElementException.class, () -> project.moduleGroup("main"));
+    assertThrows(NoSuchElementException.class, () -> project.moduleGroup("test"));
   }
 
   @Test
@@ -75,7 +88,14 @@ class ProjectTests {
     assertEquals("main", main.name());
     assertEquals(mainDestination, main.destination());
     assertEquals(List.of(Paths.get("src", "main", "java")), main.moduleSourcePath());
-    assertTrue(main.patchModule().isEmpty());
     assertTrue(main.modulePath().isEmpty());
+    assertTrue(main.patchModule().isEmpty());
+
+    var test = project.moduleGroup("test");
+    assertEquals("test", test.name());
+    assertEquals(testDestination, test.destination());
+    assertEquals(List.of(Paths.get("src", "test", "java")), test.moduleSourcePath());
+    assertEquals(List.of(mainDestination, dependencies), test.modulePath());
+    assertEquals(List.of(Paths.get("src/main/java/hello")), test.patchModule().get("hello"));
   }
 }

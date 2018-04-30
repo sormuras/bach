@@ -1314,6 +1314,9 @@ class Project {
   }
 
   ModuleGroup moduleGroup(String name) {
+    if (!moduleGroups.containsKey(name)) {
+      throw new NoSuchElementException("ModuleGroup with name `" + name + "` not found");
+    }
     return moduleGroups.get(name);
   }
 
