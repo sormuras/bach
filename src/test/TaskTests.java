@@ -16,10 +16,9 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,11 +59,7 @@ class TaskTests {
             .build();
     var runner = new Task.RunnerTask(bach, project);
     var result = runner.get();
-    assertLinesMatch(
-        List.of(
-            "Error occurred during initialization of boot layer",
-            "java.lang.module.FindException: Module world not found"),
-        Arrays.asList(context.bytes.toString().split("\\R")));
+    assertTrue(context.bytes.toString().contains("world not found"));
     assertEquals(1, result.intValue());
   }
 }

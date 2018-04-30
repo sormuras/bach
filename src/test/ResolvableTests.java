@@ -17,13 +17,10 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,42 +54,32 @@ class ResolvableTests {
 
   @ParameterizedTest
   @CsvSource({"1.0.0, 6588", "1.1.0, 6819"})
-  void resolveOpenTest4J(String version, long expectedJarSize, Bach.Util util) throws Exception {
+  void resolveFromMavenCentral(String version, long expectedSize, Bach.Util util) throws Exception {
     var resolvable =
         Bach.Resolvable.builder()
             .group("org.opentest4j")
             .artifact("opentest4j")
             .version(version)
-            .classifier("")
-            .kind("jar")
             .build();
-    var temp = Files.createTempDirectory("resolveOpenTest4J-");
+    var temp = Files.createTempDirectory("resolveFromMavenCentral-");
     var jar = util.resolve(resolvable, temp, URI.create("http://central.maven.org/maven2"));
     assertTrue(Files.exists(jar));
-    assertEquals(expectedJarSize, Files.size(jar));
+    assertEquals(expectedSize, Files.size(jar));
     util.removeTree(temp);
   }
 
   @Test
-  @Disabled("does not compute, yet")
   void resolveFromJitPack(BachContext context) throws Exception {
     var resolvable =
         Bach.Resolvable.builder()
             .group("com.github.sormuras")
-            .artifact("bach")
+            .artifact("beethoven")
             .version("master-SNAPSHOT")
-            .classifier("")
-            .kind("jar")
             .build();
     var temp = Files.createTempDirectory("resolveFromJitPack-");
-    var jarOpt = context.bach.util.resolve(resolvable, temp);
-    if (jarOpt.isPresent()) {
-      var jar = jarOpt.get();
-      assertTrue(Files.exists(jar));
-      assertEquals(6588, Files.size(jar));
-    } else {
-      assertLinesMatch(List.of("1", "2"), context.recorder.all);
-    }
+    var jar = context.bach.util.resolve(resolvable, temp, URI.create("https://jitpack.io"));
+    assertTrue(Files.exists(jar));
+    assertEquals(133464, Files.size(jar));
     context.bach.util.removeTree(temp);
   }
 }
