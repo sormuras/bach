@@ -1,8 +1,8 @@
-# "Testing In The Modular World"
+# Testing In The Modular World
 
----
++++
 
-# "Testing In The Modular World"
+### Testing In The Modular World
 
 Can't say what I'm doing here
 
@@ -10,16 +10,16 @@ But I hope to see much clearer,
 
 After living in the material world
 
-(...)
+- George Harrison
 
-After testing in the modular world
++++
 
----
+### Testing In The Modular World
 
-# "Testing In The Modular World"
+Overview
 
-- Using JUnit 5 to launch tests
-- Organized in Java Modules
+- Using **JUnit** 5 to launch tests
+- Organized in **Java Modules**
 
 ---
 
