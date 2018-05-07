@@ -1,60 +1,69 @@
-# Testing In The Modular World
+# Testing In The
+# Modular World
+
+---
+
+## Testing In The Modular World
+
+_"Can't say what I'm doing here_
+
+_But I hope to see much clearer,_
+
+_After living in the material world."_
+
+**George Harrison**
 
 +++
 
-### Testing In The Modular World
+## Testing In The Modular World
+## Overview
 
-Can't say what I'm doing here
-
-But I hope to see much clearer,
-
-After living in the material world
-
-- George Harrison
-
-+++
-
-### Testing In The Modular World
-
-Overview
-
-- Using **JUnit** 5 to launch tests
-- Organized in **Java Modules**
+- Using **JUnit 5** ✅ to launch tests
+- Organized in **Java ☕ Modules** 
+- Foundation tools `javac` and `java`
 
 ---
 
 # What is JUnit 5?
 
----
- 
-#### JUnit 5 = JUnit Platform + ...
++++
 
-- Foundation for launching testing frameworks |
-- Defines and uses `TestEngine` interface     |
+# "There is no JUnit 5."
 
 +++
  
-#### JUnit 5 = ... JUnit Jupiter + ...
+#### JUnit 5 = 
+# Platform
 
-- New programming model for writing tests    |
-- New extension model for writing extensions |
-- `JupiterTestEngine implements TestEngine`  |
+- Foundation for launching testing frameworks
+- Defines and uses `TestEngine` interface
 
 +++
  
-#### JUnit 5 = ... JUnit Vintage + ...
+#### JUnit 5 = Platform + ...
+# Jupiter
 
-- Enables running JUnit 3 and JUnit 4 tests |
-- `VintageTestEngine implements TestEngine` |
+- New programming model for writing tests
+- New extension model for writing extensions
+- `JupiterTestEngine implements TestEngine`
+
++++
+ 
+#### JUnit 5 = Platform + Jupiter + ... 
+# Vintage
+
+- Enables running JUnit 3 and JUnit 4 tests
+- `VintageTestEngine implements TestEngine`
 
 +++
 
-#### JUnit 5 = ... + Your Testing Framework
+#### JUnit 5 = Platform + Jupiter + Vintage 
+# Your Testing Framework
 
-- What is a test? You define it!          |
-- How is a test evaluated? You define it! |
-- `YourTestEngine implements TestEngine`  |
-- Get tooling support for granted.        |
+- What is a test? You define it!
+- How is a test evaluated? You define it!
+- `YourTestEngine implements TestEngine`
+- Get tooling support for granted.
 
 ---
 
@@ -152,9 +161,9 @@ void mySecondTest() {...}
 
 # Simple Jar
 
-- com.example.tool.jar
--   com.example.tool
--   com.example.tool.internal
+- `com.example.tool-1.9.jar`
+  - _com.example.tool_ 
+  - _com.example.tool.internal_ 
 
 +++
 
