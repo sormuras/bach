@@ -1,27 +1,14 @@
 //usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
 
 /*
- * Download "Bach.java" and "Bach.jsh" from github to local "target" directory.
+ * Open and source "Bach.java" and "Bach.jsh" into this jshell session.
  */
-var target = Files.createDirectories(Paths.get("target"))
-var remote = new URL("https://github.com/sormuras/bach/raw/master/src/bach/")
-for (var name : Set.of("Bach.java", "Bach.jsh")) {
-  var script = target.resolve(name);
-  // if (Files.exists(script)) continue; // uncomment to preserve existing files
-  try (var stream = new URL(remote, name).openStream()) {
-    Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
-  }
-}
-
-/*
- * Source "Bach.java" and "Bach.jsh" into this jshell session.
- */
-/open target/Bach.java
-/open target/Bach.jsh
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.jsh
 
 /*
  * Use it!
  */
-java("--version")
+var code = java("--version")
 
-/exit
+/exit code
