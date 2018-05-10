@@ -18,12 +18,12 @@
 /*
  * Define convenient short names for the foundation JDK tools and commands.
  */
-void java(Object... args) { new Bach().run("java", args); }
-void javac(Object... args) { new Bach().run("javac", args); }
-void javadoc(Object... args) { new Bach().run("javadoc", args); }
-void jar(Object... args) { new Bach().run("jar", args); }
-void jlink(Object... args) { new Bach().run("jlink", args); }
-void jmod(Object... args) { new Bach().run("jmod", args); }
-void jdeps(Object... args) { new Bach().run("jdeps", args); }
-void jdeprscan(Object... args) { new Bach().run("jdeprscan", args); }
-void javap(Object... args) { new Bach().run("javap", args); }
+int java(Object... args) { return new Bach().run("java", args); }
+int javac(Object... args) { return new Bach().run("javac", args); }
+int javadoc(Object... args) { return new Bach().run("javadoc", args); }
+int jar(Object... args) { return new Bach().run("jar", args); }
+int jlink(Object... args) { return new Bach().run("jlink", args); }
+int jmod(Object... args) { return new Bach().run("jmod", args); }
+int jdeps(Object... args) { return new Bach().run("jdeps", args); }
+int jdeprscan(Object... args) { return new Bach().run("jdeprscan", args); }
+int javap(Object... args) { return new Bach().run("javap", args); }
