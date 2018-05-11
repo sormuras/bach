@@ -1,4 +1,4 @@
-//usr/bin/env jshell --show-version --execution local "$0" "$@"; exit $?
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 /*
  * Open and source "Bach.java" and "Bach.jsh" into this jshell session.
