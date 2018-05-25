@@ -91,7 +91,7 @@ class Build {
     String file = name + "-" + version + "-all-deps.jar";
     URI uri = URI.create(String.join("/", repo, user, name, name, version, file));
     */
-    var version = "1.5";
+    var version = "1.6";
     var base = "https://github.com/google/";
     var name = "google-java-format";
     var file = name + "-" + version + "-all-deps.jar";
