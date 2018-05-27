@@ -32,7 +32,7 @@ function initialize() {
 
     feature='ea'
     license='GPL'
-    os='linux-x64'
+    os='?'
     url='?'
     workspace="${HOME}"
     target='?'
@@ -218,6 +218,13 @@ function prepare_variables() {
       feature='<overridden by custom url>'
       license='<overridden by custom url>'
     fi
+    if [[ ${os} == '?' ]]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            os = 'osx-x64'
+        else
+            os = 'linux-x64'
+        fi
+    fi
     archive="${workspace}/$(basename ${url})"
     status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
 }
@@ -242,13 +249,13 @@ function download_and_extract_and_set_target() {
     local tar_options="-z --file ${archive}" # "--auto-compress" is not supported on mac osx, using "-z"
 
     verbose "Using wget options: ${wget_options}"
-
     if [[ ${license} == 'GPL' ]]; then
         wget ${wget_options} ${url}
     else
         wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
     fi
 
+    verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
         if [[ ${os} != 'osx-x64' ]]; then
@@ -256,12 +263,11 @@ function download_and_extract_and_set_target() {
         else
             target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
         fi
+        verbose "Set target to: ${target}"
     else
         mkdir --parents ${target}
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
-
-    verbose "target=${target}"
 
     # Link to system certificates
     # http://openjdk.java.net/jeps/319
