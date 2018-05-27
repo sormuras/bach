@@ -251,7 +251,7 @@ function download_and_extract_and_set_target() {
 
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
-        target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+        target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut -f 1 -d '/' -)
     else
         mkdir --parents ${target}
         tar --extract ${tar_options} -C "${target}" --strip-components=1
