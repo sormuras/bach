@@ -32,7 +32,7 @@ function initialize() {
 
     feature='ea'
     license='GPL'
-    os='linux-64'
+    os='linux-x64'
     url='?'
     workspace="${HOME}"
     target='?'
@@ -256,6 +256,10 @@ function download_and_extract_and_set_target() {
         mkdir --parents ${target}
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
+
+    verbose "target=${target}"
+
+    ls -la
 
     # Link to system certificates
     # http://openjdk.java.net/jeps/319
