@@ -220,9 +220,9 @@ function prepare_variables() {
     fi
     if [[ ${os} == '?' ]]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            os = 'osx-x64'
+            os='osx-x64'
         else
-            os = 'linux-x64'
+            os='linux-x64'
         fi
     fi
     archive="${workspace}/$(basename ${url})"
