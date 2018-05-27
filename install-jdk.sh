@@ -239,7 +239,7 @@ function download_and_extract_and_set_target() {
     local local="--directory-prefix ${workspace}"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
-    local tar_options="--auto-compress --file ${archive}"
+    local tar_options="-z --file ${archive}" # "--auto-compress" is not supported on mac osx, using "-z"
 
     verbose "Using wget options: ${wget_options}"
 
