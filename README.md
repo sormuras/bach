@@ -72,6 +72,7 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
 
 -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
 -l|--license GPL|BCL      License defaults to "GPL"
+-o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
 -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
 -w|--workspace PATH       Working directory defaults to user's ${HOME}
 -t|--target PATH          Target directory, defaults to first component of the tarball

@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-04-30'
+    readonly script_version='2018-05-27'
 
     dry=false
     silent=false
@@ -32,6 +32,7 @@ function initialize() {
 
     feature='ea'
     license='GPL'
+    os='?'
     url='?'
     workspace="${HOME}"
     target='?'
@@ -53,6 +54,7 @@ Options:
 
   -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
   -l|--license GPL|BCL      License defaults to "GPL"
+  -o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
   -t|--target PATH          Target directory, defaults to first component of the tarball
@@ -121,6 +123,11 @@ function parse_options() {
                 verbose "license=${license}"
                 shift
                 ;;
+            -o|-O|--os)
+                os="$1"
+                verbose "os=${os}"
+                shift
+                ;;
             -u|-U|--url)
                 url="$1"
                 verbose "url=${url}"
@@ -187,29 +194,36 @@ function determine_url() {
 
     # Archived feature or official build with BCL license?
     case "${feature}-${license}" in
-        9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz"; return;;
-        9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_linux-x64_bin.tar.gz"; return;;
-       10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz"; return;;
+        9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
+        9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
+       10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_${os}_bin.tar.gz"; return;;
     esac
 
     # EA, RC or GA build?
     local JAVA_NET="http://jdk.java.net/${feature}"
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
     if [[ "${feature}" == "${latest_jdk}" ]]; then
-        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
+        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+${os}_bin.tar.gz$")
         return
     fi
-    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+linux-x64_bin.tar.gz$")
+    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+${os}_bin.tar.gz$")
 }
 
 function prepare_variables() {
+    if [[ ${os} == '?' ]]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          os='osx-x64'
+        else
+          os='linux-x64'
+        fi
+    fi
     if [[ ${url} == '?' ]]; then
-      determine_latest_jdk
-      perform_sanity_checks
-      determine_url
+        determine_latest_jdk
+        perform_sanity_checks
+        determine_url
     else
-      feature='<overridden by custom url>'
-      license='<overridden by custom url>'
+        feature='<overridden by custom url>'
+        license='<overridden by custom url>'
     fi
     archive="${workspace}/$(basename ${url})"
     status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
@@ -220,7 +234,9 @@ cat << EOF
 Variables:
   feature = ${feature}
   license = ${license}
-      url = ${url} [${status}]
+       os = ${os}
+      url = ${url}
+   status = ${status}
   archive = ${archive}
 EOF
 }
@@ -230,19 +246,24 @@ function download_and_extract_and_set_target() {
     local local="--directory-prefix ${workspace}"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
-    local tar_options="--auto-compress --file ${archive}"
+    local tar_options="-z --file ${archive}" # "--auto-compress" is not supported on mac osx, using "-z"
 
     verbose "Using wget options: ${wget_options}"
-
     if [[ ${license} == 'GPL' ]]; then
         wget ${wget_options} ${url}
     else
         wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
     fi
 
+    verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
-        target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+        if [[ ${os} != 'osx-x64' ]]; then
+            target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+        else
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+        fi
+        verbose "Set target to: ${target}"
     else
         mkdir --parents ${target}
         tar --extract ${tar_options} -C "${target}" --strip-components=1

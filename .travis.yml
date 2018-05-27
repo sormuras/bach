@@ -8,10 +8,13 @@ before_install:
 
 matrix:
   include:
-    - env: JDK='Oracle JDK 11'
-      install: . ./install-jdk.sh -F 11 -L BCL
-    - env: JDK='OpenJDK 11'
-      install: . ./install-jdk.sh -F 11 -L GPL
+    - os: linux
+      env: JDK='OpenJDK 11'
+      install: . ./install-jdk.sh --verbose
+    - os: osx
+      env: JDK='OpenJDK 11'
+      before_install: unset -f cd
+      install: . ./install-jdk.sh --verbose
 
 script:
 - java --version
