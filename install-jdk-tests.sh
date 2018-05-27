@@ -4,7 +4,6 @@ echo "`basename "$0"` -- testing main variants in dry-run mode..."
 
 FEATURE='9'
 LICENSES=(GPL BCL)
-OSES=(linux-x64 osx-x64 windows-x64)
 
 while [ "${FEATURE}" != '99' ]
 do
@@ -13,12 +12,10 @@ do
     break
   fi
   for LICENSE in "${LICENSES[@]}"; do
-  for OS in "${OSES[@]}"; do
     echo
     set -x
-    ./install-jdk.sh --dry-run --license ${LICENSE} --feature ${FEATURE} --os ${OS}
+    ./install-jdk.sh --dry-run --license ${LICENSE} --feature ${FEATURE}
     { set +x; } 2>/dev/null
-  done
   done
   FEATURE=$[${FEATURE} +1]
 done
