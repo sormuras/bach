@@ -15,7 +15,8 @@ matrix:
     - env: JDK='OpenJDK 11' OS='OSX'
       os: osx
       install:
-       - rvm get head
+       - sw_vers
+       - unset -f cd
        - . ./install-jdk.sh --verbose -F 11 -L GPL -O osx-x64
 
 script:
