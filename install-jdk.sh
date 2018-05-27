@@ -54,7 +54,7 @@ Options:
 
   -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
   -l|--license GPL|BCL      License defaults to "GPL"
-  -o|--os "linux-x64"       Operating system defaults to "linux-x64" (works best with GPL license)
+  -o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
   -t|--target PATH          Target directory, defaults to first component of the tarball
@@ -210,20 +210,20 @@ function determine_url() {
 }
 
 function prepare_variables() {
-    if [[ ${url} == '?' ]]; then
-      determine_latest_jdk
-      perform_sanity_checks
-      determine_url
-    else
-      feature='<overridden by custom url>'
-      license='<overridden by custom url>'
-    fi
     if [[ ${os} == '?' ]]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            os='osx-x64'
+          os='osx-x64'
         else
-            os='linux-x64'
+          os='linux-x64'
         fi
+    fi
+    if [[ ${url} == '?' ]]; then
+        determine_latest_jdk
+        perform_sanity_checks
+        determine_url
+    else
+        feature='<overridden by custom url>'
+        license='<overridden by custom url>'
     fi
     archive="${workspace}/$(basename ${url})"
     status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
