@@ -281,7 +281,7 @@ function main() {
     download_and_extract_and_set_target
 
     export JAVA_HOME=$(cd "${target}"; pwd)
-    if [[ ${os} == 'osx-x64' ]]; then JAVA_HOME=${JAVA_HOME}/Contents/Home; fi
+    if [[ ${os} == 'osx-x64' ]]; then JAVA_HOME="${JAVA_HOME}/Contents/Home"; fi
     export PATH=${JAVA_HOME}/bin:$PATH
 
     if [[ ${silent} == false ]]; then java --version; fi
