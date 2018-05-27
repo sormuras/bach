@@ -251,15 +251,17 @@ function download_and_extract_and_set_target() {
 
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
-        target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut -f 1 -d '/' -)
+        if [[ ${os} != 'osx-x64' ]]; then
+            target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+        else
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+        fi
     else
         mkdir --parents ${target}
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
 
     verbose "target=${target}"
-
-    ls -la
 
     # Link to system certificates
     # http://openjdk.java.net/jeps/319
@@ -285,7 +287,6 @@ function main() {
     download_and_extract_and_set_target
 
     export JAVA_HOME=$(cd "${target}"; pwd)
-    if [[ ${os} == 'osx-x64' ]]; then JAVA_HOME="${JAVA_HOME}/Contents/Home"; fi
     export PATH=${JAVA_HOME}/bin:$PATH
 
     if [[ ${silent} == false ]]; then java --version; fi
