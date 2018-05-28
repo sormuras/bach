@@ -2,20 +2,18 @@ sudo: false
 dist: trusty
 language: java
 
+matrix:
+  include:
+  - os: linux
+  - os: osx
+    osx_image: xcode9.3
+
 # https://github.com/travis-ci/travis-ci/issues/8408
 before_install:
 - unset _JAVA_OPTIONS
 
-matrix:
-  include:
-    - os: linux
-      env: JDK='OpenJDK 11'
-      install: . ./install-jdk.sh --verbose
-    - os: osx
-      env: JDK='OpenJDK 11'
-      install:
-      - unset -f cd
-      - . ./install-jdk.sh --verbose
+install:
+- . ./install-jdk.sh --verbose
 
 script:
 - java --version
