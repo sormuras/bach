@@ -6,11 +6,12 @@ matrix:
   include:
   - os: linux
   - os: osx
-    osx_image: xcode9.3
 
-# https://github.com/travis-ci/travis-ci/issues/8408
 before_install:
-- unset _JAVA_OPTIONS
+# https://github.com/travis-ci/travis-ci/issues/8408
+- unset -v _JAVA_OPTIONS
+# https://github.com/travis-ci/travis-ci/issues/8703
+- unset -f cd
 
 install:
 - . ./install-jdk.sh --verbose
