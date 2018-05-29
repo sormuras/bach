@@ -15,7 +15,7 @@ before_install:
 
 install:
 - . ./install-jdk.sh --verbose --target "target"
-- . ./install-jdk.sh --verbose
+- ./install-jdk.sh --verbose
 
 script:
 - java --version
