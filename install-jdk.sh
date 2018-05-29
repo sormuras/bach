@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-05-27'
+    readonly script_version='2018-05-29'
 
     dry=false
     silent=false
@@ -283,7 +283,7 @@ function download_and_extract_and_set_target() {
         echo "Set target to: ${target}"
         echo "Content of target directory:"
         ls "${target}"
-        echo "Content of targets' release file:"
+        echo "Content of release file:"
         cat "${target}/release"
     fi
 
@@ -299,10 +299,9 @@ function download_and_extract_and_set_target() {
 
 function main() {
     initialize
-    parse_options "$@"
-
     say "$script_name $script_version"
 
+    parse_options "$@"
     prepare_variables
 
     if [[ ${silent} == false ]]; then print_variables; fi
