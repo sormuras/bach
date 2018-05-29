@@ -224,6 +224,7 @@ function prepare_variables() {
     else
         feature='<overridden by custom url>'
         license='<overridden by custom url>'
+        os='<overridden by custom url>'
     fi
     archive="${workspace}/$(basename ${url})"
     status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
@@ -258,22 +259,32 @@ function download_and_extract_and_set_target() {
     verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
-        if [[ ${os} != 'osx-x64' ]]; then
+        if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
         else
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)
         fi
-        verbose "Set target to: ${target}"
     else
-        mkdir -p "${target}" # "--parents" is not supported on mac osx, using "-p"
-        tar --extract ${tar_options} -C "${target}" --strip-components=1
+        if [[ "$OSTYPE" != "darwin"* ]]; then
+            mkdir --parents "${target}"
+            tar --extract ${tar_options} -C "${target}" --strip-components=1
+        else
+            mkdir -p "${target}"
+            tar --extract ${tar_options} -C "${target}" --strip-components=2
+        fi
+    fi
+
+    # Fix path to JDK Home...
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        target="${target}"/Contents/Home
     fi
 
     if [[ ${verbose} == true ]]; then
-        echo "Content of targets' parent directory:"
-        ls -la "${target}/.."
+        echo "Set target to: ${target}"
         echo "Content of target directory:"
         ls -la "${target}"
+        echo "Content of targets' parent directory:"
+        ls "${target}/.."
     fi
 
     # Link to system certificates
