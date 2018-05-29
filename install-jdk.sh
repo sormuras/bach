@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-05-27'
+    readonly script_version='2018-05-29'
 
     dry=false
     silent=false
@@ -184,7 +184,7 @@ function perform_sanity_checks() {
         script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
     if [[ -d "$target" ]]; then
-        script_exit "Target directory must not exist, but it does: $(du -hs ${target})" 3
+        script_exit "Target directory must not exist, but it does: $(du -hs '${target}')" 3
     fi
 }
 
@@ -224,6 +224,7 @@ function prepare_variables() {
     else
         feature='<overridden by custom url>'
         license='<overridden by custom url>'
+        os='<overridden by custom url>'
     fi
     archive="${workspace}/$(basename ${url})"
     status=$(curl -o /dev/null --silent --head --write-out %{http_code} ${url})
@@ -258,15 +259,32 @@ function download_and_extract_and_set_target() {
     verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
-        if [[ ${os} != 'osx-x64' ]]; then
+        if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
         else
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)
         fi
-        verbose "Set target to: ${target}"
     else
-        mkdir --parents ${target}
-        tar --extract ${tar_options} -C "${target}" --strip-components=1
+        if [[ "$OSTYPE" != "darwin"* ]]; then
+            mkdir --parents "${target}"
+            tar --extract ${tar_options} -C "${target}" --strip-components=1
+        else
+            mkdir -p "${target}"
+            tar --extract ${tar_options} -C "${target}" --strip-components=2
+        fi
+    fi
+
+    # Fix path to JDK Home...
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        target="${target}"/Contents/Home
+    fi
+
+    if [[ ${verbose} == true ]]; then
+        echo "Set target to: ${target}"
+        echo "Content of target directory:"
+        ls "${target}"
+        echo "Content of release file:"
+        cat "${target}/release"
     fi
 
     # Link to system certificates
@@ -281,10 +299,9 @@ function download_and_extract_and_set_target() {
 
 function main() {
     initialize
-    parse_options "$@"
-
     say "$script_name $script_version"
 
+    parse_options "$@"
     prepare_variables
 
     if [[ ${silent} == false ]]; then print_variables; fi
