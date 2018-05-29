@@ -139,7 +139,7 @@ function parse_options() {
                 shift
                 ;;
             -t|-T|--target)
-                target=$(readlink -f "$1")
+                target="$1"
                 verbose "target=${target}"
                 shift
                 ;;
