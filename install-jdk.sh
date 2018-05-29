@@ -265,7 +265,7 @@ function download_and_extract_and_set_target() {
         fi
         verbose "Set target to: ${target}"
     else
-        mkdir --parents "${target}"
+        mkdir -p "${target}" # "--parents" is not supported on mac osx, using "-p"
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
 
