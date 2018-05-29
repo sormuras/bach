@@ -262,7 +262,7 @@ function download_and_extract_and_set_target() {
         if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
         else
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
         fi
     else
         if [[ "$OSTYPE" != "darwin"* ]]; then
