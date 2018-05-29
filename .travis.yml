@@ -14,7 +14,7 @@ before_install:
 - unset -f cd
 
 install:
-- . ./install-jdk.sh --verbose
+- . ./install-jdk.sh --verbose --target "openjdk-ea"
 
 script:
 - java --version
