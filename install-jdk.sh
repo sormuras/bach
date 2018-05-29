@@ -184,7 +184,7 @@ function perform_sanity_checks() {
         script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
     if [[ -d "$target" ]]; then
-        script_exit "Target directory must not exist, but it does: $(du -hs ${target})" 3
+        script_exit "Target directory must not exist, but it does: $(du -hs '${target}')" 3
     fi
 }
 
@@ -265,7 +265,7 @@ function download_and_extract_and_set_target() {
         fi
         verbose "Set target to: ${target}"
     else
-        mkdir --parents ${target}
+        mkdir --parents "${target}"
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
 
