@@ -282,9 +282,9 @@ function download_and_extract_and_set_target() {
     if [[ ${verbose} == true ]]; then
         echo "Set target to: ${target}"
         echo "Content of target directory:"
-        ls -la "${target}"
-        echo "Content of targets' parent directory:"
-        ls "${target}/.."
+        ls "${target}"
+        echo "Content of targets' release file:"
+        cat "${target}/release"
     fi
 
     # Link to system certificates
