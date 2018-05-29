@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-05-29'
+    readonly script_version='2018-05-30'
 
     dry=false
     silent=false
@@ -270,13 +270,8 @@ function download_and_extract_and_set_target() {
             tar --extract ${tar_options} -C "${target}" --strip-components=1
         else
             mkdir -p "${target}"
-            tar --extract ${tar_options} -C "${target}" --strip-components=2
+            tar --extract ${tar_options} -C "${target}" --strip-components=4 # . / <jdk> / Contents / Home
         fi
-    fi
-
-    # Fix path to JDK Home...
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        target="${target}"/Contents/Home
     fi
 
     if [[ ${verbose} == true ]]; then
