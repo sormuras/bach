@@ -266,8 +266,11 @@ function download_and_extract_and_set_target() {
         verbose "Set target to: ${target}"
     else
         mkdir -p "${target}" # "--parents" is not supported on mac osx, using "-p"
+        verbose $(tar --help)
         tar --extract ${tar_options} -C "${target}" --strip-components=1
     fi
+
+    verbose $(ls -la "${target}")
 
     # Link to system certificates
     # http://openjdk.java.net/jeps/319
