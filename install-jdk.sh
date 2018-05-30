@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Install JDK for Linux
+# Install JDK for Linux and Mac OS
 #
 # This script determines the most recent early-access build number,
 # downloads the JDK archive to the user home directory and extracts
@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-05-30'
+    readonly script_version='2018-05-30.a'
 
     dry=false
     silent=false
@@ -243,12 +243,13 @@ EOF
 }
 
 function download_and_extract_and_set_target() {
-    local quiet=''; if [[ ${silent} == true ]]; then quiet='--quiet'; fi
+    local quiet='--quiet'; if [[ ${verbose} == true ]]; then quiet=''; fi
     local local="--directory-prefix ${workspace}"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
     local tar_options="-z --file ${archive}" # "--auto-compress" is not supported on mac osx, using "-z"
 
+    say "Downloading JDK from ${url}..."
     verbose "Using wget options: ${wget_options}"
     if [[ ${license} == 'GPL' ]]; then
         wget ${wget_options} ${url}
