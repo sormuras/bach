@@ -1345,9 +1345,13 @@ class Project {
       return this;
     }
 
-    ProjectBuilder entryPoint(String mainModule, String mainClass) {
-      project.entryPoint = mainModule + '/' + mainClass;
+    ProjectBuilder entryPoint(String entryPoint) {
+      project.entryPoint = entryPoint;
       return this;
+    }
+
+    ProjectBuilder entryPoint(String mainModule, String mainClass) {
+      return entryPoint(mainModule + '/' + mainClass);
     }
 
     ProjectBuilder target(Path target) {
