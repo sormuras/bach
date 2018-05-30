@@ -2,19 +2,16 @@ sudo: false
 dist: trusty
 language: java
 
-matrix:
-  include:
-  - os: linux
-  - os: osx
+os:
+- linux
+- osx
 
 before_install:
 # https://github.com/travis-ci/travis-ci/issues/8408
 - unset -v _JAVA_OPTIONS
-# https://github.com/travis-ci/travis-ci/issues/8703
-- unset -f cd
 
 install:
-- . ./install-jdk.sh --verbose
+- . ./install-jdk.sh
 
 script:
 - java --version
