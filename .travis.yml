@@ -9,9 +9,11 @@ os:
 before_install:
 # https://github.com/travis-ci/travis-ci/issues/8408
 - unset -v _JAVA_OPTIONS
+# https://github.com/travis-ci/travis-ci/issues/8703
+- unset -f cd
 
 install:
-- . ./install-jdk.sh
+- . ./install-jdk.sh --verbose
 
 script:
 - java --version
