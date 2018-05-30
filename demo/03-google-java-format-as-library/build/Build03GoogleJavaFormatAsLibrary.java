@@ -13,7 +13,7 @@ public class Build03GoogleJavaFormatAsLibrary {
     // module-path
     bach.util.download(
         URI.create(
-            "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.6-SNAPSHOT/google-java-format-1.6-20180410.041304-23.jar"),
+            "http://central.maven.org/maven2/com/google/googlejavaformat/google-java-format/1.6/google-java-format-1.6.jar"),
         modulePath);
     bach.util.download(
         URI.create(
