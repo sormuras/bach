@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-05-30.a'
+    readonly script_version='2018-06-01'
 
     dry=false
     silent=false
@@ -197,6 +197,9 @@ function determine_url() {
         9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
         9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
        10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_${os}_bin.tar.gz"; return;;
+       # Workaround for https://twitter.com/sormuras/status/1002226003647791105
+       11-GPL) url="${DOWNLOAD}/early_access/jdk11/16/${license}/openjdk-11-ea+16_${os}_bin.tar.gz"; return;;
+       11-BCL) url="${DOWNLOAD}/early_access/jdk11/16/${license}/jdk-11-ea+16_${os}_bin.tar.gz"; return;;
     esac
 
     # EA, RC or GA build?
@@ -280,7 +283,7 @@ function download_and_extract_and_set_target() {
         echo "Content of target directory:"
         ls "${target}"
         echo "Content of release file:"
-        cat "${target}/release"
+        [[ ! -f "${target}/release" ]] || cat "$${target}/release"
     fi
 
     # Link to system certificates
