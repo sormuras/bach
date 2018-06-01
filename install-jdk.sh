@@ -283,7 +283,7 @@ function download_and_extract_and_set_target() {
         echo "Content of target directory:"
         ls "${target}"
         echo "Content of release file:"
-        [[ ! -f "${target}/release" ]] || cat "$${target}/release"
+        [[ ! -f "${target}/release" ]] || cat "${target}/release"
     fi
 
     # Link to system certificates
