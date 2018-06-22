@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-06-01'
+    readonly script_version='2018-06-22'
 
     dry=false
     silent=false
@@ -261,7 +261,7 @@ function download_and_extract_and_set_target() {
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
         if [[ "$OSTYPE" != "darwin"* ]]; then
-            target="${workspace}"/$(tar --list ${tar_options} | head -1 | cut --fields 1 --delimiter '/' -)
+            target="${workspace}"/$(tar --list ${tar_options} | grep 'bin/javac' | tr '/' '\n' | tail -3 | head -1)
         else
             target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
         fi
