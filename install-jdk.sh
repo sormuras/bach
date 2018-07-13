@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-06-22'
+    readonly script_version='2018-07-13'
 
     dry=false
     silent=false
@@ -192,21 +192,18 @@ function determine_url() {
     local DOWNLOAD='https://download.java.net/java'
     local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
 
-    # Archived feature or official build with BCL license?
+    # Archived feature or official GA build?
     case "${feature}-${license}" in
         9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
         9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
+       10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.1/fb4372174a714e6b8c52526dc134031e/10/openjdk-10.0.1_${os}_bin.tar.gz"; return;;
        10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_${os}_bin.tar.gz"; return;;
     esac
 
-    # EA, RC or GA build?
+    # EA or RC build?
     local JAVA_NET="http://jdk.java.net/${feature}"
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
-    if [[ "${feature}" == "${latest_jdk}" ]]; then
-        url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+${os}_bin.tar.gz$")
-        return
-    fi
-    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/.*jdk-${feature}.+${os}_bin.tar.gz$")
+    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+${os}_bin.tar.gz$")
 }
 
 function prepare_variables() {
