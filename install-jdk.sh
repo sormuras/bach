@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-07-13'
+    readonly script_version='2018-07-17'
 
     dry=false
     silent=false
@@ -196,8 +196,8 @@ function determine_url() {
     case "${feature}-${license}" in
         9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
         9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
-       10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.1/fb4372174a714e6b8c52526dc134031e/10/openjdk-10.0.1_${os}_bin.tar.gz"; return;;
-       10-BCL) url="${ORACLE}/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_${os}_bin.tar.gz"; return;;
+       10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
+       10-BCL) url="${ORACLE}/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_${os}_bin.tar.gz"; return;;
     esac
 
     # EA or RC build?
