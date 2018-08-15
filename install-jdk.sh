@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-07-17'
+    readonly script_version='2018-08-15'
 
     dry=false
     silent=false
