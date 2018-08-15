@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-07-17'
+    readonly script_version='2018-08-15'
 
     dry=false
     silent=false
@@ -203,7 +203,11 @@ function determine_url() {
     # EA or RC build?
     local JAVA_NET="http://jdk.java.net/${feature}"
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
-    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+${os}_bin.tar.gz$")
+    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.+/${license}/.*jdk-${feature}.+${os}_bin.tar.gz$" || true)
+
+    if [[ -z ${url} ]]; then
+        script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1
+    fi
 }
 
 function prepare_variables() {
