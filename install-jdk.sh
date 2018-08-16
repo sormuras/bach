@@ -248,7 +248,7 @@ function download_and_extract_and_set_target() {
     local local="--directory-prefix ${workspace}"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
-    local tar_options="--file ${archive}" # "--auto-compress" is not supported on mac osx, using "-z"
+    local tar_options="--file ${archive}"
 
     say "Downloading JDK from ${url}..."
     verbose "Using wget options: ${wget_options}"
