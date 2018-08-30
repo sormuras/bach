@@ -70,7 +70,8 @@ class Build {
     if (!classifier.isEmpty() && !classifier.startsWith("-")) {
       classifier = "-" + classifier;
     }
-    var repo = "https://repo.maven.apache.org/maven2";
+    // var repo = "https://repo.maven.apache.org/maven2";
+    var repo = "http://central.maven.org/maven2";
     var file = artifact + "-" + version + classifier + ".jar";
     var uri = URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
     return download(uri, MAVEN, file);
