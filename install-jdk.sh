@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2018-09-25'
+    readonly script_version='2018-09-26'
 
     dry=false
     silent=false
@@ -53,7 +53,7 @@ Options:
   -v|--verbose              Displays verbose output
 
   -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
-  -l|--license GPL|BCL      License defaults to "GPL"
+  -l|--license GPL|BCL      License defaults to "GPL", BCL also indicates OTN-LA for Oracle Java SE
   -o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
@@ -198,9 +198,8 @@ function determine_url() {
         9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
        10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
        10-BCL) url="${ORACLE}/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_${os}_bin.tar.gz"; return;;
-       11-GPL) url="${DOWNLOAD}/early_access/jdk11/28/GPL/openjdk-11+28_${os}_bin.tar.gz"; return;;
+       11-GPL) url="${DOWNLOAD}/GA/jdk11/28/GPL/openjdk-11+28_${os}_bin.tar.gz"; return;;
        11-BCL) url="${ORACLE}/11+28/55eed80b163941c8885ad9298e6d786a/jdk-11_${os}_bin.tar.gz"; return;;
-       # omit support for 11-BCL, for now
     esac
 
     # EA or RC build?
