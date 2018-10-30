@@ -99,7 +99,7 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[jshell]: https://docs.oracle.com/javase/10/tools/jshell.htm
+[jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
 [Bach.java]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.java
 [Bach.jsh]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.jsh
 [bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/demo/00-bootstrap/bootstrap.jsh
