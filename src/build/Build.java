@@ -45,8 +45,8 @@ class Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String JUNIT_JUPITER = "5.2.0";
-  String JUNIT_PLATFORM = "1.2.0";
+  String JUNIT_JUPITER = "5.3.1";
+  String JUNIT_PLATFORM = "1.3.1";
   String OPENTEST4J = "1.1.0";
   String API_GUARDIAN = "1.0.0";
 
@@ -70,8 +70,7 @@ class Build {
     if (!classifier.isEmpty() && !classifier.startsWith("-")) {
       classifier = "-" + classifier;
     }
-    // var repo = "https://repo.maven.apache.org/maven2";
-    var repo = "http://central.maven.org/maven2";
+    var repo = "https://repo1.maven.org/maven2";
     var file = artifact + "-" + version + classifier + ".jar";
     var uri = URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
     return download(uri, MAVEN, file);
@@ -190,7 +189,7 @@ class Build {
     System.out.printf("%n[test]%n%n");
 
     var name = "junit-platform-console-standalone";
-    var repo = "http://central.maven.org/maven2";
+    var repo = "https://repo1.maven.org/maven2";
     var user = "org/junit/platform";
     var file = name + "-" + JUNIT_PLATFORM + ".jar";
     var uri = URI.create(String.join("/", repo, user, name, JUNIT_PLATFORM, file));
@@ -199,6 +198,7 @@ class Build {
     var java = bach.command("java");
     java.add("-ea");
     java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
+    java.add("-Djunit.jupiter.execution.parallel.enabled=true");
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);

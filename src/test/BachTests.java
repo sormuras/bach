@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 
@@ -135,6 +136,7 @@ class BachTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "junit.jupiter.execution.parallel.enabled", matches = "true")
   void runStreamParallel(BachContext context) {
     var tasks = context.tasks(3).parallel();
     var result = context.bach.run("run stream in parallel", tasks);
@@ -153,6 +155,7 @@ class BachTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "junit.jupiter.execution.parallel.enabled", matches = "true")
   void runVarArgs(BachContext context) {
     var result = context.bach.run("run varargs", () -> context.task("A"), () -> context.task("B"));
     assertEquals(0, result);
