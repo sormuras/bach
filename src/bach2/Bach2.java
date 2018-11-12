@@ -17,7 +17,6 @@ import java.util.stream.*;
 interface Bach2 {
 
   interface Shadow {
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/Bartholdy.java
 
     final class Bartholdy {
 
@@ -139,7 +138,6 @@ interface Bach2 {
         throw new UnsupportedOperationException();
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/Configuration.java
 
     interface Configuration {
 
@@ -303,7 +301,6 @@ interface Bach2 {
         }
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/Reflector.java
 
     class Reflector {
 
@@ -434,7 +431,6 @@ interface Bach2 {
         return defaultName.toString();
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/Result.java
 
     interface Result {
 
@@ -525,7 +521,6 @@ interface Bach2 {
         }
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/Tool.java
 
     interface Tool {
 
@@ -544,7 +539,6 @@ interface Bach2 {
 
       Result run(Configuration configuration);
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/AbstractJdkTool.java
 
     abstract class AbstractJdkTool implements Tool {
 
@@ -586,28 +580,20 @@ interface Bach2 {
             .build();
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Jar.java
 
     class Jar extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Javac.java
 
     class Javac extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Javadoc.java
 
     class Javadoc extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Javap.java
 
     class Javap extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Jdeps.java
 
     class Jdeps extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Jlink.java
 
     class Jlink extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/jdk/Jmod.java
 
     class Jmod extends AbstractJdkTool {}
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/tool/AbstractTool.java
 
     abstract class AbstractTool implements Tool {
 
@@ -710,7 +696,6 @@ interface Bach2 {
         return lines;
       }
     }
-    // /bartholdy-0.2.1/src/main/java/de/sormuras/bartholdy/tool/Java.java
 
     class Java extends AbstractTool {
 
