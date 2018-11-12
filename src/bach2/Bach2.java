@@ -719,5 +719,180 @@ interface Bach2 {
         return Runtime.version().toString();
       }
     }
+
+    interface ModuleGroup {
+
+      Path destination();
+
+      List<Path> modulePath();
+
+      List<Path> moduleSourcePath();
+
+      String name();
+
+      Map<String, List<Path>> patchModule();
+    }
+
+    class ModuleGroupBuilder implements ModuleGroup {
+
+      private final String name;
+      private Path destination;
+      private List<Path> modulePath;
+      private List<Path> moduleSourcePath;
+      private Map<String, List<Path>> patchModule = Map.of();
+
+      private final ProjectBuilder projectBuilder;
+
+      ModuleGroupBuilder(ProjectBuilder projectBuilder, String name) {
+        this.projectBuilder = projectBuilder;
+        this.name = name;
+        this.destination = projectBuilder.target().resolve(Path.of(name, "modules"));
+        this.modulePath = List.of();
+        this.moduleSourcePath = List.of(Path.of("src", name, "java"));
+      }
+
+      public ProjectBuilder end() {
+        projectBuilder.moduleGroups().put(name, this);
+        return projectBuilder;
+      }
+
+      @Override
+      public Path destination() {
+        return destination;
+      }
+
+      public ModuleGroupBuilder destination(Path destination) {
+        this.destination = destination;
+        return this;
+      }
+
+      @Override
+      public List<Path> modulePath() {
+        return modulePath;
+      }
+
+      public ModuleGroupBuilder modulePath(List<Path> modulePath) {
+        this.modulePath = modulePath;
+        return this;
+      }
+
+      @Override
+      public List<Path> moduleSourcePath() {
+        return moduleSourcePath;
+      }
+
+      public ModuleGroupBuilder moduleSourcePath(List<Path> moduleSourcePath) {
+        this.moduleSourcePath = moduleSourcePath;
+        return this;
+      }
+
+      @Override
+      public String name() {
+        return name;
+      }
+
+      @Override
+      public Map<String, List<Path>> patchModule() {
+        return patchModule;
+      }
+
+      public ModuleGroupBuilder patchModule(Map<String, List<Path>> patchModule) {
+        this.patchModule = patchModule;
+        return this;
+      }
+    }
+
+    interface Project {
+
+      static ProjectBuilder builder() {
+        return new ProjectBuilder();
+      }
+
+      String entryPoint();
+
+      default ModuleGroup moduleGroup(String name) {
+        if (!moduleGroups().containsKey(name)) {
+          throw new NoSuchElementException("ModuleGroup with name `" + name + "` not found");
+        }
+        return moduleGroups().get(name);
+      }
+
+      Map<String, ModuleGroup> moduleGroups();
+
+      String name();
+
+      Path target();
+
+      String version();
+    }
+
+    class ProjectBuilder implements Project {
+
+      private String name = Path.of(".").toAbsolutePath().normalize().getFileName().toString();
+      private String version = "1.0.0-SNAPSHOT";
+      private String entryPoint = "";
+      private Path target = Path.of("target", "bach");
+      private Map<String, ModuleGroup> moduleGroups = new TreeMap<>();
+
+      public Project build() {
+        return this;
+      }
+
+      @Override
+      public String entryPoint() {
+        return entryPoint;
+      }
+
+      public ProjectBuilder entryPoint(String entryPoint) {
+        this.entryPoint = entryPoint;
+        return this;
+      }
+
+      public ProjectBuilder entryPoint(String mainModule, String mainClass) {
+        return entryPoint(mainModule + '/' + mainClass);
+      }
+
+      public ModuleGroupBuilder moduleGroupBegin(String name) {
+        if (moduleGroups.containsKey(name)) {
+          throw new IllegalArgumentException(name + " already defined");
+        }
+        return new ModuleGroupBuilder(this, name);
+      }
+
+      @Override
+      public Map<String, ModuleGroup> moduleGroups() {
+        return moduleGroups;
+      }
+
+      @Override
+      public String name() {
+        return name;
+      }
+
+      public ProjectBuilder name(String name) {
+        this.name = name;
+        return this;
+      }
+
+      @Override
+      public Path target() {
+        return target;
+      }
+
+      public ProjectBuilder target(Path target) {
+        this.target = target;
+        return this;
+      }
+
+      @Override
+      public String version() {
+        return version;
+      }
+
+      public ProjectBuilder version(String version) {
+        this.version = version;
+        return this;
+      }
+    }
   }
 }

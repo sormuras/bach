@@ -73,6 +73,10 @@ class Build {
     // var uri = URI.create("https://github.com/sormuras/bartholdy/archive/master.zip");
     var uri = URI.create("https://github.com/sormuras/bartholdy/archive/v" + BARTHOLDY + ".zip");
     var zip = download(uri, TARGET.resolve("downloads"), "bartholdy-" + BARTHOLDY + ".zip");
+
+    var ura = URI.create("https://github.com/sormuras/baron/archive/master.zip");
+    var zap = download(ura, TARGET.resolve("downloads"), "baron-master.zip");
+
     var builder = new ArrayList<String>();
     builder.add("import static java.lang.System.Logger.Level.DEBUG;");
     builder.add("import static java.util.Objects.requireNonNull;");
@@ -93,6 +97,14 @@ class Build {
     builder.add("interface Bach2 {");
     builder.add("");
     builder.add("interface Shadow {");
+    includes(builder, zip);
+    includes(builder, zap);
+    builder.add("}");
+    builder.add("}");
+    Files.write(Path.of("src", "bach2", "Bach2.java"), builder);
+  }
+
+  void includes(List<String> builder, Path zip) throws Exception {
     try (var zipFileSystem = FileSystems.newFileSystem(zip, null)) {
       try (var stream =
           Files.find(
@@ -155,9 +167,6 @@ class Build {
         }
       }
     }
-    builder.add("}");
-    builder.add("}");
-    Files.write(Path.of("src", "bach2", "Bach2.java"), builder);
   }
 
   Path maven(String group, String artifact, String version) throws Exception {
