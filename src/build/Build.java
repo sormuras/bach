@@ -16,10 +16,13 @@
  */
 
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 class Build {
@@ -45,6 +48,7 @@ class Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
+  String BARTHOLDY = "0.2.1";
   String JUNIT_JUPITER = "5.3.1";
   String JUNIT_PLATFORM = "1.3.1";
   String OPENTEST4J = "1.1.0";
@@ -53,6 +57,7 @@ class Build {
   final Bach bach = new Bach();
 
   void build() throws Exception {
+    includes();
     format();
     clean();
     compile();
@@ -60,6 +65,97 @@ class Build {
     javadoc();
     jar();
     jdeps();
+  }
+
+  void includes() throws Exception {
+    // var uri = URI.create("https://github.com/sormuras/bartholdy/archive/master.zip");
+    var uri = URI.create("https://github.com/sormuras/bartholdy/archive/v" + BARTHOLDY + ".zip");
+    var zip = download(uri, TARGET.resolve("downloads"), "bartholdy-" + BARTHOLDY + ".zip");
+    var builder = new ArrayList<String>();
+    builder.add("import static java.lang.System.Logger.Level.DEBUG;");
+    builder.add("import static java.util.Objects.requireNonNull;");
+    builder.add("");
+    builder.add("import java.io.*;");
+    builder.add("import java.lang.annotation.*;");
+    builder.add("import java.lang.reflect.*;");
+    builder.add("import java.net.*;");
+    builder.add("import java.nio.channels.*;");
+    builder.add("import java.nio.file.*;");
+    builder.add("import java.time.*;");
+    builder.add("import java.util.*;");
+    builder.add("import java.util.concurrent.*;");
+    builder.add("import java.util.function.*;");
+    builder.add("import java.util.spi.*;");
+    builder.add("import java.util.stream.*;");
+    builder.add("");
+    builder.add("interface Bach2 {");
+    builder.add("");
+    builder.add("interface Shadow {");
+    try (var zipFileSystem = FileSystems.newFileSystem(zip, null)) {
+      try (var stream =
+          Files.find(
+              zipFileSystem.getPath("/"),
+              9,
+              (path, attributes) ->
+                  attributes.isRegularFile()
+                      && path.toString().contains("src/main/java")
+                      && !path.getFileName().toString().contains("-")
+                      && path.toString().endsWith(".java"))) {
+        var files = stream.sorted(Path::compareTo).collect(Collectors.toList());
+        var insideMultilineComment = false;
+        for (var file : files) {
+          if (file.toString().contains("bartholdy/tool")) {
+            if (!file.getFileName().toString().endsWith("AbstractTool.java")
+                && !file.getFileName().toString().endsWith("Java.java")) {
+              System.out.printf("[includes] [-] %s%n", file);
+              continue;
+            }
+          }
+          if (file.toString().contains("bartholdy/util")) {
+            System.out.printf("[includes] [-] %s%n", file);
+            continue;
+          }
+          System.out.printf("[includes] [+] %s%n", file);
+          var lines = Files.readAllLines(file);
+          builder.add("// " + file);
+          for (var line : lines) {
+            var trim = line.trim();
+            if (insideMultilineComment) {
+              if (trim.endsWith("*/")) {
+                insideMultilineComment = false;
+              }
+              continue;
+            }
+            if (line.startsWith("package ")) {
+              continue;
+            }
+            if (line.startsWith("import ")) {
+              continue;
+            }
+            if (trim.startsWith("//")) {
+              continue;
+            }
+            if (trim.startsWith("/*")) {
+              if (trim.endsWith("*/")) {
+                continue;
+              }
+              insideMultilineComment = true;
+              continue;
+            }
+            if (trim.startsWith("public class ")
+                || trim.startsWith("public interface ")
+                || trim.startsWith("public abstract class ")
+                || trim.startsWith("public final class ")) {
+              line = line.replace("public ", "");
+            }
+            builder.add(line);
+          }
+        }
+      }
+    }
+    builder.add("}");
+    builder.add("}");
+    Files.write(Path.of("src", "bach2", "Bach2.java"), builder);
   }
 
   Path maven(String group, String artifact, String version) throws Exception {
