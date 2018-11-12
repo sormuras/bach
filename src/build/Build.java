@@ -57,7 +57,9 @@ class Build {
   final Bach bach = new Bach();
 
   void build() throws Exception {
-    includes();
+    if (Boolean.getBoolean("bach.format.replace")) {
+      includes();
+    }
     format();
     clean();
     compile();
