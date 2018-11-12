@@ -82,7 +82,6 @@ class UtilTests {
         List.of(
             "download.*",
             "local file already exists -- comparing properties to remote file...",
-            "local file size is \\d+ -- \\d+ is the remote's size",
             "local and remote file properties seem to match, using .*"),
         logger.all);
     // offline mode

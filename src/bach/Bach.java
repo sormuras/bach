@@ -724,7 +724,6 @@ class Bach {
           if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
             var localFileSize = Files.size(target);
             var contentLength = connection.getContentLengthLong();
-            debug("local file size is %d -- %d is the remote's size", localFileSize, contentLength);
             if (localFileSize == contentLength) {
               debug("local and remote file properties seem to match, using `%s`", target);
               return target;
