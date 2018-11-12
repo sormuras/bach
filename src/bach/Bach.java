@@ -667,7 +667,7 @@ class Bach {
         path = path.resolve("module-info.java");
       }
       try {
-        return moduleInfo(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
+        return moduleInfo(Files.readString(path));
       } catch (IOException e) {
         throw new UncheckedIOException("reading '" + path + "' failed", e);
       }
@@ -722,7 +722,10 @@ class Bach {
           debug("local file already exists -- comparing properties to remote file...");
           var unknownTime = urlLastModifiedMillis == 0L;
           if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-            if (Files.size(target) == connection.getContentLengthLong()) {
+            var localFileSize = Files.size(target);
+            var contentLength = connection.getContentLengthLong();
+            debug("local file size is %d -- remote weighs in: %d?", localFileSize, contentLength);
+            if (localFileSize == contentLength) {
               debug("local and remote file properties seem to match, using `%s`", target);
               return target;
             }
