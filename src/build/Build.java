@@ -49,8 +49,8 @@ class Build {
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
   String BARTHOLDY = "0.2.1";
-  String JUNIT_JUPITER = "5.3.1";
-  String JUNIT_PLATFORM = "1.3.1";
+  String JUNIT_JUPITER = "5.4.0-M1";
+  String JUNIT_PLATFORM = "1.4.0-M1";
   String OPENTEST4J = "1.1.0";
   String API_GUARDIAN = "1.0.0";
 
