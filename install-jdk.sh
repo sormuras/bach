@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-01-18'
+    readonly script_version='2019-01-18 II'
 
     dry=false
     silent=false
@@ -198,7 +198,9 @@ function determine_url() {
         9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
        10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
        10-BCL) url="${ORACLE}/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_${os}_bin.tar.gz"; return;;
-       11-GPL) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
+       # Fall-through for 11-GPL as the build number, here 9, does change now and then...
+       # See https://github.com/sormuras/bach/issues/42 for details
+       #   11-GPL) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
        11-BCL) url="${ORACLE}/11.0.2+9/f51449fcd52f4d52b93a989c5c56ed3c/jdk-11.0.2_${os}_bin.tar.gz"; return;;
     esac
 
