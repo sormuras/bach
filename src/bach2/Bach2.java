@@ -1,4 +1,5 @@
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Objects.requireNonNull;
 
 import java.io.*;
@@ -11,6 +12,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
 
@@ -118,6 +120,90 @@ interface Bach2 {
           LOG.log(System.Logger.Level.WARNING, "couldn't set executable flag: " + program);
         }
         return path;
+      }
+
+      public static void treeCopy(Path source, Path target) {
+        treeCopy(source, target, __ -> true);
+      }
+
+      public static void treeCopy(Path source, Path target, Predicate<Path> filter) {
+        LOG.log(System.Logger.Level.DEBUG, "treeCopy(source:`{0}`, target:`{1}`)", source, target);
+        if (!Files.exists(source)) {
+          return;
+        }
+        if (!Files.isDirectory(source)) {
+          throw new IllegalArgumentException("source must be a directory: " + source);
+        }
+        if (Files.exists(target)) {
+          if (!Files.isDirectory(target)) {
+            throw new IllegalArgumentException("target must be a directory: " + target);
+          }
+          try {
+            if (Files.isSameFile(source, target)) {
+              return;
+            }
+          } catch (IOException e) {
+            throw new UncheckedIOException("copyTree failed", e);
+          }
+        }
+        try (Stream<Path> stream = Files.walk(source).sorted()) {
+          int counter = 0;
+          List<Path> paths = stream.collect(Collectors.toList());
+          for (Path path : paths) {
+            Path destination = target.resolve(source.relativize(path));
+            if (Files.isDirectory(path)) {
+              Files.createDirectories(destination);
+              continue;
+            }
+            if (filter.test(path)) {
+              Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+              counter++;
+            }
+          }
+          LOG.log(
+              System.Logger.Level.DEBUG,
+              "copied {0} file(s) of {1} elements...%n",
+              counter,
+              paths.size());
+        } catch (IOException e) {
+          throw new UncheckedIOException("copyTree failed", e);
+        }
+      }
+
+      public static void treeDelete(Path root) {
+        treeDelete(root, path -> true);
+      }
+
+      public static void treeDelete(Path root, Predicate<Path> filter) {
+        try {
+          if (Files.deleteIfExists(root)) {
+            return;
+          }
+        } catch (IOException ignored) {
+        }
+        try (var stream = Files.walk(root)) {
+          var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+          for (var path : selected.collect(Collectors.toList())) {
+            Files.deleteIfExists(path);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException("removing tree failed: " + root, e);
+        }
+      }
+
+      public static void treeList(Path root, Consumer<String> out) {
+        if (Files.exists(root)) {
+          out.accept(root.toString());
+        }
+        try (Stream<Path> stream = Files.walk(root).sorted()) {
+          for (Path path : stream.collect(Collectors.toList())) {
+            String string = root.relativize(path).toString();
+            String prefix = string.isEmpty() ? "" : File.separator;
+            out.accept("." + prefix + string);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException("dumping tree failed: " + root, e);
+        }
       }
 
       public static String version() {
@@ -602,22 +688,36 @@ interface Bach2 {
         var timeout = configuration.getTimeout().toMillis();
         var command = createCommand(configuration);
         var builder = new ProcessBuilder(command);
-        builder.directory(configuration.getWorkingDirectory().toFile());
+        var working = configuration.getWorkingDirectory();
+        builder.directory(working.toFile());
         builder.environment().put("JAVA_HOME", Bartholdy.currentJdkHome().toString());
         builder.environment().put(getNameOfEnvironmentHomeVariable(), getHome().toString());
         builder.environment().putAll(configuration.getEnvironment());
         try {
-          var errfile = Files.createTempFile("bartholdy-err-", ".txt");
-          var outfile = Files.createTempFile("bartholdy-out-", ".txt");
+          var start = Instant.now();
+          var timestamp = start.toString().replace(':', '-');
+          var errfile = working.resolve(".bartholdy-err-" + timestamp + ".txt");
+          var outfile = working.resolve(".bartholdy-out-" + timestamp + ".txt");
           builder.redirectError(errfile.toFile());
           builder.redirectOutput(outfile.toFile());
-          var start = Instant.now();
           var process = builder.start();
           try {
             var timedOut = false;
             if (!process.waitFor(timeout, TimeUnit.MILLISECONDS)) {
               timedOut = true;
               process.destroy();
+              for (int i = 10; i > 0 && process.isAlive(); i--) {
+                Thread.sleep(123);
+              }
+              if (process.isAlive()) {
+                process.destroyForcibly();
+                for (int i = 10; i > 0 && process.isAlive(); i--) {
+                  Thread.sleep(1234);
+                }
+              }
+            }
+            if (process.isAlive()) {
+              throw new RuntimeException("process is still alive: " + process.info());
             }
             var duration = Duration.between(start, Instant.now());
             return Result.builder()
@@ -630,7 +730,6 @@ interface Bach2 {
           } catch (InterruptedException e) {
             throw new RuntimeException("run failed", e);
           } finally {
-
             Files.deleteIfExists(errfile);
             Files.deleteIfExists(outfile);
           }
@@ -720,7 +819,7 @@ interface Bach2 {
       }
     }
 
-    interface ModuleGroup {
+    interface Group {
 
       Path destination();
 
@@ -730,20 +829,23 @@ interface Bach2 {
 
       String name();
 
+      Map<String, String> mainClass();
+
       Map<String, List<Path>> patchModule();
     }
 
-    class ModuleGroupBuilder implements ModuleGroup {
+    class GroupBuilder implements Group {
 
       private final String name;
       private Path destination;
       private List<Path> modulePath;
       private List<Path> moduleSourcePath;
       private Map<String, List<Path>> patchModule = Map.of();
+      private Map<String, String> mainClass = Map.of();
 
       private final ProjectBuilder projectBuilder;
 
-      ModuleGroupBuilder(ProjectBuilder projectBuilder, String name) {
+      GroupBuilder(ProjectBuilder projectBuilder, String name) {
         this.projectBuilder = projectBuilder;
         this.name = name;
         this.destination = projectBuilder.target().resolve(Path.of(name, "modules"));
@@ -751,8 +853,8 @@ interface Bach2 {
         this.moduleSourcePath = List.of(Path.of("src", name, "java"));
       }
 
-      public ProjectBuilder end() {
-        projectBuilder.moduleGroups().put(name, this);
+      public ProjectBuilder buildGroup() {
+        projectBuilder.groups().put(name, this);
         return projectBuilder;
       }
 
@@ -761,7 +863,7 @@ interface Bach2 {
         return destination;
       }
 
-      public ModuleGroupBuilder destination(Path destination) {
+      public GroupBuilder destination(Path destination) {
         this.destination = destination;
         return this;
       }
@@ -771,7 +873,7 @@ interface Bach2 {
         return modulePath;
       }
 
-      public ModuleGroupBuilder modulePath(List<Path> modulePath) {
+      public GroupBuilder modulePath(List<Path> modulePath) {
         this.modulePath = modulePath;
         return this;
       }
@@ -781,7 +883,7 @@ interface Bach2 {
         return moduleSourcePath;
       }
 
-      public ModuleGroupBuilder moduleSourcePath(List<Path> moduleSourcePath) {
+      public GroupBuilder moduleSourcePath(List<Path> moduleSourcePath) {
         this.moduleSourcePath = moduleSourcePath;
         return this;
       }
@@ -796,72 +898,189 @@ interface Bach2 {
         return patchModule;
       }
 
-      public ModuleGroupBuilder patchModule(Map<String, List<Path>> patchModule) {
+      public GroupBuilder patchModule(Map<String, List<Path>> patchModule) {
         this.patchModule = patchModule;
         return this;
+      }
+
+      @Override
+      public Map<String, String> mainClass() {
+        return mainClass;
+      }
+
+      public GroupBuilder mainClass(Map<String, String> mainClass) {
+        this.mainClass = mainClass;
+        return this;
+      }
+    }
+
+    enum Layout {
+      BASIC,
+
+      MAVEN {
+        @Override
+        public Path resolveModuleSourcePath(Path root, String groupName) {
+          return root.resolve(groupName).resolve("java");
+        }
+      };
+
+      private static final System.Logger LOG = System.getLogger(Layout.class.getName());
+
+      private static final Pattern MODULE_NAME_PATTERN =
+          Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+      public static Layout of(Path root) {
+        if (Files.notExists(root)) {
+          throw new IllegalArgumentException("root path must exist: " + root);
+        }
+        if (!Files.isDirectory(root)) {
+          throw new IllegalArgumentException("root path must be a directory: " + root);
+        }
+        try {
+          var path =
+              Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                  .map(root::relativize)
+                  .findFirst()
+                  .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
+          var name = readModuleName(Files.readString(root.resolve(path)));
+          if (path.getNameCount() == 2) {
+            if (!path.startsWith(name)) {
+              LOG.log(WARNING, "expected path to start with '%s': %s", name, path);
+            }
+            return BASIC;
+          }
+          if (path.getNameCount() == 3) {
+            if (!path.getParent().endsWith("java")) {
+              LOG.log(WARNING, "expected module-info.java to be directory named 'java': %s", path);
+            }
+            return MAVEN;
+          }
+
+          throw new UnsupportedOperationException(
+              "can't detect layout for " + root + " -- found module " + name + " in " + path);
+        } catch (Exception e) {
+          throw new Error("detection failed " + e, e);
+        }
+      }
+
+      static String readModuleName(String moduleSource) {
+        var nameMatcher = MODULE_NAME_PATTERN.matcher(moduleSource);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "expected java module descriptor unit, but got: \n" + moduleSource);
+        }
+        return nameMatcher.group(2).trim();
+      }
+
+      public Path resolveModuleSourcePath(Path root, String groupName) {
+        return root;
       }
     }
 
     interface Project {
 
       static ProjectBuilder builder() {
-        return new ProjectBuilder();
+        return new ProjectBuilder(Path.of("."));
       }
 
-      String entryPoint();
-
-      default ModuleGroup moduleGroup(String name) {
-        if (!moduleGroups().containsKey(name)) {
-          throw new NoSuchElementException("ModuleGroup with name `" + name + "` not found");
+      static ProjectBuilder builder(Path root, Path... groups) {
+        if (!Files.isDirectory(root)) {
+          throw new IllegalArgumentException("root path must be a directory: " + root);
         }
-        return moduleGroups().get(name);
+        var builder = new ProjectBuilder(root);
+        builder.name(root.getFileName().toString());
+        var destination = builder.target().resolve("modules");
+        for (var group : groups) {
+          var groupName = group.getFileName().toString();
+          var groupLayout = Layout.of(root.resolve(group));
+          var groupDestination = groups.length == 1 ? destination : destination.resolve(groupName);
+          var groupBuilder = builder.groupBuilder(groupName);
+          groupBuilder.destination(groupDestination);
+          groupBuilder.moduleSourcePath(
+              List.of(groupLayout.resolveModuleSourcePath(group, groupName)));
+          groupBuilder.buildGroup();
+        }
+        return builder;
       }
 
-      Map<String, ModuleGroup> moduleGroups();
+      static Project of(Path root, Path... groups) {
+        return builder(root, groups).buildProject();
+      }
+
+      Path root();
+
+      default Group group(String name) {
+        if (!groups().containsKey(name)) {
+          throw new NoSuchElementException("group with name `" + name + "` not found");
+        }
+        return groups().get(name);
+      }
+
+      Map<String, Group> groups();
 
       String name();
 
       Path target();
 
       String version();
+
+      default Set<String> modules() {
+        Set<String> modules = new TreeSet<>();
+        for (var group : groups().values()) {
+          for (var path : group.moduleSourcePath()) {
+            var start = root().resolve(path);
+            try {
+              Files.find(start, 10, (p, a) -> p.endsWith("module-info.java"))
+                  .map(Project::readString)
+                  .map(Layout::readModuleName)
+                  .forEach(modules::add);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          }
+        }
+        return modules;
+      }
+
+      private static String readString(Path path) {
+        try {
+          return Files.readString(path);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
     }
 
     class ProjectBuilder implements Project {
 
-      private String name = Path.of(".").toAbsolutePath().normalize().getFileName().toString();
-      private String version = "1.0.0-SNAPSHOT";
-      private String entryPoint = "";
-      private Path target = Path.of("target", "bach");
-      private Map<String, ModuleGroup> moduleGroups = new TreeMap<>();
+      private final Path root;
+      private String name;
+      private String version;
+      private Path target;
+      private Map<String, Group> groups;
 
-      public Project build() {
+      ProjectBuilder(Path root) {
+        this.root = root.normalize().toAbsolutePath();
+        this.name = this.root.getFileName().toString();
+        this.target = this.root.resolve("target").resolve("bach");
+        this.version = "1.0.0-SNAPSHOT";
+        this.groups = new TreeMap<>();
+      }
+
+      public Project buildProject() {
         return this;
       }
 
-      @Override
-      public String entryPoint() {
-        return entryPoint;
-      }
-
-      public ProjectBuilder entryPoint(String entryPoint) {
-        this.entryPoint = entryPoint;
-        return this;
-      }
-
-      public ProjectBuilder entryPoint(String mainModule, String mainClass) {
-        return entryPoint(mainModule + '/' + mainClass);
-      }
-
-      public ModuleGroupBuilder moduleGroupBegin(String name) {
-        if (moduleGroups.containsKey(name)) {
+      public GroupBuilder groupBuilder(String name) {
+        if (groups.containsKey(name)) {
           throw new IllegalArgumentException(name + " already defined");
         }
-        return new ModuleGroupBuilder(this, name);
+        return new GroupBuilder(this, name);
       }
 
       @Override
-      public Map<String, ModuleGroup> moduleGroups() {
-        return moduleGroups;
+      public Map<String, Group> groups() {
+        return groups;
       }
 
       @Override
@@ -872,6 +1091,11 @@ interface Bach2 {
       public ProjectBuilder name(String name) {
         this.name = name;
         return this;
+      }
+
+      @Override
+      public Path root() {
+        return root;
       }
 
       @Override

@@ -48,7 +48,7 @@ class Build {
   Path ARTIFACTS = TARGET.resolve("artifacts");
   Path BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
 
-  String BARTHOLDY = "0.2.1";
+  String BARTHOLDY = "0.2.3";
   String JUNIT_JUPITER = "5.4.0-M1";
   String JUNIT_PLATFORM = "1.4.0-M1";
   String OPENTEST4J = "1.1.0";
@@ -79,6 +79,7 @@ class Build {
 
     var builder = new ArrayList<String>();
     builder.add("import static java.lang.System.Logger.Level.DEBUG;");
+    builder.add("import static java.lang.System.Logger.Level.WARNING;");
     builder.add("import static java.util.Objects.requireNonNull;");
     builder.add("");
     builder.add("import java.io.*;");
@@ -91,6 +92,7 @@ class Build {
     builder.add("import java.util.*;");
     builder.add("import java.util.concurrent.*;");
     builder.add("import java.util.function.*;");
+    builder.add("import java.util.regex.*;");
     builder.add("import java.util.spi.*;");
     builder.add("import java.util.stream.*;");
     builder.add("");
@@ -112,7 +114,7 @@ class Build {
               9,
               (path, attributes) ->
                   attributes.isRegularFile()
-                      && path.toString().contains("src/main/java")
+                      && path.toString().contains("src/main/java/de/sormuras")
                       && !path.getFileName().toString().contains("-")
                       && path.toString().endsWith(".java"))) {
         var files = stream.sorted(Path::compareTo).collect(Collectors.toList());
@@ -157,6 +159,7 @@ class Build {
               continue;
             }
             if (trim.startsWith("public class ")
+                || trim.startsWith("public enum ")
                 || trim.startsWith("public interface ")
                 || trim.startsWith("public abstract class ")
                 || trim.startsWith("public final class ")) {
