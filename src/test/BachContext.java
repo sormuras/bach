@@ -37,8 +37,7 @@ class BachContext implements ParameterResolver {
     }
 
     List<String> level(System.Logger.Level level) {
-      return entries
-          .stream()
+      return entries.stream()
           .filter(e -> e.level.getSeverity() >= level.getSeverity())
           .map(e -> e.message)
           .collect(Collectors.toList());

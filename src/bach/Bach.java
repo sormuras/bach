@@ -783,8 +783,7 @@ class Bach {
 
     /** Return list of child directory names directly present in {@code root} path. */
     List<String> findDirectoryNames(Path root) {
-      return findDirectories(root)
-          .stream()
+      return findDirectories(root).stream()
           .map(root::relativize)
           .map(Path::toString)
           .collect(Collectors.toList());
@@ -1488,9 +1487,7 @@ interface Task extends Supplier<Integer> {
       bach.info("[runner] %s", project);
       var java = new JdkTool.Java();
       java.modulePath =
-          project
-              .moduleGroups()
-              .stream()
+          project.moduleGroups().stream()
               .map(Project.ModuleGroup::destination)
               .collect(Collectors.toList());
       java.module = project.entryPoint();
