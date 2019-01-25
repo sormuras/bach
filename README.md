@@ -38,23 +38,22 @@ See **bootstrap on-the-fly** section below for an example.
 
 ## bootstrap on-the-fly
  
-Copy and paste the source of [bootstrap.jsh] to automatically download that latest revisions of [Bach.java] and [Bach.jsh].
+Copy and paste the source of [bootstrap.jsh] to automatically download that latest revisions of [Bach.java].
 
 ```javascript
 //usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 /*
- * Open and load "Bach.java" and "Bach.jsh" into this jshell session.
+ * Open and source "Bach.java" into this jshell session.
  */
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.jsh
 
 /*
  * Use it!
  */
-java("--version")
+var code = new Bach().run("java", "--version")
 
-/exit
+/exit code
 ```
 
 ## install-jdk.sh

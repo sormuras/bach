@@ -9,7 +9,7 @@ script:
 
 after_success:
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-- echo "./bootstrap.jsh"
+- ./bootstrap.jsh
 
 - cd $TRAVIS_BUILD_DIR/demo/01-hello-world
 - echo "./build-01-hello-world.jsh"
