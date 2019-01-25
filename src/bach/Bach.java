@@ -26,7 +26,6 @@ import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -48,12 +47,12 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class Bach {
+class Bach implements Function<String[], Integer> {
 
   private static final String VERSION = "2.0";
 
   public static void main(String... args) {
-    System.exit(new Bach().main(List.of(args)));
+    System.exit(new Bach().apply(args));
   }
 
   final Variables vars;
@@ -72,15 +71,17 @@ class Bach {
     }
   }
 
-  public int main(List<String> args) {
+  @Override
+  public Integer apply(String... args) {
     var start = Instant.now();
     log.info("Bach {0}", VERSION);
 
+    var arguments = List.of(args);
     try {
-      if (args.isEmpty()) {
+      if (arguments.isEmpty()) {
         build();
       } else {
-        log.debug("Arguments: {0}", args);
+        log.debug("Arguments: {0}", arguments);
         for (var arg : args) {
           Bach.class.getMethod(arg).invoke(this);
         }
@@ -96,21 +97,20 @@ class Bach {
     }
   }
 
-  public void build() throws Exception {
+  public void build() {
     log.info("Building...");
     format();
   }
 
-  public void clean() throws Exception {
+  public void clean() {
     log.info("Cleaning up...");
-    Thread.sleep(123);
   }
 
-  public void format() throws Exception {
+  public void format() {
     format(Boolean.getBoolean("bach.format.replace"), ".");
   }
 
-  void format(boolean replace, String... directories) throws Exception {
+  void format(boolean replace, String... directories) {
     log.info("Formatting {0}...", List.of(directories));
     var version = "1.7";
     var base = "https://github.com/google/";
@@ -450,10 +450,6 @@ class Bach {
         }
       }
       return false;
-    }
-
-    boolean isJavaFile(Path path, BasicFileAttributes attributes) {
-      return attributes.isRegularFile() && isJavaFile(path);
     }
 
     Path currentJavaHome() {
