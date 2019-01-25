@@ -1,25 +1,15 @@
+dist: xenial
 language: java
 
-os:
-- linux
-- osx
-
-before_install:
-# https://github.com/travis-ci/travis-ci/issues/8408
-- unset -v _JAVA_OPTIONS
-# https://github.com/travis-ci/travis-ci/issues/8703
-- unset -f cd
-
 install:
-- . ./install-jdk.sh --verbose
+- java --version
 
 script:
-- java --version
 - ./build.jsh
 
 after_success:
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-- ./bootstrap.jsh
+- echo "./bootstrap.jsh"
 
 - cd $TRAVIS_BUILD_DIR/demo/01-hello-world
-- ./build-01-hello-world.jsh
+- echo "./build-01-hello-world.jsh"
