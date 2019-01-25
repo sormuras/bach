@@ -20,8 +20,7 @@
 /*
  * Open and source "Bach.java" into this jshell session.
  */
-//open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
-/open src/bach/Bach.java
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
 /*
  * Use it!
