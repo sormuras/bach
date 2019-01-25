@@ -182,7 +182,7 @@ class Build {
     var java = bach.command("java");
     java.add("-ea");
     java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
-    java.add("-Djunit.jupiter.execution.parallel.enabled=true");
+    java.add("-Djunit.jupiter.execution.parallel.enabled=false");
     java.add("-jar").add(jar);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
