@@ -1,6 +1,8 @@
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+
 /*
  * Bach - Java Shell Builder
- * Copyright (C) 2018 Christian Stein
+ * Copyright (C) 2019 Christian Stein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +18,13 @@
  */
 
 /*
- * Define convenient short names for the foundation JDK tools and commands.
+ * Open and source "Bach.java" into this jshell session.
  */
-int java(Object... args) { return new Bach().run("java", args); }
-int javac(Object... args) { return new Bach().run("javac", args); }
-int javadoc(Object... args) { return new Bach().run("javadoc", args); }
-int jar(Object... args) { return new Bach().run("jar", args); }
-int jlink(Object... args) { return new Bach().run("jlink", args); }
-int jmod(Object... args) { return new Bach().run("jmod", args); }
-int jdeps(Object... args) { return new Bach().run("jdeps", args); }
-int jdeprscan(Object... args) { return new Bach().run("jdeprscan", args); }
-int javap(Object... args) { return new Bach().run("javap", args); }
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+
+/*
+ * Use it!
+ */
+var code = new Bach().main()
+
+/exit code

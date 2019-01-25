@@ -1,6 +1,6 @@
 /*
  * Bach - Java Shell Builder
- * Copyright (C) 2018 Christian Stein
+ * Copyright (C) 2019 Christian Stein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,37 +17,53 @@
 
 // default package
 
-import static java.lang.System.Logger.Level;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.channels.Channels;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.text.MessageFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import java.io.*;
-import java.lang.annotation.*;
-import java.lang.module.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.nio.charset.*;
-import java.nio.file.*;
-import java.nio.file.attribute.*;
-import java.time.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.*;
-import java.util.regex.*;
-import java.util.spi.*;
-import java.util.stream.*;
-
-/**
- * Java Shell Builder.
- *
- * @see <a href="https://github.com/sormuras/bach">https://github.com/sormuras/bach</a>
- */
 class Bach {
 
-  final Util util;
+  private static final String VERSION = "2.0";
+
+  public static void main(String... args) {
+    System.exit(new Bach().main(List.of(args)));
+  }
+
   final Variables vars;
+  final Logging log;
+  final Utilities util;
 
   Bach() {
     this.vars = new Variables();
-    this.util = new Util();
+    this.log = new Logging();
+    this.util = new Utilities();
 
     try {
       Files.createDirectories(vars.temporary);
@@ -56,29 +72,77 @@ class Bach {
     }
   }
 
+  public int main(List<String> args) {
+    var start = Instant.now();
+    log.info("Bach {0}", VERSION);
+
+    try {
+      if (args.isEmpty()) {
+        build();
+      } else {
+        log.debug("Arguments: {0}", args);
+        for (var arg : args) {
+          Bach.class.getMethod(arg).invoke(this);
+        }
+      }
+      log.info("SUCCESS");
+      return 0;
+    } catch (Throwable throwable) {
+      log.log(System.Logger.Level.ERROR, "Bach failed to execute: " + throwable.getMessage());
+      return 1;
+    } finally {
+      var duration = Duration.between(start, Instant.now());
+      log.info("Bach execution took {0} milliseconds.", duration.toMillis());
+    }
+  }
+
+  public void build() throws Exception {
+    log.info("Building...");
+    format();
+  }
+
+  public void clean() throws Exception {
+    log.info("Cleaning up...");
+    Thread.sleep(123);
+  }
+
+  public void format() throws Exception {
+    format(Boolean.getBoolean("bach.format.replace"), ".");
+  }
+
+  void format(boolean replace, String... directories) throws Exception {
+    log.info("Formatting {0}...", List.of(directories));
+    var version = "1.7";
+    var base = "https://github.com/google/";
+    var name = "google-java-format";
+    var file = name + "-" + version + "-all-deps.jar";
+    var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
+    var jar = util.download(uri, vars.tools.resolve(name));
+
+    var command = new Command(util.currentJavaHome().resolve("bin").resolve("java").toString());
+    command.add("-jar");
+    command.add(jar);
+    if (replace) {
+      command.add("--replace");
+    } else {
+      command.add("--dry-run");
+      command.add("--set-exit-if-changed");
+    }
+    command.addAllJavaFiles(Arrays.stream(directories).map(Path::of).collect(Collectors.toList()));
+    var code = run(name, command);
+    if (code != 0) {
+      throw new Error("format failed");
+    }
+  }
+
   /** Create command for executable name and any arguments. */
   Command command(String executable, Object... arguments) {
     return new Command(executable).addAll(arguments);
   }
 
-  /** Return {@code true} if debugging is enabled. */
-  boolean debug() {
-    return vars.level.getSeverity() <= Level.DEBUG.getSeverity();
-  }
-
-  /** Log debug level message. */
-  void debug(String format, Object... arguments) {
-    vars.logger.accept(Level.DEBUG, String.format(format, arguments));
-  }
-
-  /** Log info level message. */
-  void info(String format, Object... arguments) {
-    vars.logger.accept(Level.INFO, String.format(format, arguments));
-  }
-
   /** Run named executable with given arguments. */
   int run(String executable, Object... arguments) {
-    info("[run] %s %s", executable, List.of(arguments));
+    log.info("[run] {0} {1}", executable, List.of(arguments));
     return command(executable, arguments).get();
   }
 
@@ -100,61 +164,21 @@ class Bach {
 
   /** Run stream of tasks. */
   int run(String caption, Stream<Supplier<Integer>> stream) {
-    info("[run] %s...", caption);
+    log.info("[run] {0}...", caption);
     var results = stream.map(CompletableFuture::supplyAsync).map(CompletableFuture::join);
     var result = results.reduce(0, Integer::sum);
-    info("[run] %s done.", caption);
+    log.info("[run] {0} done.", caption);
     if (result != 0) {
-      throw new IllegalStateException("0 expected, but got: " + result);
+      throw new Error(caption + " finished with exit code " + result);
     }
     return result;
   }
 
-  /** Command option annotation, aka its "name". */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  @interface Option {
-    String value();
-  }
-  /** Indicate that an option may be used multiple times. */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.FIELD)
-  @interface Repeatable {}
-
   /** Command line program and in-process tool abstraction. */
   class Command implements Supplier<Integer> {
 
-    /** Type-safe helper for adding common options. */
-    class Helper {
-
-      @SuppressWarnings("unused")
-      void addModules(List<String> addModules) {
-        if (addModules.isEmpty()) {
-          return;
-        }
-        add("--add-modules");
-        add(String.join(",", addModules));
-      }
-
-      @SuppressWarnings("unused")
-      void patchModule(Map<String, List<Path>> patchModule) {
-        patchModule.forEach(this::addPatchModule);
-      }
-
-      private void addPatchModule(String module, List<Path> paths) {
-        if (paths.isEmpty()) {
-          throw new AssertionError("expected at least one patch path entry for " + module);
-        }
-        var patches =
-            paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-        add("--patch-module");
-        add(module + "=" + patches);
-      }
-    }
-
     final String executable;
     final List<String> arguments = new ArrayList<>();
-    private final Helper helper = new Helper();
     private int dumpLimit = Integer.MAX_VALUE;
     private int dumpOffset = Integer.MAX_VALUE;
 
@@ -217,122 +241,6 @@ class Bach {
     /** Add all .java source files by walking specified root paths recursively. */
     Command addAllJavaFiles(List<Path> roots) {
       return addAll(roots, util::isJavaFile);
-    }
-
-    /** Add all reflected options. */
-    Command addAllOptions(Object options) {
-      return addAllOptions(options, UnaryOperator.identity());
-    }
-
-    /** Add all reflected options after a custom stream operator did its work. */
-    Command addAllOptions(Object options, UnaryOperator<Stream<Field>> operator) {
-      var stream =
-          Arrays.stream(options.getClass().getDeclaredFields())
-              .filter(field -> !field.isSynthetic())
-              .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
-              .filter(field -> !java.lang.reflect.Modifier.isPrivate(field.getModifiers()))
-              .filter(field -> !java.lang.reflect.Modifier.isTransient(field.getModifiers()));
-      stream = operator.apply(stream);
-      stream.forEach(field -> addOptionUnchecked(options, field));
-      return this;
-    }
-
-    private void addOption(Object options, Field field) throws ReflectiveOperationException {
-      // custom option visitor method declared?
-      try {
-        options.getClass().getDeclaredMethod(field.getName(), Command.class).invoke(options, this);
-        return;
-      } catch (NoSuchMethodException e) {
-        // fall-through
-      }
-      // get the field's value
-      var value = field.get(options);
-      // skip null field value
-      if (value == null) {
-        return;
-      }
-      // skip empty collections
-      if (value instanceof Collection && ((Collection) value).isEmpty()) {
-        return;
-      }
-      // common add helper available?
-      try {
-        Helper.class.getDeclaredMethod(field.getName(), field.getType()).invoke(helper, value);
-        return;
-      } catch (NoSuchMethodException e) {
-        // fall-through
-      }
-      // get or generate option name
-      var optional = Optional.ofNullable(field.getAnnotation(Option.class));
-      var optionName = optional.map(Option::value).orElse(getOptionName(field.getName()));
-      // is it an omissible boolean flag?
-      if (field.getType() == boolean.class) {
-        if (field.getBoolean(options)) {
-          add(optionName);
-        }
-        return;
-      }
-      // add option name only if it is not empty
-      if (!optionName.isEmpty()) {
-        add(optionName);
-      }
-      // is value a collection?
-      if (value instanceof Collection) {
-        var iterator = ((Collection) value).iterator();
-        var head = iterator.next();
-        if (field.isAnnotationPresent(Repeatable.class)) {
-          add(head);
-          while (iterator.hasNext()) {
-            add(optionName);
-            add(iterator.next());
-          }
-          return;
-        }
-        if (head instanceof Path) {
-          @SuppressWarnings("unchecked")
-          var path = (Collection<Path>) value;
-          add(path);
-          return;
-        }
-      }
-      // is value a charset?
-      if (value instanceof Charset) {
-        add(((Charset) value).name());
-        return;
-      }
-      // finally, add string representation of the value
-      add(value.toString());
-    }
-
-    private void addOptionUnchecked(Object options, Field field) {
-      try {
-        addOption(options, field);
-      } catch (ReflectiveOperationException e) {
-        throw new Error("reflecting option from field '" + field + "' failed for " + options, e);
-      }
-    }
-
-    private String getOptionName(String fieldName) {
-      var hasUppercase = !fieldName.equals(fieldName.toLowerCase());
-      var defaultName = new StringBuilder();
-      if (hasUppercase) {
-        defaultName.append("--");
-        fieldName
-            .chars()
-            .forEach(
-                i -> {
-                  if (Character.isUpperCase(i)) {
-                    defaultName.append('-');
-                    defaultName.append((char) Character.toLowerCase(i));
-                  } else {
-                    defaultName.append((char) i);
-                  }
-                });
-      } else {
-        defaultName.append('-');
-        defaultName.append(fieldName.replace('_', '-'));
-      }
-      return defaultName.toString();
     }
 
     /** Dump command executables and arguments using the provided string consumer. */
@@ -415,8 +323,8 @@ class Bach {
             throw new UncheckedIOException("creating temporary arguments file failed", e);
           }
         } else {
-          info(
-              "large command line (%s) detected, but %s does not support @argument file",
+          log.info(
+              "large command line ({0}) detected, but {1} does not support @argument file",
               commandLineLength, executable);
         }
       }
@@ -459,24 +367,24 @@ class Bach {
      *     execution.
      */
     int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-      if (debug()) {
+      if (log.debug()) {
         List<String> lines = new ArrayList<>();
         dump(lines::add);
-        debug("running %s with %d argument(s)", executable, arguments.size());
-        debug("%s", String.join("\n", lines));
+        log.debug("running {0} with {1} argument(s)", executable, arguments.size());
+        log.debug("{0}", String.join("\n", lines));
       }
-      var out = vars.printStreamOut;
-      var err = vars.printStreamErr;
+      var out = log.printStreamOut;
+      var err = log.printStreamErr;
       var foundationTool = ToolProvider.findFirst(executable).orElse(null);
       var tool = tools.getOrDefault(executable, foundationTool);
       if (tool != null) {
         return operator.apply(tool).run(out, err, toArgumentsArray());
       }
       var processBuilder = supplier.get();
-      if (debug()) {
+      if (log.debug()) {
         var program = processBuilder.command().get(0);
         if (!executable.equals(program)) {
-          debug("replaced executable `%s` with program `%s`", executable, program);
+          log.debug("replaced executable {0} with program {1}", executable, program);
         }
       }
       try {
@@ -489,276 +397,51 @@ class Bach {
     }
   }
 
-  /** Mutable runtime properties. */
-  class Variables {
-
-    private String defaultFormat = System.getProperty("bach.format", "[%s] %s%n");
-
-    private Path defaultTemporary = Paths.get(System.getProperty("java.io.tmpdir"), ".bach");
+  class Logging {
 
     PrintStream printStreamOut = System.out;
 
     PrintStream printStreamErr = System.err;
 
-    /** Logger level. */
-    Level level = Level.valueOf(System.getProperty("bach.level", "ALL"));
-
     /** Logger function. */
-    BiConsumer<Level, String> logger =
-        (level, text) -> {
-          var severity = level.getSeverity();
-          if (severity >= Variables.this.level.getSeverity()) {
-            var stream = severity >= Level.ERROR.getSeverity() ? printStreamErr : printStreamOut;
-            stream.printf(defaultFormat, level, text);
-          }
-        };
+    BiConsumer<System.Logger.Level, String> consumer = this::log;
 
-    /** Offline mode switch. */
-    boolean offline = Boolean.getBoolean("bach.offline");
-
-    /** Temporary path. */
-    Path temporary = Paths.get(System.getProperty("bach.temporary", defaultTemporary.toString()));
-
-    /** List of repositories used for resolving dependencies. */
-    List<URI> repositories =
-        List.of(
-            URI.create("http://central.maven.org/maven2"),
-            URI.create("https://jcenter.bintray.com"),
-            URI.create("https://oss.sonatype.org/content/repositories/snapshots"),
-            URI.create("https://jitpack.io"));
-  }
-
-  /** Maven-resolvable data holder. */
-  static class Resolvable {
-
-    /** Return a new {@link ResolvableBuilder} instance. */
-    static ResolvableBuilder builder() {
-      return new ResolvableBuilder();
+    /** Return {@code true} if debugging is enabled. */
+    boolean debug() {
+      return is(System.Logger.Level.DEBUG);
     }
 
-    private String group;
-    private String artifact;
-    private String version;
-    private String classifier = "";
-    private String kind = "jar";
-    private String file;
-
-    private Resolvable() {}
-
-    /** Group identifier. */
-    String getGroup() {
-      return group;
+    /** Return {@code true} if the supplied level is enabled. */
+    boolean is(System.Logger.Level level) {
+      return vars.logLevel.getSeverity() <= level.getSeverity();
     }
 
-    /** Artifact identifier. */
-    String getArtifact() {
-      return artifact;
+    /** Log debug level message. */
+    void debug(String format, Object... arguments) {
+      log(System.Logger.Level.DEBUG, format, arguments);
     }
 
-    /** Version string. */
-    String getVersion() {
-      return version;
+    /** Log info level message. */
+    void info(String format, Object... arguments) {
+      log(System.Logger.Level.INFO, format, arguments);
     }
 
-    /** Classifier string. */
-    String getClassifier() {
-      return classifier;
+    void log(System.Logger.Level level, String format, Object... arguments) {
+      consumer.accept(level, MessageFormat.format(format, arguments));
     }
 
-    /** File extension type. */
-    String getKind() {
-      return kind;
-    }
-
-    /** Name of the file. */
-    String getFile() {
-      return file;
-    }
-
-    /** Return {@code true} iff version is {@code LATEST}, else {@code false}. */
-    boolean isLatest() {
-      return version.equals("LATEST");
-    }
-
-    /** Return {@code true} iff version is {@code RELEASE}, else {@code false}. */
-    boolean isRelease() {
-      return version.equals("RELEASE");
-    }
-
-    /** Return {@code true} iff version is {@code SNAPSHOT}, else {@code false}. */
-    boolean isSnapshot() {
-      return version.endsWith("SNAPSHOT");
-    }
-
-    /** Combine all parts. */
-    String toPathString() {
-      return Paths.get(getGroup().replace('.', '/'), getArtifact(), getVersion(), getFile())
-          .toString()
-          .replace('\\', '/');
+    void log(System.Logger.Level level, String text) {
+      var severity = level.getSeverity();
+      if (severity >= vars.logLevel.getSeverity()) {
+        var error = severity >= System.Logger.Level.ERROR.getSeverity();
+        var stream = error ? printStreamErr : printStreamOut;
+        stream.printf(vars.logFormat, level, text);
+      }
     }
   }
 
-  static class ResolvableBuilder {
+  class Utilities {
 
-    private Resolvable resolvable = new Resolvable();
-
-    Resolvable build() {
-      var result = resolvable;
-      resolvable = new Resolvable();
-      // assemble file name
-      var versifier = result.version;
-      if (!result.classifier.isEmpty()) {
-        versifier = result.version + '-' + result.classifier;
-      }
-      result.file = result.artifact + '-' + versifier + '.' + result.kind;
-      return result;
-    }
-
-    ResolvableBuilder group(String group) {
-      resolvable.group = group;
-      return this;
-    }
-
-    ResolvableBuilder artifact(String artifact) {
-      resolvable.artifact = artifact;
-      return this;
-    }
-
-    ResolvableBuilder version(String version) {
-      resolvable.version = version;
-      return this;
-    }
-
-    ResolvableBuilder classifier(String classifier) {
-      resolvable.classifier = classifier;
-      return this;
-    }
-
-    ResolvableBuilder kind(String kind) {
-      resolvable.kind = kind;
-      return this;
-    }
-  }
-
-  /** Overlay. */
-  class Util {
-
-    /** Simple module information collector. */
-    class ModuleInfo {
-      private final String name;
-      private final Set<String> requires;
-
-      private ModuleInfo(String name, Set<String> requires) {
-        this.name = name;
-        this.requires = Set.copyOf(requires);
-      }
-
-      String getName() {
-        return name;
-      }
-
-      Set<String> getRequires() {
-        return requires;
-      }
-    }
-
-    ModuleInfo moduleInfo(Path path) {
-      if (Files.isDirectory(path)) {
-        path = path.resolve("module-info.java");
-      }
-      try {
-        return moduleInfo(Files.readString(path));
-      } catch (IOException e) {
-        throw new UncheckedIOException("reading '" + path + "' failed", e);
-      }
-    }
-
-    ModuleInfo moduleInfo(List<String> lines) {
-      return moduleInfo(String.join("\n", lines));
-    }
-
-    ModuleInfo moduleInfo(String source) {
-      // extract module name
-      var namePattern = Pattern.compile("module (.+)\\{", Pattern.DOTALL);
-      var nameMatcher = namePattern.matcher(source);
-      if (!nameMatcher.find()) {
-        throw new IllegalArgumentException(
-            "expected java module descriptor unit, but got: " + source);
-      }
-      var name = nameMatcher.group(1).trim();
-
-      // extract required module names
-      var requiresPattern = Pattern.compile("requires (.+?);", Pattern.DOTALL);
-      var requiresMatcher = requiresPattern.matcher(source);
-      var requires = new TreeSet<String>();
-      while (requiresMatcher.find()) {
-        var split = requiresMatcher.group(1).trim().split("\\s+");
-        requires.add(split[split.length - 1]);
-      }
-      return new ModuleInfo(name, requires);
-    }
-
-    /** Download the resource specified by its URI to the target directory. */
-    Path download(URI uri, Path directory) throws IOException {
-      return download(uri, directory, fileName(uri));
-    }
-
-    /** Download the resource from URI to the target directory using the provided file name. */
-    Path download(URI uri, Path directory, String fileName) throws IOException {
-      debug("download(uri:%s, directory:%s, fileName:%s)", uri, directory, fileName);
-      var target = directory.resolve(fileName);
-      if (vars.offline) {
-        if (Files.exists(target)) {
-          return target;
-        }
-        throw new Error("offline mode is active -- missing file " + target);
-      }
-      Files.createDirectories(directory);
-      var connection = uri.toURL().openConnection();
-      try (var sourceStream = connection.getInputStream()) {
-        var urlLastModifiedMillis = connection.getLastModified();
-        var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
-        if (Files.exists(target)) {
-          debug("local file already exists -- comparing properties to remote file...");
-          var unknownTime = urlLastModifiedMillis == 0L;
-          if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-            var localFileSize = Files.size(target);
-            var contentLength = connection.getContentLengthLong();
-            if (localFileSize == contentLength) {
-              debug("local and remote file properties seem to match, using `%s`", target);
-              return target;
-            }
-          }
-          debug("local file `%s` differs from remote one -- replacing it", target);
-        }
-        debug("transferring `%s`...", uri);
-        try (var targetStream = Files.newOutputStream(target)) {
-          sourceStream.transferTo(targetStream);
-        }
-        if (urlLastModifiedMillis != 0L) {
-          Files.setLastModifiedTime(target, urlLastModifiedTime);
-        }
-        info("`%s` downloaded [%d|%s]", fileName, Files.size(target), urlLastModifiedTime);
-      }
-      return target;
-    }
-
-    /** Return the file name of the uri. */
-    String fileName(URI uri) {
-      var urlString = uri.getPath();
-      var begin = urlString.lastIndexOf('/') + 1;
-      return urlString.substring(begin).split("\\?")[0].split("#")[0];
-    }
-
-    /** Return {@code true} if the path points to a canonical Java archive file. */
-    boolean isJarFile(Path path) {
-      if (Files.isRegularFile(path)) {
-        return path.getFileName().toString().endsWith(".jar");
-      }
-      return false;
-    }
-
-    /** Return {@code true} if the path points to a canonical Java compilation unit file. */
     boolean isJavaFile(Path path) {
       if (Files.isRegularFile(path)) {
         var name = path.getFileName().toString();
@@ -769,100 +452,46 @@ class Bach {
       return false;
     }
 
-    /** Return list of child directories directly present in {@code root} path. */
-    List<Path> findDirectories(Path root) {
-      if (Files.notExists(root)) {
-        return Collections.emptyList();
+    boolean isJavaFile(Path path, BasicFileAttributes attributes) {
+      return attributes.isRegularFile() && isJavaFile(path);
+    }
+
+    Path currentJavaHome() {
+      var executable = ProcessHandle.current().info().command().map(Path::of).orElseThrow();
+      return executable.getParent().getParent().toAbsolutePath();
+    }
+
+    String fileName(URI uri) {
+      var urlString = uri.getPath();
+      var begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    }
+
+    Path download(URI uri, Path targetDirectory) {
+      return download(uri, targetDirectory, fileName(uri));
+    }
+
+    Path download(URI uri, Path targetDirectory, String fileName) {
+      var targetPath = targetDirectory.resolve(fileName);
+      if (Files.exists(targetPath)) {
+        log.debug(
+            "Using cached {0} in {1} instead of downloading it from {2}",
+            fileName, targetDirectory, uri);
+        return targetPath;
       }
-      try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
-        return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+      if (vars.offline) {
+        throw new Error("offline mode is active -- missing file " + targetPath);
+      }
+      log.info("Downloading {0} to {1}...", uri, targetPath);
+      try {
+        var readableByteChannel = Channels.newChannel(uri.toURL().openStream());
+        Files.createDirectories(targetDirectory);
+        var fileOutputStream = new FileOutputStream(targetPath.toFile());
+        fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+        return targetPath;
       } catch (IOException e) {
-        throw new UncheckedIOException("findDirectories failed for root: " + root, e);
+        throw new UncheckedIOException("download failed", e);
       }
-    }
-
-    /** Return list of child directory names directly present in {@code root} path. */
-    List<String> findDirectoryNames(Path root) {
-      return findDirectories(root).stream()
-          .map(root::relativize)
-          .map(Path::toString)
-          .collect(Collectors.toList());
-    }
-
-    /** Return the location path of the module reference. */
-    Path getPath(ModuleReference moduleReference) {
-      return Paths.get(moduleReference.location().orElseThrow());
-    }
-
-    /** Collect all Java archives ({@code .jar} files) into a list. */
-    List<Path> getClassPath(List<Path> modulePath, List<Path> depsPath) {
-      List<Path> classPath = new ArrayList<>();
-      for (var path : modulePath) {
-        ModuleFinder.of(path).findAll().stream().map(this::getPath).forEach(classPath::add);
-      }
-      for (var path : depsPath) {
-        try (Stream<Path> paths = Files.walk(path, 1)) {
-          paths.filter(this::isJarFile).forEach(classPath::add);
-        } catch (IOException e) {
-          throw new UncheckedIOException("failed adding jars from " + path + " to classpath", e);
-        }
-      }
-      return classPath;
-    }
-
-    /** Return patch map using two lists of paths. */
-    Map<String, List<Path>> getPatchMap(List<Path> basePath, List<Path> patchPath) {
-      var map = new TreeMap<String, List<Path>>();
-      for (var base : basePath) {
-        for (var name : findDirectoryNames(base)) {
-          for (var patch : patchPath) {
-            var candidate = patch.resolve(name);
-            if (Files.isDirectory(candidate)) {
-              map.computeIfAbsent(name, __ -> new ArrayList<>()).add(candidate);
-            }
-          }
-        }
-      }
-      return map;
-    }
-
-    /** Find foundation JDK command by its name. */
-    Optional<Path> findJdkCommandPath(String name) {
-      var bin = Paths.get(System.getProperty("java.home")).toAbsolutePath().resolve("bin");
-      for (var suffix : List.of("", ".exe")) {
-        var tool = bin.resolve(name + suffix);
-        if (Files.isExecutable(tool)) {
-          return Optional.of(tool);
-        }
-      }
-      return Optional.empty();
-    }
-
-    /** Find foundation JDK command by its name. */
-    String getJdkCommand(String name) {
-      return findJdkCommandPath(name).map(Object::toString).orElseThrow();
-    }
-
-    /** Calculate external module names. */
-    Set<String> getExternalModuleNames(Path... roots) {
-      var declaredModules = new TreeSet<String>();
-      var requiredModules = new TreeSet<String>();
-      var paths = new ArrayList<Path>();
-      for (var root : roots) {
-        try (var stream = Files.walk(root)) {
-          stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
-        } catch (IOException e) {
-          throw new UncheckedIOException("walking path failed for: " + root, e);
-        }
-      }
-      for (var path : paths) {
-        var info = moduleInfo(path);
-        declaredModules.add(info.getName());
-        requiredModules.addAll(info.getRequires());
-      }
-      var externalModules = new TreeSet<>(requiredModules);
-      externalModules.removeAll(declaredModules);
-      return externalModules;
     }
 
     /** Delete directory. */
@@ -890,608 +519,35 @@ class Bach {
         throw new UncheckedIOException("removing tree failed: " + root, e);
       }
     }
-
-    /** Dump directory tree structure. */
-    void dumpTree(Path root, Consumer<String> out) {
-      if (Files.exists(root)) {
-        out.accept(root.toString());
-      }
-      try (Stream<Path> stream = Files.walk(root).sorted()) {
-        for (Path path : stream.collect(Collectors.toList())) {
-          String string = root.relativize(path).toString();
-          String prefix = string.isEmpty() ? "" : File.separator;
-          out.accept("." + prefix + string);
-        }
-      } catch (IOException e) {
-        throw new UncheckedIOException("dumping tree failed: " + root, e);
-      }
-    }
-
-    /** Copy source directory to target directory. */
-    void copyTree(Path source, Path target) {
-      copyTree(source, target, __ -> true);
-    }
-
-    /** Copy source directory to target directory. */
-    void copyTree(Path source, Path target, Predicate<Path> filter) {
-      debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
-      if (!Files.exists(source)) {
-        return;
-      }
-      if (!Files.isDirectory(source)) {
-        throw new IllegalArgumentException("source must be a directory: " + source);
-      }
-      if (Files.exists(target)) {
-        if (!Files.isDirectory(target)) {
-          throw new IllegalArgumentException("target must be a directory: " + target);
-        }
-        try {
-          if (Files.isSameFile(source, target)) {
-            return;
-          }
-        } catch (IOException e) {
-          throw new UncheckedIOException("copyTree failed", e);
-        }
-      }
-      try (Stream<Path> stream = Files.walk(source).sorted()) {
-        int counter = 0;
-        List<Path> paths = stream.collect(Collectors.toList());
-        for (Path path : paths) {
-          Path destination = target.resolve(source.relativize(path));
-          if (Files.isDirectory(path)) {
-            Files.createDirectories(destination);
-            continue;
-          }
-          if (filter.test(path)) {
-            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-            counter++;
-          }
-        }
-        debug("copied %d file(s) of %d elements...%n", counter, paths.size());
-      } catch (IOException e) {
-        throw new UncheckedIOException("copyTree failed", e);
-      }
-    }
-
-    Path resolve(Resolvable resolvable, Path targetDirectory, URI repository) throws Exception {
-      var uri = URI.create(repository.toString() + '/' + resolvable.toPathString());
-      var fileName = fileName(uri);
-      // revert local file name with constant version attribute
-      if (resolvable.isSnapshot()) {
-        fileName = resolvable.getFile();
-      }
-      return download(uri, targetDirectory, fileName);
-    }
-
-    Optional<Path> resolve(Resolvable resolvable, Path targetDirectory) {
-      return resolve(resolvable, targetDirectory, vars.repositories);
-    }
-
-    Optional<Path> resolve(Resolvable resolvable, Path targetDirectory, List<URI> repositories) {
-      for (var repository : repositories) {
-        try {
-          return Optional.of(resolve(resolvable, targetDirectory, repository));
-        } catch (Exception e) {
-          debug("resolve(repository:'%s') failed: %s", repository, e);
-        }
-      }
-      return Optional.empty();
-    }
-  }
-}
-
-/**
- * You can use the foundation JDK tools and commands to create and build applications.
- *
- * @see <a
- *     href="https://docs.oracle.com/javase/9/tools/main-tools-create-and-build-applications.htm">Main
- *     Tools to Create and Build Applications</a>
- */
-interface JdkTool extends Function<Bach, Integer> {
-  /**
-   * You can use the javac tool and its options to read Java class and interface definitions and
-   * compile them into bytecode and class files.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/javac.htm">javac</a>
-   */
-  class Javac implements JdkTool {
-    /** (Legacy) class path. */
-    List<Path> classPath = List.of();
-
-    /** (Legacy) locations where to find Java source files. */
-    @Bach.Option("--source-path")
-    transient List<Path> classSourcePath = List.of();
-
-    /** Generates all debugging information, including local variables. */
-    @Bach.Option("-g")
-    boolean generateAllDebuggingInformation = false;
-
-    /** Output source locations where deprecated APIs are used. */
-    boolean deprecation = true;
-
-    /** The destination directory for class files. */
-    @Bach.Option("-d")
-    Path destination = null;
-
-    /** Specify character encoding used by source files. */
-    Charset encoding = StandardCharsets.UTF_8;
-
-    /** Terminate compilation if warnings occur. */
-    @Bach.Option("-Werror")
-    boolean failOnWarnings = true;
-
-    /** Overrides or augments a module with classes and resources in JAR files or directories. */
-    Map<String, List<Path>> patchModule = Map.of();
-
-    /** Specify where to find application modules. */
-    List<Path> modulePath = List.of();
-
-    /** Where to find input source files for multiple modules. */
-    List<Path> moduleSourcePath = List.of();
-
-    /** Specifies root modules to resolve in addition to the initial modules. */
-    List<String> addModules = List.of();
-
-    /** Compiles only the specified module and checks timestamps. */
-    @Bach.Option("--module")
-    String module = null;
-
-    /** Generate metadata for reflection on method parameters. */
-    boolean parameters = true;
-
-    /** Output messages about what the compiler is doing. */
-    boolean verbose = false;
-
-    /** Create javac command with options and source files added. */
-    @Override
-    public Bach.Command toCommand(Bach bach, Object... extras) {
-      var command = JdkTool.super.toCommand(bach, extras);
-      command.mark(10);
-      command.addAll(classSourcePath, bach.util::isJavaFile);
-      if (module == null) {
-        command.addAll(moduleSourcePath, bach.util::isJavaFile);
-      }
-      command.setExecutableSupportsArgumentFile(true);
-      return command;
-    }
   }
 
-  /**
-   * You can use the java command to launch a Java application.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/java.htm">java</a>
-   */
-  class Java implements JdkTool {
-    /** (Legacy) class path. */
-    List<Path> classPath = List.of();
+  class Variables {
 
-    /**
-     * Creates the VM but doesn't execute the main method.
-     *
-     * <p>This {@code --dry-run} option may be useful for validating the command-line options such
-     * as the module system configuration.
-     */
-    boolean dryRun = false;
+    /** Log format in printf-style. */
+    String logFormat = get("bach.log.format", "[%s] %s%n");
 
-    /** The name of the Java Archive (JAR) file to be called. */
-    Path jar = null;
+    /** Log level. */
+    System.Logger.Level logLevel = System.Logger.Level.valueOf(get("bach.log.level", "ALL"));
 
-    /** Overrides or augments a module with classes and resources in JAR files or directories. */
-    Map<String, List<Path>> patchModule = Map.of();
+    /** Offline mode switch. */
+    boolean offline = Boolean.getBoolean("bach.offline");
 
-    /** Where to find application modules. */
-    List<Path> modulePath = List.of();
+    /** Temporary path. */
+    Path temporary = get("bach.path.temporary", Path.of(get("java.io.tmpdir"), ".bach"));
 
-    /** Specifies root modules to resolve in addition to the initial modules. */
-    List<String> addModules = List.of();
+    /** Tools cache path. */
+    Path tools = Path.of(get("bach.path.tools", ".bach/tools"));
 
-    /** Initial module to resolve and the name of the main class to execute. */
-    @Bach.Option("--module")
-    String module = null;
-
-    /** Arguments passed to the main entry-point. */
-    transient List<Object> args = List.of();
-
-    /** Create java command with options and source files added. */
-    @Override
-    public Bach.Command toCommand(Bach bach, Object... extras) {
-      var command = JdkTool.super.toCommand(bach, extras);
-      command.setExecutableSupportsArgumentFile(true);
-      command.setExecutableToProgramOperator(bach.util::getJdkCommand);
-      command.mark(9);
-      command.addAll(args);
-      return command;
-    }
-  }
-
-  /**
-   * You use the javadoc tool and options to generate HTML pages of API documentation from Java
-   * source files.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/javadoc.htm">javadoc</a>
-   */
-  class Javadoc implements JdkTool {
-
-    enum Visibility {
-      /** Shows only public elements. */
-      PUBLIC,
-      /** Shows public and protected elements. This is the default. */
-      PROTECTED,
-      /** Shows public, protected, and package elements. */
-      PACKAGE,
-      /** Shows all elements. */
-      PRIVATE
+    private String get(String key) {
+      return System.getProperty(key);
     }
 
-    /** The destination directory for generated files. */
-    @Bach.Option("-d")
-    Path destination = null;
-
-    /** Shuts off messages so that only the warnings and errors appear. */
-    boolean quiet = true;
-
-    /** Generates HTML5 output. */
-    boolean html5 = true;
-
-    /** Adds HTML keyword {@code <META>} tags to the generated file for each class. */
-    boolean keywords = true;
-
-    /** Creates links to existing documentation of externally referenced classes. */
-    @Bach.Repeatable List<String> link = List.of();
-
-    /** Creates an HTML version of each source file. */
-    boolean linksource = false;
-
-    /** Enables recommended checks for problems in javadoc comments. */
-    String doclint = "";
-
-    void doclint(Bach.Command command) {
-      if (doclint == null) {
-        return;
-      }
-      if (doclint.isEmpty()) {
-        command.add("-Xdoclint");
-        return;
-      }
-      // Enable or disable specific checks for problems in javadoc
-      // comments, where <group> is one of accessibility, html,
-      // missing, reference, or syntax.
-      command.add("-Xdoclint:" + doclint); // all,-missing,-reference...
+    private String get(String key, String defaultValue) {
+      return System.getProperty(key, defaultValue);
     }
 
-    /** Specifies which declarations (fields or methods) are documented. */
-    Visibility showMembers = Visibility.PROTECTED;
-
-    void showMembers(Bach.Command command) {
-      if (showMembers == Visibility.PROTECTED) {
-        return;
-      }
-      command.add("--show-members").add(showMembers.name().toLowerCase());
-    }
-
-    /** Specifies which declarations (interfaces or classes) are documented. */
-    Visibility showTypes = Visibility.PROTECTED;
-
-    void showTypes(Bach.Command command) {
-      if (showTypes == Visibility.PROTECTED) {
-        return;
-      }
-      command.add("--show-types").add(showTypes.name().toLowerCase());
-    }
-  }
-
-  /**
-   * You can use the jar command to create an archive for classes and resources, and manipulate or
-   * restore individual classes or resources from an archive.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/jar.htm">jar</a>
-   */
-  class Jar implements JdkTool {
-    /** Specify the operation mode for the jar command. */
-    @Bach.Option("")
-    String mode = "--create";
-
-    /** Specifies the archive file name. */
-    @Bach.Option("--file")
-    Path file = Paths.get("out.jar");
-
-    /** Specifies the application entry point for stand-alone applications. */
-    String mainClass = null;
-
-    /** Specifies the module version, when creating a modular JAR file. */
-    String moduleVersion = null;
-
-    /** Stores without using ZIP compression. */
-    boolean noCompress = false;
-
-    /** Sends or prints verbose output to standard output. */
-    @Bach.Option("--verbose")
-    boolean verbose = false;
-
-    /** Changes to the specified directory and includes the files at the end of the command. */
-    @Bach.Option("-C")
-    Path path = null;
-
-    @Override
-    public Bach.Command toCommand(Bach bach, Object... extras) {
-      var command = JdkTool.super.toCommand(bach, extras);
-      if (path != null) {
-        command.mark(1);
-        command.add(".");
-      }
-      return command;
-    }
-  }
-
-  /**
-   * You use the jdeps command to launch the Java class dependency analyzer.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/jdeps.htm">jdeps</a>
-   */
-  class Jdeps implements JdkTool {
-    /** Specifies where to find class files. */
-    List<Path> classpath = List.of();
-
-    /** Recursively traverses all dependencies. */
-    boolean recursive = true;
-
-    /** Finds class-level dependencies in JDK internal APIs. */
-    boolean jdkInternals = false;
-
-    /** Shows profile or the file containing a package. */
-    boolean profile = false;
-
-    /** Restricts analysis to APIs, like deps from the signature of public and protected members. */
-    boolean apionly = false;
-
-    /** Prints dependency summary only. */
-    boolean summary = false;
-
-    /** Prints all class-level dependencies. */
-    boolean verbose = false;
-  }
-
-  /**
-   * You can use the jlink tool to assemble and optimize a set of modules and their dependencies
-   * into a custom runtime image.
-   *
-   * @see <a href="https://docs.oracle.com/javase/9/tools/jlink.htm">jlink</a>
-   */
-  class Jlink implements JdkTool {
-    /** Where to find application modules. */
-    List<Path> modulePath = List.of();
-
-    /** The directory that contains the resulting runtime image. */
-    @Bach.Option("--output")
-    Path output = null;
-  }
-
-  /** Execute this tool. */
-  @Override
-  default Integer apply(Bach bach) {
-    return toCommand(bach).get();
-  }
-
-  /** Name of this tool, like {@code javac} or {@code jar}. */
-  default String name() {
-    return getClass().getSimpleName().toLowerCase();
-  }
-
-  /** Create command instance based on this tool's options. */
-  default Bach.Command toCommand(Bach bach, Object... extras) {
-    return bach.command(name()).addAllOptions(this).addAll(extras);
-  }
-}
-
-/** Project build support. */
-class Project {
-
-  static ProjectBuilder builder() {
-    return new ProjectBuilder();
-  }
-
-  private String name = Paths.get(".").toAbsolutePath().normalize().getFileName().toString();
-  private String version = "1.0.0-SNAPSHOT";
-  private String entryPoint = "";
-  private Path target = Paths.get("target", "bach");
-  private Map<String, ModuleGroup> moduleGroups = new TreeMap<>();
-
-  private Project() {}
-
-  String name() {
-    return name;
-  }
-
-  String version() {
-    return version;
-  }
-
-  String entryPoint() {
-    return entryPoint;
-  }
-
-  Path target() {
-    return target;
-  }
-
-  ModuleGroup moduleGroup(String name) {
-    if (!moduleGroups.containsKey(name)) {
-      throw new NoSuchElementException("ModuleGroup with name `" + name + "` not found");
-    }
-    return moduleGroups.get(name);
-  }
-
-  Collection<ModuleGroup> moduleGroups() {
-    return moduleGroups.values();
-  }
-
-  /** A mutable project. */
-  static class ProjectBuilder {
-
-    private Project project = new Project();
-
-    Project build() {
-      var result = project;
-      project = new Project();
-      return result;
-    }
-
-    ProjectBuilder name(String name) {
-      project.name = name;
-      return this;
-    }
-
-    ProjectBuilder version(String version) {
-      project.version = version;
-      return this;
-    }
-
-    ProjectBuilder entryPoint(String entryPoint) {
-      project.entryPoint = entryPoint;
-      return this;
-    }
-
-    ProjectBuilder entryPoint(String mainModule, String mainClass) {
-      return entryPoint(mainModule + '/' + mainClass);
-    }
-
-    ProjectBuilder target(Path target) {
-      project.target = target;
-      return this;
-    }
-
-    ModuleGroupBuilder newModuleGroup(String name) {
-      if (project.moduleGroups.containsKey(name)) {
-        throw new IllegalArgumentException(name + " already defined");
-      }
-      return new ModuleGroupBuilder(this, name);
-    }
-  }
-
-  /** Source set, like {@code main} or {@code test}. */
-  static class ModuleGroup {
-
-    private final String name;
-    private Path destination;
-    private List<Path> modulePath;
-    private List<Path> moduleSourcePath;
-    private Map<String, List<Path>> patchModule = Map.of();
-
-    private ModuleGroup(String name) {
-      this.name = name;
-    }
-
-    String name() {
-      return name;
-    }
-
-    Path destination() {
-      return destination;
-    }
-
-    List<Path> modulePath() {
-      return modulePath;
-    }
-
-    List<Path> moduleSourcePath() {
-      return moduleSourcePath;
-    }
-
-    Map<String, List<Path>> patchModule() {
-      return patchModule;
-    }
-  }
-
-  /** A mutable source set. */
-  static class ModuleGroupBuilder {
-
-    private final ProjectBuilder projectBuilder;
-    private final ModuleGroup group;
-
-    private ModuleGroupBuilder(ProjectBuilder projectBuilder, String name) {
-      this.projectBuilder = projectBuilder;
-      this.group = new ModuleGroup(name);
-      this.group.destination = projectBuilder.project.target.resolve(Paths.get(name, "modules"));
-      this.group.modulePath = List.of();
-      this.group.moduleSourcePath = List.of(Paths.get("src", name, "java"));
-    }
-
-    ProjectBuilder end() {
-      projectBuilder.project.moduleGroups.put(group.name, group);
-      return projectBuilder;
-    }
-
-    ModuleGroupBuilder destination(Path destination) {
-      group.destination = destination;
-      return this;
-    }
-
-    ModuleGroupBuilder modulePath(List<Path> modulePath) {
-      group.modulePath = modulePath;
-      return this;
-    }
-
-    ModuleGroupBuilder moduleSourcePath(List<Path> moduleSourcePath) {
-      group.moduleSourcePath = moduleSourcePath;
-      return this;
-    }
-
-    ModuleGroupBuilder patchModule(Map<String, List<Path>> patchModule) {
-      group.patchModule = patchModule;
-      return this;
-    }
-  }
-}
-
-/** A task is a piece of code that can be executed. */
-interface Task extends Supplier<Integer> {
-
-  /** Execute {@code javac} for all module groups. */
-  class CompilerTask implements Task {
-    final Bach bach;
-    final Project project;
-
-    CompilerTask(Bach bach, Project project) {
-      this.bach = bach;
-      this.project = project;
-    }
-
-    int compile(Project.ModuleGroup group) {
-      bach.info("[compile] %s", group.name());
-      var javac = new JdkTool.Javac();
-      javac.destination = group.destination();
-      javac.moduleSourcePath = group.moduleSourcePath();
-      javac.modulePath = group.modulePath();
-      javac.patchModule = group.patchModule();
-      return javac.toCommand(bach).get();
-    }
-
-    @Override
-    public Integer get() {
-      bach.info("[compiler] %s", project);
-      return project.moduleGroups().stream().mapToInt(this::compile).sum();
-    }
-  }
-
-  class RunnerTask implements Task {
-    final Bach bach;
-    final Project project;
-
-    RunnerTask(Bach bach, Project project) {
-      this.bach = bach;
-      this.project = project;
-    }
-
-    @Override
-    public Integer get() {
-      bach.info("[runner] %s", project);
-      var java = new JdkTool.Java();
-      java.modulePath =
-          project.moduleGroups().stream()
-              .map(Project.ModuleGroup::destination)
-              .collect(Collectors.toList());
-      java.module = project.entryPoint();
-      return java.toCommand(bach).get();
+    private Path get(String key, Path defaultPath) {
+      return Path.of(get(key, defaultPath.toString()));
     }
   }
 }
