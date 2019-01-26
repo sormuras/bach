@@ -18,14 +18,13 @@
 // default package
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -119,7 +119,7 @@ class Bach implements Function<String[], Integer> {
     var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
     var jar = util.download(uri, vars.tools.resolve(name));
 
-    var command = new Command(util.currentJavaHome().resolve("bin").resolve("java").toString());
+    var command = command("java");
     command.add("-jar");
     command.add(jar);
     if (replace) {
@@ -128,6 +128,7 @@ class Bach implements Function<String[], Integer> {
       command.add("--dry-run");
       command.add("--set-exit-if-changed");
     }
+    command.mark(10);
     command.addAllJavaFiles(Arrays.stream(directories).map(Path::of).collect(Collectors.toList()));
     var code = run(name, command);
     if (code != 0) {
@@ -137,7 +138,10 @@ class Bach implements Function<String[], Integer> {
 
   /** Create command for executable name and any arguments. */
   Command command(String executable, Object... arguments) {
-    return new Command(executable).addAll(arguments);
+    var command = new Command(executable).addAll(arguments);
+    util.findJdkCommandPath(executable)
+        .ifPresent(path -> command.setExecutableToProgramOperator(__ -> path.toString()));
+    return command;
   }
 
   /** Run named executable with given arguments. */
@@ -175,7 +179,7 @@ class Bach implements Function<String[], Integer> {
   }
 
   /** Command line program and in-process tool abstraction. */
-  class Command implements Supplier<Integer> {
+  class Command implements Supplier<Integer>, Function<Bach, Integer> {
 
     final String executable;
     final List<String> arguments = new ArrayList<>();
@@ -346,6 +350,21 @@ class Bach implements Function<String[], Integer> {
     }
 
     /**
+     * Run this command, returning zero for a successful run.
+     *
+     * @return the result of executing the tool. A return value of 0 means the tool did not
+     *     encounter any errors; any other value indicates that at least one error occurred during
+     *     execution.
+     */
+    @Override
+    public Integer apply(Bach bach) {
+      if (bach != Bach.this) {
+        throw new AssertionError("expected " + Bach.this + ", but got: " + bach);
+      }
+      return get();
+    }
+
+    /**
      * Run this command.
      *
      * @throws AssertionError if the execution result is not zero
@@ -367,24 +386,28 @@ class Bach implements Function<String[], Integer> {
      *     execution.
      */
     int run(UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
-      if (log.debug()) {
+      return run(Bach.this, operator, supplier);
+    }
+
+    int run(Bach bach, UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
+      if (bach.log.debug()) {
         List<String> lines = new ArrayList<>();
         dump(lines::add);
-        log.debug("running {0} with {1} argument(s)", executable, arguments.size());
-        log.debug("{0}", String.join("\n", lines));
+        bach.log.debug("running {0} with {1} argument(s)", executable, arguments.size());
+        bach.log.debug("{0}", String.join("\n", lines));
       }
-      var out = log.printStreamOut;
-      var err = log.printStreamErr;
+      var out = bach.log.printStreamOut;
+      var err = bach.log.printStreamErr;
       var foundationTool = ToolProvider.findFirst(executable).orElse(null);
       var tool = tools.getOrDefault(executable, foundationTool);
       if (tool != null) {
         return operator.apply(tool).run(out, err, toArgumentsArray());
       }
       var processBuilder = supplier.get();
-      if (log.debug()) {
+      if (bach.log.debug()) {
         var program = processBuilder.command().get(0);
         if (!executable.equals(program)) {
-          log.debug("replaced executable {0} with program {1}", executable, program);
+          bach.log.debug("replaced executable `{0}` with program `{1}`", executable, program);
         }
       }
       try {
@@ -456,6 +479,24 @@ class Bach implements Function<String[], Integer> {
       var executable = ProcessHandle.current().info().command().map(Path::of).orElseThrow();
       return executable.getParent().getParent().toAbsolutePath();
     }
+    /** Find foundation JDK command by its name. */
+    Optional<Path> findJdkCommandPath(String name) {
+      // Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
+      var home = currentJavaHome();
+      var bin = home.resolve("bin");
+      for (var suffix : List.of("", ".exe")) {
+        var tool = bin.resolve(name + suffix);
+        if (Files.isExecutable(tool)) {
+          return Optional.of(tool);
+        }
+      }
+      return Optional.empty();
+    }
+
+    /** Find foundation JDK command by its name. */
+    String getJdkCommand(String name) {
+      return findJdkCommandPath(name).map(Object::toString).orElseThrow();
+    }
 
     String fileName(URI uri) {
       var urlString = uri.getPath();
@@ -464,30 +505,51 @@ class Bach implements Function<String[], Integer> {
     }
 
     Path download(URI uri, Path targetDirectory) {
-      return download(uri, targetDirectory, fileName(uri));
-    }
-
-    Path download(URI uri, Path targetDirectory, String fileName) {
-      var targetPath = targetDirectory.resolve(fileName);
-      if (Files.exists(targetPath)) {
-        log.debug(
-            "Using cached {0} in {1} instead of downloading it from {2}",
-            fileName, targetDirectory, uri);
-        return targetPath;
-      }
-      if (vars.offline) {
-        throw new Error("offline mode is active -- missing file " + targetPath);
-      }
-      log.info("Downloading {0} to {1}...", uri, targetPath);
       try {
-        var readableByteChannel = Channels.newChannel(uri.toURL().openStream());
-        Files.createDirectories(targetDirectory);
-        var fileOutputStream = new FileOutputStream(targetPath.toFile());
-        fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-        return targetPath;
+        return download(uri, targetDirectory, fileName(uri));
       } catch (IOException e) {
         throw new UncheckedIOException("download failed", e);
       }
+    }
+
+    /** Download the resource from URI to the target directory using the provided file name. */
+    Path download(URI uri, Path directory, String fileName) throws IOException {
+      log.debug("download(uri:{0}, directory:{1}, fileName:{2})", uri, directory, fileName);
+      var target = directory.resolve(fileName);
+      if (vars.offline) {
+        if (Files.exists(target)) {
+          return target;
+        }
+        throw new Error("offline mode is active -- missing file " + target);
+      }
+      Files.createDirectories(directory);
+      var connection = uri.toURL().openConnection();
+      try (var sourceStream = connection.getInputStream()) {
+        var urlLastModifiedMillis = connection.getLastModified();
+        var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
+        if (Files.exists(target)) {
+          log.debug("local file already exists -- comparing properties to remote file...");
+          var unknownTime = urlLastModifiedMillis == 0L;
+          if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
+            var localFileSize = Files.size(target);
+            var contentLength = connection.getContentLengthLong();
+            if (localFileSize == contentLength) {
+              log.debug("local and remote file properties seem to match, using `%s`", target);
+              return target;
+            }
+          }
+          log.debug("local file `{0}` differs from remote one -- replacing it", target);
+        }
+        log.debug("transferring `{0}`...", uri);
+        try (var targetStream = Files.newOutputStream(target)) {
+          sourceStream.transferTo(targetStream);
+        }
+        if (urlLastModifiedMillis != 0L) {
+          Files.setLastModifiedTime(target, urlLastModifiedTime);
+        }
+        log.info("`{0}` downloaded [{1}|{2}]", fileName, Files.size(target), urlLastModifiedTime);
+      }
+      return target;
     }
 
     /** Delete directory. */

@@ -80,7 +80,7 @@ class Build {
     return bach.util.download(mavenUri(group, artifact, version), MAVEN);
   }
 
-  void format() throws Exception {
+  void format() {
     System.out.printf("%n[format]%n%n");
     bach.format(Boolean.getBoolean("bach.format.replace"), "src", "demo");
 
@@ -95,11 +95,11 @@ class Build {
     System.out.println("deleted " + TARGET);
   }
 
-  void compile() throws Exception {
+  void compile() {
     System.out.printf("%n[compile]%n%n");
 
     // main
-    var javac = bach.new Command("javac");
+    var javac = bach.command("javac");
     javac.setExecutableSupportsArgumentFile(true);
     javac.add("-g");
     javac.add("-d").add(TARGET_MAIN);
@@ -109,7 +109,7 @@ class Build {
     javac.run();
 
     // test
-    var test = bach.new Command("javac");
+    var test = bach.command("javac");
     test.setExecutableSupportsArgumentFile(true);
     test.add("-g");
     test.add("-d").add(TARGET_TEST);
@@ -133,7 +133,7 @@ class Build {
     System.out.printf("%n[javadoc]%n%n");
 
     Files.createDirectories(JAVADOC);
-    var javadoc = bach.new Command("javadoc");
+    var javadoc = bach.command("javadoc");
     javadoc.add("-d").add(JAVADOC);
     javadoc.add("-package");
     javadoc.add("-quiet");
@@ -156,7 +156,7 @@ class Build {
   }
 
   void jar(String artifact, Path path) {
-    var jar = bach.new Command("jar");
+    var jar = bach.command("jar");
     jar.add("--create");
     jar.add("--file").add(ARTIFACTS.resolve(artifact));
     jar.add("-C").add(path).add(".");
@@ -166,7 +166,7 @@ class Build {
   void jdeps() {
     System.out.printf("%n[jdeps]%n%n");
 
-    var jdeps = bach.new Command("jdeps");
+    var jdeps = bach.command("jdeps");
     jdeps.add("-summary");
     jdeps.add("-recursive");
     jdeps.add(ARTIFACTS.resolve("bach.jar"));

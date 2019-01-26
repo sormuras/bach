@@ -29,6 +29,7 @@ import java.lang.System.Logger.Level;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -179,56 +180,61 @@ class BachTests {
     assertEquals("error finished with exit code 9", exception.getMessage());
   }
 
-  //  @Test
-  //  void runCommand(BachContext context) {
-  //    var bach = context.bach;
-  //    var command = new JdkTool.Java().toCommand(bach).add("--version");
-  //    var result = bach.run("java --version", command);
-  //    assertEquals(0, result);
-  //    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
-  //    var expected =
-  //        List.of(
-  //            "[run] java --version...",
-  //            "running java with 1 argument(s)",
-  //            "java\n--version",
-  //            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
-  //            "[run] java --version done.");
-  //    assertLinesMatch(expected, context.recorder.all);
-  //  }
+  @Test
+  void runCommand(BachContext context) {
+    var bach = context.bach;
+    var command = bach.command("java").add("--version");
+    var result = bach.run("java --version", command);
+    assertEquals(0, result);
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] java --version...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
+            "[run] java --version done.");
+    assertLinesMatch(expected, context.recorder.all);
+  }
 
-  //  @Test
-  //  void runFunction(BachContext context) {
-  //    var bach = context.bach;
-  //    var function = new JdkTool.Java();
-  //    function.args = List.of("--version");
-  //    var result = bach.run(function);
-  //    assertEquals(0, result);
-  //    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
-  //    var expected =
-  //        List.of(
-  //            "[run] Java...",
-  //            "running java with 1 argument(s)",
-  //            "java\n--version",
-  //            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
-  //            "[run] Java done.");
-  //    assertLinesMatch(expected, context.recorder.all);
-  //  }
+  @Test
+  void runFunction(BachContext context) {
+    var bach = context.bach;
+    Function<Bach, Integer> function = bach.command("java", "--version");
+    var result = bach.run(function);
+    assertEquals(0, result);
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] " + function.getClass().getSimpleName() + "...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
+            "[run] " + function.getClass().getSimpleName() + " done.");
+    assertLinesMatch(expected, context.recorder.all);
+  }
 
-  //  @Test
-  //  void runFunctionWithCaption(BachContext context) {
-  //    var bach = context.bach;
-  //    var function = new JdkTool.Java();
-  //    function.args = List.of("--version");
-  //    var result = bach.run("Java Version Function", function);
-  //    assertEquals(0, result);
-  //    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
-  //    var expected =
-  //        List.of(
-  //            "[run] Java Version Function...",
-  //            "running java with 1 argument(s)",
-  //            "java\n--version",
-  //            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
-  //            "[run] Java Version Function done.");
-  //    assertLinesMatch(expected, context.recorder.all);
-  //  }
+  @Test
+  void runFunctionWithCaption(BachContext context) {
+    var bach = context.bach;
+    Function<Bach, Integer> function = bach.command("java", "--version");
+    var result = bach.run("Java Version Function", function);
+    assertEquals(0, result);
+    assertTrue(context.bytes.toString().contains(Runtime.version().toString()));
+    var expected =
+        List.of(
+            "[run] Java Version Function...",
+            "running java with 1 argument(s)",
+            "java\n--version",
+            "replaced executable `java` with program `" + bach.util.getJdkCommand("java") + "`",
+            "[run] Java Version Function done.");
+    assertLinesMatch(expected, context.recorder.all);
+  }
+
+  @Test
+  void runFunctionOnDifferentBachInstanceFails(BachContext context) {
+    var bach = context.bach;
+    Function<Bach, Integer> function = bach.command("java", "--version");
+    assertThrows(Throwable.class, () -> new Bach().run(function));
+  }
 }
