@@ -192,7 +192,7 @@ class CommandTests {
     }
     custom.toProcessBuilder();
     var actual = String.join("\n", context.recorder.all);
-    assertTrue(actual.contains("large command line (36.039) detected"), actual);
+    assertTrue(actual.contains("large command line"), actual);
     assertTrue(actual.contains("but custom tool does not support @argument file"));
   }
 
