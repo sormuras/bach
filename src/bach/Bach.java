@@ -82,6 +82,10 @@ class Bach implements Function<String[], Integer> {
         build();
       } else {
         log.debug("Arguments: {0}", arguments);
+        if (arguments.contains("help")) {
+          help();
+          return 0;
+        }
         for (var arg : args) {
           Bach.class.getMethod(arg).invoke(this);
         }
@@ -95,6 +99,15 @@ class Bach implements Function<String[], Integer> {
       var duration = Duration.between(start, Instant.now());
       log.info("Bach execution took {0} milliseconds.", duration.toMillis());
     }
+  }
+
+  public void help() {
+    var out = log.printStreamOut;
+    out.println("java Bach.java <args>");
+    out.println("  help   - show this message and exit");
+    out.println("  build  - build project in current working directory");
+    out.println("  clean  - delete all generated directories and files");
+    out.println("  format - apply Google Java Format to all sources");
   }
 
   public void build() {

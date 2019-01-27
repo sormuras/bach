@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -178,6 +179,21 @@ class BachTests {
     Executable executable = () -> context.bach.run("error", Stream.of(nine));
     var exception = assertThrows(Error.class, executable);
     assertEquals("error finished with exit code 9", exception.getMessage());
+  }
+
+  @Test
+  void runApplyToCallHelp(BachContext context) {
+    var bach = context.bach;
+    var result = bach.apply("help");
+    assertEquals(0, result);
+    assertLinesMatch(
+        List.of( //
+            "java Bach.java <args>",
+            "  help   - show this message and exit",
+            "  build  - build project in current working directory",
+            "  clean  - delete all generated directories and files",
+            "  format - apply Google Java Format to all sources"),
+        context.bytes.toString().lines().collect(Collectors.toList()));
   }
 
   @Test
