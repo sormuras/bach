@@ -18,9 +18,21 @@
  */
 
 /*
+ * Download "Bach.java" and other assets from github to local cache directory.
+ */
+var target = Files.createDirectories(Paths.get(".bach/src/bach"))
+var context = new URL("https://github.com/sormuras/bach/raw/master/src/bach/")
+for (Path script : Set.of(target.resolve("Bach.java"))) {
+  // if (Files.exists(script)) continue; // uncomment to preserve existing files
+  try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
+    Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
+  }
+}
+
+/*
  * Open and source "Bach.java" into this jshell session.
  */
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+/open .bach/src/bach/Bach.java
 
 /*
  * Use it!
