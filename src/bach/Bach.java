@@ -34,8 +34,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -43,6 +46,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,11 +62,17 @@ class Bach implements Function<String[], Integer> {
   final Variables vars;
   final Logging log;
   final Utilities util;
+  final Project project;
 
   Bach() {
+    this(Project.of(Path.of("."), Path.of("src")));
+  }
+
+  Bach(Project project) {
     this.vars = new Variables();
     this.log = new Logging();
     this.util = new Utilities();
+    this.project = project;
 
     try {
       Files.createDirectories(vars.temporary);
@@ -74,7 +84,7 @@ class Bach implements Function<String[], Integer> {
   @Override
   public Integer apply(String... args) {
     var start = Instant.now();
-    log.info("Bach {0}", VERSION);
+    log.info("Bach {0} for {1}", VERSION, project.name());
 
     var arguments = List.of(args);
     try {
@@ -193,6 +203,334 @@ class Bach implements Function<String[], Integer> {
       throw new Error(caption + " finished with exit code " + result);
     }
     return result;
+  }
+
+  /** Project model. */
+  interface Project {
+
+    static ProjectBuilder builder() {
+      return new ProjectBuilder(Path.of("."));
+    }
+
+    static ProjectBuilder builder(Path root, Path... groups) {
+      if (!Files.isDirectory(root)) {
+        throw new IllegalArgumentException("root path must be a directory: " + root);
+      }
+      var builder = new ProjectBuilder(root);
+      builder.name(root.toAbsolutePath().normalize().getFileName().toString());
+      var destination = builder.target().resolve("modules");
+      for (var group : groups) {
+        var groupName = group.getFileName().toString();
+        var groupLayout = Layout.of(root.resolve(group));
+        var groupDestination = groups.length == 1 ? destination : destination.resolve(groupName);
+        var groupBuilder = builder.groupBuilder(groupName);
+        groupBuilder.destination(groupDestination);
+        groupBuilder.moduleSourcePath(
+            List.of(groupLayout.resolveModuleSourcePath(group, groupName)));
+        groupBuilder.buildGroup();
+      }
+      return builder;
+    }
+
+    static Project of(Path root, Path... groups) {
+      return builder(root, groups).buildProject();
+    }
+
+    Path root();
+
+    default Group group(String name) {
+      if (!groups().containsKey(name)) {
+        throw new NoSuchElementException("group with name `" + name + "` not found");
+      }
+      return groups().get(name);
+    }
+
+    Map<String, Group> groups();
+
+    String name();
+
+    Path target();
+
+    String version();
+
+    default Set<String> modules() {
+      Set<String> modules = new TreeSet<>();
+      for (var group : groups().values()) {
+        for (var path : group.moduleSourcePath()) {
+          var start = root().resolve(path);
+          try {
+            Files.find(start, 10, (p, a) -> p.endsWith("module-info.java"))
+                .map(Project::readString)
+                .map(Layout::readModuleName)
+                .forEach(modules::add);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }
+      }
+      return modules;
+    }
+
+    private static String readString(Path path) {
+      try {
+        return Files.readString(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    enum Layout {
+      /** No {@code module-info.java} files present. */
+      CLASSIC,
+
+      /**
+       * Module descriptor resides in folder with same name as the module.
+       *
+       * <ul>
+       *   <li>Pattern: {@code <root>/<module name>/module-info.java}
+       *   <li>Example: {@code src/com.greetings/module-info.java} containing {@code module
+       *       com.greetings {...}}
+       * </ul>
+       */
+      BASIC,
+
+      /**
+       * Module group folder first and no module name but "java" in the directory hierarchy.
+       *
+       * <ul>
+       *   <li>Pattern: {@code {@code <root>/[main|test|...]/java/module-info.java}}
+       *   <li>Example: {@code src/main/java/module-info.java} containing {@code module
+       *       com.greetings {...}}
+       * </ul>
+       */
+      MAVEN {
+        @Override
+        public Path resolveModuleSourcePath(Path root, String groupName) {
+          return root.resolve(groupName).resolve("java");
+        }
+      };
+
+      private static final Pattern MODULE_NAME_PATTERN =
+          Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+      public static Layout of(Path root) {
+        if (Files.notExists(root)) {
+          throw new IllegalArgumentException("root path must exist: " + root);
+        }
+        if (!Files.isDirectory(root)) {
+          throw new IllegalArgumentException("root path must be a directory: " + root);
+        }
+        try {
+          var classic = Path.of("CLASSIC");
+          var path =
+              Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+                  .map(root::relativize)
+                  .findFirst()
+                  .orElse(classic);
+          if (path == classic) {
+            return CLASSIC;
+          }
+          var name = readModuleName(Files.readString(root.resolve(path)));
+          if (path.getNameCount() == 2) {
+            if (!path.startsWith(name)) {
+              throw new IllegalStateException(
+                  String.format("expected path to start with '%s': %s", name, path));
+            }
+            return BASIC;
+          }
+          if (path.getNameCount() == 3) {
+            if (!path.getParent().endsWith("java")) {
+              throw new IllegalStateException(
+                  String.format(
+                      "expected module-info.java to be directory named 'java': %s", path));
+            }
+            return MAVEN;
+          }
+
+          throw new UnsupportedOperationException(
+              "can't detect layout for " + root + " -- found module " + name + " in " + path);
+        } catch (Exception e) {
+          throw new Error("detection failed " + e, e);
+        }
+      }
+
+      static String readModuleName(String moduleSource) {
+        var nameMatcher = MODULE_NAME_PATTERN.matcher(moduleSource);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "expected java module descriptor unit, but got: \n" + moduleSource);
+        }
+        return nameMatcher.group(2).trim();
+      }
+
+      public Path resolveModuleSourcePath(Path root, String groupName) {
+        return root;
+      }
+    }
+
+    /** Defines a group of modules or a source set. */
+    interface Group {
+
+      Path destination();
+
+      List<Path> modulePath();
+
+      List<Path> moduleSourcePath();
+
+      String name();
+
+      Map<String, String> mainClass();
+
+      Map<String, List<Path>> patchModule();
+    }
+
+    class GroupBuilder implements Group {
+
+      private final String name;
+      private Path destination;
+      private List<Path> modulePath;
+      private List<Path> moduleSourcePath;
+      private Map<String, List<Path>> patchModule = Map.of();
+      private Map<String, String> mainClass = Map.of();
+
+      private final ProjectBuilder projectBuilder;
+
+      GroupBuilder(ProjectBuilder projectBuilder, String name) {
+        this.projectBuilder = projectBuilder;
+        this.name = name;
+        this.destination = projectBuilder.target().resolve(Path.of(name, "modules"));
+        this.modulePath = List.of();
+        this.moduleSourcePath = List.of(Path.of("src", name, "java"));
+      }
+
+      ProjectBuilder buildGroup() {
+        projectBuilder.groups().put(name, this);
+        return projectBuilder;
+      }
+
+      @Override
+      public Path destination() {
+        return destination;
+      }
+
+      GroupBuilder destination(Path destination) {
+        this.destination = destination;
+        return this;
+      }
+
+      @Override
+      public List<Path> modulePath() {
+        return modulePath;
+      }
+
+      GroupBuilder modulePath(List<Path> modulePath) {
+        this.modulePath = modulePath;
+        return this;
+      }
+
+      @Override
+      public List<Path> moduleSourcePath() {
+        return moduleSourcePath;
+      }
+
+      GroupBuilder moduleSourcePath(List<Path> moduleSourcePath) {
+        this.moduleSourcePath = moduleSourcePath;
+        return this;
+      }
+
+      @Override
+      public String name() {
+        return name;
+      }
+
+      @Override
+      public Map<String, List<Path>> patchModule() {
+        return patchModule;
+      }
+
+      GroupBuilder patchModule(Map<String, List<Path>> patchModule) {
+        this.patchModule = patchModule;
+        return this;
+      }
+
+      @Override
+      public Map<String, String> mainClass() {
+        return mainClass;
+      }
+
+      GroupBuilder mainClass(Map<String, String> mainClass) {
+        this.mainClass = mainClass;
+        return this;
+      }
+    }
+
+    class ProjectBuilder implements Project {
+
+      private final Path root;
+      private String name;
+      private String version;
+      private Path target;
+      private Map<String, Group> groups;
+
+      ProjectBuilder(Path root) {
+        this.root = root.normalize().toAbsolutePath();
+        this.name = this.root.getFileName().toString();
+        this.target = this.root.resolve("target").resolve("bach");
+        this.version = "1.0.0-SNAPSHOT";
+        this.groups = new TreeMap<>();
+      }
+
+      Project buildProject() {
+        return this;
+      }
+
+      GroupBuilder groupBuilder(String name) {
+        if (groups.containsKey(name)) {
+          throw new IllegalArgumentException(name + " already defined");
+        }
+        return new GroupBuilder(this, name);
+      }
+
+      @Override
+      public Map<String, Group> groups() {
+        return groups;
+      }
+
+      @Override
+      public String name() {
+        return name;
+      }
+
+      ProjectBuilder name(String name) {
+        this.name = name;
+        return this;
+      }
+
+      @Override
+      public Path root() {
+        return root;
+      }
+
+      @Override
+      public Path target() {
+        return target;
+      }
+
+      ProjectBuilder target(Path target) {
+        this.target = target;
+        return this;
+      }
+
+      @Override
+      public String version() {
+        return version;
+      }
+
+      ProjectBuilder version(String version) {
+        this.version = version;
+        return this;
+      }
+    }
   }
 
   /** Command line program and in-process tool abstraction. */
