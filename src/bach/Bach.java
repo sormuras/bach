@@ -124,7 +124,7 @@ class Bach implements Function<String[], Integer> {
   }
 
   public void format() {
-    format(Boolean.getBoolean("bach.format.replace"), ".");
+    format(Boolean.getBoolean("bach.format.replace"), "src");
   }
 
   void format(boolean replace, String... directories) {
