@@ -249,8 +249,9 @@ class BachTests {
 
   @Test
   void runFunctionOnDifferentBachInstanceFails(BachContext context) {
-    var bach = context.bach;
-    Function<Bach, Integer> function = bach.command("java", "--version");
-    assertThrows(Throwable.class, () -> new Bach().run(function));
+    var function = context.bach.command("java", "--version");
+    var other = new Bach();
+    other.vars.logLevel = Level.WARNING;
+    assertThrows(Throwable.class, () -> other.run(function));
   }
 }
