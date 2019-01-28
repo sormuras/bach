@@ -18,25 +18,42 @@
  */
 
 /*
- * Download "Bach.java" and other assets from github to local cache directory.
+ * Download "Bach.java" and other assets from github to local directory.
  */
-var target = Files.createDirectories(Paths.get(".bach/src/bach"))
-var context = new URL("https://github.com/sormuras/bach/raw/master/src/bach/")
-for (Path script : Set.of(target.resolve("Bach.java"))) {
-  // if (Files.exists(script)) continue; // uncomment to preserve existing files
-  try (InputStream stream = new URL(context, script.getFileName().toString()).openStream()) {
-    Files.copy(stream, script, StandardCopyOption.REPLACE_EXISTING);
+var version = "master" // Must match with "/open" directive below!
+System.out.println("Bootstrapping Java Shell Builder - Bach (" + version + ")")
+
+var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
+var target = Files.createDirectories(Paths.get(".bach/" + version))
+for (var asset : Set.of(target.resolve("Bach.java"))) {
+  if (Files.exists(asset) && !version.equals("master")) continue;
+  var source = new URL(context, asset.getFileName().toString());
+  System.out.println("Loading " + source + "...");
+  try (var stream = source.openStream()) {
+    Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
   }
+  System.out.println("Stored " + asset);
 }
 
 /*
  * Open and source "Bach.java" into this jshell session.
  */
-/open .bach/src/bach/Bach.java
+System.out.println("Opening Bach.java...")
+/open .bach/master/Bach.java
 
 /*
  * Use it!
  */
-var code = new Bach().apply()
+System.out.println("Calling Bach...")
+System.out.println("")
+
+var bach = new Bach()
+var code = bach.apply()
+
+System.out.println("")
+System.out.println("Bootstrap and initial build finished. You now may use the following command:")
+System.out.println("")
+bach.help("java .bach/" + version + "/Bach.java <actions>\n")
+System.out.println("")
 
 /exit code
