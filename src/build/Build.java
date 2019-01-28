@@ -173,11 +173,12 @@ class Build {
     jdeps.run();
   }
 
-  void test() throws Exception {
+  void test() {
     System.out.printf("%n[test]%n%n");
 
-    var uri = mavenUri("org.junit.platform", "junit-platform-console-standalone", JUNIT_PLATFORM);
-    var jar = bach.util.download(uri, TOOLS);
+    var art = "junit-platform-console-standalone";
+    var uri = mavenUri("org.junit.platform", art, JUNIT_PLATFORM);
+    var jar = bach.util.download(uri, TOOLS.resolve(art));
 
     var java = bach.command("java");
     java.add("-ea");
