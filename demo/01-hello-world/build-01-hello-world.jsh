@@ -2,12 +2,17 @@
 
 /open ../../src/bach/Bach.java
 
-var javac = new JdkTool.Javac()
-javac.destination = Paths.get("target", "mods")
-javac.moduleSourcePath = List.of(Paths.get("src"), Paths.get("src-de"), Paths.get("src-fr"))
-
 var bach = new Bach()
+
+var destination = Path.of("target", "mods")
+var moduleSourcePath = List.of(Path.of("src"), Path.of("src-de"), Path.of("src-fr"))
+
+var javac = bach.command("javac")
+javac.add("-d").add(destination)
+javac.add("--module-source-path").add(moduleSourcePath)
+javac.addAllJavaFiles(moduleSourcePath)
+
 bach.run(javac)
-bach.run("java", "--module-path", javac.destination, "--module", "world/com.greetings.Main")
+bach.run("java", "--module-path", destination, "--module", "world/com.greetings.Main")
 
 /exit
