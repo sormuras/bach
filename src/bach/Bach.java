@@ -102,8 +102,12 @@ class Bach implements Function<String[], Integer> {
   }
 
   public void help() {
+    help("java Bach.java <args>");
+  }
+
+  void help(String caption) {
     var out = log.printStreamOut;
-    out.println("java Bach.java <args>");
+    out.println(caption);
     out.println("  help   - show this message and exit");
     out.println("  build  - build project in current working directory");
     out.println("  clean  - delete all generated directories and files");
