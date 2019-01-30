@@ -53,7 +53,6 @@ class UtilTests {
     assertEquals("b", last("a", "b"));
     assertEquals("c", last("a", "b", "c"));
     assertEquals(File.separator, last(File.separator));
-    assertEquals("C:" + File.separator, last("C:" + File.separator));
     assertEquals("a", last(File.separator + "a"));
     assertEquals("b", last("a" + File.separator + "b"));
     assertEquals("b", last(File.separator + "a" + File.separator + "b"));
