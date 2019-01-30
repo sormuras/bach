@@ -62,14 +62,21 @@ class Bach {
   final Var var = new Var();
 
   /** Main entry-point. */
-  int main(List<String> args) {
+  int main(List<String> arguments) {
     log.info("Bach");
-    log.debug("args = " + args);
+    if (arguments.isEmpty()) {
+      log.debug("No arguments");
+    } else {
+      log.debug("Arguments");
+      for (var argument : arguments) {
+        log.debug("  -> %s", argument);
+      }
+    }
     log.debug("Properties");
     for (var property : Property.values()) {
-      log.debug("%s -> %s", property.key, Util.get(property));
+      log.debug("  %s -> %s", property.key, Util.get(property));
     }
-    return args.contains("ERROR") ? 1 : 0;
+    return arguments.contains("ERROR") ? 1 : 0;
   }
 
   /** Run named executable with given arguments. */
@@ -468,6 +475,15 @@ class Util {
       }
     }
     return false;
+  }
+
+  /** Test for an empty directory */
+  static boolean isEmpty(Path directory) {
+    try (var stream = Files.newDirectoryStream(directory)) {
+      return !stream.iterator().hasNext();
+    } catch (IOException e) {
+      throw new UncheckedIOException("streaming contents failed for: " + directory, e);
+    }
   }
 
   /** Get path pointing to the current Java home directory. */

@@ -20,40 +20,53 @@
 /*
  * Download "Bach.java" and other assets from github to local directory.
  */
-var version = "master" // Must match with "/open" directive below!
-System.out.println("Bootstrapping Java Shell Builder - Bach (" + version + ")")
+var version = "master" // Must match "/open .bach/${version}/Bach.java" directive below!
+
+/open PRINTING
+
+println(" ________   ________   ________   ___  ___     ")
+println("|\\   __  \\ |\\   __  \\ |\\   ____\\ |\\  \\|\\  \\    ")
+println("\\ \\  \\|\\ /_\\ \\  \\|\\  \\\\ \\  \\___| \\ \\  \\\\\\  \\   ")
+println(" \\ \\   __  \\\\ \\   __  \\\\ \\  \\     \\ \\   __  \\  ")
+println("  \\ \\  \\|\\  \\\\ \\  \\ \\  \\\\ \\  \\____ \\ \\  \\ \\  \\ ")
+println("   \\ \\_______\\\\ \\__\\ \\__\\\\ \\_______\\\\ \\__\\ \\__\\")
+println("    \\|_______| \\|__|\\|__| \\|_______| \\|__|\\|__|")
+println()
+println("     Java Shell Builder - " + version)
+println()
 
 var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 var target = Files.createDirectories(Paths.get(".bach/" + version))
-for (var asset : Set.of(target.resolve("Bach.java"))) {
+for (var asset : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
   if (Files.exists(asset) && !version.equals("master")) continue;
   var source = new URL(context, asset.getFileName().toString());
-  System.out.println("Loading " + source + "...");
+  println("Loading " + source + "...");
   try (var stream = source.openStream()) {
     Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
   }
-  System.out.println("Stored " + asset);
+  println("     -> " + asset.toAbsolutePath());
 }
 
 /*
  * Open and source "Bach.java" into this jshell session.
  */
-System.out.println("Opening Bach.java...")
+println()
+println("Opening Bach.java...")
 /open .bach/master/Bach.java
 
 /*
  * Use it!
  */
-System.out.println("Calling Bach...")
-System.out.println("")
+println("Calling Bach...")
+println("")
 
 var bach = new Bach()
-var code = bach.apply()
+var code = bach.main(List.of("boot"))
 
-System.out.println("")
-System.out.println("Bootstrap and initial build finished. You now may use the following command:")
-System.out.println("")
-bach.help("java .bach/" + version + "/Bach.java <actions>\n")
-System.out.println("")
+println()
+println("Bootstrap and initial build finished. You now may use the following command:")
+println("")
+println("java .bach/" + version + "/Bach.java <actions>")
+println()
 
 /exit code

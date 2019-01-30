@@ -73,6 +73,19 @@ class UtilTests {
     assertFalse(Files.exists(temp));
   }
 
+  @Test
+  void emptyDirectoryChecks() throws Exception {
+    var temp = Files.createTempDirectory("bach-UtilTests.emptyDirectoryChecks-");
+    assertTrue(Files.exists(temp));
+    assertTrue(Util.isEmpty(temp));
+    var file = Files.createTempFile(temp, "file-", ".temp");
+    assertFalse(Util.isEmpty(temp));
+    assertThrows(UncheckedIOException.class, () -> Util.isEmpty(file));
+    Util.removeTree(temp, __ -> true);
+    assertFalse(Files.exists(file));
+    assertFalse(Files.exists(temp));
+  }
+
   private static String last(String first, String... more) {
     return Util.last(Path.of(first, more)).toString();
   }
