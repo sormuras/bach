@@ -51,15 +51,12 @@ class UtilTests {
     assertEquals("", last(""));
     assertEquals("a", last("a"));
     assertEquals("b", last("a", "b"));
-    assertEquals(File.separator, last("/"));
-    assertEquals("\\", last("\\"));
-    assertEquals("C:\\", last("C:\\"));
-    assertEquals("a", last("/a"));
-    assertEquals("a", last("\\a"));
-    assertEquals("b", last("a/b"));
-    assertEquals("b", last("a\\b"));
-    assertEquals("b", last("/a/b"));
-    assertEquals("b", last("\\a\\b"));
+    assertEquals("c", last("a", "b", "c"));
+    assertEquals(File.separator, last(File.separator));
+    assertEquals("C:" + File.separator, last("C:" + File.separator));
+    assertEquals("a", last(File.separator + "a"));
+    assertEquals("b", last("a" + File.separator + "b"));
+    assertEquals("b", last(File.separator + "a" + File.separator + "b"));
   }
 
   @Test
