@@ -52,8 +52,8 @@ class UtilTests {
     assertEquals("a", last("a"));
     assertEquals("b", last("a", "b"));
     assertEquals(File.separator, last("/"));
-    assertEquals(File.separator, last("\\"));
-    assertEquals("C:" + File.separator, last("C:\\"));
+    assertEquals("\\", last("\\"));
+    assertEquals("C:\\", last("C:\\"));
     assertEquals("a", last("/a"));
     assertEquals("a", last("\\a"));
     assertEquals("b", last("a/b"));
@@ -73,7 +73,7 @@ class UtilTests {
   void removeTreeForEmptyDirectoryWorks() throws Exception {
     var temp = Files.createTempDirectory("bach-UtilTests.downloadUsingHttps-");
     assertTrue(Files.exists(temp));
-    Util.removeTree(temp);
+    Util.removeTree(temp, __ -> true);
     assertFalse(Files.exists(temp));
   }
 
