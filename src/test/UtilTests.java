@@ -1,6 +1,6 @@
 /*
  * Bach - Java Shell Builder
- * Copyright (C) 2017 Christian Stein
+ * Copyright (C) 2019 Christian Stein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,91 +17,67 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.URI;
+import java.io.File;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(BachContext.class)
 class UtilTests {
 
   @Test
-  void downloadUsingHttps(Bach bach) throws Exception {
-    var temporary = Files.createTempDirectory("BachTests.downloadUsingHttps-");
-    bach.util.download(URI.create("https://junit.org/junit5/index.html"), temporary);
-    bach.util.removeTree(temporary);
+  void currentJavaHome() {
+    assertTrue(Files.isDirectory(Util.currentJavaHome()));
   }
 
   @Test
-  void downloadUsingLocalFileSystem(BachContext context) throws Exception {
-    var bach = context.bach;
-    var logger = context.recorder;
-
-    var tempRoot = Files.createTempDirectory("BachTests.downloadUsingLocalFileSystem-");
-    var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
-    var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
-    Files.write(tempFile, content);
-    var tempPath = Files.createDirectory(tempRoot.resolve("target"));
-    var first = bach.util.download(tempFile.toUri(), tempPath);
-    var name = tempFile.getFileName().toString();
-    var actual = tempPath.resolve(name);
-    assertEquals(actual, first);
-    assertTrue(Files.exists(actual));
-    assertLinesMatch(content, Files.readAllLines(actual));
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "transferring `" + tempFile.toUri().toString() + "`...",
-            "`" + name + "` downloaded .*"),
-        logger.all);
-    // reload
-    logger.all.clear();
-    var second = bach.util.download(tempFile.toUri(), tempPath);
-    assertEquals(first, second);
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "local file already exists -- comparing properties to remote file...",
-            "local and remote file properties seem to match, using .*"),
-        logger.all);
-    // offline mode
-    logger.all.clear();
-    bach.vars.offline = true;
-    var third = bach.util.download(tempFile.toUri(), tempPath);
-    assertEquals(second, third);
-    assertLinesMatch(List.of("download.*"), logger.all);
-    // offline mode with error
-    Files.delete(actual);
-    assertThrows(Error.class, () -> bach.util.download(tempFile.toUri(), tempPath));
-    // online but different file
-    logger.all.clear();
-    bach.vars.offline = false;
-    Files.write(actual, List.of("Hello world!"));
-    var forth = bach.util.download(tempFile.toUri(), tempPath);
-    assertEquals(actual, forth);
-    assertLinesMatch(content, Files.readAllLines(actual));
-    assertLinesMatch(
-        List.of(
-            "download.*",
-            "local file already exists -- comparing properties to remote file...",
-            "local file `.*` differs from remote one -- replacing it",
-            "transferring `" + tempFile.toUri().toString() + "`...",
-            "`" + name + "` downloaded .*"),
-        logger.all);
-    bach.util.removeTree(tempRoot);
+  void tempDir() {
+    assertEquals("tools", Util.path(Property.PATH_TOOLS).getFileName().toString());
   }
 
   @Test
-  void isJavaFile(Bach.Utilities util) {
-    assertFalse(util.isJavaFile(Path.of("")));
-    assertFalse(util.isJavaFile(Path.of("a/b")));
-    assertTrue(util.isJavaFile(Path.of("src/test/UtilTests.java")));
-    assertFalse(util.isJavaFile(Path.of("src/test-resources/Util.isJavaFile.java")));
+  void isJavaFile() {
+    assertFalse(Util.isJavaFile(Path.of("")));
+    assertFalse(Util.isJavaFile(Path.of("a/b")));
+    assertTrue(Util.isJavaFile(Path.of("src/test/UtilTests.java")));
+    assertFalse(Util.isJavaFile(Path.of("src/test-resources/Util.isJavaFile.java")));
+  }
+
+  @Test
+  void last() {
+    assertEquals("", last(""));
+    assertEquals("a", last("a"));
+    assertEquals("b", last("a", "b"));
+    assertEquals(File.separator, last("/"));
+    assertEquals(File.separator, last("\\"));
+    assertEquals("C:" + File.separator, last("C:\\"));
+    assertEquals("a", last("/a"));
+    assertEquals("a", last("\\a"));
+    assertEquals("b", last("a/b"));
+    assertEquals("b", last("a\\b"));
+    assertEquals("b", last("/a/b"));
+    assertEquals("b", last("\\a\\b"));
+  }
+
+  @Test
+  void removeTreeForNonExistingPathFails() {
+    var path = Path.of("does not exist");
+    var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
+    assertEquals("removing tree failed: does not exist", e.getMessage());
+  }
+
+  @Test
+  void removeTreeForEmptyDirectoryWorks() throws Exception {
+    var temp = Files.createTempDirectory("bach-UtilTests.downloadUsingHttps-");
+    assertTrue(Files.exists(temp));
+    Util.removeTree(temp);
+    assertFalse(Files.exists(temp));
+  }
+
+  private static String last(String first, String... more) {
+    return Util.last(Path.of(first, more)).toString();
   }
 }

@@ -1,3 +1,20 @@
+/*
+ * Bach - Java Shell Builder
+ * Copyright (C) 2019 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
@@ -47,20 +64,22 @@ class BachContext implements ParameterResolver {
   final Bach bach;
   final Recorder recorder;
 
-  ByteArrayOutputStream bytes = new ByteArrayOutputStream(2000);
+  ByteArrayOutputStream bytesErr = new ByteArrayOutputStream(2000);
+  ByteArrayOutputStream bytesOut = new ByteArrayOutputStream(2000);
 
-  BachContext() {
+  private BachContext() {
     this.bach = new Bach();
     this.recorder = new Recorder();
 
-    bach.log.consumer = recorder;
-    bach.log.printStreamOut = new PrintStream(bytes);
+    bach.log.logger = recorder;
+    bach.var.streamErr = new PrintStream(bytesErr);
+    bach.var.streamOut = new PrintStream(bytesOut);
   }
 
   @Override
   public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext unused) {
     var type = parameterContext.getParameter().getType();
-    return type.equals(getClass()) || type.equals(Bach.class) || type.equals(Bach.Utilities.class);
+    return type.equals(getClass()) || type.equals(Bach.class);
   }
 
   @Override
@@ -74,9 +93,6 @@ class BachContext implements ParameterResolver {
     if (type.equals(Bach.class)) {
       return context.bach;
     }
-    if (type.equals(Bach.Utilities.class)) {
-      return context.bach.util;
-    }
     throw new ParameterResolutionException("Can't resolve parameter of type: " + type);
   }
 
@@ -89,14 +105,14 @@ class BachContext implements ParameterResolver {
   }
 
   int task(String name, IntSupplier result) {
-    bach.log.info("{0} begin", name);
+    bach.log.info("%s begin", name);
     var millis = (long) (Math.random() * 200 + 50);
     try {
       Thread.sleep(millis);
     } catch (InterruptedException e) {
       Thread.interrupted();
     }
-    bach.log.info("{0} done. {1}", name, millis);
+    bach.log.info("%s done. %s", name, millis);
     return result.getAsInt();
   }
 }
