@@ -7,7 +7,7 @@ var bach = new Bach()
 var destination = Path.of("target", "mods")
 var moduleSourcePath = List.of(Path.of("src"), Path.of("src-de"), Path.of("src-fr"))
 
-var javac = bach.command("javac")
+var javac = new Command("javac")
 javac.add("-d").add(destination)
 javac.add("--module-source-path").add(moduleSourcePath)
 javac.addAllJavaFiles(moduleSourcePath)
