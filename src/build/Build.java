@@ -77,12 +77,15 @@ class Build {
   }
 
   Path maven(String group, String artifact, String version) {
-    return bach.util.download(mavenUri(group, artifact, version), MAVEN);
+    return new Tool.Download(mavenUri(group, artifact, version), MAVEN).run(bach);
   }
 
   void format() {
     System.out.printf("%n[format]%n%n");
-    bach.format(Boolean.getBoolean("bach.format.replace"), "src", "demo");
+
+    var replace = Boolean.getBoolean("bach.format.replace");
+    var format = new Tool.GoogleJavaFormat(replace, List.of(Path.of("src"), Path.of("demo")));
+    bach.run(format);
 
     System.out.println("formatted 'src/**/*.java' and 'demo/**/*.java' sources");
   }
@@ -90,7 +93,7 @@ class Build {
   void clean() {
     System.out.printf("%n[clean]%n%n");
     if (Files.exists(TARGET)) {
-      bach.util.removeTree(TARGET);
+      Util.removeTree(TARGET);
     }
     System.out.println("deleted " + TARGET);
   }
@@ -99,18 +102,16 @@ class Build {
     System.out.printf("%n[compile]%n%n");
 
     // main
-    var javac = bach.command("javac");
-    javac.setExecutableSupportsArgumentFile(true);
+    var javac = new Command("javac");
     javac.add("-g");
     javac.add("-d").add(TARGET_MAIN);
     javac.add("--source-path").add(SOURCE_BACH);
     javac.mark(10);
-    javac.addAll(SOURCE_BACH, bach.util::isJavaFile);
-    javac.run();
+    javac.addAllJavaFiles(List.of(SOURCE_BACH));
+    javac.run(bach);
 
     // test
-    var test = bach.command("javac");
-    test.setExecutableSupportsArgumentFile(true);
+    var test = new Command("javac");
     test.add("-g");
     test.add("-d").add(TARGET_TEST);
     test.add("--source-path").add(SOURCE_TEST);
@@ -124,16 +125,16 @@ class Build {
                 maven("org.apiguardian", "apiguardian-api", API_GUARDIAN),
                 maven("org.opentest4j", "opentest4j", OPENTEST4J)));
     test.mark(10);
-    test.addAll(SOURCE_TEST, bach.util::isJavaFile);
-    test.run();
-    //    bach.util.copyTree(Paths.get("src/test-resources"), TARGET_TEST);
+    test.addAllJavaFiles(List.of(SOURCE_TEST));
+    test.run(bach);
+    // TODO bach.util.copyTree(Paths.get("src/test-resources"), TARGET_TEST);
   }
 
   void javadoc() throws Exception {
     System.out.printf("%n[javadoc]%n%n");
 
     Files.createDirectories(JAVADOC);
-    var javadoc = bach.command("javadoc");
+    var javadoc = new Command("javadoc");
     javadoc.add("-d").add(JAVADOC);
     javadoc.add("-package");
     javadoc.add("-quiet");
@@ -143,7 +144,7 @@ class Build {
     javadoc.add("-Xdoclint:all,-missing");
     javadoc.add("-link").add("https://docs.oracle.com/en/java/javase/11/docs/api/");
     javadoc.add(BACH_JAVA);
-    javadoc.run();
+    javadoc.run(bach);
   }
 
   void jar() throws Exception {
@@ -156,21 +157,21 @@ class Build {
   }
 
   void jar(String artifact, Path path) {
-    var jar = bach.command("jar");
+    var jar = new Command("jar");
     jar.add("--create");
     jar.add("--file").add(ARTIFACTS.resolve(artifact));
     jar.add("-C").add(path).add(".");
-    jar.run();
+    jar.run(bach);
   }
 
   void jdeps() {
     System.out.printf("%n[jdeps]%n%n");
 
-    var jdeps = bach.command("jdeps");
+    var jdeps = new Command("jdeps");
     jdeps.add("-summary");
     jdeps.add("-recursive");
     jdeps.add(ARTIFACTS.resolve("bach.jar"));
-    jdeps.run();
+    jdeps.run(bach);
   }
 
   void test() {
@@ -178,16 +179,17 @@ class Build {
 
     var art = "junit-platform-console-standalone";
     var uri = mavenUri("org.junit.platform", art, JUNIT_PLATFORM);
-    var jar = bach.util.download(uri, TOOLS.resolve(art));
+    var jar = new Tool.Download(uri, TOOLS.resolve(art));
+    jar.run(bach);
 
-    var java = bach.command("java");
+    var java = new Command("java");
     java.add("-ea");
     java.add("-Dbach.offline=" + System.getProperty("bach.offline", "false"));
     java.add("-Djunit.jupiter.execution.parallel.enabled=false");
-    java.add("-jar").add(jar);
+    java.add("-jar").add(jar.target);
     java.add("--class-path").add(TARGET_TEST);
     java.add("--class-path").add(TARGET_MAIN);
     java.add("--scan-classpath");
-    java.run();
+    java.run(bach);
   }
 }
