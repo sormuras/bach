@@ -559,7 +559,11 @@ enum Property {
   PATH_TARGET("target/bach"),
 
   /** Cache of binary tools. */
-  PATH_CACHE_TOOLS(".bach/tools");
+  PATH_CACHE_TOOLS(".bach/tools"),
+
+  /** Maven URI. */
+  TOOL_MAVEN_URI(
+      "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
 
   /** Base directory of the current project. */
   static final Path BASE = Path.of(System.getProperty("bach.base", System.getProperty("user.dir")));
@@ -924,10 +928,8 @@ interface Tool extends Function<Bach, Integer> {
     @Override
     public Integer apply(Bach bach) {
       // download
-      var version = "3.6.0"; // TODO Configure version.
-      var host = "https://archive.apache.org/dist/maven/maven-3/" + version;
-      var uri = String.format("%s/binaries/apache-maven-%s-bin.zip", host, version);
-      var zip = new Download(URI.create(uri), Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
+      var uri = URI.create(Property.TOOL_MAVEN_URI.get());
+      var zip = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
       // extract
       var home = new Extract(zip).run(bach);
       // run
