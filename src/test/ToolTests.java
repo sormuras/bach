@@ -129,6 +129,16 @@ class ToolTests {
   }
 
   @Nested
+  class Gradle {
+
+    @Test
+    void version(Bach bach) {
+      var gradle = Tool.of("gradle", "--version");
+      assertEquals(0, gradle.run(bach));
+    }
+  }
+
+  @Nested
   class Maven {
 
     @Test

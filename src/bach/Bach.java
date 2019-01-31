@@ -561,6 +561,9 @@ enum Property {
   /** Cache of binary tools. */
   PATH_CACHE_TOOLS(".bach/tools"),
 
+  /** Gradle URI. */
+  TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.1.1-bin.zip"),
+
   /** Maven URI. */
   TOOL_MAVEN_URI(
       "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
@@ -750,6 +753,8 @@ interface Tool extends Function<Bach, Integer> {
 
   static Tool of(String name, List<String> arguments) {
     switch (name.toLowerCase()) {
+      case "gradle":
+        return new Tool.Gradle(arguments);
       case "maven":
       case "mvn":
         return new Tool.Maven(arguments);
@@ -913,6 +918,31 @@ interface Tool extends Function<Bach, Integer> {
       command.mark(10);
       command.addAllJavaFiles(roots);
       return bach.run("GoogleJavaFormat", command);
+    }
+  }
+
+  /** Gradle. */
+  class Gradle implements Tool {
+
+    final List<String> arguments;
+
+    Gradle(List<String> arguments) {
+      this.arguments = arguments;
+    }
+
+    @Override
+    public Integer apply(Bach bach) {
+      // download
+      var uri = URI.create(Property.TOOL_GRADLE_URI.get());
+      var zip = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
+      // extract
+      var home = new Extract(zip).run(bach);
+      // run
+      var win = System.getProperty("os.name").toLowerCase().contains("win");
+      var name = "gradle" + (win ? ".bat" : "");
+      var executable = Util.setExecutable(home.resolve("bin").resolve(name));
+      var command = new Command(executable.toString()).addAll(arguments);
+      return command.apply(bach);
     }
   }
 
