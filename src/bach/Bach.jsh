@@ -1,4 +1,4 @@
-//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 /*
  * Bach - Java Shell Builder
@@ -18,12 +18,25 @@
  */
 
 /*
- * Download "Bach.java" and other assets from github to local directory.
+ * Declare constants and helper methods.
  */
-var version = "master" // Must match "/open .bach/${version}/Bach.java" directive below!
+var version = "master"
+var target = Files.createDirectories(Paths.get(".bach/" + version))
 
 /open PRINTING
 
+int start(String executable, String... args) throws Exception {
+ 	var processBuilder = new ProcessBuilder(executable);
+ 	Arrays.stream(args).forEach(processBuilder.command()::add);
+ 	processBuilder.redirectErrorStream(true);
+ 	var process = processBuilder.start();
+ 	process.getInputStream().transferTo(System.out);
+ 	return process.waitFor();
+ }
+
+/*
+ * Banner!
+ */
 println(" ________   ________   ________   ___  ___     ")
 println("|\\   __  \\ |\\   __  \\ |\\   ____\\ |\\  \\|\\  \\    ")
 println("\\ \\  \\|\\ /_\\ \\  \\|\\  \\\\ \\  \\___| \\ \\  \\\\\\  \\   ")
@@ -35,7 +48,9 @@ println()
 println("     Java Shell Builder - " + version)
 println()
 
-var target = Files.createDirectories(Paths.get(".bach/" + version))
+/*
+ * Download "Bach.java" and other assets from GitHub to local directory.
+ */
 println()
 println("Downloading assets to " + target + "...")
 println()
@@ -54,13 +69,13 @@ println()
 println("Executing Bach.java BOOT...")
 println()
 var bach = target.resolve("Bach.java").toString()
-var code = new ProcessBuilder("java", "-Dbach.log.level=WARNING", bach, "BOOT").inheritIO().start().waitFor()
+var code = start("java", "-Dbach.log.level=WARNING", bach, "BOOT")
 
 println()
 println("Bootstrap and initial build finished. You now may use the following command:")
 println("")
 println("java " + bach + " <actions>")
 println()
-code += new ProcessBuilder("java", "-Dbach.log.level=OFF", bach, "HELP").inheritIO().start().waitFor()
+code += start("java", "-Dbach.log.level=OFF", bach, "HELP")
 
 /exit code
