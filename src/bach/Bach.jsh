@@ -1,4 +1,4 @@
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
 
 /*
  * Bach - Java Shell Builder
@@ -35,8 +35,11 @@ println()
 println("     Java Shell Builder - " + version)
 println()
 
-var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 var target = Files.createDirectories(Paths.get(".bach/" + version))
+println()
+println("Downloading assets to " + target + "...")
+println()
+var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 for (var asset : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
   if (Files.exists(asset) && !version.equals("master")) continue;
   var source = new URL(context, asset.getFileName().toString());
@@ -47,26 +50,17 @@ for (var asset : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))
   println("     -> " + asset.toAbsolutePath());
 }
 
-/*
- * Open and source "Bach.java" into this jshell session.
- */
 println()
-println("Opening Bach.java...")
-/open .bach/master/Bach.java
-
-/*
- * Use it!
- */
-println("Calling Bach...")
-println("")
-
-var bach = new Bach()
-var code = bach.main(List.of("boot"))
+println("Executing Bach.java BOOT...")
+println()
+var bach = target.resolve("Bach.java").toString()
+var code = new ProcessBuilder("java", "-Dbach.log.level=WARNING", bach, "BOOT").inheritIO().start().waitFor()
 
 println()
 println("Bootstrap and initial build finished. You now may use the following command:")
 println("")
-println("java .bach/" + version + "/Bach.java <actions>")
+println("java " + bach + " <actions>")
 println()
+code += new ProcessBuilder("java", "-Dbach.log.level=OFF", bach, "HELP").inheritIO().start().waitFor()
 
 /exit code
