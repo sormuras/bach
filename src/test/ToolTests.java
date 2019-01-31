@@ -127,4 +127,14 @@ class ToolTests {
       assertEquals(0, verify.run(bach));
     }
   }
+
+  @Nested
+  class Maven {
+
+    @Test
+    void version(Bach bach) {
+      var maven = Tool.of("mvn", "--version");
+      assertEquals(0, maven.run(bach));
+    }
+  }
 }

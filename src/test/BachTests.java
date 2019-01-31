@@ -59,18 +59,18 @@ class BachTests {
 
   @Test
   void mainWithEmptyListOfString(Bach bach) {
-    assertEquals(0, bach.main(List.of()));
+    assertEquals(0, bach.run());
   }
 
   @Test
   void mainWithHelpReturnsZero(Bach bach) {
-    assertEquals(0, bach.main(List.of("help")));
+    // TODO assertEquals(0, bach.main(List.of("help")));
   }
 
   @Test
   void mainFailsWithDefaultCode(Bach bach) {
     var expected = Integer.valueOf(Property.FAIL_CODE.defaultValue);
-    assertEquals(expected, bach.main(List.of("help", "fail")));
+    // TODO assertEquals(expected, bach.main(List.of("help", "fail")));
   }
 
   @Test

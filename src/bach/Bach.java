@@ -20,9 +20,12 @@
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -31,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,18 +55,23 @@ class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    var bach = new Bach();
-    var code = bach.main(List.of(args));
+    var bach = new Bach(args);
+    var code = bach.run();
     if (code != 0) {
       throw new Error("Bach finished with exit code " + code);
     }
   }
 
+  final List<String> arguments;
   final Log log = new Log();
   final Var var = new Var();
 
+  Bach(String... arguments) {
+    this.arguments = List.of(arguments);
+  }
+
   /** Main entry-point entry-point. */
-  int main(List<String> arguments) {
+  int run() {
     // Welcome!
     log.info("Bach");
 
@@ -94,6 +103,10 @@ class Bach {
         if (code != 0 && var.failFast) {
           log.log(Level.ERROR, "Action " + action + " returned " + code);
           return code;
+        }
+        if (action == Action.TOOL) {
+          // all arguments are consumed by the external tool
+          break;
         }
       }
       return code;
@@ -289,6 +302,26 @@ enum Action implements Function<Bach, Integer> {
     public String toString() {
       var base = Property.BASE;
       return "Create starter project " + Util.last(base) + " in current directory: " + base;
+    }
+  },
+
+  TOOL {
+    @Override
+    public Integer apply(Bach bach) {
+      var args = new LinkedList<>(bach.arguments);
+      if (args.size() < 2) {
+        bach.log.log(Level.WARNING, "Too few arguments for executing an external tool: " + args);
+        return 1;
+      }
+      args.removeFirst(); // discard "TOOL" action marker
+      var name = args.removeFirst();
+      var tool = Tool.of(name, args);
+      return tool.apply(bach);
+    }
+
+    @Override
+    public String toString() {
+      return "Execute an external tool consuming all remaining arguments.";
     }
   }
 }
@@ -687,13 +720,45 @@ class Util {
       throw new UncheckedIOException("removing tree failed: " + root, e);
     }
   }
+
+  /** Mark the supplied file as executable. */
+  static Path setExecutable(Path path) {
+    if (Files.isExecutable(path)) {
+      return path;
+    }
+    if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      return path;
+    }
+    var program = path.toFile();
+    if (!program.setExecutable(true)) {
+      throw new IllegalStateException("can't set executable flag: " + program);
+    }
+    return path;
+  }
 }
 
 /** External tool. */
 interface Tool extends Function<Bach, Integer> {
 
+  static Tool of(String name, String... arguments) {
+    return of(name, List.of(arguments));
+  }
+
+  static Tool of(String name, List<String> arguments) {
+    switch (name.toLowerCase()) {
+      case "maven":
+      case "mvn":
+        return new Tool.Maven(arguments);
+    }
+    throw new UnsupportedOperationException("tool not supported: " + name);
+  }
+
   default Object run(Bach bach) {
-    return bach.run(this);
+    var code = bach.run(this);
+    if (code != 0) {
+      throw new Error(getClass().getSimpleName() + " failed with code " + code);
+    }
+    return code;
   }
 
   /** Load an asset from the supplied URI to the specified target directory. */
@@ -767,6 +832,46 @@ interface Tool extends Function<Bach, Integer> {
     }
   }
 
+  /** Unzip. */
+  class Extract implements Tool {
+
+    final Path zip;
+    Path target;
+
+    Extract(Path zip) {
+      this.zip = zip;
+    }
+
+    @Override
+    public Integer apply(Bach bach) {
+      try {
+        var jar = ToolProvider.findFirst("jar").orElseThrow();
+        var listing = new StringWriter();
+        var printWriter = new PrintWriter(listing);
+        jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
+        // TODO Find better way to extract root folder name...
+        var root = Path.of(listing.toString().split("\\R")[0]);
+        var home = Util.path(Property.PATH_CACHE_TOOLS).resolve(root);
+        if (Files.notExists(home)) {
+          jar.run(System.out, System.err, "--extract", "--file", zip.toString());
+          Files.move(root, home);
+        }
+        // done
+        target = home.normalize().toAbsolutePath();
+        return 0;
+      } catch (IOException e) {
+        bach.log.log(Level.ERROR, "Extraction of " + zip + " failed: " + e.getMessage());
+        return 1;
+      }
+    }
+
+    @Override
+    public Path run(Bach bach) {
+      Tool.super.run(bach);
+      return target;
+    }
+  }
+
   /** Google Java Format. */
   class GoogleJavaFormat implements Tool {
 
@@ -804,6 +909,33 @@ interface Tool extends Function<Bach, Integer> {
       command.mark(10);
       command.addAllJavaFiles(roots);
       return bach.run("GoogleJavaFormat", command);
+    }
+  }
+
+  /** Maven. */
+  class Maven implements Tool {
+
+    final List<String> arguments;
+
+    Maven(List<String> arguments) {
+      this.arguments = arguments;
+    }
+
+    @Override
+    public Integer apply(Bach bach) {
+      // download
+      var version = "3.6.0"; // TODO Configure version.
+      var host = "https://archive.apache.org/dist/maven/maven-3/" + version;
+      var uri = String.format("%s/binaries/apache-maven-%s-bin.zip", host, version);
+      var zip = new Download(URI.create(uri), Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
+      // extract
+      var home = new Extract(zip).run(bach);
+      // run
+      var win = System.getProperty("os.name").toLowerCase().contains("win");
+      var name = "mvn" + (win ? ".cmd" : "");
+      var executable = Util.setExecutable(home.resolve("bin").resolve(name));
+      var command = new Command(executable.toString()).addAll(arguments);
+      return command.apply(bach);
     }
   }
 }

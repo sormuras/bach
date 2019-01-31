@@ -42,6 +42,7 @@ class ActionTests {
             " FAIL      -> .+",
             " HELP      -> .+",
             " SCAFFOLD  -> .+",
+            " TOOL      -> .+",
             ""),
         context.bytesOut.toString().lines().collect(Collectors.toList()));
   }
