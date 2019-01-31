@@ -210,13 +210,23 @@ enum Action implements Function<Bach, Integer> {
   BOOT {
     @Override
     public Integer apply(Bach bach) {
+      var base = Property.BASE;
+      if (Util.isEmpty(base)) {
+        return SCAFFOLD.apply(bach);
+      }
+      if (Files.exists(base.resolve("pom.xml"))) {
+        return Tool.of("maven", "verify").apply(bach);
+      }
+      if (Files.exists(base.resolve("build.gradle"))) {
+        return Tool.of("gradle", "build").apply(bach);
+      }
       bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
       return 0;
     }
 
     @Override
     public String toString() {
-      return "Scaffold or build action - called by Bach.jsh JShell script.";
+      return "Scaffold or build action - called by Bach.jsh, the boot script.";
     }
   },
 
