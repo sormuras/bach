@@ -54,16 +54,19 @@ class Bach {
     var bach = new Bach();
     var code = bach.main(List.of(args));
     if (code != 0) {
-      throw new AssertionError("Bach finished with exit code " + code);
+      throw new Error("Bach finished with exit code " + code);
     }
   }
 
   final Log log = new Log();
   final Var var = new Var();
 
-  /** Main entry-point. */
+  /** Main entry-point entry-point. */
   int main(List<String> arguments) {
+    // Welcome!
     log.info("Bach");
+
+    // Debug...
     if (arguments.isEmpty()) {
       log.debug("No arguments");
     } else {
@@ -74,9 +77,27 @@ class Bach {
     }
     log.debug("Properties");
     for (var property : Property.values()) {
-      log.debug("  %s -> %s", property.key, Util.get(property));
+      log.debug("  %s -> %s", property.key, property.get());
     }
-    return arguments.contains("ERROR") ? 1 : 0;
+
+    // Action!
+    if (arguments.isEmpty()) {
+      var action = Action.valueOf(Property.ACTION.get().toUpperCase());
+      log.debug("Calling default action: %s", action.name());
+      return action.apply(this);
+    } else {
+      var code = 0;
+      for (var argument : arguments) {
+        var action = Action.valueOf(argument.toUpperCase());
+        log.debug("Calling action: %s", action.name());
+        code += action.apply(this);
+        if (code != 0 && var.failFast) {
+          log.log(Level.ERROR, "Action " + action + " returned " + code);
+          return code;
+        }
+      }
+      return code;
+    }
   }
 
   /** Run named executable with given arguments. */
@@ -116,10 +137,10 @@ class Bach {
     BiConsumer<Level, String> logger = this::log;
 
     /** Logger format in {@link java.util.Formatter} style. */
-    String format = Util.get(Property.LOG_FORMAT);
+    String format = Property.LOG_FORMAT.get();
 
     /** Current logger level threshold. */
-    Level level = Level.valueOf(Util.get(Property.LOG_LEVEL));
+    Level level = Level.valueOf(Property.LOG_LEVEL.get());
 
     /** Return {@code true} if debugging is enabled. */
     boolean debug() {
@@ -157,6 +178,9 @@ class Bach {
 
   /** Variables. */
   class Var {
+    /** Return non-zero exit code on first failed action/function/operation. */
+    boolean failFast = Util.isTrue(Property.FAIL_FAST);
+
     /** Use only locally cached assets. */
     boolean offline = Util.isTrue(Property.OFFLINE);
 
@@ -165,6 +189,107 @@ class Bach {
 
     /** Print stream to emit standard messages to. */
     PrintStream streamOut = System.out;
+  }
+}
+
+/** Main program actions. */
+enum Action implements Function<Bach, Integer> {
+  BOOT {
+    @Override
+    public Integer apply(Bach bach) {
+      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "Scaffold or build action - called by Bach.jsh JShell script.";
+    }
+  },
+
+  BUILD {
+    @Override
+    public Integer apply(Bach bach) {
+      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "Build project in current directory: " + Property.BASE;
+    }
+  },
+
+  CLEAN {
+    @Override
+    public Integer apply(Bach bach) {
+      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "Delete directory " + Property.PATH_TARGET.get() + " - but keep caches intact.";
+    }
+  },
+
+  ERASE {
+    @Override
+    public Integer apply(Bach bach) {
+      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "Delete out all generated assets, including caches.";
+    }
+  },
+
+  FAIL {
+    @Override
+    public Integer apply(Bach bach) {
+      var code = Util.integer(Property.FAIL_CODE.get(), -1);
+      bach.log.log(Level.WARNING, "Setting exit code to " + code);
+      return code;
+    }
+
+    @Override
+    public String toString() {
+      return "Set exit code to an non-zero value to fail the run.";
+    }
+  },
+
+  HELP {
+    @Override
+    public Integer apply(Bach bach) {
+      var out = bach.var.streamOut;
+      out.println();
+      for (var action : Action.values()) {
+        out.println(String.format(" %-9s -> %s", action.name(), action));
+      }
+      out.println();
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "Display help screen ... F1, F1, F1!";
+    }
+  },
+
+  SCAFFOLD {
+    @Override
+    public Integer apply(Bach bach) {
+      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      var base = Property.BASE;
+      return "Create starter project " + Util.last(base) + " in current directory: " + base;
+    }
   }
 }
 
@@ -335,26 +460,17 @@ class Command implements Function<Bach, Integer> {
     return run(bach, UnaryOperator.identity(), this::toProcessBuilder);
   }
 
-  /**
-   * Run this command.
-   *
-   * @throws AssertionError if the execution result is not zero
-   */
+  /** Run this command. */
   void run(Bach bach) {
     var result = apply(bach);
     var successful = result == 0;
     if (successful) {
       return;
     }
-    throw new AssertionError("expected an exit code of zero, but got: " + result);
+    throw new Error("expected an exit code of zero, but got: " + result);
   }
 
-  /**
-   * Run this command, returning zero for a successful run.
-   *
-   * @return the result of executing the tool. A return value of 0 means the tool did not encounter
-   *     any errors; any other value indicates that at least one error occurred during execution.
-   */
+  /** Run this command, returning zero for a successful run. */
   int run(Bach bach, UnaryOperator<ToolProvider> operator, Supplier<ProcessBuilder> supplier) {
     if (bach.log.debug()) {
       List<String> lines = new ArrayList<>();
@@ -386,18 +502,36 @@ class Command implements Function<Bach, Integer> {
   }
 }
 
-/** Default constants. */
+/** Available properties and their default values. */
 enum Property {
+  /** Action to call when no explicit actions are supplied. */
+  ACTION(Action.BUILD.name()),
+
+  /** Exit code value returned by {@link Action#FAIL}. */
+  FAIL_CODE("4711"),
+
+  /** Return on first non-zero operation. */
+  FAIL_FAST("true"),
+
+  /** Log format string used by {@link Bach.Log#log(Level, String)}. */
   LOG_FORMAT("[%s] %s%n"),
 
+  /** Initial log level threshold. */
   LOG_LEVEL("ALL"),
 
+  /** Use only locally cached assets. */
   OFFLINE("false"),
 
-  PATH_TOOLS(".bach/tools");
+  /** Root path for all generated assets. */
+  PATH_TARGET("target/bach"),
 
-  static final Path BASE = Path.of(System.getProperty("user.dir"));
+  /** Cache of binary tools. */
+  PATH_CACHE_TOOLS(".bach/tools");
 
+  /** Base directory of the current project. */
+  static final Path BASE = Path.of(System.getProperty("bach.base", System.getProperty("user.dir")));
+
+  /** Properties loaded from {@code ${BASE}/bach.properties} file. */
   static final Map<String, String> PROPERTIES = load(BASE.resolve("bach.properties"));
 
   static Map<String, String> load(Path path) {
@@ -439,25 +573,36 @@ enum Property {
     this.defaultValue = defaultValue;
     this.description = String.join("", description);
   }
+
+  /** Get configured string value of this property. */
+  String get() {
+    return System.getProperty(key, PROPERTIES.getOrDefault(key, defaultValue));
+  }
 }
 
 /** Tiny static helpers. */
 class Util {
 
-  /** Get string value of the supplied property. */
-  static String get(Property property) {
-    var key = property.key;
-    return System.getProperty(key, Property.PROPERTIES.getOrDefault(key, property.defaultValue));
+  /** Get integer value of the supplied string. */
+  static int integer(String string, Integer defaultValue) {
+    try {
+      return Integer.valueOf(string);
+    } catch (NumberFormatException e) {
+      if (defaultValue == null) {
+        throw e;
+      }
+      return defaultValue;
+    }
   }
 
   /** Get path value of the supplied property. */
   static Path path(Property property) {
-    return Path.of(get(property));
+    return Path.of(property.get());
   }
 
   /** Get boolean value of the supplied property. */
   static boolean isTrue(Property property) {
-    return Boolean.valueOf(get(property));
+    return Boolean.valueOf(property.get());
   }
 
   /** Get last path or the root of the supplied path. */
@@ -645,7 +790,7 @@ interface Tool extends Function<Bach, Integer> {
       var name = "google-java-format";
       var file = name + "-" + version + "-all-deps.jar";
       var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
-      var jar = new Download(uri, Util.path(Property.PATH_TOOLS).resolve(name)).run(bach);
+      var jar = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS).resolve(name)).run(bach);
 
       var command = new Command("java");
       command.add("-jar");

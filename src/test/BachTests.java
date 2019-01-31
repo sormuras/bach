@@ -32,22 +32,45 @@ import org.junit.jupiter.api.function.Executable;
 class BachTests {
 
   @Test
-  void applyWithEmptyStringArray(Bach bach) {
-    assertEquals(0, bach.main(List.of()));
-    assertEquals(1, bach.main(List.of("ERROR")));
+  void mainWithEmptyStringArray() {
+    var level = "bach.log.level";
+    try {
+      System.setProperty(level, "OFF");
+      assertDoesNotThrow((Executable) Bach::main);
+    } finally {
+      System.clearProperty(level);
+    }
   }
 
   @Test
-  void mainWithEmptyStringArray() {
-    var key = "bach.log.level";
+  void mainFailsWithCustomErrorCode() {
+    var level = "bach.log.level";
+    var error = "bach.fail.code";
     try {
-      System.setProperty(key, "OFF");
-      assertDoesNotThrow((Executable) Bach::main);
-      Error e = assertThrows(Error.class, () -> Bach.main("ERROR"));
-      assertEquals("Bach finished with exit code 1", e.getMessage());
+      System.setProperty(level, "OFF");
+      System.setProperty(error, "123");
+      Error e = assertThrows(Error.class, () -> Bach.main("fail"));
+      assertEquals("Bach finished with exit code 123", e.getMessage());
     } finally {
-      System.clearProperty(key);
+      System.clearProperty(level);
+      System.clearProperty(error);
     }
+  }
+
+  @Test
+  void mainWithEmptyListOfString(Bach bach) {
+    assertEquals(0, bach.main(List.of()));
+  }
+
+  @Test
+  void mainWithHelpReturnsZero(Bach bach) {
+    assertEquals(0, bach.main(List.of("help")));
+  }
+
+  @Test
+  void mainFailsWithDefaultCode(Bach bach) {
+    var expected = Integer.valueOf(Property.FAIL_CODE.defaultValue);
+    assertEquals(expected, bach.main(List.of("help", "fail")));
   }
 
   @Test

@@ -35,7 +35,14 @@ class UtilTests {
 
   @Test
   void tempDir() {
-    assertEquals("tools", Util.path(Property.PATH_TOOLS).getFileName().toString());
+    assertEquals("tools", Util.path(Property.PATH_CACHE_TOOLS).getFileName().toString());
+  }
+
+  @Test
+  void integer() {
+    assertEquals(0, Util.integer("0", 1));
+    assertEquals(0, Util.integer("*", 0));
+    assertThrows(NumberFormatException.class, () -> Util.integer("*", null));
   }
 
   @Test

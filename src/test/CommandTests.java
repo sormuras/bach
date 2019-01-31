@@ -129,8 +129,7 @@ class CommandTests {
 
   @Test
   void runJavaWithOptionThatDoesNotExist(Bach bach) {
-    var error =
-        assertThrows(AssertionError.class, () -> new Command("java").add("--foo").run(bach));
+    var error = assertThrows(Error.class, () -> new Command("java").add("--foo").run(bach));
     assertEquals("expected an exit code of zero, but got: 1", error.getMessage());
   }
 
@@ -178,7 +177,7 @@ class CommandTests {
   }
 
   @Test
-  void addAllUsingNonExistentFileAsRootFails(Bach bach) {
+  void addAllUsingNonExistentFileAsRootFails() {
     var command = new Command("error");
     var path = Paths.get("error");
     var e = assertThrows(UncheckedIOException.class, () -> command.addAll(path, __ -> true));
