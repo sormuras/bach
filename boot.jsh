@@ -21,18 +21,8 @@
  * Declare constants and helper methods.
  */
 var version = "master"
-var target = Files.createDirectories(Paths.get(".bach/" + version))
 
 /open PRINTING
-
-int start(String executable, String... args) throws Exception {
- 	var processBuilder = new ProcessBuilder(executable);
- 	Arrays.stream(args).forEach(processBuilder.command()::add);
- 	processBuilder.redirectErrorStream(true);
- 	var process = processBuilder.start();
- 	process.getInputStream().transferTo(System.out);
- 	return process.waitFor();
- }
 
 /*
  * Banner!
@@ -46,6 +36,7 @@ println("   \\ \\_______\\\\ \\__\\ \\__\\\\ \\_______\\\\ \\__\\ \\__\\")
 println("    \\|_______| \\|__|\\|__| \\|_______| \\|__|\\|__|")
 println()
 println("     Java Shell Builder - " + version)
+println("     https://github.com/sormuras/bach")
 println()
 
 /*
@@ -54,6 +45,7 @@ println()
 println()
 println("Downloading assets to " + target + "...")
 println()
+var target = Files.createDirectories(Path.of(".bach/" + version))
 var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 for (var asset : Set.of(target.resolve("Bach.java"))) {
   if (Files.exists(asset) && !version.equals("master")) continue;
@@ -71,35 +63,26 @@ for (var asset : Set.of(target.resolve("Bach.java"))) {
 var bach = target.resolve("Bach.java").toString()
 var java = "java --show-version " + bach
 println()
-println("Generating local launchers...")
-println()
+println("Generating local launchers and initial configuration...")
+println("     -> bach");
+Files.write(Path.of("bach."), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
 println("     -> bach.bat");
 Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", java + " %*"))
-println("     -> bach.java");
-Files.write(Path.of("bach.java"), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
-
-/*
- * Run boot action.
- */
-println()
-println("Executing " + bach + " boot...")
-println()
-var code = start("java", "-Dbach.log.level=WARNING", bach, "boot")
+println("     -> bach.properties");
+Files.write(Path.of("bach.properties"), List.of("bach.log.level=WARNING"))
 
 /*
  * Print some help and wave goodbye.
  */
 println()
-println("Bootstrap and initial build finished. Use the following commands to launch:")
+println("Bootstrap finished. Use the following command to launch Bach:")
 println("")
-println("   Any OS: java " + bach + " <actions>")
-println("  Windows: bach[.bat]  <actions>")
-println("    Linux: ./bach.java <actions>")
+println("   Any OS: java .bach/" + version + "/Bach.java <actions>")
+println("  Windows: bach[.bat] <actions>")
+println("    Linux: ./bach <actions>")
 println()
-code += start("java", "-Dbach.log.level=OFF", bach, "help")
-
 println()
-println("Thanks for using https://github.com/sormuras/bach")
+println("Have fun using Bach -- https://github.com/sormuras/bach")
 println()
 
-/exit code
+/exit

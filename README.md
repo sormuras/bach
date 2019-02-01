@@ -10,53 +10,14 @@ Use Java source in [jshell] to build your modular project.
 
 Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-## simple usage
+## bootstrap
 
-Download a copy of [Bach.java] to your project's root directory and put the following [jshell] script in file called `build.jsh`.
-Launch the build with `jshell build.jsh`.
-
-```javascript
-/open Bach.java
-
-new Bach().run("java", "--version")
-
-/exit
+```text
+jshell https://bit.ly/boot-bach
+bach help
 ```
 
-## make it executable
-
-Want to call just `./build` to launch the build?
-
-Add the following pseudo-shebang as the first line to `build.jsh`:
-
-```bash
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
-```
-
-Don't forget to mark your build script executable, i.e. `chmod u+x build.jsh`.
-See **bootstrap on-the-fly** section below for an example.
-
-## bootstrap on-the-fly
- 
-Copy and paste the source of [bootstrap.jsh] to automatically download that latest revisions of [Bach.java].
-
-```javascript
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
-
-/*
- * Open and source "Bach.java" into this jshell session.
- */
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
-
-/*
- * Use it!
- */
-var code = new Bach().run("java", "--version")
-
-/exit code
-```
-
-## install-jdk.sh
+# install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](http://jdk.java.net).
 It supports GA releases and builds provided by [Oracle](http://www.oracle.com/technetwork/java/javase/terms/license/index.html) as well. 
@@ -99,7 +60,7 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
+[boot.jsh]: https://github.com/sormuras/bach/blob/master/boot.jsh
 [Bach.java]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.java
 [Bach.jsh]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.jsh
-[bootstrap.jsh]: https://github.com/sormuras/bach/blob/master/demo/00-bootstrap/bootstrap.jsh
 [install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
