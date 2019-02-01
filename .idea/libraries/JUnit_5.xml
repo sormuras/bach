@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="JUnit 5">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.bach/tools/junit-platform-console-standalone/junit-platform-console-standalone-1.4.0-RC2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

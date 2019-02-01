@@ -1,9 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Bach" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="Build" />
-    <module name="bach" />
-    <option name="VM_PARAMETERS" value="-Dbach.format.replace=true -Dbach.offline=false" />
-    <option name="WORKING_DIRECTORY" value="file://$MODULE_DIR$" />
-    <method />
-  </configuration>
-</component>
