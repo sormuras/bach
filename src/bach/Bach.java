@@ -204,8 +204,8 @@ class Bach {
           log.log(Level.ERROR, "Action " + action + " returned " + code);
           return code;
         }
-        if (action == Action.TOOL) {
-          // all arguments are consumed by the external tool
+        if (action == Action.RUN || action == Action.TOOL) {
+          // all arguments are already consumed
           break;
         }
       }
@@ -398,6 +398,25 @@ enum Action implements Function<Bach, Integer> {
     @Override
     public String toString() {
       return "Display help screen ... F1, F1, F1!";
+    }
+  },
+
+  RUN {
+    @Override
+    public Integer apply(Bach bach) {
+      var args = new LinkedList<>(bach.arguments);
+      if (args.size() < 2) {
+        bach.log.log(Level.WARNING, "Too few arguments for executing a command: " + args);
+        return 1;
+      }
+      args.removeFirst(); // discard "RUN" action marker
+      var name = args.removeFirst();
+      return bach.run(name, args.toArray());
+    }
+
+    @Override
+    public String toString() {
+      return "Run an arbitrary command (potentially in-process) consuming all arguments.";
     }
   },
 
