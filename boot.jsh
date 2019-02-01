@@ -46,7 +46,7 @@ println()
  * Download "Bach.java" and other assets from GitHub to local directory.
  */
 println()
-println("Downloading assets to " + target + "...")
+println("Downloading assets to " + target.toAbsolutePath() + "...")
 println()
 Files.createDirectories(target)
 for (var asset : Set.of(bach)) {
@@ -55,7 +55,7 @@ for (var asset : Set.of(bach)) {
   try (var stream = remote.openStream()) {
     Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
   }
-  println("     -> " + asset.toAbsolutePath());
+  println("     -> " + asset);
 }
 
 /*

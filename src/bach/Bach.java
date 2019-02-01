@@ -316,7 +316,7 @@ enum Action implements Function<Bach, Integer> {
 
     @Override
     public String toString() {
-      return "Build project in current directory: " + Property.BASE;
+      return "Build project '" + Util.last(Property.BASE) + "' in current directory";
     }
   },
 
@@ -387,8 +387,7 @@ enum Action implements Function<Bach, Integer> {
 
     @Override
     public String toString() {
-      var base = Property.BASE;
-      return "Create starter project " + Util.last(base) + " in current directory: " + base;
+      return "Create starter project '" + Util.last(Property.BASE) + "' in current directory";
     }
   },
 
