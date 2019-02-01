@@ -35,7 +35,6 @@ class ActionTests {
     assertLinesMatch(
         List.of(
             "",
-            " boot      -> .+",
             " build     -> .+",
             " clean     -> .+",
             " erase     -> .+",
