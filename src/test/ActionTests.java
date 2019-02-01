@@ -35,14 +35,14 @@ class ActionTests {
     assertLinesMatch(
         List.of(
             "",
-            " BOOT      -> .+",
-            " BUILD     -> .+",
-            " CLEAN     -> .+",
-            " ERASE     -> .+",
-            " FAIL      -> .+",
-            " HELP      -> .+",
-            " SCAFFOLD  -> .+",
-            " TOOL      -> .+",
+            " boot      -> .+",
+            " build     -> .+",
+            " clean     -> .+",
+            " erase     -> .+",
+            " fail      -> .+",
+            " help      -> .+",
+            " scaffold  -> .+",
+            " tool      -> .+",
             ""),
         context.bytesOut.toString().lines().collect(Collectors.toList()));
   }

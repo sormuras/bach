@@ -37,11 +37,6 @@ class PropertyTests {
   }
 
   @Test
-  void lastOfBaseIsBach() {
-    assertEquals("bach", Util.last(Property.BASE).toString());
-  }
-
-  @Test
   void loadProperties() {
     var lines = List.of("a=1", "# comment", " b = 2=II");
     assertEquals(Map.of("a", "1", "b", "2=II"), Property.load(lines.stream()));
