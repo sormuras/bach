@@ -41,7 +41,6 @@ class ActionTests {
             " erase     -> .+",
             " fail      -> .+",
             " help      -> .+",
-            " run       -> .+",
             " scaffold  -> .+",
             " tool      -> .+",
             ""),

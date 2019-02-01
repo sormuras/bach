@@ -204,8 +204,8 @@ class Bach {
           log.log(Level.ERROR, "Action " + action + " returned " + code);
           return code;
         }
-        if (action == Action.RUN || action == Action.TOOL) {
-          // all arguments are already consumed
+        if (action == Action.TOOL) {
+          // all arguments are consumed by the external tool
           break;
         }
       }
@@ -401,25 +401,6 @@ enum Action implements Function<Bach, Integer> {
     }
   },
 
-  RUN {
-    @Override
-    public Integer apply(Bach bach) {
-      var args = new LinkedList<>(bach.arguments);
-      if (args.size() < 2) {
-        bach.log.log(Level.WARNING, "Too few arguments for executing a command: " + args);
-        return 1;
-      }
-      args.removeFirst(); // discard "RUN" action marker
-      var name = args.removeFirst();
-      return bach.run(name, args.toArray());
-    }
-
-    @Override
-    public String toString() {
-      return "Run an arbitrary command (potentially in-process) consuming all arguments.";
-    }
-  },
-
   SCAFFOLD {
     @Override
     public Integer apply(Bach bach) {
@@ -444,8 +425,12 @@ enum Action implements Function<Bach, Integer> {
       }
       args.removeFirst(); // discard "TOOL" action marker
       var name = args.removeFirst();
-      var tool = Tool.of(name, args);
-      return tool.apply(bach);
+      try {
+        var tool = Tool.of(name, args);
+        return tool.apply(bach);
+      } catch (UnsupportedOperationException e) {
+        return bach.run(name, args.toArray());
+      }
     }
 
     @Override
