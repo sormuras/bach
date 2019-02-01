@@ -389,7 +389,7 @@ enum Action implements Function<Bach, Integer> {
       var out = bach.var.streamOut;
       out.println();
       for (var action : Action.values()) {
-        out.println(String.format(" %-9s -> %s", action.name(), action));
+        out.println(String.format(" %-9s -> %s", action.name().toLowerCase(), action));
       }
       out.println();
       return 0;

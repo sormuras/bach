@@ -87,7 +87,7 @@ println()
 var code = start("java", "-Dbach.log.level=WARNING", bach, "boot")
 
 /*
- * Outro and pr
+ * Print some help and wave goodbye.
  */
 println()
 println("Bootstrap and initial build finished. Use the following commands to launch:")
@@ -96,7 +96,7 @@ println("   Any OS: java " + bach + " <actions>")
 println("  Windows: bach[.bat]  <actions>")
 println("    Linux: ./bach.java <actions>")
 println()
-code += start("java", "-Dbach.log.level=OFF", bach, "HELP")
+code += start("java", "-Dbach.log.level=OFF", bach, "help")
 
 println()
 println("Thanks for using https://github.com/sormuras/bach")
