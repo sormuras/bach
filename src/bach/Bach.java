@@ -865,10 +865,12 @@ interface Tool extends Function<Bach, Integer> {
     return of(name, List.of(arguments));
   }
 
-  static Tool of(String name, List<String> arguments) {
+  static Tool of(String name, List<?> arguments) {
     switch (name.toLowerCase()) {
       case "gradle":
         return new Tool.Gradle(arguments);
+      case "junit":
+        return new Tool.JUnit(arguments);
       case "maven":
       case "mvn":
         return new Tool.Maven(arguments);
@@ -1038,9 +1040,9 @@ interface Tool extends Function<Bach, Integer> {
   /** Gradle. */
   class Gradle implements Tool {
 
-    final List<String> arguments;
+    final List<?> arguments;
 
-    Gradle(List<String> arguments) {
+    Gradle(List<?> arguments) {
       this.arguments = arguments;
     }
 
@@ -1070,9 +1072,9 @@ interface Tool extends Function<Bach, Integer> {
       return jar.run(bach);
     }
 
-    final List<Object> arguments;
+    final List<?> arguments;
 
-    JUnit(List<Object> arguments) {
+    JUnit(List<?> arguments) {
       this.arguments = arguments;
     }
 
@@ -1090,9 +1092,9 @@ interface Tool extends Function<Bach, Integer> {
   /** Maven. */
   class Maven implements Tool {
 
-    final List<String> arguments;
+    final List<?> arguments;
 
-    Maven(List<String> arguments) {
+    Maven(List<?> arguments) {
       this.arguments = arguments;
     }
 
