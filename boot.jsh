@@ -21,6 +21,9 @@
  * Declare constants and helper methods.
  */
 var version = "master"
+var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
+var target = Path.of(".bach/" + version)
+var bach = target.resolve("Bach.java")
 
 /open PRINTING
 
@@ -45,13 +48,11 @@ println()
 println()
 println("Downloading assets to " + target + "...")
 println()
-var target = Files.createDirectories(Path.of(".bach/" + version))
-var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
-for (var asset : Set.of(target.resolve("Bach.java"))) {
-  if (Files.exists(asset) && !version.equals("master")) continue;
-  var source = new URL(context, asset.getFileName().toString());
-  println("Loading " + source + "...");
-  try (var stream = source.openStream()) {
+Files.createDirectories(target)
+for (var asset : Set.of(bach)) {
+  var remote = new URL(source, asset.getFileName().toString());
+  println("Loading " + remote + "...");
+  try (var stream = remote.openStream()) {
     Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
   }
   println("     -> " + asset.toAbsolutePath());
@@ -60,12 +61,11 @@ for (var asset : Set.of(target.resolve("Bach.java"))) {
 /*
  * Generate local launchers.
  */
-var bach = target.resolve("Bach.java").toString()
 var java = "java --show-version " + bach
 println()
 println("Generating local launchers and initial configuration...")
 println("     -> bach");
-Files.write(Path.of("bach."), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
+Files.write(Path.of("bach"), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
 println("     -> bach.bat");
 Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", java + " %*"))
 println("     -> bach.properties");
