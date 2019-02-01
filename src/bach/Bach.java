@@ -54,12 +54,112 @@ import java.util.stream.Stream;
 class Bach {
 
   /** Main entry-point. */
-  public static void main(String... args) {
+  public static void main(String... args) throws Exception {
     var bach = new Bach(args);
-    var code = bach.run();
+    var code = List.of("-").equals(List.of(args)) ? make(bach) : bach.run();
     if (code != 0) {
       throw new Error("Bach finished with exit code " + code);
     }
+  }
+
+  private static int make(Bach bach) throws Exception {
+    bach.log.info("Make!");
+    var SOURCE_BACH = Path.of("src", "bach");
+    var SOURCE_TEST = Path.of("src", "test");
+    var TARGET = Path.of("target", "build");
+    var TARGET_MAIN = TARGET.resolve("classes/main");
+    var TARGET_TEST = TARGET.resolve("classes/test");
+    var JAVADOC = TARGET.resolve("javadoc");
+    var ARTIFACTS = TARGET.resolve("artifacts");
+    var BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
+
+    bach.log.info("Format");
+    var format = new Tool.GoogleJavaFormat(true, List.of(Path.of("src"), Path.of("demo")));
+    format.run(bach);
+
+    bach.log.info("Clean");
+    if (Files.exists(TARGET)) Util.removeTree(TARGET);
+
+    bach.log.info("Compile Bach.java");
+    var main = new Command("javac");
+    main.add("-g");
+    main.add("-d").add(TARGET_MAIN);
+    main.add("--source-path").add(SOURCE_BACH);
+    main.mark(10);
+    main.addAllJavaFiles(List.of(SOURCE_BACH));
+    main.run(bach);
+
+    bach.log.info("Compile tests");
+    var test = new Command("javac");
+    test.add("-g");
+    test.add("-d").add(TARGET_TEST);
+    test.add("--source-path").add(SOURCE_TEST);
+    test.add("--class-path").add(List.of(TARGET_MAIN, Tool.JUnit.install(bach)));
+    test.mark(10);
+    test.addAllJavaFiles(List.of(SOURCE_TEST));
+    test.run(bach);
+
+    bach.log.info("Launch JUnit Platform Console");
+    new Tool.JUnit(
+            List.of(
+                "--exclude-tag",
+                "make",
+                "--class-path",
+                TARGET_TEST,
+                "--class-path",
+                TARGET_MAIN,
+                "--scan-class-path"))
+        .run(bach);
+
+    bach.log.info("Generate javadoc");
+    Files.createDirectories(JAVADOC);
+    var javadoc = new Command("javadoc");
+    javadoc.add("-d").add(JAVADOC);
+    javadoc.add("-package");
+    javadoc.add("-quiet");
+    javadoc.add("-keywords");
+    javadoc.add("-html5");
+    javadoc.add("-linksource");
+    javadoc.add("-Xdoclint:all,-missing");
+    javadoc.add("-link").add("https://docs.oracle.com/en/java/javase/11/docs/api/");
+    javadoc.add(BACH_JAVA);
+    javadoc.run(bach);
+
+    bach.log.info("Package");
+    Files.createDirectories(ARTIFACTS);
+    new Command("jar")
+        .add("--create")
+        .add("--file")
+        .add(ARTIFACTS.resolve("bach.jar"))
+        .add("-C")
+        .add(TARGET_MAIN)
+        .add(".")
+        .run(bach);
+    new Command("jar")
+        .add("--create")
+        .add("--file")
+        .add(ARTIFACTS.resolve("bach-sources.jar"))
+        .add("-C")
+        .add(SOURCE_BACH)
+        .add(".")
+        .run(bach);
+    new Command("jar")
+        .add("--create")
+        .add("--file")
+        .add(ARTIFACTS.resolve("bach-javadoc.jar"))
+        .add("-C")
+        .add(JAVADOC)
+        .add(".")
+        .run(bach);
+
+    bach.log.info("JDeps");
+    new Command("jdeps")
+        .add("-summary")
+        .add("-recursive")
+        .add(ARTIFACTS.resolve("bach.jar"))
+        .run(bach);
+
+    return 0;
   }
 
   final List<String> arguments;
@@ -574,6 +674,10 @@ enum Property {
   /** Gradle URI. */
   TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.1.1-bin.zip"),
 
+  /** JUnit Platform Console Standalone URI. */
+  TOOL_JUNIT_URI(
+      "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0-RC2/junit-platform-console-standalone-1.4.0-RC2.jar"),
+
   /** Maven URI. */
   TOOL_MAVEN_URI(
       "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
@@ -953,6 +1057,33 @@ interface Tool extends Function<Bach, Integer> {
       var executable = Util.setExecutable(home.resolve("bin").resolve(name));
       var command = new Command(executable.toString()).addAll(arguments);
       return command.apply(bach);
+    }
+  }
+
+  /** JUnit Platform Console Standalone. */
+  class JUnit implements Tool {
+
+    static Path install(Bach bach) {
+      var art = "junit-platform-console-standalone";
+      var uri = URI.create(Property.TOOL_JUNIT_URI.get());
+      var jar = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS).resolve(art));
+      return jar.run(bach);
+    }
+
+    final List<Object> arguments;
+
+    JUnit(List<Object> arguments) {
+      this.arguments = arguments;
+    }
+
+    @Override
+    public Integer apply(Bach bach) {
+      var jar = install(bach);
+      var java = new Command("java");
+      java.add("-ea");
+      java.add("-jar").add(jar);
+      java.addAll(arguments);
+      return java.apply(bach);
     }
   }
 
