@@ -18,64 +18,14 @@
  */
 
 /*
- * Declare constants and helper methods.
+ * Define convenient short names for the foundation JDK tools and commands.
  */
-var version = "master"
-var target = Files.createDirectories(Paths.get(".bach/" + version))
-
-/open PRINTING
-
-int start(String executable, String... args) throws Exception {
- 	var processBuilder = new ProcessBuilder(executable);
- 	Arrays.stream(args).forEach(processBuilder.command()::add);
- 	processBuilder.redirectErrorStream(true);
- 	var process = processBuilder.start();
- 	process.getInputStream().transferTo(System.out);
- 	return process.waitFor();
- }
-
-/*
- * Banner!
- */
-println(" ________   ________   ________   ___  ___     ")
-println("|\\   __  \\ |\\   __  \\ |\\   ____\\ |\\  \\|\\  \\    ")
-println("\\ \\  \\|\\ /_\\ \\  \\|\\  \\\\ \\  \\___| \\ \\  \\\\\\  \\   ")
-println(" \\ \\   __  \\\\ \\   __  \\\\ \\  \\     \\ \\   __  \\  ")
-println("  \\ \\  \\|\\  \\\\ \\  \\ \\  \\\\ \\  \\____ \\ \\  \\ \\  \\ ")
-println("   \\ \\_______\\\\ \\__\\ \\__\\\\ \\_______\\\\ \\__\\ \\__\\")
-println("    \\|_______| \\|__|\\|__| \\|_______| \\|__|\\|__|")
-println()
-println("     Java Shell Builder - " + version)
-println()
-
-/*
- * Download "Bach.java" and other assets from GitHub to local directory.
- */
-println()
-println("Downloading assets to " + target + "...")
-println()
-var context = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
-for (var asset : Set.of(target.resolve("Bach.java"), target.resolve("Bach.jsh"))) {
-  if (Files.exists(asset) && !version.equals("master")) continue;
-  var source = new URL(context, asset.getFileName().toString());
-  println("Loading " + source + "...");
-  try (var stream = source.openStream()) {
-    Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
-  }
-  println("     -> " + asset.toAbsolutePath());
-}
-
-println()
-println("Executing Bach.java BOOT...")
-println()
-var bach = target.resolve("Bach.java").toString()
-var code = start("java", "-Dbach.log.level=WARNING", bach, "BOOT")
-
-println()
-println("Bootstrap and initial build finished. You now may use the following command:")
-println("")
-println("java " + bach + " <actions>")
-println()
-code += start("java", "-Dbach.log.level=OFF", bach, "HELP")
-
-/exit code
+int java(Object... args) { return new Bach().run("java", args); }
+int javac(Object... args) { return new Bach().run("javac", args); }
+int javadoc(Object... args) { return new Bach().run("javadoc", args); }
+int jar(Object... args) { return new Bach().run("jar", args); }
+int jlink(Object... args) { return new Bach().run("jlink", args); }
+int jmod(Object... args) { return new Bach().run("jmod", args); }
+int jdeps(Object... args) { return new Bach().run("jdeps", args); }
+int jdeprscan(Object... args) { return new Bach().run("jdeprscan", args); }
+int javap(Object... args) { return new Bach().run("javap", args); }
