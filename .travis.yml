@@ -5,7 +5,7 @@ install:
 - java --version
 
 script:
-- ./build.jsh
+- java src/bach/Bach.java -
 
 # https://github.com/sormuras/bach/issues/43
 #after_success:
