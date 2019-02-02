@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 class Bach {
 
   /** Main entry-point. */
-  static void main(String... args) {
+  public static void main(String... args) {
     var bach = new Bach(args);
     var code = bach.run();
     if (code != 0) {
