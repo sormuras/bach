@@ -5,7 +5,8 @@ install:
 - java --version
 
 script:
-- java src/bach/Bach.java -
+- javac -d target/make src/bach/Bach.java src/bach/Make.java
+- java -cp target/make Make
 
 after_success:
 - cd $TRAVIS_BUILD_DIR/demo/00-bootstrap

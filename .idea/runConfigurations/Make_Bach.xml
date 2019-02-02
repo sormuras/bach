@@ -1,9 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Make Bach" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="Bach" />
+    <option name="MAIN_CLASS_NAME" value="Make" />
     <module name="bach" />
-    <option name="PROGRAM_PARAMETERS" value="-" />
-    <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

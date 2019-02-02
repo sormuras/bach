@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.function.Function;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,18 +30,6 @@ import org.junit.jupiter.api.function.Executable;
 
 @ExtendWith(BachContext.class)
 class BachTests {
-
-  @Test
-  @Tag("make")
-  void mainMake() throws Exception {
-    var level = "bach.log.level";
-    try {
-      System.setProperty(level, "WARNING");
-      Bach.main("-");
-    } finally {
-      System.clearProperty(level);
-    }
-  }
 
   @Test
   void mainWithEmptyStringArray() {

@@ -54,112 +54,12 @@ import java.util.stream.Stream;
 class Bach {
 
   /** Main entry-point. */
-  public static void main(String... args) throws Exception {
+  static void main(String... args) {
     var bach = new Bach(args);
-    var code = List.of("-").equals(List.of(args)) ? make(bach) : bach.run();
+    var code = bach.run();
     if (code != 0) {
       throw new Error("Bach finished with exit code " + code);
     }
-  }
-
-  private static int make(Bach bach) throws Exception {
-    bach.log.info("Make!");
-    var SOURCE_BACH = Path.of("src", "bach");
-    var SOURCE_TEST = Path.of("src", "test");
-    var TARGET = Path.of("target", "build");
-    var TARGET_MAIN = TARGET.resolve("classes/main");
-    var TARGET_TEST = TARGET.resolve("classes/test");
-    var JAVADOC = TARGET.resolve("javadoc");
-    var ARTIFACTS = TARGET.resolve("artifacts");
-    var BACH_JAVA = SOURCE_BACH.resolve("Bach.java");
-
-    bach.log.info("Format");
-    var format = new Tool.GoogleJavaFormat(true, List.of(Path.of("src"), Path.of("demo")));
-    format.run(bach);
-
-    bach.log.info("Clean");
-    if (Files.exists(TARGET)) Util.removeTree(TARGET);
-
-    bach.log.info("Compile Bach.java");
-    var main = new Command("javac");
-    main.add("-g");
-    main.add("-d").add(TARGET_MAIN);
-    main.add("--source-path").add(SOURCE_BACH);
-    main.mark(10);
-    main.addAllJavaFiles(List.of(SOURCE_BACH));
-    main.run(bach);
-
-    bach.log.info("Compile tests");
-    var test = new Command("javac");
-    test.add("-g");
-    test.add("-d").add(TARGET_TEST);
-    test.add("--source-path").add(SOURCE_TEST);
-    test.add("--class-path").add(List.of(TARGET_MAIN, Tool.JUnit.install(bach)));
-    test.mark(10);
-    test.addAllJavaFiles(List.of(SOURCE_TEST));
-    test.run(bach);
-
-    bach.log.info("Launch JUnit Platform Console");
-    new Tool.JUnit(
-            List.of(
-                "--exclude-tag",
-                "make",
-                "--class-path",
-                TARGET_TEST,
-                "--class-path",
-                TARGET_MAIN,
-                "--scan-class-path"))
-        .run(bach);
-
-    bach.log.info("Generate javadoc");
-    Files.createDirectories(JAVADOC);
-    var javadoc = new Command("javadoc");
-    javadoc.add("-d").add(JAVADOC);
-    javadoc.add("-package");
-    javadoc.add("-quiet");
-    javadoc.add("-keywords");
-    javadoc.add("-html5");
-    javadoc.add("-linksource");
-    javadoc.add("-Xdoclint:all,-missing");
-    javadoc.add("-link").add("https://docs.oracle.com/en/java/javase/11/docs/api/");
-    javadoc.add(BACH_JAVA);
-    javadoc.run(bach);
-
-    bach.log.info("Package");
-    Files.createDirectories(ARTIFACTS);
-    new Command("jar")
-        .add("--create")
-        .add("--file")
-        .add(ARTIFACTS.resolve("bach.jar"))
-        .add("-C")
-        .add(TARGET_MAIN)
-        .add(".")
-        .run(bach);
-    new Command("jar")
-        .add("--create")
-        .add("--file")
-        .add(ARTIFACTS.resolve("bach-sources.jar"))
-        .add("-C")
-        .add(SOURCE_BACH)
-        .add(".")
-        .run(bach);
-    new Command("jar")
-        .add("--create")
-        .add("--file")
-        .add(ARTIFACTS.resolve("bach-javadoc.jar"))
-        .add("-C")
-        .add(JAVADOC)
-        .add(".")
-        .run(bach);
-
-    bach.log.info("JDeps");
-    new Command("jdeps")
-        .add("-summary")
-        .add("-recursive")
-        .add(ARTIFACTS.resolve("bach.jar"))
-        .run(bach);
-
-    return 0;
   }
 
   final List<String> arguments;
