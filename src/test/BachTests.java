@@ -17,6 +17,7 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,12 +25,45 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(BachContext.class)
 class BachTests {
+
+  @Test
+  void staticUserPathPointsToWorkingDirectory() {
+    assertEquals(System.getProperty("user.dir"), Bach.USER_PATH.toString());
+  }
+
+  @Test
+  void basedAbsolutePathReturnsSameInstance() {
+    var absolutePath = Path.of("absolute/path").toAbsolutePath();
+    assertSame(absolutePath, new Bach().based(absolutePath));
+  }
+
+  @Test
+  void basedRelativePathReturnsSameInstance() {
+    var relativePath = Path.of("relative/path");
+    assertSame(relativePath, new Bach().based(relativePath));
+  }
+
+  @Test
+  void basedRelativePath() {
+    var base = Path.of("other/path");
+    var relativePath = "relative/path";
+    assertEquals(base.resolve(relativePath), new Bach(base).based(relativePath));
+  }
+
+  @Test
+  void getCustomDefaultValueForNonExistingKey() {
+    var bach = new Bach();
+    var key = "key that doesn't exist";
+    assertEquals("4711", bach.get(key, "4711"));
+    assertEquals(List.of("a", "b", "c"), bach.get(key, "a:b:c", ":").collect(Collectors.toList()));
+  }
 
   @Test
   void mainWithEmptyStringArray() {
@@ -58,19 +92,41 @@ class BachTests {
   }
 
   @Test
-  void mainWithEmptyListOfString(Bach bach) {
-    // TODO assertEquals(0, bach.run());
+  void runDefaultAction() {
+    var bach = new Bach(Path.of("."), Map.of(Property.ACTION.key, "HELP"), List.of());
+    var context = new BachContext(bach);
+    assertEquals(0, context.bach.run());
+    assertLinesMatch(
+        List.of(
+            "Bach [" + context.bach.base + "]",
+            ">> DEBUG LINES >>",
+            "Calling default action: HELP"),
+        context.recorder.all);
   }
 
   @Test
-  void mainWithHelpReturnsZero(Bach bach) {
-    // TODO assertEquals(0, bach.main(List.of("help")));
+  void runHelpReturnsZero() {
+    var bach = new Bach("help");
+    var context = new BachContext(bach);
+    assertEquals(0, context.bach.run());
+    assertLinesMatch(
+        List.of("Bach [" + context.bach.base + "]", ">> DEBUG LINES >>", "Calling action: HELP"),
+        context.recorder.all);
   }
 
   @Test
-  void mainFailsWithDefaultCode(Bach bach) {
+  void runFailsWithDefaultCode() {
     var expected = Integer.valueOf(Property.FAIL_CODE.defaultValue);
-    // TODO assertEquals(expected, bach.main(List.of("help", "fail")));
+    var bach = new Bach("help", "fail");
+    var context = new BachContext(bach);
+    assertEquals(expected, bach.run());
+    assertLinesMatch(
+        List.of(
+            "Bach [" + bach.base + "]",
+            ">> DEBUG LINES >>",
+            "Calling action: HELP",
+            "Calling action: FAIL"),
+        context.recorder.all);
   }
 
   @Test

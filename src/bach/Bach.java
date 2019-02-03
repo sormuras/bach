@@ -54,6 +54,9 @@ import java.util.stream.Stream;
 /** Java Shell Builder. */
 class Bach {
 
+  /** User's current working directory as path. */
+  static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
+
   /** Main entry-point. */
   public static void main(String... args) {
     var bach = new Bach(args);
@@ -75,12 +78,34 @@ class Bach {
   }
 
   Bach(Path base, String... arguments) {
+    this(base, Property.load(base.resolve("bach.properties")), List.of(arguments));
+  }
+
+  Bach(Path base, Map<String, String> properties, List<String> arguments) {
     this.base = base;
-    this.arguments = List.of(arguments);
-    this.properties = Property.load(base.resolve("bach.properties"));
+    this.properties = properties;
+    this.arguments = arguments;
     this.log = new Log();
     this.var = new Var();
     this.project = new Project();
+  }
+
+  Path based(Path path) {
+    if (path.isAbsolute()) {
+      return path;
+    }
+    if (base.equals(USER_PATH)) {
+      return path;
+    }
+    return base.resolve(path);
+  }
+
+  Path based(String first, String... more) {
+    return based(Path.of(first, more));
+  }
+
+  Path based(Property property) {
+    return based(Path.of(get(property)));
   }
 
   /** Get the value of the supplied property. */
@@ -98,15 +123,10 @@ class Bach {
     return Arrays.stream(get(key, defaultValue).split(regex)).map(String::strip);
   }
 
-  /** Get boolean value of the supplied property. */
-  boolean isTrue(Property property) {
-    return Boolean.valueOf(get(property));
-  }
-
   /** Main entry-point entry-point. */
   int run() {
     // Welcome!
-    log.info("Bach (base=%s)", base);
+    log.info("Bach [%s]", base);
 
     // Debug...
     log.debug("Arguments");
@@ -241,10 +261,10 @@ class Bach {
   /** Variables. */
   class Var {
     /** Return non-zero exit code on first failed action/function/operation. */
-    boolean failFast = isTrue(Property.FAIL_FAST);
+    boolean failFast = Boolean.valueOf(get(Property.FAIL_FAST));
 
     /** Use only locally cached assets. */
-    boolean offline = isTrue(Property.OFFLINE);
+    boolean offline = Boolean.valueOf(get(Property.OFFLINE));
 
     /** Print stream to emit error messages to. */
     PrintStream streamErr = System.err;
@@ -267,11 +287,9 @@ class Bach {
         var prefix = "bach.project.realms[" + name + "].";
         this.sources =
             get(prefix + "sources", get(Property.PATH_SOURCE) + "/" + name + "/java", ",")
-                .map(base::resolve)
+                .map(Bach.this::based)
                 .collect(Collectors.toList());
-        this.target =
-            base.resolve(
-                Path.of(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name)));
+        this.target = based(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name));
       }
 
       int compile() {
@@ -296,7 +314,7 @@ class Bach {
       this.launch = get(Property.PROJECT_LAUNCH);
       this.realms = new TreeMap<>();
       get("bach.project.realms", "main, test", ",")
-          .filter(key -> Files.isDirectory(base.resolve(get(Property.PATH_SOURCE)).resolve(key)))
+          .filter(key -> Files.isDirectory(based(get(Property.PATH_SOURCE)).resolve(key)))
           .forEach(key -> realms.put(key, new Realm(key)));
     }
 
@@ -343,7 +361,7 @@ enum Action implements Function<Bach, Integer> {
   CLEAN {
     @Override
     public Integer apply(Bach bach) {
-      var target = bach.base.resolve(bach.get(Property.PATH_TARGET));
+      var target = bach.based(Property.PATH_TARGET);
       if (Files.exists(target)) {
         Util.removeTree(target);
       }
@@ -359,7 +377,7 @@ enum Action implements Function<Bach, Integer> {
   ERASE {
     @Override
     public Integer apply(Bach bach) {
-      var tools = bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS));
+      var tools = bach.based(Property.PATH_CACHE_TOOLS);
       if (Files.exists(tools)) {
         Util.removeTree(tools);
       }
@@ -982,7 +1000,7 @@ interface Tool extends Function<Bach, Integer> {
         jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
         // TODO Find better way to extract root folder name...
         var root = Path.of(listing.toString().split("\\R")[0]);
-        var home = bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(root);
+        var home = bach.based(Property.PATH_CACHE_TOOLS).resolve(root);
         if (Files.notExists(home)) {
           jar.run(System.out, System.err, "--extract", "--file", zip.toString());
           Files.move(root, home);
@@ -1026,9 +1044,7 @@ interface Tool extends Function<Bach, Integer> {
       var name = "google-java-format";
       var file = name + "-" + version + "-all-deps.jar";
       var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
-      var jar =
-          new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(name))
-              .run(bach);
+      var jar = new Download(uri, bach.based(Property.PATH_CACHE_TOOLS).resolve(name)).run(bach);
 
       var command = new Command("java");
       command.add("-jar");
@@ -1058,7 +1074,7 @@ interface Tool extends Function<Bach, Integer> {
     public Integer apply(Bach bach) {
       // download
       var uri = URI.create(bach.get(Property.TOOL_GRADLE_URI));
-      var zip = new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS))).run(bach);
+      var zip = new Download(uri, bach.based(Property.PATH_CACHE_TOOLS)).run(bach);
       // extract
       var home = new Extract(zip).run(bach);
       // run
@@ -1076,8 +1092,7 @@ interface Tool extends Function<Bach, Integer> {
     static Path install(Bach bach) {
       var art = "junit-platform-console-standalone";
       var uri = URI.create(bach.get(Property.TOOL_JUNIT_URI));
-      return new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(art))
-          .run(bach);
+      return new Download(uri, bach.based(Property.PATH_CACHE_TOOLS).resolve(art)).run(bach);
     }
 
     final List<?> arguments;
@@ -1110,7 +1125,7 @@ interface Tool extends Function<Bach, Integer> {
     public Integer apply(Bach bach) {
       // download
       var uri = URI.create(bach.get(Property.TOOL_MAVEN_URI));
-      var zip = new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS))).run(bach);
+      var zip = new Download(uri, bach.based(Property.PATH_CACHE_TOOLS)).run(bach);
       // extract
       var home = new Extract(zip).run(bach);
       // run
