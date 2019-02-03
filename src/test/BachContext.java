@@ -67,8 +67,12 @@ class BachContext implements ParameterResolver {
   ByteArrayOutputStream bytesErr = new ByteArrayOutputStream(2000);
   ByteArrayOutputStream bytesOut = new ByteArrayOutputStream(2000);
 
-  private BachContext() {
-    this.bach = new Bach();
+  BachContext() {
+    this(new Bach());
+  }
+
+  BachContext(Bach bach) {
+    this.bach = bach;
     this.recorder = new Recorder();
 
     bach.log.logger = recorder;

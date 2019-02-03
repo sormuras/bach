@@ -31,6 +31,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(BachContext.class)
 class ToolTests {
 
+  class NoopTool implements Tool {
+    final Integer code;
+
+    NoopTool(Integer code) {
+      this.code = code;
+    }
+
+    @Override
+    public Integer apply(Bach bach) {
+      return code;
+    }
+  }
+
+  @Test
+  void runNoopToolWithNonZeroCodeFails(Bach bach) {
+    var noop = new NoopTool(123);
+    var e = assertThrows(Error.class, () -> noop.run(bach));
+    assertEquals("NoopTool failed with code 123", e.getMessage());
+  }
+
+  @Test
+  void ofEmptyNameIsNotSupported() {
+    assertThrows(UnsupportedOperationException.class, () -> Tool.of(""));
+  }
+
   @Nested
   class Download {
 
@@ -135,6 +160,16 @@ class ToolTests {
     void version(Bach bach) {
       var gradle = Tool.of("gradle", "--version");
       assertEquals(0, gradle.run(bach));
+    }
+  }
+
+  @Nested
+  class JUnit {
+
+    @Test
+    void version(Bach bach) {
+      var junit = Tool.of("junit", "--help");
+      assertEquals(0, junit.run(bach));
     }
   }
 

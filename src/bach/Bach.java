@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,36 +63,84 @@ class Bach {
     }
   }
 
+  final Path base;
   final List<String> arguments;
-  final Log log = new Log();
-  final Var var = new Var();
+  final Map<String, String> properties;
+  final Log log;
+  final Var var;
+  final Project project;
 
   Bach(String... arguments) {
+    this(Path.of(System.getProperty("bach.base", System.getProperty("user.dir"))), arguments);
+  }
+
+  Bach(Path base, String... arguments) {
+    this.base = base;
     this.arguments = List.of(arguments);
+    this.properties = Property.load(base.resolve("bach.properties"));
+    this.log = new Log();
+    this.var = new Var();
+    this.project = new Project();
+  }
+
+  /** Get the value of the supplied property. */
+  String get(Property property) {
+    return get(property.key, property.defaultValue);
+  }
+
+  /** Get the entire configured string value of the supplied key. */
+  String get(String key, String defaultValue) {
+    return System.getProperty(key, properties.getOrDefault(key, defaultValue));
+  }
+
+  /** Get configured regex-separated values of the supplied key as a stream of strings. */
+  Stream<String> get(String key, String defaultValue, String regex) {
+    return Arrays.stream(get(key, defaultValue).split(regex)).map(String::strip);
+  }
+
+  /** Get boolean value of the supplied property. */
+  boolean isTrue(Property property) {
+    return Boolean.valueOf(get(property));
   }
 
   /** Main entry-point entry-point. */
   int run() {
     // Welcome!
-    log.info("Bach");
+    log.info("Bach (base=%s)", base);
 
     // Debug...
+    log.debug("Arguments");
     if (arguments.isEmpty()) {
-      log.debug("No arguments");
+      log.debug("<none>");
     } else {
-      log.debug("Arguments");
       for (var argument : arguments) {
         log.debug("  -> %s", argument);
       }
     }
+    log.debug("Variables");
+    for (var var : Var.class.getDeclaredFields()) {
+      try {
+        log.debug("  %s -> %s", var.getName(), var.get(this.var));
+      } catch (IllegalAccessException e) {
+        throw new Error("Accessing field failed?!");
+      }
+    }
     log.debug("Properties");
     for (var property : Property.values()) {
-      log.debug("  %s -> %s", property.key, property.get());
+      log.debug("  %s -> %s", property.key, get(property));
+    }
+    log.debug("Project");
+    log.debug("  name -> %s", project.name);
+    log.debug("  version -> %s", project.version);
+    for (var realm : project.realms.values()) {
+      log.debug("Project Realm '%s'", realm.name);
+      log.debug("  %s.sources -> %s", realm.name, realm.sources);
+      log.debug("  %s.target -> %s", realm.name, realm.target);
     }
 
     // Action!
     if (arguments.isEmpty()) {
-      var action = Action.valueOf(Property.ACTION.get().toUpperCase());
+      var action = Action.valueOf(get(Property.ACTION).toUpperCase());
       log.debug("Calling default action: %s", action.name());
       return action.apply(this);
     } else {
@@ -150,10 +199,10 @@ class Bach {
     BiConsumer<Level, String> logger = this::log;
 
     /** Logger format in {@link java.util.Formatter} style. */
-    String format = Property.LOG_FORMAT.get();
+    String format = get(Property.LOG_FORMAT);
 
     /** Current logger level threshold. */
-    Level level = Level.valueOf(Property.LOG_LEVEL.get());
+    Level level = Level.valueOf(get(Property.LOG_LEVEL));
 
     /** Return {@code true} if debugging is enabled. */
     boolean debug() {
@@ -192,16 +241,76 @@ class Bach {
   /** Variables. */
   class Var {
     /** Return non-zero exit code on first failed action/function/operation. */
-    boolean failFast = Util.isTrue(Property.FAIL_FAST);
+    boolean failFast = isTrue(Property.FAIL_FAST);
 
     /** Use only locally cached assets. */
-    boolean offline = Util.isTrue(Property.OFFLINE);
+    boolean offline = isTrue(Property.OFFLINE);
 
     /** Print stream to emit error messages to. */
     PrintStream streamErr = System.err;
 
     /** Print stream to emit standard messages to. */
     PrintStream streamOut = System.out;
+  }
+
+  /** Project. */
+  class Project {
+
+    /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
+    class Realm {
+      final String name;
+      final List<Path> sources;
+      final Path target;
+
+      Realm(String name) {
+        this.name = name;
+        var prefix = "bach.project.realms[" + name + "].";
+        this.sources =
+            get(prefix + "sources", get(Property.PATH_SOURCE) + "/" + name + "/java", ",")
+                .map(base::resolve)
+                .collect(Collectors.toList());
+        this.target =
+            base.resolve(
+                Path.of(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name)));
+      }
+
+      int compile() {
+        log.info("[compile] %s", name);
+        var javac = new Command("javac");
+        javac.add("-d").add(target);
+        javac.add("--module-source-path").add(sources);
+        // javac.modulePath = group.modulePath();
+        // javac.patchModule = group.patchModule();
+        javac.addAllJavaFiles(sources);
+        return javac.apply(Bach.this);
+      }
+    }
+
+    final String name, version;
+    final String launch;
+    final Map<String, Realm> realms;
+
+    Project() {
+      this.name = get(Property.PROJECT_NAME);
+      this.version = get(Property.PROJECT_VERSION);
+      this.launch = get(Property.PROJECT_LAUNCH);
+      this.realms = new TreeMap<>();
+      get("bach.project.realms", "main, test", ",")
+          .filter(key -> Files.isDirectory(base.resolve(get(Property.PATH_SOURCE)).resolve(key)))
+          .forEach(key -> realms.put(key, new Realm(key)));
+    }
+
+    int compile() {
+      return realms.values().stream().mapToInt(Realm::compile).sum();
+    }
+
+    int launch() {
+      var java = new Command("java");
+      java.add("--module-path")
+          .add(realms.values().stream().map(realm -> realm.target).collect(Collectors.toList()));
+      java.add("--module").add(launch);
+      return java.apply(Bach.this);
+    }
   }
 }
 
@@ -210,33 +319,51 @@ enum Action implements Function<Bach, Integer> {
   BUILD {
     @Override
     public Integer apply(Bach bach) {
-      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
-      return 0;
+      return build(bach.log, bach.project);
+    }
+
+    int build(Bach.Log log, Bach.Project project) {
+      log.info("Building %s...", project.name);
+      var code = project.compile();
+      code += project.launch();
+      if (code == 0) {
+        log.info("%s %s built successfully.", project.name, project.version);
+      } else {
+        log.log(Level.WARNING, "Build failed!");
+      }
+      return code;
     }
 
     @Override
     public String toString() {
-      return "Build project '" + Util.last(Property.BASE) + "' in current directory";
+      return "Build project in current directory";
     }
   },
 
   CLEAN {
     @Override
     public Integer apply(Bach bach) {
-      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      var target = bach.base.resolve(bach.get(Property.PATH_TARGET));
+      if (Files.exists(target)) {
+        Util.removeTree(target);
+      }
       return 0;
     }
 
     @Override
     public String toString() {
-      return "Delete directory " + Property.PATH_TARGET.get() + " - but keep caches intact.";
+      return "Delete directory ${" + Property.PATH_TARGET.key + "} - but keep caches intact.";
     }
   },
 
   ERASE {
     @Override
     public Integer apply(Bach bach) {
-      bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
+      var tools = bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS));
+      if (Files.exists(tools)) {
+        Util.removeTree(tools);
+      }
+      CLEAN.apply(bach);
       return 0;
     }
 
@@ -249,7 +376,7 @@ enum Action implements Function<Bach, Integer> {
   FAIL {
     @Override
     public Integer apply(Bach bach) {
-      var code = Util.integer(Property.FAIL_CODE.get(), -1);
+      var code = Util.integer(bach.get(Property.FAIL_CODE), -1);
       bach.log.log(Level.WARNING, "Setting exit code to " + code);
       return code;
     }
@@ -287,7 +414,7 @@ enum Action implements Function<Bach, Integer> {
 
     @Override
     public String toString() {
-      return "Create starter project '" + Util.last(Property.BASE) + "' in current directory";
+      return "Create starter project in current directory";
     }
   },
 
@@ -378,7 +505,12 @@ class Command implements Function<Bach, Integer> {
 
   /** Add all files visited by walking specified root paths recursively. */
   Command addAll(Collection<Path> roots, Predicate<Path> predicate) {
-    roots.forEach(root -> addAll(root, predicate));
+    for (var root : roots) {
+      if (Files.notExists(root)) {
+        continue;
+      }
+      addAll(root, predicate);
+    }
     return this;
   }
 
@@ -545,11 +677,26 @@ enum Property {
   /** Use only locally cached assets. */
   OFFLINE("false"),
 
+  /** Root path for all source realms. */
+  PATH_SOURCE("src"),
+
   /** Root path for all generated assets. */
   PATH_TARGET("target/bach"),
 
   /** Cache of binary tools. */
   PATH_CACHE_TOOLS(".bach/tools"),
+
+  /** Name of the project. */
+  PROJECT_NAME("project"),
+
+  /** Version of the project. */
+  PROJECT_VERSION("1.0.0-SNAPSHOT"),
+
+  /** Main entry-point of the project. */
+  PROJECT_LAUNCH("n/a"),
+
+  /** Names of source set realms. */
+  PROJECT_REALMS("main, test"),
 
   /** Gradle URI. */
   TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.1.1-bin.zip"),
@@ -561,12 +708,6 @@ enum Property {
   /** Maven URI. */
   TOOL_MAVEN_URI(
       "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
-
-  /** Base directory of the current project. */
-  static final Path BASE = Path.of(System.getProperty("bach.base", System.getProperty("user.dir")));
-
-  /** Properties loaded from {@code ${BASE}/bach.properties} file. */
-  static final Map<String, String> PROPERTIES = load(BASE.resolve("bach.properties"));
 
   static Map<String, String> load(Path path) {
     if (Files.notExists(path)) {
@@ -607,11 +748,6 @@ enum Property {
     this.defaultValue = defaultValue;
     this.description = String.join("", description);
   }
-
-  /** Get configured string value of this property. */
-  String get() {
-    return System.getProperty(key, PROPERTIES.getOrDefault(key, defaultValue));
-  }
 }
 
 /** Tiny static helpers. */
@@ -627,16 +763,6 @@ class Util {
       }
       return defaultValue;
     }
-  }
-
-  /** Get path value of the supplied property. */
-  static Path path(Property property) {
-    return Path.of(property.get());
-  }
-
-  /** Get boolean value of the supplied property. */
-  static boolean isTrue(Property property) {
-    return Boolean.valueOf(property.get());
   }
 
   /** Get last path or the root of the supplied path. */
@@ -856,7 +982,7 @@ interface Tool extends Function<Bach, Integer> {
         jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
         // TODO Find better way to extract root folder name...
         var root = Path.of(listing.toString().split("\\R")[0]);
-        var home = Util.path(Property.PATH_CACHE_TOOLS).resolve(root);
+        var home = bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(root);
         if (Files.notExists(home)) {
           jar.run(System.out, System.err, "--extract", "--file", zip.toString());
           Files.move(root, home);
@@ -900,7 +1026,9 @@ interface Tool extends Function<Bach, Integer> {
       var name = "google-java-format";
       var file = name + "-" + version + "-all-deps.jar";
       var uri = URI.create(base + name + "/releases/download/" + name + "-" + version + "/" + file);
-      var jar = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS).resolve(name)).run(bach);
+      var jar =
+          new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(name))
+              .run(bach);
 
       var command = new Command("java");
       command.add("-jar");
@@ -929,8 +1057,8 @@ interface Tool extends Function<Bach, Integer> {
     @Override
     public Integer apply(Bach bach) {
       // download
-      var uri = URI.create(Property.TOOL_GRADLE_URI.get());
-      var zip = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
+      var uri = URI.create(bach.get(Property.TOOL_GRADLE_URI));
+      var zip = new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS))).run(bach);
       // extract
       var home = new Extract(zip).run(bach);
       // run
@@ -947,9 +1075,9 @@ interface Tool extends Function<Bach, Integer> {
 
     static Path install(Bach bach) {
       var art = "junit-platform-console-standalone";
-      var uri = URI.create(Property.TOOL_JUNIT_URI.get());
-      var jar = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS).resolve(art));
-      return jar.run(bach);
+      var uri = URI.create(bach.get(Property.TOOL_JUNIT_URI));
+      return new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS)).resolve(art))
+          .run(bach);
     }
 
     final List<?> arguments;
@@ -981,8 +1109,8 @@ interface Tool extends Function<Bach, Integer> {
     @Override
     public Integer apply(Bach bach) {
       // download
-      var uri = URI.create(Property.TOOL_MAVEN_URI.get());
-      var zip = new Download(uri, Util.path(Property.PATH_CACHE_TOOLS)).run(bach);
+      var uri = URI.create(bach.get(Property.TOOL_MAVEN_URI));
+      var zip = new Download(uri, bach.base.resolve(bach.get(Property.PATH_CACHE_TOOLS))).run(bach);
       // extract
       var home = new Extract(zip).run(bach);
       // run

@@ -34,11 +34,6 @@ class UtilTests {
   }
 
   @Test
-  void tempDir() {
-    assertEquals("tools", Util.path(Property.PATH_CACHE_TOOLS).getFileName().toString());
-  }
-
-  @Test
   void integer() {
     assertEquals(0, Util.integer("0", 1));
     assertEquals(0, Util.integer("*", 0));

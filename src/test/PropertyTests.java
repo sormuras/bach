@@ -27,16 +27,6 @@ import org.junit.jupiter.api.Test;
 class PropertyTests {
 
   @Test
-  void base() {
-    assertEquals(Path.of(".").toAbsolutePath().normalize(), Property.BASE);
-  }
-
-  @Test
-  void noPropertiesInBaseDirectory() {
-    assertEquals(Map.of(), Property.PROPERTIES);
-  }
-
-  @Test
   void loadProperties() {
     var lines = List.of("a=1", "# comment", " b = 2=II");
     assertEquals(Map.of("a", "1", "b", "2=II"), Property.load(lines.stream()));

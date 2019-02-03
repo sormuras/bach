@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,12 +48,19 @@ class ActionTests {
   }
 
   @TestFactory
-  Stream<DynamicTest> applyToEmptyDirectory(Bach bach) {
+  Stream<DynamicTest> applyToEmptyDirectory() {
     return Stream.of(Action.values())
-        .map(action -> dynamicTest(action.name(), () -> applyToEmptyDirectory(bach, action)));
+        .map(action -> dynamicTest(action.name(), () -> applyToEmptyDirectory(action)));
   }
 
-  private void applyToEmptyDirectory(Bach bach, Action action) {
-    action.apply(bach);
+  private void applyToEmptyDirectory(Action action) throws Exception {
+    var temp = Files.createTempDirectory("ActionTests-");
+    Bach bach = new Bach(temp);
+    BachContext context = new BachContext(bach);
+    try {
+      action.apply(bach);
+    } finally {
+      Util.removeTree(temp);
+    }
   }
 }
