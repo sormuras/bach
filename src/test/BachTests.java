@@ -108,10 +108,7 @@ class BachTests {
     var context = new BachContext(bach);
     assertEquals(0, context.bach.run());
     assertLinesMatch(
-        List.of(
-            "Bach - .+ - .+",
-            ">> DEBUG LINES >>",
-            "Calling default action: HELP"),
+        List.of("Bach - .+ - .+", ">> DEBUG LINES >>", "Calling default action: HELP"),
         context.recorder.all);
   }
 
@@ -133,10 +130,7 @@ class BachTests {
     assertEquals(expected, bach.run());
     assertLinesMatch(
         List.of(
-            "Bach - .+ - .+",
-            ">> DEBUG LINES >>",
-            "Calling action: HELP",
-            "Calling action: FAIL"),
+            "Bach - .+ - .+", ">> DEBUG LINES >>", "Calling action: HELP", "Calling action: FAIL"),
         context.recorder.all);
   }
 
