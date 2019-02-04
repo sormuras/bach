@@ -125,7 +125,11 @@ class Bach {
 
   /** Get configured regex-separated values of the supplied key as a stream of strings. */
   Stream<String> get(String key, String defaultValue, String regex) {
-    return Arrays.stream(get(key, defaultValue).split(regex)).map(String::strip);
+    var value = get(key, defaultValue);
+    if (value.isBlank()) {
+      return Stream.empty();
+    }
+    return Arrays.stream(value.split(regex)).map(String::strip);
   }
 
   /** Main entry-point entry-point. */
@@ -323,7 +327,8 @@ class Bach {
         javac.add("-d").add(target);
         javac.add("--module-path").add(modules);
         javac.add("--module-source-path").add(sources);
-        // javac.patchModule = group.patchModule();
+        get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
+        javac.mark(99);
         javac.addAllJavaFiles(sources);
         return javac.apply(Bach.this);
       }
