@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,13 +32,21 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 
 @ExtendWith(BachContext.class)
 class BachTests {
 
   @Test
   void staticUserPathPointsToWorkingDirectory() {
+    assertNotNull(Bach.USER_PATH);
     assertEquals(System.getProperty("user.dir"), Bach.USER_PATH.toString());
+  }
+
+  @Test
+  void staticVersionIsNotBlank() {
+    assertNotNull(Bach.VERSION);
+    assertFalse(Bach.VERSION.isBlank());
   }
 
   @Test
@@ -70,7 +81,7 @@ class BachTests {
     var level = "bach.log.level";
     try {
       System.setProperty(level, "OFF");
-      // TODO assertDoesNotThrow((Executable) Bach::main);
+      assertDoesNotThrow((Executable) Bach::main);
     } finally {
       System.clearProperty(level);
     }
@@ -92,7 +103,7 @@ class BachTests {
   }
 
   @Test
-  void runDefaultAction() {
+  void runDefaultAction() throws Exception {
     var bach = new Bach(Path.of("."), Map.of(Property.ACTION.key, "HELP"), List.of());
     var context = new BachContext(bach);
     assertEquals(0, context.bach.run());
@@ -105,7 +116,7 @@ class BachTests {
   }
 
   @Test
-  void runHelpReturnsZero() {
+  void runHelpReturnsZero() throws Exception {
     var bach = new Bach("help");
     var context = new BachContext(bach);
     assertEquals(0, context.bach.run());
@@ -115,7 +126,7 @@ class BachTests {
   }
 
   @Test
-  void runFailsWithDefaultCode() {
+  void runFailsWithDefaultCode() throws Exception {
     var expected = Integer.valueOf(Property.FAIL_CODE.defaultValue);
     var bach = new Bach("help", "fail");
     var context = new BachContext(bach);

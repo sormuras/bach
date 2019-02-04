@@ -54,11 +54,14 @@ import java.util.stream.Stream;
 /** Java Shell Builder. */
 class Bach {
 
+  /** Version tag, defaults to {@code master}. */
+  static final String VERSION = "master";
+
   /** User's current working directory as path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
   /** Main entry-point. */
-  public static void main(String... args) {
+  public static void main(String... args) throws Exception {
     var bach = new Bach(args);
     var code = bach.run();
     if (code != 0) {
@@ -124,9 +127,9 @@ class Bach {
   }
 
   /** Main entry-point entry-point. */
-  int run() {
+  int run() throws ReflectiveOperationException {
     // Welcome!
-    log.info("Bach [%s]", base);
+    log.info("Bach - %s - [%s]", VERSION, base);
 
     // Debug...
     log.debug("Arguments");
@@ -213,6 +216,11 @@ class Bach {
     return result;
   }
 
+  @Override
+  public String toString() {
+    return "Bach - " + VERSION + " - @" + Integer.toHexString(System.identityHashCode(this));
+  }
+
   /** Logging support. */
   class Log {
     /** Logger function defaults to {@linkplain #log(Level, String)} of this class. */
@@ -297,7 +305,6 @@ class Bach {
         var javac = new Command("javac");
         javac.add("-d").add(target);
         javac.add("--module-source-path").add(sources);
-        // javac.modulePath = group.modulePath();
         // javac.patchModule = group.patchModule();
         javac.addAllJavaFiles(sources);
         return javac.apply(Bach.this);
