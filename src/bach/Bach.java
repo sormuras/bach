@@ -334,7 +334,7 @@ class Bach {
 
 /** Main program actions. */
 enum Action implements Function<Bach, Integer> {
-  BUILD {
+  BUILD("Build project in base directory.") {
     @Override
     public Integer apply(Bach bach) {
       return build(bach.log, bach.project);
@@ -351,14 +351,9 @@ enum Action implements Function<Bach, Integer> {
       }
       return code;
     }
-
-    @Override
-    public String toString() {
-      return "Build project in current directory";
-    }
   },
 
-  CLEAN {
+  CLEAN("Delete all generated assets - but keep caches intact.") {
     @Override
     public Integer apply(Bach bach) {
       var target = bach.based(Property.PATH_TARGET);
@@ -367,14 +362,9 @@ enum Action implements Function<Bach, Integer> {
       }
       return 0;
     }
-
-    @Override
-    public String toString() {
-      return "Delete directory ${" + Property.PATH_TARGET.key + "} - but keep caches intact.";
-    }
   },
 
-  ERASE {
+  ERASE("Delete all generated assets - and also delete caches.") {
     @Override
     public Integer apply(Bach bach) {
       var tools = bach.based(Property.PATH_CACHE_TOOLS);
@@ -384,64 +374,45 @@ enum Action implements Function<Bach, Integer> {
       CLEAN.apply(bach);
       return 0;
     }
-
-    @Override
-    public String toString() {
-      return "Delete out all generated assets, including caches.";
-    }
   },
 
-  FAIL {
+  FAIL("Set exit code to an non-zero value to fail the run.") {
     @Override
     public Integer apply(Bach bach) {
       var code = Util.integer(bach.get(Property.FAIL_CODE), -1);
       bach.log.log(Level.WARNING, "Setting exit code to " + code);
       return code;
     }
-
-    @Override
-    public String toString() {
-      return "Set exit code to an non-zero value to fail the run.";
-    }
   },
 
-  HELP {
+  HELP("Display help screen ... F1, F1, F1!") {
     @Override
     public Integer apply(Bach bach) {
       var out = bach.var.streamOut;
       out.println();
       for (var action : Action.values()) {
-        out.println(String.format(" %-9s -> %s", action.name().toLowerCase(), action));
+        out.println(String.format(" %-9s -> %s", action.name().toLowerCase(), action.description));
       }
       out.println();
       return 0;
     }
-
-    @Override
-    public String toString() {
-      return "Display help screen ... F1, F1, F1!";
-    }
   },
 
-  SCAFFOLD {
+  SCAFFOLD("Create a starter project in current directory.") {
     @Override
     public Integer apply(Bach bach) {
       bach.log.log(Level.WARNING, name() + " isn't implemented, yet");
       return 0;
     }
-
-    @Override
-    public String toString() {
-      return "Create starter project in current directory";
-    }
   },
 
-  TOOL {
+  TOOL("Execute named tool consuming all remaining actions as arguments.") {
     @Override
     public Integer apply(Bach bach) {
       var args = new LinkedList<>(bach.arguments);
       if (args.size() < 2) {
         bach.log.log(Level.WARNING, "Too few arguments for executing an external tool: " + args);
+        bach.log.log(Level.WARNING, "  Usage: java Bach.java tool <name> [<arg>]*" + args);
         return 1;
       }
       args.removeFirst(); // discard "TOOL" action marker
@@ -453,11 +424,17 @@ enum Action implements Function<Bach, Integer> {
         return bach.run(name, args.toArray());
       }
     }
+  };
 
-    @Override
-    public String toString() {
-      return "Execute an external tool consuming all remaining arguments.";
-    }
+  final String description;
+
+  Action(String... description) {
+    this.description = String.join("", description);
+  }
+
+  @Override
+  public String toString() {
+    return name().toLowerCase();
   }
 }
 

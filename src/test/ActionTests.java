@@ -36,13 +36,13 @@ class ActionTests {
     assertLinesMatch(
         List.of(
             "",
-            " build     -> .+",
-            " clean     -> .+",
-            " erase     -> .+",
-            " fail      -> .+",
-            " help      -> .+",
-            " scaffold  -> .+",
-            " tool      -> .+",
+            " build     -> Build project in base directory.",
+            " clean     -> Delete all generated assets - but keep caches intact.",
+            " erase     -> Delete all generated assets - and also delete caches.",
+            " fail      -> Set exit code to an non-zero value to fail the run.",
+            " help      -> Display help screen ... F1, F1, F1!",
+            " scaffold  -> Create a starter project in current directory.",
+            " tool      -> Execute named tool consuming all remaining actions as arguments.",
             ""),
         context.bytesOut.toString().lines().collect(Collectors.toList()));
   }
