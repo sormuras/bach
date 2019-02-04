@@ -307,6 +307,11 @@ class Bach {
             get(prefix + "modules", get(Property.PATH_CACHE_MODULES) + "/" + name, ",")
                 .map(Bach.this::based)
                 .collect(Collectors.toCollection(TreeSet::new));
+
+        get(prefix + "modules.uris", "", ",")
+            .map(URI::create)
+            .peek(uri -> log.debug("Loading %s", uri))
+            .forEach(uri -> new Tool.Download(uri, modules.iterator().next()).apply(Bach.this));
         // depend on all realms created prior to this
         realms
             .values()
