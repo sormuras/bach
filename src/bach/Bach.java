@@ -142,11 +142,7 @@ class Bach {
     }
     log.debug("Variables");
     for (var var : Var.class.getDeclaredFields()) {
-      try {
-        log.debug("  %s -> %s", var.getName(), var.get(this.var));
-      } catch (IllegalAccessException e) {
-        throw new Error("Accessing field failed?!");
-      }
+      log.debug("  %s -> %s", var.getName(), var.get(this.var));
     }
     log.debug("Properties");
     for (var property : Property.values()) {
@@ -155,10 +151,12 @@ class Bach {
     log.debug("Project");
     log.debug("  name -> %s", project.name);
     log.debug("  version -> %s", project.version);
+    log.debug("  launch -> %s", project.launch);
     for (var realm : project.realms.values()) {
       log.debug("Project Realm '%s'", realm.name);
-      log.debug("  %s.sources -> %s", realm.name, realm.sources);
-      log.debug("  %s.target -> %s", realm.name, realm.target);
+      for (var field : Project.Realm.class.getDeclaredFields()) {
+        log.debug("  %s.%s -> %s", realm.name, field.getName(), field.get(realm));
+      }
     }
 
     // Action!
