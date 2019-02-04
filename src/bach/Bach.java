@@ -299,6 +299,10 @@ class Bach {
       }
 
       int compile() {
+        if (sources.stream().noneMatch(path -> Files.exists(path))) {
+          log.info("Skip compile for %s! None source path exists: %s" + sources, name, sources);
+          return 0;
+        }
         log.info("[compile] %s", name);
         var javac = new Command("javac");
         javac.add("-d").add(target);
@@ -328,6 +332,10 @@ class Bach {
     }
 
     int launch() {
+      if ("n/a".equals(launch)) {
+        log.info("%s's launch entry-point not specified", name);
+        return 0;
+      }
       var java = new Command("java");
       java.add("--module-path")
           .add(realms.values().stream().map(realm -> realm.target).collect(Collectors.toList()));
