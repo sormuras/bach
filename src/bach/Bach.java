@@ -39,7 +39,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -285,31 +287,52 @@ class Bach {
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       final String name;
-      final List<Path> sources;
       final Path target;
+      final Set<Path> sources;
+      final Set<Path> modules;
 
-      Realm(String name) {
+      Realm(String name, Map<String, Realm> realms) {
         this.name = name;
         var prefix = "bach.project.realms[" + name + "].";
+        this.target = based(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name));
         this.sources =
             get(prefix + "sources", get(Property.PATH_SOURCE) + "/" + name + "/java", ",")
                 .map(Bach.this::based)
-                .collect(Collectors.toList());
-        this.target = based(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name));
+                .collect(Collectors.toCollection(TreeSet::new));
+        this.modules =
+            get(prefix + "modules", get(Property.PATH_CACHE_MODULES) + "/" + name, ",")
+                .map(Bach.this::based)
+                .collect(Collectors.toCollection(TreeSet::new));
+        // depend on all realms created prior to this
+        realms
+            .values()
+            .forEach(
+                other -> {
+                  modules.add(other.target);
+                  modules.addAll(other.modules);
+                });
       }
 
       int compile() {
-        if (sources.stream().noneMatch(path -> Files.exists(path))) {
+        if (sources.stream().noneMatch(Files::isDirectory)) {
           log.info("Skip compile for %s! None source path exists: %s" + sources, name, sources);
           return 0;
         }
         log.info("[compile] %s", name);
         var javac = new Command("javac");
         javac.add("-d").add(target);
+        javac.add("--module-path").add(modules);
         javac.add("--module-source-path").add(sources);
         // javac.patchModule = group.patchModule();
         javac.addAllJavaFiles(sources);
         return javac.apply(Bach.this);
+      }
+
+      Set<Path> createModulePath() {
+        var set = new TreeSet<Path>();
+        set.add(target);
+        modules.stream().filter(Files::isDirectory).forEach(set::add);
+        return set;
       }
     }
 
@@ -324,7 +347,7 @@ class Bach {
       this.realms = new TreeMap<>();
       get("bach.project.realms", "main, test", ",")
           .filter(key -> Files.isDirectory(based(get(Property.PATH_SOURCE)).resolve(key)))
-          .forEach(key -> realms.put(key, new Realm(key)));
+          .forEach(key -> realms.put(key, new Realm(key, realms)));
     }
 
     int compile() {
@@ -336,9 +359,13 @@ class Bach {
         log.info("%s's launch entry-point not specified", name);
         return 0;
       }
+      if (realms.isEmpty()) {
+        log.info("No realm available, no launch.");
+        return 0;
+      }
+      var realm = realms.entrySet().iterator().next().getValue(); // first real, usually "main"
       var java = new Command("java");
-      java.add("--module-path")
-          .add(realms.values().stream().map(realm -> realm.target).collect(Collectors.toList()));
+      java.add("--module-path").add(realm.createModulePath());
       java.add("--module").add(launch);
       return java.apply(Bach.this);
     }
@@ -523,7 +550,7 @@ class Command implements Function<Bach, Integer> {
   }
 
   /** Add all .java source files by walking specified root paths recursively. */
-  Command addAllJavaFiles(List<Path> roots) {
+  Command addAllJavaFiles(Collection<Path> roots) {
     return addAll(roots, Util::isJavaFile);
   }
 
@@ -693,6 +720,9 @@ enum Property {
 
   /** Cache of binary tools. */
   PATH_CACHE_TOOLS(".bach/tools"),
+
+  /** Cache of resolved modules. */
+  PATH_CACHE_MODULES(".bach/modules"),
 
   /** Name of the project. */
   PROJECT_NAME("project"),
