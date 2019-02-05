@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -104,8 +104,11 @@ class BachTests {
 
   @Test
   void runDefaultAction() throws Exception {
-    var bach = new Bach(Path.of("."), Map.of(Property.ACTION.key, "HELP"), List.of());
+    var properties = new Properties();
+    properties.setProperty(Property.ACTION.key, "HELP");
+    var bach = new Bach(Path.of("."), properties, List.of());
     var context = new BachContext(bach);
+    assertSame(properties, bach.properties);
     assertEquals(0, context.bach.run());
     assertLinesMatch(
         List.of("Bach - .+ - .+", ">> DEBUG LINES >>", "Calling default action: HELP"),
@@ -139,11 +142,6 @@ class BachTests {
     var actual = new Bach().base;
     assertEquals(Path.of(".").toAbsolutePath().normalize(), actual);
     assertEquals(Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize(), actual);
-  }
-
-  @Test
-  void emptyPropertiesInBaseDirectory() {
-    assertEquals(Map.of(), new Bach().properties);
   }
 
   @Test

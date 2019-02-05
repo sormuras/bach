@@ -34,11 +34,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -73,7 +73,7 @@ class Bach {
 
   final Path base;
   final List<String> arguments;
-  final Map<String, String> properties;
+  final Properties properties;
   final Log log;
   final Var var;
   final Project project;
@@ -83,10 +83,10 @@ class Bach {
   }
 
   Bach(Path base, String... arguments) {
-    this(base, Property.load(base.resolve("bach.properties")), List.of(arguments));
+    this(base, Util.loadProperties(base.resolve("bach.properties")), List.of(arguments));
   }
 
-  Bach(Path base, Map<String, String> properties, List<String> arguments) {
+  Bach(Path base, Properties properties, List<String> arguments) {
     this.base = base;
     this.properties = properties;
     this.arguments = arguments;
@@ -120,7 +120,7 @@ class Bach {
 
   /** Get the entire configured string value of the supplied key. */
   String get(String key, String defaultValue) {
-    return System.getProperty(key, properties.getOrDefault(key, defaultValue));
+    return System.getProperty(key, properties.getProperty(key, defaultValue));
   }
 
   /** Get configured regex-separated values of the supplied key as a stream of strings. */
@@ -757,36 +757,6 @@ enum Property {
   TOOL_MAVEN_URI(
       "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
 
-  static Map<String, String> load(Path path) {
-    if (Files.notExists(path)) {
-      return Map.of();
-    }
-    try (var lines = Files.lines(path)) {
-      return load(lines);
-    } catch (IOException e) {
-      throw new UncheckedIOException("loading properties failed", e);
-    }
-  }
-
-  static Map<String, String> load(Stream<String> stream) {
-    var lines =
-        stream
-            .map(String::stripLeading)
-            .filter(s -> !s.startsWith("#"))
-            .filter(s -> s.indexOf('=') > 0)
-            .collect(Collectors.toList());
-    if (lines.isEmpty()) {
-      return Map.of();
-    }
-    var map = new HashMap<String, String>();
-    for (var line : lines) {
-      var key = line.substring(0, line.indexOf('='));
-      var value = line.substring(key.length() + 1);
-      map.put(key.strip(), value.strip());
-    }
-    return Map.copyOf(map);
-  }
-
   final String key;
   final String defaultValue;
   final String description;
@@ -817,6 +787,19 @@ class Util {
   static Path last(Path path) {
     var last = path.getFileName();
     return last == null ? path.getRoot() : last;
+  }
+
+  /** Load {@code .properties} from supplied path. */
+  static Properties loadProperties(Path path) {
+    var properties = new Properties();
+    if (Files.exists(path)) {
+      try (var stream = Files.newInputStream(path)) {
+        properties.load(stream);
+      } catch (IOException e) {
+        throw new UncheckedIOException("loading properties failed", e);
+      }
+    }
+    return properties;
   }
 
   /** Test supplied path for pointing to a Java source unit file. */

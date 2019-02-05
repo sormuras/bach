@@ -15,42 +15,31 @@
  * limitations under the License.
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 
 class PropertyTests {
 
-  @Test
-  void loadProperties() {
-    var lines = List.of("a=1", "# comment", " b = 2=II");
-    assertEquals(Map.of("a", "1", "b", "2=II"), Property.load(lines.stream()));
+  private static <E extends Enum<E>> Stream<DynamicTest> stream(
+      Class<E> enumClass, Consumer<E> consumer) {
+    return Stream.of(enumClass.getEnumConstants())
+        .map(property -> dynamicTest(property.name(), () -> consumer.accept(property)));
   }
 
-  @Test
-  void loadPropertiesWithNoPropertiesYieldsAnEmptyMap() {
-    var lines = List.of("#", "# comment", "", "   # with whitespace ", "");
-    assertEquals(Map.of(), Property.load(lines.stream()));
+  @TestFactory
+  Stream<DynamicTest> property() {
+    return stream(Property.class, this::assertProperty);
   }
 
-  @Test
-  void loadPropertiesFromDirectoryFails() {
-    assertThrows(UncheckedIOException.class, () -> Property.load(Path.of(".")));
-  }
-
-  @Test
-  void loadPropertiesFromTestResources() {
-    var path = Path.of("src", "test-resources", "Property.load.properties");
-    var map = Property.load(path);
-    assertEquals("true", map.get("bach.offline"));
-    assertEquals("Test Project Name", map.get("project.name"));
-    assertEquals("1.2.3-SNAPSHOT", map.get("project.version"));
-    assertEquals("level = %s | message = %s %n", map.get("bach.log.format"));
-    assertEquals(4, map.size());
+  private void assertProperty(Property property) {
+    assertTrue(property.key.startsWith("bach."));
+    assertFalse(property.defaultValue.isBlank());
+    // assertFalse(property.description.isBlank());
   }
 }

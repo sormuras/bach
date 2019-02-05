@@ -61,6 +61,22 @@ class UtilTests {
   }
 
   @Test
+  void loadPropertiesFromDirectoryFails() {
+    assertThrows(UncheckedIOException.class, () -> Util.loadProperties(Path.of(".")));
+  }
+
+  @Test
+  void loadPropertiesFromTestResources() {
+    var path = Path.of("src", "test-resources", "Property.load.properties");
+    var map = Util.loadProperties(path);
+    assertEquals("true", map.get("bach.offline"));
+    assertEquals("Test Project Name", map.get("project.name"));
+    assertEquals("1.2.3-SNAPSHOT", map.get("project.version"));
+    assertEquals("level = %s | message = %s %n", map.get("bach.log.format"));
+    assertEquals(4, map.size());
+  }
+
+  @Test
   void removeTreeForNonExistingPathFails() {
     var path = Path.of("does not exist");
     var e = assertThrows(UncheckedIOException.class, () -> Util.removeTree(path));
