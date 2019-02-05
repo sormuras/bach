@@ -399,6 +399,7 @@ class Bach {
         log.info("Not a single realm available, no launch.");
         return 0;
       }
+      log.info("Launching %s...", launch);
       var realm = realms.entrySet().iterator().next().getValue(); // first realm, usually "main"
       var java = new Command("java");
       java.add("--module-path").add(realm.createModulePath());
@@ -412,6 +413,7 @@ class Bach {
         log.info("No test realm available, no tests.");
         return 0;
       }
+      log.info("Testings...");
       var java = new Command("java");
       java.add("--module-path").add(Set.of(realm.target, Path.of(".bach/modules/test")));
       java.add("--add-modules").add("ALL-MODULE-PATH,ALL-DEFAULT");
