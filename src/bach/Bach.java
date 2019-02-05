@@ -338,7 +338,7 @@ class Bach {
           log.info("Skip compile for %s! None source path exists: %s" + sources, name, sources);
           return 0;
         }
-        log.info("[compile] %s", name);
+        log.info("Compiling %s...", name);
         var javac = new Command("javac");
         javac.add("-d").add(target);
         javac.add("--module-path").add(modules);
@@ -378,6 +378,7 @@ class Bach {
       // code += jar();
       code += test();
       code += launch();
+      // code += verify();
       if (code == 0) {
         log.info("%s %s built successfully.", name, version);
       } else {
