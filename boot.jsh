@@ -64,12 +64,12 @@ for (var asset : Set.of(bach)) {
 var java = "java --show-version " + bach
 println()
 println("Generating local launchers and initial configuration...")
-println("     -> bach");
+println("     -> bach")
 Files.write(Path.of("bach"), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
-println("     -> bach.bat");
+println("     -> bach.bat")
 Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", java + " %*"))
-println("     -> bach.properties");
-Files.write(Path.of("bach.properties"), List.of("bach.log.level=WARNING"))
+// println("     -> bach.properties")
+// Files.write(Path.of("bach.properties"), List.of("bach.log.level=WARNING"))
 
 /*
  * Print some help and wave goodbye.
