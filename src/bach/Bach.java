@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -730,6 +731,82 @@ class Command implements Function<Bach, Integer> {
     } catch (IOException | InterruptedException e) {
       throw new Error("executing `" + executable + "` failed", e);
     }
+  }
+}
+
+/** Directory tree layout. */
+enum Layout {
+  /**
+   * Module descriptor resides in folder with same name as the module.
+   *
+   * <p>Pattern: {@code <root>/<module name>/module-info.java}
+   *
+   * <ul>
+   *   <li>{@code <src/> tool/module-info.java} containing {@code module tool {}}
+   *   <li>{@code <src/main/> tool/module-info.java} containing {@code module tool {}}
+   *   <li>{@code <src/test/> tool/module-info.java} containing {@code open module tool {}} or a
+   *       {@code module-info.test} configuration file.
+   * </ul>
+   */
+  BASIC,
+
+  /**
+   * Module group folder first and no module name but "java" in the directory hierarchy.
+   *
+   * <p>Pattern: {@code <root>/[main|test|...]/java/module-info.java}
+   *
+   * <ul>
+   *   <li>{@code src/main/java/ module-info.java} containing {@code module tool {}}
+   *   <li>{@code src/test/java/ module-info.java} containing {@code open module tool {}} or a
+   *       {@code module-info.test} configuration file.
+   * </ul>
+   */
+  MAVEN;
+
+  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+  static Layout of(Path root) {
+    if (Files.notExists(root)) {
+      throw new IllegalArgumentException("root path must exist: " + root);
+    }
+    if (!Files.isDirectory(root)) {
+      throw new IllegalArgumentException("root path must be a directory: " + root);
+    }
+    try {
+      var path =
+          Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+              .map(root::relativize)
+              .findFirst()
+              .orElseThrow(() -> new Error("no module descriptor found in " + root));
+      var name = readModuleName(Files.readString(root.resolve(path)));
+      if (path.getNameCount() == 2) {
+        if (!path.startsWith(name)) {
+          throw new Error(String.format("expected path to start with '%s': %s", name, path));
+        }
+        return BASIC;
+      }
+      if (path.getNameCount() == 3) {
+        if (!path.getParent().endsWith("java")) {
+          var message = String.format("expected module-info.java in 'java' directory: %s", path);
+          throw new Error(message);
+        }
+        return MAVEN;
+      }
+
+      throw new UnsupportedOperationException(
+          "can't detect layout for " + root + " -- found module " + name + " in " + path);
+    } catch (Exception e) {
+      throw new Error("detection failed " + e, e);
+    }
+  }
+
+  static String readModuleName(String moduleSource) {
+    var nameMatcher = MODULE_NAME_PATTERN.matcher(moduleSource);
+    if (!nameMatcher.find()) {
+      throw new IllegalArgumentException(
+          "expected java module descriptor unit, but got: \n" + moduleSource);
+    }
+    return nameMatcher.group(2).trim();
   }
 }
 
