@@ -16,16 +16,14 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @ExtendWith(BachContext.class)
 class ActionTests {
@@ -47,13 +45,9 @@ class ActionTests {
         context.bytesOut.toString().lines().collect(Collectors.toList()));
   }
 
-  @TestFactory
-  Stream<DynamicTest> applyToEmptyDirectory() {
-    return Stream.of(Action.values())
-        .map(action -> dynamicTest(action.name(), () -> applyToEmptyDirectory(action)));
-  }
-
-  private void applyToEmptyDirectory(Action action) throws Exception {
+  @ParameterizedTest
+  @EnumSource(Action.class)
+  void applyToEmptyDirectory(Action action) throws Exception {
     var temp = Files.createTempDirectory("ActionTests-");
     Bach bach = new Bach(temp);
     BachContext context = new BachContext(bach);

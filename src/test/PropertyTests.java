@@ -17,27 +17,15 @@
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class PropertyTests {
 
-  private static <E extends Enum<E>> Stream<DynamicTest> stream(
-      Class<E> enumClass, Consumer<E> consumer) {
-    return Stream.of(enumClass.getEnumConstants())
-        .map(property -> dynamicTest(property.name(), () -> consumer.accept(property)));
-  }
-
-  @TestFactory
-  Stream<DynamicTest> property() {
-    return stream(Property.class, this::assertProperty);
-  }
-
-  private void assertProperty(Property property) {
+  @ParameterizedTest
+  @EnumSource(Property.class)
+  void assertProperty(Property property) {
     assertTrue(property.key.startsWith("bach."));
     assertFalse(property.defaultValue.isBlank());
     // assertFalse(property.description.isBlank());
