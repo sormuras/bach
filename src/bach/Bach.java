@@ -64,6 +64,17 @@ class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) throws Exception {
+    System.out.println(
+        "    ___      ___      ___      ___   \n"
+            + "   /\\  \\    /\\  \\    /\\  \\    /\\__\\  \n"
+            + "  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_ \n"
+            + " /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\\n"
+            + " \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /\n"
+            + "  \\::/  /   /:/  /  \\:\\__\\    /:/  / \n"
+            + "   \\/__/    \\/__/    \\/__/    \\/__/"
+            + " "
+            + VERSION
+            + "\n\n");
     var bach = new Bach(args);
     var code = bach.run();
     if (code != 0) {
