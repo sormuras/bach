@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
 
 @ExtendWith(BachContext.class)
 class BachTests {
@@ -74,17 +72,6 @@ class BachTests {
     var key = "key that doesn't exist";
     assertEquals("4711", bach.get(key, "4711"));
     assertEquals(List.of("a", "b", "c"), bach.get(key, "a:b:c", ":").collect(Collectors.toList()));
-  }
-
-  @Test
-  void mainWithEmptyStringArray() {
-    var level = "bach.log.level";
-    try {
-      System.setProperty(level, "OFF");
-      assertDoesNotThrow((Executable) Bach::main);
-    } finally {
-      System.clearProperty(level);
-    }
   }
 
   @Test

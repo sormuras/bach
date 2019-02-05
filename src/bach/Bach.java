@@ -360,6 +360,21 @@ class Bach {
           .forEach(key -> realms.put(key, new Realm(key, realms)));
     }
 
+    int build() {
+      log.info("Building %s...", name);
+      var code = compile();
+      // code += format();
+      // code += jar();
+      code += test();
+      code += launch();
+      if (code == 0) {
+        log.info("%s %s built successfully.", name, version);
+      } else {
+        log.log(Level.WARNING, "Build failed!");
+      }
+      return code;
+    }
+
     int compile() {
       return realms.values().stream().mapToInt(Realm::compile).sum();
     }
@@ -370,13 +385,27 @@ class Bach {
         return 0;
       }
       if (realms.isEmpty()) {
-        log.info("No realm available, no launch.");
+        log.info("Not a single realm available, no launch.");
         return 0;
       }
-      var realm = realms.entrySet().iterator().next().getValue(); // first real, usually "main"
+      var realm = realms.entrySet().iterator().next().getValue(); // first realm, usually "main"
       var java = new Command("java");
       java.add("--module-path").add(realm.createModulePath());
       java.add("--module").add(launch);
+      return java.apply(Bach.this);
+    }
+
+    int test() {
+      var realm = realms.get(get(Property.PROJECT_REALM_TEST));
+      if (realm == null) {
+        log.info("No test realm available, no tests.");
+        return 0;
+      }
+      var java = new Command("java");
+      java.add("--module-path").add(Set.of(realm.target, Path.of(".bach/modules/test")));
+      java.add("--add-modules").add("ALL-MODULE-PATH,ALL-DEFAULT");
+      java.add("--module").add("org.junit.platform.console");
+      java.add("--scan-modules");
       return java.apply(Bach.this);
     }
   }
@@ -387,19 +416,7 @@ enum Action implements Function<Bach, Integer> {
   BUILD("Build project in base directory.") {
     @Override
     public Integer apply(Bach bach) {
-      return build(bach.log, bach.project);
-    }
-
-    int build(Bach.Log log, Bach.Project project) {
-      log.info("Building %s...", project.name);
-      var code = project.compile();
-      code += project.launch();
-      if (code == 0) {
-        log.info("%s %s built successfully.", project.name, project.version);
-      } else {
-        log.log(Level.WARNING, "Build failed!");
-      }
-      return code;
+      return bach.project.build();
     }
   },
 
@@ -745,6 +762,9 @@ enum Property {
 
   /** Names of source set realms. */
   PROJECT_REALMS("main, test"),
+
+  /** Name of test realm. */
+  PROJECT_REALM_TEST("test"),
 
   /** Gradle URI. */
   TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.2-bin.zip"),
