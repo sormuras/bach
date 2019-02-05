@@ -747,7 +747,7 @@ enum Property {
   PROJECT_REALMS("main, test"),
 
   /** Gradle URI. */
-  TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.1.1-bin.zip"),
+  TOOL_GRADLE_URI("https://services.gradle.org/distributions/gradle-5.2-bin.zip"),
 
   /** JUnit Platform Console Standalone URI. */
   TOOL_JUNIT_URI(
