@@ -29,6 +29,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -169,6 +170,8 @@ class Bach {
     log.debug("Project");
     log.debug("  name -> %s", project.name);
     log.debug("  version -> %s", project.version);
+    log.debug("  source -> %s", project.source);
+    log.debug("  target -> %s", project.target);
     log.debug("  launch -> %s", project.launch);
     for (var realm : project.realms.values()) {
       log.debug("Project Realm '%s'", realm.name);
@@ -303,9 +306,10 @@ class Bach {
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       final String name;
-      final Path target;
-      final Set<Path> sources;
       final Set<Path> modules;
+      final Set<Path> sources;
+      final Layout layout;
+      final Path target;
 
       Realm(String name, Map<String, Realm> realms) {
         this.name = name;
@@ -315,6 +319,7 @@ class Bach {
             get(prefix + "sources", get(Property.PATH_SOURCE) + "/" + name + "/java", ",")
                 .map(Bach.this::based)
                 .collect(Collectors.toCollection(TreeSet::new));
+        this.layout = Layout.of(sources.iterator().next());
         this.modules =
             get(prefix + "modules", get(Property.PATH_CACHE_MODULES) + "/" + name, ",")
                 .map(Bach.this::based)
@@ -343,7 +348,9 @@ class Bach {
         var javac = new Command("javac");
         javac.add("-d").add(target);
         javac.add("--module-path").add(modules);
-        javac.add("--module-source-path").add(sources);
+        if (layout == Layout.BASIC) {
+          javac.add("--module-source-path").add(sources);
+        }
         get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
         javac.mark(99);
         javac.addAllJavaFiles(sources);
@@ -360,20 +367,24 @@ class Bach {
 
     final String name, version;
     final String launch;
+    final Path source, target;
     final Map<String, Realm> realms;
 
     Project() {
-      this.name = get(Property.PROJECT_NAME);
+      this.name = get(Property.PROJECT_NAME.key, Util.last(base).toString());
       this.version = get(Property.PROJECT_VERSION);
       this.launch = get(Property.PROJECT_LAUNCH);
+      this.source = based(get(Property.PATH_SOURCE));
+      this.target = based(get(Property.PATH_TARGET));
       this.realms = new TreeMap<>();
       get("bach.project.realms", "main, test", ",")
-          .filter(key -> Files.isDirectory(based(get(Property.PATH_SOURCE)).resolve(key)))
+          .filter(key -> Files.isDirectory(source.resolve(key)))
           .forEach(key -> realms.put(key, new Realm(key, realms)));
     }
 
     int build() {
-      log.info("Building %s...", name);
+      log.info("Project '%s %s' build started...", name, version);
+      var start = Instant.now();
       var code = compile();
       // code += format();
       // code += jar();
@@ -381,7 +392,8 @@ class Bach {
       code += launch();
       // code += verify();
       if (code == 0) {
-        log.info("%s %s built successfully.", name, version);
+        var duration = Duration.between(start, Instant.now()).toMillis();
+        log.info("Project '%s %s' built successfully in %d ms.", name, version, duration);
       } else {
         log.log(Level.WARNING, "Build failed!");
       }
@@ -736,6 +748,9 @@ class Command implements Function<Bach, Integer> {
 
 /** Directory tree layout. */
 enum Layout {
+  /** Unknown layout. */
+  UNKNOWN,
+
   /**
    * Module descriptor resides in folder with same name as the module.
    *
@@ -767,10 +782,12 @@ enum Layout {
 
   static Layout of(Path root) {
     if (Files.notExists(root)) {
-      throw new IllegalArgumentException("root path must exist: " + root);
+      // throw new IllegalArgumentException("root path must exist: " + root);
+      return UNKNOWN;
     }
     if (!Files.isDirectory(root)) {
-      throw new IllegalArgumentException("root path must be a directory: " + root);
+      // throw new IllegalArgumentException("root path must be a directory: " + root);
+      return UNKNOWN;
     }
     try {
       var path =
@@ -792,9 +809,7 @@ enum Layout {
         }
         return MAVEN;
       }
-
-      throw new UnsupportedOperationException(
-          "can't detect layout for " + root + " -- found module " + name + " in " + path);
+      return UNKNOWN;
     } catch (Exception e) {
       throw new Error("detection failed " + e, e);
     }

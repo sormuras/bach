@@ -38,6 +38,12 @@ class LayoutTests {
     assertEquals(expected, Layout.readModuleName(source));
   }
 
+  @Test
+  void checkBootstrapProject() {
+    var root = Path.of("demo", "00-bootstrap");
+    assertEquals(Layout.BASIC, Layout.of(root.resolve("src/main/java")));
+  }
+
   @ParameterizedTest
   @ValueSource(
       strings = {
