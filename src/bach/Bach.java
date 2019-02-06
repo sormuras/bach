@@ -778,8 +778,6 @@ enum Layout {
    */
   MAVEN;
 
-  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
-
   static Layout of(Path root) {
     if (Files.notExists(root)) {
       // throw new IllegalArgumentException("root path must exist: " + root);
@@ -790,12 +788,21 @@ enum Layout {
       return UNKNOWN;
     }
     try {
+      var none = Path.of("");
       var path =
           Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
               .map(root::relativize)
               .findFirst()
-              .orElseThrow(() -> new Error("no module descriptor found in " + root));
-      var name = readModuleName(Files.readString(root.resolve(path)));
+              .orElse(none);
+      if (path == none) {
+        // throw new Error("no module descriptor found in " + root)
+        return UNKNOWN;
+      }
+      var name =
+          Util.findModuleName(Files.readString(root.resolve(path)))
+              .orElseThrow(
+                  () ->
+                      new Error("not a Java compilation unit with a module declaration: " + path));
       if (path.getNameCount() == 2) {
         if (!path.startsWith(name)) {
           throw new Error(String.format("expected path to start with '%s': %s", name, path));
@@ -813,15 +820,6 @@ enum Layout {
     } catch (Exception e) {
       throw new Error("detection failed " + e, e);
     }
-  }
-
-  static String readModuleName(String moduleSource) {
-    var nameMatcher = MODULE_NAME_PATTERN.matcher(moduleSource);
-    if (!nameMatcher.find()) {
-      throw new IllegalArgumentException(
-          "expected java module descriptor unit, but got: \n" + moduleSource);
-    }
-    return nameMatcher.group(2).trim();
   }
 }
 
@@ -973,10 +971,21 @@ class Util {
     return findJdkCommandPath(name).map(Object::toString).orElseThrow();
   }
 
+  /** Extract path last element from the supplied uri. */
   static String fileName(URI uri) {
     var urlString = uri.getPath();
     var begin = urlString.lastIndexOf('/') + 1;
     return urlString.substring(begin).split("\\?")[0].split("#")[0];
+  }
+
+  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+  static Optional<String> findModuleName(String source) {
+    var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
+    if (nameMatcher.find()) {
+      return Optional.of(nameMatcher.group(2).trim());
+    }
+    return Optional.empty();
   }
 
   /** Delete directory. */
