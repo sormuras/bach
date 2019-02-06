@@ -8,8 +8,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class LayoutTests {
 
-  private final Path demo = Path.of("demo");
-
   @ParameterizedTest
   @ValueSource(
       strings = {
@@ -49,13 +47,13 @@ class LayoutTests {
         "greetings-world-with-main-and-test/src/test"
       })
   void checkJigsawQuickStartContainsOnlyBasicLayout(Path path) {
-    var root = demo.resolve("04-jigsaw-quick-start");
+    var root = Path.of("demo", "04-jigsaw-quick-start");
     assertEquals(Layout.BASIC, Layout.of(root.resolve(path)));
   }
 
   @Test
   void checkMavenProjects() {
-    var root = demo.resolve("05-maven");
+    var root = Path.of("demo", "05-maven");
     assertEquals(Layout.MAVEN, Layout.of(root.resolve("maven-archetype-quickstart/src")));
   }
 }
