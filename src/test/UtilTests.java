@@ -25,8 +25,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class UtilTests {
 
@@ -104,42 +102,6 @@ class UtilTests {
     Util.removeTree(temp, __ -> true);
     assertFalse(Files.exists(file));
     assertFalse(Files.exists(temp));
-  }
-
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "module a {",
-        "open module a{",
-        "what ever \r\n prefix module    a   \n{",
-        "/**\n * Comment with module literal.\n */ module a {"
-      })
-  void readModuleNameFromStringYieldsA(String source) {
-    assertModuleNameIs("a", source);
-  }
-
-  @Test
-  void readModuleNameReturnsWrongNameWithContrivedComment() {
-    var src = "/**\n * Some module literal {@code followed} by a curly bracket.\n */ module a {";
-    assertModuleNameIs("literal", src);
-  }
-
-  @Test
-  void readModuleNameFailsForNonModuleDescriptorSourceUnit() {
-    String source = "enum E {}";
-    Exception e = assertThrows(Exception.class, () -> assertModuleNameIs("b", source));
-    assertEquals(IllegalArgumentException.class, e.getClass());
-    assertEquals("expected java module descriptor unit, but got: \n" + source, e.getMessage());
-  }
-
-  private void assertModuleNameIs(String expected, String source) {
-    var actual =
-        Util.findModuleName(source)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "expected java module descriptor unit, but got: \n" + source));
-    assertEquals(expected, actual);
   }
 
   private static String last(String first, String... more) {

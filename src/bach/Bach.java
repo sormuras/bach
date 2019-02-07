@@ -798,11 +798,7 @@ enum Layout {
         // throw new Error("no module descriptor found in " + root)
         return UNKNOWN;
       }
-      var name =
-          Util.findModuleName(Files.readString(root.resolve(path)))
-              .orElseThrow(
-                  () ->
-                      new Error("not a Java compilation unit with a module declaration: " + path));
+      var name = ModuleInfo.of(root.resolve(path)).name;
       if (path.getNameCount() == 2) {
         if (!path.startsWith(name)) {
           throw new Error(String.format("expected path to start with '%s': %s", name, path));
@@ -820,6 +816,78 @@ enum Layout {
     } catch (Exception e) {
       throw new Error("detection failed " + e, e);
     }
+  }
+}
+
+/** Simple module information collector. */
+class ModuleInfo {
+
+  private static final Pattern NAME = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+  private static final Pattern REQUIRES = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+  static ModuleInfo of(Path path) {
+    if (Files.isDirectory(path)) {
+      path = path.resolve("module-info.java");
+    }
+    try {
+      return of(Files.readString(path));
+    } catch (IOException e) {
+      throw new UncheckedIOException("reading '" + path + "' failed", e);
+    }
+  }
+
+  static ModuleInfo of(List<String> lines) {
+    return of(String.join("\n", lines));
+  }
+
+  static ModuleInfo of(String source) {
+    // extract module name
+    var nameMatcher = NAME.matcher(source);
+    if (!nameMatcher.find()) {
+      throw new IllegalArgumentException(
+          "expected java module descriptor unit, but got: " + source);
+    }
+    var name = nameMatcher.group(2).trim();
+
+    // extract required module names
+    var requiresMatcher = REQUIRES.matcher(source);
+    var requires = new TreeSet<String>();
+    while (requiresMatcher.find()) {
+      var split = requiresMatcher.group(1).trim().split("\\s+");
+      requires.add(split[split.length - 1]);
+    }
+    return new ModuleInfo(name, requires);
+  }
+
+  /** Calculate external module names. */
+  static Set<String> findExternalModuleNames(Path... roots) {
+    var declaredModules = new TreeSet<String>();
+    var requiredModules = new TreeSet<String>();
+    var paths = new ArrayList<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
+      } catch (IOException e) {
+        throw new UncheckedIOException("walking path failed for: " + root, e);
+      }
+    }
+    for (var path : paths) {
+      var info = ModuleInfo.of(path);
+      declaredModules.add(info.name);
+      requiredModules.addAll(info.requires);
+    }
+    var externalModules = new TreeSet<>(requiredModules);
+    externalModules.removeAll(declaredModules);
+    return externalModules;
+  }
+
+  final String name;
+  final Set<String> requires;
+
+  private ModuleInfo(String name, Set<String> requires) {
+    this.name = name;
+    this.requires = Set.copyOf(requires);
   }
 }
 
@@ -976,16 +1044,6 @@ class Util {
     var urlString = uri.getPath();
     var begin = urlString.lastIndexOf('/') + 1;
     return urlString.substring(begin).split("\\?")[0].split("#")[0];
-  }
-
-  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
-
-  static Optional<String> findModuleName(String source) {
-    var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
-    if (nameMatcher.find()) {
-      return Optional.of(nameMatcher.group(2).trim());
-    }
-    return Optional.empty();
   }
 
   /** Delete directory. */

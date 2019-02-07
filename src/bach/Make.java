@@ -29,6 +29,7 @@ class Make {
 
     var SOURCE_BACH = Path.of("src", "bach");
     var SOURCE_TEST = Path.of("src", "test");
+    var SOURCE_TEST_RESOURCES = Path.of("src", "test-resources");
     var TARGET = Path.of("target", "build");
     var TARGET_MAIN = TARGET.resolve("classes/main");
     var TARGET_TEST = TARGET.resolve("classes/test");
@@ -64,7 +65,14 @@ class Make {
 
     bach.log.info("Launch JUnit Platform Console");
     new Tool.JUnit(
-            List.of("--class-path", TARGET_TEST, "--class-path", TARGET_MAIN, "--scan-class-path"))
+            List.of(
+                "--class-path",
+                TARGET_TEST,
+                "--class-path",
+                SOURCE_TEST_RESOURCES,
+                "--class-path",
+                TARGET_MAIN,
+                "--scan-class-path"))
         .run(bach);
 
     bach.log.info("Generate javadoc");
