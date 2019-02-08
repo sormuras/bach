@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ProjectTests {
+class DemoTests {
 
   @Test
   void demo_00_bootstrap() throws Exception {
@@ -30,7 +30,7 @@ class ProjectTests {
     var bach = new Bach(base, "clean", "build");
     var context = new BachContext(bach);
     var code = bach.run();
-    assertEquals(0, code, context.bytesErr.toString());
+    assertEquals(0, code, context.toString());
     assertLinesMatch(
         List.of(
             "Bach - master - [" + base + "]",
@@ -47,7 +47,7 @@ class ProjectTests {
     var bach = new Bach(base, "clean", "build");
     var context = new BachContext(bach);
     var code = bach.run();
-    assertEquals(0, code, context.bytesErr.toString());
+    assertEquals(0, code, context.toString());
     assertLinesMatch(
         List.of(
             "Bach - master - [" + base + "]",
@@ -55,6 +55,23 @@ class ProjectTests {
             "Project 'Hello World 1.0' build started...",
             ">> BUILD >>",
             "Project 'Hello World 1.0' built successfully in .+ ms."),
+        context.recorder.all);
+  }
+
+  @Test
+  void demo_02_testing() throws Exception {
+    var base = Path.of("demo", "02-testing");
+    var bach = new Bach(base, "clean", "build");
+    var context = new BachContext(bach);
+    var code = bach.run();
+    assertEquals(0, code, context.toString());
+    assertLinesMatch(
+        List.of(
+            "Bach - master - [" + base + "]",
+            ">> FIXTURES >>",
+            "Project '02-testing 1.0.0-SNAPSHOT' build started...",
+            ">> BUILD >>",
+            "Project '02-testing 1.0.0-SNAPSHOT' built successfully in .+ ms."),
         context.recorder.all);
   }
 }

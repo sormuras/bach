@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -30,7 +30,7 @@ class ModuleInfoTests {
   @Test
   void moduleInfoFromNonExistingFileFails() {
     var source = Path.of(".", "module-info.java");
-    var exception = assertThrows(UncheckedIOException.class, () -> ModuleInfo.of(source));
+    var exception = assertThrows(Exception.class, () -> ModuleInfo.of(source));
     assertEquals("reading '" + source + "' failed", exception.getMessage());
   }
 
@@ -101,8 +101,25 @@ class ModuleInfoTests {
   }
 
   @Test
+  void findSystemModuleNames() {
+    var names = ModuleInfo.findSystemModuleNames();
+    assertTrue(names.contains("java.base"));
+    assertTrue(names.contains("java.compiler"));
+    assertTrue(names.contains("java.desktop"));
+    assertTrue(names.contains("java.scripting"));
+    assertTrue(names.contains("java.sql"));
+    assertTrue(names.contains("java.xml"));
+    assertTrue(names.contains("jdk.accessibility"));
+    assertTrue(names.contains("jdk.jartool"));
+    assertTrue(names.contains("jdk.javadoc"));
+    assertTrue(names.contains("jdk.zipfs"));
+    assertFalse(names.contains("hello"));
+    assertFalse(names.contains("world"));
+  }
+
+  @Test
   void findExternalModuleNamesInDemoProjects() {
-    var names = ModuleInfo.findExternalModuleNames(Path.of("demo"));
+    var names = ModuleInfo.findExternalModuleNames(Set.of(Path.of("demo")));
     assertTrue(names.contains("org.junit.jupiter.api"));
     assertFalse(names.contains("hello"));
     assertFalse(names.contains("world"));
@@ -110,9 +127,8 @@ class ModuleInfoTests {
 
   @Test
   void findExternalModuleNamesForNonExistingPathFails() {
-    var path = Path.of("does not exist");
-    var e =
-        assertThrows(UncheckedIOException.class, () -> ModuleInfo.findExternalModuleNames(path));
+    var paths = Set.of(Path.of("does not exist"));
+    var e = assertThrows(Exception.class, () -> ModuleInfo.findExternalModuleNames(paths));
     assertEquals("walking path failed for: does not exist", e.getMessage());
   }
 }

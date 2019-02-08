@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -173,7 +174,7 @@ class Bach {
     log.debug("  source -> %s", project.source);
     log.debug("  target -> %s", project.target);
     log.debug("  launch -> %s", project.launch);
-    for (var realm : project.realms.values()) {
+    for (var realm : List.of(project.main, project.test)) {
       log.debug("Project Realm '%s'", realm.name);
       for (var field : Project.Realm.class.getDeclaredFields()) {
         log.debug("  %s.%s -> %s", realm.name, field.getName(), field.get(realm));
@@ -306,69 +307,89 @@ class Bach {
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       final String name;
-      final Set<Path> modules;
-      final Set<Path> sources;
       final Layout layout;
+      final Path source;
       final Path target;
 
-      Realm(String name, Map<String, Realm> realms) {
+      Realm(String name) {
         this.name = name;
-        var prefix = "bach.project.realms[" + name + "].";
-        this.target = based(get(prefix + "target", get(Property.PATH_TARGET) + "/mods/" + name));
-        this.sources =
-            get(prefix + "sources", get(Property.PATH_SOURCE) + "/" + name + "/java", ",")
-                .map(Bach.this::based)
-                .collect(Collectors.toCollection(TreeSet::new));
-        this.layout = Layout.of(sources.iterator().next());
-        this.modules =
-            get(prefix + "modules", get(Property.PATH_CACHE_MODULES) + "/" + name, ",")
-                .map(Bach.this::based)
-                .collect(Collectors.toCollection(TreeSet::new));
-
-        get(prefix + "modules.uris", "", ",")
-            .map(URI::create)
-            .peek(uri -> log.debug("Loading %s", uri))
-            .forEach(uri -> new Tool.Download(uri, modules.iterator().next()).apply(Bach.this));
-        // depend on all realms created prior to this
-        realms
-            .values()
-            .forEach(
-                other -> {
-                  modules.add(other.target);
-                  modules.addAll(other.modules);
-                });
+        this.source = based(get(Property.PATH_SOURCE) + "/" + name + "/java");
+        this.target = based(get(Property.PATH_TARGET) + "/compiled/" + name);
+        this.layout = Layout.of(source);
       }
 
       int compile() {
-        if (sources.stream().noneMatch(Files::isDirectory)) {
-          log.info("Skip compile for %s! None source path exists: %s" + sources, name, sources);
+        if (Files.notExists(source)) {
+          log.info("Skip compile for %s! None source path exists: %s", name, source);
           return 0;
         }
-        log.info("Compiling %s...", name);
+        log.info("Compiling %s realm...", name);
         var javac = new Command("javac");
         javac.add("-d").add(target);
         javac.add("--module-path").add(modules);
         if (layout == Layout.BASIC) {
-          javac.add("--module-source-path").add(sources);
+          javac.add("--module-source-path").add(source);
         }
         get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
         javac.mark(99);
-        javac.addAllJavaFiles(sources);
+        javac.addAllJavaFiles(Set.of(source));
         return javac.apply(Bach.this);
       }
+    }
 
-      Set<Path> createModulePath() {
-        var set = new TreeSet<Path>();
-        set.add(target);
-        modules.stream().filter(Files::isDirectory).forEach(set::add);
-        return set;
+    class TestRealm extends Realm {
+      TestRealm(String name) {
+        super(name);
+      }
+
+      int compile() {
+        if (Files.notExists(source)) {
+          log.info("Skip compile for %s! None source path exists: %s", name, source);
+          return 0;
+        }
+        log.info("Compiling %s realm...", name);
+        var javac = new Command("javac");
+        javac.add("-d").add(target);
+
+        var modulePath = new ArrayList<Path>();
+        if (main.layout == Layout.BASIC) {
+          for (var mod : Util.findDirectoryNames(main.target)) {
+            modulePath.add(main.target.resolve(mod));
+          }
+        } else {
+          modulePath.add(main.target);
+        }
+        modulePath.add(modules);
+        javac.add("--module-path").add(modulePath);
+
+        var patchMap = Util.findPatchMap(List.of(test.source), List.of(main.source));
+
+        for (var entry : patchMap.entrySet()) {
+          var module = entry.getKey();
+          var paths = entry.getValue();
+          if (paths.isEmpty()) {
+            throw new AssertionError("expected at least one patch path entry for " + module);
+          }
+          var patches =
+              paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+          javac.add("--patch-module");
+          javac.add(module + "=" + patches);
+        }
+
+        if (layout == Layout.BASIC) {
+          javac.add("--module-source-path").add(source);
+        }
+        get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
+        javac.mark(99);
+        javac.addAllJavaFiles(Set.of(source));
+        return javac.apply(Bach.this);
       }
     }
 
     final String name, version;
     final String launch;
-    final Path source, target;
-    final Map<String, Realm> realms;
+    final Path source, target, modules;
+    final Realm main, test;
 
     Project() {
       this.name = get(Property.PROJECT_NAME.key, Util.last(base).toString());
@@ -376,16 +397,21 @@ class Bach {
       this.launch = get(Property.PROJECT_LAUNCH);
       this.source = based(get(Property.PATH_SOURCE));
       this.target = based(get(Property.PATH_TARGET));
-      this.realms = new TreeMap<>();
-      get("bach.project.realms", "main, test", ",")
-          .filter(key -> Files.isDirectory(source.resolve(key)))
-          .forEach(key -> realms.put(key, new Realm(key, realms)));
+      this.modules = target.resolve("modules");
+
+      this.main = new Realm("main");
+      this.test = new TestRealm("test");
     }
 
     int build() {
       log.info("Project '%s %s' build started...", name, version);
       var start = Instant.now();
-      var code = compile();
+      var code = assemble();
+      code += compile();
+      if (code != 0) {
+        log.log(Level.WARNING, "compile() failed: " + code);
+        return code;
+      }
       // code += format();
       // code += jar();
       code += test();
@@ -400,38 +426,91 @@ class Bach {
       return code;
     }
 
+    int assemble() {
+      log.info("Assembling %s realm...", name);
+
+      // Initialize external assets shared by all projects
+      new Tool.Download(
+              URI.create(
+                  "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-maven.properties"),
+              based(Property.PATH_CACHE_MODULES))
+          .apply(Bach.this);
+      new Tool.Download(
+              URI.create(
+                  "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-version.properties"),
+              based(Property.PATH_CACHE_MODULES))
+          .apply(Bach.this);
+
+      var moduleMaven =
+          Util.loadProperties(
+              based(Property.PATH_CACHE_MODULES).resolve("module-maven.properties"));
+      var moduleVersion =
+          Util.loadProperties(
+              based(Property.PATH_CACHE_MODULES).resolve("module-version.properties"));
+
+      get("bach.project.modules.uris", "", ",")
+          .map(URI::create)
+          .peek(uri -> log.debug("Loading %s", uri))
+          .forEach(uri -> new Tool.Download(uri, modules).apply(Bach.this));
+
+      var roots =
+          Set.of(main.source, test.source).stream()
+              .filter(Files::isDirectory)
+              .collect(Collectors.toSet());
+      var externals = ModuleInfo.findExternalModuleNames(roots);
+      log.info("External module names: %s", externals);
+      for (var external : externals) {
+        var mavenGA = moduleMaven.getProperty(external);
+        if (mavenGA == null) {
+          log.log(Level.WARNING, "External module not mapped: " + external);
+          continue;
+        }
+        var group = mavenGA.substring(0, mavenGA.indexOf(':'));
+        var artifact = mavenGA.substring(group.length() + 1);
+        var version = moduleVersion.getProperty(external);
+        var uri = Util.maven(group, artifact, version);
+        log.info("  o %s:%s -> %s", mavenGA, version, uri);
+        new Tool.Download(uri, modules).apply(Bach.this);
+      }
+      return 0;
+    }
+
     int compile() {
-      return realms.values().stream().mapToInt(Realm::compile).sum();
+      return main.compile() + test.compile();
     }
 
     int launch() {
-      if ("n/a".equals(launch)) {
-        log.info("%s's launch entry-point not specified", name);
+      if (Files.notExists(main.target)) {
+        log.info("No main target, no launch.");
         return 0;
       }
-      if (realms.isEmpty()) {
-        log.info("Not a single realm available, no launch.");
+      if ("n/a".equals(launch)) {
+        log.debug("%s's launch entry-point not specified", name);
         return 0;
       }
       log.info("Launching %s...", launch);
-      var realm = realms.entrySet().iterator().next().getValue(); // first realm, usually "main"
       var java = new Command("java");
-      java.add("--module-path").add(realm.createModulePath());
+      java.add("--module-path").add(List.of(main.target, modules));
       java.add("--module").add(launch);
       return java.apply(Bach.this);
     }
 
     int test() {
-      var realm = realms.get(get(Property.PROJECT_REALM_TEST));
-      if (realm == null) {
+      if (Files.notExists(test.target)) {
         log.info("No test realm available, no tests.");
         return 0;
       }
       log.info("Testings...");
       var java = new Command("java");
-      java.add("--module-path").add(Set.of(realm.target, Path.of(".bach/modules/test")));
-      java.add("--add-modules").add("ALL-MODULE-PATH,ALL-DEFAULT");
-      java.add("--module").add("org.junit.platform.console");
+      java.add("--module-path").add(List.of(test.target, main.target, modules));
+
+      // java.add("--add-modules").add("ALL-MODULE-PATH,ALL-DEFAULT");
+      java.add("--add-modules").add(String.join(",", Util.findDirectoryNames(test.target)));
+
+      // java.add("--module").add("org.junit.platform.console");
+      java.add("--class-path").add(Tool.JUnit.install(Bach.this));
+      java.add("org.junit.platform.console.ConsoleLauncher");
+
       java.add("--scan-modules");
       return java.apply(Bach.this);
     }
@@ -860,8 +939,15 @@ class ModuleInfo {
     return new ModuleInfo(name, requires);
   }
 
+  /** Enumerate all system module names. */
+  static Set<String> findSystemModuleNames() {
+    return ModuleFinder.ofSystem().findAll().stream()
+        .map(reference -> reference.descriptor().name())
+        .collect(Collectors.toSet());
+  }
+
   /** Calculate external module names. */
-  static Set<String> findExternalModuleNames(Path... roots) {
+  static Set<String> findExternalModuleNames(Set<Path> roots) {
     var declaredModules = new TreeSet<String>();
     var requiredModules = new TreeSet<String>();
     var paths = new ArrayList<Path>();
@@ -879,6 +965,7 @@ class ModuleInfo {
     }
     var externalModules = new TreeSet<>(requiredModules);
     externalModules.removeAll(declaredModules);
+    externalModules.removeAll(findSystemModuleNames()); // "java.base", "java.logging", ...
     return externalModules;
   }
 
@@ -943,7 +1030,7 @@ enum Property {
 
   /** JUnit Platform Console Standalone URI. */
   TOOL_JUNIT_URI(
-      "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0-RC2/junit-platform-console-standalone-1.4.0-RC2.jar"),
+      "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/junit-platform-console-standalone-1.4.0.jar"),
 
   /** Maven URI. */
   TOOL_MAVEN_URI(
@@ -1085,6 +1172,55 @@ class Util {
       throw new IllegalStateException("can't set executable flag: " + program);
     }
     return path;
+  }
+
+  /** Return list of child directories directly present in {@code root} path. */
+  static List<Path> findDirectories(Path root) {
+    if (Files.notExists(root)) {
+      return Collections.emptyList();
+    }
+    try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+      return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new UncheckedIOException("findDirectories failed for root: " + root, e);
+    }
+  }
+
+  /** Return list of child directory names directly present in {@code root} path. */
+  static List<String> findDirectoryNames(Path root) {
+    return findDirectories(root).stream()
+        .map(root::relativize)
+        .map(Path::toString)
+        .collect(Collectors.toList());
+  }
+
+  /** Return patch map using two collections of paths. */
+  static Map<String, Set<Path>> findPatchMap(Collection<Path> bases, Collection<Path> patches) {
+    var map = new TreeMap<String, Set<Path>>();
+    for (var base : bases) {
+      for (var name : findDirectoryNames(base)) {
+        for (var patch : patches) {
+          var candidate = patch.resolve(name);
+          if (Files.isDirectory(candidate)) {
+            map.computeIfAbsent(name, __ -> new TreeSet<>()).add(candidate);
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+  static URI maven(String group, String artifact, String version) {
+    return maven(group, artifact, version, "");
+  }
+
+  static URI maven(String group, String artifact, String version, String classifier) {
+    if (!classifier.isEmpty() && !classifier.startsWith("-")) {
+      classifier = "-" + classifier;
+    }
+    var repo = "https://repo1.maven.org/maven2";
+    var file = artifact + "-" + version + classifier + ".jar";
+    return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
   }
 }
 

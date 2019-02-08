@@ -119,4 +119,10 @@ class BachContext implements ParameterResolver {
     bach.log.info("%s done. %s", name, millis);
     return result.getAsInt();
   }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "LOG:%n%s%nOUT:%n%s%nERR:%n%s", String.join("\n", recorder.all), bytesOut, bytesErr);
+  }
 }

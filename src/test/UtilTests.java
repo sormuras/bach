@@ -24,7 +24,15 @@ import java.io.File;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 
 class UtilTests {
 
@@ -102,6 +110,68 @@ class UtilTests {
     Util.removeTree(temp, __ -> true);
     assertFalse(Files.exists(file));
     assertFalse(Files.exists(temp));
+  }
+
+  @Test
+  void findDirectories() {
+    var root = Path.of(".").toAbsolutePath().normalize();
+    var dirs = Util.findDirectories(root);
+    assertTrue(dirs.contains(root.resolve("demo")));
+    assertTrue(dirs.contains(root.resolve("src")));
+  }
+
+  @Test
+  void findDirectoryNames() {
+    var root = Path.of(".").toAbsolutePath().normalize();
+    var dirs = Util.findDirectoryNames(root);
+    assertTrue(dirs.contains("demo"));
+    assertTrue(dirs.contains("src"));
+  }
+
+  @Test
+  void findDirectoriesReturnEmptyListWhenRootDoesNotExist() {
+    var root = Path.of("does", "not", "exist");
+    assertTrue(Util.findDirectories(root).isEmpty());
+    assertTrue(Util.findDirectoryNames(root).isEmpty());
+  }
+
+  @Test
+  void findDirectoriesFails() throws Exception {
+    var root = Files.createTempDirectory("findDirectoriesFails-");
+    denyListing(root);
+    assertThrows(UncheckedIOException.class, () -> Util.findDirectories(root));
+    assertThrows(UncheckedIOException.class, () -> Util.findDirectoryNames(root));
+    Util.removeTree(root);
+  }
+
+  private void denyListing(Path path) throws Exception {
+    if (OS.WINDOWS.isCurrentOs()) {
+      var upls = path.getFileSystem().getUserPrincipalLookupService();
+      var user = upls.lookupPrincipalByName(System.getProperty("user.name"));
+      var builder = AclEntry.newBuilder();
+      builder.setPermissions(
+          EnumSet.of(
+              AclEntryPermission.EXECUTE,
+              // AclEntryPermission.READ_DATA, // == LIST_DIRECTORY
+              AclEntryPermission.READ_ATTRIBUTES,
+              AclEntryPermission.READ_NAMED_ATTRS,
+              AclEntryPermission.WRITE_DATA,
+              AclEntryPermission.APPEND_DATA,
+              AclEntryPermission.WRITE_ATTRIBUTES,
+              AclEntryPermission.WRITE_NAMED_ATTRS,
+              AclEntryPermission.DELETE_CHILD,
+              AclEntryPermission.DELETE,
+              AclEntryPermission.READ_ACL,
+              AclEntryPermission.WRITE_ACL,
+              AclEntryPermission.WRITE_OWNER,
+              AclEntryPermission.SYNCHRONIZE));
+      builder.setPrincipal(user);
+      builder.setType(AclEntryType.ALLOW);
+      var aclAttr = Files.getFileAttributeView(path, AclFileAttributeView.class);
+      aclAttr.setAcl(List.of(builder.build()));
+      return;
+    }
+    Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("------rwx"));
   }
 
   private static String last(String first, String... more) {
