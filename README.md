@@ -10,11 +10,51 @@ Use Java source in [jshell] to build your modular project.
 
 Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-## bootstrap
+## Bootstrap
 
 ```text
 jshell https://bit.ly/boot-bach
-bach help
+bach <ACTION...>
+```
+
+With `ACTION`:
+
+```text
+ build     -> Build project in base directory.
+ clean     -> Delete all generated assets - but keep caches intact.
+ erase     -> Delete all generated assets - and also delete caches.
+ fail      -> Set exit code to an non-zero value to fail the run.
+ help      -> Display help screen ... F1, F1, F1!
+ scaffold  -> Create a starter project in current directory.
+ tool      -> Execute named tool consuming all remaining actions as arguments.
+```
+
+## Directory Layout
+
+Project with one more more modules.
+
+```text
+demo
+  + src
+    + com.greetings
+    + org.astro
+    + ...
+```
+
+Project with one more more modules and test modules.
+
+```text
+demo
+  + src
+    + com.greetings
+    + org.astro
+    + ...
+  + test
+    + com.greetings
+    + org.astro
+    + ...
+    + integration
+    + ...
 ```
 
 # install-jdk.sh
