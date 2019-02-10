@@ -90,7 +90,7 @@ class BachTests {
   }
 
   @Test
-  void runDefaultAction() throws Exception {
+  void runDefaultAction() {
     var properties = new Properties();
     properties.setProperty(Property.ACTION.key, "HELP");
     var bach = new Bach(Path.of("."), properties, List.of());
@@ -103,7 +103,7 @@ class BachTests {
   }
 
   @Test
-  void runHelpReturnsZero() throws Exception {
+  void runHelpReturnsZero() {
     var bach = new Bach("help");
     var context = new BachContext(bach);
     assertEquals(0, context.bach.run());
@@ -113,7 +113,7 @@ class BachTests {
   }
 
   @Test
-  void runFailsWithDefaultCode() throws Exception {
+  void runFailsWithDefaultCode() {
     var expected = Integer.valueOf(Property.FAIL_CODE.defaultValue);
     var bach = new Bach("help", "fail");
     var context = new BachContext(bach);

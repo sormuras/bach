@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class DemoTests {
 
   @Test
-  void demo_00_bootstrap() throws Exception {
+  void demo_00_bootstrap() {
     var base = Path.of("demo", "00-bootstrap");
     var bach = new Bach(base, "clean", "build");
     var context = new BachContext(bach);
@@ -42,7 +42,7 @@ class DemoTests {
   }
 
   @Test
-  void demo_01_hello_world() throws Exception {
+  void demo_01_hello_world() {
     var base = Path.of("demo", "01-hello-world");
     var bach = new Bach(base, "clean", "build");
     var context = new BachContext(bach);
@@ -59,7 +59,7 @@ class DemoTests {
   }
 
   @Test
-  void demo_02_testing() throws Exception {
+  void demo_02_testing() {
     var base = Path.of("demo", "02-testing");
     var bach = new Bach(base, "clean", "build");
     var context = new BachContext(bach);

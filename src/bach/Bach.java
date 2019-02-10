@@ -66,7 +66,7 @@ class Bach {
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
   /** Main entry-point. */
-  public static void main(String... args) throws Exception {
+  public static void main(String... args) {
     System.out.println(
         "    ___      ___      ___      ___   \n"
             + "   /\\  \\    /\\  \\    /\\  \\    /\\__\\  \n"
@@ -147,7 +147,7 @@ class Bach {
   }
 
   /** Main entry-point entry-point. */
-  int run() throws ReflectiveOperationException {
+  int run() {
     // Welcome!
     log.info("Bach - %s - [%s]", VERSION, base);
 
@@ -160,10 +160,7 @@ class Bach {
         log.debug("  -> %s", argument);
       }
     }
-    log.debug("Variables");
-    for (var var : Var.class.getDeclaredFields()) {
-      log.debug("  %s -> %s", var.getName(), var.get(this.var));
-    }
+    log.log(Level.DEBUG, "Variables", "var", var);
     log.debug("Properties");
     for (var property : Property.values()) {
       log.debug("  %s -> %s", property.key, get(property));
@@ -175,10 +172,7 @@ class Bach {
     log.debug("  target -> %s", project.target);
     log.debug("  launch -> %s", project.launch);
     for (var realm : List.of(project.main, project.test)) {
-      log.debug("Project Realm '%s'", realm.name);
-      for (var field : Project.Realm.class.getDeclaredFields()) {
-        log.debug("  %s.%s -> %s", realm.name, field.getName(), field.get(realm));
-      }
+      log.log(Level.DEBUG, "Project Realm '%s'", realm.name, realm);
     }
 
     // Action!
@@ -272,6 +266,22 @@ class Bach {
     void info(String format, Object... arguments) {
       var text = arguments.length == 0 ? format : String.format(format, arguments);
       logger.accept(Level.INFO, text);
+    }
+
+    /** Log field names and values of the supplied object. */
+    void log(Level level, String caption, String identifier, Object object) {
+      log(Level.DEBUG, String.format(caption, identifier));
+      for (var field : object.getClass().getDeclaredFields()) {
+        if (field.isSynthetic()) {
+          continue;
+        }
+        try {
+          var value = field.get(object);
+          log(level, String.format("  %s.%s -> %s", identifier, field.getName(), value));
+        } catch (IllegalAccessException e) {
+          log(Level.WARNING, String.format("Accessing %s failed: %s", field, e));
+        }
+      }
     }
 
     /** Log the supplied text as-is to standard streams, unless the supplied level is muted. */
