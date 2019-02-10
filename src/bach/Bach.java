@@ -317,7 +317,6 @@ class Bach {
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       final String name;
-      final Layout layout;
       final Path source;
       final Path target;
 
@@ -325,7 +324,6 @@ class Bach {
         this.name = name;
         this.source = based(get(Property.PATH_SOURCE) + "/" + name + "/java");
         this.target = based(get(Property.PATH_TARGET) + "/compiled/" + name);
-        this.layout = Layout.of(source);
       }
 
       int compile() {
@@ -337,9 +335,7 @@ class Bach {
         var javac = new Command("javac");
         javac.add("-d").add(target);
         javac.add("--module-path").add(modules);
-        if (layout == Layout.BASIC) {
-          javac.add("--module-source-path").add(source);
-        }
+        javac.add("--module-source-path").add(source);
         get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
         javac.mark(99);
         javac.addAllJavaFiles(Set.of(source));
@@ -362,12 +358,9 @@ class Bach {
         javac.add("-d").add(target);
 
         var modulePath = new ArrayList<Path>();
-        if (main.layout == Layout.BASIC) {
-          for (var mod : Util.findDirectoryNames(main.target)) {
-            modulePath.add(main.target.resolve(mod));
-          }
-        } else {
-          modulePath.add(main.target);
+
+        for (var mod : Util.findDirectoryNames(main.target)) {
+          modulePath.add(main.target.resolve(mod));
         }
         modulePath.add(modules);
         javac.add("--module-path").add(modulePath);
@@ -386,9 +379,7 @@ class Bach {
           javac.add(module + "=" + patches);
         }
 
-        if (layout == Layout.BASIC) {
-          javac.add("--module-source-path").add(source);
-        }
+        javac.add("--module-source-path").add(source);
         get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
         javac.mark(99);
         javac.addAllJavaFiles(Set.of(source));
@@ -831,79 +822,6 @@ class Command implements Function<Bach, Integer> {
       return process.waitFor();
     } catch (IOException | InterruptedException e) {
       throw new Error("executing `" + executable + "` failed", e);
-    }
-  }
-}
-
-/** Directory tree layout. */
-enum Layout {
-  /** Unknown layout. */
-  UNKNOWN,
-
-  /**
-   * Module descriptor resides in folder with same name as the module.
-   *
-   * <p>Pattern: {@code <root>/<module name>/module-info.java}
-   *
-   * <ul>
-   *   <li>{@code <src/> tool/module-info.java} containing {@code module tool {}}
-   *   <li>{@code <src/main/> tool/module-info.java} containing {@code module tool {}}
-   *   <li>{@code <src/test/> tool/module-info.java} containing {@code open module tool {}} or a
-   *       {@code module-info.test} configuration file.
-   * </ul>
-   */
-  BASIC,
-
-  /**
-   * Module group folder first and no module name but "java" in the directory hierarchy.
-   *
-   * <p>Pattern: {@code <root>/[main|test|...]/java/module-info.java}
-   *
-   * <ul>
-   *   <li>{@code src/main/java/ module-info.java} containing {@code module tool {}}
-   *   <li>{@code src/test/java/ module-info.java} containing {@code open module tool {}} or a
-   *       {@code module-info.test} configuration file.
-   * </ul>
-   */
-  MAVEN;
-
-  static Layout of(Path root) {
-    if (Files.notExists(root)) {
-      // throw new IllegalArgumentException("root path must exist: " + root);
-      return UNKNOWN;
-    }
-    if (!Files.isDirectory(root)) {
-      // throw new IllegalArgumentException("root path must be a directory: " + root);
-      return UNKNOWN;
-    }
-    try {
-      var none = Path.of("");
-      var path =
-          Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
-              .map(root::relativize)
-              .findFirst()
-              .orElse(none);
-      if (path == none) {
-        // throw new Error("no module descriptor found in " + root)
-        return UNKNOWN;
-      }
-      var name = ModuleInfo.of(root.resolve(path)).name;
-      if (path.getNameCount() == 2) {
-        if (!path.startsWith(name)) {
-          throw new Error(String.format("expected path to start with '%s': %s", name, path));
-        }
-        return BASIC;
-      }
-      if (path.getNameCount() == 3) {
-        if (!path.getParent().endsWith("java")) {
-          var message = String.format("expected module-info.java in 'java' directory: %s", path);
-          throw new Error(message);
-        }
-        return MAVEN;
-      }
-      return UNKNOWN;
-    } catch (Exception e) {
-      throw new Error("detection failed " + e, e);
     }
   }
 }
