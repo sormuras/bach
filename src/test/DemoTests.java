@@ -6,8 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DemoTests {
   private final CollectingLogger logger = new CollectingLogger("*");
@@ -16,9 +17,10 @@ class DemoTests {
   @Nested
   class JigsawQuickStart {
 
-    @Test
-    void greetings(@TempDir Path workspace) {
-      var demo = Path.of("demo", "jigsaw-quick-start", "greetings");
+    @ParameterizedTest
+    @ValueSource(strings = {"greetings", "greetings-world", "greetings-world-with-main-and-test"})
+    void greetings(String name, @TempDir Path workspace) {
+      var demo = Path.of("demo", "jigsaw-quick-start", name);
       var base = workspace.resolve(demo.getFileName());
       bach.run(new Bach.Action.TreeCopy(demo, base));
 
@@ -27,9 +29,9 @@ class DemoTests {
       bach.project.dormant = false;
       assertEquals(base, bach.base);
       assertTrue(Files.isDirectory(bach.based("src")));
-      assertEquals("greetings", bach.project.name);
+      assertEquals(name, bach.project.name);
       assertEquals("1.0.0-SNAPSHOT", bach.project.version);
-      assertEquals(0, bach.run());
+      assertEquals(0, bach.run(), logger.toString());
       assertLinesMatch(
           List.of(
               "Running action Banner...",
