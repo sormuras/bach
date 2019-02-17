@@ -23,11 +23,12 @@ var bach = new Bach()
 bach.var.out = System.out::println
 bach.var.err = System.err::println
 
-var compileMain = new Bach.Action.Tool("javac", "-d", "build/main", "src/main/Bach.java")
-var downloadJUnit = new Bach.Action.Download(Path.of("build"), URI.create(bach.var.get(Bach.Property.TOOL_JUNIT_URI)))
-var junit = Path.of("build/junit-platform-console-standalone-1.4.0.jar")
-var compileTest = new Bach.Action.Tool(new Bach.Command("javac").add("-d").add("build/test").add("-cp").add(List.of(Path.of("build/main"), junit)).addAllJavaFiles(List.of(Path.of("src/test"))))
-var copyTestResources = new Bach.Action.TreeCopy(Path.of("src/test-resources"), Path.of("build/test"))
-var runTest = new Bach.Action.Tool(new Bach.Command("java").add("-ea").add("-D" + "bach.dry-run=true").add("-cp").add(List.of(Path.of("build/test"), Path.of("build/main"), junit)).add("org.junit.platform.console.ConsoleLauncher").add("--scan-class-path"))
+var target = "target/build"
+var compileMain = new Bach.Action.Tool("javac", "-d", target + "/main", "src/main/Bach.java")
+var downloadJUnit = new Bach.Action.Download(Path.of(target), URI.create(bach.var.get(Bach.Property.TOOL_JUNIT_URI)))
+var junit = Path.of(target + "/junit-platform-console-standalone-1.4.0.jar")
+var compileTest = new Bach.Action.Tool(new Bach.Command("javac").add("-d").add(target + "/test").add("-cp").add(List.of(Path.of(target + "/main"), junit)).addAllJavaFiles(List.of(Path.of("src/test"))))
+var copyTestResources = new Bach.Action.TreeCopy(Path.of("src/test-resources"), Path.of(target + "/test"))
+var runTest = new Bach.Action.Tool(new Bach.Command("java").add("-ea").add("-D" + "bach.project.dormant=true").add("-cp").add(List.of(Path.of(target + "/test"), Path.of(target + "/main"), junit)).add("org.junit.platform.console.ConsoleLauncher").add("--scan-class-path"))
 
 /exit bach.run(compileMain, downloadJUnit, compileTest, copyTestResources, runTest)
