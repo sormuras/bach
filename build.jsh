@@ -29,6 +29,6 @@ var downloadJUnit = new Bach.Action.Download(Path.of(target), URI.create(bach.va
 var junit = Path.of(target + "/junit-platform-console-standalone-1.4.0.jar")
 var compileTest = new Bach.Action.Tool(new Bach.Command("javac").add("-d").add(target + "/test").add("-cp").add(List.of(Path.of(target + "/main"), junit)).addAllJavaFiles(List.of(Path.of("src/test"))))
 var copyTestResources = new Bach.Action.TreeCopy(Path.of("src/test-resources"), Path.of(target + "/test"))
-var runTest = new Bach.Action.Tool(new Bach.Command("java").add("-ea").add("-D" + "bach.project.dormant=true").add("-cp").add(List.of(Path.of(target + "/test"), Path.of(target + "/main"), junit)).add("org.junit.platform.console.ConsoleLauncher").add("--scan-class-path"))
+var runTest = new Bach.Action.Tool(new Bach.Command("java").add("-ea").add("-cp").add(List.of(Path.of(target + "/test"), Path.of(target + "/main"), junit)).add("org.junit.platform.console.ConsoleLauncher").add("--scan-class-path"))
 
 /exit bach.run(compileMain, downloadJUnit, compileTest, copyTestResources, runTest)

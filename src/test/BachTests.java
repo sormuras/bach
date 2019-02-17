@@ -137,7 +137,6 @@ class BachTests {
   void openAndRunBachJavaInJShellReturnsZero() throws Exception {
     var builder = new ProcessBuilder("jshell");
     builder.command().add("--execution=local");
-    builder.command().add("-J-D" + "bach.project.dormant=true");
     builder.command().add("-"); // Standard input, without interactive I/O.
     var process = builder.start();
     process.getOutputStream().write("/open src/main/Bach.java\n".getBytes());
@@ -154,7 +153,6 @@ class BachTests {
   void compileAndRunBachJavaWithJavaReturnsZero() throws Exception {
     var builder = new ProcessBuilder("java");
     builder.command().add("-ea");
-    builder.command().add("-D" + "bach.project.dormant=true");
     builder.command().add("src/main/Bach.java");
     var process = builder.start();
     process.waitFor(9, TimeUnit.SECONDS);
