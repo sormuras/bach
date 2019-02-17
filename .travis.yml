@@ -5,15 +5,15 @@ install:
 - java --version
 
 script:
-- javac -d target/make src/bach/Bach.java src/bach/Make.java
-- java -cp target/make Make
+# - javac -d target/make src/bach/Bach.java src/bach/Make.java
+# - java -cp target/make Make
 
 after_success:
-- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-- ./bootstrap.sh
+#- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
+#- ./bootstrap.sh
 
-- cd $TRAVIS_BUILD_DIR/demo/01-hello-world
-- java ../../src/bach/Bach.java
+#- cd $TRAVIS_BUILD_DIR/demo/01-hello-world
+#- java ../../src/bach/Bach.java
 
-- cd $TRAVIS_BUILD_DIR/demo/02-testing
-- java ../../src/bach/Bach.java
+#- cd $TRAVIS_BUILD_DIR/demo/02-testing
+#- java ../../src/bach/Bach.java
