@@ -41,6 +41,6 @@ class ProjectTests {
     Util.chmod(root, false, true, true);
     assertThrows(Error.class, () -> bach.project.findDirectories(root));
     assertThrows(Error.class, () -> bach.project.findDirectoryNames(root));
-    // bach.run(new Bach.Action.TreeDelete(root));
+    bach.run(new Bach.Action.TreeDelete(root));
   }
 }
