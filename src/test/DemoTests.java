@@ -24,9 +24,8 @@ class DemoTests {
       var base = workspace.resolve(demo.getFileName());
       bach.run(new Bach.Action.TreeCopy(demo, base));
 
-      var logger = new CollectingLogger("*");
-      var bach = new Bach(logger, base, List.of());
-      bach.project.dormant = false;
+      var logger = new CollectingLogger(name);
+      var bach = new Bach(logger, base, List.of("build"));
       assertEquals(base, bach.base);
       assertTrue(Files.isDirectory(bach.based("src")));
       assertEquals(name, bach.project.name);
@@ -36,6 +35,7 @@ class DemoTests {
           List.of(
               "Running action Banner...",
               "Bach.java - " + Bach.VERSION,
+              ">> BANNER >>",
               "Action Banner succeeded.",
               "Running action Check...",
               "Action Check succeeded.",

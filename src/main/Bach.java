@@ -34,12 +34,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -113,23 +116,28 @@ class Bach {
 
   /** Run default actions. */
   int run() {
-    if (arguments.isEmpty()) {
-      return run(new Action.Banner(), new Action.Check(), new Action.Build());
+    var code = run(new Action.Banner(), new Action.Check());
+    if (code != 0 || arguments.isEmpty()) {
+      return code;
     }
-    if (arguments.get(0).equalsIgnoreCase("tool")) {
-      if (arguments.size() == 1) {
-        logger.log(ERROR, "Missing name of tool to run!");
+    var strings = new ArrayDeque<>(arguments);
+    var operation = strings.removeFirst().toLowerCase();
+    switch (operation) {
+      case "build":
+        return run(new Action.Build());
+      case "tool":
+        if (strings.isEmpty()) {
+          logger.log(ERROR, "Missing name of tool to run!");
+          return 1;
+        }
+        var tool = new Action.Tool(new Command(strings.removeFirst()).addAll(strings));
+        var.out = System.out::println;
+        var.err = System.err::println;
+        return run(tool);
+      default:
+        logger.log(ERROR, "Unsupported operation: " + arguments);
         return 1;
-      }
-      var command = new Command(arguments.get(1));
-      command.addAll(arguments.subList(2, arguments.size()));
-      var tool = new Action.Tool(command);
-      var.out = System.out::println;
-      var.err = System.err::println;
-      return run(new Action.Banner(), new Action.Check(), tool);
     }
-    logger.log(ERROR, "Unsupported operation: " + arguments);
-    return 1;
   }
 
   /** Run supplied actions. */
@@ -156,6 +164,9 @@ class Bach {
 
   /** Constants with default values. */
   enum Property {
+    /** Default Maven repository used for artifact resolution. */
+    MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
+
     /** Offline mode. */
     OFFLINE("false"),
 
@@ -189,33 +200,118 @@ class Bach {
 
   /** Bach's project object model. */
   class Project {
-    boolean dormant; // non-final for testing purposes
     final String name, version;
-    final Realm main;
+    final Path modules;
+    final Realm main, test;
 
     Project() {
-      this.dormant = Boolean.parseBoolean(var.get(Property.PROJECT_DORMANT));
       var defaultName =
           Optional.ofNullable(base.getFileName())
               .map(Object::toString)
               .orElse(Property.PROJECT_NAME.defaultValue);
       this.name = var.get(Property.PROJECT_NAME.key, defaultName);
       this.version = var.get(Property.PROJECT_VERSION);
-      this.main = new Realm("main");
+      this.modules = based(Property.PATH_CACHE_MODULES);
+      this.main = new Realm("main", List.of("src/main/java", "src/main", "main", "src"));
+      this.test = new Realm("test", List.of("src/test/java", "src/test", "test"));
     }
 
     int build() {
-      if (dormant) {
-        logger.log(INFO, "Dry-mode mode is enabled.");
-        return 0;
-      }
       try {
+        assemble();
         main.compile();
-      } catch (RuntimeException e) {
-        logger.log(ERROR, "Building project failed.", e);
+        test.compile();
+      } catch (Exception e) {
+        logger.log(ERROR, "Building project failed: " + e.getMessage(), e);
         return 1;
       }
       return 0;
+    }
+
+    void assemble() throws Exception {
+      //      var.get("bach.project.modules.uris", "", ",")
+      //              .map(URI::create)
+      //              .peek(uri -> log.debug("Loading %s", uri))
+      //              .forEach(uri -> new Tool.Download(uri, modules).apply(Bach.this));
+      var roots =
+          Set.of(main.source, test.source).stream()
+              .filter(Files::isDirectory)
+              .collect(Collectors.toSet());
+      var externals = ModuleInfo.findExternalModuleNames(roots);
+      logger.log(DEBUG, "External module names: {0}", externals);
+      if (externals.isEmpty()) {
+        return;
+      }
+      var moduleMaven =
+          var.load(
+              new Action.Download(modules)
+                  .run(
+                      Bach.this,
+                      URI.create(
+                          "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-maven.properties")));
+      var moduleVersion =
+          var.load(
+              new Action.Download(modules)
+                  .run(
+                      Bach.this,
+                      URI.create(
+                          "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-version.properties")));
+      var uris = new ArrayList<URI>();
+      for (var external : externals) {
+        var mavenGA = moduleMaven.getProperty(external);
+        if (mavenGA == null) {
+          logger.log(WARNING, "External module not mapped: {0}", external);
+          continue;
+        }
+        var group = mavenGA.substring(0, mavenGA.indexOf(':'));
+        var artifact = mavenGA.substring(group.length() + 1);
+        var version = moduleVersion.getProperty(external);
+        uris.add(maven(group, artifact, version));
+      }
+      new Action.Download(modules, uris).run(Bach.this);
+    }
+
+    /** Create URI for supplied Maven coordinates. */
+    URI maven(String group, String artifact, String version) {
+      var repo = var.get(Property.MAVEN_REPOSITORY);
+      var file = artifact + "-" + version + ".jar";
+      return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
+    }
+
+    /** Return list of child directories directly present in {@code root} path. */
+    List<Path> findDirectories(Path root) {
+      if (Files.notExists(root)) {
+        return List.of();
+      }
+      try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+        return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+      } catch (Exception e) {
+        throw new Error("findDirectories failed for root: " + root, e);
+      }
+    }
+
+    /** Return list of child directory names directly present in {@code root} path. */
+    List<String> findDirectoryNames(Path root) {
+      return findDirectories(root).stream()
+          .map(root::relativize)
+          .map(Path::toString)
+          .collect(Collectors.toList());
+    }
+
+    /** Return patch map using two collections of paths. */
+    Map<String, Set<Path>> findPatchMap(Collection<Path> bases, Collection<Path> patches) {
+      var map = new TreeMap<String, Set<Path>>();
+      for (var base : bases) {
+        for (var name : findDirectoryNames(base)) {
+          for (var patch : patches) {
+            var candidate = patch.resolve(name);
+            if (Files.isDirectory(candidate)) {
+              map.computeIfAbsent(name, __ -> new TreeSet<>()).add(candidate);
+            }
+          }
+        }
+      }
+      return map;
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
@@ -224,13 +320,14 @@ class Bach {
       final Path source;
       final Path target;
 
-      Realm(String name) {
+      Realm(String name, List<String> sources) {
         this.name = name;
         this.source =
-            List.of(based("src", name, "java"), based("src", name), based("src")).stream()
+            sources.stream()
+                .map(Bach.this::based)
                 .filter(Files::isDirectory)
                 .findFirst()
-                .orElse(based("src", name, "java"));
+                .orElse(based(sources.get(0)));
         this.target = based("bin", "compiled", name);
       }
 
@@ -242,9 +339,22 @@ class Bach {
         }
         var javac = new Command("javac");
         javac.add("-d").add(target);
-        // TODO javac.add("--module-path").add(modules);
+        javac.add("--module-path").add(modules);
         javac.add("--module-source-path").add(source);
         // get("bach.project.realms[" + name + "].compile.options", "", ",").forEach(javac::add);
+
+        for (var entry : findPatchMap(List.of(test.source), List.of(main.source)).entrySet()) {
+          var module = entry.getKey();
+          var paths = entry.getValue();
+          if (paths.isEmpty()) {
+            throw new Error("expected at least one patch path entry for " + module);
+          }
+          var patches =
+              paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+          javac.add("--patch-module");
+          javac.add(module + "=" + patches);
+        }
+
         // javac.mark(99);
         javac.addAllJavaFiles(Set.of(source));
         if (run(new Action.Tool(javac)) != 0) {
@@ -314,6 +424,22 @@ class Bach {
       @Override
       public int run(Bach bach) {
         bach.logger.log(INFO, "Bach.java - {0}", Bach.VERSION);
+        bach.logger.log(DEBUG, "    base = {0}", bach.base);
+        bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
+        if (bach.arguments.isEmpty()) {
+          bach.logger.log(DEBUG, "Arguments: <none>");
+        } else {
+          bach.logger.log(DEBUG, "Argument(s)");
+          var index = 0;
+          for (var argument : bach.arguments) {
+            bach.logger.log(DEBUG, "  [{0}] = {1}", index++, argument);
+          }
+        }
+        // TODO logger.log(Level.DEBUG, "Variables", "var", var);
+        bach.logger.log(DEBUG, "Properties");
+        for (var property : Property.values()) {
+          bach.logger.log(DEBUG, "  {0} = {1}", property.key, bach.var.get(property));
+        }
         return 0;
       }
     }
@@ -345,8 +471,12 @@ class Bach {
       final List<URI> uris;
 
       Download(Path destination, URI... uris) {
+        this(destination, List.of(uris));
+      }
+
+      Download(Path destination, List<URI> uris) {
         this.destination = destination;
-        this.uris = List.of(uris);
+        this.uris = uris;
       }
 
       @Override
@@ -363,14 +493,14 @@ class Bach {
         }
       }
 
-      private void run(Bach bach, URI uri) throws Exception {
+      Path run(Bach bach, URI uri) throws Exception {
         bach.logger.log(DEBUG, "Downloading {0}...", uri);
         var fileName = fileName(uri);
         var target = destination.resolve(fileName);
         if (bach.var.offline) {
           if (Files.exists(target)) {
             bach.logger.log(DEBUG, "Offline mode is active and target already exists.");
-            return;
+            return target;
           }
           throw new IllegalStateException("Target is missing and being offline: " + target);
         }
@@ -387,7 +517,7 @@ class Bach {
               var contentLength = connection.getContentLengthLong();
               if (localFileSize == contentLength) {
                 bach.logger.log(DEBUG, "Local and remote file attributes seem to match.");
-                return;
+                return target;
               }
             }
             bach.logger.log(DEBUG, "Local file differs from remote -- replacing it...");
@@ -403,6 +533,7 @@ class Bach {
           bach.logger.log(DEBUG, " o Size -> {0} bytes", Files.size(target));
           bach.logger.log(DEBUG, " o Last Modified -> {0}", urlLastModifiedTime);
         }
+        return target;
       }
     }
 
