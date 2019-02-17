@@ -230,12 +230,12 @@ class Bach {
             List.of(based("src", name, "java"), based("src", name), based("src")).stream()
                 .filter(Files::isDirectory)
                 .findFirst()
-                .orElse(base);
+                .orElse(based("src", name, "java"));
         this.target = based("bin", "compiled", name);
       }
 
       void compile() {
-        logger.log(DEBUG, "Compiling " + name);
+        logger.log(DEBUG, "Compiling realm: " + name);
         if (Files.notExists(source)) {
           logger.log(INFO, "Skip compile for {0}! No source path exists: {1}", name, source);
           return;
