@@ -21,7 +21,7 @@
  * Declare constants and helper methods.
  */
 var version = "master"
-var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
+var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/main/")
 var target = Path.of(".bach/" + version)
 var bach = target.resolve("Bach.java")
 
