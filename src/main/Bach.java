@@ -176,9 +176,6 @@ class Bach {
     /** Cache of resolved modules. */
     PATH_CACHE_MODULES(".bach/modules"),
 
-    /** Prevent project being built. */
-    PROJECT_DORMANT("false"),
-
     /** Name of the project. */
     PROJECT_NAME("project"),
 
@@ -424,18 +421,24 @@ class Bach {
       @Override
       public int run(Bach bach) {
         bach.logger.log(INFO, "Bach.java - {0}", Bach.VERSION);
-        bach.logger.log(DEBUG, "    base = {0}", bach.base);
+
+        bach.logger.log(DEBUG, "Main");
+        bach.logger.log(DEBUG, "  base = {0}", bach.base);
         bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
+        bach.logger.log(DEBUG, "Arguments");
         if (bach.arguments.isEmpty()) {
-          bach.logger.log(DEBUG, "Arguments: <none>");
+          bach.logger.log(DEBUG, "  <none>");
         } else {
-          bach.logger.log(DEBUG, "Argument(s)");
           var index = 0;
           for (var argument : bach.arguments) {
             bach.logger.log(DEBUG, "  [{0}] = {1}", index++, argument);
           }
         }
-        // TODO logger.log(Level.DEBUG, "Variables", "var", var);
+        bach.logger.log(DEBUG, "Variables");
+        bach.logger.log(DEBUG, "  offline = {0}", bach.var.offline);
+        bach.logger.log(DEBUG, "  out = {0}", bach.var.out);
+        bach.logger.log(DEBUG, "  err = {0}", bach.var.err);
+        bach.logger.log(DEBUG, "  properties = {0}", bach.var.properties);
         bach.logger.log(DEBUG, "Properties");
         for (var property : Property.values()) {
           bach.logger.log(DEBUG, "  {0} = {1}", property.key, bach.var.get(property));
