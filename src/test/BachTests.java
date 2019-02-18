@@ -72,6 +72,7 @@ class BachTests {
 
   @Test
   void mainWithJavac() {
+    // Emits "javac <version>" on stdout...
     assertDoesNotThrow(() -> Bach.main("tool", "javac", "--version"));
   }
 

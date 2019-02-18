@@ -43,6 +43,7 @@ class ToolTests {
 
     @Override
     public int run(Bach bach) {
+      assertEquals(1, Bach.Tool.super.run(bach));
       return code;
     }
   }
