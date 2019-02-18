@@ -1,6 +1,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,10 @@ class DemoTests {
       assertTrue(Files.isDirectory(bach.based("src")));
       assertEquals(name, bach.project.name);
       assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+      if (bach.var.offline) {
+        // TODO Better check for unresolvable external modules.
+        assumeFalse(name.equals("greetings-world-with-main-and-test"));
+      }
       assertEquals(0, bach.run(), logger.toString());
       assertLinesMatch(
           List.of(
