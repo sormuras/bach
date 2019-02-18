@@ -8,7 +8,8 @@ script:
 - jshell ./build.jsh
 
 after_success:
-- export BACH=${TRAVIS_BUILD_DIR}src/main/Bach.java
+- BACH=${TRAVIS_BUILD_DIR}/src/main/Bach.java
+
 #- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 #- ./bootstrap.sh
 
