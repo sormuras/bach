@@ -63,8 +63,8 @@ class Bach {
 
   /** Main entry-point running all default actions. */
   public static void main(String... args) {
-    var format = "java.util.logging.SimpleFormatter.format";
-    if (System.getProperty(format) == null) {
+    if (System.getProperty("java.util.logging.config.file") == null) {
+      var format = "java.util.logging.SimpleFormatter.format";
       System.setProperty(format, "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %2$s %5$s%6$s%n");
     }
     var bach = new Bach(List.of(args));
