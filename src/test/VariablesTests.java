@@ -1,5 +1,4 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -11,12 +10,6 @@ class VariablesTests {
 
   private final CollectingLogger logger = new CollectingLogger("*");
   private final Bach bach = new Bach(logger, Path.of("."), List.of());
-
-  @Test
-  void defaults() {
-    assertEquals(0, bach.var.properties.size());
-    assertFalse(bach.var.offline);
-  }
 
   @Test
   void loadPropertiesFromDirectoryFails() {

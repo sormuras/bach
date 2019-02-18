@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 
 class ActionTests {
@@ -19,6 +20,7 @@ class ActionTests {
   private final Bach bach = new Bach(logger, Path.of("."), List.of());
 
   @Nested
+  @DisabledIfSystemProperty(named="bach.offline", matches="true")
   class Download {
     @Test
     void relativeUriThrows() {
