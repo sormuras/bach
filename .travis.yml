@@ -12,7 +12,7 @@ after_success:
 #- ./bootstrap.sh
 
 - cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
-- java ${TRAVIS_BUILD_DIR}/src/bach/Bach.java build
+- java ../../../src/bach/Bach.java build
 
 #- cd $TRAVIS_BUILD_DIR/demo/02-testing
 #- java ../../src/bach/Bach.java
