@@ -354,7 +354,7 @@ class Bach {
 
         // javac.mark(99);
         javac.addAllJavaFiles(Set.of(source));
-        if (run(new Action.Tool(javac)) != 0) {
+        if (javac.run(Bach.this) != 0) {
           throw new RuntimeException(name + ".compile() failed!");
         }
       }
@@ -602,11 +602,18 @@ class Bach {
           return provider.get().run(out, err, args.toArray(String[]::new));
         }
         // Delegate to process builder.
-        // TODO Map to managed "jar" tool installation.
         // TODO Find foundation tool executable in "${JDK}/bin" folder.
         var command = new ArrayList<String>();
-        command.add(name);
-        command.addAll(args);
+        switch (name) {
+          case "junit":
+            var junit = new Bach.Tool.JUnit(args).toCommand(bach);
+            command.add(junit.name);
+            command.addAll(junit.arguments);
+            break;
+          default:
+            command.add(name);
+            command.addAll(args);
+        }
         var executor = Executors.newFixedThreadPool(2);
         try {
           var process = new ProcessBuilder(command).start();
@@ -754,6 +761,49 @@ class Bach {
     }
   }
 
+  /** External program. */
+  interface Tool extends Action {
+
+    Command toCommand(Bach bach);
+
+    @Override
+    default int run(Bach bach) {
+      return toCommand(bach).run(bach);
+    }
+
+    class JUnit implements Bach.Tool {
+
+      static Path install(Bach bach) throws Exception {
+        var art = "junit-platform-console-standalone";
+        var dir = bach.based(Property.PATH_CACHE_TOOLS).resolve(art);
+        var uri = URI.create(bach.var.get(Property.TOOL_JUNIT_URI));
+        return new Bach.Action.Download(dir).run(bach, uri);
+      }
+
+      final List<?> arguments;
+
+      JUnit(List<?> arguments) {
+        this.arguments = arguments;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) {
+        try {
+          var junit = install(bach);
+          var java = new Command("java");
+          java.add("-ea");
+          java.add("-jar").add(junit);
+          java.addAll(arguments);
+          return java;
+        } catch (Exception e) {
+          var message = getClass().getSimpleName() + " failed: " + e.getMessage();
+          throw new Error(message, e);
+        }
+      }
+    }
+
+  }
+
   /** Command line builder. */
   static class Command {
 
@@ -842,6 +892,10 @@ class Bach {
         consumer.accept(indent + argument);
       }
       return this;
+    }
+
+    int run(Bach bach) {
+      return bach.run(new Bach.Action.Tool(this));
     }
   }
 
