@@ -144,7 +144,7 @@ class BachTests {
     process.getOutputStream().write("var code = bach.run()\n".getBytes());
     process.getOutputStream().write("/exit code\n".getBytes());
     process.getOutputStream().flush();
-    process.waitFor(9, TimeUnit.SECONDS);
+    process.waitFor(20, TimeUnit.SECONDS);
     var code = process.exitValue();
     assertEquals(0, code);
   }
@@ -155,7 +155,7 @@ class BachTests {
     builder.command().add("-ea");
     builder.command().add("src/main/Bach.java");
     var process = builder.start();
-    process.waitFor(9, TimeUnit.SECONDS);
+    process.waitFor(10, TimeUnit.SECONDS);
     var code = process.exitValue();
     assertEquals(0, code);
   }
