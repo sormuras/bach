@@ -218,6 +218,7 @@ class Bach {
         assemble();
         main.compile();
         test.compile();
+        test();
       } catch (Exception e) {
         logger.log(ERROR, "Building project failed: " + e.getMessage(), e);
         return 1;
@@ -309,6 +310,26 @@ class Bach {
         }
       }
       return map;
+    }
+
+    int test() {
+      if (Files.notExists(test.target)) {
+        logger.log(INFO, "No test realm target available, no tests.");
+        return 0;
+      }
+      logger.log(INFO, "Launching JUnit Platform...");
+      var java = new Command("java");
+      java.add("--module-path").add(List.of(test.target, main.target, modules));
+
+      // java.add("--add-modules").add("ALL-MODULE-PATH,ALL-DEFAULT");
+      java.add("--add-modules").add(String.join(",", findDirectoryNames(test.target)));
+
+      // java.add("--module").add("org.junit.platform.console");
+      java.add("--class-path").add(Tool.JUnit.install(Bach.this));
+      java.add("org.junit.platform.console.ConsoleLauncher");
+
+      java.add("--scan-modules");
+      return java.run(Bach.this);
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
@@ -773,11 +794,15 @@ class Bach {
 
     class JUnit implements Bach.Tool {
 
-      static Path install(Bach bach) throws Exception {
+      static Path install(Bach bach) {
         var art = "junit-platform-console-standalone";
         var dir = bach.based(Property.PATH_CACHE_TOOLS).resolve(art);
         var uri = URI.create(bach.var.get(Property.TOOL_JUNIT_URI));
-        return new Bach.Action.Download(dir).run(bach, uri);
+        try {
+          return new Download(dir).run(bach, uri);
+        } catch (Exception e) {
+          throw new Error("Installing JUnit failed: " + e.getMessage(), e);
+        }
       }
 
       final List<?> arguments;
@@ -788,20 +813,14 @@ class Bach {
 
       @Override
       public Command toCommand(Bach bach) {
-        try {
-          var junit = install(bach);
-          var java = new Command("java");
-          java.add("-ea");
-          java.add("-jar").add(junit);
-          java.addAll(arguments);
-          return java;
-        } catch (Exception e) {
-          var message = getClass().getSimpleName() + " failed: " + e.getMessage();
-          throw new Error(message, e);
-        }
+        var junit = install(bach);
+        var java = new Command("java");
+        java.add("-ea");
+        java.add("-jar").add(junit);
+        java.addAll(arguments);
+        return java;
       }
     }
-
   }
 
   /** Command line builder. */
