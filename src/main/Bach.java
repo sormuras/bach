@@ -271,6 +271,8 @@ class Bach {
 
     /** Create URI for supplied Maven coordinates. */
     URI maven(String group, String artifact, String version) {
+      // TODO Try local repository first?
+      // var repo = Path.of(System.getProperty("user.home"), ".m2", "repository").toUri().toString();
       var repo = var.get(Property.MAVEN_REPOSITORY);
       var file = artifact + "-" + version + ".jar";
       return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
