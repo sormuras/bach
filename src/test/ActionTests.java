@@ -20,7 +20,7 @@ class ActionTests {
   private final Bach bach = new Bach(logger, Path.of("."), List.of());
 
   @Nested
-  @DisabledIfSystemProperty(named="bach.offline", matches="true")
+  @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
   class Download {
     @Test
     void relativeUriThrows() {
