@@ -40,8 +40,28 @@ class ToolTests {
           List.of(
               ">> INSTALL >>",
               "Running action Tool...",
-              ">>  >>",
+              ">> INTRO >>",
               "Usage: google-java-format [options] file(s)",
+              ">> HELP TEXT >>",
+              "Action Tool succeeded."),
+          logger.getLines());
+    }
+  }
+
+  @Nested
+  class Maven {
+
+    @Test
+    void version() {
+      var mvn = new Bach.Tool.Maven(List.of("--version"));
+      logger.clear();
+      assertEquals(0, mvn.run(bach));
+      assertLinesMatch(
+          List.of(
+              ">> INSTALL >>",
+              "Running action Tool...",
+              ">> INTRO >>",
+              "Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-24T20:41:47+02:00)",
               ">> HELP TEXT >>",
               "Action Tool succeeded."),
           logger.getLines());

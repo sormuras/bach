@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -188,7 +189,11 @@ class Bach {
 
     /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_JUNIT_URI(
-        "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/junit-platform-console-standalone-1.4.0.jar");
+        "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/junit-platform-console-standalone-1.4.0.jar"),
+
+    /** Maven URI. */
+    TOOL_MAVEN_URI(
+        "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
 
     final String key;
     final String defaultValue;
@@ -327,7 +332,7 @@ class Bach {
       return map;
     }
 
-    int test() {
+    int test() throws Exception {
       if (Files.notExists(test.target)) {
         logger.log(INFO, "No test realm target available, no tests.");
         return 0;
@@ -576,6 +581,24 @@ class Bach {
       }
     }
 
+    /** Unzip. */
+    interface Extract {
+      static Path extract(Bach bach, Path zip) throws Exception {
+        var jar = ToolProvider.findFirst("jar").orElseThrow();
+        var listing = new StringWriter();
+        var printWriter = new PrintWriter(listing);
+        jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
+        // TODO Find better way to extract root folder name...
+        var root = Path.of(listing.toString().split("\\R")[0]);
+        var home = bach.based(Property.PATH_CACHE_TOOLS).resolve(root);
+        if (Files.notExists(home)) {
+          jar.run(System.out, System.err, "--extract", "--file", zip.toString());
+          Files.move(root, home);
+        }
+        return home.normalize().toAbsolutePath();
+      }
+    }
+
     /** Build the project. */
     class Build implements Action {
 
@@ -640,20 +663,25 @@ class Bach {
         // Delegate to process builder.
         // TODO Find foundation tool executable in "${JDK}/bin" folder.
         var command = new ArrayList<String>();
-        switch (name) {
-          case "format":
-            var format = new Bach.Tool.GoogleJavaFormat(args).toCommand(bach);
-            command.add(format.name);
-            command.addAll(format.arguments);
-            break;
-          case "junit":
-            var junit = new Bach.Tool.JUnit(args).toCommand(bach);
-            command.add(junit.name);
-            command.addAll(junit.arguments);
-            break;
-          default:
-            command.add(name);
-            command.addAll(args);
+        try {
+          switch (name) {
+            case "format":
+              var format = new Bach.Tool.GoogleJavaFormat(args).toCommand(bach);
+              command.add(format.name);
+              command.addAll(format.arguments);
+              break;
+            case "junit":
+              var junit = new Bach.Tool.JUnit(args).toCommand(bach);
+              command.add(junit.name);
+              command.addAll(junit.arguments);
+              break;
+            default:
+              command.add(name);
+              command.addAll(args);
+          }
+        } catch (Exception e) {
+          bach.logger.log(ERROR, "Creating command for tool failed: " + e.getMessage(), e);
+          return 1;
         }
         var executor = Executors.newFixedThreadPool(2);
         try {
@@ -805,24 +833,40 @@ class Bach {
   /** External program. */
   interface Tool extends Action {
 
-    Command toCommand(Bach bach);
+    Command toCommand(Bach bach) throws Exception;
 
     @Override
     default int run(Bach bach) {
-      return toCommand(bach).run(bach);
+      try {
+        return toCommand(bach).run(bach);
+      } catch (Exception e) {
+        bach.logger.log(ERROR, "Running failed: " + e.getMessage(), e);
+        return 1;
+      }
+    }
+
+    /** Mark the supplied file as executable. */
+    static Path setExecutable(Path path) {
+      if (Files.isExecutable(path)) {
+        return path;
+      }
+      if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+        return path;
+      }
+      var program = path.toFile();
+      if (!program.setExecutable(true)) {
+        throw new IllegalStateException("can't set executable flag: " + program);
+      }
+      return path;
     }
 
     class GoogleJavaFormat implements Bach.Tool {
 
-      static Path install(Bach bach) {
+      static Path install(Bach bach) throws Exception {
         var name = "google-java-format";
         var destination = bach.based(Property.PATH_CACHE_TOOLS).resolve(name);
         var uri = URI.create(bach.var.get(Property.TOOL_FORMAT_URI));
-        try {
-          return new Download(destination).run(bach, uri);
-        } catch (Exception e) {
-          throw new Error("Installing JUnit failed: " + e.getMessage(), e);
-        }
+        return new Download(destination).run(bach, uri);
       }
 
       final List<?> arguments;
@@ -840,7 +884,7 @@ class Bach {
       }
 
       @Override
-      public Command toCommand(Bach bach) {
+      public Command toCommand(Bach bach) throws Exception {
         var jar = install(bach);
         var command = new Command("java");
         command.add("-jar");
@@ -854,15 +898,11 @@ class Bach {
 
     class JUnit implements Bach.Tool {
 
-      static Path install(Bach bach) {
+      static Path install(Bach bach) throws Exception {
         var art = "junit-platform-console-standalone";
         var dir = bach.based(Property.PATH_CACHE_TOOLS).resolve(art);
         var uri = URI.create(bach.var.get(Property.TOOL_JUNIT_URI));
-        try {
-          return new Download(dir).run(bach, uri);
-        } catch (Exception e) {
-          throw new Error("Installing JUnit failed: " + e.getMessage(), e);
-        }
+        return new Download(dir).run(bach, uri);
       }
 
       final List<?> arguments;
@@ -872,13 +912,34 @@ class Bach {
       }
 
       @Override
-      public Command toCommand(Bach bach) {
+      public Command toCommand(Bach bach) throws Exception {
         var junit = install(bach);
         var command = new Command("java");
         command.add("-ea");
         command.add("-jar").add(junit);
         command.addAll(arguments);
         return command;
+      }
+    }
+
+    /** Maven. */
+    class Maven implements Bach.Tool {
+
+      final List<?> arguments;
+
+      Maven(List<?> arguments) {
+        this.arguments = arguments;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) throws Exception {
+        var uri = URI.create(bach.var.get(Property.TOOL_MAVEN_URI));
+        var zip = new Download(bach.based(Property.PATH_CACHE_TOOLS)).run(bach, uri);
+        var home = Extract.extract(bach, zip);
+        var win = System.getProperty("os.name").toLowerCase().contains("win");
+        var name = "mvn" + (win ? ".cmd" : "");
+        var executable = setExecutable(home.resolve("bin").resolve(name));
+        return new Command(executable.toString()).addAll(arguments);
       }
     }
   }
