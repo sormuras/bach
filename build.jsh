@@ -23,6 +23,7 @@ var bach = new Bach()
 bach.var.out = System.out::println
 bach.var.err = System.err::println
 
+var format = new Bach.Tool.GoogleJavaFormat(Boolean.getBoolean("bach.format.replace"), Set.of(Path.of("src"), Path.of("demo")))
 var target = "target/build"
 var compileMain = new Bach.Action.Tool("javac", "-d", target + "/main", "src/main/Bach.java")
 var downloadJUnit = new Bach.Action.Download(Path.of(target), URI.create(bach.var.get(Bach.Property.TOOL_JUNIT_URI)))
@@ -31,4 +32,4 @@ var compileTest = new Bach.Action.Tool(new Bach.Command("javac").add("-d").add(t
 var copyTestResources = new Bach.Action.TreeCopy(Path.of("src/test-resources"), Path.of(target + "/test"))
 var runTest = new Bach.Action.Tool(new Bach.Command("java").add("-ea").add("-cp").add(List.of(Path.of(target + "/test"), Path.of(target + "/main"), junit)).add("org.junit.platform.console.ConsoleLauncher").add("--scan-class-path"))
 
-/exit bach.run(compileMain, downloadJUnit, compileTest, copyTestResources, runTest)
+/exit bach.run(format, compileMain, downloadJUnit, compileTest, copyTestResources, runTest)
