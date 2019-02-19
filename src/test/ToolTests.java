@@ -29,6 +29,25 @@ class ToolTests {
     }
   }
 
+  @Nested
+  class GoogleJavaFormat {
+    @Test
+    void help() {
+      var format = new Bach.Tool.GoogleJavaFormat(List.of("--help"));
+      logger.clear();
+      assertEquals(0, format.run(bach));
+      assertLinesMatch(
+          List.of(
+              ">> INSTALL >>",
+              "Running action Tool...",
+              ">>  >>",
+              "Usage: google-java-format [options] file(s)",
+              ">> HELP TEXT >>",
+              "Action Tool succeeded."),
+          logger.getLines());
+    }
+  }
+
   class NoopTool implements Bach.Tool {
     final int code;
 

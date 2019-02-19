@@ -182,7 +182,11 @@ class Bach {
     /** Version of the project. */
     PROJECT_VERSION("1.0.0-SNAPSHOT"),
 
-    /** JUnit Platform Console Standalone URI. */
+    /** URI to Google Java Format "all-deps" JAR. */
+    TOOL_FORMAT_URI(
+        "https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar"),
+
+    /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_JUNIT_URI(
         "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/junit-platform-console-standalone-1.4.0.jar");
 
@@ -215,6 +219,7 @@ class Bach {
 
     int build() {
       try {
+        format();
         assemble();
         main.compile();
         test.compile();
@@ -224,6 +229,14 @@ class Bach {
         return 1;
       }
       return 0;
+    }
+
+    void format() {
+      var code =
+          new Bach.Tool.GoogleJavaFormat(false, Set.of(main.source, test.source)).run(Bach.this);
+      if (code != 0) {
+        throw new IllegalStateException("Format violation(s) detected!");
+      }
     }
 
     void assemble() throws Exception {
@@ -272,7 +285,7 @@ class Bach {
     /** Create URI for supplied Maven coordinates. */
     URI maven(String group, String artifact, String version) {
       // TODO Try local repository first?
-      // var repo = Path.of(System.getProperty("user.home"), ".m2", "repository").toUri().toString();
+      // Path.of(System.getProperty("user.home"), ".m2", "repository").toUri().toString();
       var repo = var.get(Property.MAVEN_REPOSITORY);
       var file = artifact + "-" + version + ".jar";
       return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
@@ -628,6 +641,11 @@ class Bach {
         // TODO Find foundation tool executable in "${JDK}/bin" folder.
         var command = new ArrayList<String>();
         switch (name) {
+          case "format":
+            var format = new Bach.Tool.GoogleJavaFormat(args).toCommand(bach);
+            command.add(format.name);
+            command.addAll(format.arguments);
+            break;
           case "junit":
             var junit = new Bach.Tool.JUnit(args).toCommand(bach);
             command.add(junit.name);
@@ -794,6 +812,46 @@ class Bach {
       return toCommand(bach).run(bach);
     }
 
+    class GoogleJavaFormat implements Bach.Tool {
+
+      static Path install(Bach bach) {
+        var name = "google-java-format";
+        var destination = bach.based(Property.PATH_CACHE_TOOLS).resolve(name);
+        var uri = URI.create(bach.var.get(Property.TOOL_FORMAT_URI));
+        try {
+          return new Download(destination).run(bach, uri);
+        } catch (Exception e) {
+          throw new Error("Installing JUnit failed: " + e.getMessage(), e);
+        }
+      }
+
+      final List<?> arguments;
+      final Collection<Path> roots;
+
+      GoogleJavaFormat(List<?> arguments) {
+        this.arguments = arguments;
+        this.roots = Set.of();
+      }
+
+      GoogleJavaFormat(boolean replace, Collection<Path> roots) {
+        this.arguments =
+            replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed");
+        this.roots = roots;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) {
+        var jar = install(bach);
+        var command = new Command("java");
+        command.add("-jar");
+        command.add(jar);
+        command.addAll(arguments);
+        // command.mark(10);
+        command.addAllJavaFiles(roots);
+        return command;
+      }
+    }
+
     class JUnit implements Bach.Tool {
 
       static Path install(Bach bach) {
@@ -816,11 +874,11 @@ class Bach {
       @Override
       public Command toCommand(Bach bach) {
         var junit = install(bach);
-        var java = new Command("java");
-        java.add("-ea");
-        java.add("-jar").add(junit);
-        java.addAll(arguments);
-        return java;
+        var command = new Command("java");
+        command.add("-ea");
+        command.add("-jar").add(junit);
+        command.addAll(arguments);
+        return command;
       }
     }
   }
