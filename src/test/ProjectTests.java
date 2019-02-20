@@ -1,7 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -36,11 +35,11 @@ class ProjectTests {
   }
 
   @Test
-  void findDirectoriesFails(@TempDir Path temp) throws Exception {
-    var root = Files.createDirectory(temp.resolve("findDirectoriesFails-"));
+  void findDirectoriesFails(@TempDir Path root) throws Exception {
+    Util.createFiles(root, 3);
     Util.chmod(root, false, true, true);
     assertThrows(Error.class, () -> bach.project.findDirectories(root));
     assertThrows(Error.class, () -> bach.project.findDirectoryNames(root));
-    bach.run(new Bach.Action.TreeDelete(root));
+    Util.chmod(root, true, true, true);
   }
 }

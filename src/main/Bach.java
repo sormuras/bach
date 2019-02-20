@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,6 +81,7 @@ class Bach {
   final System.Logger logger;
   final Variables var;
   final Project project;
+  final Utilities utilities;
 
   Bach() {
     this(List.of());
@@ -95,6 +97,7 @@ class Bach {
     this.arguments = List.copyOf(arguments);
     this.var = new Variables();
     this.project = new Project();
+    this.utilities = new Utilities();
   }
 
   Path based(Path path) {
@@ -117,28 +120,35 @@ class Bach {
 
   /** Run default actions. */
   int run() {
-    var code = run(new Action.Banner(), new Action.Check());
-    if (code != 0 || arguments.isEmpty()) {
-      return code;
-    }
+    var actions = new ArrayList<Action>();
+    // always run default actions
+    actions.add(Action.Default.BANNER);
+    actions.add(Action.Default.CHECK);
+    // append more actions
     var strings = new ArrayDeque<>(arguments);
-    var operation = strings.removeFirst().toLowerCase();
-    switch (operation) {
-      case "build":
-        return run(new Action.Build());
-      case "tool":
+    while (!strings.isEmpty()) {
+      var operation = strings.removeFirst();
+      if (operation.equalsIgnoreCase("tool")) {
         if (strings.isEmpty()) {
           logger.log(ERROR, "Missing name of tool to run!");
           return 1;
         }
-        var tool = new Action.Tool(new Command(strings.removeFirst()).addAll(strings));
+        var tool = new Action.ToolRunner(new Command(strings.removeFirst()).addAll(strings));
         var.out = System.out::println;
         var.err = System.err::println;
-        return run(tool);
-      default:
-        logger.log(ERROR, "Unsupported operation: " + arguments);
+        actions.add(tool);
+        strings.clear();
+        break;
+      }
+      try {
+        var action = Action.Default.valueOf(operation.toUpperCase());
+        actions.add(action);
+      } catch (IllegalArgumentException e) {
+        logger.log(ERROR, "Unsupported action: " + operation);
         return 1;
+      }
     }
+    return run(actions);
   }
 
   /** Run supplied actions. */
@@ -260,18 +270,16 @@ class Bach {
       }
       var moduleMaven =
           var.load(
-              new Action.Download(modules)
-                  .run(
-                      Bach.this,
-                      URI.create(
-                          "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-maven.properties")));
+              utilities.download(
+                  modules,
+                  URI.create(
+                      "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-maven.properties")));
       var moduleVersion =
           var.load(
-              new Action.Download(modules)
-                  .run(
-                      Bach.this,
-                      URI.create(
-                          "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-version.properties")));
+              utilities.download(
+                  modules,
+                  URI.create(
+                      "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-version.properties")));
       var uris = new ArrayList<URI>();
       for (var external : externals) {
         var mavenGA = moduleMaven.getProperty(external);
@@ -284,7 +292,10 @@ class Bach {
         var version = moduleVersion.getProperty(external);
         uris.add(maven(group, artifact, version));
       }
-      new Action.Download(modules, uris).run(Bach.this);
+      var paths = utilities.download(modules, uris);
+      for (var path : paths) {
+        logger.log(DEBUG, "Resolved {0}", path);
+      }
     }
 
     /** Create URI for supplied Maven coordinates. */
@@ -445,6 +456,176 @@ class Bach {
     }
   }
 
+  /** Utilities. */
+  class Utilities {
+
+    /** Unzip. */
+    Path extract(Path zip) throws Exception {
+      var jar = ToolProvider.findFirst("jar").orElseThrow();
+      var listing = new StringWriter();
+      var printWriter = new PrintWriter(listing);
+      jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
+      // TODO Find better way to extract root folder name...
+      var root = Path.of(listing.toString().split("\\R")[0]);
+      var home = based(Property.PATH_CACHE_TOOLS).resolve(root);
+      if (Files.notExists(home)) {
+        jar.run(System.out, System.err, "--extract", "--file", zip.toString());
+        Files.move(root, home);
+      }
+      return home.normalize().toAbsolutePath();
+    }
+
+    /** Extract path last element from the supplied uri. */
+    String fileName(URI uri) {
+      var urlString = uri.getPath();
+      var begin = urlString.lastIndexOf('/') + 1;
+      return urlString.substring(begin).split("\\?")[0].split("#")[0];
+    }
+
+    /** Download files from supplied uris to specified destination directory. */
+    List<Path> download(Path destination, List<URI> uris) {
+      logger.log(DEBUG, "Downloading {0} file(s) to {1}...", uris.size(), destination);
+      try {
+        var paths = new ArrayList<Path>();
+        for (var uri : uris) {
+          paths.add(download(destination, uri));
+        }
+        return paths;
+      } catch (Exception e) {
+        throw new Error("Download failed: " + e.getMessage(), e);
+      }
+    }
+
+    /** Download file from supplied uri to specified destination directory. */
+    Path download(Path destination, URI uri) throws Exception {
+      logger.log(DEBUG, "Downloading {0}...", uri);
+      var fileName = fileName(uri);
+      var target = destination.resolve(fileName);
+      if (var.offline) {
+        if (Files.exists(target)) {
+          logger.log(DEBUG, "Offline mode is active and target already exists.");
+          return target;
+        }
+        throw new IllegalStateException("Target is missing and being offline: " + target);
+      }
+      Files.createDirectories(destination);
+      var connection = uri.toURL().openConnection();
+      try (var sourceStream = connection.getInputStream()) {
+        var urlLastModifiedMillis = connection.getLastModified();
+        var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
+        if (Files.exists(target)) {
+          logger.log(DEBUG, "Local file exists. Comparing attributes to remote file...");
+          var unknownTime = urlLastModifiedMillis == 0L;
+          if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
+            var localFileSize = Files.size(target);
+            var contentLength = connection.getContentLengthLong();
+            if (localFileSize == contentLength) {
+              logger.log(DEBUG, "Local and remote file attributes seem to match.");
+              return target;
+            }
+          }
+          logger.log(DEBUG, "Local file differs from remote -- replacing it...");
+        }
+        logger.log(DEBUG, "Transferring {0}...", uri);
+        try (var targetStream = Files.newOutputStream(target)) {
+          sourceStream.transferTo(targetStream);
+        }
+        if (urlLastModifiedMillis != 0L) {
+          Files.setLastModifiedTime(target, urlLastModifiedTime);
+        }
+        logger.log(INFO, "Downloaded {0} successfully.", fileName);
+        logger.log(DEBUG, " o Size -> {0} bytes", Files.size(target));
+        logger.log(DEBUG, " o Last Modified -> {0}", urlLastModifiedTime);
+      }
+      return target;
+    }
+
+    /** Copy all files and directories from source to target directory. */
+    void treeCopy(Path source, Path target) throws Exception {
+      treeCopy(source, target, __ -> true);
+    }
+
+    /** Copy selected files and directories from source to target directory. */
+    void treeCopy(Path source, Path target, Predicate<Path> filter) throws Exception {
+      // debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
+      if (!Files.exists(source)) {
+        throw new IllegalArgumentException("source must exist: " + source);
+      }
+      if (!Files.isDirectory(source)) {
+        throw new IllegalArgumentException("source must be a directory: " + source);
+      }
+      if (Files.exists(target)) {
+        if (!Files.isDirectory(target)) {
+          throw new IllegalArgumentException("target must be a directory: " + target);
+        }
+        if (target.equals(source)) {
+          return;
+        }
+        if (target.startsWith(source)) {
+          // copy "a/" to "a/b/"...
+          throw new IllegalArgumentException("target must not a child of source");
+        }
+      }
+      try (var stream = Files.walk(source).sorted()) {
+        int counter = 0;
+        var paths = stream.collect(Collectors.toList());
+        for (var path : paths) {
+          var destination = target.resolve(source.relativize(path));
+          if (Files.isDirectory(path)) {
+            Files.createDirectories(destination);
+            continue;
+          }
+          if (filter.test(path)) {
+            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+            counter++;
+          }
+        }
+        logger.log(DEBUG, "Copied {0} file(s) of {1} elements.", counter, paths.size());
+      }
+    }
+
+    /** Delete all files and directories from the root directory. */
+    void treeDelete(Path root) throws Exception {
+      treeDelete(root, __ -> true);
+    }
+
+    /** Delete selected files and directories from the root directory. */
+    void treeDelete(Path root, Predicate<Path> filter) throws Exception {
+      // trivial case: delete existing empty directory or single file
+      try {
+        Files.deleteIfExists(root);
+        return;
+      } catch (DirectoryNotEmptyException ignored) {
+        // fall-through
+      }
+      // default case: walk the tree...
+      try (var stream = Files.walk(root)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      }
+    }
+
+    /** Walk directory tree structure. */
+    void treeWalk(Path root, Consumer<String> out) {
+      if (Files.exists(root)) {
+        out.accept(root.toString());
+      }
+      Consumer<Path> consumePath =
+          path -> {
+            var string = root.relativize(path).toString().replace('\\', '/');
+            var prefix = string.isEmpty() ? "" : "/";
+            out.accept("." + prefix + string);
+          };
+      try (var stream = Files.walk(root).sorted()) {
+        stream.forEach(consumePath);
+      } catch (Exception e) {
+        throw new Error("Walking tree failed: " + root, e);
+      }
+    }
+  }
+
   /** Action running on Bach instances. */
   @FunctionalInterface
   interface Action {
@@ -456,160 +637,59 @@ class Bach {
     /** Run this action and return zero on success. */
     int run(Bach bach);
 
-    /** Log banner action. */
-    class Banner implements Action {
+    /** No-arg default action. */
+    enum Default implements Action {
+      BANNER {
+        @Override
+        public int run(Bach bach) {
+          bach.logger.log(INFO, "Bach.java - {0}", Bach.VERSION);
 
-      @Override
-      public int run(Bach bach) {
-        bach.logger.log(INFO, "Bach.java - {0}", Bach.VERSION);
-
-        bach.logger.log(DEBUG, "Main");
-        bach.logger.log(DEBUG, "  base = {0}", bach.base);
-        bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
-        bach.logger.log(DEBUG, "Arguments");
-        if (bach.arguments.isEmpty()) {
-          bach.logger.log(DEBUG, "  <none>");
-        } else {
-          var index = 0;
-          for (var argument : bach.arguments) {
-            bach.logger.log(DEBUG, "  [{0}] = {1}", index++, argument);
+          bach.logger.log(DEBUG, "Main");
+          bach.logger.log(DEBUG, "  base = {0}", bach.base);
+          bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
+          bach.logger.log(DEBUG, "Arguments");
+          if (bach.arguments.isEmpty()) {
+            bach.logger.log(DEBUG, "  <none>");
+          } else {
+            var index = 0;
+            for (var argument : bach.arguments) {
+              bach.logger.log(DEBUG, "  [{0}] = {1}", index++, argument);
+            }
           }
-        }
-        bach.logger.log(DEBUG, "Variables");
-        bach.logger.log(DEBUG, "  offline = {0}", bach.var.offline);
-        bach.logger.log(DEBUG, "  out = {0}", bach.var.out);
-        bach.logger.log(DEBUG, "  err = {0}", bach.var.err);
-        bach.logger.log(DEBUG, "  properties = {0}", bach.var.properties);
-        bach.logger.log(DEBUG, "Properties");
-        for (var property : Property.values()) {
-          bach.logger.log(DEBUG, "  {0} = {1}", property.key, bach.var.get(property));
-        }
-        return 0;
-      }
-    }
-
-    /** Check preconditions action. */
-    class Check implements Action {
-
-      @Override
-      public int run(Bach bach) {
-        if (bach.base.getNameCount() == 0) {
-          bach.logger.log(ERROR, "Base path has zero elements!");
-          return 1;
-        }
-        return 0;
-      }
-    }
-
-    /** Download files from supplied uris to specified destination directory. */
-    class Download implements Action {
-
-      /** Extract path last element from the supplied uri. */
-      static String fileName(URI uri) {
-        var urlString = uri.getPath();
-        var begin = urlString.lastIndexOf('/') + 1;
-        return urlString.substring(begin).split("\\?")[0].split("#")[0];
-      }
-
-      final Path destination;
-      final List<URI> uris;
-
-      Download(Path destination, URI... uris) {
-        this(destination, List.of(uris));
-      }
-
-      Download(Path destination, List<URI> uris) {
-        this.destination = destination;
-        this.uris = uris;
-      }
-
-      @Override
-      public int run(Bach bach) {
-        bach.logger.log(DEBUG, "Downloading {0} file(s) to {1}...", uris.size(), destination);
-        try {
-          for (var uri : uris) {
-            run(bach, uri);
+          bach.logger.log(DEBUG, "Variables");
+          bach.logger.log(DEBUG, "  offline = {0}", bach.var.offline);
+          bach.logger.log(DEBUG, "  out = {0}", bach.var.out);
+          bach.logger.log(DEBUG, "  err = {0}", bach.var.err);
+          bach.logger.log(DEBUG, "  properties = {0}", bach.var.properties);
+          bach.logger.log(DEBUG, "Properties");
+          for (var property : Property.values()) {
+            bach.logger.log(DEBUG, "  {0} = {1}", property.key, bach.var.get(property));
           }
           return 0;
-        } catch (Exception e) {
-          bach.logger.log(ERROR, "Download failed: " + e.getMessage());
-          return 1;
         }
-      }
+      },
 
-      Path run(Bach bach, URI uri) throws Exception {
-        bach.logger.log(DEBUG, "Downloading {0}...", uri);
-        var fileName = fileName(uri);
-        var target = destination.resolve(fileName);
-        if (bach.var.offline) {
-          if (Files.exists(target)) {
-            bach.logger.log(DEBUG, "Offline mode is active and target already exists.");
-            return target;
+      CHECK {
+        @Override
+        public int run(Bach bach) {
+          if (bach.base.getNameCount() == 0) {
+            bach.logger.log(ERROR, "Base path has zero elements!");
+            return 1;
           }
-          throw new IllegalStateException("Target is missing and being offline: " + target);
+          return 0;
         }
-        Files.createDirectories(destination);
-        var connection = uri.toURL().openConnection();
-        try (var sourceStream = connection.getInputStream()) {
-          var urlLastModifiedMillis = connection.getLastModified();
-          var urlLastModifiedTime = FileTime.fromMillis(urlLastModifiedMillis);
-          if (Files.exists(target)) {
-            bach.logger.log(DEBUG, "Local file exists. Comparing attributes to remote file...");
-            var unknownTime = urlLastModifiedMillis == 0L;
-            if (Files.getLastModifiedTime(target).equals(urlLastModifiedTime) || unknownTime) {
-              var localFileSize = Files.size(target);
-              var contentLength = connection.getContentLengthLong();
-              if (localFileSize == contentLength) {
-                bach.logger.log(DEBUG, "Local and remote file attributes seem to match.");
-                return target;
-              }
-            }
-            bach.logger.log(DEBUG, "Local file differs from remote -- replacing it...");
-          }
-          bach.logger.log(DEBUG, "Transferring {0}...", uri);
-          try (var targetStream = Files.newOutputStream(target)) {
-            sourceStream.transferTo(targetStream);
-          }
-          if (urlLastModifiedMillis != 0L) {
-            Files.setLastModifiedTime(target, urlLastModifiedTime);
-          }
-          bach.logger.log(INFO, "Downloaded {0} successfully.", fileName);
-          bach.logger.log(DEBUG, " o Size -> {0} bytes", Files.size(target));
-          bach.logger.log(DEBUG, " o Last Modified -> {0}", urlLastModifiedTime);
+      },
+
+      BUILD {
+        @Override
+        public int run(Bach bach) {
+          return bach.project.build();
         }
-        return target;
-      }
-    }
-
-    /** Unzip. */
-    interface Extract {
-      static Path extract(Bach bach, Path zip) throws Exception {
-        var jar = ToolProvider.findFirst("jar").orElseThrow();
-        var listing = new StringWriter();
-        var printWriter = new PrintWriter(listing);
-        jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
-        // TODO Find better way to extract root folder name...
-        var root = Path.of(listing.toString().split("\\R")[0]);
-        var home = bach.based(Property.PATH_CACHE_TOOLS).resolve(root);
-        if (Files.notExists(home)) {
-          jar.run(System.out, System.err, "--extract", "--file", zip.toString());
-          Files.move(root, home);
-        }
-        return home.normalize().toAbsolutePath();
-      }
-    }
-
-    /** Build the project. */
-    class Build implements Action {
-
-      @Override
-      public int run(Bach bach) {
-        return bach.project.build();
       }
     }
 
     /** Tool runner action. */
-    class Tool implements Action {
+    class ToolRunner implements Action {
 
       class Gobbler extends StringWriter implements Runnable {
 
@@ -640,12 +720,12 @@ class Bach {
       final String name;
       final List<String> args;
 
-      Tool(Command command) {
+      ToolRunner(Command command) {
         this.name = command.name;
         this.args = command.arguments;
       }
 
-      Tool(String name, String... args) {
+      ToolRunner(String name, String... args) {
         this.name = name;
         this.args = List.of(args);
       }
@@ -697,137 +777,6 @@ class Bach {
         }
       }
     }
-
-    /** Delete selected files and directories from the root directory. */
-    class TreeCopy implements Action {
-
-      final Path source, target;
-      final Predicate<Path> filter;
-
-      TreeCopy(Path source, Path target) {
-        this(source, target, __ -> true);
-      }
-
-      TreeCopy(Path source, Path target, Predicate<Path> filter) {
-        this.source = source;
-        this.target = target;
-        this.filter = filter;
-      }
-
-      @Override
-      public int run(Bach bach) {
-        // debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
-        if (!Files.exists(source)) {
-          return 0;
-        }
-        if (!Files.isDirectory(source)) {
-          // throw new IllegalArgumentException("source must be a directory: " + source);
-          return 1;
-        }
-        if (Files.exists(target)) {
-          if (!Files.isDirectory(target)) {
-            // throw new IllegalArgumentException("target must be a directory: " + target);
-            return 2;
-          }
-          if (target.equals(source)) {
-            return 0;
-          }
-          if (target.startsWith(source)) {
-            // copy "a/" to "a/b/"...
-            return 3;
-          }
-        }
-        try (var stream = Files.walk(source).sorted()) {
-          int counter = 0;
-          var paths = stream.collect(Collectors.toList());
-          for (var path : paths) {
-            var destination = target.resolve(source.relativize(path));
-            if (Files.isDirectory(path)) {
-              Files.createDirectories(destination);
-              continue;
-            }
-            if (filter.test(path)) {
-              Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-              counter++;
-            }
-          }
-          bach.logger.log(DEBUG, "Copied {0} file(s) of {1} elements.", counter, paths.size());
-        } catch (Exception e) {
-          // throw new UncheckedIOException("copyTree failed", e);
-          return 4;
-        }
-        return 0;
-      }
-    }
-
-    /** Delete selected files and directories from the root directory. */
-    class TreeDelete implements Action {
-
-      final Path root;
-      final Predicate<Path> filter;
-
-      TreeDelete(Path root) {
-        this(root, __ -> true);
-      }
-
-      TreeDelete(Path root, Predicate<Path> filter) {
-        this.root = root;
-        this.filter = filter;
-      }
-
-      @Override
-      public int run(Bach bach) {
-        // trivial case: delete existing single file or empty directory right away
-        try {
-          if (Files.deleteIfExists(root)) {
-            return 0;
-          }
-        } catch (Exception ignored) {
-          // fall-through
-        }
-        // default case: walk the tree...
-        try (var stream = Files.walk(root)) {
-          var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-          for (var path : selected.collect(Collectors.toList())) {
-            Files.deleteIfExists(path);
-          }
-        } catch (Exception e) {
-          bach.logger.log(ERROR, "Deleting tree failed: " + root, e);
-          return 1;
-        }
-        return 0;
-      }
-    }
-
-    /** Walk directory tree structure. */
-    class TreeWalk implements Action {
-
-      final Path root;
-      final Consumer<String> out;
-
-      TreeWalk(Path root, Consumer<String> out) {
-        this.root = root;
-        this.out = out;
-      }
-
-      @Override
-      public int run(Bach bach) {
-        if (Files.exists(root)) {
-          out.accept(root.toString());
-        }
-        try (var stream = Files.walk(root).sorted()) {
-          for (var path : stream.collect(Collectors.toList())) {
-            var string = root.relativize(path).toString();
-            var prefix = string.isEmpty() ? "" : File.separator;
-            out.accept("." + prefix + string);
-          }
-        } catch (Exception e) {
-          // throw new UncheckedIOException("dumping tree failed: " + root, e);
-          return 1;
-        }
-        return 0;
-      }
-    }
   }
 
   /** External program. */
@@ -860,13 +809,13 @@ class Bach {
       return path;
     }
 
-    class GoogleJavaFormat implements Bach.Tool {
+    class GoogleJavaFormat implements Tool {
 
       static Path install(Bach bach) throws Exception {
         var name = "google-java-format";
         var destination = bach.based(Property.PATH_CACHE_TOOLS).resolve(name);
         var uri = URI.create(bach.var.get(Property.TOOL_FORMAT_URI));
-        return new Download(destination).run(bach, uri);
+        return bach.utilities.download(destination, uri);
       }
 
       final List<?> arguments;
@@ -896,13 +845,13 @@ class Bach {
       }
     }
 
-    class JUnit implements Bach.Tool {
+    class JUnit implements Tool {
 
       static Path install(Bach bach) throws Exception {
         var art = "junit-platform-console-standalone";
         var dir = bach.based(Property.PATH_CACHE_TOOLS).resolve(art);
         var uri = URI.create(bach.var.get(Property.TOOL_JUNIT_URI));
-        return new Download(dir).run(bach, uri);
+        return bach.utilities.download(dir, uri);
       }
 
       final List<?> arguments;
@@ -923,7 +872,7 @@ class Bach {
     }
 
     /** Maven. */
-    class Maven implements Bach.Tool {
+    class Maven implements Tool {
 
       final List<?> arguments;
 
@@ -934,8 +883,8 @@ class Bach {
       @Override
       public Command toCommand(Bach bach) throws Exception {
         var uri = URI.create(bach.var.get(Property.TOOL_MAVEN_URI));
-        var zip = new Download(bach.based(Property.PATH_CACHE_TOOLS)).run(bach, uri);
-        var home = Extract.extract(bach, zip);
+        var zip = bach.utilities.download(bach.based(Property.PATH_CACHE_TOOLS), uri);
+        var home = bach.utilities.extract(zip);
         var win = System.getProperty("os.name").toLowerCase().contains("win");
         var name = "mvn" + (win ? ".cmd" : "");
         var executable = setExecutable(home.resolve("bin").resolve(name));
@@ -1035,7 +984,7 @@ class Bach {
     }
 
     int run(Bach bach) {
-      return bach.run(new Bach.Action.Tool(this));
+      return bach.run(new Action.ToolRunner(this));
     }
   }
 

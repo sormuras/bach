@@ -5,6 +5,7 @@ import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.condition.OS;
@@ -51,5 +52,13 @@ interface Util {
     }
     var user = (r ? "r" : "-") + (w ? "w" : "-") + (x ? "x" : "-");
     Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(user + "------"));
+  }
+
+  static List<Path> createFiles(Path directory, int count) throws Exception {
+    var paths = new ArrayList<Path>();
+    for (int i = 0; i < count; i++) {
+      paths.add(Files.createFile(directory.resolve("file-" + i)));
+    }
+    return paths;
   }
 }

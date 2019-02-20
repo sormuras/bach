@@ -20,10 +20,10 @@ class DemoTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"greetings", "greetings-world", "greetings-world-with-main-and-test"})
-    void greetings(String name, @TempDir Path workspace) {
+    void greetings(String name, @TempDir Path workspace) throws Exception {
       var demo = Path.of("demo", "jigsaw-quick-start", name);
       var base = workspace.resolve(demo.getFileName());
-      bach.run(new Bach.Action.TreeCopy(demo, base));
+      bach.utilities.treeCopy(demo, base);
 
       var logger = new CollectingLogger(name);
       var bach = new Bach(logger, base, List.of("build"));
@@ -38,15 +38,15 @@ class DemoTests {
       assertEquals(0, bach.run(), logger.toString());
       assertLinesMatch(
           List.of(
-              "Running action Banner...",
+              "Running action BANNER...",
               "Bach.java - " + Bach.VERSION,
               ">> BANNER >>",
-              "Action Banner succeeded.",
-              "Running action Check...",
-              "Action Check succeeded.",
-              "Running action Build...",
+              "Action BANNER succeeded.",
+              "Running action CHECK...",
+              "Action CHECK succeeded.",
+              "Running action BUILD...",
               ">> BUILD >>",
-              "Action Build succeeded."),
+              "Action BUILD succeeded."),
           logger.getLines());
       // logger.getLines().forEach(System.out::println);
       // bach.run(new Bach.Action.TreeWalk(base, System.out::println));
