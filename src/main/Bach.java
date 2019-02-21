@@ -621,7 +621,7 @@ class Bach {
     /** Walk directory tree structure. */
     List<String> treeWalk(Path root) {
       var lines = new ArrayList<String>();
-      treeWalk(root,lines::add);
+      treeWalk(root, lines::add);
       return lines;
     }
 
@@ -662,7 +662,8 @@ class Bach {
         public int run(Bach bach) {
           bach.logger.log(
               INFO,
-              "    ___      ___      ___      ___   \n"
+              "\n"
+                  + "    ___      ___      ___      ___   \n"
                   + "   /\\  \\    /\\  \\    /\\  \\    /\\__\\\n"
                   + "  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_\n"
                   + " /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\\n"
@@ -670,8 +671,7 @@ class Bach {
                   + "  \\::/  /   /:/  /  \\:\\__\\    /:/  /\n"
                   + "   \\/__/    \\/__/    \\/__/    \\/__/"
                   + " "
-                  + VERSION
-                  + "\n");
+                  + VERSION);
           bach.logger.log(DEBUG, "Main");
           bach.logger.log(DEBUG, "  base = {0}", bach.base);
           bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
@@ -741,6 +741,25 @@ class Bach {
           }
           return 0;
         }
+      },
+
+      HELP("Print this help screen on standard out ... F1, F1, F1!") {
+        @Override
+        public int run(Bach bach) {
+          System.out.println();
+          for (var action : Action.Default.values()) {
+            var name = action.name().toLowerCase();
+            System.out.println(String.format(" %-9s -> %s", name, action.description));
+          }
+          System.out.println();
+          return 0;
+        }
+      };
+
+      final String description;
+
+      Default(String... description) {
+        this.description = String.join("", description);
       }
     }
 

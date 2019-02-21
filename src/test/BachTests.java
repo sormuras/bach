@@ -110,10 +110,7 @@ class BachTests {
     assertEquals(0, bach.run(), logger.toString());
     assertLinesMatch(
         List.of(
-            "Running action BANNER...",
-            ">> BANNER >>",
-            "Action BANNER succeeded.",
-            ">> CHECK >>"),
+            "Running action BANNER...", ">> BANNER >>", "Action BANNER succeeded.", ">> CHECK >>"),
         logger.getLines());
   }
 

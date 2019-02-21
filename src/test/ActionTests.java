@@ -1,8 +1,12 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +14,32 @@ class ActionTests {
 
   private final CollectingLogger logger = new CollectingLogger("*");
   private final Bach bach = new Bach(logger, Path.of("."), List.of());
+
+  @Nested
+  class Help {
+    @Test
+    void checkHelpOutput() {
+      var out = System.out;
+      var bytes = new ByteArrayOutputStream();
+      try {
+        System.setOut(new PrintStream(bytes));
+        Bach.Action.Default.HELP.run(bach);
+      } finally {
+        System.setOut(out);
+      }
+      assertLinesMatch(
+          List.of(
+              "",
+              " banner    -> ",
+              " build     -> ",
+              " check     -> ",
+              " clean     -> ",
+              " erase     -> ",
+              " help      -> Print this help screen on standard out ... F1, F1, F1!",
+              ""),
+          bytes.toString().lines().collect(Collectors.toList()));
+    }
+  }
 
   @Nested
   class Tool {
