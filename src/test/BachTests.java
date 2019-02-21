@@ -34,6 +34,11 @@ class BachTests {
   }
 
   @Test
+  void userHomeIsUsersHome() {
+    assertEquals(Path.of(System.getProperty("user.home")), Bach.USER_HOME);
+  }
+
+  @Test
   void basedAbsolutePathReturnsSameInstance() {
     var absolutePath = Path.of("absolute/path").toAbsolutePath();
     assertSame(absolutePath, new Bach().based(absolutePath));

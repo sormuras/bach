@@ -59,6 +59,9 @@ class Bach {
   /** Version is either {@code master} or {@link Runtime.Version#parse(String)}-compatible. */
   static final String VERSION = "master";
 
+  /** Convenient short-cut to {@code "user.home"} as a path. */
+  static final Path USER_HOME = Path.of(System.getProperty("user.home"));
+
   /** Convenient short-cut to {@code "user.dir"} as a path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
