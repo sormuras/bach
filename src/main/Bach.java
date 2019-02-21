@@ -255,8 +255,13 @@ class Bach {
     }
 
     void format() {
-      var code =
-          new Bach.Tool.GoogleJavaFormat(false, Set.of(main.source, test.source)).run(Bach.this);
+      var roots = Set.of(main.source, test.source);
+      var count = new Command("count **/*.java").addAllJavaFiles(roots);
+      if (count.arguments.isEmpty()) {
+        logger.log(INFO, "No Java source files present.");
+        return;
+      }
+      var code = run(new Bach.Tool.GoogleJavaFormat(false, roots));
       if (code != 0) {
         throw new IllegalStateException("Format violation(s) detected!");
       }
