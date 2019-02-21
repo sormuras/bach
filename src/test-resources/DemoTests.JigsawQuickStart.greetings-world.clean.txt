@@ -1,0 +1,13 @@
+>> 1 >>
+.
+./src
+./src/com.greetings
+./src/com.greetings/com
+./src/com.greetings/com/greetings
+./src/com.greetings/com/greetings/Main.java
+./src/com.greetings/module-info.java
+./src/org.astro
+./src/org.astro/module-info.java
+./src/org.astro/org
+./src/org.astro/org/astro
+./src/org.astro/org/astro/World.java

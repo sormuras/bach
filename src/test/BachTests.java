@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,7 +108,13 @@ class BachTests {
     var base = Path.of(".").toAbsolutePath();
     var bach = new Bach(logger, base, List.of());
     assertEquals(0, bach.run(), logger.toString());
-    assertTrue(logger.getLines().contains("Bach.java - " + Bach.VERSION));
+    assertLinesMatch(
+        List.of(
+            "Running action BANNER...",
+            ">> BANNER >>",
+            "Action BANNER succeeded.",
+            ">> CHECK >>"),
+        logger.getLines());
   }
 
   @Test

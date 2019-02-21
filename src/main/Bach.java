@@ -218,11 +218,13 @@ class Bach {
 
   /** Bach's project object model. */
   class Project {
+    final Path target;
     final String name, version;
     final Path modules;
     final Realm main, test;
 
     Project() {
+      this.target = based("bin");
       var defaultName =
           Optional.ofNullable(base.getFileName())
               .map(Object::toString)
@@ -246,6 +248,10 @@ class Bach {
         return 1;
       }
       return 0;
+    }
+
+    void clean() throws Exception {
+      utilities.treeDelete(target);
     }
 
     void format() {
@@ -379,7 +385,7 @@ class Bach {
                 .filter(Files::isDirectory)
                 .findFirst()
                 .orElse(based(sources.get(0)));
-        this.target = based("bin", "compiled", name);
+        this.target = Project.this.target.resolve(Path.of("compiled", name));
       }
 
       void compile() {
@@ -613,6 +619,13 @@ class Bach {
     }
 
     /** Walk directory tree structure. */
+    List<String> treeWalk(Path root) {
+      var lines = new ArrayList<String>();
+      treeWalk(root,lines::add);
+      return lines;
+    }
+
+    /** Walk directory tree structure. */
     void treeWalk(Path root, Consumer<String> out) {
       if (Files.exists(root)) {
         out.accept(root.toString());
@@ -647,8 +660,18 @@ class Bach {
       BANNER {
         @Override
         public int run(Bach bach) {
-          bach.logger.log(INFO, "Bach.java - {0}", Bach.VERSION);
-
+          bach.logger.log(
+              INFO,
+              "    ___      ___      ___      ___   \n"
+                  + "   /\\  \\    /\\  \\    /\\  \\    /\\__\\\n"
+                  + "  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_\n"
+                  + " /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\\n"
+                  + " \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /\n"
+                  + "  \\::/  /   /:/  /  \\:\\__\\    /:/  /\n"
+                  + "   \\/__/    \\/__/    \\/__/    \\/__/"
+                  + " "
+                  + VERSION
+                  + "\n");
           bach.logger.log(DEBUG, "Main");
           bach.logger.log(DEBUG, "  base = {0}", bach.base);
           bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
@@ -674,6 +697,13 @@ class Bach {
         }
       },
 
+      BUILD {
+        @Override
+        public int run(Bach bach) {
+          return bach.project.build();
+        }
+      },
+
       CHECK {
         @Override
         public int run(Bach bach) {
@@ -685,10 +715,31 @@ class Bach {
         }
       },
 
-      BUILD {
+      CLEAN {
         @Override
         public int run(Bach bach) {
-          return bach.project.build();
+          try {
+            bach.project.clean();
+          } catch (Exception e) {
+            bach.logger.log(ERROR, "Deleting cache directory failed!", e);
+            return 1;
+          }
+          return 0;
+        }
+      },
+
+      ERASE {
+        @Override
+        public int run(Bach bach) {
+          try {
+            CLEAN.run(bach);
+            bach.utilities.treeDelete(bach.based(".bach"));
+            // TODO bach.utilities.treeDelete(USER_HOME.resolve(".bach"));
+          } catch (Exception e) {
+            bach.logger.log(ERROR, "Deleting cache directories failed!", e);
+            return 1;
+          }
+          return 0;
         }
       }
     }

@@ -1,6 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.nio.file.Files;
@@ -27,10 +26,12 @@ class DemoTests {
 
       var logger = new CollectingLogger(name);
       var bach = new Bach(logger, base, List.of("build"));
+      var expected = Path.of("src", "test-resources");
       assertEquals(base, bach.base);
-      assertTrue(Files.isDirectory(bach.based("src")));
       assertEquals(name, bach.project.name);
       assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+      var cleanTreeWalk = expected.resolve("DemoTests.JigsawQuickStart." + name + ".clean.txt");
+      assertLinesMatch(Files.readAllLines(cleanTreeWalk), bach.utilities.treeWalk(base));
       if (bach.var.offline) {
         // TODO Better check for unresolvable external modules.
         assumeFalse(name.equals("greetings-world-with-main-and-test"));
@@ -39,7 +40,6 @@ class DemoTests {
       assertLinesMatch(
           List.of(
               "Running action BANNER...",
-              "Bach.java - " + Bach.VERSION,
               ">> BANNER >>",
               "Action BANNER succeeded.",
               "Running action CHECK...",
@@ -48,8 +48,10 @@ class DemoTests {
               ">> BUILD >>",
               "Action BUILD succeeded."),
           logger.getLines());
-      // logger.getLines().forEach(System.out::println);
-      // bach.run(new Bach.Action.TreeWalk(base, System.out::println));
+      var buildTreeWalk = expected.resolve("DemoTests.JigsawQuickStart." + name + ".build.txt");
+      assertLinesMatch(Files.readAllLines(buildTreeWalk), bach.utilities.treeWalk(base));
+      bach.run(Bach.Action.Default.ERASE);
+      assertLinesMatch(Files.readAllLines(cleanTreeWalk), bach.utilities.treeWalk(base));
     }
   }
 }

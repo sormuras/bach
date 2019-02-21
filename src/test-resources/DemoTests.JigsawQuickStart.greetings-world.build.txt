@@ -1,0 +1,26 @@
+>> 1 >>
+.
+./bin
+./bin/compiled
+./bin/compiled/main
+./bin/compiled/main/com.greetings
+./bin/compiled/main/com.greetings/com
+./bin/compiled/main/com.greetings/com/greetings
+./bin/compiled/main/com.greetings/com/greetings/Main.class
+./bin/compiled/main/com.greetings/module-info.class
+./bin/compiled/main/org.astro
+./bin/compiled/main/org.astro/module-info.class
+./bin/compiled/main/org.astro/org
+./bin/compiled/main/org.astro/org/astro
+./bin/compiled/main/org.astro/org/astro/World.class
+./src
+./src/com.greetings
+./src/com.greetings/com
+./src/com.greetings/com/greetings
+./src/com.greetings/com/greetings/Main.java
+./src/com.greetings/module-info.java
+./src/org.astro
+./src/org.astro/module-info.java
+./src/org.astro/org
+./src/org.astro/org/astro
+./src/org.astro/org/astro/World.java
