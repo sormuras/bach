@@ -372,6 +372,9 @@ class Bach {
       java.add("--class-path").add(Tool.JUnit.install(Bach.this));
       java.add("org.junit.platform.console.ConsoleLauncher");
 
+      java.add("--reports-dir");
+      java.add(target.resolve("test-reports"));
+
       java.add("--scan-modules");
       return java.run(Bach.this);
     }
