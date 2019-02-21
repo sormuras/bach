@@ -56,7 +56,7 @@ class ToolTests {
     void version() {
       var mvn = new Bach.Tool.Maven(List.of("--version"));
       logger.clear();
-      assertEquals(0, mvn.run(bach));
+      assertEquals(0, mvn.run(bach), logger.toString());
       assertLinesMatch(
           List.of(
               ">> INSTALL >>",

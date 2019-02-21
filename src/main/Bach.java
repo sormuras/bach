@@ -469,10 +469,13 @@ class Bach {
       jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
       // TODO Find better way to extract root folder name...
       var root = Path.of(listing.toString().split("\\R")[0]);
-      var home = based(Property.PATH_CACHE_TOOLS).resolve(root);
+      var destination = zip.getParent();
+      var home = destination.resolve(root);
       if (Files.notExists(home)) {
-        jar.run(System.out, System.err, "--extract", "--file", zip.toString());
-        Files.move(root, home);
+        new ProcessBuilder("jar", "--extract", "--file", zip.toString())
+            .directory(destination.toFile())
+            .start()
+            .waitFor();
       }
       return home.normalize().toAbsolutePath();
     }
@@ -786,6 +789,11 @@ class Bach {
 
     Command toCommand(Bach bach) throws Exception;
 
+    static Path tools(Bach bach) {
+      // return bach.based(Property.PATH_CACHE_TOOLS); // each project got its own tool
+      return USER_HOME.resolve(bach.var.get(Property.PATH_CACHE_TOOLS)); // share tools
+    }
+
     @Override
     default int run(Bach bach) {
       try {
@@ -800,7 +808,7 @@ class Bach {
 
       static Path install(Bach bach) throws Exception {
         var name = "google-java-format";
-        var destination = bach.based(Property.PATH_CACHE_TOOLS).resolve(name);
+        var destination = tools(bach).resolve(name);
         var uri = URI.create(bach.var.get(Property.TOOL_FORMAT_URI));
         return bach.utilities.download(destination, uri);
       }
@@ -836,7 +844,7 @@ class Bach {
 
       static Path install(Bach bach) throws Exception {
         var art = "junit-platform-console-standalone";
-        var dir = bach.based(Property.PATH_CACHE_TOOLS).resolve(art);
+        var dir = tools(bach).resolve(art);
         var uri = URI.create(bach.var.get(Property.TOOL_JUNIT_URI));
         return bach.utilities.download(dir, uri);
       }
@@ -870,7 +878,7 @@ class Bach {
       @Override
       public Command toCommand(Bach bach) throws Exception {
         var uri = URI.create(bach.var.get(Property.TOOL_MAVEN_URI));
-        var zip = bach.utilities.download(bach.based(Property.PATH_CACHE_TOOLS), uri);
+        var zip = bach.utilities.download(tools(bach), uri);
         var home = bach.utilities.extract(zip);
         var win = System.getProperty("os.name").toLowerCase().contains("win");
         var name = "mvn" + (win ? ".cmd" : "");
