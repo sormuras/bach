@@ -682,6 +682,26 @@ class Bach {
                   + "   \\/__/    \\/__/    \\/__/    \\/__/"
                   + " "
                   + VERSION);
+          return 0;
+        }
+
+        @Override
+        public boolean visible() {
+          return false;
+        }
+      },
+
+      BUILD("Build project in base directory.") {
+        @Override
+        public int run(Bach bach) {
+          return bach.project.build();
+        }
+      },
+
+      CHECK("Check preconditions.") {
+        @Override
+        public int run(Bach bach) {
+          // First, log all settings for debugging.
           bach.logger.log(DEBUG, "Main");
           bach.logger.log(DEBUG, "  base = {0}", bach.base);
           bach.logger.log(DEBUG, "  logger = {0}", bach.logger.getName());
@@ -703,25 +723,7 @@ class Bach {
           for (var property : Property.values()) {
             bach.logger.log(DEBUG, "  {0} = {1}", property.key, bach.var.get(property));
           }
-          return 0;
-        }
-
-        @Override
-        public boolean visible() {
-          return false;
-        }
-      },
-
-      BUILD("Build project in base directory.") {
-        @Override
-        public int run(Bach bach) {
-          return bach.project.build();
-        }
-      },
-
-      CHECK("Check preconditions.") {
-        @Override
-        public int run(Bach bach) {
+          // Now perform checks.
           if (bach.base.getNameCount() == 0) {
             bach.logger.log(ERROR, "Base path has zero elements!");
             return 1;
