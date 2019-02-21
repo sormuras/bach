@@ -660,9 +660,14 @@ class Bach {
     /** Run this action and return zero on success. */
     int run(Bach bach);
 
+    /** Visible in help's output by default. */
+    default boolean visible() {
+      return true;
+    }
+
     /** No-arg default action. */
     enum Default implements Action {
-      BANNER {
+      BANNER("Display a fancy ASCII art banner") {
         @Override
         public int run(Bach bach) {
           bach.logger.log(
@@ -700,16 +705,21 @@ class Bach {
           }
           return 0;
         }
+
+        @Override
+        public boolean visible() {
+          return false;
+        }
       },
 
-      BUILD {
+      BUILD("Build project in base directory.") {
         @Override
         public int run(Bach bach) {
           return bach.project.build();
         }
       },
 
-      CHECK {
+      CHECK("Check preconditions.") {
         @Override
         public int run(Bach bach) {
           if (bach.base.getNameCount() == 0) {
@@ -718,9 +728,14 @@ class Bach {
           }
           return 0;
         }
+
+        @Override
+        public boolean visible() {
+          return false;
+        }
       },
 
-      CLEAN {
+      CLEAN("Delete all generated assets - but keep caches intact.") {
         @Override
         public int run(Bach bach) {
           try {
@@ -733,7 +748,7 @@ class Bach {
         }
       },
 
-      ERASE {
+      ERASE("Delete all generated assets - and also delete caches.") {
         @Override
         public int run(Bach bach) {
           try {
@@ -748,16 +763,26 @@ class Bach {
         }
       },
 
-      HELP("Print this help screen on standard out ... F1, F1, F1!") {
+      HELP("Print this help screen on standard out... F1, F1, F1!") {
         @Override
         public int run(Bach bach) {
           System.out.println();
           for (var action : Action.Default.values()) {
+            if (!action.visible()) {
+              continue;
+            }
             var name = action.name().toLowerCase();
             System.out.println(String.format(" %-9s -> %s", name, action.description));
           }
           System.out.println();
           return 0;
+        }
+      },
+
+      TOOL("Execute named tool consuming all remaining arguments.") {
+        @Override
+        public int run(Bach bach) {
+          throw new UnsupportedOperationException("Action.ToolRunner should have handled this!");
         }
       };
 

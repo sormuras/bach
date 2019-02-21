@@ -30,12 +30,11 @@ class ActionTests {
       assertLinesMatch(
           List.of(
               "",
-              " banner    -> ",
-              " build     -> ",
-              " check     -> ",
-              " clean     -> ",
-              " erase     -> ",
-              " help      -> Print this help screen on standard out ... F1, F1, F1!",
+              " build     -> Build project in base directory.",
+              " clean     -> Delete all generated assets - but keep caches intact.",
+              " erase     -> Delete all generated assets - and also delete caches.",
+              " help      -> Print this help screen on standard out... F1, F1, F1!",
+              " tool      -> Execute named tool consuming all remaining arguments.",
               ""),
           bytes.toString().lines().collect(Collectors.toList()));
     }

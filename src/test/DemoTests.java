@@ -43,6 +43,7 @@ class DemoTests {
               ">> BANNER >>",
               "Action BANNER succeeded.",
               "Running action CHECK...",
+              ">> CHECK >>",
               "Action CHECK succeeded.",
               "Running action BUILD...",
               ">> BUILD >>",
