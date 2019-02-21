@@ -31,7 +31,6 @@ import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -794,21 +793,6 @@ class Bach {
       }
     }
 
-    /** Mark the supplied file as executable. */
-    static Path setExecutable(Path path) {
-      if (Files.isExecutable(path)) {
-        return path;
-      }
-      if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
-        return path;
-      }
-      var program = path.toFile();
-      if (!program.setExecutable(true)) {
-        throw new IllegalStateException("can't set executable flag: " + program);
-      }
-      return path;
-    }
-
     class GoogleJavaFormat implements Tool {
 
       static Path install(Bach bach) throws Exception {
@@ -887,7 +871,8 @@ class Bach {
         var home = bach.utilities.extract(zip);
         var win = System.getProperty("os.name").toLowerCase().contains("win");
         var name = "mvn" + (win ? ".cmd" : "");
-        var executable = setExecutable(home.resolve("bin").resolve(name));
+        var executable = home.resolve("bin").resolve(name);
+        executable.toFile().setExecutable(true);
         return new Command(executable.toString()).addAll(arguments);
       }
     }

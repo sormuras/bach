@@ -130,7 +130,7 @@ class ToolTests {
 
     @Override
     public Bach.Command toCommand(Bach bach) {
-      return new Bach.Command("noop");
+      throw new UnsupportedOperationException();
     }
 
     @Override
