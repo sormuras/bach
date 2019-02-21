@@ -31,6 +31,9 @@
 ./bin/compiled/test/org.astro/org/astro
 ./bin/compiled/test/org.astro/org/astro/World.class
 ./bin/compiled/test/org.astro/org/astro/WorldTests.class
+./bin/test-reports
+./bin/test-reports/TEST-junit-jupiter.xml
+./bin/test-reports/TEST-junit-vintage.xml
 ./logging.properties
 ./src
 ./src/main
