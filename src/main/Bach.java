@@ -366,10 +366,10 @@ class Bach {
       return map;
     }
 
-    int test() throws Exception {
+    void test() throws Exception {
       if (Files.notExists(test.target)) {
         logger.log(INFO, "No test realm target available, no tests.");
-        return 0;
+        return;
       }
       logger.log(INFO, "Launching JUnit Platform...");
       var java = new Command("java");
@@ -386,7 +386,10 @@ class Bach {
       java.add(target.resolve("test-reports"));
 
       java.add("--scan-modules");
-      return java.run(Bach.this);
+
+      if (java.run(Bach.this) != 0) {
+        throw new RuntimeException("test() failed!");
+      }
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
