@@ -34,6 +34,7 @@ class ActionTests {
               " clean     -> Delete all generated assets - but keep caches intact.",
               " erase     -> Delete all generated assets - and also delete caches.",
               " help      -> Print this help screen on standard out... F1, F1, F1!",
+              " scaffold  -> Create modular Java sample project in base directory.",
               " tool      -> Execute named tool consuming all remaining arguments.",
               ""),
           bytes.toString().lines().collect(Collectors.toList()));

@@ -786,6 +786,23 @@ class Bach {
         }
       },
 
+      SCAFFOLD("Create modular Java sample project in base directory.") {
+        @Override
+        public int run(Bach bach) {
+          // TODO Check for effectively empty base directory.
+          try {
+            var uri = "https://github.com/sormuras/bach/raw/" + VERSION + "/demo/scaffold.zip";
+            var zip = bach.utilities.download(bach.base, URI.create(uri));
+            bach.utilities.extract(zip);
+            Files.delete(zip);
+          } catch (Exception e) {
+            bach.logger.log(ERROR, "Scaffolding project failed!", e);
+            return 1;
+          }
+          return 0;
+        }
+      },
+
       TOOL("Execute named tool consuming all remaining arguments.") {
         @Override
         public int run(Bach bach) {
