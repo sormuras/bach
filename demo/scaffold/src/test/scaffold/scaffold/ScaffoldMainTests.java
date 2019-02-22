@@ -1,0 +1,3 @@
+package scaffold;
+
+class ScaffoldMainTests {}
