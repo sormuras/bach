@@ -884,6 +884,12 @@ class Bach {
               command.add(junit.name);
               command.addAll(junit.arguments);
               break;
+            case "maven":
+            case "mvn":
+              var maven = new Bach.Tool.Maven(args).toCommand(bach);
+              command.add(maven.name);
+              command.addAll(maven.arguments);
+              break;
             default:
               command.add(name);
               command.addAll(args);
