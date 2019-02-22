@@ -12,6 +12,7 @@
 ./src/test
 ./src/test/integration
 ./src/test/integration/integration
+./src/test/integration/integration/EchoPlugin.java
 ./src/test/integration/integration/IntegrationTests.java
 ./src/test/integration/module-info.java
 ./src/test/scaffold

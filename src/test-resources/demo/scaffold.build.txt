@@ -16,6 +16,7 @@
 ./bin/compiled/test
 ./bin/compiled/test/integration
 ./bin/compiled/test/integration/integration
+./bin/compiled/test/integration/integration/EchoPlugin.class
 ./bin/compiled/test/integration/integration/IntegrationTests.class
 ./bin/compiled/test/integration/module-info.class
 ./bin/compiled/test/scaffold
@@ -23,6 +24,7 @@
 ./bin/compiled/test/scaffold/scaffold
 ./bin/compiled/test/scaffold/scaffold/ScaffoldMainTests.class
 ./bin/compiled/test/scaffold/scaffold/api
+./bin/compiled/test/scaffold/scaffold/api/ScaffoldPlugin.class
 ./bin/compiled/test/scaffold/scaffold/api/ScaffoldPluginTests.class
 ./bin/test-reports
 ./bin/test-reports/TEST-junit-jupiter.xml
@@ -38,6 +40,7 @@
 ./src/test
 ./src/test/integration
 ./src/test/integration/integration
+./src/test/integration/integration/EchoPlugin.java
 ./src/test/integration/integration/IntegrationTests.java
 ./src/test/integration/module-info.java
 ./src/test/scaffold
