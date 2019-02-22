@@ -24,6 +24,7 @@ bach.var.out = System.out::println
 bach.var.err = System.err::println
 
 var format = new Bach.Tool.GoogleJavaFormat(Boolean.getBoolean("bach.format.replace"), Set.of(Path.of("src"), Path.of("demo")))
+var updateScaffoldArchive = new Bach.Action.ToolRunner("jar", "--verbose", "--update", "--file", "demo/scaffold.zip", "--no-manifest", "-C", "demo/scaffold", ".")
 var target = "target/build"
 var compileMain = new Bach.Action.ToolRunner("javac", "-d", target + "/main", "src/main/Bach.java")
 var junit = bach.utilities.download(Path.of(target), URI.create(bach.var.get(Bach.Property.TOOL_JUNIT_URI)))
@@ -32,4 +33,4 @@ var test = new Bach.Action.ToolRunner(new Bach.Command("java").add("-ea").add("-
 
 bach.utilities.treeCopy(Path.of("src/test-resources"), Path.of(target + "/test"))
 
-/exit bach.run(format, compileMain, compileTest, test)
+/exit bach.run(format, updateScaffoldArchive, compileMain, compileTest, test)
