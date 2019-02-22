@@ -486,10 +486,14 @@ class Bach {
       var destination = zip.getParent();
       var home = destination.resolve(root);
       if (Files.notExists(home)) {
-        new ProcessBuilder("jar", "--extract", "--file", zip.toString())
-            .directory(destination.toFile())
-            .start()
-            .waitFor();
+        if (base.equals(USER_PATH)) {
+          jar.run(System.out, System.err, "--extract", "--file", zip.toString());
+        } else {
+          new ProcessBuilder("jar", "--extract", "--file", zip.toString())
+              .directory(destination.toFile())
+              .start()
+              .waitFor();
+        }
       }
       return home.normalize().toAbsolutePath();
     }
