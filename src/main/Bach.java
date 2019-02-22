@@ -249,6 +249,7 @@ class Bach {
         main.compile();
         test.compile();
         test();
+        launch();
       } catch (Exception e) {
         logger.log(ERROR, "Building project failed: " + e.getMessage(), e);
         return 1;
@@ -395,6 +396,22 @@ class Bach {
 
       if (java.run(Bach.this) != 0) {
         throw new RuntimeException("test() failed!");
+      }
+    }
+
+    void launch() {
+      var launch = var.get("bach.project.launch", null);
+      if (launch == null) {
+        logger.log(INFO, "No module/main-entry supplied, no launch.");
+        return;
+      }
+      logger.log(INFO, "Launching {0}...", launch);
+      var java = new Command("java");
+      java.add("--module-path").add(List.of(main.target, modules));
+      java.add("--module").add(launch);
+
+      if (java.run(Bach.this) != 0) {
+        throw new RuntimeException("launch() failed!");
       }
     }
 
