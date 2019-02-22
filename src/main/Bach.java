@@ -305,6 +305,12 @@ class Bach {
                           + "module-version.properties")));
       var uris = new ArrayList<URI>();
       for (var external : externals) {
+        var uri = var.get("module." + external, null);
+        if (uri != null) {
+          logger.log(DEBUG, "External module {0} mapped to custom uri: {1}", external, uri);
+          uris.add(URI.create(uri));
+          continue;
+        }
         var mavenGA = moduleMaven.getProperty(external);
         if (mavenGA == null) {
           logger.log(WARNING, "External module not mapped: {0}", external);
