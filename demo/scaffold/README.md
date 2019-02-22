@@ -1,5 +1,7 @@
 # Scaffold Project
 
+A simple modular Java project containing modular tests.
+
 ## main realm
 
 - module `scaffold` contains 2 packages: `scaffold` and `scaffold.api`
