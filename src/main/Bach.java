@@ -197,15 +197,21 @@ class Bach {
 
     /** URI to Google Java Format "all-deps" JAR. */
     TOOL_FORMAT_URI(
-        "https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar"),
+        "https://github.com/"
+            + "google/google-java-format/releases/download/google-java-format-1.7/"
+            + "google-java-format-1.7-all-deps.jar"),
 
     /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_JUNIT_URI(
-        "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/junit-platform-console-standalone-1.4.0.jar"),
+        "http://central.maven.org/"
+            + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
+            + "junit-platform-console-standalone-1.4.0.jar"),
 
     /** Maven URI. */
     TOOL_MAVEN_URI(
-        "https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip");
+        "https://archive.apache.org/"
+            + "dist/maven/maven-3/3.6.0/binaries/"
+            + "apache-maven-3.6.0-bin.zip");
 
     final String key;
     final String defaultValue;
@@ -286,13 +292,17 @@ class Bach {
               utilities.download(
                   modules,
                   URI.create(
-                      "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-maven.properties")));
+                      "https://raw.githubusercontent.com/"
+                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "module-maven.properties")));
       var moduleVersion =
           var.load(
               utilities.download(
                   modules,
                   URI.create(
-                      "https://raw.githubusercontent.com/jodastephen/jpms-module-names/master/generated/module-version.properties")));
+                      "https://raw.githubusercontent.com/"
+                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "module-version.properties")));
       var uris = new ArrayList<URI>();
       for (var external : externals) {
         var mavenGA = moduleMaven.getProperty(external);
