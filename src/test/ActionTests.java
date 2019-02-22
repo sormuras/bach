@@ -1,6 +1,8 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -9,36 +11,61 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ActionTests {
 
   private final CollectingLogger logger = new CollectingLogger("*");
   private final Bach bach = new Bach(logger, Path.of("."), List.of());
 
-  @Nested
-  class Help {
-    @Test
-    void checkHelpOutput() {
-      var out = System.out;
-      var bytes = new ByteArrayOutputStream();
-      try {
-        System.setOut(new PrintStream(bytes));
-        Bach.Action.Default.HELP.run(bach);
-      } finally {
-        System.setOut(out);
-      }
-      assertLinesMatch(
-          List.of(
-              "",
-              " build     -> Build project in base directory.",
-              " clean     -> Delete all generated assets - but keep caches intact.",
-              " erase     -> Delete all generated assets - and also delete caches.",
-              " help      -> Print this help screen on standard out... F1, F1, F1!",
-              " scaffold  -> Create modular Java sample project in base directory.",
-              " tool      -> Execute named tool consuming all remaining arguments.",
-              ""),
-          bytes.toString().lines().collect(Collectors.toList()));
+  @Test
+  void help() {
+    var out = System.out;
+    var bytes = new ByteArrayOutputStream();
+    try {
+      System.setOut(new PrintStream(bytes));
+      Bach.Action.Default.HELP.run(bach);
+    } finally {
+      System.setOut(out);
     }
+    assertLinesMatch(
+        List.of(
+            "",
+            " build     -> Build project in base directory.",
+            " clean     -> Delete all generated assets - but keep caches intact.",
+            " erase     -> Delete all generated assets - and also delete caches.",
+            " help      -> Print this help screen on standard out... F1, F1, F1!",
+            " scaffold  -> Create modular Java sample project in base directory.",
+            " tool      -> Execute named tool consuming all remaining arguments.",
+            ""),
+        bytes.toString().lines().collect(Collectors.toList()));
+  }
+
+  @Test
+  void scaffold(@TempDir Path temp) {
+    assumeFalse(bach.var.offline);
+
+    var logger = new CollectingLogger("*");
+    var bach = new Bach(logger, temp, List.of());
+    var code = Bach.Action.Default.SCAFFOLD.run(bach);
+    assertEquals(0, code, logger.toString());
+    var uri = "https://github.com/sormuras/bach/raw/" + Bach.VERSION + "/demo/scaffold.zip";
+    assertLinesMatch(
+        List.of(
+            "Downloading " + uri + "...",
+            "Transferring " + uri + "...",
+            "Downloaded scaffold.zip successfully.",
+            ">> 2 >>"),
+        logger.getLines());
+    var expected = bach.utilities.treeWalk(Path.of("demo", "scaffold"));
+    var actual = bach.utilities.treeWalk(bach.base);
+    actual.removeAll(expected);
+    assertTrue(actual.size() <= 2, actual.toString());
+  }
+
+  @Test
+  void tool() {
+    assertThrows(UnsupportedOperationException.class, () -> Bach.Action.Default.TOOL.run(bach));
   }
 
   @Nested
