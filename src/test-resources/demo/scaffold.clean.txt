@@ -6,9 +6,9 @@
 ./src/main/scaffold
 ./src/main/scaffold/module-info.java
 ./src/main/scaffold/scaffold
+./src/main/scaffold/scaffold/ScaffoldMain.java
 ./src/main/scaffold/scaffold/api
 ./src/main/scaffold/scaffold/api/ScaffoldPlugin.java
-./src/main/scaffold/scaffold/ScaffoldMain.java
 ./src/test
 ./src/test/integration
 ./src/test/integration/integration
@@ -17,6 +17,6 @@
 ./src/test/scaffold
 ./src/test/scaffold/module-info.java
 ./src/test/scaffold/scaffold
+./src/test/scaffold/scaffold/ScaffoldMainTests.java
 ./src/test/scaffold/scaffold/api
 ./src/test/scaffold/scaffold/api/ScaffoldPluginTests.java
-./src/test/scaffold/scaffold/ScaffoldMainTests.java

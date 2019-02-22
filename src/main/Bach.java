@@ -638,14 +638,12 @@ class Bach {
       if (Files.exists(root)) {
         out.accept(root.toString());
       }
-      Consumer<Path> consumePath =
-          path -> {
-            var string = root.relativize(path).toString().replace('\\', '/');
-            var prefix = string.isEmpty() ? "" : "/";
-            out.accept("." + prefix + string);
-          };
-      try (var stream = Files.walk(root).sorted()) {
-        stream.forEach(consumePath);
+      try (var stream = Files.walk(root)) {
+        stream
+            .map(root::relativize)
+            .map(path -> path.toString().replace('\\', '/'))
+            .sorted()
+            .forEach(string -> out.accept("." + (string.isEmpty() ? "" : "/") + string));
       } catch (Exception e) {
         throw new Error("Walking tree failed: " + root, e);
       }
