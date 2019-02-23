@@ -250,7 +250,6 @@ class Bach {
         main.compile();
         test.compile();
         test();
-        launch();
       } catch (Exception e) {
         logger.log(ERROR, "Building project failed: " + e.getMessage(), e);
         return 1;
@@ -401,8 +400,13 @@ class Bach {
     }
 
     void launch() {
+      if (Files.notExists(main.target)) {
+        logger.log(INFO, "Main target directory {0} doesn't exist, no launch.", main.target);
+        return;
+      }
       var launch = var.get("bach.project.launch.module", null);
       if (launch == null) {
+        // TODO Find first (or unique) program in main.source folder.
         logger.log(INFO, "No <module>[/<main-class>] supplied, no launch.");
         return;
       }
@@ -828,6 +832,19 @@ class Bach {
             System.out.println(String.format(" %-9s -> %s", name, action.description));
           }
           System.out.println();
+          return 0;
+        }
+      },
+
+      LAUNCH("Start main program.") {
+        @Override
+        public int run(Bach bach) {
+          try {
+            bach.project.launch();
+          } catch (Exception e) {
+            bach.logger.log(ERROR, "Running program failed!", e);
+            return 1;
+          }
           return 0;
         }
       },

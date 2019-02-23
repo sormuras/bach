@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ActionTests {
 
@@ -35,6 +37,7 @@ class ActionTests {
             " clean     -> Delete all generated assets - but keep caches intact.",
             " erase     -> Delete all generated assets - and also delete caches.",
             " help      -> Print this help screen on standard out... F1, F1, F1!",
+            " launch    -> Start main program.",
             " scaffold  -> Create modular Java sample project in base directory.",
             " tool      -> Execute named tool consuming all remaining arguments.",
             ""),
@@ -68,8 +71,21 @@ class ActionTests {
     assertThrows(UnsupportedOperationException.class, () -> Bach.Action.Default.TOOL.run(bach));
   }
 
+  @ParameterizedTest
+  @EnumSource(Bach.Action.Default.class)
+  void applyToEmptyDirectory(Bach.Action action, @TempDir Path empty) {
+    var logger = new CollectingLogger("empty-" + action);
+    var bach = new Bach(logger, empty, List.of());
+    if (action == Bach.Action.Default.TOOL) {
+      assertThrows(UnsupportedOperationException.class, () -> bach.run(action));
+      return;
+    }
+    var code = bach.run(action);
+    assertEquals(0, code, logger.toString());
+  }
+
   @Nested
-  class Tool {
+  class ToolRunner {
 
     @Test
     void failsOnNonExistentTool() {
