@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class VariablesTests {
@@ -35,5 +36,13 @@ class VariablesTests {
     System.setProperty(key, "789");
     assertEquals("789", bach.var.get(key, "456"));
     System.clearProperty(key);
+  }
+
+  @Test
+  void getMultipleValuesForSingleKey() {
+    var key = "key that doesn't exist";
+    var actual = bach.var.get(key, "a:b:c", ":").collect(Collectors.toList());
+    assertEquals(List.of("a", "b", "c"), actual);
+    assertEquals(0, bach.var.get(key, " \t\r\n ", ":").count());
   }
 }

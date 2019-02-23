@@ -37,6 +37,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -400,16 +401,16 @@ class Bach {
     }
 
     void launch() {
-      var launch = var.get("bach.project.launch", null);
+      var launch = var.get("bach.project.launch.module", null);
       if (launch == null) {
-        logger.log(INFO, "No module/main-entry supplied, no launch.");
+        logger.log(INFO, "No <module>[/<main-class>] supplied, no launch.");
         return;
       }
       logger.log(INFO, "Launching {0}...", launch);
       var java = new Command("java");
+      var.get("bach.project.launch.options", "", "\\|").forEach(java::add);
       java.add("--module-path").add(List.of(main.target, modules));
       java.add("--module").add(launch);
-
       if (java.run(Bach.this) != 0) {
         throw new RuntimeException("launch() failed!");
       }
@@ -492,6 +493,15 @@ class Bach {
         return value;
       }
       return properties.getProperty(key, defaultValue);
+    }
+
+    /** Get regex-separated values of the supplied key as a stream of strings. */
+    Stream<String> get(String key, String defaultValue, String regex) {
+      var value = get(key, defaultValue);
+      if (value.isBlank()) {
+        return Stream.empty();
+      }
+      return Arrays.stream(value.split(regex)).map(String::strip);
     }
 
     /** Load from properties from path. */
