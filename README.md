@@ -1,32 +1,86 @@
-# bach - Java Shell Builder
+# Bach.java - Java Shell Builder
  
 [![jdk11](https://img.shields.io/badge/jdk-11-blue.svg)](http://jdk.java.net/11/)
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
 [![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
-Use Java source in [jshell] to build your modular project.
+Use Java source (in [jshell]) to build your modular Java project.
+
+```text
+    ___      ___      ___      ___
+   /\  \    /\  \    /\  \    /\__\
+  /::\  \  /::\  \  /::\  \  /:/__/_
+ /::\:\__\/::\:\__\/:/\:\__\/::\/\__\
+ \:\::/  /\/\::/  /\:\ \/__/\/\::/  /
+  \::/  /   /:/  /  \:\__\    /:/  /
+   \/__/    \/__/    \/__/    \/__/.java
+```
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
 
 Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-## Bootstrap
+## Bootstrap Bach.java
 
+This guide will help you get started with `Bach.java`.
+
+##### 0. Install JDK 11 or later
+Make sure you have JDK 11 or later installed and configured.
+`jshell` should be executable from any directory and print its version via: 
 ```text
-jshell https://bit.ly/boot-bach
-bach <ACTION...>
+<path/> jshell --version
+jshell 11.0.2
 ```
 
-With `ACTION`:
+##### 1. Create demo directory
+Create an empty directory and change into it.
+On Windows, you may open a command prompt and enter `mkdir demo & cd demo`.
+On Linux and Mac OS, it could read `mkdir demo && cd demo`.
+
+```text
+<path/demo/> | // blinking cursor
+```
+
+##### 2. Download `Bach.java`
+Either download a copy of [Bach.java] from GitHub manually or let [jshell] do it for you:
+
+```text
+<path/demo/> jshell https://bit.ly/boot-bach
+```
+
+> Note: the shortened `https://bit.ly/boot-bach` expands to https://raw.githubusercontent.com/sormuras/bach/master/boot.jsh
+
+```text
+<path/demo/>
+.
+├── bach                 // Linux/Mac OS launch script | 
+├── bach.bat             // Windows batch file         |    Just convenient short-cuts for:
+└── .bach                //                             \__   java .bach/master/Bach.java  
+    └── master           //
+        └── Bach.java    // Java Shell Builder
+```
+
+##### 3. Scaffold, build and launch demo project
+Remember to prepend `./` before each `bach` command when running on Linux or Mac OS. 
+
+```text
+<path/demo/> bach scaffold
+<path/demo/> bach build
+<path/demo/> bach launch
+```
+
+## Available Actions
+
+`java Bach.java ACTION [ ACTION]*`
 
 ```text
  build     -> Build project in base directory.
  clean     -> Delete all generated assets - but keep caches intact.
  erase     -> Delete all generated assets - and also delete caches.
- fail      -> Set exit code to an non-zero value to fail the run.
- help      -> Display help screen ... F1, F1, F1!
- scaffold  -> Create a starter project in current directory.
- tool      -> Execute named tool consuming all remaining actions as arguments.
+ help      -> Print this help screen on standard out... F1, F1, F1!
+ launch    -> Start main program.
+ scaffold  -> Create modular Java sample project in base directory.
+ tool      -> Execute named tool consuming all remaining arguments.
 ```
 
 ## Directory Layout
@@ -94,13 +148,11 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
   - `JAVA_HOME=$(./install-jdk.sh --silent --emit-java-home)`
   - `JAVA_HOME=$(./install-jdk.sh --emit-java-home | tail --lines 1)`
 
-
-
 ## be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
+[bach.jsh]: https://github.com/sormuras/bach/blob/master/bach.jsh
 [boot.jsh]: https://github.com/sormuras/bach/blob/master/boot.jsh
-[Bach.java]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.java
-[Bach.jsh]: https://github.com/sormuras/bach/blob/master/src/bach/Bach.jsh
+[Bach.java]: https://github.com/sormuras/bach/blob/master/src/main/Bach.java
 [install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
