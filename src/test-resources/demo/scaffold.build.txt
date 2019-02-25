@@ -22,6 +22,7 @@
 ./bin/compiled/test/scaffold
 ./bin/compiled/test/scaffold/module-info.class
 ./bin/compiled/test/scaffold/scaffold
+./bin/compiled/test/scaffold/scaffold/ScaffoldMain.class
 ./bin/compiled/test/scaffold/scaffold/ScaffoldMainTests.class
 ./bin/compiled/test/scaffold/scaffold/api
 ./bin/compiled/test/scaffold/scaffold/api/ScaffoldPlugin.class
