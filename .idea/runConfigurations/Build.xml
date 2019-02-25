@@ -2,7 +2,7 @@
   <configuration default="false" name="Build" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="Build" />
     <module name="bach" />
-    <option name="VM_PARAMETERS" value="-ea -Dbach.format.replace=true" />
+    <option name="VM_PARAMETERS" value="-ea -Dbach.format.replace=true -Dbach.offline=true" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
