@@ -2,8 +2,7 @@ before_install:
 - source install-jdk.sh --feature ea
 
 install:
-- javac -d target/make src/bach/Bach.java src/bach/Make.java
-- java -cp target/make Make
+- ./build.jsh
 - ARTIFACTS="target/build/artifacts"
 - JARS="-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar"
 - find $ARTIFACTS

@@ -1,4 +1,5 @@
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -60,8 +61,73 @@ class Build {
 
     bach.utilities.treeCopy(Path.of("src/test-resources"), Path.of(target + "/test"));
 
-    // TODO "-javadoc.jar" + "-source.jar" and reactivate JitPack build.
+    var JAVADOC = target + "/javadoc";
+    var ARTIFACTS = Path.of(target, "artifacts");
 
-    return bach.run(format, updateScaffoldArchive, compileMain, compileTest, test);
+    Files.createDirectories(Path.of(JAVADOC));
+    var javadoc =
+        new Bach.Action.ToolRunner(
+            new Bach.Command("javadoc")
+                .add("-d")
+                .add(JAVADOC)
+                .add("-package")
+                .add("-quiet")
+                .add("-keywords")
+                .add("-html5")
+                .add("-linksource")
+                .add("-Xdoclint:all,-missing")
+                .add("-link")
+                .add("https://docs.oracle.com/en/java/javase/11/docs/api/")
+                .add("src/main/Bach.java"));
+
+    //    bach.log.info("Package");
+    Files.createDirectories(ARTIFACTS);
+    var jarBinaries =
+        new Bach.Tool.ToolRunner(
+            new Bach.Command("jar")
+                .add("--create")
+                .add("--file")
+                .add(ARTIFACTS.resolve("bach.jar"))
+                .add("-C")
+                .add(target + "/main")
+                .add("."));
+
+    var jarSources =
+        new Bach.Tool.ToolRunner(
+            new Bach.Command("jar")
+                .add("--create")
+                .add("--file")
+                .add(ARTIFACTS.resolve("bach-sources.jar"))
+                .add("-C")
+                .add("src/main")
+                .add("."));
+
+    var jarJavadoc =
+        new Bach.Tool.ToolRunner(
+            new Bach.Command("jar")
+                .add("--create")
+                .add("--file")
+                .add(ARTIFACTS.resolve("bach-javadoc.jar"))
+                .add("-C")
+                .add(JAVADOC)
+                .add("."));
+
+    //    bach.log.info("JDeps");
+    //    new Command("jdeps")
+    //            .add("-summary")
+    //            .add("-recursive")
+    //            .add(ARTIFACTS.resolve("bach.jar"))
+    //            .run(bach);
+
+    return bach.run(
+        format,
+        updateScaffoldArchive,
+        compileMain,
+        compileTest,
+        test,
+        javadoc,
+        jarBinaries,
+        jarSources,
+        jarJavadoc);
   }
 }
