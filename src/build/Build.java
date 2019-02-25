@@ -60,6 +60,8 @@ class Build {
 
     bach.utilities.treeCopy(Path.of("src/test-resources"), Path.of(target + "/test"));
 
+    // TODO "-javadoc.jar" + "-source.jar" and reactivate JitPack build.
+
     return bach.run(format, updateScaffoldArchive, compileMain, compileTest, test);
   }
 }

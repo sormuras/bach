@@ -936,6 +936,7 @@ class Bach {
         // TODO Find foundation tool executable in "${JDK}/bin" folder.
         var command = new ArrayList<String>();
         try {
+          // TODO Improve tool selection.
           switch (name) {
             case "format":
               var format = new Bach.Tool.GoogleJavaFormat(args).toCommand(bach);
