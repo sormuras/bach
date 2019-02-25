@@ -28,6 +28,8 @@ class Build {
             "-C",
             "demo/scaffold",
             ".");
+    bach.utilities.treeDelete(Path.of("demo/scaffold/.bach"));
+    bach.utilities.treeDelete(Path.of("demo/scaffold/bin"));
 
     var target = "target/build";
 
