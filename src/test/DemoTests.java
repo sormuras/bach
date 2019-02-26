@@ -34,6 +34,9 @@ class DemoTests {
       assertEquals(base, bach.base);
       assertEquals(name, bach.project.name);
       assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+      assertEquals(
+          "com.greetings/com.greetings.Main",
+          Bach.ModuleInfo.findLaunch(base.resolve("src")).orElseThrow());
       var cleanTreeWalk = expected.resolve(demo.resolveSibling(name + ".clean.txt"));
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), bach.utilities.treeWalk(base));
       if (bach.var.offline) {

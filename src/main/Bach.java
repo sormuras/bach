@@ -404,9 +404,9 @@ class Bach {
         logger.log(INFO, "Main target directory {0} doesn't exist, no launch.", main.target);
         return;
       }
-      var launch = var.get("bach.project.launch.module", null);
+      var defaultLaunch = ModuleInfo.findLaunch(main.source).orElse(null);
+      var launch = var.get("bach.project.launch.module", defaultLaunch);
       if (launch == null) {
-        // TODO Find first (or unique) program in main.source folder.
         logger.log(INFO, "No <module>[/<main-class>] supplied, no launch.");
         return;
       }
@@ -1183,7 +1183,11 @@ class Bach {
 
     private static final Pattern NAME = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
 
+    private static final Pattern PACKAGE = Pattern.compile("package\\s+(.+?);", Pattern.DOTALL);
+
     private static final Pattern REQUIRES = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+    private static final Pattern TYPE = Pattern.compile("(class|interface|enum)\\s+(.+)\\s*\\{.*");
 
     static ModuleInfo of(Path path) {
       if (Files.isDirectory(path)) {
@@ -1243,6 +1247,47 @@ class Bach {
       externalModules.removeAll(declaredModules);
       externalModules.removeAll(findSystemModuleNames()); // "java.base", "java.logging", ...
       return externalModules;
+    }
+
+    /** Find a Java compilation unit with an entry-point method. */
+    static Optional<String> findLaunch(Path root) {
+      try (var stream = Files.walk(root)) {
+        for (var path : stream.filter(Command::isJavaFile).collect(Collectors.toList())) {
+          var source = Files.readString(path);
+          // TODO Replace hard-coded search sequence with a regular expression.
+          if (source.contains("static void main(String")) {
+            // extract name from "module-info.java" in parent directories
+            var modulePath = path.getParent();
+            while (modulePath != null) {
+              if (Files.exists(modulePath.resolve("module-info.java"))) {
+                break;
+              }
+              modulePath = modulePath.getParent();
+            }
+            if (modulePath == null) {
+              throw new IllegalStateException("expected 'module-info.java' in parents of " + path);
+            }
+            var moduleName = ModuleInfo.of(modulePath).name;
+            // extract name of type's package
+            var packageMatcher = PACKAGE.matcher(source);
+            if (!packageMatcher.find()) {
+              throw new IllegalStateException("expected package to be declared in " + path);
+            }
+            var packageName = packageMatcher.group(1);
+            // extract name of the type
+            var typeMatcher = TYPE.matcher(source);
+            if (!typeMatcher.find()) {
+              throw new IllegalArgumentException(
+                  "expected java compilation unit, but got: " + path);
+            }
+            var typeName = typeMatcher.group(2).trim().split(" ")[0];
+            return Optional.of(moduleName + '/' + packageName + '.' + typeName);
+          }
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("walking path failed for: " + root, e);
+      }
+      return Optional.empty();
     }
 
     final String name;
