@@ -4,6 +4,8 @@ import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
@@ -12,8 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
@@ -23,7 +27,14 @@ import java.util.stream.Stream;
 /** Java Shell Builder. */
 class Bach {
 
+  /** Version is either {@code master} or {@link Runtime.Version#parse(String)}-compatible. */
   static final String VERSION = "master";
+
+  /** Convenient short-cut to {@code "user.home"} as a path. */
+  static final Path USER_HOME = Path.of(System.getProperty("user.home"));
+
+  /** Convenient short-cut to {@code "user.dir"} as a path. */
+  static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
   /** Main program. */
   public static void main(String... args) {
@@ -46,11 +57,10 @@ class Bach {
         var argument = arguments.removeFirst();
         if (argument.equalsIgnoreCase("tool")) {
           if (arguments.isEmpty()) {
-            throw new Error("No name supplied for TOOL action!");
+            throw new Error("No name supplied for tool action!");
           }
           var name = arguments.removeFirst();
-          var task = new Command(name).addAll(arguments);
-          tasks.add(task);
+          tasks.add(Task.of(name, arguments));
           break;
         }
         var name = argument.toUpperCase();
@@ -67,7 +77,15 @@ class Bach {
     }
   }
 
+  /** Managed properties loaded from {@code ${base}/bach.properties} file. */
+  final Properties properties = Property.loadProperties(USER_PATH.resolve("bach.properties"));
+
+  /** Offline mode. */
+  boolean offline = Boolean.parseBoolean(get(Property.OFFLINE));
+
+  /** Log level. */
   Level level = System.Logger.Level.valueOf(System.getProperty("bach.level", "INFO"));
+
   PrintStream err = System.err;
   PrintStream out = System.out;
 
@@ -105,9 +123,61 @@ class Bach {
     return target;
   }
 
-  /** Format all Java source units. */
+  /** Unzip. */
+  Path extract(Path zip) throws Exception {
+    var jar = ToolProvider.findFirst("jar").orElseThrow();
+    var listing = new StringWriter();
+    var printWriter = new PrintWriter(listing);
+    jar.run(printWriter, printWriter, "--list", "--file", zip.toString());
+    // TODO Find better way to extract root folder name...
+    var root = Path.of(listing.toString().split("\\R")[0]);
+    var destination = zip.getParent();
+    var home = destination.resolve(root);
+    if (Files.notExists(home)) {
+      if (destination.equals(USER_PATH)) {
+        jar.run(out, err, "--extract", "--file", zip.toString());
+      } else {
+        new ProcessBuilder("jar", "--extract", "--file", zip.toString())
+            .inheritIO()
+            .directory(destination.toFile())
+            .start()
+            .waitFor();
+      }
+    }
+    return home.normalize().toAbsolutePath();
+  }
+
+  /** Format all Java source units in user's current working directory. */
   void format() {
-    // TODO Format with "--replace".
+    format(true, Path.of(""));
+  }
+
+  /** Format in-place or just check all Java source units in supplied roots. */
+  void format(boolean replace, Path... roots) {
+    new Tool.Format(replace, List.of(roots)).execute(this);
+  }
+
+  /** Get value for the supplied property, using its key and default value. */
+  String get(Property property) {
+    return get(property.key, property.defaultValue);
+  }
+
+  /** Get value for the supplied property key. */
+  String get(String key, String defaultValue) {
+    var value = System.getProperty(key);
+    if (value != null) {
+      return value;
+    }
+    return properties.getProperty(key, defaultValue);
+  }
+
+  /** Get regex-separated values of the supplied key as a stream of strings. */
+  Stream<String> get(String key, String defaultValue, String regex) {
+    var value = get(key, defaultValue);
+    if (value.isBlank()) {
+      return Stream.empty();
+    }
+    return Arrays.stream(value.split(regex)).map(String::strip);
   }
 
   /** Jar main binaries, main sources and javadoc. */
@@ -395,13 +465,190 @@ class Bach {
     }
   }
 
+  /** Constants with default values. */
+  enum Property {
+    /** Default Maven repository used for artifact resolution. */
+    MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
+
+    /** Offline mode. */
+    OFFLINE("false"),
+
+    /** Cache of binary tools. */
+    PATH_CACHE_TOOLS(".bach/tools"),
+
+    /** Cache of resolved modules. */
+    PATH_CACHE_MODULES(".bach/modules"),
+
+    /** Name of the project. */
+    PROJECT_NAME("project"),
+
+    /** Version of the project. */
+    PROJECT_VERSION("1.0.0-SNAPSHOT"),
+
+    /** URI to Google Java Format "all-deps" JAR. */
+    TOOL_FORMAT_URI(
+        "https://github.com/"
+            + "google/google-java-format/releases/download/google-java-format-1.7/"
+            + "google-java-format-1.7-all-deps.jar"),
+
+    /** URI to JUnit Platform Console Standalone JAR. */
+    TOOL_JUNIT_URI(
+        "http://central.maven.org/"
+            + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
+            + "junit-platform-console-standalone-1.4.0.jar"),
+
+    /** Maven URI. */
+    TOOL_MAVEN_URI(
+        "https://archive.apache.org/"
+            + "dist/maven/maven-3/3.6.0/binaries/"
+            + "apache-maven-3.6.0-bin.zip");
+
+    /** Load from properties from path. */
+    static Properties loadProperties(Path path) {
+      var properties = new Properties();
+      if (Files.exists(path)) {
+        try (var stream = Files.newInputStream(path)) {
+          properties.load(stream);
+        } catch (Exception e) {
+          throw new Error("Loading properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+
+    final String key;
+    final String defaultValue;
+
+    Property(String defaultValue) {
+      this.key = "bach." + name().toLowerCase().replace('_', '.');
+      this.defaultValue = defaultValue;
+    }
+  }
+
   /** Bach consumer/visitor. */
   interface Task {
+
+    static Task of(String tool, Iterable<?> arguments) {
+      switch (tool) {
+        case "format":
+        case "fmt":
+          return new Tool.Format(arguments);
+        case "junit":
+          return new Tool.JUnit(arguments);
+        case "maven":
+        case "mvn":
+          return new Tool.Maven(arguments);
+        default:
+          return new Command(tool).addAll(arguments);
+      }
+    }
 
     void execute(Bach bach);
 
     default String name() {
       return toString();
+    }
+  }
+
+  /** External program. */
+  interface Tool extends Task {
+
+    Command toCommand(Bach bach) throws Exception;
+
+    static Path tools(Bach bach) {
+      return USER_HOME.resolve(bach.get(Property.PATH_CACHE_TOOLS));
+    }
+
+    @Override
+    default void execute(Bach bach) {
+      try {
+        toCommand(bach).execute(bach);
+      } catch (Exception e) {
+        throw new Error("Execution of " + this + " failed!", e);
+      }
+    }
+
+    class Format implements Tool {
+
+      static Path install(Bach bach) throws Exception {
+        var name = "google-java-format";
+        var destination = tools(bach).resolve(name);
+        var uri = URI.create(bach.get(Property.TOOL_FORMAT_URI));
+        return bach.download(destination, uri);
+      }
+
+      final Iterable<?> arguments;
+      final Collection<Path> roots;
+
+      Format(Iterable<?> arguments) {
+        this.arguments = arguments;
+        this.roots = List.of();
+      }
+
+      Format(boolean replace, Collection<Path> roots) {
+        this.arguments =
+            replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed");
+        this.roots = roots;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) throws Exception {
+        var jar = install(bach);
+        var command = new Command("java");
+        command.add("-jar");
+        command.add(jar);
+        command.addAll(arguments);
+        // command.mark(10);
+        command.addAllJavaFiles(roots);
+        return command;
+      }
+    }
+
+    class JUnit implements Tool {
+
+      static Path install(Bach bach) throws Exception {
+        var name = "junit-platform-console-standalone";
+        var destination = tools(bach).resolve(name);
+        var uri = URI.create(bach.get(Property.TOOL_JUNIT_URI));
+        return bach.download(destination, uri);
+      }
+
+      final Iterable<?> arguments;
+
+      JUnit(Iterable<?> arguments) {
+        this.arguments = arguments;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) throws Exception {
+        var junit = install(bach);
+        var command = new Command("java");
+        command.add("-ea");
+        command.add("-jar").add(junit);
+        command.addAll(arguments);
+        return command;
+      }
+    }
+
+    class Maven implements Tool {
+
+      final Iterable<?> arguments;
+
+      Maven(Iterable<?> arguments) {
+        this.arguments = arguments;
+      }
+
+      @Override
+      public Command toCommand(Bach bach) throws Exception {
+        var uri = URI.create(bach.get(Property.TOOL_MAVEN_URI));
+        var zip = bach.download(tools(bach), uri);
+        var home = bach.extract(zip);
+        var win = System.getProperty("os.name").toLowerCase().contains("win");
+        var name = "mvn" + (win ? ".cmd" : "");
+        var executable = home.resolve("bin").resolve(name);
+        executable.toFile().setExecutable(true);
+        return new Command(executable.toString()).addAll(arguments);
+      }
     }
   }
 }

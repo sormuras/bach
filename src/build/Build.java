@@ -1,5 +1,4 @@
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,19 +22,8 @@ class Build {
   public static void build(Bach bach) throws Exception {
     bach.level = System.Logger.Level.ALL;
 
-    var userHome = Path.of(System.getProperty("user.home"));
-    var formatUri =
-        URI.create(
-            "https://github.com/"
-                + "google/google-java-format/releases/download/google-java-format-1.7/"
-                + "google-java-format-1.7-all-deps.jar");
-    Files.createDirectories(userHome.resolve(".bach/tools/google-java-format"));
-    var format = bach.download(userHome.resolve(".bach/tools/google-java-format"), formatUri);
-
-    // TODO "--dry-run", "--set-exit-if-changed"
-    new Bach.Command("java", "-jar", format.toString(), "--replace")
-        .addAllJavaFiles(List.of(Path.of("src"), Path.of("demo")))
-        .execute(bach);
+    System.out.println("[format]");
+    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("src"), Path.of("demo"));
 
     var target = "target/build";
     bach.treeDelete(Path.of(target).resolve("artifacts"));
@@ -47,16 +35,11 @@ class Build {
     bach.run("javac", "-d", target + "/main", "src/bach/Bach.java");
 
     System.out.println("[test]");
-    var junitUri =
-        URI.create(
-            "http://central.maven.org/"
-                + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
-                + "junit-platform-console-standalone-1.4.0.jar");
-    var junit = bach.download(Path.of(target), junitUri);
+    var junitJar = Bach.Tool.JUnit.install(bach);
 
     new Bach.Command("javac", "-d", target + "/test")
         .add("--class-path")
-        .add(List.of(Path.of(target, "main"), junit))
+        .add(List.of(Path.of(target, "main"), junitJar))
         .addAllJavaFiles(List.of(Path.of("src/test")))
         .execute(bach);
     bach.treeCopy(Path.of("src/test-resources"), Path.of(target + "/test"));
@@ -66,7 +49,7 @@ class Build {
         "java",
         "-ea",
         "--class-path",
-        target + "/test" + File.pathSeparator + target + "/main" + File.pathSeparator + junit,
+        target + "/test" + File.pathSeparator + target + "/main" + File.pathSeparator + junitJar,
         "org.junit.platform.console.ConsoleLauncher",
         "--scan-class-path");
 
