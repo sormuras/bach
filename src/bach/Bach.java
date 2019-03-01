@@ -572,7 +572,7 @@ class Bach {
 
       static Path install(Bach bach) throws Exception {
         var name = "google-java-format";
-        var destination = tools(bach).resolve(name);
+        var destination = Files.createDirectories(tools(bach).resolve(name));
         var uri = URI.create(bach.get(Property.TOOL_FORMAT_URI));
         return bach.download(destination, uri);
       }
@@ -608,7 +608,7 @@ class Bach {
 
       static Path install(Bach bach) throws Exception {
         var name = "junit-platform-console-standalone";
-        var destination = tools(bach).resolve(name);
+        var destination = Files.createDirectories(tools(bach).resolve(name));
         var uri = URI.create(bach.get(Property.TOOL_JUNIT_URI));
         return bach.download(destination, uri);
       }
@@ -641,7 +641,7 @@ class Bach {
       @Override
       public Command toCommand(Bach bach) throws Exception {
         var uri = URI.create(bach.get(Property.TOOL_MAVEN_URI));
-        var zip = bach.download(tools(bach), uri);
+        var zip = bach.download(Files.createDirectories(tools(bach)), uri);
         var home = bach.extract(zip);
         var win = System.getProperty("os.name").toLowerCase().contains("win");
         var name = "mvn" + (win ? ".cmd" : "");
