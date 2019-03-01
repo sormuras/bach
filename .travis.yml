@@ -5,10 +5,10 @@ install:
 - java --version
 
 script:
-- jshell ./build.jsh
+- jshell --execution local ./build.jsh
 
 after_success:
-- BACH=${TRAVIS_BUILD_DIR}/src/main/Bach.java
+- BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
 
 #- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 #- ./bootstrap.sh
