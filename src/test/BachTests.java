@@ -78,37 +78,37 @@ class BachTests {
   }
 
   @Test
-  @SwallowSystemStreams
-  void mainWithoutArguments(SwallowSystemStreams.Streams capture) {
+  @SwallowSystem
+  void mainWithoutArguments(SwallowSystem.Streams streams) {
     assertDoesNotThrow((Executable) Bach::main);
-    assertLinesMatch(List.of(">> BANNER >>"), capture.outLines());
+    assertLinesMatch(List.of(">> BANNER >>"), streams.outLines());
   }
 
   @Test
-  @SwallowSystemStreams
-  void mainWithBanner(SwallowSystemStreams.Streams capture) {
+  @SwallowSystem
+  void mainWithBanner(SwallowSystem.Streams streams) {
     assertDoesNotThrow(() -> Bach.main("banner"));
-    assertLinesMatch(List.of(">> BANNER >>"), capture.outLines());
+    assertLinesMatch(List.of(">> BANNER >>"), streams.outLines());
   }
 
   @Test
-  @SwallowSystemStreams
-  void mainWithJavac(SwallowSystemStreams.Streams capture) {
+  @SwallowSystem
+  void mainWithJavac(SwallowSystem.Streams streams) {
     assertDoesNotThrow(() -> Bach.main("tool", "javac", "--version"));
-    assertLinesMatch(List.of("javac .+"), capture.outLines());
+    assertLinesMatch(List.of("javac .+"), streams.outLines());
   }
 
   @Test
-  @SwallowSystemStreams
-  void mainWithUnnamedToolDoesThrow(SwallowSystemStreams.Streams streams) {
+  @SwallowSystem
+  void mainWithUnnamedToolDoesThrow(SwallowSystem.Streams streams) {
     var e = assertThrows(Error.class, () -> Bach.main("tool"));
     assertEquals("Bach.java failed -- expected exit code of 0, but got: 1", e.getMessage());
     assertLinesMatch(List.of("No name supplied for tool action!"), streams.errLines());
   }
 
   @Test
-  @SwallowSystemStreams
-  void mainWithUnknownToolDoesThrow(SwallowSystemStreams.Streams streams) {
+  @SwallowSystem
+  void mainWithUnknownToolDoesThrow(SwallowSystem.Streams streams) {
     var e = assertThrows(Error.class, () -> Bach.main("t o o l"));
     assertEquals("Bach.java failed -- expected exit code of 0, but got: 1", e.getMessage());
     var line = "Unsupported action: t o o l -> No enum constant Bach.Action.T O O L";

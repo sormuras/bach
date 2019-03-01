@@ -19,8 +19,8 @@ import org.junit.jupiter.api.parallel.Resources;
 @Retention(RUNTIME)
 @ResourceLock(Resources.SYSTEM_OUT)
 @ResourceLock(Resources.SYSTEM_ERR)
-@ExtendWith(SwallowSystemStreams.Extension.class)
-public @interface SwallowSystemStreams {
+@ExtendWith(SwallowSystem.Extension.class)
+public @interface SwallowSystem {
 
   class Extension implements ParameterResolver {
 
