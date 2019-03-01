@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Java Shell Builder. */
+@SuppressWarnings("WeakerAccess")
 class Bach {
 
   /** Version is either {@code master} or {@link Runtime.Version#parse(String)}-compatible. */
@@ -116,10 +116,14 @@ class Bach {
       log(DEBUG, String.format("download skipped, using %s", target.toUri()));
       return target;
     }
+    if (offline) {
+      throw new IllegalStateException("offline and target does not exist: " + target.toUri());
+    }
     log(INFO, String.format("downloading %s to %s <- %s", name, destination, uri));
     try (var stream = uri.toURL().openStream()) {
       Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
     }
+    log(INFO, String.format("Downloaded %s to %s <- %s", name, destination, uri));
     return target;
   }
 
@@ -169,15 +173,6 @@ class Bach {
       return value;
     }
     return properties.getProperty(key, defaultValue);
-  }
-
-  /** Get regex-separated values of the supplied key as a stream of strings. */
-  Stream<String> get(String key, String defaultValue, String regex) {
-    var value = get(key, defaultValue);
-    if (value.isBlank()) {
-      return Stream.empty();
-    }
-    return Arrays.stream(value.split(regex)).map(String::strip);
   }
 
   /** Jar main binaries, main sources and javadoc. */
@@ -445,18 +440,6 @@ class Bach {
     /** Add all {@code .java} source files by walking specified root paths recursively. */
     Command addAllJavaFiles(Collection<Path> roots) {
       return addAll(roots, Command::isJavaFile);
-    }
-
-    /** Dump command executables and arguments using the provided string consumer. */
-    Command dump(Consumer<String> consumer) {
-      var iterator = arguments.listIterator();
-      consumer.accept(name);
-      while (iterator.hasNext()) {
-        var argument = iterator.next();
-        var indent = argument.startsWith("-") ? "" : "  ";
-        consumer.accept(indent + argument);
-      }
-      return this;
     }
 
     @Override
