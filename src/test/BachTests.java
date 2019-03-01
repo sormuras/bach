@@ -32,7 +32,7 @@ class BachTests {
     process.getOutputStream().write("/open src/bach/Bach.java\n".getBytes());
     process.getOutputStream().write("/exit Bach.main(List.of())\n".getBytes());
     process.getOutputStream().flush();
-    if (!process.waitFor(5, TimeUnit.SECONDS)) {
+    if (!process.waitFor(20, TimeUnit.SECONDS)) {
       process.destroy();
     }
     var code = process.exitValue();
@@ -47,7 +47,7 @@ class BachTests {
     builder.command().add("-ea");
     builder.command().add("src/bach/Bach.java");
     var process = builder.start();
-    process.waitFor(10, TimeUnit.SECONDS);
+    process.waitFor(20, TimeUnit.SECONDS);
     var code = process.exitValue();
     assertEquals(0, code);
   }
