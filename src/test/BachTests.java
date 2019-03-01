@@ -1,12 +1,17 @@
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
@@ -70,5 +75,43 @@ class BachTests {
     process.waitFor(20, TimeUnit.SECONDS);
     var code = process.exitValue();
     assertEquals(0, code);
+  }
+
+  @Test
+  @SwallowSystemStreams
+  void mainWithoutArguments(SwallowSystemStreams.Streams capture) {
+    assertDoesNotThrow((Executable) Bach::main);
+    assertLinesMatch(List.of(">> BANNER >>"), capture.outLines());
+  }
+
+  @Test
+  @SwallowSystemStreams
+  void mainWithBanner(SwallowSystemStreams.Streams capture) {
+    assertDoesNotThrow(() -> Bach.main("banner"));
+    assertLinesMatch(List.of(">> BANNER >>"), capture.outLines());
+  }
+
+  @Test
+  @SwallowSystemStreams
+  void mainWithJavac(SwallowSystemStreams.Streams capture) {
+    assertDoesNotThrow(() -> Bach.main("tool", "javac", "--version"));
+    assertLinesMatch(List.of("javac .+"), capture.outLines());
+  }
+
+  @Test
+  @SwallowSystemStreams
+  void mainWithUnnamedToolDoesThrow(SwallowSystemStreams.Streams streams) {
+    var e = assertThrows(Error.class, () -> Bach.main("tool"));
+    assertEquals("Bach.java failed -- expected exit code of 0, but got: 1", e.getMessage());
+    assertLinesMatch(List.of("No name supplied for tool action!"), streams.errLines());
+  }
+
+  @Test
+  @SwallowSystemStreams
+  void mainWithUnknownToolDoesThrow(SwallowSystemStreams.Streams streams) {
+    var e = assertThrows(Error.class, () -> Bach.main("t o o l"));
+    assertEquals("Bach.java failed -- expected exit code of 0, but got: 1", e.getMessage());
+    var line = "Unsupported action: t o o l -> No enum constant Bach.Action.T O O L";
+    assertLinesMatch(List.of(line), streams.errLines());
   }
 }

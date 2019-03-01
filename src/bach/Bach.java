@@ -57,15 +57,21 @@ class Bach {
         var argument = arguments.removeFirst();
         if (argument.equalsIgnoreCase("tool")) {
           if (arguments.isEmpty()) {
-            throw new Error("No name supplied for tool action!");
+            System.err.println("No name supplied for tool action!");
+            return 1;
           }
           var name = arguments.removeFirst();
           tasks.add(Task.of(name, arguments));
           break;
         }
-        var name = argument.toUpperCase();
-        var task = Action.valueOf(name);
-        tasks.add(task);
+        try {
+          var name = argument.toUpperCase();
+          var task = Action.valueOf(name);
+          tasks.add(task);
+        } catch (IllegalArgumentException e) {
+          System.err.println("Unsupported action: " + argument + " -> " + e.getMessage());
+          return 1;
+        }
       }
     }
     return new Bach().run(tasks);
@@ -212,7 +218,7 @@ class Bach {
       }
       return 0;
     } catch (RuntimeException exception) {
-      exception.printStackTrace();
+      exception.printStackTrace(err);
       return 1;
     }
   }
