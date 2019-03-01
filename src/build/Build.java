@@ -29,6 +29,7 @@ class Build {
             "https://github.com/"
                 + "google/google-java-format/releases/download/google-java-format-1.7/"
                 + "google-java-format-1.7-all-deps.jar");
+    Files.createDirectories(userHome.resolve(".bach/tools/google-java-format"));
     var format = bach.download(userHome.resolve(".bach/tools/google-java-format"), formatUri);
 
     // TODO "--dry-run", "--set-exit-if-changed"
