@@ -10,6 +10,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
+
+  @Test
+  void versionIsMasterXorConsumableByRuntimeVersionParse() throws Exception {
+    var actual = "" + Bach.class.getDeclaredField("VERSION").get(null);
+    if (actual.equals("master")) {
+      return;
+    }
+    Runtime.Version.parse(actual);
+  }
+
+  @Test
+  void userPathIsCurrentWorkingDirectory() {
+    assertEquals(Path.of(".").normalize().toAbsolutePath(), Bach.USER_PATH);
+  }
+
+  @Test
+  void userHomeIsUsersHome() {
+    assertEquals(Path.of(System.getProperty("user.home")), Bach.USER_HOME);
+  }
+
   @Test
   void hasPublicStaticVoidMainWithVarArgs() throws Exception {
     var main = Bach.class.getMethod("main", String[].class);
