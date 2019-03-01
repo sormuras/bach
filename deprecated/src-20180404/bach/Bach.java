@@ -888,8 +888,7 @@ class Util {
 
   /** Return list of child directory names directly present in {@code root} path. */
   static List<String> findDirectoryNames(Path root) {
-    return findDirectories(root)
-        .stream()
+    return findDirectories(root).stream()
         .map(root::relativize)
         .map(Path::toString)
         .collect(Collectors.toList());

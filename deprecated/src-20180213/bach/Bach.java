@@ -466,8 +466,7 @@ interface Bach {
     }
 
     static List<String> findDirectoryNames(Path root) {
-      return findDirectories(root)
-          .stream()
+      return findDirectories(root).stream()
           .map(root::relativize)
           .map(Path::toString)
           .collect(Collectors.toList());

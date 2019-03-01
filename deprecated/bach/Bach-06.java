@@ -62,47 +62,48 @@ public class Bach {
   public static void main(String... args) throws Exception {
     System.out.printf("%n%s%n%n", "BASIC");
     new Bach(Level.FINE, Layout.BASIC)
-            .set(Folder.SOURCE, Paths.get("demo/basic"))
-            .set(Folder.TARGET, Paths.get("target/bach/basic"))
-            .format()
-            .compile()
-            .run("com.greetings", "com.greetings.Main");
+        .set(Folder.SOURCE, Paths.get("demo/basic"))
+        .set(Folder.TARGET, Paths.get("target/bach/basic"))
+        .format()
+        .compile()
+        .run("com.greetings", "com.greetings.Main");
 
     System.out.printf("%n%s%n%n", "COMMON");
     new Bach(Level.INFO, Layout.COMMON)
-            .set(Folder.SOURCE, Paths.get("demo/common"))
-            .set(Folder.TARGET, Paths.get("target/bach/common"))
-            .format()
-            .compile()
-            .run("com.greetings", "com.greetings.Main");
+        .set(Folder.SOURCE, Paths.get("demo/common"))
+        .set(Folder.TARGET, Paths.get("target/bach/common"))
+        .format()
+        .compile()
+        .run("com.greetings", "com.greetings.Main");
 
     System.out.printf("%n%s%n%n", "IDEA");
     new Bach(Level.INFO, Layout.IDEA)
-            .set(Folder.SOURCE, Paths.get("demo/idea"))
-            .set(Folder.TARGET, Paths.get("target/bach/idea"))
-            .format()
-            .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
-            .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
-            // .load("org.opentest4j", URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
-            .compile()
-            .test()
-            .run("com.greetings", "com.greetings.Main");
+        .set(Folder.SOURCE, Paths.get("demo/idea"))
+        .set(Folder.TARGET, Paths.get("target/bach/idea"))
+        .format()
+        .load(
+            "org.junit.jupiter.api",
+            URI.create(
+                "http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
+        .load(
+            "org.junit.platform.commons",
+            URI.create(
+                "http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
+        // .load("org.opentest4j",
+        // URI.create("http://central.maven.org/maven2/org/opentest4j/opentest4j/1.0.0-M2/opentest4j-1.0.0-M2.jar"))
+        .compile()
+        .test()
+        .run("com.greetings", "com.greetings.Main");
   }
 
   enum Layout {
-    /**
-     * {@code src/<module>}
-     */
+    /** {@code src/<module>} */
     BASIC,
 
-    /**
-     * {@code src/[main|test]/[java|resources]/<module>}
-     */
+    /** {@code src/[main|test]/[java|resources]/<module>} */
     COMMON,
 
-    /**
-     * {@code src/<module>/[main|test]/[java|resources]}
-     */
+    /** {@code src/<module>/[main|test]/[java|resources]} */
     IDEA,
   }
 
@@ -143,7 +144,8 @@ public class Bach {
     this.util = new Util();
     this.folders = util.defaultFolders();
     this.standardStreams = new StandardStreams();
-    this.javac = requireNonNull(ToolProvider.getSystemJavaCompiler(), "java compiler not available");
+    this.javac =
+        requireNonNull(ToolProvider.getSystemJavaCompiler(), "java compiler not available");
     this.log = new Log().level(initialLevel).tag("init");
     this.layout = requireNonNull(layout, "layout must not be null");
     log.info("%s initialized%n", getClass());
@@ -186,7 +188,7 @@ public class Bach {
     return this;
   }
 
-  private void check(boolean condition, String format, Object...args) {
+  private void check(boolean condition, String format, Object... args) {
     if (!condition) {
       log.error(null, format, args);
     }
@@ -195,7 +197,7 @@ public class Bach {
   public Bach compile() throws Exception {
     log.tag("compile").log(Level.CONFIG, "folder %s%n", folders.keySet());
     Path modules = get(Folder.SOURCE);
-    check(Files.exists(modules),"folder source `%s` does not exist", modules);
+    check(Files.exists(modules), "folder source `%s` does not exist", modules);
     check(util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
     Path tools = get(Folder.TARGET_TOOLS);
     util.cleanTree(get(Folder.TARGET), true, path -> !path.startsWith(tools));
@@ -215,15 +217,23 @@ public class Bach {
         }
         break;
       case IDEA:
-        util.findDirectoryNames(modules).forEach(module -> {
-          log.log(Level.FINE, "module %s%n", module);
-          Path source = modules.resolve(module);
-          // main
-          util.copyTree(source.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_MAIN_SOURCE).resolve(module));
-          // test
-          util.copyTree(source.resolve(get(Folder.MAIN_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
-          util.copyTree(source.resolve(get(Folder.TEST_JAVA)), get(Folder.TARGET_TEST_SOURCE).resolve(module));
-        });
+        util.findDirectoryNames(modules)
+            .forEach(
+                module -> {
+                  log.log(Level.FINE, "module %s%n", module);
+                  Path source = modules.resolve(module);
+                  // main
+                  util.copyTree(
+                      source.resolve(get(Folder.MAIN_JAVA)),
+                      get(Folder.TARGET_MAIN_SOURCE).resolve(module));
+                  // test
+                  util.copyTree(
+                      source.resolve(get(Folder.MAIN_JAVA)),
+                      get(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  util.copyTree(
+                      source.resolve(get(Folder.TEST_JAVA)),
+                      get(Folder.TARGET_TEST_SOURCE).resolve(module));
+                });
         log.info("main%n");
         compile(get(Folder.TARGET_MAIN_SOURCE), get(Folder.TARGET_MAIN_COMPILED));
         if (Files.exists(get(Folder.TARGET_TEST_SOURCE))) {
@@ -238,7 +248,8 @@ public class Bach {
   }
 
   public int compile(Path moduleSourcePath, Path destinationPath) throws IOException {
-    check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
+    check(
+        Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
     List<String> arguments = new ArrayList<>();
     if (log.threshold <= Level.FINEST.intValue()) {
       // output messages about what the compiler is doing
@@ -262,8 +273,8 @@ public class Bach {
     // specify where to find input source files for multiple modules
     arguments.add("--module-source-path");
     arguments.add(moduleSourcePath.toString());
-    log.log(Level.FINE,"javac%n");
-    arguments.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+    log.log(Level.FINE, "javac%n");
+    arguments.forEach(a -> log.log(Level.FINE, "%s%s%n", a.startsWith("-") ? "  " : "", a));
     // collect .java source files
     int[] count = {0};
     Files.walk(moduleSourcePath)
@@ -273,7 +284,12 @@ public class Bach {
         .forEach(arguments::add);
     // compile
     long start = System.currentTimeMillis();
-    int code = javac.run(standardStreams.in, standardStreams.out, standardStreams.err, arguments.toArray(new String[0]));
+    int code =
+        javac.run(
+            standardStreams.in,
+            standardStreams.out,
+            standardStreams.err,
+            arguments.toArray(new String[0]));
     log.info("%d java files compiled in %d ms%n", count[0], System.currentTimeMillis() - start);
     return code;
   }
@@ -284,11 +300,13 @@ public class Bach {
     List<String> command = new ArrayList<>();
     command.add("java");
     command.add("--module-path");
-    command.add(String.join(File.pathSeparator, folders.map(f -> get(f).toString()).collect(Collectors.toList())));
+    command.add(
+        String.join(
+            File.pathSeparator, folders.map(f -> get(f).toString()).collect(Collectors.toList())));
     command.add("--module");
     command.add(module + "/" + main);
     command.addAll(List.of(arguments));
-    command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+    command.forEach(a -> log.log(Level.FINE, "%s%s%n", a.startsWith("-") ? "  " : "", a));
     Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
     process.getInputStream().transferTo(System.out);
     try {
@@ -301,27 +319,35 @@ public class Bach {
   public Bach test() throws Exception {
     log.tag("test");
     Path junitPath = get(Folder.TARGET_TOOLS).resolve("junit");
-    Path junitJar = util.download(URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar"), junitPath);
-    util.findDirectoryNames(get(Folder.TARGET_TEST_COMPILED)).forEach(module -> {
-      try {
-        log.info("module %s%n", module);
-        Path modulePath = get(Folder.TARGET_TEST_COMPILED).resolve(module);
-        List<String> command = new ArrayList<>();
-        command.add("java");
-        command.add("-jar");
-        command.add(junitJar.toString());
-        command.add("--classpath");
-        command.add(modulePath.toString());
-        command.add("--scan-classpath");
-        command.add(modulePath.toString());
-        command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
-        Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
-        process.getInputStream().transferTo(System.out);
-        process.waitFor();
-      } catch (Exception e) {
-        log.error(e, "testing %s failed", module);
-      }
-    });
+    Path junitJar =
+        util.download(
+            URI.create(
+                "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar"),
+            junitPath);
+    util.findDirectoryNames(get(Folder.TARGET_TEST_COMPILED))
+        .forEach(
+            module -> {
+              try {
+                log.info("module %s%n", module);
+                Path modulePath = get(Folder.TARGET_TEST_COMPILED).resolve(module);
+                List<String> command = new ArrayList<>();
+                command.add("java");
+                command.add("-jar");
+                command.add(junitJar.toString());
+                command.add("--classpath");
+                command.add(modulePath.toString());
+                command.add("--scan-classpath");
+                command.add(modulePath.toString());
+                command.forEach(
+                    a -> log.log(Level.FINE, "%s%s%n", a.startsWith("-") ? "  " : "", a));
+                Process process =
+                    new ProcessBuilder().command(command).redirectErrorStream(true).start();
+                process.getInputStream().transferTo(System.out);
+                process.waitFor();
+              } catch (Exception e) {
+                log.error(e, "testing %s failed", module);
+              }
+            });
     return this;
   }
 
@@ -330,22 +356,26 @@ public class Bach {
     Path path = get(Folder.SOURCE);
     log.info("format %s%n", path);
     Path formatPath = get(Folder.TARGET_TOOLS).resolve("format");
-    Path formatJar = util.download(URI.create("https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"), formatPath);
+    Path formatJar =
+        util.download(
+            URI.create(
+                "https://github.com/google/google-java-format/releases/download/google-java-format-1.3/google-java-format-1.3-all-deps.jar"),
+            formatPath);
     try {
       List<String> command = new ArrayList<>();
       command.add("java");
       command.add("-jar");
       command.add(formatJar.toString());
       command.add("--replace");
-      command.forEach(a -> log.log(Level.FINE,"%s%s%n", a.startsWith("-") ? "  " : "", a));
+      command.forEach(a -> log.log(Level.FINE, "%s%s%n", a.startsWith("-") ? "  " : "", a));
       // collect .java source files
       int[] count = {0};
       Files.walk(path)
-              .map(Path::toString)
-              .filter(name -> name.endsWith(".java"))
-              .filter(name -> !name.endsWith("module-info.java"))
-              .peek(name -> count[0]++)
-              .forEach(command::add);
+          .map(Path::toString)
+          .filter(name -> name.endsWith(".java"))
+          .filter(name -> !name.endsWith("module-info.java"))
+          .peek(name -> count[0]++)
+          .forEach(command::add);
       Process process = new ProcessBuilder().command(command).redirectErrorStream(true).start();
       process.getInputStream().transferTo(System.out);
       process.waitFor();
@@ -370,7 +400,7 @@ public class Bach {
         return this;
       }
       this.tag = tag;
-      log(Level.CONFIG,"%n");
+      log(Level.CONFIG, "%n");
       return this;
     }
 
@@ -430,9 +460,9 @@ public class Bach {
 
     Stream<String> findDirectoryNames(Path root) throws IOException {
       return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
-              .filter(path -> !root.equals(path))
-              .map(root::relativize)
-              .map(Path::toString);
+          .filter(path -> !root.equals(path))
+          .map(root::relativize)
+          .map(Path::toString);
     }
 
     Path cleanTree(Path root, boolean keepRoot) throws IOException {
@@ -462,10 +492,14 @@ public class Bach {
       log.log(Level.FINE, "copy `%s` to `%s`%n", source, target);
       try {
         Files.createDirectories(target);
-        Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+        Files.walkFileTree(
+            source,
+            EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+            Integer.MAX_VALUE,
             new SimpleFileVisitor<>() {
               @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                  throws IOException {
                 Path targetdir = target.resolve(source.relativize(dir));
                 try {
                   Files.copy(dir, targetdir);
@@ -478,8 +512,12 @@ public class Bach {
               }
 
               @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                  throws IOException {
+                Files.copy(
+                    file,
+                    target.resolve(source.relativize(file)),
+                    StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
               }
             });
@@ -488,17 +526,18 @@ public class Bach {
       }
     }
 
-    /**
-     * Download the resource specified by its URI to the target directory.
-     */
+    /** Download the resource specified by its URI to the target directory. */
     Path download(URI uri, Path targetDirectory) throws IOException {
       return download(uri, targetDirectory, fileName(uri), targetPath -> true);
     }
 
     /**
-     * Download the resource specified by its URI to the target directory using the provided file name.
+     * Download the resource specified by its URI to the target directory using the provided file
+     * name.
      */
-    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp) throws IOException {
+    Path download(
+        URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp)
+        throws IOException {
       URL url = requireNonNull(uri, "uri must not be null").toURL();
       requireNonNull(targetDirectory, "targetDirectory must be null");
       if (requireNonNull(targetFileName, "targetFileName must be null").isEmpty()) {
@@ -520,7 +559,8 @@ public class Bach {
         Files.delete(targetPath);
       }
       log.log(Level.FINE, "download `%s` in progress...%n", uri);
-      try (InputStream sourceStream = url.openStream(); OutputStream targetStream = Files.newOutputStream(targetPath)) {
+      try (InputStream sourceStream = url.openStream();
+          OutputStream targetStream = Files.newOutputStream(targetPath)) {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
@@ -529,9 +569,7 @@ public class Bach {
       return targetPath;
     }
 
-    /**
-     * Extract the file name from the uri.
-     */
+    /** Extract the file name from the uri. */
     String fileName(URI uri) {
       String urlString = uri.getPath();
       return urlString.substring(urlString.lastIndexOf('/') + 1).split("\\?")[0].split("#")[0];
@@ -548,8 +586,7 @@ public class Bach {
       try {
         Files.move(pathSource, path.resolve("module-info.java"));
         log.log(Level.FINE, "moved `%s` to `%s`%n", pathSource, "module-info.java");
-      }
-      catch(IOException e) {
+      } catch (IOException e) {
         log.error(e, "moving module-info failed for %s", path);
       }
     }

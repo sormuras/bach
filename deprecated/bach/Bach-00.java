@@ -25,9 +25,9 @@ import java.nio.file.attribute.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.regex.*;
 import java.util.spi.*;
 import java.util.stream.*;
-import java.util.regex.*;
 
 /** Source directory module tree layout/scheme. */
 enum Layout {
@@ -76,9 +76,12 @@ enum Folder {
 }
 
 enum Tool {
-  FORMAT("https://jitpack.io/com/github/sormuras/google-java-format/google-java-format/validate-SNAPSHOT/google-java-format-validate-SNAPSHOT-all-deps.jar"),
-  JUNIT("http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar");
+  FORMAT(
+      "https://jitpack.io/com/github/sormuras/google-java-format/google-java-format/validate-SNAPSHOT/google-java-format-validate-SNAPSHOT-all-deps.jar"),
+  JUNIT(
+      "http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar");
   URI uri;
+
   Tool(String uri) {
     this.uri = URI.create(uri);
   }
@@ -91,7 +94,7 @@ enum Tool {
  */
 public class Bach {
 
-  /** Immutable configuration, setup, partition...*/
+  /** Immutable configuration, setup, partition... */
   public static class Score {
 
     final Charset charset;
@@ -117,7 +120,6 @@ public class Bach {
       this.streamOut = builder.streamOut;
       this.streamErr = builder.streamErr;
     }
-
   }
 
   public static Builder builder() {
@@ -178,7 +180,7 @@ public class Bach {
   public Bach compile() throws Exception {
     log.tag("compile").print(Level.CONFIG, "folder %s%n", score.folders.keySet());
     Path modules = path(Folder.SOURCE);
-    log.check(Files.exists(modules),"folder source `%s` does not exist", modules);
+    log.check(Files.exists(modules), "folder source `%s` does not exist", modules);
     log.check(util.findDirectoryNames(modules).count() > 0, "no directory found in `%s`", modules);
     util.cleanTree(path(Folder.TARGET), true);
     switch (score.layout) {
@@ -188,18 +190,30 @@ public class Bach {
         util.copyTree(modules, path(Folder.TARGET_MAIN_COMPILED)); // TODO exclude .java files?
         break;
       case FIRST:
-        util.findDirectoryNames(modules).forEach(module -> {
-          log.fine("module %s%n", module);
-          Path source = modules.resolve(module);
-          // main
-          util.copyTree(source.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_SOURCE).resolve(module));
-          util.copyTree(source.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILED).resolve(module));
-          // test
-          util.copyTree(source.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_TEST_SOURCE).resolve(module));
-          util.copyTree(source.resolve(path(Folder.TEST_JAVA)), path(Folder.TARGET_TEST_SOURCE).resolve(module));
-          util.moveModuleInfo(path(Folder.TARGET_TEST_SOURCE).resolve(module));
-          util.copyTree(source.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILED).resolve(module));
-        });
+        util.findDirectoryNames(modules)
+            .forEach(
+                module -> {
+                  log.fine("module %s%n", module);
+                  Path source = modules.resolve(module);
+                  // main
+                  util.copyTree(
+                      source.resolve(path(Folder.MAIN_JAVA)),
+                      path(Folder.TARGET_MAIN_SOURCE).resolve(module));
+                  util.copyTree(
+                      source.resolve(path(Folder.MAIN_RESOURCES)),
+                      path(Folder.TARGET_MAIN_COMPILED).resolve(module));
+                  // test
+                  util.copyTree(
+                      source.resolve(path(Folder.MAIN_JAVA)),
+                      path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  util.copyTree(
+                      source.resolve(path(Folder.TEST_JAVA)),
+                      path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  util.moveModuleInfo(path(Folder.TARGET_TEST_SOURCE).resolve(module));
+                  util.copyTree(
+                      source.resolve(path(Folder.TEST_RESOURCES)),
+                      path(Folder.TARGET_TEST_COMPILED).resolve(module));
+                });
         log.info("main%n");
         compile(path(Folder.TARGET_MAIN_SOURCE), path(Folder.TARGET_MAIN_COMPILED));
         if (Files.exists(path(Folder.TARGET_TEST_SOURCE))) {
@@ -210,45 +224,50 @@ public class Bach {
       case TRAIL:
         log.info("main%n");
         compile(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_MAIN_COMPILED));
-        util.copyTree(modules.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILED));
+        util.copyTree(
+            modules.resolve(path(Folder.MAIN_RESOURCES)), path(Folder.TARGET_MAIN_COMPILED));
         if (Files.exists(modules.resolve(path(Folder.TEST_JAVA)))) {
           log.info("test%n");
           util.copyTree(modules.resolve(path(Folder.MAIN_JAVA)), path(Folder.TARGET_TEST_SOURCE));
           util.copyTree(modules.resolve(path(Folder.TEST_JAVA)), path(Folder.TARGET_TEST_SOURCE));
           compile(path(Folder.TARGET_TEST_SOURCE), path(Folder.TARGET_TEST_COMPILED));
-          util.copyTree(modules.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILED));
+          util.copyTree(
+              modules.resolve(path(Folder.TEST_RESOURCES)), path(Folder.TARGET_TEST_COMPILED));
         }
         break;
       default:
-        log.check(false, "unsupported module source path layout %s for: `%s`", score.layout, modules);
+        log.check(
+            false, "unsupported module source path layout %s for: `%s`", score.layout, modules);
     }
     return this;
   }
 
   public Bach compile(Path moduleSourcePath, Path destinationPath) throws Exception {
     log.tag("compile");
-    log.check(Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
-    Command command = Command.of("javac")
-    // output messages about what the compiler is doing
-        .add(log.isLevelActive(Level.FINEST), "-verbose")
-    // sets the destination directory for class files
-        .add("-d")
-        .add(destinationPath.toString())
-    // output source locations where deprecated APIs are used
-        .add("-deprecation")
-    // generate metadata for reflection on method parameters
-        .add("-parameters")
-    // terminate compilation if warnings occur
-        .add("-Werror")
-    // specify character encoding used by source files
-        .add("-encoding")
-        .add(score.charset.name())
-    // specify where to find application modules
-        .add("--module-path")
-        .add(path(Folder.DEPENDENCIES))
-    // specify where to find input source files for multiple modules
-        .add("--module-source-path")
-        .add(moduleSourcePath);
+    log.check(
+        Files.exists(moduleSourcePath), "module source path `%s` does not exist", moduleSourcePath);
+    Command command =
+        Command.of("javac")
+            // output messages about what the compiler is doing
+            .add(log.isLevelActive(Level.FINEST), "-verbose")
+            // sets the destination directory for class files
+            .add("-d")
+            .add(destinationPath.toString())
+            // output source locations where deprecated APIs are used
+            .add("-deprecation")
+            // generate metadata for reflection on method parameters
+            .add("-parameters")
+            // terminate compilation if warnings occur
+            .add("-Werror")
+            // specify character encoding used by source files
+            .add("-encoding")
+            .add(score.charset.name())
+            // specify where to find application modules
+            .add("--module-path")
+            .add(path(Folder.DEPENDENCIES))
+            // specify where to find input source files for multiple modules
+            .add("--module-source-path")
+            .add(moduleSourcePath);
     // collect .java source files
     command.limit(10);
     int[] count = {0};
@@ -267,7 +286,11 @@ public class Bach {
   }
 
   public Bach runCompiled(String module, String... arguments) {
-    return run(Folder.TARGET_MAIN_COMPILED, module, score.mains.getOrDefault(module, module + ".Main"), arguments);
+    return run(
+        Folder.TARGET_MAIN_COMPILED,
+        module,
+        score.mains.getOrDefault(module, module + ".Main"),
+        arguments);
   }
 
   public Bach runJar(String module, String... arguments) {
@@ -277,19 +300,20 @@ public class Bach {
   public Bach run(Folder folder, String module, String main, String... arguments) {
     String entryPoint = main == null ? module : module + "/" + main;
     log.tag("run").info("%s%n", entryPoint);
-    return execute(Command.of("java")
-    // options
-        .add("-Dfile.encoding=" + score.charset.name())
-    // module-path: a list of directories in which each directory is a directory of modules
-        .add("--module-path")
-        .add(this::path, folder, Folder.DEPENDENCIES)
-    // name of the initial module to resolve and execute
-        .add("--module")
-        .add(entryPoint)
-    // set internal dump mark and limit
-        .limit(20)
-    // arguments passed to the main method separated by spaces
-        .addAll((Object[]) arguments));
+    return execute(
+        Command.of("java")
+            // options
+            .add("-Dfile.encoding=" + score.charset.name())
+            // module-path: a list of directories in which each directory is a directory of modules
+            .add("--module-path")
+            .add(this::path, folder, Folder.DEPENDENCIES)
+            // name of the initial module to resolve and execute
+            .add("--module")
+            .add(entryPoint)
+            // set internal dump mark and limit
+            .limit(20)
+            // arguments passed to the main method separated by spaces
+            .addAll((Object[]) arguments));
   }
 
   public Bach execute(String executable, Object... command) {
@@ -331,7 +355,8 @@ public class Bach {
 
   public Bach test(boolean additional, String... options) throws Exception {
     log.tag("test");
-    List<String> modules = util.findDirectoryNames(path(Folder.TARGET_TEST_COMPILED)).collect(Collectors.toList());
+    List<String> modules =
+        util.findDirectoryNames(path(Folder.TARGET_TEST_COMPILED)).collect(Collectors.toList());
     for (String module : modules) {
       test(module, additional, options);
     }
@@ -341,16 +366,15 @@ public class Bach {
   public Bach test(String module, boolean additional, String... options) throws Exception {
     log.tag("test").info("module %s%n", module);
     Path modulePath = path(Folder.TARGET_TEST_COMPILED).resolve(module);
-    Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
-            .add("-ea")
-            .add("-jar")
-            .add(path(Tool.JUNIT));
+    Command command =
+        Command.of(path(Folder.JDK_HOME_BIN), "java").add("-ea").add("-jar").add(path(Tool.JUNIT));
     util.findDirectories(path(Folder.TARGET_TEST_COMPILED))
-            .forEach(m -> command.add(additional, "--classpath").add(additional, m));
-    command.add(additional, "--scan-classpath")
-            .add(additional, modulePath)
-            .limit(10)
-            .addAll((Object[]) options);
+        .forEach(m -> command.add(additional, "--classpath").add(additional, m));
+    command
+        .add(additional, "--scan-classpath")
+        .add(additional, modulePath)
+        .limit(10)
+        .addAll((Object[]) options);
     return execute(command);
   }
 
@@ -365,31 +389,33 @@ public class Bach {
   public Bach format(boolean replace, Path... paths) throws Exception {
     String mode = replace ? "replace" : "validate";
     log.tag("format").fine("mode=%s%n", mode);
-    Command command = Command.of(path(Folder.JDK_HOME_BIN), "java")
-        .add("-jar")
-        .add(path(Tool.FORMAT))
-        .add("--" + mode)
-        .limit(10);
+    Command command =
+        Command.of(path(Folder.JDK_HOME_BIN), "java")
+            .add("-jar")
+            .add(path(Tool.FORMAT))
+            .add("--" + mode)
+            .limit(10);
     // collect valid .java source files
-    Predicate<Path> validJavaFilePath = path -> {
-      String name = path.getFileName().toString();
-      if (name.equals("module-info.java")) {
-        return false; // see https://github.com/google/google-java-format/issues/75
-      }
-      //noinspection SimplifiableIfStatement
-      if (name.chars().filter(c -> c == '.').count() != 1) {
-        return false;
-      }
-      return name.endsWith(".java");
-    };
+    Predicate<Path> validJavaFilePath =
+        path -> {
+          String name = path.getFileName().toString();
+          if (name.equals("module-info.java")) {
+            return false; // see https://github.com/google/google-java-format/issues/75
+          }
+          //noinspection SimplifiableIfStatement
+          if (name.chars().filter(c -> c == '.').count() != 1) {
+            return false;
+          }
+          return name.endsWith(".java");
+        };
     int[] count = {0};
     for (Path path : paths) {
       log.fine("%s `%s`...%n", replace ? "formatting" : "validating", path);
       Files.walk(path)
-              .filter(validJavaFilePath)
-              .map(Path::toString)
-              .peek(name -> count[0]++)
-              .forEach(command::add);
+          .filter(validJavaFilePath)
+          .map(Path::toString)
+          .peek(name -> count[0]++)
+          .forEach(command::add);
       execute(command);
     }
     log.info("%d files %s%n", count[0], replace ? "formatted" : "validated");
@@ -399,13 +425,17 @@ public class Bach {
   public Bach javadoc(String module, Path source, String... packageNames) throws Exception {
     log.tag("javadoc");
     Path destination = path(Folder.TARGET_MAIN_JAVADOC).resolve(module);
-    Command command = Command.of("javadoc")
+    Command command =
+        Command.of("javadoc")
             // provides more detailed messages while the javadoc command runs
             .add(log.isLevelActive(Level.FINEST), "-verbose")
-            // specifies the destination directory where the javadoc command saves the generated HTML files
-            .add("-d").add(destination)
+            // specifies the destination directory where the javadoc command saves the generated
+            // HTML files
+            .add("-d")
+            .add(destination)
             // specifies the search paths for finding source files when passing package names
-            .add("--source-path").add(source)
+            .add("--source-path")
+            .add(source)
             // package names
             .add(Arrays.stream(packageNames), " ");
     execute(command);
@@ -414,13 +444,15 @@ public class Bach {
 
   public Bach jar() throws Exception {
     log.tag("jar");
-    List<String> modules = util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILED)).collect(Collectors.toList());
+    List<String> modules =
+        util.findDirectoryNames(path(Folder.TARGET_MAIN_COMPILED)).collect(Collectors.toList());
     for (String module : modules) {
       Path modulePath = path(Folder.TARGET_MAIN_COMPILED).resolve(module);
       String main = score.mains.getOrDefault(module, module + "." + "Main");
       if (Files.notExists(modulePath.resolve(main.replace('.', '/') + ".class"))) {
         if (score.mains.containsKey(module)) {
-          log.fail(IllegalStateException::new, "entry-point `%s` not found in `%s`", main, modulePath);
+          log.fail(
+              IllegalStateException::new, "entry-point `%s` not found in `%s`", main, modulePath);
         }
         main = null;
       }
@@ -435,24 +467,27 @@ public class Bach {
     log.tag("jar");
     Files.createDirectories(path(Folder.TARGET_MAIN_JAR));
     Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
-    Command command = Command.of("jar")
+    Command command =
+        Command.of("jar")
             // output messages about what the jar command is doing
             .add(log.isLevelActive(Level.FINEST), "--verbose")
             // creates the archive
             .add("--create")
             // specifies the archive file name
-            .add("--file").add(jarFile);
-            if (main != null && !main.isEmpty()) {
-              // specifies the application entry point for stand-alone applications
-              command.add("--main-class").add(main);
-            }
-            if (version != null && !version.isEmpty()) {
-              // specifies the module version
-              command.add("--module-version").add(version);
-            }
-            // changes to the specified directory and includes the files specified at the end of the command line
-            command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
-   execute(command);
+            .add("--file")
+            .add(jarFile);
+    if (main != null && !main.isEmpty()) {
+      // specifies the application entry point for stand-alone applications
+      command.add("--main-class").add(main);
+    }
+    if (version != null && !version.isEmpty()) {
+      // specifies the module version
+      command.add("--module-version").add(version);
+    }
+    // changes to the specified directory and includes the files specified at the end of the command
+    // line
+    command.add("-C").add(path(Folder.TARGET_MAIN_COMPILED).resolve(module)).add(".");
+    execute(command);
     if (log.isLevelActive(Level.FINE)) {
       execute("jar", "--describe-module", "--file", jarFile);
     }
@@ -463,30 +498,33 @@ public class Bach {
     log.tag("jar");
     Files.createDirectories(path(Folder.TARGET_MAIN_JAR));
     Path jarFile = path(Folder.TARGET_MAIN_JAR).resolve(fileName);
-    Command command = Command.of("jar")
+    Command command =
+        Command.of("jar")
             // output messages about what the jar command is doing
             .add(log.isLevelActive(Level.FINEST), "--verbose")
             // creates the archive
             .add("--create")
             // specifies the archive file name
-            .add("--file").add(jarFile);
-    // changes to the specified directory and includes the files specified at the end of the command line
+            .add("--file")
+            .add(jarFile);
+    // changes to the specified directory and includes the files specified at the end of the command
+    // line
     command.add("-C").add(path).add(".");
     execute(command);
     return this;
   }
 
-  /**
-   * Assemble and optimize a set of modules and their dependencies into a custom runtime image.
-   */
+  /** Assemble and optimize a set of modules and their dependencies into a custom runtime image. */
   public Bach link(String module, String name) {
     log.tag("link").info("%s%n", name);
     Path target = path(Folder.TARGET).resolve(name);
-    Command command = Command.of("jlink")
+    Command command =
+        Command.of("jlink")
             // specifies the module path
             .add("--module-path")
             .add(this::path, Folder.TARGET_MAIN_JAR, Folder.DEPENDENCIES, Folder.JDK_HOME_MODS)
-            // adds the named module to the default set of root modules (the default set of root modules is empty)
+            // adds the named module to the default set of root modules (the default set of root
+            // modules is empty)
             .add("--add-modules")
             .add(module)
             // specifies the launcher command name for the module
@@ -500,7 +538,8 @@ public class Bach {
             .add("--strip-debug")
             // exclude native commands (such as java or java.exe) from the image
             // .add("--strip-native-commands")
-            // compress all resources in the output image: 0=no compression, 1=constant string sharing, 2=ZIP
+            // compress all resources in the output image: 0=no compression, 1=constant string
+            // sharing, 2=ZIP
             .add("--compress")
             .add(2)
             // saves options in the specified file
@@ -517,8 +556,7 @@ public class Bach {
     log.tag("visit");
     try {
       visitor.visit(this);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       log.fail(e, "visit failed");
     }
     return this;
@@ -550,15 +588,15 @@ public class Bach {
         return this;
       }
       this.tag = tag;
-      print(Level.CONFIG,"%n");
+      print(Level.CONFIG, "%n");
       return this;
     }
 
-    void check(boolean condition, String format, Object...args) {
+    void check(boolean condition, String format, Object... args) {
       if (!condition) log.fail(AssertionError::new, format, args);
     }
 
-    <T> T assigned(T instance, String format, Object...args) {
+    <T> T assigned(T instance, String format, Object... args) {
       if (instance == null) log.fail(NullPointerException::new, format, args);
       return instance;
     }
@@ -627,8 +665,7 @@ public class Bach {
       Path toolPath = path(Folder.TOOLS).resolve(tool.name().toLowerCase());
       try {
         return util.download(tool.uri, toolPath);
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         log.fail(e, "loading tool %s from uri %s failed", tool, tool.uri);
         throw new Error(e);
       }
@@ -644,13 +681,11 @@ public class Bach {
 
     Stream<Path> findDirectories(Path root) throws Exception {
       return Files.find(root, 1, (path, attr) -> Files.isDirectory(path))
-              .filter(path -> !root.equals(path));
+          .filter(path -> !root.equals(path));
     }
 
     Stream<String> findDirectoryNames(Path root) throws Exception {
-      return findDirectories(root)
-              .map(root::relativize)
-              .map(Path::toString);
+      return findDirectories(root).map(root::relativize).map(Path::toString);
     }
 
     Path cleanTree(Path root, boolean keepRoot) throws Exception {
@@ -680,10 +715,14 @@ public class Bach {
       log.fine("copy `%s` to `%s`%n", source, target);
       try {
         Files.createDirectories(target);
-        Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+        Files.walkFileTree(
+            source,
+            EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+            Integer.MAX_VALUE,
             new SimpleFileVisitor<>() {
               @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes bfa) throws IOException {
+              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes bfa)
+                  throws IOException {
                 Path targetdir = target.resolve(source.relativize(dir));
                 try {
                   Files.copy(dir, targetdir);
@@ -696,8 +735,12 @@ public class Bach {
               }
 
               @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes bfa) throws IOException {
-                Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+              public FileVisitResult visitFile(Path file, BasicFileAttributes bfa)
+                  throws IOException {
+                Files.copy(
+                    file,
+                    target.resolve(source.relativize(file)),
+                    StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
               }
             });
@@ -706,17 +749,18 @@ public class Bach {
       }
     }
 
-    /**
-     * Download the resource specified by its URI to the target directory.
-     */
+    /** Download the resource specified by its URI to the target directory. */
     Path download(URI uri, Path targetDirectory) throws Exception {
       return download(uri, targetDirectory, fileName(uri), targetPath -> true);
     }
 
     /**
-     * Download the resource specified by its URI to the target directory using the provided file name.
+     * Download the resource specified by its URI to the target directory using the provided file
+     * name.
      */
-    Path download(URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp) throws Exception {
+    Path download(
+        URI uri, Path targetDirectory, String targetFileName, Predicate<Path> useTimeStamp)
+        throws Exception {
       URL url = log.assigned(uri, "uri").toURL();
       log.assigned(targetDirectory, "targetDirectory");
       if (log.assigned(targetFileName, "targetFileName").isEmpty()) {
@@ -738,7 +782,8 @@ public class Bach {
         Files.delete(targetPath);
       }
       log.fine("download `%s` in progress...%n", uri);
-      try (InputStream sourceStream = url.openStream(); OutputStream targetStream = Files.newOutputStream(targetPath)) {
+      try (InputStream sourceStream = url.openStream();
+          OutputStream targetStream = Files.newOutputStream(targetPath)) {
         sourceStream.transferTo(targetStream);
       }
       Files.setLastModifiedTime(targetPath, urlLastModifiedTime);
@@ -747,9 +792,7 @@ public class Bach {
       return targetPath;
     }
 
-    /**
-     * Extract the file name from the uri.
-     */
+    /** Extract the file name from the uri. */
     String fileName(URI uri) {
       String urlString = uri.getPath();
       return urlString.substring(urlString.lastIndexOf('/') + 1).split("\\?")[0].split("#")[0];
@@ -764,9 +807,9 @@ public class Bach {
         return;
       }
       try {
-        Files.move(pathSource, path.resolve("module-info.java"), StandardCopyOption.REPLACE_EXISTING);
-      }
-      catch(Exception e) {
+        Files.move(
+            pathSource, path.resolve("module-info.java"), StandardCopyOption.REPLACE_EXISTING);
+      } catch (Exception e) {
         log.fail(e, "moving module-info failed for %s", path);
       }
       log.fine("moved `%s` to `%s`%n", pathSource, "module-info.java");
@@ -805,7 +848,7 @@ public class Bach {
     }
 
     Command addAll(Object... values) {
-      for (Object value: values) {
+      for (Object value : values) {
         add(value);
       }
       return this;
@@ -864,7 +907,8 @@ public class Bach {
         String indent = nextIndex > indentOff || argument.startsWith("-") ? "" : "  ";
         printer.accept("%s%s%n", args(indent, argument));
         if (nextIndex >= dumpLimit) {
-          printer.accept("%s... [omitted %d arguments]%n", args(indent, arguments.size() - nextIndex - 1));
+          printer.accept(
+              "%s... [omitted %d arguments]%n", args(indent, arguments.size() - nextIndex - 1));
           printer.accept("%s%s%n", args(indent, arguments.get(arguments.size() - 1)));
           break;
         }
@@ -1002,7 +1046,8 @@ public class Bach {
         return Layout.AUTO;
       }
       try {
-        Path path = Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
+        Path path =
+            Files.find(root, 10, (p, a) -> p.endsWith("module-info.java"))
                 .map(root::relativize)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("no module descriptor found in " + root));
@@ -1011,16 +1056,17 @@ public class Bach {
           return Layout.BASIC;
         }
         // nested case: extract module name and check whether the relative path starts with it
-        String moduleSource = new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
+        String moduleSource =
+            new String(Files.readAllBytes(root.resolve(path)), StandardCharsets.UTF_8);
         Pattern namePattern = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
         Matcher nameMatcher = namePattern.matcher(moduleSource);
         if (!nameMatcher.find()) {
-          throw new IllegalArgumentException("expected java module descriptor unit, but got: \n" + moduleSource);
+          throw new IllegalArgumentException(
+              "expected java module descriptor unit, but got: \n" + moduleSource);
         }
         String moduleName = nameMatcher.group(2).trim();
         return path.startsWith(moduleName) ? Layout.FIRST : Layout.TRAIL;
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         throw new Error("detection failed " + e, e);
       }
     }

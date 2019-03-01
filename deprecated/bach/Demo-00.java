@@ -28,7 +28,7 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/basic"))
         .override(Folder.TARGET, Paths.get("target/bach/demo/basic"))
         .peek(builder -> System.out.println(builder.name))
-      .build()
+        .build()
         .execute("java", "--version")
         .format()
         .compile()
@@ -41,18 +41,23 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/common"))
         .override(Folder.TARGET, Paths.get("target/bach/demo/common"))
         .peek(builder -> System.out.println(builder.name))
-      .build()
+        .build()
         .format()
         .compile()
         .runCompiled("com.greetings");
   }
 
   static void idea() throws Exception {
-    Bach.Visitor jdeps = bach -> bach.execute("jdeps",
-            "-profile",
-            // "--dot-output", bach.path(Folder.TARGET),
-            "--module-path", bach.path(Folder.TARGET_MAIN_JAR),
-            "--module", "com.greetings");
+    Bach.Visitor jdeps =
+        bach ->
+            bach.execute(
+                "jdeps",
+                "-profile",
+                // "--dot-output", bach.path(Folder.TARGET),
+                "--module-path",
+                bach.path(Folder.TARGET_MAIN_JAR),
+                "--module",
+                "com.greetings");
     Bach.builder()
         .name("idea")
         .log(Level.FINE)
@@ -61,10 +66,16 @@ public class Demo {
         .override(Folder.SOURCE, Paths.get("demo/idea"))
         .override(Folder.TARGET, Paths.get("target/bach/demo/idea"))
         .peek(builder -> System.out.println(builder.name))
-      .build()
+        .build()
         .format()
-        .load("org.junit.jupiter.api", URI.create("http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
-        .load("org.junit.platform.commons", URI.create("http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
+        .load(
+            "org.junit.jupiter.api",
+            URI.create(
+                "http://central.maven.org/maven2/org/junit/jupiter/junit-jupiter-api/5.0.0-M4/junit-jupiter-api-5.0.0-M4.jar"))
+        .load(
+            "org.junit.platform.commons",
+            URI.create(
+                "http://central.maven.org/maven2/org/junit/platform/junit-platform-commons/1.0.0-M4/junit-platform-commons-1.0.0-M4.jar"))
         .compile()
         .test()
         .jar()
