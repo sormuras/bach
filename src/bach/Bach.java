@@ -89,8 +89,11 @@ class Bach {
   /** Offline mode. */
   boolean offline = Boolean.parseBoolean(get(Property.OFFLINE));
 
+  /** {@code -Debug=true} flag. */
+  boolean debug = Boolean.getBoolean("ebug");
+
   /** Log level. */
-  Level level = System.Logger.Level.valueOf(System.getProperty("bach.level", "INFO"));
+  Level level = Level.valueOf(System.getProperty("bach.level", debug ? "ALL" : "INFO"));
 
   PrintStream err = System.err;
   PrintStream out = System.out;
@@ -221,8 +224,8 @@ class Bach {
         log(DEBUG, String.format("<< %s", task));
       }
       return 0;
-    } catch (RuntimeException exception) {
-      exception.printStackTrace(err);
+    } catch (Throwable throwable) {
+      throwable.printStackTrace(err);
       return 1;
     }
   }
@@ -544,6 +547,7 @@ class Bach {
   }
 
   /** External program. */
+  // TODO Convert to abstract base class that "implements Task".
   interface Tool extends Task {
 
     Command toCommand(Bach bach) throws Exception;
