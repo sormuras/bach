@@ -48,6 +48,8 @@ class Build {
     bach.run(
         "java",
         "-ea",
+        "-Djunit.jupiter.execution.parallel.enabled=true",
+        "-Djunit.jupiter.execution.parallel.mode.default=concurrent",
         "--class-path",
         target + "/test" + File.pathSeparator + target + "/main" + File.pathSeparator + junitJar,
         "org.junit.platform.console.ConsoleLauncher",
