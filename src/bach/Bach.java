@@ -83,19 +83,23 @@ class Bach {
     }
   }
 
-  /** Managed properties loaded from {@code ${base}/bach.properties} file. */
-  final Properties properties = Property.loadProperties(USER_PATH.resolve("bach.properties"));
+  /** {@code -Debug=true} flag. */
+  boolean debug = Boolean.getBoolean("ebug");
+
+  /** Managed properties loaded from {@code ${user.path}/bach.properties} file. */
+  Properties properties =
+      Property.loadProperties(Path.of(System.getProperty("bach.properties", "bach.properties")));
+
+  /** Log level. */
+  Level level = Level.valueOf(get(Property.LEVEL.key, debug ? "ALL" : Property.LEVEL.defaultValue));
 
   /** Offline mode. */
   boolean offline = Boolean.parseBoolean(get(Property.OFFLINE));
 
-  /** {@code -Debug=true} flag. */
-  boolean debug = Boolean.getBoolean("ebug");
-
-  /** Log level. */
-  Level level = Level.valueOf(System.getProperty("bach.level", debug ? "ALL" : "INFO"));
-
+  /** Current error output stream, defaults to {@link System#err}. */
   PrintStream err = System.err;
+
+  /** Current standard output stream, defaults to {@link System#out}. */
   PrintStream out = System.out;
 
   /** Display banner. */
@@ -170,7 +174,7 @@ class Bach {
     new Tool.Format(replace, List.of(roots)).execute(this);
   }
 
-  /** Get value for the supplied property, using its key and default value. */
+  /** Get value for the supplied property, using its key and its hard-coded default value. */
   String get(Property property) {
     return get(property.key, property.defaultValue);
   }
@@ -463,6 +467,9 @@ class Bach {
 
   /** Constants with default values. */
   enum Property {
+    /** Log level. */
+    LEVEL("INFO"),
+
     /** Default Maven repository used for artifact resolution. */
     MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
 
