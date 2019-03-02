@@ -118,6 +118,25 @@ class Bach {
             + "\n");
   }
 
+  /** Check preconditions and download 3rd-party modules. */
+  void assemble() {
+    log(DEBUG, "Instance Bach@" + Integer.toHexString(System.identityHashCode(this)));
+    log(DEBUG, "  version = " + VERSION);
+    log(DEBUG, "  base = " + USER_PATH);
+    log(DEBUG, "  debug = " + debug);
+    log(DEBUG, "  level = " + level);
+    log(DEBUG, "  offline = " + offline);
+    log(DEBUG, "  stream.out = " + out);
+    log(DEBUG, "  stream.err = " + err);
+    log(DEBUG, "Properties");
+    log(DEBUG, "  bach.properties = " + properties);
+    for (var property : Property.values()) {
+      log(DEBUG, "  " + property.key + " = " + get(property));
+    }
+    // TODO Check common and project-specific preconditions.
+    // TODO Populate "bin/lib" directory with missing external modules.
+  }
+
   /** Compile main and test sources. */
   void compile() {}
 
@@ -344,6 +363,7 @@ class Bach {
 
   /** Default task implementation. */
   enum Action implements Task {
+    ASSEMBLE(Bach::assemble, "Check preconditions and download required 3rd-party modules"),
     BANNER(Bach::banner, "Display a fancy multi-line ASCII art banner"),
     COMPILE(Bach::compile, "Compile main and test sources"),
     DOCUMENT(Bach::document, "Generate javadoc"),

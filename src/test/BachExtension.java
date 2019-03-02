@@ -51,6 +51,7 @@ public @interface BachExtension {
       this.out = new ByteArrayOutputStream();
       this.err = new ByteArrayOutputStream();
 
+      bach.debug = true;
       bach.level = System.Logger.Level.ALL;
       bach.out = new PrintStream(out);
       bach.err = new PrintStream(err);
