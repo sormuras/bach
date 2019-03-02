@@ -197,6 +197,9 @@ class Bach {
     out.println();
   }
 
+  /** Launch test run. */
+  void test() {}
+
   /** Create a custom modular run-time image. */
   void link() {}
 
@@ -204,11 +207,12 @@ class Bach {
     if (level.getSeverity() < this.level.getSeverity()) {
       return;
     }
-    out.printf("%s %s %n", level, message);
+    var stream = level.getSeverity() < WARNING.getSeverity() ? out : err;
+    stream.println(level + " " + message);
   }
 
   /** Run supplied tasks. */
-  int run(List<Task> tasks) {
+  int run(List<? extends Task> tasks) {
     try {
       log(DEBUG, String.format("Running %d task(s)...", tasks.size()));
       for (var task : tasks) {
@@ -340,7 +344,7 @@ class Bach {
     HELP(Bach::help, "Print this help screen"),
     LINK(Bach::link, "Create a custom modular run-time image"),
     PACK(Bach::pack, "Create jars from main binaries, sources and javadoc"),
-    TEST("Launch JUnit Platform"),
+    TEST(Bach::test, "Launch JUnit Platform"),
     TOOL(
         "Run named tool consuming all remaining arguments",
         "  tool <name> <args...>",
@@ -350,7 +354,7 @@ class Bach {
     @Override
     public void execute(Bach bach) {
       if (task == null) {
-        bach.log(WARNING, this + " not linked, yet");
+        bach.log(WARNING, this + " not handled, yet");
         return;
       }
       task.execute(bach);

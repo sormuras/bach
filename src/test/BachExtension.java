@@ -1,4 +1,5 @@
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.io.ByteArrayOutputStream;
@@ -6,54 +7,58 @@ import java.io.PrintStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 
-@Target(METHOD)
+@Target({METHOD, TYPE})
 @Retention(RUNTIME)
-@ResourceLock(Resources.SYSTEM_OUT)
-@ResourceLock(Resources.SYSTEM_ERR)
-@ExtendWith(SwallowSystem.Extension.class)
-public @interface SwallowSystem {
+@ExtendWith(BachExtension.Extension.class)
+public @interface BachExtension {
 
   class Extension implements ParameterResolver {
 
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext context) {
-      return parameterContext.getParameter().getType() == Streams.class;
+      var type = parameterContext.getParameter().getType();
+      return type.equals(BachSupplier.class) || type.equals(Bach.class);
     }
 
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext context) {
-      var store = context.getStore(Namespace.create(getClass(), context.getRequiredTestMethod()));
-      return store.getOrComputeIfAbsent(Streams.class, key -> new Streams());
+      var supplier = new BachSupplier();
+      var type = parameterContext.getParameter().getType();
+      if (type.equals(BachSupplier.class)) {
+        return supplier;
+      }
+      if (type.equals(Bach.class)) {
+        return supplier.bach;
+      }
+      throw new ParameterResolutionException("Can't resolve parameter of type: " + type);
     }
   }
 
-  class Streams implements ExtensionContext.Store.CloseableResource {
-
-    private final PrintStream standardOut, standardErr;
+  class BachSupplier implements Supplier<Bach> {
+    private final Bach bach;
     private final ByteArrayOutputStream out, err;
 
-    Streams() {
-      this.standardOut = System.out;
-      this.standardErr = System.err;
+    BachSupplier() {
+      this.bach = new Bach();
       this.out = new ByteArrayOutputStream();
       this.err = new ByteArrayOutputStream();
-      System.setOut(new PrintStream(out));
-      System.setErr(new PrintStream(err));
+
+      bach.level = System.Logger.Level.ALL;
+      bach.out = new PrintStream(out);
+      bach.err = new PrintStream(err);
     }
 
     @Override
-    public void close() {
-      System.setOut(standardOut);
-      System.setErr(standardErr);
+    public Bach get() {
+      return bach;
     }
 
     List<String> outLines() {
@@ -67,6 +72,13 @@ public @interface SwallowSystem {
     @Override
     public String toString() {
       return "out=```" + out.toString() + "```, err=```" + err.toString() + "```";
+    }
+
+    void printStreams() {
+      outLines().forEach(System.out::println);
+      System.out.flush();
+      errLines().forEach(System.err::println);
+      System.err.flush();
     }
   }
 }
