@@ -46,6 +46,7 @@ class Bach {
     var tasks = new ArrayList<Task>();
     if (args.isEmpty()) {
       tasks.add(Action.BANNER);
+      tasks.add(Action.ASSEMBLE);
       tasks.add(Action.COMPILE);
       tasks.add(Action.TEST);
       tasks.add(Action.DOCUMENT);
