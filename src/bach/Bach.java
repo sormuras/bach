@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -206,19 +207,20 @@ class Bach {
     return home.normalize().toAbsolutePath();
   }
 
-  /** Format all Java source units found walking base directory recursively. */
+  /** Format all Java source files found walking base directory recursively. */
   void format() {
     format(true, base);
   }
 
-  /** Format in-place or just check all Java source units in supplied roots. */
-  void format(boolean replace, Path root) {
-    var roots = List.of(based(root));
-    if (new Command("collect **/*.java files").addAllJavaFiles(roots).arguments.isEmpty()) {
-      log(INFO, "No **/*.java file found in: " + roots);
+  /** Format all Java source files in supplied roots. */
+  void format(boolean replace, Path... roots) {
+    var based = Arrays.stream(roots).map(this::based).collect(Collectors.toList());
+    log(DEBUG, String.format("format(%s, %s)", replace, based));
+    if (new Command("collect **/*.java files").addAllJavaFiles(based).arguments.isEmpty()) {
+      log(INFO, "format skipped, no *.java file found in " + based);
       return;
     }
-    new Tool.Format(replace, roots).execute(this);
+    new Tool.Format(replace, based).execute(this);
   }
 
   /** Get value for the supplied property, using its key and its hard-coded default value. */

@@ -9,9 +9,10 @@ class Build {
     build(new Bach());
   }
 
+  /** Called by {@code build.jsh} to get an exit value instead. */
   public static int main() {
     try {
-      build(new Bach());
+      main(new String[0]);
     } catch (Throwable t) {
       t.printStackTrace();
       return 1;
@@ -23,8 +24,7 @@ class Build {
     bach.level = System.Logger.Level.ALL;
 
     System.out.println("[format]");
-    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("src"));
-    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("demo"));
+    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("src"), Path.of("demo"));
 
     var target = "target/build";
     bach.treeDelete(Path.of(target).resolve("artifacts"));
