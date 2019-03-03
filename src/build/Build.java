@@ -23,7 +23,8 @@ class Build {
     bach.level = System.Logger.Level.ALL;
 
     System.out.println("[format]");
-    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("src"), Path.of("demo"));
+    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("src"));
+    bach.format(Boolean.getBoolean("bach.format.replace"), Path.of("demo"));
 
     var target = "target/build";
     bach.treeDelete(Path.of(target).resolve("artifacts"));

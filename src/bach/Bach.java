@@ -87,9 +87,13 @@ class Bach {
   /** {@code -Debug=true} flag. */
   boolean debug = Boolean.getBoolean("ebug");
 
+  /** Base path. */
+  Path base = Path.of(System.getProperty("bach.base", ""));
+
   /** Managed properties loaded from {@code ${user.path}/bach.properties} file. */
   Properties properties =
-      Property.loadProperties(Path.of(System.getProperty("bach.properties", "bach.properties")));
+      Property.loadProperties(
+          base.resolve(System.getProperty("bach.properties", "bach.properties")));
 
   /** Log level. */
   Level level = Level.valueOf(get(Property.LEVEL.key, debug ? "ALL" : Property.LEVEL.defaultValue));
@@ -102,6 +106,24 @@ class Bach {
 
   /** Current standard output stream, defaults to {@link System#out}. */
   PrintStream out = System.out;
+
+  Path based(Path path) {
+    if (path.isAbsolute()) {
+      return path;
+    }
+    if (base.equals(USER_PATH)) {
+      return path;
+    }
+    return base.resolve(path).normalize();
+  }
+
+  Path based(String first, String... more) {
+    return based(Path.of(first, more));
+  }
+
+  Path based(Property property) {
+    return based(Path.of(get(property)));
+  }
 
   /** Display banner. */
   void banner() {
@@ -123,7 +145,7 @@ class Bach {
   void assemble() {
     log(DEBUG, "Instance Bach@" + Integer.toHexString(System.identityHashCode(this)));
     log(DEBUG, "  version = " + VERSION);
-    log(DEBUG, "  base = " + USER_PATH);
+    log(DEBUG, "  base = " + base);
     log(DEBUG, "  debug = " + debug);
     log(DEBUG, "  level = " + level);
     log(DEBUG, "  offline = " + offline);
@@ -171,7 +193,7 @@ class Bach {
     var destination = zip.getParent();
     var home = destination.resolve(root);
     if (Files.notExists(home)) {
-      if (destination.equals(USER_PATH)) {
+      if (base.equals(USER_PATH)) {
         jar.run(out, err, "--extract", "--file", zip.toString());
       } else {
         new ProcessBuilder("jar", "--extract", "--file", zip.toString())
@@ -184,14 +206,19 @@ class Bach {
     return home.normalize().toAbsolutePath();
   }
 
-  /** Format all Java source units in user's current working directory. */
+  /** Format all Java source units found walking base directory recursively. */
   void format() {
-    format(true, Path.of(""));
+    format(true, base);
   }
 
   /** Format in-place or just check all Java source units in supplied roots. */
-  void format(boolean replace, Path... roots) {
-    new Tool.Format(replace, List.of(roots)).execute(this);
+  void format(boolean replace, Path root) {
+    var roots = List.of(based(root));
+    if (new Command("collect **/*.java files").addAllJavaFiles(roots).arguments.isEmpty()) {
+      log(INFO, "No **/*.java file found in: " + roots);
+      return;
+    }
+    new Tool.Format(replace, roots).execute(this);
   }
 
   /** Get value for the supplied property, using its key and its hard-coded default value. */
