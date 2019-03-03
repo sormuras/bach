@@ -33,7 +33,7 @@ class BachTests {
   @Test
   @ResourceLock(Resources.SYSTEM_OUT)
   @ResourceLock(Resources.SYSTEM_ERR)
-  void defaultValues() {
+  void constructDefaultInstance() {
     var bach = new Bach();
 
     assertFalse(bach.debug);
@@ -45,11 +45,14 @@ class BachTests {
   }
 
   @Test
-  void debugModeAndEmptyBaseDirectory(@TempDir Path empty) {
+  void constructInstanceInDebugModeAndDifferentBaseDirectory(@TempDir Path empty) {
     var bach = new Bach(true, empty);
 
     assertTrue(bach.debug);
     assertEquals(empty, bach.base);
+    assertNotNull(bach.log);
+    assertNotNull(bach.log.out);
+    assertNotNull(bach.log.err);
     assertSame(System.Logger.Level.ALL, bach.log.threshold);
   }
 }
