@@ -19,12 +19,30 @@
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /** Java Shell Builder. */
 class Bach {
+
+  /** Main entry-point throwing runtime exception on error. */
+  public static void main(String... args) {
+    var actions = new ArrayList<Action>();
+    if (args.length == 0) {
+      actions.add(Action.Default.BUILD);
+    } else {
+      var arguments = new ArrayDeque<>(List.of(args));
+      while (!arguments.isEmpty()) {
+        var argument = arguments.removeFirst();
+        actions.add(Action.Default.valueOf(argument.toUpperCase()));
+      }
+    }
+    new Bach().run(actions);
+  }
 
   /** {@code -Debug=true} flag. */
   final boolean debug;

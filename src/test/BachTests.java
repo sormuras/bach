@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
@@ -53,6 +55,32 @@ class BachTests {
     assertNotNull(bach.log.out);
     assertNotNull(bach.log.err);
     assertSame(System.Logger.Level.ALL, bach.log.threshold);
+  }
+
+  @Test
+  @SwallowSystem
+  void mainWithoutArguments(SwallowSystem.Streams streams) {
+    assertDoesNotThrow((Executable) Bach::main);
+    assertLinesMatch(List.of(), streams.outLines());
+    assertLinesMatch(List.of(), streams.errLines());
+  }
+
+  @Test
+  @SwallowSystem
+  void mainWithArgumentBuild(SwallowSystem.Streams streams) {
+    assertDoesNotThrow(() -> Bach.main("build"));
+    assertLinesMatch(List.of(), streams.outLines());
+    assertLinesMatch(List.of(), streams.errLines());
+  }
+
+  @Test
+  @SwallowSystem
+  void mainWithArgumentThatIsUnsupported(SwallowSystem.Streams streams) {
+    var e = assertThrows(IllegalArgumentException.class, () -> Bach.main("foo"));
+    assertLinesMatch(List.of(), streams.outLines());
+    assertLinesMatch(List.of(), streams.errLines());
+
+    assertEquals("No enum constant Bach.Action.Default.FOO", e.getMessage());
   }
 
   @Test
