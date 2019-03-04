@@ -2,8 +2,8 @@ before_install:
 - source install-jdk.sh --feature ea
 
 install:
-- jshell ./build.jsh
-- ARTIFACTS="target/build/artifacts"
-- JARS="-Dfile=$ARTIFACTS/bach.jar -Dsources=$ARTIFACTS/bach-sources.jar -Djavadoc=$ARTIFACTS/bach-javadoc.jar"
-- find $ARTIFACTS
-- mvn install:install-file $JARS -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+- jshell --execution local ./build.jsh
+- JARS="target/build/jars"
+- FILES="-Dfile=$JARS/bach.jar -Dsources=$JARS/bach-sources.jar -Djavadoc=$JARS/bach-javadoc.jar"
+- find $JARS
+- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
