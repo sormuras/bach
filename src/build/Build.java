@@ -41,12 +41,12 @@ class Build {
 
   private void compile() {
     System.out.println("\n[compile]");
-    bach.run("javac", "-d", targetBinMain, "src/bach/Bach.java");
+    bach.run(0, "javac", "-d", targetBinMain, "src/bach/Bach.java");
   }
 
   private void test() {
     System.out.println("\n[test - compile] // TODO");
-    // TODO bach.run("javac", "-d", targetBinTest, "src/test/BachTests.java", ...);
+    // TODO bach.run(0, "javac", "-d", targetBinTest, "src/test/BachTests.java", ...);
 
     System.out.println("\n[test - run] // TODO");
     // TODO Start JUnit Platform ConsoleLauncher
@@ -56,6 +56,7 @@ class Build {
     System.out.println("\n[document]");
     Files.createDirectories(targetJavadoc);
     bach.run(
+        0,
         "javadoc",
         "-d",
         targetJavadoc,
@@ -74,6 +75,7 @@ class Build {
     System.out.println("\n[jar]");
     Files.createDirectories(targetJars);
     bach.run(
+        0,
         "jar",
         "--create",
         "--file",
@@ -81,9 +83,10 @@ class Build {
         "--main-class",
         "Bach",
         "-C",
-        target + "/main",
+        targetBinMain,
         ".");
     bach.run(
+        0,
         "jar",
         "--create",
         "--file",
@@ -92,6 +95,7 @@ class Build {
         "src/bach",
         ".");
     bach.run(
+        0,
         "jar",
         "--create",
         "--file",
@@ -104,10 +108,10 @@ class Build {
 
   private void validate() {
     System.out.println("\n[validate - jdeps]");
-    bach.run("jdeps", "-summary", "-recursive", targetJars.resolve("bach.jar"));
+    bach.run(0, "jdeps", "-summary", "-recursive", targetJars.resolve("bach.jar"));
 
     System.out.println("\n[validate - java -jar bach.jar banner]");
-    bach.run("java", "-jar", targetJars.resolve("bach.jar"), "tool", "javac", "--version");
+    bach.run(0, "java", "-jar", targetJars.resolve("bach.jar"), "tool", "javac", "--version");
   }
 
   private void zip() {
@@ -115,6 +119,7 @@ class Build {
     // TODO bach.treeDelete(Path.of("demo/scaffold/.bach"));
     // TODO bach.treeDelete(Path.of("demo/scaffold/bin"));
     bach.run(
+        0,
         "jar",
         "--update",
         "--file",
@@ -124,5 +129,4 @@ class Build {
         "demo/scaffold",
         ".");
   }
-
 }
