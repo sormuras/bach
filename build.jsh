@@ -20,4 +20,4 @@
 /open src/bach/Bach.java
 /open src/build/Build.java
 
-/exit Build.main()
+/exit new Build().main(Throwable::printStackTrace)
