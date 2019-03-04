@@ -19,6 +19,7 @@
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /** Java Shell Builder. */
@@ -64,6 +65,35 @@ class Bach {
       }
       var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
       consumer.accept(message);
+    }
+  }
+
+  /** Build all and everything. */
+  public void build() throws Exception {
+    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
+  }
+
+  /** Bach consuming action operating via side-effects. */
+  @FunctionalInterface
+  interface Action {
+
+    /** Performs this action on the given Bach instance. */
+    void perform(Bach bach) throws Exception;
+
+    /** Default action delegating to Bach API methods. */
+    enum Default implements Action {
+      BUILD(Bach::build);
+
+      final Action action;
+
+      Default(Action action) {
+        this.action = action;
+      }
+
+      @Override
+      public void perform(Bach bach) throws Exception {
+        action.perform(bach);
+      }
     }
   }
 }
