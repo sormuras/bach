@@ -14,7 +14,7 @@ after_success:
 #- ./bootstrap.sh
 
 - cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
-- java ${BACH}
+- java -Debug=true ${BACH}
 
 - cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
-- java -Dbach.level=ALL ${BACH}
+- java -Debug=true ${BACH}
