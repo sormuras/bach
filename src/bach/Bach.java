@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 class Bach {
 
   /** {@code -Debug=true} flag. */
-  boolean debug;
+  final boolean debug;
 
   /** Base path defaults to user's current working directory. */
   final Path base;
@@ -33,9 +33,9 @@ class Bach {
   /** Logging helper. */
   final Log log;
 
-  /** Initialize Bach instance in current working directory. */
+  /** Initialize Bach instance using system properties. */
   Bach() {
-    this(Boolean.getBoolean("ebug"), Path.of(""));
+    this(Boolean.getBoolean("ebug"), Path.of(System.getProperty("bach.base", "")));
   }
 
   /** Initialize Bach instance in supplied working directory. */
