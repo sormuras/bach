@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
 
   @Test
-  @ResourceLock(Resources.SYSTEM_OUT)
-  @ResourceLock(Resources.SYSTEM_ERR)
   void constructDefaultInstance() {
     var bach = new Bach();
 
@@ -54,5 +53,40 @@ class BachTests {
     assertNotNull(bach.log.out);
     assertNotNull(bach.log.err);
     assertSame(System.Logger.Level.ALL, bach.log.threshold);
+  }
+
+  @Test
+  void runEmptyCollectionOfActions() {
+    var bach = new Bach(true, Path.of(""));
+
+    bach.run(List.of());
+  }
+
+  @Test
+  void runNoopAction() {
+    new Bach().run(List.of(bach -> {}));
+  }
+
+  @Test
+  void runThrowingAction() {
+    var bach = new Bach();
+    var lines = new ArrayList<String>();
+    bach.log.err = lines::add;
+
+    var action = new ThrowingAction();
+    var error = assertThrows(Error.class, () -> bach.run(List.of(action)));
+    assertEquals("Action failed: " + action.toString(), error.getMessage());
+    assertEquals(UnsupportedOperationException.class, error.getCause().getClass());
+    assertEquals("123", error.getCause().getMessage());
+
+    assertLinesMatch(List.of("123"), lines);
+  }
+
+  private static class ThrowingAction implements Bach.Action {
+
+    @Override
+    public void perform(Bach bach) {
+      throw new UnsupportedOperationException("123");
+    }
   }
 }

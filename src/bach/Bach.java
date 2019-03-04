@@ -19,6 +19,7 @@
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
@@ -46,6 +47,26 @@ class Bach {
     this.log = new Log();
   }
 
+  /** Execute a collection of actions sequentially on this instance. */
+  void run(Collection<? extends Action> actions) {
+    log.log(Level.DEBUG, String.format("Performing %d action(s)...", actions.size()));
+    for (var action : actions) {
+      try {
+        log.log(Level.TRACE, String.format(">> %s", action));
+        action.perform(this);
+        log.log(Level.TRACE, String.format("<< %s", action));
+      } catch (Throwable throwable) {
+        log.log(Level.ERROR, throwable.getMessage());
+        throw new Error("Action failed: " + action, throwable);
+      }
+    }
+  }
+
+  /** Build all and everything. */
+  public void build() throws Exception {
+    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
+  }
+
   /** Logging helper. */
   class Log {
 
@@ -66,11 +87,6 @@ class Bach {
       var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
       consumer.accept(message);
     }
-  }
-
-  /** Build all and everything. */
-  public void build() throws Exception {
-    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
   }
 
   /** Bach consuming action operating via side-effects. */
