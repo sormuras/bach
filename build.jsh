@@ -20,4 +20,12 @@
 /open src/bach/Bach.java
 /open src/build/Build.java
 
-/exit new Build().main(Throwable::printStackTrace)
+var code = 0
+try {
+  Build.main();
+} catch (Throwable throwable) {
+  throwable.printStackTrace();
+  code = 1;
+}
+
+/exit code

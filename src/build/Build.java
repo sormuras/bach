@@ -16,34 +16,27 @@
  */
 
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 /** OS-agnostic build program. */
 class Build {
 
   /** Main entry-point throwing runtime exception on error. */
-  public static void main(String... args) {
-    new Build().main(Throwable::printStackTrace, args);
+  public static void main(String... args) throws Exception {
+    var build = new Build();
+    build.compile();
+    // TODO format, package, document, ...
   }
 
   private final Bach bach;
 
   Build() {
     this.bach = new Bach(true, Path.of(""));
+    System.out.println(bach.toString());
   }
 
-  /** Build entry-point returning non-zero exit value on error. */
-  int main(Consumer<Throwable> throwableConsumer, String... args) {
-    try {
-      System.out.println("[main] BEGIN");
-      System.out.println(bach.toString());
-      Thread.sleep(1000);
-      // TODO format, compile, package, document, ...
-      System.out.println("[main] END.");
-      return 0;
-    } catch (Throwable throwable) {
-      throwableConsumer.accept(throwable);
-      return 1;
-    }
+  void compile() throws Exception {
+    System.out.println("[compile] BEGIN");
+    Thread.sleep(1000);
+    System.out.println("[compile] END.");
   }
 }
