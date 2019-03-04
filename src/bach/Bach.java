@@ -33,18 +33,9 @@ class Bach {
 
   /** Main entry-point throwing runtime exception on error. */
   public static void main(String... args) {
-    var actions = new ArrayList<Action>();
-    if (args.length == 0) {
-      actions.add(Action.Default.BUILD);
-    } else {
-      var arguments = new ArrayDeque<>(List.of(args));
-      while (!arguments.isEmpty()) {
-        var argument = arguments.removeFirst();
-        var defaultAction = Action.Default.valueOf(argument.toUpperCase());
-        actions.add(defaultAction.consume(arguments));
-      }
-    }
-    new Bach().run(actions);
+    var bach = new Bach();
+    var actions = bach.actions(args);
+    bach.run(actions);
   }
 
   /** {@code -Debug=true} flag. */
@@ -66,6 +57,23 @@ class Bach {
     this.debug = debug;
     this.base = base;
     this.log = new Log();
+  }
+
+  /** Transforming strings to actions. */
+  List<Action> actions(String... args) {
+    var actions = new ArrayList<Action>();
+    if (args.length == 0) {
+      actions.add(Action.Default.BUILD);
+    } else {
+      var arguments = new ArrayDeque<>(List.of(args));
+      while (!arguments.isEmpty()) {
+        var argument = arguments.removeFirst();
+        var defaultAction = Action.Default.valueOf(argument.toUpperCase());
+        var action = defaultAction.consume(arguments);
+        actions.add(action);
+      }
+    }
+    return actions;
   }
 
   /** Execute a collection of actions sequentially on this instance. */

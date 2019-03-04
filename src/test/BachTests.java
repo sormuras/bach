@@ -58,6 +58,23 @@ class BachTests {
   }
 
   @Test
+  void actionsEmptyArgsReturnsDefaultActions() {
+    assertEquals(List.of(Bach.Action.Default.BUILD), new Bach().actions());
+  }
+
+  @Test
+  void actionsForBuildReturnsDefaultAction() {
+    assertEquals(
+        List.of(Bach.Action.Default.BUILD, Bach.Action.Default.BUILD, Bach.Action.Default.BUILD),
+        new Bach().actions("build", "Build", "BUILD"));
+  }
+
+  @Test
+  void actionsTools() {
+    assertEquals(2, new Bach().actions("build", "tool", "1", "2", "3").size());
+  }
+
+  @Test
   @SwallowSystem
   void mainWithoutArguments(SwallowSystem.Streams streams) {
     assertDoesNotThrow((Executable) Bach::main);
