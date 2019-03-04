@@ -1,4 +1,4 @@
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
 
 /*
  * Bach - Java Shell Builder
@@ -21,7 +21,7 @@
  * Declare constants and helper methods.
  */
 var version = "master"
-var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/main/")
+var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 var target = Path.of(".bach/" + version)
 var bach = target.resolve("Bach.java")
 
