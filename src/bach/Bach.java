@@ -101,7 +101,11 @@ class Bach {
   }
 
   /** Execute the named tool. */
-  int run(String name, String... args) {
+  int run(String name, Object... arguments) {
+    var args = new String[arguments.length];
+    for (int i = 0; i < args.length; i++) {
+      args[i] = arguments[i].toString();
+    }
     log.log(Level.DEBUG, String.format("run(%s, %s)", name, List.of(args)));
     var toolProvider = ToolProvider.findFirst(name);
     if (toolProvider.isPresent()) {
@@ -164,7 +168,7 @@ class Bach {
         @Override
         Action consume(Deque<String> arguments) {
           var name = arguments.removeFirst();
-          var args = arguments.toArray(String[]::new);
+          var args = arguments.toArray(Object[]::new);
           arguments.clear();
           return bach -> bach.run(name, args);
         }
