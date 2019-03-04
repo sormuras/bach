@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 
 /** Java Shell Builder. */
 class Bach {
@@ -77,6 +78,28 @@ class Bach {
         log.log(Level.ERROR, throwable.getMessage());
         throw new Error("Action failed: " + action, throwable);
       }
+    }
+  }
+
+  /** Execute the named tool. */
+  int run(String name, String... args) {
+    log.log(Level.DEBUG, String.format("run(%s, %s)", name, List.of(args)));
+    var toolProvider = ToolProvider.findFirst(name);
+    if (toolProvider.isPresent()) {
+      var tool = toolProvider.get();
+      log.log(Level.DEBUG, "Running provided tool in-process: " + tool);
+      return tool.run(System.out, System.err, args);
+    }
+    // TODO Find registered tool, like "format", "junit", "maven", "gradle"
+    // TODO Find executable via {java.home}/${name}[.exe]
+    try {
+      var builder = new ProcessBuilder(name).inheritIO();
+      builder.command().addAll(List.of(args));
+      var process = builder.start();
+      log.log(Level.DEBUG, "Running tool in a new process: " + process);
+      return process.waitFor();
+    } catch (Exception e) {
+      throw new Error("Running tool " + name + " failed!", e);
     }
   }
 

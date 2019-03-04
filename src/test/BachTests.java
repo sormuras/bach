@@ -113,6 +113,37 @@ class BachTests {
     assertLinesMatch(List.of("123"), lines);
   }
 
+  @Test
+  @SwallowSystem
+  void runToolJavaDryRun(SwallowSystem.Streams streams) {
+    var bach = new Bach(true, Path.of(""));
+    var code = bach.run("java", "--dry-run", "src/bach/Bach.java");
+    assertEquals(0, code, streams.toString());
+    assertLinesMatch(
+        List.of("run(java, [--dry-run, src/bach/Bach.java])", "Running tool in a new process: .+"),
+        streams.outLines());
+  }
+
+  @Test
+  @SwallowSystem
+  void runToolJavacVersion(SwallowSystem.Streams streams) {
+    var bach = new Bach(true, Path.of(""));
+    var code = bach.run("javac", "--version");
+    assertEquals(0, code, streams.toString());
+    assertLinesMatch(
+        List.of("run(javac, [--version])", "Running provided tool in-process: .+", "javac .+"),
+        streams.outLines());
+  }
+
+  @Test
+  @SwallowSystem
+  void runToolThatDoesNotExistFails(SwallowSystem.Streams streams) {
+    var bach = new Bach(true, Path.of(""));
+    var error = assertThrows(Error.class, () -> bach.run("does-not-exist"));
+    assertEquals("Running tool does-not-exist failed!", error.getMessage());
+    assertLinesMatch(List.of("run(does-not-exist, [])"), streams.outLines());
+  }
+
   private static class ThrowingAction implements Bach.Action {
 
     @Override
