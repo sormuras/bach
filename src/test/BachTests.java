@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,36 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
+
+  @Test
+  void versionIsMasterXorConsumableByRuntimeVersionParse() throws Exception {
+    var actual = "" + Bach.class.getDeclaredField("VERSION").get(null);
+    if (actual.equals("master")) {
+      return;
+    }
+    Runtime.Version.parse(actual);
+  }
+
+  @Test
+  void userPathIsCurrentWorkingDirectory() {
+    assertEquals(Path.of(".").normalize().toAbsolutePath(), Bach.USER_PATH);
+  }
+
+  @Test
+  void userHomeIsUsersHome() {
+    assertEquals(Path.of(System.getProperty("user.home")), Bach.USER_HOME);
+  }
+
+  @Test
+  void hasPublicStaticVoidMainWithVarArgs() throws Exception {
+    var main = Bach.class.getMethod("main", String[].class);
+    assertTrue(Modifier.isPublic(main.getModifiers()));
+    assertTrue(Modifier.isStatic(main.getModifiers()));
+    assertSame(void.class, main.getReturnType());
+    assertEquals("main", main.getName());
+    assertTrue(main.isVarArgs());
+    assertEquals(0, main.getExceptionTypes().length);
+  }
 
   @Test
   void constructDefaultInstance() {
