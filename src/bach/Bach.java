@@ -100,7 +100,15 @@ class Bach {
     }
   }
 
-  /** Execute the named tool. */
+  /** Execute the named tool and throw an error the expected and actual exit values aren't equal. */
+  void run(int expected, String name, Object... arguments) {
+    var actual = run(name, arguments);
+    if (expected != actual) {
+      throw new Error(name + " returned " + actual + ", but expected " + expected);
+    }
+  }
+
+  /** Execute the named tool and return its exit value. */
   int run(String name, Object... arguments) {
     var args = new String[arguments.length];
     for (int i = 0; i < args.length; i++) {

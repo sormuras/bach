@@ -185,6 +185,19 @@ class BachTests {
 
   @Test
   @SwallowSystem
+  void runToolJavacWithUnknownOption(SwallowSystem.Streams streams) {
+    var bach = new Bach(true, Path.of(""));
+    bach.run(2, "javac", "--unknown-option");
+    assertLinesMatch(
+        List.of("run(javac, [--unknown-option])", "Running provided tool in-process: .+"),
+        streams.outLines());
+
+    var error = assertThrows(Error.class, () -> bach.run(0, "javac", "--unknown-option"));
+    assertEquals("javac returned 2, but expected 0", error.getMessage());
+  }
+
+  @Test
+  @SwallowSystem
   void runToolThatDoesNotExistFails(SwallowSystem.Streams streams) {
     var bach = new Bach(true, Path.of(""));
     var error = assertThrows(Error.class, () -> bach.run("does-not-exist"));
