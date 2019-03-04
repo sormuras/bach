@@ -86,8 +86,11 @@ class BachTests {
   @Test
   void runEmptyCollectionOfActions() {
     var bach = new Bach(true, Path.of(""));
+    var lines = new ArrayList<String>();
+    bach.log.out = lines::add;
 
     bach.run(List.of());
+    assertLinesMatch(List.of("Performing 0 action(s)..."), lines);
   }
 
   @Test
