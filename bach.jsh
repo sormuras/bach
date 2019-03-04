@@ -1,4 +1,4 @@
-//usr/bin/env jshell --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
 
 /*
  * Bach - Java Shell Builder
@@ -17,7 +17,13 @@
  * limitations under the License.
  */
 
-/open https://github.com/sormuras/bach/raw/master/src/main/Bach.java
-var bach = new Bach()
-var code = bach.run()
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+
+var code = 0
+try {
+  Bach.main();
+} catch (Throwable throwable) {
+  throwable.printStackTrace();
+  code = 1;
+}
 /exit code
