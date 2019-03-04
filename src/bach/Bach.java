@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -39,7 +40,8 @@ class Bach {
       var arguments = new ArrayDeque<>(List.of(args));
       while (!arguments.isEmpty()) {
         var argument = arguments.removeFirst();
-        actions.add(Action.Default.valueOf(argument.toUpperCase()));
+        var defaultAction = Action.Default.valueOf(argument.toUpperCase());
+        actions.add(defaultAction.consume(arguments));
       }
     }
     new Bach().run(actions);
@@ -139,7 +141,17 @@ class Bach {
 
     /** Default action delegating to Bach API methods. */
     enum Default implements Action {
-      BUILD(Bach::build);
+      BUILD(Bach::build),
+
+      TOOL(null) {
+        @Override
+        Action consume(Deque<String> arguments) {
+          var name = arguments.removeFirst();
+          var args = arguments.toArray(String[]::new);
+          arguments.clear();
+          return bach -> bach.run(name, args);
+        }
+      };
 
       final Action action;
 
@@ -150,6 +162,10 @@ class Bach {
       @Override
       public void perform(Bach bach) throws Exception {
         action.perform(bach);
+      }
+
+      Action consume(Deque<String> arguments) {
+        return this;
       }
     }
   }
