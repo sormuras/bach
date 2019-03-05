@@ -158,28 +158,6 @@ class Bach {
     }
   }
 
-  /** Logging helper. */
-  class Log {
-
-    /** Current logging level threshold. */
-    Level threshold = debug ? Level.ALL : Level.INFO;
-
-    /** Standard output message consumer. */
-    Consumer<String> out = System.out::println;
-
-    /** Error output stream. */
-    Consumer<String> err = System.err::println;
-
-    /** Log message unless threshold suppresses it. */
-    void log(Level level, String message) {
-      if (level.getSeverity() < threshold.getSeverity()) {
-        return;
-      }
-      var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
-      consumer.accept(message);
-    }
-  }
-
   /** Bach consuming action operating via side-effects. */
   @FunctionalInterface
   interface Action {
@@ -221,6 +199,28 @@ class Bach {
       Action consume(Deque<String> arguments) {
         return this;
       }
+    }
+  }
+
+  /** Logging helper. */
+  class Log {
+
+    /** Current logging level threshold. */
+    Level threshold = debug ? Level.ALL : Level.INFO;
+
+    /** Standard output message consumer. */
+    Consumer<String> out = System.out::println;
+
+    /** Error output stream. */
+    Consumer<String> err = System.err::println;
+
+    /** Log message unless threshold suppresses it. */
+    void log(Level level, String message) {
+      if (level.getSeverity() < threshold.getSeverity()) {
+        return;
+      }
+      var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
+      consumer.accept(message);
     }
   }
 }
