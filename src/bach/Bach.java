@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
@@ -62,15 +63,19 @@ class Bach {
   /** Project model. */
   final Project project;
 
+  /** User-defined properties loaded from {@code ${base}/bach.properties} file. */
+  final Properties properties;
+
   /** Initialize Bach instance using system properties. */
   Bach() {
-    this(Boolean.getBoolean("ebug"), Path.of(System.getProperty("bach.base", "")));
+    this(Boolean.getBoolean("ebug"), Path.of(Property.BASE.get()));
   }
 
   /** Initialize Bach instance in supplied working directory. */
   Bach(boolean debug, Path base) {
     this.debug = debug;
     this.base = base.normalize();
+    this.properties = Property.loadProperties(base.resolve(Property.PROPERTIES.get()));
     this.log = new Log();
     this.project = new Project();
   }
@@ -109,6 +114,21 @@ class Bach {
     Util.treeDelete(project.cache);
   }
 
+  /** Gets the property value. */
+  String get(Property property) {
+    return get(property.key, property.defaultValue);
+  }
+
+  /** Gets the property value indicated by the specified key. */
+  String get(String key, String defaultValue) {
+    var value = System.getProperty(key);
+    if (value != null) {
+      log.log(Level.TRACE, String.format("Got system property %s: %s", key, value));
+      return value;
+    }
+    return properties.getProperty(key, defaultValue);
+  }
+
   /** Print help text to the "standard" output stream. */
   public void help() {
     System.out.println();
@@ -120,7 +140,7 @@ class Bach {
   void help(Consumer<String> out) {
     out.accept("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
     out.accept("Available default actions are:");
-    for (var action : Bach.Action.Default.values()) {
+    for (var action : Action.Default.values()) {
       var name = action.name().toLowerCase();
       var text =
           String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
@@ -215,13 +235,51 @@ class Bach {
 
       @Override
       public void perform(Bach bach) throws Exception {
+        var key = "bach.action." + name().toLowerCase() + ".enabled";
+        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
+        if (!enabled) {
+          bach.log.log(Level.INFO, "Action " + name() + " disabled.");
+          return;
+        }
         action.perform(bach);
       }
 
-      /** Return this instance. */
+      /** Return this default action instance without consuming any argument. */
       Action consume(Deque<String> arguments) {
         return this;
       }
+    }
+  }
+
+  /** Property names, keys and default values. */
+  enum Property {
+    PROPERTIES("bach.properties"),
+    BASE("."),
+    LOG_LEVEL("INFO");
+
+    /** Load properties from given path. */
+    static Properties loadProperties(Path path) {
+      var properties = new Properties();
+      if (Files.exists(path)) {
+        try (var stream = Files.newInputStream(path)) {
+          properties.load(stream);
+        } catch (Exception e) {
+          throw new Error("Loading properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+
+    final String key;
+    final String defaultValue;
+
+    Property(String defaultValue) {
+      this.key = "bach." + name().toLowerCase().replace('_', '.');
+      this.defaultValue = defaultValue;
+    }
+
+    String get() {
+      return System.getProperty(key, defaultValue);
     }
   }
 
@@ -229,7 +287,7 @@ class Bach {
   final class Log {
 
     /** Current logging level threshold. */
-    Level threshold = debug ? Level.ALL : Level.INFO;
+    Level threshold = debug ? Level.ALL : Level.valueOf(get(Property.LOG_LEVEL));
 
     /** Standard output message consumer. */
     Consumer<String> out = System.out::println;
