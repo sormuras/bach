@@ -85,6 +85,30 @@ class Bach {
     return actions;
   }
 
+  /** Build all and everything. */
+  public void build() throws Exception {
+    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
+  }
+
+  /** Print help text to the "standard" output stream. */
+  public void help() {
+    System.out.println();
+    help(System.out::println);
+    System.out.println();
+  }
+
+  /** Print help text to given print stream. */
+  public void help(Consumer<String> out) {
+    out.accept("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
+    out.accept("Available default actions are:");
+    for (var action : Bach.Action.Default.values()) {
+      var name = action.name().toLowerCase();
+      var text =
+          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
+      text.lines().forEach(out);
+    }
+  }
+
   /** Execute a collection of actions sequentially on this instance. */
   void run(Collection<? extends Action> actions) {
     log.log(Level.DEBUG, String.format("Performing %d action(s)...", actions.size()));
@@ -134,11 +158,6 @@ class Bach {
     }
   }
 
-  /** Build all and everything. */
-  public void build() throws Exception {
-    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
-  }
-
   /** Logging helper. */
   class Log {
 
@@ -170,9 +189,13 @@ class Bach {
 
     /** Default action delegating to Bach API methods. */
     enum Default implements Action {
-      BUILD(Bach::build),
-
-      TOOL(null) {
+      BUILD(Bach::build, "Build modular Java project"),
+      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
+      TOOL(
+          null,
+          "Run named tool consuming all remaining arguments",
+          "  tool <name> <args...>",
+          "  tool java --show-version Program.java") {
         @Override
         Action consume(Deque<String> arguments) {
           var name = arguments.removeFirst();
@@ -183,9 +206,11 @@ class Bach {
       };
 
       final Action action;
+      final String[] description;
 
-      Default(Action action) {
+      Default(Action action, String... description) {
         this.action = action;
+        this.description = description;
       }
 
       @Override
