@@ -18,6 +18,7 @@
 // default package
 
 import java.lang.System.Logger.Level;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 /** Java Shell Builder. */
 class Bach {
@@ -211,7 +213,7 @@ class Bach {
   }
 
   /** Logging helper. */
-  class Log {
+  final class Log {
 
     /** Current logging level threshold. */
     Level threshold = debug ? Level.ALL : Level.INFO;
@@ -233,7 +235,7 @@ class Bach {
   }
 
   /** Project model. */
-  class Project {
+  final class Project {
     /** Destination directory for generated binaries. */
     final Path bin;
     /** Name of the project. */
@@ -314,6 +316,39 @@ class Bach {
         javac.add(source);
         javac.addAll(findFiles(List.of(source), path -> path.toString().endsWith(".java")));
         run(0, "javac", javac.toArray(Object[]::new));
+      }
+    }
+  }
+
+  /** Static helpers. */
+  static final class Util {
+    /** No instance permitted. */
+    Util() {
+      throw new Error();
+    }
+
+    /** Delete all files and directories from and including the root directory. */
+    static void treeDelete(Path root) throws Exception {
+      treeDelete(root, __ -> true);
+    }
+
+    /** Delete selected files and directories from and including the root directory. */
+    static void treeDelete(Path root, Predicate<Path> filter) throws Exception {
+      // trivial case: delete existing empty directory or single file
+      if (filter.test(root)) {
+        try {
+          Files.deleteIfExists(root);
+          return;
+        } catch (DirectoryNotEmptyException ignored) {
+          // fall-through
+        }
+      }
+      // default case: walk the tree...
+      try (var stream = Files.walk(root)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
       }
     }
   }

@@ -124,10 +124,10 @@ class Build {
     bach.run(0, "java", "-jar", targetJars.resolve("bach.jar"), "tool", "javac", "--version");
   }
 
-  private void zip() {
-    System.out.println("[zip]");
-    // TODO bach.treeDelete(Path.of("demo/scaffold/.bach"));
-    // TODO bach.treeDelete(Path.of("demo/scaffold/bin"));
+  private void zip() throws Exception {
+    System.out.println("\n[zip]");
+    Bach.Util.treeDelete(Path.of("demo/scaffold/.bach"));
+    Bach.Util.treeDelete(Path.of("demo/scaffold/bin"));
     bach.run(
         0,
         "jar",

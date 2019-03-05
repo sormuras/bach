@@ -1,4 +1,3 @@
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -106,29 +105,6 @@ interface Util {
         if (filter.test(path)) {
           Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
         }
-      }
-    }
-  }
-
-  /** Delete all files and directories from the root directory. */
-  static void treeDelete(Path root) throws Exception {
-    treeDelete(root, __ -> true);
-  }
-
-  /** Delete selected files and directories from the root directory. */
-  static void treeDelete(Path root, Predicate<Path> filter) throws Exception {
-    // trivial case: delete existing empty directory or single file
-    try {
-      Files.deleteIfExists(root);
-      return;
-    } catch (DirectoryNotEmptyException ignored) {
-      // fall-through
-    }
-    // default case: walk the tree...
-    try (var stream = Files.walk(root)) {
-      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-      for (var path : selected.collect(Collectors.toList())) {
-        Files.deleteIfExists(path);
       }
     }
   }
