@@ -98,6 +98,17 @@ class Bach {
     project.test.compile();
   }
 
+  /** Delete generated binary assets. */
+  public void clean() throws Exception {
+    Util.treeDelete(project.bin);
+  }
+
+  /** Delete generated binary assets and local build cache directory. */
+  public void erase() throws Exception {
+    clean();
+    Util.treeDelete(project.cache);
+  }
+
   /** Print help text to the "standard" output stream. */
   public void help() {
     System.out.println();
@@ -176,6 +187,8 @@ class Bach {
     /** Default action delegating to Bach API methods. */
     enum Default implements Action {
       BUILD(Bach::build, "Build modular Java project"),
+      CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
+      ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
       TOOL(
           null,
@@ -238,6 +251,8 @@ class Bach {
   final class Project {
     /** Destination directory for generated binaries. */
     final Path bin;
+    /** Root of local build cache. */
+    final Path cache;
     /** Name of the project. */
     final String name;
     /** Main realm. */
@@ -248,6 +263,7 @@ class Bach {
     /** Initialize project properties with default values. */
     Project() {
       this.bin = base.resolve("bin");
+      this.cache = base.resolve(".bach");
       this.name = base.getNameCount() > 0 ? base.toAbsolutePath().getFileName() + "" : "project";
       this.main = new Realm("main", List.of("src/main/java", "src/main", "main", "src"));
       this.test = new Realm("test", List.of("src/test/java", "src/test", "test"));

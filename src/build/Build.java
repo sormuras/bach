@@ -41,8 +41,12 @@ class Build {
   private final Path targetJavadoc = target.resolve("javadoc");
   private final Path targetJars = target.resolve("jars");
 
-  private void clean() {
-    System.out.println("\n[clean] // TODO");
+  private void clean() throws Exception {
+    System.out.println("\n[clean]");
+
+    Bach.Util.treeDelete(targetBinMain);
+    Bach.Util.treeDelete(targetJavadoc);
+    Bach.Util.treeDelete(targetJars);
   }
 
   private void format() {

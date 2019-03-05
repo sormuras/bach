@@ -69,6 +69,8 @@ class ActionTests {
             "Usage of Bach.java (master):  java Bach.java [<action>...]",
             "Available default actions are:",
             " build        Build modular Java project",
+            " clean        Delete all generated assets - but keep caches intact.",
+            " erase        Delete all generated assets - and also delete caches.",
             " help         Print this help screen on standard out... F1, F1, F1!",
             " tool         Run named tool consuming all remaining arguments",
             "                tool <name> <args...>",
@@ -80,7 +82,7 @@ class ActionTests {
   @SwallowSystem
   void help(SwallowSystem.Streams streams) {
     new Bach().help();
-    assertEquals(9, streams.outLines().size(), streams.toString());
+    assertEquals(11, streams.outLines().size(), streams.toString());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }
 }

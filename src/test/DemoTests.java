@@ -62,8 +62,8 @@ class DemoTests {
       var buildTreeWalk = resources.resolve(demo.resolveSibling(name + ".build.txt"));
       assertLinesMatch(Files.readAllLines(buildTreeWalk), Util.treeWalk(base));
 
-      // bach.run(Bach.Action.Default.ERASE);
-      // assertLinesMatch(Files.readAllLines(cleanTreeWalk), bach.utilities.treeWalk(base));
+      bach.erase();
+      assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
     }
   }
 }
