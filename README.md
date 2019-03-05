@@ -20,9 +20,47 @@ Use Java source (in [jshell]) to build your modular Java project.
 
 Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
+## Execute Bach.java on-the-fly
+
+This section will help you get started with `Bach.jsh` used as a remote `load-file` of [jshell].
+
+##### 0. Install JDK 11 or later
+Make sure you have JDK 11 or later installed and configured.
+`jshell` should be executable from any directory and print its version via: 
+```text
+<path/> jshell --version
+jshell 11.0.2
+```
+
+##### 1. Source `Bach.jsh` into JShell
+
+Open a command shell and change into the directory containing your modular Java project. 
+
+```text
+<path/> jshell https://bit.ly/bach-jsh
+```
+
+That's all you need to build a modular Java project.
+
+> Note: the shortened `https://bit.ly/bach-jsh` expands to https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh
+
+For immediate results, such as fail-fast on errors, use:
+
+```text
+jshell --execution=local https://bit.ly/bach-jsh
+```
+
+For more information what Bach.java is doing at runtime, use:
+
+```text
+jshell --execution=local -J-Debug=true https://bit.ly/bach-jsh
+```
+
+For more details consult the output of `jshell --help`.
+
 ## Bootstrap Bach.java
 
-This guide will help you get started with `Bach.java`.
+This section will help you get started with `Bach.java` used as single file source code Java program.
 
 ##### 0. Install JDK 11 or later
 Make sure you have JDK 11 or later installed and configured.
