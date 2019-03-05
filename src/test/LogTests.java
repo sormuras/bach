@@ -45,7 +45,7 @@ class LogTests {
     bach.log.log(Level.ALL, "a");
     bach.log.log(Level.TRACE, "t");
     bach.log.log(Level.DEBUG, "d");
-    bach.log.log(Level.INFO,"i");
+    bach.log.log(Level.INFO, "i");
     bach.log.log(Level.WARNING, "w");
     bach.log.log(Level.ERROR, "e");
     return lines;
