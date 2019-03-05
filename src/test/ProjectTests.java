@@ -1,0 +1,102 @@
+/*
+ * Bach - Java Shell Builder
+ * Copyright (C) 2019 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+class ProjectTests {
+
+  private final Bach bach;
+  private final List<String> outLines, errLines;
+
+  private ProjectTests() {
+    this.bach = new Bach(true, Path.of(""));
+    this.outLines = new ArrayList<>();
+    this.errLines = new ArrayList<>();
+    bach.log.out = outLines::add;
+    bach.log.err = errLines::add;
+  }
+
+  @Test
+  void defaults() {
+    assertEquals(Bach.USER_PATH.getFileName().toString(), bach.project.name);
+    assertTrue(outLines.isEmpty());
+    assertTrue(errLines.isEmpty());
+  }
+
+  @Test
+  void nameInRootDirectoryIsProject() {
+    var root = FileSystems.getDefault().getRootDirectories().iterator().next();
+    assertEquals("project", new Bach(true, root).project.name);
+  }
+
+  @Test
+  void basedAbsolutePath() {
+    assertTrue(Bach.USER_PATH.isAbsolute());
+    assertSame(Bach.USER_PATH, bach.project.based(Bach.USER_PATH));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", ".", "path/.."})
+  void basedRelativePathPointingToUsersCurrentWorkingDirectory(Path path) {
+    assertFalse(path.isAbsolute());
+    assertSame(path, bach.project.based(path));
+  }
+
+  @Test
+  void findFiles() throws Exception {
+    var root = bach.base;
+    var files = bach.project.findFiles(List.of(root), __ -> true);
+    assertTrue(files.contains(root.resolve("boot.jsh")));
+    assertTrue(files.contains(root.resolve("build.jsh")));
+    assertTrue(files.contains(root.resolve("src/bach/Bach.java")));
+  }
+
+  @Test
+  void findFilesForNonExistentRootFails() {
+    var root = Path.of("does", "not", "exist");
+    assertThrows(Exception.class, () -> bach.project.findFiles(List.of(root), __ -> true));
+  }
+
+  @Test
+  void findFilesForRegularFileRootReturnsThatFile() throws Exception {
+    var root = Path.of("README.md");
+    var files = bach.project.findFiles(List.of(root), __ -> true);
+    assertEquals(List.of(root), files);
+  }
+
+  @Test
+  void findFilesInHiddenDirectoryFails(@TempDir Path temp) throws Exception {
+    var root = Files.createDirectory(temp.resolve("-w-"));
+    Util.chmod(root, false, true, false);
+    assertThrows(Exception.class, () -> bach.project.findFiles(List.of(temp), __ -> true));
+    Util.chmod(root, true, true, true);
+  }
+}

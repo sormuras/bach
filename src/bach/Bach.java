@@ -18,14 +18,15 @@
 // default package
 
 import java.lang.System.Logger.Level;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /** Java Shell Builder. */
@@ -56,6 +57,9 @@ class Bach {
   /** Logging helper. */
   final Log log;
 
+  /** Project model. */
+  final Project project;
+
   /** Initialize Bach instance using system properties. */
   Bach() {
     this(Boolean.getBoolean("ebug"), Path.of(System.getProperty("bach.base", "")));
@@ -64,8 +68,9 @@ class Bach {
   /** Initialize Bach instance in supplied working directory. */
   Bach(boolean debug, Path base) {
     this.debug = debug;
-    this.base = base;
+    this.base = base.normalize();
     this.log = new Log();
+    this.project = new Project();
   }
 
   /** Transforming strings to actions. */
@@ -87,7 +92,8 @@ class Bach {
 
   /** Build all and everything. */
   public void build() throws Exception {
-    Thread.sleep(ThreadLocalRandom.current().nextLong(111, 999));
+    project.main.compile();
+    project.test.compile();
   }
 
   /** Print help text to the "standard" output stream. */
@@ -98,7 +104,7 @@ class Bach {
   }
 
   /** Print help text to given print stream. */
-  public void help(Consumer<String> out) {
+  void help(Consumer<String> out) {
     out.accept("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
     out.accept("Available default actions are:");
     for (var action : Bach.Action.Default.values()) {
@@ -221,6 +227,92 @@ class Bach {
       }
       var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
       consumer.accept(message);
+    }
+  }
+
+  /** Project model. */
+  class Project {
+    /** Destination directory for generated binaries. */
+    final Path bin;
+    /** Name of the project. */
+    final String name;
+    /** Main realm. */
+    final Realm main;
+    /** Test realm. */
+    final Realm test;
+
+    /** Initialize project properties with default values. */
+    Project() {
+      this.bin = base.resolve("bin");
+      this.name = base.getNameCount() > 0 ? base.toAbsolutePath().getFileName() + "" : "project";
+      this.main = new Realm("main", List.of("src/main/java", "src/main", "main", "src"));
+      this.test = new Realm("test", List.of("src/test/java", "src/test", "test"));
+    }
+
+    /** Rebase path as needed. */
+    Path based(Path path) {
+      if (path.isAbsolute()) {
+        return path;
+      }
+      if (base.toAbsolutePath().equals(USER_PATH)) {
+        return path;
+      }
+      return base.resolve(path).normalize();
+    }
+
+    /** Create and rebase path as needed. */
+    Path based(String first, String... more) {
+      return based(Path.of(first, more));
+    }
+
+    /** List all regular files matching the given filter. */
+    List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) throws Exception {
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
+        }
+      }
+      return files;
+    }
+
+    /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
+    class Realm {
+      /** Name of the realm. */
+      final String name;
+      /** Source path. */
+      final Path source;
+      /** Target path. */
+      final Path target;
+
+      /** Initialize this realm. */
+      Realm(String name, List<String> sources) {
+        this.name = name;
+        this.source =
+            sources.stream()
+                .map(Project.this::based)
+                .filter(Files::isDirectory)
+                .findFirst()
+                .orElse(based(sources.get(0)));
+        this.target = bin.resolve(Path.of("realm", name));
+      }
+
+      /** Compile all Java sources found in this realm. */
+      void compile() throws Exception {
+        log.log(Level.TRACE, String.format("%s.compile()", name));
+        if (Files.notExists(source)) {
+          log.log(Level.INFO, String.format("Skip %s.compile(): path %s not found", name, source));
+          return;
+        }
+        var javac = new ArrayList<>();
+        javac.add("-d");
+        javac.add(target);
+        // javac.add("--module-path").add(modules);
+        javac.add("--module-source-path");
+        javac.add(source);
+        javac.addAll(findFiles(List.of(source), path -> path.toString().endsWith(".java")));
+        run(0, "javac", javac.toArray(Object[]::new));
+      }
     }
   }
 }
