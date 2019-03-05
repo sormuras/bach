@@ -180,6 +180,7 @@ class Bach {
           "Run named tool consuming all remaining arguments",
           "  tool <name> <args...>",
           "  tool java --show-version Program.java") {
+        /** Return new Action running the named tool and consuming all remaining arguments. */
         @Override
         Action consume(Deque<String> arguments) {
           var name = arguments.removeFirst();
@@ -202,6 +203,7 @@ class Bach {
         action.perform(bach);
       }
 
+      /** Return this instance. */
       Action consume(Deque<String> arguments) {
         return this;
       }
