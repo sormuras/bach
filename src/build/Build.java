@@ -25,6 +25,8 @@ class Build {
   public static void main(String... args) throws Exception {
     System.out.println("\nBuilding Bach.java " + Bach.VERSION + "...");
     var build = new Build();
+    build.clean();
+    build.format();
     build.compile();
     build.test();
     build.document();
@@ -38,6 +40,14 @@ class Build {
   private final Path targetBinMain = target.resolve("bin/main");
   private final Path targetJavadoc = target.resolve("javadoc");
   private final Path targetJars = target.resolve("jars");
+
+  private void clean() {
+    System.out.println("\n[clean] // TODO");
+  }
+
+  private void format() {
+    System.out.println("\n[format] // TODO");
+  }
 
   private void compile() {
     System.out.println("\n[compile]");
