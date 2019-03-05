@@ -39,12 +39,14 @@ class ActionTests {
     if (action == Bach.Action.Default.HELP) {
       return; // skip
     }
+    var out = new ArrayList<String>();
     var bach = new Bach(true, empty);
+    bach.log.out = out::add;
     if (action.action == null) {
       assertThrows(NullPointerException.class, () -> action.perform(bach));
       return;
     }
-    assertDoesNotThrow(() -> action.perform(bach));
+    assertDoesNotThrow(() -> action.perform(bach), out.toString());
     var arguments = new ArrayDeque<>(List.of("a", "z"));
     assertSame(action, action.consume(arguments));
     assertEquals("[a, z]", arguments.toString());
