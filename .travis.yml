@@ -16,5 +16,8 @@ after_success:
 - cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
 - java -Debug=true ${BACH}
 
+- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
+- java -Debug=true ${BACH}
+
 - cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
 - java -Debug=true ${BACH}
