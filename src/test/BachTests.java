@@ -106,6 +106,14 @@ class BachTests {
 
   @Test
   @SwallowSystem
+  void mainWithArgumentBuild(SwallowSystem.Streams streams) {
+    assertDoesNotThrow(() -> Bach.main("build"));
+    assertLinesMatch(List.of("Action BUILD disabled."), streams.outLines());
+    assertLinesMatch(List.of(), streams.errLines());
+  }
+
+  @Test
+  @SwallowSystem
   void mainWithArgumentHelp(SwallowSystem.Streams streams) {
     assertDoesNotThrow(() -> Bach.main("help"));
     assertLinesMatch(List.of(">> HELP >>"), streams.outLines());
