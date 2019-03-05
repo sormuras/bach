@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
@@ -107,17 +106,9 @@ class BachTests {
 
   @Test
   @SwallowSystem
-  void mainWithoutArguments(SwallowSystem.Streams streams) {
-    assertDoesNotThrow((Executable) Bach::main);
-    assertLinesMatch(List.of(), streams.outLines());
-    assertLinesMatch(List.of(), streams.errLines());
-  }
-
-  @Test
-  @SwallowSystem
-  void mainWithArgumentBuild(SwallowSystem.Streams streams) {
-    assertDoesNotThrow(() -> Bach.main("build"));
-    assertLinesMatch(List.of(), streams.outLines());
+  void mainWithArgumentHelp(SwallowSystem.Streams streams) {
+    assertDoesNotThrow(() -> Bach.main("help"));
+    assertLinesMatch(List.of(">> HELP >>"), streams.outLines());
     assertLinesMatch(List.of(), streams.errLines());
   }
 

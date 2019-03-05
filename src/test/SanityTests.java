@@ -33,6 +33,7 @@ class SanityTests {
     var builder = new ProcessBuilder("java");
     builder.command().add("-ea");
     builder.command().add("src/bach/Bach.java");
+    builder.command().add("help");
     var process = builder.start();
     process.waitFor(23, TimeUnit.SECONDS);
     var code = process.exitValue();
