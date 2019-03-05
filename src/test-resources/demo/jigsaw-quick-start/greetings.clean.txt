@@ -1,8 +1,6 @@
->> 1 >>
-.
-./src
-./src/com.greetings
-./src/com.greetings/com
-./src/com.greetings/com/greetings
-./src/com.greetings/com/greetings/Main.java
-./src/com.greetings/module-info.java
+src
+src/com.greetings
+src/com.greetings/com
+src/com.greetings/com/greetings
+src/com.greetings/com/greetings/Main.java
+src/com.greetings/module-info.java
