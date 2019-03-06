@@ -48,9 +48,8 @@ class DemoTests {
       assertEquals(base, bach.base);
       assertEquals(name, bach.project.name);
       // assertEquals("1.0.0-SNAPSHOT", bach.project.version);
-      //  assertEquals(
-      //    "com.greetings/com.greetings.Main",
-      //    Bach.ModuleInfo.findLaunch(base.resolve("src")).orElseThrow());
+      var program = Bach.ModuleInfo.findProgram(base.resolve("src"));
+      assertEquals("com.greetings/com.greetings.Main", program);
 
       var cleanTreeWalk = resources.resolve(demo.resolveSibling(name + ".clean.txt"));
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
