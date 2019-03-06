@@ -18,6 +18,7 @@
 // default package
 
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +28,11 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -302,6 +306,135 @@ class Bach {
       }
       var consumer = level.getSeverity() < Level.WARNING.getSeverity() ? out : err;
       consumer.accept(message);
+    }
+  }
+
+  /** Simple module information collector. */
+  static class ModuleInfo {
+
+    private static final Pattern NAME = Pattern.compile("(module)\\s+(.+)\\s*\\{.*");
+
+    private static final Pattern PACKAGE = Pattern.compile("package\\s+(.+?);", Pattern.DOTALL);
+
+    private static final Pattern REQUIRES = Pattern.compile("requires (.+?);", Pattern.DOTALL);
+
+    private static final Pattern TYPE = Pattern.compile("(class|interface|enum)\\s+(.+)\\s*\\{.*");
+
+    static ModuleInfo of(Path path) {
+      if (Files.isDirectory(path)) {
+        path = path.resolve("module-info.java");
+      }
+      try {
+        return of(Files.readString(path));
+      } catch (Exception e) {
+        throw new RuntimeException("reading '" + path + "' failed", e);
+      }
+    }
+
+    static ModuleInfo of(String source) {
+      // extract module name
+      var nameMatcher = NAME.matcher(source);
+      if (!nameMatcher.find()) {
+        throw new IllegalArgumentException(
+            "expected java module descriptor unit, but got: " + source);
+      }
+      var name = nameMatcher.group(2).trim();
+
+      // extract required module names
+      var requiresMatcher = REQUIRES.matcher(source);
+      var requires = new TreeSet<String>();
+      while (requiresMatcher.find()) {
+        var split = requiresMatcher.group(1).trim().split("\\s+");
+        requires.add(split[split.length - 1]);
+      }
+      return new ModuleInfo(name, requires);
+    }
+
+    /** Enumerate all system module names. */
+    static Set<String> findSystemModuleNames() {
+      return ModuleFinder.ofSystem().findAll().stream()
+          .map(reference -> reference.descriptor().name())
+          .collect(Collectors.toSet());
+    }
+
+    /** Calculate external module names. */
+    static Set<String> findExternalModuleNames(Set<Path> roots) {
+      var declaredModules = new TreeSet<String>();
+      var requiredModules = new TreeSet<String>();
+      var paths = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(path -> path.endsWith("module-info.java")).forEach(paths::add);
+        } catch (Exception e) {
+          throw new RuntimeException("walking path failed for: " + root, e);
+        }
+      }
+      for (var path : paths) {
+        var info = ModuleInfo.of(path);
+        declaredModules.add(info.name);
+        requiredModules.addAll(info.requires);
+      }
+      var externalModules = new TreeSet<>(requiredModules);
+      externalModules.removeAll(declaredModules);
+      externalModules.removeAll(findSystemModuleNames()); // "java.base", "java.logging", ...
+      return externalModules;
+    }
+
+    /** Find first Java program walking root path or {@code null}. */
+    static String findProgram(Path root) throws Exception {
+      var programs = findPrograms(root, true);
+      return programs.isEmpty() ? null : programs.get(0);
+    }
+
+    /** Find first or all Java programs walking root path. */
+    static List<String> findPrograms(Path root, boolean first) throws Exception {
+      var programs = new ArrayList<String>();
+      try (var stream = Files.walk(root)) {
+        for (var path : stream.filter(Util::isJavaFile).collect(Collectors.toList())) {
+          var source = Files.readString(path);
+          // TODO Replace hard-coded search sequence with a regular expression.
+          if (source.contains("static void main(String")) {
+            // extract name from "module-info.java" in parent directories
+            var modulePath = path.getParent();
+            while (modulePath != null) {
+              if (Files.exists(modulePath.resolve("module-info.java"))) {
+                break;
+              }
+              modulePath = modulePath.getParent();
+            }
+            if (modulePath == null) {
+              throw new IllegalStateException("expected 'module-info.java' in parents of " + path);
+            }
+            var moduleName = ModuleInfo.of(modulePath).name;
+            // extract name of type's package
+            var packageMatcher = PACKAGE.matcher(source);
+            if (!packageMatcher.find()) {
+              throw new IllegalStateException("expected package to be declared in " + path);
+            }
+            var packageName = packageMatcher.group(1);
+            // extract name of the type
+            var typeMatcher = TYPE.matcher(source);
+            if (!typeMatcher.find()) {
+              throw new IllegalStateException("expected java compilation unit, but got: " + path);
+            }
+            var typeName = typeMatcher.group(2).trim().split(" ")[0];
+            var program = moduleName + '/' + packageName + '.' + typeName;
+            programs.add(program);
+            if (first) {
+              break;
+            }
+          }
+        }
+      }
+      return programs;
+    }
+
+    final String name;
+    final Set<String> requires;
+
+    private ModuleInfo(String name, Set<String> requires) {
+      this.name = name;
+      this.requires = Set.copyOf(requires);
     }
   }
 
