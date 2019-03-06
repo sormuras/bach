@@ -72,6 +72,7 @@ class ActionTests {
             " clean        Delete all generated assets - but keep caches intact.",
             " erase        Delete all generated assets - and also delete caches.",
             " help         Print this help screen on standard out... F1, F1, F1!",
+            " launch       Start project's main program.",
             " tool         Run named tool consuming all remaining arguments",
             "                tool <name> <args...>",
             "                tool java --show-version Program.java"),
@@ -82,7 +83,7 @@ class ActionTests {
   @SwallowSystem
   void help(SwallowSystem.Streams streams) {
     new Bach().help();
-    assertEquals(11, streams.outLines().size(), streams.toString());
+    assertEquals(12, streams.outLines().size(), streams.toString());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }
 }

@@ -140,6 +140,11 @@ class Bach {
     System.out.println();
   }
 
+  /** Start main program. */
+  public void launch() throws Exception {
+    project.launch();
+  }
+
   /** Print help text to given print stream. */
   void help(Consumer<String> out) {
     out.accept("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
@@ -214,6 +219,7 @@ class Bach {
       CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
       ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
+      LAUNCH(Bach::launch, "Start project's main program."),
       TOOL(
           null,
           "Run named tool consuming all remaining arguments",
@@ -485,6 +491,28 @@ class Bach {
         }
       }
       return files;
+    }
+
+    /** Launch main program. */
+    void launch() throws Exception {
+      if (Files.notExists(main.target)) {
+        log.log(Level.INFO, "Skip launch. No compiled classes target found: " + main.target);
+        return;
+      }
+      var defaultLaunch = ModuleInfo.findProgram(main.source);
+      var launch = get("bach.project.launch.module", defaultLaunch);
+      if (launch == null) {
+        log.log(Level.INFO, "No <module>[/<main-class>] supplied, no launch.");
+        return;
+      }
+      log.log(Level.INFO, "Launching " + launch + "...");
+      var java = new ArrayList<>();
+      // TODO get("bach.project.launch.options", "", "\\|").forEach(java::add);
+      java.add("--module-path");
+      java.add(main.target); // TODO List.of(main.target, lib, modules)
+      java.add("--module");
+      java.add(launch);
+      run(0, "java", java.toArray(Object[]::new));
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
