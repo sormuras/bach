@@ -388,7 +388,7 @@ class Bach {
         // javac.add("--module-path").add(modules);
         javac.add("--module-source-path");
         javac.add(source);
-        javac.addAll(findFiles(List.of(source), path -> path.toString().endsWith(".java")));
+        javac.addAll(findFiles(List.of(source), Util::isJavaFile));
         run(0, "javac", javac.toArray(Object[]::new));
       }
     }
@@ -399,6 +399,17 @@ class Bach {
     /** No instance permitted. */
     Util() {
       throw new Error();
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        var name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.indexOf('.') == name.length() - 5; // single dot in filename
+        }
+      }
+      return false;
     }
 
     /** Delete all files and directories from and including the root directory. */

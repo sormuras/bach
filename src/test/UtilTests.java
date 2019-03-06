@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,15 @@ class UtilTests {
   @Test
   void newFails() {
     assertThrows(Error.class, Bach.Util::new);
+  }
+
+
+  @Test
+  void isJavaFile() {
+    assertFalse(Bach.Util.isJavaFile(Path.of("")));
+    assertFalse(Bach.Util.isJavaFile(Path.of("a/b")));
+    assertTrue(Bach.Util.isJavaFile(Path.of("src/test/UtilTests.java")));
+    assertFalse(Bach.Util.isJavaFile(Path.of("src/test-resources/Util.isJavaFile.java")));
   }
 
   //  @Nested
