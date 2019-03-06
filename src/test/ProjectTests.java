@@ -17,6 +17,7 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,5 +99,24 @@ class ProjectTests {
     Util.chmod(root, false, true, false);
     assertThrows(Exception.class, () -> bach.project.findFiles(List.of(temp), __ -> true));
     Util.chmod(root, true, true, true);
+  }
+
+  @Test
+  void buildAndLaunchMinimalProgram(@TempDir Path workspace) throws Exception {
+    var demo = Path.of("src", "test-resources", "program", "minimal");
+    var base = workspace.resolve(demo.getFileName());
+    Util.treeCopy(demo, base);
+
+    var out = new ArrayList<String>();
+    var bach = new Bach(true, base);
+    bach.log.out = out::add;
+    bach.build();
+    bach.launch();
+    assertLinesMatch(List.of("main.compile()", ">> BUILD >>", "Launching minimal/modular.Program...", ">> LAUNCH >>"), out);
+
+    Files.delete(base.resolve("src/minimal/modular/Program.java"));
+    out.clear();
+    bach.launch();
+    assertLinesMatch(List.of("No <module>[/<main-class>] supplied, no launch."), out);
   }
 }
