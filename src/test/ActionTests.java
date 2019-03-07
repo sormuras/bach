@@ -1,144 +1,89 @@
+/*
+ * Bach - Java Shell Builder
+ * Copyright (C) 2019 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.opentest4j.TestAbortedException;
 
 class ActionTests {
 
-  private final CollectingLogger logger = new CollectingLogger("*");
-  private final Bach bach = new Bach(logger, Path.of("."), List.of());
+  @ParameterizedTest
+  @EnumSource(Bach.Action.Default.class)
+  void performActionOnEmptyDirectory(Bach.Action.Default action, @TempDir Path empty) {
+    if (action == Bach.Action.Default.HELP) {
+      return; // skip
+    }
+    var out = new ArrayList<String>();
+    var bach = new Bach(true, empty);
+    bach.log.out = out::add;
+    if (action.action == null) {
+      assertThrows(NullPointerException.class, () -> action.perform(bach));
+      return;
+    }
+    assertDoesNotThrow(() -> action.perform(bach), out.toString());
+    var arguments = new ArrayDeque<>(List.of("a", "z"));
+    assertSame(action, action.consume(arguments));
+    assertEquals("[a, z]", arguments.toString());
+  }
+
+  @Test
+  void toolConsumesArgumentsAndCreatesNewActionInstance() {
+    var action = Bach.Action.Default.TOOL;
+    var arguments = new ArrayDeque<>(List.of("a", "z"));
+    assertNotSame(action, action.consume(arguments));
+    assertEquals("[]", arguments.toString());
+  }
 
   @Test
   void help() {
-    var out = System.out;
-    var bytes = new ByteArrayOutputStream();
-    try {
-      System.setOut(new PrintStream(bytes));
-      Bach.Action.Default.HELP.run(bach);
-    } finally {
-      System.setOut(out);
-    }
+    var lines = new ArrayList<String>();
+    new Bach().help(lines::add);
     assertLinesMatch(
         List.of(
-            "",
-            " build     -> Build project in base directory.",
-            " clean     -> Delete all generated assets - but keep caches intact.",
-            " erase     -> Delete all generated assets - and also delete caches.",
-            " help      -> Print this help screen on standard out... F1, F1, F1!",
-            " launch    -> Start main program.",
-            " scaffold  -> Create modular Java sample project in base directory.",
-            " tool      -> Execute named tool consuming all remaining arguments.",
-            ""),
-        bytes.toString().lines().collect(Collectors.toList()));
+            "Usage of Bach.java (master):  java Bach.java [<action>...]",
+            "Available default actions are:",
+            " build        Build modular Java project in base directory.",
+            " clean        Delete all generated assets - but keep caches intact.",
+            " erase        Delete all generated assets - and also delete caches.",
+            " help         Print this help screen on standard out... F1, F1, F1!",
+            " launch       Start project's main program.",
+            " tool         Run named tool consuming all remaining arguments:",
+            "                tool <name> <args...>",
+            "                tool java --show-version Program.java"),
+        lines);
   }
 
   @Test
-  void scaffold(@TempDir Path temp) {
-    assumeFalse(bach.var.offline);
-
-    var logger = new CollectingLogger("*");
-    var bach = new Bach(logger, temp, List.of());
-    var code = Bach.Action.Default.SCAFFOLD.run(bach);
-    assertEquals(0, code, logger.toString());
-    var uri = "https://github.com/sormuras/bach/raw/" + Bach.VERSION + "/demo/scaffold.zip";
-    assertLinesMatch(
-        List.of(
-            "Downloading " + uri + "...",
-            "Transferring " + uri + "...",
-            "Downloaded scaffold.zip successfully.",
-            ">> 2 >>"),
-        logger.getLines());
-    var expected = bach.utilities.treeWalk(Path.of("demo", "scaffold"));
-    var actual = bach.utilities.treeWalk(bach.base);
-    actual.removeAll(expected);
-    assertTrue(actual.size() <= 2, actual.toString());
-  }
-
-  @Test
-  void tool() {
-    assertThrows(UnsupportedOperationException.class, () -> Bach.Action.Default.TOOL.run(bach));
-  }
-
-  @ParameterizedTest
-  @EnumSource(Bach.Action.Default.class)
-  void applyToEmptyDirectory(Bach.Action action, @TempDir Path empty) {
-    var logger = new CollectingLogger("empty-" + action);
-    var bach = new Bach(logger, empty, List.of());
-    if (action == Bach.Action.Default.TOOL) {
-      assertThrows(UnsupportedOperationException.class, () -> bach.run(action));
-      return;
-    }
-    if (bach.var.offline) {
-      if (action == Bach.Action.Default.SCAFFOLD) {
-        throw new TestAbortedException("Online mode required");
-      }
-    }
-    var code = bach.run(action);
-    assertEquals(0, code, logger.toString());
-  }
-
-  @Nested
-  class ToolRunner {
-
-    @Test
-    void failsOnNonExistentTool() {
-      var tool = new Bach.Action.ToolRunner("does not exist", "really");
-      var code = bach.run(tool);
-      var log = logger.toString();
-      assertEquals(1, code, log);
-      assertTrue(log.contains("does not exist"), log);
-      assertTrue(log.contains("Running tool failed:"), log);
-    }
-
-    @Test
-    void standardIO() {
-      var out = new StringBuilder();
-      var tool = new Bach.Action.ToolRunner("java", "--version");
-      bach.var.out = out::append;
-      var code = bach.run(tool);
-      var log = logger.toString();
-      assertEquals(0, code, log);
-      assertTrue(out.toString().contains(Runtime.version().toString()), out.toString());
-    }
-
-    @Test
-    void java() {
-      var tool = new Bach.Action.ToolRunner("java", "--version");
-      var code = bach.run(tool);
-      var log = logger.toString();
-      assertEquals(0, code, log);
-      assertTrue(log.contains(Runtime.version().toString()), log);
-    }
-
-    @Test
-    void javac() {
-      var tool = new Bach.Action.ToolRunner("javac", "--version");
-      var code = bach.run(tool);
-      var log = logger.toString();
-      assertEquals(0, code, log);
-      assertTrue(log.contains("javac " + Runtime.version().feature()), log);
-    }
-
-    @Test
-    void javadoc() {
-      var tool = new Bach.Action.ToolRunner(new Bach.Command("javadoc").add("--version"));
-      var code = bach.run(tool);
-      var log = logger.toString();
-      assertEquals(0, code, log);
-      assertTrue(log.contains("javadoc " + Runtime.version().feature()), log);
-    }
+  @SwallowSystem
+  void help(SwallowSystem.Streams streams) {
+    new Bach().help();
+    assertEquals(12, streams.outLines().size(), streams.toString());
+    assertEquals(0, streams.errLines().size(), streams.toString());
   }
 }

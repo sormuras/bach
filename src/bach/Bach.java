@@ -215,14 +215,14 @@ class Bach {
 
     /** Default action delegating to Bach API methods. */
     enum Default implements Action {
-      BUILD(Bach::build, "Build modular Java project"),
+      BUILD(Bach::build, "Build modular Java project in base directory."),
       CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
       ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
       LAUNCH(Bach::launch, "Start project's main program."),
       TOOL(
           null,
-          "Run named tool consuming all remaining arguments",
+          "Run named tool consuming all remaining arguments:",
           "  tool <name> <args...>",
           "  tool java --show-version Program.java") {
         /** Return new Action running the named tool and consuming all remaining arguments. */
