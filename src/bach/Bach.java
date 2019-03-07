@@ -464,6 +464,10 @@ class Bach {
     final Path bin;
     /** Root of local build cache. */
     final Path cache;
+    /** Locally cached modules. */
+    final Path cachedModules;
+    /** User-managed 3rd-party libraries. */
+    final Path lib;
     /** Name of the project. */
     final String name;
     /** Main realm. */
@@ -473,11 +477,22 @@ class Bach {
 
     /** Initialize project properties with default values. */
     Project() {
-      this.bin = base.resolve("bin");
-      this.cache = base.resolve(".bach");
+      this.bin = based("bin");
+      this.cache = based(".bach");
+      this.cachedModules = cache.resolve("modules");
+      this.lib = based("lib");
+      // TODO Get project name and version from properties.
       this.name = base.getNameCount() > 0 ? base.toAbsolutePath().getFileName() + "" : "project";
-      this.main = new Realm("main", List.of("src/main/java", "src/main", "main", "src"));
-      this.test = new Realm("test", List.of("src/test/java", "src/test", "test"));
+      this.main =
+          new Realm(
+              "main",
+              List.of("src/main/java", "src/main", "main", "src"),
+              Util.path(lib, cachedModules));
+      this.test =
+          new Realm(
+              "test",
+              List.of("src/test/java", "src/test", "test"),
+              Util.path(main.target, lib, cachedModules));
     }
 
     /** Rebase path as needed. */
@@ -523,7 +538,7 @@ class Bach {
       var java = new ArrayList<>();
       get(Property.PROJECT_LAUNCH_OPTIONS, "\\|").forEach(java::add);
       java.add("--module-path");
-      java.add(main.target); // TODO List.of(main.target, lib, modules)
+      java.add(Util.path(main.target, lib, cachedModules));
       java.add("--module");
       java.add(launch);
       run(0, "java", java.toArray(Object[]::new));
@@ -537,9 +552,11 @@ class Bach {
       final Path source;
       /** Target path. */
       final Path target;
+      /** Module path. */
+      final String modulePath;
 
       /** Initialize this realm. */
-      Realm(String name, List<String> sources) {
+      Realm(String name, List<String> sources, String modulePath) {
         this.name = name;
         this.source =
             sources.stream()
@@ -548,6 +565,7 @@ class Bach {
                 .findFirst()
                 .orElse(based(sources.get(0)));
         this.target = bin.resolve(Path.of("realm", name));
+        this.modulePath = modulePath;
       }
 
       /** Compile all Java sources found in this realm. */
@@ -560,7 +578,8 @@ class Bach {
         var javac = new ArrayList<>();
         javac.add("-d");
         javac.add(target);
-        // TODO javac.add("--module-path").add(List.of(lib, modules));
+        javac.add("--module-path");
+        javac.add(modulePath);
         javac.add("--module-source-path");
         javac.add(source);
         javac.addAll(findFiles(List.of(source), Util::isJavaFile));
