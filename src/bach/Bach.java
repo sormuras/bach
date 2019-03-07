@@ -265,7 +265,8 @@ class Bach {
   enum Property {
     PROPERTIES("bach.properties"),
     BASE("."),
-    LOG_LEVEL("INFO");
+    LOG_LEVEL("INFO"),
+    PROJECT_LAUNCH_MODULE("<module>[/<main-class>]");
 
     /** Load properties from given path. */
     static Properties loadProperties(Path path) {
@@ -500,7 +501,7 @@ class Bach {
         return;
       }
       var defaultLaunch = ModuleInfo.findProgram(main.source);
-      var launch = get("bach.project.launch.module", defaultLaunch);
+      var launch = get(Property.PROJECT_LAUNCH_MODULE.key, defaultLaunch);
       if (launch == null) {
         log.log(Level.INFO, "No <module>[/<main-class>] supplied, no launch.");
         return;
