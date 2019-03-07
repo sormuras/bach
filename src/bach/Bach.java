@@ -135,9 +135,9 @@ class Bach {
     return properties.getProperty(key, defaultValue);
   }
 
-  /** Get regex-separated values of the supplied key as a stream of strings. */
-  Stream<String> get(String key, String defaultValue, String regex) {
-    var value = get(key, defaultValue);
+  /** Get regex-separated values of the supplied property as a stream of strings. */
+  Stream<String> get(Property property, String regex) {
+    var value = get(property.key, property.defaultValue);
     if (value.isBlank()) {
       return Stream.empty();
     }
@@ -277,7 +277,8 @@ class Bach {
     PROPERTIES("bach.properties"),
     BASE("."),
     LOG_LEVEL("INFO"),
-    PROJECT_LAUNCH_MODULE("<module>[/<main-class>]");
+    PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
+    PROJECT_LAUNCH_OPTIONS("");
 
     /** Load properties from given path. */
     static Properties loadProperties(Path path) {
@@ -519,7 +520,7 @@ class Bach {
       }
       log.log(Level.INFO, "Launching " + launch + "...");
       var java = new ArrayList<>();
-      // TODO get("bach.project.launch.options", "", "\\|").forEach(java::add);
+      get(Property.PROJECT_LAUNCH_OPTIONS, "\\|").forEach(java::add);
       java.add("--module-path");
       java.add(main.target); // TODO List.of(main.target, lib, modules)
       java.add("--module");

@@ -1,10 +1,3 @@
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -12,6 +5,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class PropertyTests {
 
@@ -21,7 +16,7 @@ class PropertyTests {
   @EnumSource(Bach.Property.class)
   void assertProperty(Bach.Property property) {
     assertTrue(property.key.startsWith("bach."));
-    assertFalse(property.defaultValue.isBlank());
+    assertNotNull(property.defaultValue);
   }
 
   @Test
@@ -58,10 +53,13 @@ class PropertyTests {
 
   @Test
   void getMultipleValuesForSingleKey() {
-    var key = "key that doesn't exist";
-    var actual = bach.get(key, "a:b:c", ":").collect(Collectors.toList());
+    var property = Bach.Property.PROJECT_LAUNCH_OPTIONS;
+    bach.properties.setProperty(property.key, "a: b:  c  ");
+    var actual = bach.get(property, ":").collect(Collectors.toList());
     assertEquals(List.of("a", "b", "c"), actual);
-    assertEquals(0, bach.get(key, " \t\r\n ", ":").count());
+    bach.properties.setProperty(property.key, " \t\r\n ");
+    assertEquals(0, bach.get(property, ":").count());
+    bach.properties.setProperty(property.key, property.defaultValue);
   }
 
   //  @Test
