@@ -10,6 +10,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 class PropertyTests {
 
@@ -52,6 +54,14 @@ class PropertyTests {
     System.setProperty(key, "789");
     assertEquals("789", bach.get(key, "456"));
     System.clearProperty(key);
+  }
+
+  @Test
+  void getMultipleValuesForSingleKey() {
+    var key = "key that doesn't exist";
+    var actual = bach.get(key, "a:b:c", ":").collect(Collectors.toList());
+    assertEquals(List.of("a", "b", "c"), actual);
+    assertEquals(0, bach.get(key, " \t\r\n ", ":").count());
   }
 
   //  @Test

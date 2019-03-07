@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Java Shell Builder. */
 class Bach {
@@ -131,6 +133,15 @@ class Bach {
       return value;
     }
     return properties.getProperty(key, defaultValue);
+  }
+
+  /** Get regex-separated values of the supplied key as a stream of strings. */
+  Stream<String> get(String key, String defaultValue, String regex) {
+    var value = get(key, defaultValue);
+    if (value.isBlank()) {
+      return Stream.empty();
+    }
+    return Arrays.stream(value.split(regex)).map(String::strip);
   }
 
   /** Print help text to the "standard" output stream. */
