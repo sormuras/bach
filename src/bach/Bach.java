@@ -17,6 +17,7 @@
 
 // default package
 
+import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.DirectoryNotEmptyException;
@@ -559,7 +560,7 @@ class Bach {
         var javac = new ArrayList<>();
         javac.add("-d");
         javac.add(target);
-        // javac.add("--module-path").add(modules);
+        // TODO javac.add("--module-path").add(List.of(lib, modules));
         javac.add("--module-source-path");
         javac.add(source);
         javac.addAll(findFiles(List.of(source), Util::isJavaFile));
@@ -573,6 +574,24 @@ class Bach {
     /** No instance permitted. */
     Util() {
       throw new Error();
+    }
+
+    /** Join supplied paths into a single string joined by current path separator. */
+    static String path(Collection<?> paths) {
+      return paths.stream().map(Object::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /** Join supplied paths into a single string. joined by current path separator. */
+    static String path(Object first, Object... more) {
+      if (more.length == 0) {
+        return first.toString();
+      }
+      var strings = new String[1 + more.length];
+      strings[0] = first.toString();
+      for (var i = 0; i < more.length; i++) {
+        strings[i + 1] = more[i].toString();
+      }
+      return String.join(File.pathSeparator, strings);
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */

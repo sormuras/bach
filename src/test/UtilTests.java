@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,13 +21,24 @@ class UtilTests {
     assertThrows(Error.class, Bach.Util::new);
   }
 
-
   @Test
   void isJavaFile() {
     assertFalse(Bach.Util.isJavaFile(Path.of("")));
     assertFalse(Bach.Util.isJavaFile(Path.of("a/b")));
     assertTrue(Bach.Util.isJavaFile(Path.of("src/test/UtilTests.java")));
     assertFalse(Bach.Util.isJavaFile(Path.of("src/test-resources/Util.isJavaFile.java")));
+  }
+
+  @Test
+  void paths() {
+    var abc = "a" + File.pathSeparator + "b" + File.pathSeparator + "c";
+    assertEquals("", Bach.Util.path(List.of()));
+    assertEquals("a", Bach.Util.path(List.of("a")));
+    assertEquals(abc, Bach.Util.path(List.of("a", "b", "c")));
+
+    assertEquals("", Bach.Util.path(""));
+    assertEquals("a", Bach.Util.path("a"));
+    assertEquals(abc, Bach.Util.path("a", "b", "c"));
   }
 
   //  @Nested
