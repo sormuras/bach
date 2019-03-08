@@ -110,9 +110,37 @@ class ProjectTests {
     var out = new ArrayList<String>();
     var bach = new Bach(true, base);
     bach.log.out = out::add;
+    var project = bach.project;
+
+    // project
+    assertEquals("minimal", project.name);
+    assertEquals(base.resolve("bin"), project.bin);
+    assertEquals(base.resolve(".bach"), project.cache);
+    assertEquals(base.resolve(".bach/modules"), project.cachedModules);
+    assertEquals(base.resolve("lib"), project.lib);
+    // main
+    assertEquals(base.resolve("src"), project.main.source);
+    assertTrue(Files.exists(project.main.source));
+    assertEquals(base.resolve("bin/realm/main"), project.main.target);
+    assertEquals(
+        Bach.Util.path(base.resolve("lib"), base.resolve(".bach/modules")),
+        project.main.modulePath);
+    // test
+    assertEquals(base.resolve("bin/realm/test"), project.test.target);
+    assertEquals(base.resolve("src/test/java"), project.test.source);
+    assertFalse(Files.exists(project.test.source));
+    assertEquals(
+        Bach.Util.path(project.main.target, base.resolve("lib"), base.resolve(".bach/modules")),
+        project.test.modulePath);
     bach.build();
     bach.launch();
-    assertLinesMatch(List.of("main.compile()", ">> BUILD >>", "Launching minimal/modular.Program...", ">> LAUNCH >>"), out);
+    assertLinesMatch(
+        List.of(
+            "main.compile()",
+            ">> BUILD >>",
+            "Launching minimal/modular.Program...",
+            ">> LAUNCH >>"),
+        out);
 
     Files.delete(base.resolve("src/minimal/modular/Program.java"));
     out.clear();
