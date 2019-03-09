@@ -17,6 +17,8 @@
 
 // default package
 
+import static java.lang.System.currentTimeMillis;
+
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
@@ -24,6 +26,7 @@ import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -594,6 +597,48 @@ class Bach {
     /** No instance permitted. */
     Util() {
       throw new Error();
+    }
+
+    /** Download file from supplied uri to specified destination directory. */
+    static Path download(Consumer<String> logger, Path destination, URI uri) throws Exception {
+      logger.accept("download(" + uri + ")");
+      var fileName = extractFileName(uri);
+      var target = destination.resolve(fileName);
+      //      if (var.offline) {
+      //        if (Files.exists(target)) {
+      //          // logger.accept(DEBUG, "Offline mode is active and target already exists.");
+      //          return target;
+      //        }
+      //        throw new IllegalStateException("Target is missing and being offline: " + target);
+      //      }
+      Files.createDirectories(destination);
+      var connection = uri.toURL().openConnection();
+      try (var sourceStream = connection.getInputStream()) {
+        var millis = connection.getLastModified();
+        var urlLastModifiedTime = FileTime.fromMillis(millis == 0 ? currentTimeMillis() : millis);
+        if (Files.exists(target)) {
+          logger.accept("Local target file exists. Comparing last modified timestamps...");
+          var localLastModifiedTime = Files.getLastModifiedTime(target);
+          logger.accept(" o Remote Last Modified -> " + urlLastModifiedTime);
+          logger.accept(" o Target Last Modified -> " + localLastModifiedTime);
+          if (localLastModifiedTime.equals(urlLastModifiedTime)) {
+            logger.accept(String.format("Already downloaded %s previously.", fileName));
+            return target;
+          }
+          logger.accept("Local target file differs from remote source -- replacing it...");
+        }
+        logger.accept("Transferring " + uri);
+        try (var targetStream = Files.newOutputStream(target)) {
+          sourceStream.transferTo(targetStream);
+        }
+        Files.setLastModifiedTime(target, urlLastModifiedTime);
+        logger.accept(String.format(" o Remote   -> %s", uri));
+        logger.accept(String.format(" o Target   -> %s", target.toUri()));
+        logger.accept(String.format(" o Modified -> %s", urlLastModifiedTime));
+        logger.accept(String.format(" o Size     -> %d bytes", Files.size(target)));
+        logger.accept(String.format("Downloaded %s successfully.", fileName));
+      }
+      return target;
     }
 
     /** Extract last path element from the supplied uri. */
