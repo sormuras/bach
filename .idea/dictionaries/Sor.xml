@@ -8,6 +8,7 @@
       <w>deps</w>
       <w>ebug</w>
       <w>github</w>
+      <w>ipsum</w>
       <w>jcenter</w>
       <w>jdeps</w>
       <w>jitpack</w>
@@ -15,6 +16,7 @@
       <w>jqwik</w>
       <w>jshell</w>
       <w>linksource</w>
+      <w>lorem</w>
       <w>omissible</w>
       <w>opentest</w>
       <w>printf</w>
