@@ -32,13 +32,13 @@ class UtilTests {
   @Test
   void paths() {
     var abc = "a" + File.pathSeparator + "b" + File.pathSeparator + "c";
-    assertEquals("", Bach.Util.path(List.of()));
-    assertEquals("a", Bach.Util.path(List.of("a")));
-    assertEquals(abc, Bach.Util.path(List.of("a", "b", "c")));
+    assertEquals("", Bach.Util.join(List.of()));
+    assertEquals("a", Bach.Util.join(List.of("a")));
+    assertEquals(abc, Bach.Util.join(List.of("a", "b", "c")));
 
-    assertEquals("", Bach.Util.path(""));
-    assertEquals("a", Bach.Util.path("a"));
-    assertEquals(abc, Bach.Util.path("a", "b", "c"));
+    assertEquals("", Bach.Util.join(""));
+    assertEquals("a", Bach.Util.join("a"));
+    assertEquals(abc, Bach.Util.join("a", "b", "c"));
   }
 
   //  @Nested

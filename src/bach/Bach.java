@@ -487,12 +487,12 @@ class Bach {
           new Realm(
               "main",
               List.of("src/main/java", "src/main", "main", "src"),
-              Util.path(lib, cachedModules));
+              Util.join(lib, cachedModules));
       this.test =
           new Realm(
               "test",
               List.of("src/test/java", "src/test", "test"),
-              Util.path(main.target, lib, cachedModules));
+              Util.join(main.target, lib, cachedModules));
     }
 
     /** Rebase path as needed. */
@@ -538,7 +538,7 @@ class Bach {
       var java = new ArrayList<>();
       get(Property.PROJECT_LAUNCH_OPTIONS, "\\|").forEach(java::add);
       java.add("--module-path");
-      java.add(Util.path(main.target, lib, cachedModules));
+      java.add(Util.join(main.target, lib, cachedModules));
       java.add("--module");
       java.add(launch);
       run(0, "java", java.toArray(Object[]::new));
@@ -595,24 +595,6 @@ class Bach {
       throw new Error();
     }
 
-    /** Join supplied paths into a single string joined by current path separator. */
-    static String path(Collection<?> paths) {
-      return paths.stream().map(Object::toString).collect(Collectors.joining(File.pathSeparator));
-    }
-
-    /** Join supplied paths into a single string. joined by current path separator. */
-    static String path(Object first, Object... more) {
-      if (more.length == 0) {
-        return first.toString();
-      }
-      var strings = new String[1 + more.length];
-      strings[0] = first.toString();
-      for (var i = 0; i < more.length; i++) {
-        strings[i + 1] = more[i].toString();
-      }
-      return String.join(File.pathSeparator, strings);
-    }
-
     /** Test supplied path for pointing to a Java source compilation unit. */
     static boolean isJavaFile(Path path) {
       if (Files.isRegularFile(path)) {
@@ -622,6 +604,24 @@ class Bach {
         }
       }
       return false;
+    }
+
+    /** Join supplied paths into a single string joined by current path separator. */
+    static String join(Collection<?> paths) {
+      return paths.stream().map(Object::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /** Join supplied paths into a single string. joined by current path separator. */
+    static String join(Object path, Object... more) {
+      if (more.length == 0) {
+        return path.toString();
+      }
+      var strings = new String[1 + more.length];
+      strings[0] = path.toString();
+      for (var i = 0; i < more.length; i++) {
+        strings[1 + i] = more[i].toString();
+      }
+      return String.join(File.pathSeparator, strings);
     }
 
     /** Delete all files and directories from and including the root directory. */

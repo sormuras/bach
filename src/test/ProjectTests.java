@@ -123,14 +123,14 @@ class ProjectTests {
     assertTrue(Files.exists(project.main.source));
     assertEquals(base.resolve("bin/realm/main"), project.main.target);
     assertEquals(
-        Bach.Util.path(base.resolve("lib"), base.resolve(".bach/modules")),
+        Bach.Util.join(base.resolve("lib"), base.resolve(".bach/modules")),
         project.main.modulePath);
     // test
     assertEquals(base.resolve("bin/realm/test"), project.test.target);
     assertEquals(base.resolve("src/test/java"), project.test.source);
     assertFalse(Files.exists(project.test.source));
     assertEquals(
-        Bach.Util.path(project.main.target, base.resolve("lib"), base.resolve(".bach/modules")),
+        Bach.Util.join(project.main.target, base.resolve("lib"), base.resolve(".bach/modules")),
         project.test.modulePath);
     bach.build();
     bach.launch();
