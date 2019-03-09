@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,12 +14,20 @@ import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class UtilTests {
 
   @Test
   void newFails() {
     assertThrows(Error.class, Bach.Util::new);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"a.b", "a.b#c", "a.b?c", "https://host/path/../a.b#c?d=e&more=b.a"})
+  void extractFileName(String uri) {
+    assertEquals("a.b", Bach.Util.extractFileName(URI.create(uri)));
   }
 
   @Test
@@ -30,7 +39,7 @@ class UtilTests {
   }
 
   @Test
-  void paths() {
+  void joinPathsToString() {
     var abc = "a" + File.pathSeparator + "b" + File.pathSeparator + "c";
     assertEquals("", Bach.Util.join(List.of()));
     assertEquals("a", Bach.Util.join(List.of("a")));

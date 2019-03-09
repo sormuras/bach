@@ -20,6 +20,7 @@
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
+import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -593,6 +594,12 @@ class Bach {
     /** No instance permitted. */
     Util() {
       throw new Error();
+    }
+
+    /** Extract last path element from the supplied uri. */
+    static String extractFileName(URI uri) {
+      var path = uri.getPath(); // strip query and fragment elements
+      return path.substring(path.lastIndexOf('/') + 1);
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */
