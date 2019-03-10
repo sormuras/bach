@@ -32,6 +32,15 @@ class UtilTests {
   }
 
   @Test
+  void downloadRelativeUriThrows() {
+    var log = new ArrayList<String>();
+    var uri = URI.create("void");
+    var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, Path.of("."), uri));
+    assertTrue(e.getMessage().contains("URI is not absolute"));
+    assertLinesMatch(List.of("download(" + uri + ")"), log);
+  }
+
+  @Test
   void isJavaFile() {
     assertFalse(Bach.Util.isJavaFile(Path.of("")));
     assertFalse(Bach.Util.isJavaFile(Path.of("a/b")));
@@ -54,18 +63,10 @@ class UtilTests {
   @Nested
   @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
   class Download {
-    @Test
-    void relativeUriThrows() {
-      var log = new ArrayList<String>();
-      var uri = URI.create("void");
-      var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, Path.of("."), uri));
-      assertTrue(e.getMessage().contains("URI is not absolute"));
-      assertLinesMatch(List.of("download(" + uri + ")"), log);
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"http", "https"})
-    void downloadApacheLicense(String protocol, @TempDir Path temp) throws Exception {
+    void downloadLicenseFromApacheOrg(String protocol, @TempDir Path temp) throws Exception {
       var log = new ArrayList<String>();
       var uri = URI.create(protocol + "://www.apache.org/licenses/LICENSE-2.0.txt");
       var first = Bach.Util.download(log::add, temp, uri);

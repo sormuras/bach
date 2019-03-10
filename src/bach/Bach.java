@@ -603,7 +603,8 @@ class Bach {
     static Path download(Consumer<String> logger, Path destination, URI uri) throws Exception {
       logger.accept("download(" + uri + ")");
       var fileName = extractFileName(uri);
-      var target = destination.resolve(fileName);
+      var target = Files.createDirectories(destination).resolve(fileName);
+      var url = uri.toURL();
       //      if (var.offline) {
       //        if (Files.exists(target)) {
       //          // logger.accept(DEBUG, "Offline mode is active and target already exists.");
@@ -611,8 +612,7 @@ class Bach {
       //        }
       //        throw new IllegalStateException("Target is missing and being offline: " + target);
       //      }
-      Files.createDirectories(destination);
-      var connection = uri.toURL().openConnection();
+      var connection = url.openConnection();
       try (var sourceStream = connection.getInputStream()) {
         var millis = connection.getLastModified();
         var urlLastModifiedTime = FileTime.fromMillis(millis == 0 ? currentTimeMillis() : millis);
