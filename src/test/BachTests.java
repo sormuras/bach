@@ -192,7 +192,7 @@ class BachTests {
         streams.outLines());
 
     var error = assertThrows(Error.class, () -> bach.run(0, "javac", "--unknown-option"));
-    assertEquals("javac returned 2, but expected 0", error.getMessage());
+    assertEquals("Expected 0, but got 2 as result of: javac [--unknown-option]", error.getMessage());
   }
 
   @Test

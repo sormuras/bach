@@ -35,6 +35,7 @@ class DemoTests {
   class JigsawQuickStart {
 
     @ParameterizedTest
+    // TODO "greetings-world-with-main-and-test"
     @ValueSource(strings = {"greetings", "greetings-world"})
     void greetings(String name, @TempDir Path workspace) throws Exception {
       var demo = Path.of("demo", "jigsaw-quick-start", name);
@@ -54,7 +55,10 @@ class DemoTests {
       var cleanTreeWalk = resources.resolve(demo.resolveSibling(name + ".clean.txt"));
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
 
+      bach.project.assemble();
+      Util.treeWalk(base, System.out::println);
       bach.build();
+
       assertLinesMatch(
           List.of("main.compile()", ">> MAIN >>", "test.compile()", ">> TEST >>"), out);
 

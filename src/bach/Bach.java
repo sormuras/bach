@@ -110,6 +110,7 @@ class Bach {
 
   /** Build all and everything. */
   public void build() throws Exception {
+    project.assemble();
     project.main.compile();
     project.test.compile();
   }
@@ -192,7 +193,8 @@ class Bach {
   void run(int expected, String name, Object... arguments) {
     var actual = run(name, arguments);
     if (expected != actual) {
-      throw new Error(name + " returned " + actual + ", but expected " + expected);
+      var command = name + (arguments.length == 0 ? "" : " " + List.of(arguments));
+      throw new Error("Expected " + expected + ", but got " + actual + " as result of: " + command);
     }
   }
 
@@ -282,6 +284,8 @@ class Bach {
     PROPERTIES("bach.properties"),
     BASE("."),
     LOG_LEVEL("INFO"),
+    /** Default Maven repository used for artifact resolution. */
+    MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
     PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
     PROJECT_LAUNCH_OPTIONS(""),
     TOOL_URI_JUNIT(
@@ -501,6 +505,81 @@ class Bach {
               "test",
               List.of("src/test/java", "src/test", "test"),
               Util.join(main.target, lib, cachedModules));
+    }
+
+    /** Assemble all assets. */
+    void assemble() throws Exception {
+      assembleExternalModules();
+    }
+
+    /** Assemble external modules. */
+    void assembleExternalModules() throws Exception {
+      var logger = (Consumer<String>) (message -> log.log(Level.DEBUG, message));
+      // TODO get("bach.project.modules.uris", "", ",")
+      //              .map(URI::create)
+      //              .peek(uri -> log.debug("Loading %s", uri))
+      //              .forEach(uri -> new Tool.Download(uri, modules).apply(Bach.this));
+      var roots =
+          Set.of(main.source, test.source).stream()
+              .filter(Files::isDirectory)
+              .collect(Collectors.toSet());
+      var externals = ModuleInfo.findExternalModuleNames(roots);
+      if (externals.isEmpty()) {
+        return;
+      }
+      log.log(Level.DEBUG, "External module names: " + externals);
+      if (externals.isEmpty()) {
+        return;
+      }
+      var moduleMaven =
+          Property.loadProperties(
+              Util.download(
+                  logger,
+                  cache,
+                  URI.create(
+                      "https://raw.githubusercontent.com/"
+                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "module-maven.properties")));
+      var moduleVersion =
+          Property.loadProperties(
+              Util.download(
+                  logger,
+                  cache,
+                  URI.create(
+                      "https://raw.githubusercontent.com/"
+                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "module-version.properties")));
+      var uris = new ArrayList<URI>();
+      for (var external : externals) {
+        var uri = get("module." + external, null);
+        if (uri != null) {
+          // logger.log(DEBUG, "External module {0} mapped to custom uri: {1}", external, uri);
+          uris.add(URI.create(uri));
+          continue;
+        }
+        var mavenGA = moduleMaven.getProperty(external);
+        if (mavenGA == null) {
+          // logger.log(WARNING, "External module not mapped: {0}", external);
+          continue;
+        }
+        var group = mavenGA.substring(0, mavenGA.indexOf(':'));
+        var artifact = mavenGA.substring(group.length() + 1);
+        var version = moduleVersion.getProperty(external);
+        uris.add(maven(group, artifact, version));
+      }
+      for (var uri : uris) {
+        var path = Util.download(logger, cachedModules, uri);
+        log.log(Level.DEBUG, "Resolved " + path);
+      }
+    }
+
+    /** Create URI for supplied Maven coordinates. */
+    URI maven(String group, String artifact, String version) {
+      // TODO Try local repository first?
+      // Path.of(System.getProperty("user.home"), ".m2", "repository").toUri().toString();
+      var repo = get(Property.MAVEN_REPOSITORY);
+      var file = artifact + "-" + version + ".jar";
+      return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
     }
 
     /** Rebase path as needed. */
