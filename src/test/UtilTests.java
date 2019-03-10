@@ -41,6 +41,36 @@ class UtilTests {
   }
 
   @Test
+  void findFiles() throws Exception {
+    var root = Bach.USER_PATH;
+    var files = Bach.Util.findFiles(List.of(root), __ -> true);
+    assertTrue(files.contains(root.resolve("boot.jsh")));
+    assertTrue(files.contains(root.resolve("build.jsh")));
+    assertTrue(files.contains(root.resolve("src/bach/Bach.java")));
+  }
+
+  @Test
+  void findFilesForNonExistentRootFails() {
+    var root = Path.of("does", "not", "exist");
+    assertThrows(Exception.class, () -> Bach.Util.findFiles(List.of(root), __ -> true));
+  }
+
+  @Test
+  void findFilesForRegularFileRootReturnsThatFile() throws Exception {
+    var root = Path.of("README.md");
+    var files = Bach.Util.findFiles(List.of(root), __ -> true);
+    assertEquals(List.of(root), files);
+  }
+
+  @Test
+  void findFilesInHiddenDirectoryFails(@TempDir Path temp) throws Exception {
+    var root = Files.createDirectory(temp.resolve("-w-"));
+    Util.chmod(root, false, true, false);
+    assertThrows(Exception.class, () -> Bach.Util.findFiles(List.of(temp), __ -> true));
+    Util.chmod(root, true, true, true);
+  }
+
+  @Test
   void isJavaFile() {
     assertFalse(Bach.Util.isJavaFile(Path.of("")));
     assertFalse(Bach.Util.isJavaFile(Path.of("a/b")));

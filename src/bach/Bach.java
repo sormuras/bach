@@ -515,17 +515,6 @@ class Bach {
       return based(Path.of(first, more));
     }
 
-    /** List all regular files matching the given filter. */
-    List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) throws Exception {
-      var files = new ArrayList<Path>();
-      for (var root : roots) {
-        try (var stream = Files.walk(root)) {
-          stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
-        }
-      }
-      return files;
-    }
-
     /** Launch main program. */
     void launch() throws Exception {
       if (Files.notExists(main.target)) {
@@ -586,7 +575,7 @@ class Bach {
         javac.add(modulePath);
         javac.add("--module-source-path");
         javac.add(source);
-        javac.addAll(findFiles(List.of(source), Util::isJavaFile));
+        javac.addAll(Util.findJavaFiles(source));
         run(0, "javac", javac.toArray(Object[]::new));
       }
     }
@@ -645,6 +634,22 @@ class Bach {
     static String extractFileName(URI uri) {
       var path = uri.getPath(); // strip query and fragment elements
       return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    /** List all regular files matching the given filter. */
+    static List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) throws Exception {
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
+        }
+      }
+      return files;
+    }
+
+    /** List all regular Java files in given root directory. */
+    static List<Path> findJavaFiles(Path root) throws Exception {
+      return findFiles(List.of(root), Util::isJavaFile);
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */

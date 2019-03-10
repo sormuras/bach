@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.FileSystems;
@@ -69,36 +68,6 @@ class ProjectTests {
   void basedRelativePathPointingToUsersCurrentWorkingDirectory(Path path) {
     assertFalse(path.isAbsolute());
     assertSame(path, bach.project.based(path));
-  }
-
-  @Test
-  void findFiles() throws Exception {
-    var root = bach.base;
-    var files = bach.project.findFiles(List.of(root), __ -> true);
-    assertTrue(files.contains(root.resolve("boot.jsh")));
-    assertTrue(files.contains(root.resolve("build.jsh")));
-    assertTrue(files.contains(root.resolve("src/bach/Bach.java")));
-  }
-
-  @Test
-  void findFilesForNonExistentRootFails() {
-    var root = Path.of("does", "not", "exist");
-    assertThrows(Exception.class, () -> bach.project.findFiles(List.of(root), __ -> true));
-  }
-
-  @Test
-  void findFilesForRegularFileRootReturnsThatFile() throws Exception {
-    var root = Path.of("README.md");
-    var files = bach.project.findFiles(List.of(root), __ -> true);
-    assertEquals(List.of(root), files);
-  }
-
-  @Test
-  void findFilesInHiddenDirectoryFails(@TempDir Path temp) throws Exception {
-    var root = Files.createDirectory(temp.resolve("-w-"));
-    Util.chmod(root, false, true, false);
-    assertThrows(Exception.class, () -> bach.project.findFiles(List.of(temp), __ -> true));
-    Util.chmod(root, true, true, true);
   }
 
   @Test
