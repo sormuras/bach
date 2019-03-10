@@ -158,10 +158,10 @@ class ModuleInfoTests {
 
   @Test
   void findProgramInSrcDirectoryFails() {
-    var root = Path.of("src");
+    var root = Path.of("src", "bach");
     var e = assertThrows(IllegalStateException.class, () -> Bach.ModuleInfo.findProgram(root));
     assertEquals(
-        "expected 'module-info.java' in parents of " + root.resolve("bach/Bach.java"),
+        "expected 'module-info.java' in parents of " + root.resolve("Bach.java"),
         e.getMessage());
   }
 
