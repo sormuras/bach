@@ -283,7 +283,11 @@ class Bach {
     BASE("."),
     LOG_LEVEL("INFO"),
     PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
-    PROJECT_LAUNCH_OPTIONS("");
+    PROJECT_LAUNCH_OPTIONS(""),
+    TOOL_URI_JUNIT(
+        "http://central.maven.org/"
+            + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
+            + "junit-platform-console-standalone-1.4.0.jar");
 
     /** Load properties from given path. */
     static Properties loadProperties(Path path) {
