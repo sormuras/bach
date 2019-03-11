@@ -167,7 +167,10 @@ class BachTests {
     var code = bach.run("java", "--dry-run", "src/bach/Bach.java");
     assertEquals(0, code, streams.toString());
     assertLinesMatch(
-        List.of("run(java, [--dry-run, src/bach/Bach.java])", "Running tool in a new process: .+"),
+        List.of(
+            "run(java, [--dry-run, src/bach/Bach.java])",
+            "Redirect: INHERIT",
+            "Running tool in a new process: .+"),
         streams.outLines());
   }
 
@@ -192,7 +195,8 @@ class BachTests {
         streams.outLines());
 
     var error = assertThrows(Error.class, () -> bach.run(0, "javac", "--unknown-option"));
-    assertEquals("Expected 0, but got 2 as result of: javac [--unknown-option]", error.getMessage());
+    assertEquals(
+        "Expected 0, but got 2 as result of: javac [--unknown-option]", error.getMessage());
   }
 
   @Test
@@ -201,7 +205,7 @@ class BachTests {
     var bach = new Bach(true, Path.of(""));
     var error = assertThrows(Error.class, () -> bach.run("does-not-exist"));
     assertEquals("Running tool does-not-exist failed!", error.getMessage());
-    assertLinesMatch(List.of("run(does-not-exist, [])"), streams.outLines());
+    assertLinesMatch(List.of("run(does-not-exist, [])", "Redirect: INHERIT"), streams.outLines());
   }
 
   private static class ThrowingAction implements Bach.Action {

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,37 +34,41 @@ class DemoTests {
   class JigsawQuickStart {
 
     @ParameterizedTest
-    // TODO "greetings-world-with-main-and-test"
-    @ValueSource(strings = {"greetings", "greetings-world"})
+    @ValueSource(strings = {"greetings", "greetings-world", "greetings-world-with-main-and-test"})
     void greetings(String name, @TempDir Path workspace) throws Exception {
       var demo = Path.of("demo", "jigsaw-quick-start", name);
       var base = workspace.resolve(demo.getFileName());
       Util.treeCopy(demo, base);
 
-      var out = new ArrayList<String>();
+      var log = new ArrayList<String>();
       var bach = new Bach(true, base);
-      bach.log.out = out::add;
-      var resources = Path.of("src", "test-resources");
+      bach.log.out = log::add;
+      bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "FILE");
+
       assertEquals(base, bach.base);
       assertEquals(name, bach.project.name);
       // assertEquals("1.0.0-SNAPSHOT", bach.project.version);
       var program = Bach.ModuleInfo.findProgram(base.resolve("src"));
       assertEquals("com.greetings/com.greetings.Main", program);
-
+      var resources = Path.of("src", "test-resources");
       var cleanTreeWalk = resources.resolve(demo.resolveSibling(name + ".clean.txt"));
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
 
-      bach.project.assemble();
-      Util.treeWalk(base, System.out::println);
       bach.build();
 
-      assertLinesMatch(
-          List.of("main.compile()", ">> MAIN >>", "test.compile()", ">> TEST >>"), out);
+      if (Files.exists(resources.resolve(demo.resolveSibling(name + ".run.txt")))) {
+        assertLinesMatch(
+            Files.readAllLines(resources.resolve(demo.resolveSibling(name + ".run.txt"))),
+            Files.readAllLines(Path.of(bach.get(Bach.Property.RUN_REDIRECT_FILE))));
+      }
 
       var buildTreeWalk = resources.resolve(demo.resolveSibling(name + ".build.txt"));
       assertLinesMatch(Files.readAllLines(buildTreeWalk), Util.treeWalk(base));
+      var logLines = resources.resolve(demo.resolveSibling(name + ".log.txt"));
+      assertLinesMatch(Files.readAllLines(logLines), log);
 
       bach.erase();
+
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
     }
   }

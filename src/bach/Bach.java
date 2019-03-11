@@ -33,8 +33,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -113,6 +115,7 @@ class Bach {
     project.assemble();
     project.main.compile();
     project.test.compile();
+    project.test();
   }
 
   /** Delete generated binary assets. */
@@ -214,7 +217,30 @@ class Bach {
     // TODO Find registered tool, like "format", "junit", "maven", "gradle"
     // TODO Find executable via {java.home}/${name}[.exe]
     try {
-      var builder = new ProcessBuilder(name).inheritIO();
+      var builder = new ProcessBuilder(name);
+      switch (get(Property.RUN_REDIRECT_TYPE).toUpperCase()) {
+        case "INHERIT":
+          log.log(Level.DEBUG, "Redirect: INHERIT");
+          builder.inheritIO();
+          break;
+        case "DISCARD":
+          log.log(Level.DEBUG, "Redirect: DISCARD");
+          builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+          builder.redirectError(ProcessBuilder.Redirect.DISCARD);
+          break;
+        case "FILE":
+          if(get(Property.RUN_REDIRECT_FILE).isEmpty()) {
+            var temp = Files.createTempFile("bach-run-", ".txt");
+            properties.setProperty(Property.RUN_REDIRECT_FILE.key, temp.toString());
+          }
+          var temp = Path.of(get(Property.RUN_REDIRECT_FILE));
+          log.log(Level.DEBUG, "Redirect: FILE " + temp);
+          builder.redirectErrorStream(true);
+          builder.redirectOutput(ProcessBuilder.Redirect.appendTo(temp.toFile()));
+          break;
+        default:
+          log.log(Level.DEBUG, "Redirect: PIPE");
+      }
       builder.command().addAll(List.of(args));
       var process = builder.start();
       log.log(Level.DEBUG, "Running tool in a new process: " + process);
@@ -288,6 +314,8 @@ class Bach {
     MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
     PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
     PROJECT_LAUNCH_OPTIONS(""),
+    RUN_REDIRECT_TYPE("INHERIT"),
+    RUN_REDIRECT_FILE(""), // empty: create temporary file
     TOOL_URI_JUNIT(
         "http://central.maven.org/"
             + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
@@ -620,6 +648,32 @@ class Bach {
       run(0, "java", java.toArray(Object[]::new));
     }
 
+    /** Start test run. */
+    void test() throws Exception {
+      if (Files.notExists(test.target)) {
+        log.log(Level.INFO, "Skip test. No compiled classes target found: " + test.target);
+        return;
+      }
+      log.log(Level.INFO, "Launching JUnit Platform...");
+      var java = new ArrayList<>();
+      java.add("--module-path");
+      java.add(Util.join(test.target, lib, cachedModules));
+      java.add("--add-modules");
+      java.add(
+          "ALL-MODULE-PATH"); // TODO java.add(String.join(",", findDirectoryNames(test.target)));
+      java.add("--class-path");
+      java.add(
+          Util.download(
+              message -> log.log(Level.DEBUG, message),
+              USER_HOME.resolve(Path.of(".bach", "tools", "junit-platform-console-standalone")),
+              URI.create(get(Property.TOOL_URI_JUNIT))));
+      java.add("org.junit.platform.console.ConsoleLauncher");
+      java.add("--reports-dir");
+      java.add(bin.resolve("test-reports"));
+      java.add("--scan-modules");
+      run(0, "java", java.toArray(Object[]::new));
+    }
+
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       /** Name of the realm. */
@@ -658,6 +712,20 @@ class Bach {
         javac.add(modulePath);
         javac.add("--module-source-path");
         javac.add(source);
+        // TODO Move to a better place (`TestRealm`) or configure it.
+        if (name.equalsIgnoreCase("test")) {
+          for (var e : Util.findPatchMap(List.of(test.source), List.of(main.source)).entrySet()) {
+            var module = e.getKey();
+            var paths = e.getValue();
+            if (paths.isEmpty()) {
+              throw new Error("Expected at least one patch path entry for " + module);
+            }
+            var patches =
+                paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+            javac.add("--patch-module");
+            javac.add(module + "=" + patches);
+          }
+        }
         javac.addAll(Util.findJavaFiles(source));
         run(0, "javac", javac.toArray(Object[]::new));
       }
@@ -717,6 +785,42 @@ class Bach {
     static String extractFileName(URI uri) {
       var path = uri.getPath(); // strip query and fragment elements
       return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    /** Return list of child directories directly present in {@code root} path. */
+    static List<Path> findDirectories(Path root) {
+      if (Files.notExists(root)) {
+        return List.of();
+      }
+      try (var paths = Files.find(root, 1, (path, attr) -> Files.isDirectory(path))) {
+        return paths.filter(path -> !root.equals(path)).collect(Collectors.toList());
+      } catch (Exception e) {
+        throw new Error("findDirectories failed for root: " + root, e);
+      }
+    }
+
+    /** Return list of child directory names directly present in {@code root} path. */
+    static List<String> findDirectoryNames(Path root) {
+      return findDirectories(root).stream()
+          .map(root::relativize)
+          .map(Path::toString)
+          .collect(Collectors.toList());
+    }
+
+    /** Return patch map using two collections of paths. */
+    static Map<String, Set<Path>> findPatchMap(Collection<Path> bases, Collection<Path> patches) {
+      var map = new TreeMap<String, Set<Path>>();
+      for (var base : bases) {
+        for (var name : findDirectoryNames(base)) {
+          for (var patch : patches) {
+            var candidate = patch.resolve(name);
+            if (Files.isDirectory(candidate)) {
+              map.computeIfAbsent(name, __ -> new TreeSet<>()).add(candidate);
+            }
+          }
+        }
+      }
+      return map;
     }
 
     /** List all regular files matching the given filter. */

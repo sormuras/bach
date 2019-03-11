@@ -1,0 +1,4 @@
+main.compile()
+>> MAIN >>
+test.compile()
+>> TEST >>
