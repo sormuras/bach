@@ -17,8 +17,6 @@
 
 // default package
 
-import static java.lang.System.currentTimeMillis;
-
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
@@ -108,6 +106,11 @@ class Bach {
       }
     }
     return actions;
+  }
+
+  /** Download file from supplied uri to specified destination directory. */
+  Path download(Path destination, URI uri) throws Exception {
+    return Util.download(log::debug, Boolean.parseBoolean(get(Property.OFFLINE)), destination, uri);
   }
 
   /** Build all and everything. */
@@ -310,6 +313,8 @@ class Bach {
     PROPERTIES("bach.properties"),
     BASE("."),
     LOG_LEVEL("INFO"),
+    /** Offline mode flag. */
+    OFFLINE("false"),
     /** Default Maven repository used for artifact resolution. */
     MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
     PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
@@ -358,6 +363,10 @@ class Bach {
 
     /** Error output stream. */
     Consumer<String> err = System.err::println;
+
+    void debug(String message) {
+      log.log(Level.DEBUG, message);
+    }
 
     /** Log message unless threshold suppresses it. */
     void log(Level level, String message) {
@@ -547,7 +556,6 @@ class Bach {
 
     /** Assemble external modules. */
     void assembleExternalModules() throws Exception {
-      var logger = (Consumer<String>) (message -> log.log(Level.DEBUG, message));
       // TODO get("bach.project.modules.uris", "", ",")
       //              .map(URI::create)
       //              .peek(uri -> log.debug("Loading %s", uri))
@@ -566,8 +574,7 @@ class Bach {
       }
       var moduleMaven =
           Property.loadProperties(
-              Util.download(
-                  logger,
+              download(
                   cache,
                   URI.create(
                       "https://raw.githubusercontent.com/"
@@ -575,8 +582,7 @@ class Bach {
                           + "module-maven.properties")));
       var moduleVersion =
           Property.loadProperties(
-              Util.download(
-                  logger,
+              download(
                   cache,
                   URI.create(
                       "https://raw.githubusercontent.com/"
@@ -601,7 +607,7 @@ class Bach {
         uris.add(maven(group, artifact, version));
       }
       for (var uri : uris) {
-        var path = Util.download(logger, cachedModules, uri);
+        var path = download(cachedModules, uri);
         log.log(Level.DEBUG, "Resolved " + path);
       }
     }
@@ -676,8 +682,7 @@ class Bach {
           "ALL-MODULE-PATH"); // TODO java.add(String.join(",", findDirectoryNames(test.target)));
       java.add("--class-path");
       java.add(
-          Util.download(
-              message -> log.log(Level.DEBUG, message),
+          download(
               USER_HOME.resolve(Path.of(".bach", "tools", "junit-platform-console-standalone")),
               URI.create(get(Property.TOOL_URI_JUNIT))));
       java.add("org.junit.platform.console.ConsoleLauncher");
@@ -741,28 +746,29 @@ class Bach {
     }
 
     /** Download file from supplied uri to specified destination directory. */
-    static Path download(Consumer<String> logger, Path destination, URI uri) throws Exception {
+    static Path download(Consumer<String> logger, boolean offline, Path destination, URI uri)
+        throws Exception {
       logger.accept("download(" + uri + ")");
       var fileName = extractFileName(uri);
       var target = Files.createDirectories(destination).resolve(fileName);
       var url = uri.toURL();
-      //      if (var.offline) {
-      //        if (Files.exists(target)) {
-      //          // logger.accept(DEBUG, "Offline mode is active and target already exists.");
-      //          return target;
-      //        }
-      //        throw new IllegalStateException("Target is missing and being offline: " + target);
-      //      }
+      if (offline) {
+        if (Files.exists(target)) {
+          logger.accept("Offline mode is active and target already exists.");
+          return target;
+        }
+        throw new IllegalStateException("Target is missing and being offline: " + target);
+      }
       var connection = url.openConnection();
       try (var sourceStream = connection.getInputStream()) {
         var millis = connection.getLastModified();
-        var urlLastModifiedTime = FileTime.fromMillis(millis == 0 ? currentTimeMillis() : millis);
+        var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
         if (Files.exists(target)) {
           logger.accept("Local target file exists. Comparing last modified timestamps...");
-          var localLastModifiedTime = Files.getLastModifiedTime(target);
-          logger.accept(" o Remote Last Modified -> " + urlLastModifiedTime);
-          logger.accept(" o Target Last Modified -> " + localLastModifiedTime);
-          if (localLastModifiedTime.equals(urlLastModifiedTime)) {
+          var fileModified = Files.getLastModifiedTime(target);
+          logger.accept(" o Remote Last Modified -> " + lastModified);
+          logger.accept(" o Target Last Modified -> " + fileModified);
+          if (fileModified.equals(lastModified)) {
             logger.accept(String.format("Already downloaded %s previously.", fileName));
             return target;
           }
@@ -772,10 +778,10 @@ class Bach {
         try (var targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
         }
-        Files.setLastModifiedTime(target, urlLastModifiedTime);
+        Files.setLastModifiedTime(target, lastModified);
         logger.accept(String.format(" o Remote   -> %s", uri));
         logger.accept(String.format(" o Target   -> %s", target.toUri()));
-        logger.accept(String.format(" o Modified -> %s", urlLastModifiedTime));
+        logger.accept(String.format(" o Modified -> %s", lastModified));
         logger.accept(String.format(" o Size     -> %d bytes", Files.size(target)));
         logger.accept(String.format("Downloaded %s successfully.", fileName));
       }

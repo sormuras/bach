@@ -35,7 +35,8 @@ class UtilTests {
   void downloadRelativeUriThrows() {
     var log = new ArrayList<String>();
     var uri = URI.create("void");
-    var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, Path.of("."), uri));
+    var base = Path.of(".");
+    var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, true, base, uri));
     assertTrue(e.getMessage().contains("URI is not absolute"));
     assertLinesMatch(List.of("download(" + uri + ")"), log);
   }
@@ -99,13 +100,13 @@ class UtilTests {
     void downloadLicenseFromApacheOrg(String protocol, @TempDir Path temp) throws Exception {
       var log = new ArrayList<String>();
       var uri = URI.create(protocol + "://www.apache.org/licenses/LICENSE-2.0.txt");
-      var first = Bach.Util.download(log::add, temp, uri);
+      var first = Bach.Util.download(log::add, false, temp, uri);
       assertTrue(Files.readString(first).contains("Apache License"));
-      var second = Bach.Util.download(log::add, temp, uri);
+      var second = Bach.Util.download(log::add, false, temp, uri);
       assertEquals(first, second);
       Files.writeString(first, "Lorem ipsum...");
       assertFalse(Files.readString(first).contains("Apache License"));
-      var third = Bach.Util.download(log::add, temp, uri);
+      var third = Bach.Util.download(log::add, false, temp, uri);
       assertEquals(first, third);
       assertLinesMatch(
           List.of(

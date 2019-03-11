@@ -70,7 +70,7 @@ class Build {
   private void test() throws Exception {
     System.out.println("\n[test - download]");
     var uri = URI.create(bach.get(Bach.Property.TOOL_URI_JUNIT));
-    var junit = Bach.Util.download(System.out::println, target, uri);
+    var junit = bach.download(target, uri);
 
     System.out.println("\n[test - compile]");
     var javac = new ArrayList<>();
@@ -224,7 +224,7 @@ class Build {
     }
 
     /** Walk directory tree structure. */
-   static void treeWalk(Path root, Consumer<String> out) {
+    static void treeWalk(Path root, Consumer<String> out) {
       try (var stream = Files.walk(root)) {
         stream
             .map(root::relativize)
