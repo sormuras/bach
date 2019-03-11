@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +74,9 @@ class BachTests {
     assertNotNull(bach.log.out);
     assertNotNull(bach.log.err);
     assertSame(System.Logger.Level.INFO, bach.log.threshold);
+    assertNotNull(bach.tools);
+    assertEquals(1, bach.tools.size(), bach.tools.toString());
+    assertTrue(bach.tools.containsKey("format"));
   }
 
   @Test
@@ -206,6 +210,36 @@ class BachTests {
     var error = assertThrows(Error.class, () -> bach.run("does-not-exist"));
     assertEquals("Running tool does-not-exist failed!", error.getMessage());
     assertLinesMatch(List.of("run(does-not-exist, [])", "Redirect: INHERIT"), streams.outLines());
+  }
+
+  @Test
+  @SwallowSystem
+  void runToolFormat(SwallowSystem.Streams streams) throws Exception {
+    var bach = new Bach(true, Path.of(""));
+    bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "FILE");
+    var code = bach.run("format", "--version");
+    assertEquals(0, code, streams.toString());
+    assertLinesMatch(
+        List.of(
+            "run(format, [--version])",
+            ">> DOWNLOAD/INSTALL >>",
+            "Redirect: FILE .+",
+            "Running tool in a new process: .+"),
+        streams.outLines());
+    assertLinesMatch(
+        List.of("google-java-format: Version 1.7"),
+        Files.readAllLines(Path.of(bach.get(Bach.Property.RUN_REDIRECT_FILE))));
+  }
+
+  @Test
+  @SwallowSystem
+  void runToolFormatDryRun(SwallowSystem.Streams streams) throws Exception {
+    var bach = new Bach(true, Path.of(""));
+    bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "DISCARD");
+    Bach.Tool.format(bach, false, List.of(Path.of("src", "bach")));
+    assertLinesMatch(
+        List.of(">> DOWNLOAD/INSTALL >>", "Redirect: DISCARD", "Running tool in a new process: .+"),
+        streams.outLines());
   }
 
   private static class ThrowingAction implements Bach.Action {

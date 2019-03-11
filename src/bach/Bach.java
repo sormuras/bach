@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -77,6 +78,9 @@ class Bach {
   /** User-defined properties loaded from {@code ${base}/bach.properties} file. */
   final Properties properties;
 
+  /** Tool map. */
+  final Map<String, Tool> tools;
+
   /** Initialize Bach instance using system properties. */
   Bach() {
     this(Boolean.getBoolean("ebug"), Path.of(Property.BASE.get()));
@@ -89,6 +93,9 @@ class Bach {
     this.properties = Property.loadProperties(base.resolve(Property.PROPERTIES.get()));
     this.log = new Log();
     this.project = new Project();
+    this.tools = new HashMap<>();
+
+    tools.put("format", Tool::format);
   }
 
   /** Transforming strings to actions. */
@@ -217,7 +224,15 @@ class Bach {
       log.debug("Running provided tool in-process: " + tool);
       return tool.run(System.out, System.err, args);
     }
-    // TODO Find registered tool, like "format", "junit", "maven", "gradle"
+    try {
+      var tool = tools.get(name);
+      if (tool != null) {
+        tools.get(name).run(this, arguments);
+        return 0;
+      }
+    } catch (Exception e) {
+      return 1;
+    }
     // TODO Find executable via {java.home}/${name}[.exe]
     try {
       var builder = new ProcessBuilder(name);
@@ -253,7 +268,7 @@ class Bach {
     }
   }
 
-  /** Bach consuming action operating via side-effects. */
+  /** Bach consuming no-arg action operating via side-effects. */
   @FunctionalInterface
   interface Action {
 
@@ -308,6 +323,32 @@ class Bach {
     }
   }
 
+  /** Bach consuming parameterized action operating via side-effects. */
+  @FunctionalInterface
+  interface Tool {
+
+    void run(Bach bach, Object... args) throws Exception;
+
+    static void format(Bach bach, Object... args) throws Exception {
+      var name = "google-java-format";
+      var destination = USER_HOME.resolve(Path.of(".bach", "tools", name));
+      var uri = URI.create(bach.get(Property.TOOL_URI_FORMAT));
+      var jar = bach.download(destination, uri);
+      var arguments = new ArrayList<>();
+      arguments.add("-jar");
+      arguments.add(jar);
+      arguments.addAll(List.of(args));
+      bach.run(0, "java", arguments.toArray(Object[]::new));
+    }
+
+    static void format(Bach bach, boolean replace, Collection<Path> roots) throws Exception {
+      var args = new ArrayList<>();
+      args.addAll(replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed"));
+      args.addAll(Util.findFiles(roots, Util::isJavaFile));
+      format(bach, args.toArray(Object[]::new));
+    }
+  }
+
   /** Property names, keys and default values. */
   enum Property {
     PROPERTIES("bach.properties"),
@@ -321,6 +362,12 @@ class Bach {
     PROJECT_LAUNCH_OPTIONS(""),
     RUN_REDIRECT_TYPE("INHERIT"),
     RUN_REDIRECT_FILE(""), // empty: create temporary file
+    /** URI to Google Java Format "all-deps" JAR. */
+    TOOL_URI_FORMAT(
+        "https://github.com/"
+            + "google/google-java-format/releases/download/google-java-format-1.7/"
+            + "google-java-format-1.7-all-deps.jar"),
+    /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_URI_JUNIT(
         "http://central.maven.org/"
             + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"

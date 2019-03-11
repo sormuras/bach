@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -57,8 +58,16 @@ class Build {
     Bach.Util.treeDelete(targetJars);
   }
 
-  private void format() {
-    System.out.println("\n[format] // TODO");
+  private void format() throws Exception {
+    System.out.println("\n[format]");
+
+    var roots =
+        List.of(
+            Path.of("demo"),
+            Path.of("src", "bach"),
+            Path.of("src", "build"),
+            Path.of("src", "test"));
+    Bach.Tool.format(bach, Boolean.getBoolean("bach.format.replace"), roots);
   }
 
   private void compile() {
@@ -146,7 +155,9 @@ class Build {
         "-C",
         targetJavadoc,
         ".");
-    // TODO bach.treeWalk(targetJars, System.out::println);
+
+    System.out.println("\nArtifacts in " + targetJars);
+    Util.treeWalk(targetJars, System.out::println);
   }
 
   private void validate() {
