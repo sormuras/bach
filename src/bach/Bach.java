@@ -182,7 +182,7 @@ class Bach {
 
   /** Execute a collection of actions sequentially on this instance. */
   void run(Collection<? extends Action> actions) {
-    log.log(Level.DEBUG, String.format("Performing %d action(s)...", actions.size()));
+    log.debug(String.format("Performing %d action(s)...", actions.size()));
     for (var action : actions) {
       try {
         log.log(Level.TRACE, String.format(">> %s", action));
@@ -210,11 +210,11 @@ class Bach {
     for (int i = 0; i < args.length; i++) {
       args[i] = arguments[i].toString();
     }
-    log.log(Level.DEBUG, String.format("run(%s, %s)", name, List.of(args)));
+    log.debug(String.format("run(%s, %s)", name, List.of(args)));
     var toolProvider = ToolProvider.findFirst(name);
     if (toolProvider.isPresent()) {
       var tool = toolProvider.get();
-      log.log(Level.DEBUG, "Running provided tool in-process: " + tool);
+      log.debug("Running provided tool in-process: " + tool);
       return tool.run(System.out, System.err, args);
     }
     // TODO Find registered tool, like "format", "junit", "maven", "gradle"
@@ -223,11 +223,11 @@ class Bach {
       var builder = new ProcessBuilder(name);
       switch (get(Property.RUN_REDIRECT_TYPE).toUpperCase()) {
         case "INHERIT":
-          log.log(Level.DEBUG, "Redirect: INHERIT");
+          log.debug("Redirect: INHERIT");
           builder.inheritIO();
           break;
         case "DISCARD":
-          log.log(Level.DEBUG, "Redirect: DISCARD");
+          log.debug("Redirect: DISCARD");
           builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
           builder.redirectError(ProcessBuilder.Redirect.DISCARD);
           break;
@@ -237,16 +237,16 @@ class Bach {
             properties.setProperty(Property.RUN_REDIRECT_FILE.key, temp.toString());
           }
           var temp = Path.of(get(Property.RUN_REDIRECT_FILE));
-          log.log(Level.DEBUG, "Redirect: FILE " + temp);
+          log.debug("Redirect: FILE " + temp);
           builder.redirectErrorStream(true);
           builder.redirectOutput(ProcessBuilder.Redirect.appendTo(temp.toFile()));
           break;
         default:
-          log.log(Level.DEBUG, "Redirect: PIPE");
+          log.debug("Redirect: PIPE");
       }
       builder.command().addAll(List.of(args));
       var process = builder.start();
-      log.log(Level.DEBUG, "Running tool in a new process: " + process);
+      log.debug("Running tool in a new process: " + process);
       return process.waitFor();
     } catch (Exception e) {
       throw new Error("Running tool " + name + " failed!", e);
@@ -364,6 +364,7 @@ class Bach {
     /** Error output stream. */
     Consumer<String> err = System.err::println;
 
+    /** Log debug message unless threshold suppresses it. */
     void debug(String message) {
       log.log(Level.DEBUG, message);
     }
@@ -568,7 +569,7 @@ class Bach {
       if (externals.isEmpty()) {
         return;
       }
-      log.log(Level.DEBUG, "External module names: " + externals);
+      log.debug("External module names: " + externals);
       if (externals.isEmpty()) {
         return;
       }
@@ -608,7 +609,7 @@ class Bach {
       }
       for (var uri : uris) {
         var path = download(cachedModules, uri);
-        log.log(Level.DEBUG, "Resolved " + path);
+        log.debug("Resolved " + path);
       }
     }
 
