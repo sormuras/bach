@@ -229,7 +229,7 @@ class Bach {
           builder.redirectError(ProcessBuilder.Redirect.DISCARD);
           break;
         case "FILE":
-          if(get(Property.RUN_REDIRECT_FILE).isEmpty()) {
+          if (get(Property.RUN_REDIRECT_FILE).isEmpty()) {
             var temp = Files.createTempFile("bach-run-", ".txt");
             properties.setProperty(Property.RUN_REDIRECT_FILE.key, temp.toString());
           }
@@ -523,16 +523,21 @@ class Bach {
       this.lib = based("lib");
       // TODO Get project name and version from properties.
       this.name = base.getNameCount() > 0 ? base.toAbsolutePath().getFileName() + "" : "project";
+      // Realm: "main"
       this.main =
           new Realm(
               "main",
-              List.of("src/main/java", "src/main", "main", "src"),
-              Util.join(lib, cachedModules));
+              findFirst("src/main/java", "src/main", "main", "src"),
+              Util.join(lib, cachedModules),
+              Map.of());
+      // Realm: "test"
+      var testSource = findFirst("src/test/java", "src/test", "test");
       this.test =
           new Realm(
               "test",
-              List.of("src/test/java", "src/test", "test"),
-              Util.join(main.target, lib, cachedModules));
+              testSource,
+              Util.join(main.target, lib, cachedModules),
+              Util.findPatchMap(List.of(testSource), List.of(main.source)));
     }
 
     /** Assemble all assets. */
@@ -626,6 +631,14 @@ class Bach {
       return based(Path.of(first, more));
     }
 
+    Path findFirst(String... paths) {
+      return Arrays.stream(paths)
+          .map(Project.this::based)
+          .filter(Files::isDirectory)
+          .findFirst()
+          .orElse(based(paths[0]));
+    }
+
     /** Launch main program. */
     void launch() throws Exception {
       if (Files.notExists(main.target)) {
@@ -684,18 +697,16 @@ class Bach {
       final Path target;
       /** Module path. */
       final String modulePath;
+      /** Patch modules. */
+      Map<String, Set<Path>> patches;
 
       /** Initialize this realm. */
-      Realm(String name, List<String> sources, String modulePath) {
+      Realm(String name, Path source, String modulePath, Map<String, Set<Path>> patches) {
         this.name = name;
-        this.source =
-            sources.stream()
-                .map(Project.this::based)
-                .filter(Files::isDirectory)
-                .findFirst()
-                .orElse(based(sources.get(0)));
+        this.source = source;
         this.target = bin.resolve(Path.of("realm", name));
         this.modulePath = modulePath;
+        this.patches = patches;
       }
 
       /** Compile all Java sources found in this realm. */
@@ -712,19 +723,9 @@ class Bach {
         javac.add(modulePath);
         javac.add("--module-source-path");
         javac.add(source);
-        // TODO Move to a better place (`TestRealm`) or configure it.
-        if (name.equalsIgnoreCase("test")) {
-          for (var e : Util.findPatchMap(List.of(test.source), List.of(main.source)).entrySet()) {
-            var module = e.getKey();
-            var paths = e.getValue();
-            if (paths.isEmpty()) {
-              throw new Error("Expected at least one patch path entry for " + module);
-            }
-            var patches =
-                paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-            javac.add("--patch-module");
-            javac.add(module + "=" + patches);
-          }
+        for (var entry : patches.entrySet()) {
+          javac.add("--patch-module");
+          javac.add(entry.getKey() + "=" + Util.join(entry.getValue()));
         }
         javac.addAll(Util.findJavaFiles(source));
         run(0, "javac", javac.toArray(Object[]::new));
