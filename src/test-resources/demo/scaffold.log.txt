@@ -1,0 +1,10 @@
+External module names: [org.apiguardian.api, org.jooq.jool, org.junit.jupiter.api]
+>> RESOLVE EXTERNAL MODULES >>
+main.compile()
+>> COMPILE MAIN >>
+test.compile()
+>> COMPILE TEST >>
+Launching JUnit Platform...
+>> RUN TEST >>
+Redirect: FILE .+
+Running tool in a new process: .+

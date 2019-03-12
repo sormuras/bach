@@ -23,9 +23,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentest4j.TestAbortedException;
 
 class DemoTests {
 
@@ -71,5 +73,37 @@ class DemoTests {
 
       assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
     }
+  }
+
+  @Test
+  void scaffold(@TempDir Path workspace) throws Exception {
+    var name = "scaffold";
+    var demo = Path.of("demo", name);
+    var base = workspace.resolve(demo.getFileName());
+    Util.treeCopy(demo, base);
+
+    var log = new ArrayList<String>();
+    var bach = new Bach(true, base);
+    bach.log.out = log::add;
+    bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "FILE");
+    var expected = Path.of("src", "test-resources");
+    assertEquals(base, bach.base);
+    assertEquals(name, bach.project.name);
+    // TODO assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+    var cleanTreeWalk = expected.resolve(demo.resolveSibling(name + ".clean.txt"));
+    // Files.write(cleanTreeWalk, bach.utilities.treeWalk(base));
+    assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
+    if (Boolean.getBoolean("bach.offline")) {
+      // TODO Better check for unresolvable external modules.
+      throw new TestAbortedException("Online mode is required");
+    }
+    bach.build();
+    var buildTreeWalk = expected.resolve(demo.resolveSibling(name + ".build.txt"));
+    // Files.write(buildTreeWalk, bach.utilities.treeWalk(base));
+    assertLinesMatch(Files.readAllLines(buildTreeWalk), Util.treeWalk(base));
+    bach.erase();
+    assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));
+    var logLines = expected.resolve(demo.resolveSibling(name + ".log.txt"));
+    assertLinesMatch(Files.readAllLines(logLines), log);
   }
 }
