@@ -31,6 +31,49 @@ class UtilTests {
     assertEquals("a.b", Bach.Util.extractFileName(URI.create(uri)));
   }
 
+  @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
+  @ParameterizedTest
+  @ValueSource(strings = {"http", "https"})
+  void downloadLicenseFromApacheOrg(String protocol, @TempDir Path temp) throws Exception {
+    var log = new ArrayList<String>();
+    var uri = URI.create(protocol + "://www.apache.org/licenses/LICENSE-2.0.txt");
+    var first = Bach.Util.download(log::add, false, temp, uri);
+    assertTrue(Files.readString(first).contains("Apache License"));
+    var second = Bach.Util.download(log::add, false, temp, uri);
+    assertEquals(first, second);
+    Files.writeString(first, "Lorem ipsum...");
+    assertFalse(Files.readString(first).contains("Apache License"));
+    var third = Bach.Util.download(log::add, false, temp, uri);
+    assertEquals(first, third);
+    var forth = Bach.Util.download(log::add, true, temp, uri);
+    assertEquals(first, forth);
+    Files.delete(first);
+    var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, true, temp, uri));
+    assertEquals("Target is missing and being offline: " + first, e.getMessage());
+    assertLinesMatch(
+        List.of(
+            // first
+            "download(" + uri + ")",
+            ">> TRANSFER >>",
+            "Downloaded LICENSE-2.0.txt successfully.",
+            // second
+            "download(" + uri + ")",
+            ">> TIMESTAMP COMPARISON >>",
+            "Already downloaded LICENSE-2.0.txt previously.",
+            // third
+            "download(" + uri + ")",
+            ">> TIMESTAMP COMPARISON >>",
+            "Local target file differs from remote source -- replacing it...",
+            ">> TRANSFER >>",
+            "Downloaded LICENSE-2.0.txt successfully.",
+            // forth
+            "download(" + uri + ")",
+            "Offline mode is active and target already exists.",
+            // fifth
+            "download(" + uri + ")"),
+        log);
+  }
+
   @Test
   void downloadRelativeUriThrows() {
     var log = new ArrayList<String>();
@@ -39,6 +82,38 @@ class UtilTests {
     var e = assertThrows(Exception.class, () -> Bach.Util.download(log::add, true, base, uri));
     assertTrue(e.getMessage().contains("URI is not absolute"));
     assertLinesMatch(List.of("download(" + uri + ")"), log);
+  }
+
+  @Test
+  void findDirectories() {
+    var root = Path.of(".").toAbsolutePath().normalize();
+    var dirs = Bach.Util.findDirectories(root);
+    assertTrue(dirs.contains(root.resolve("demo")));
+    assertTrue(dirs.contains(root.resolve("src")));
+  }
+
+  @Test
+  void findDirectoryNames() {
+    var root = Path.of(".").toAbsolutePath().normalize();
+    var dirs = Bach.Util.findDirectoryNames(root);
+    assertTrue(dirs.contains("demo"));
+    assertTrue(dirs.contains("src"));
+  }
+
+  @Test
+  void findDirectoriesReturnEmptyListWhenRootDoesNotExist() {
+    var root = Path.of("does", "not", "exist");
+    assertTrue(Bach.Util.findDirectories(root).isEmpty());
+    assertTrue(Bach.Util.findDirectoryNames(root).isEmpty());
+  }
+
+  @Test
+  void findDirectoriesFails() throws Exception {
+    var root = Files.createTempDirectory("findDirectoriesFails-");
+    Util.chmod(root, false, true, true);
+    assertThrows(Error.class, () -> Bach.Util.findDirectories(root));
+    assertThrows(Error.class, () -> Bach.Util.findDirectoryNames(root));
+    Util.chmod(root, true, true, true);
   }
 
   @Test
@@ -89,111 +164,6 @@ class UtilTests {
     assertEquals("", Bach.Util.join(""));
     assertEquals("a", Bach.Util.join("a"));
     assertEquals(abc, Bach.Util.join("a", "b", "c"));
-  }
-
-  @Nested
-  @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
-  class Download {
-
-    @ParameterizedTest
-    @ValueSource(strings = {"http", "https"})
-    void downloadLicenseFromApacheOrg(String protocol, @TempDir Path temp) throws Exception {
-      var log = new ArrayList<String>();
-      var uri = URI.create(protocol + "://www.apache.org/licenses/LICENSE-2.0.txt");
-      var first = Bach.Util.download(log::add, false, temp, uri);
-      assertTrue(Files.readString(first).contains("Apache License"));
-      var second = Bach.Util.download(log::add, false, temp, uri);
-      assertEquals(first, second);
-      Files.writeString(first, "Lorem ipsum...");
-      assertFalse(Files.readString(first).contains("Apache License"));
-      var third = Bach.Util.download(log::add, false, temp, uri);
-      assertEquals(first, third);
-      assertLinesMatch(
-          List.of(
-              // first
-              "download(" + uri + ")",
-              ">> TRANSFER >>",
-              "Downloaded LICENSE-2.0.txt successfully.",
-              // second
-              "download(" + uri + ")",
-              ">> TIMESTAMP COMPARISON >>",
-              "Already downloaded LICENSE-2.0.txt previously.",
-              // third
-              "download(" + uri + ")",
-              ">> TIMESTAMP COMPARISON >>",
-              "Local target file differs from remote source -- replacing it...",
-              ">> TRANSFER >>",
-              "Downloaded LICENSE-2.0.txt successfully."),
-          log);
-    }
-
-  //    @Test
-  //    void defaultFileSystem(@TempDir Path tempRoot) throws Exception {
-  //      var content = List.of("Lorem", "ipsum", "dolor", "sit", "amet");
-  //      var tempFile = Files.createFile(tempRoot.resolve("source.txt"));
-  //      Files.write(tempFile, content);
-  //      var tempPath = Files.createDirectory(tempRoot.resolve("target"));
-  //      var name = tempFile.getFileName().toString();
-  //      var actual = tempPath.resolve(name);
-  //
-  //      // initial download
-  //      bach.utilities.download(tempPath, tempFile.toUri());
-  //      assertTrue(Files.exists(actual));
-  //      assertLinesMatch(content, Files.readAllLines(actual));
-  //      assertLinesMatch(
-  //          List.of(
-  //              "Downloading " + tempFile.toUri() + "...",
-  //              "Transferring " + tempFile.toUri() + "...",
-  //              "Downloaded source.txt successfully.",
-  //              " o Size -> .. bytes", // 32 on Windows, 27 on Linux/Mac
-  //              " o Last Modified .+"),
-  //          logger.getLines());
-  //
-  //      // reload
-  //      logger.clear();
-  //      bach.utilities.download(tempPath, tempFile.toUri());
-  //      assertLinesMatch(
-  //          List.of(
-  //              "Downloading " + tempFile.toUri() + "...",
-  //              "Local file exists. Comparing attributes to remote file...",
-  //              "Local and remote file attributes seem to match."),
-  //          logger.getLines());
-  //
-  //      // offline mode
-  //      logger.clear();
-  //      bach.var.offline = true;
-  //      bach.utilities.download(tempPath, tempFile.toUri());
-  //      assertLinesMatch(
-  //          List.of(
-  //              "Downloading " + tempFile.toUri() + "...",
-  //              "Offline mode is active and target already exists."),
-  //          logger.getLines());
-  //
-  //      // offline mode with error
-  //      logger.clear();
-  //      Files.delete(actual);
-  //      var e =
-  //          assertThrows(Exception.class, () -> bach.utilities.download(tempPath,
-  // tempFile.toUri()));
-  //      assertEquals("Target is missing and being offline: " + actual, e.getMessage());
-  //      assertLinesMatch(List.of("Downloading " + tempFile.toUri() + "..."), logger.getLines());
-  //      // online but different file
-  //      logger.clear();
-  //      bach.var.offline = false;
-  //      Files.write(actual, List.of("Hello world!"));
-  //      bach.utilities.download(tempPath, tempFile.toUri());
-  //      assertLinesMatch(content, Files.readAllLines(actual));
-  //      assertLinesMatch(
-  //          List.of(
-  //              "Downloading " + tempFile.toUri() + "...",
-  //              "Local file exists. Comparing attributes to remote file...",
-  //              "Local file differs from remote -- replacing it...",
-  //              "Transferring " + tempFile.toUri() + "...",
-  //              "Downloaded source.txt successfully.",
-  //              " o Size -> .. bytes", // 32 on Windows, 27 on Linux/Mac
-  //              " o Last Modified .+"),
-  //          logger.getLines());
-  //    }
   }
 
   @Nested
