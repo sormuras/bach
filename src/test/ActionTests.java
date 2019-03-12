@@ -75,7 +75,8 @@ class ActionTests {
             " launch       Start project's main program.",
             " tool         Run named tool consuming all remaining arguments:",
             "                tool <name> <args...>",
-            "                tool java --show-version Program.java"),
+            "                tool java --show-version Program.java",
+            " scaffold     Create modular Java sample project in base directory."),
         lines);
   }
 
@@ -83,7 +84,7 @@ class ActionTests {
   @SwallowSystem
   void help(SwallowSystem.Streams streams) {
     new Bach().help();
-    assertEquals(12, streams.outLines().size(), streams.toString());
+    assertEquals(13, streams.outLines().size(), streams.toString());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }
 }

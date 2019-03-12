@@ -177,6 +177,14 @@ class Bach {
     project.launch();
   }
 
+  /** Create modular Java sample project in base directory. */
+  public void scaffold() throws Exception {
+    var uri = "https://github.com/sormuras/bach/raw/" + VERSION + "/demo/scaffold.zip";
+    var zip = download(base, URI.create(uri));
+    Util.unzip(zip);
+    Files.delete(zip);
+  }
+
   /** Print help text to given print stream. */
   void help(Consumer<String> out) {
     out.accept("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
@@ -298,7 +306,8 @@ class Bach {
           arguments.clear();
           return bach -> bach.run(name, args);
         }
-      };
+      },
+      SCAFFOLD(Bach::scaffold, "Create modular Java sample project in base directory.");
 
       final Action action;
       final String[] description;
