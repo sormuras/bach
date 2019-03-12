@@ -151,9 +151,11 @@ class BachTests {
 
   @Test
   void runThrowingAction() {
-    var bach = new Bach();
-    var lines = new ArrayList<String>();
-    bach.log.err = lines::add;
+    var bach = new Bach(true, Path.of(""));
+    var logOutput = new ArrayList<String>();
+    var logErrors = new ArrayList<String>();
+    bach.log.out = logOutput::add;
+    bach.log.err = logErrors::add;
 
     var action = new ThrowingAction();
     var error = assertThrows(Error.class, () -> bach.run(List.of(action)));
@@ -161,7 +163,25 @@ class BachTests {
     assertEquals(UnsupportedOperationException.class, error.getCause().getClass());
     assertEquals("123", error.getCause().getMessage());
 
-    assertLinesMatch(List.of("123"), lines);
+    assertLinesMatch(
+        List.of("Performing 1 action(s)...", "\\Q>> BachTests$ThrowingAction@\\E.+"), logOutput);
+    assertLinesMatch(List.of("123"), logErrors);
+  }
+
+  @Test
+  void runThrowingTool() {
+    var bach = new Bach(true, Path.of(""));
+    var log = new ArrayList<String>();
+    var tool = new ThrowingTool();
+    bach.log.out = log::add;
+    bach.tools.put("throws", tool);
+
+    var error = assertThrows(Error.class, () -> bach.run("throws", "x"));
+    assertEquals("Running tool throws failed!", error.getMessage());
+    assertEquals(Exception.class, error.getCause().getClass());
+    assertEquals("123", error.getCause().getMessage());
+
+    assertLinesMatch(List.of("run(throws, [x])", "Running mapped tool in-process: .+"), log);
   }
 
   @Test
@@ -247,6 +267,14 @@ class BachTests {
     @Override
     public void perform(Bach bach) {
       throw new UnsupportedOperationException("123");
+    }
+  }
+
+  private static class ThrowingTool implements Bach.Tool {
+
+    @Override
+    public void run(Bach bach, Object... args) throws Exception {
+      throw new Exception("123");
     }
   }
 }
