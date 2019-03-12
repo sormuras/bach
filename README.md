@@ -109,16 +109,21 @@ Remember to prepend `./` before each `bach` command when running on Linux or Mac
 
 ## Available Actions
 
-`java Bach.java ACTION [ ACTION]*`
+`java Bach.java help` prints
 
 ```text
- build     -> Build project in base directory.
- clean     -> Delete all generated assets - but keep caches intact.
- erase     -> Delete all generated assets - and also delete caches.
- help      -> Print this help screen on standard out... F1, F1, F1!
- launch    -> Start main program.
- scaffold  -> Create modular Java sample project in base directory.
- tool      -> Execute named tool consuming all remaining arguments.
+Usage of Bach.java (master):  java Bach.java [<action>...]
+
+Available default actions are:
+ build        Build modular Java project in base directory.
+ clean        Delete all generated assets - but keep caches intact.
+ erase        Delete all generated assets - and also delete caches.
+ help         Print this help screen on standard out... F1, F1, F1!
+ launch       Start project's main program.
+ tool         Run named tool consuming all remaining arguments:
+                tool <name> <args...>
+                tool java --show-version Program.java
+ scaffold     Create modular Java sample project in base directory.
 ```
 
 ## Directory Layout
