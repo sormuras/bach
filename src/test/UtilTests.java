@@ -166,6 +166,26 @@ class UtilTests {
     assertEquals(abc, Bach.Util.join("a", "b", "c"));
   }
 
+  @Test
+  void unzip(@TempDir Path temp) throws Exception {
+    var zip = Path.of("demo", "scaffold.zip");
+    var one = Files.createDirectories(temp.resolve("one"));
+    var home1 = Bach.Util.unzip(zip, one);
+    assertEquals(one, home1);
+    assertLinesMatch(
+        Files.readAllLines(Path.of("src", "test-resources", "demo", "scaffold.clean.txt")),
+        Util.treeWalk(home1));
+
+    var two = Files.createDirectories(temp.resolve("two"));
+    var zip2 = Files.copy(zip, two.resolve(zip.getFileName()));
+    var home2 = Bach.Util.unzip(zip2);
+    assertEquals(two, home2);
+    Files.delete(zip2);
+    assertLinesMatch(
+        Files.readAllLines(Path.of("src", "test-resources", "demo", "scaffold.clean.txt")),
+        Util.treeWalk(home2));
+  }
+
   @Nested
   class Trees {
 

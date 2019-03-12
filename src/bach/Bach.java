@@ -22,6 +22,7 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -990,6 +991,31 @@ class Bach {
           Files.deleteIfExists(path);
         }
       }
+    }
+
+    /** Unzip file "in place". */
+    static Path unzip(Path zip) throws Exception {
+      return unzip(zip, zip.toAbsolutePath().getParent());
+    }
+
+    /** Unzip file to specified destination directory. */
+    static Path unzip(Path zip, Path destination) throws Exception {
+      var loader = Bach.class.getClassLoader();
+      try (var zipFileSystem = FileSystems.newFileSystem(zip, loader)) {
+        var root = zipFileSystem.getPath(zipFileSystem.getSeparator());
+        treeCopy(root, destination);
+      }
+      // Single subdirectory created in destination?
+      try (var stream = Files.list(destination)) {
+        var entries = stream.collect(Collectors.toList());
+        if (entries.size() == 1) {
+          var single = entries.get(0);
+          if (Files.isDirectory(single)) {
+            return destination.resolve(single.getFileName());
+          }
+        }
+      }
+      return destination;
     }
   }
 }
