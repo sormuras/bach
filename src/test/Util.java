@@ -1,6 +1,5 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
@@ -11,7 +10,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.condition.OS;
 
 interface Util {
@@ -67,8 +65,6 @@ interface Util {
     }
     return paths;
   }
-
-
 
   /** Walk directory tree structure. */
   static List<String> treeWalk(Path root) {
