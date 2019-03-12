@@ -75,8 +75,9 @@ class BachTests {
     assertNotNull(bach.log.err);
     assertSame(System.Logger.Level.INFO, bach.log.threshold);
     assertNotNull(bach.tools);
-    assertEquals(1, bach.tools.size(), bach.tools.toString());
+    assertEquals(2, bach.tools.size(), bach.tools.toString());
     assertTrue(bach.tools.containsKey("format"));
+    assertTrue(bach.tools.containsKey("maven"));
   }
 
   @Test

@@ -98,6 +98,7 @@ class Bach {
     this.tools = new HashMap<>();
 
     tools.put("format", Tool::format);
+    tools.put("maven", Tool::maven);
   }
 
   /** Transforming strings to actions. */
@@ -360,6 +361,20 @@ class Bach {
       args.addAll(Util.findFiles(roots, Util::isJavaFile));
       format(bach, args.toArray(Object[]::new));
     }
+
+    static void maven(Bach bach, Object... args) throws Exception {
+      bach.log.debug("maven(" + List.of(args) + ")");
+      var uri = URI.create(bach.get(Property.TOOL_URI_MAVEN));
+      var tools = USER_HOME.resolve(Path.of(".bach", "tools"));
+      var zip = bach.download(tools, uri);
+      bach.log.debug("unzip(" + zip + ")");
+      var home = Bach.Util.unzip(zip);
+      var win = System.getProperty("os.name").toLowerCase().contains("win");
+      var name = "mvn" + (win ? ".cmd" : "");
+      var executable = home.resolve("bin").resolve(name);
+      executable.toFile().setExecutable(true);
+      bach.run(0, executable.toString(), args);
+    }
   }
 
   /** Property names, keys and default values. */
@@ -384,7 +399,12 @@ class Bach {
     TOOL_URI_JUNIT(
         "http://central.maven.org/"
             + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
-            + "junit-platform-console-standalone-1.4.0.jar");
+            + "junit-platform-console-standalone-1.4.0.jar"),
+    /** Maven URI. */
+    TOOL_URI_MAVEN(
+        "https://archive.apache.org/"
+            + "dist/maven/maven-3/3.6.0/binaries/"
+            + "apache-maven-3.6.0-bin.zip");
 
     /** Load properties from given path. */
     static Properties loadProperties(Path path) {
