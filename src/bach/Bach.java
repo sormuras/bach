@@ -227,11 +227,12 @@ class Bach {
     try {
       var tool = tools.get(name);
       if (tool != null) {
-        tools.get(name).run(this, arguments);
+        log.debug("Running mapped tool in-process: " + tool);
+        tool.run(this, arguments);
         return 0;
       }
     } catch (Exception e) {
-      return 1;
+      throw new Error("Running tool " + name + " failed!", e);
     }
     // TODO Find executable via {java.home}/${name}[.exe]
     try {
