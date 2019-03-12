@@ -24,6 +24,7 @@ import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -922,6 +923,48 @@ class Bach {
         strings[1 + i] = more[i].toString();
       }
       return String.join(File.pathSeparator, strings);
+    }
+
+    /** Copy all files and directories from source to target directory. */
+    static void treeCopy(Path source, Path target) throws Exception {
+      treeCopy(source, target, __ -> true);
+    }
+
+    /** Copy selected files and directories from source to target directory. */
+    static void treeCopy(Path source, Path target, Predicate<Path> filter) throws Exception {
+      // debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
+      if (!Files.exists(source)) {
+        throw new IllegalArgumentException("source must exist: " + source);
+      }
+      if (!Files.isDirectory(source)) {
+        throw new IllegalArgumentException("source must be a directory: " + source);
+      }
+      if (Files.exists(target)) {
+        if (!Files.isDirectory(target)) {
+          throw new IllegalArgumentException("target must be a directory: " + target);
+        }
+        if (target.equals(source)) {
+          return;
+        }
+        if (target.startsWith(source)) {
+          // copy "a/" to "a/b/"...
+          throw new IllegalArgumentException("target must not a child of source");
+        }
+      }
+      try (var stream = Files.walk(source).sorted()) {
+        var paths = stream.collect(Collectors.toList());
+        for (var path : paths) {
+          var destination = target.resolve(source.relativize(path).toString());
+          if (Files.isDirectory(path)) {
+            Files.createDirectories(destination);
+            continue;
+          }
+          if (filter.test(path)) {
+            // TODO Compare last modified time before replacing
+            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+          }
+        }
+      }
     }
 
     /** Delete all files and directories from and including the root directory. */

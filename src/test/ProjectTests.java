@@ -74,7 +74,7 @@ class ProjectTests {
   void buildAndLaunchMinimalProgram(@TempDir Path workspace) throws Exception {
     var demo = Path.of("src", "test-resources", "program", "minimal");
     var base = workspace.resolve(demo.getFileName());
-    Util.treeCopy(demo, base);
+    Bach.Util.treeCopy(demo, base);
 
     var out = new ArrayList<String>();
     var bach = new Bach(true, base);

@@ -40,7 +40,7 @@ class DemoTests {
     void greetings(String name, @TempDir Path workspace) throws Exception {
       var demo = Path.of("demo", "jigsaw-quick-start", name);
       var base = workspace.resolve(demo.getFileName());
-      Util.treeCopy(demo, base);
+      Bach.Util.treeCopy(demo, base);
 
       var log = new ArrayList<String>();
       var bach = new Bach(true, base);
@@ -80,7 +80,7 @@ class DemoTests {
     var name = "scaffold";
     var demo = Path.of("demo", name);
     var base = workspace.resolve(demo.getFileName());
-    Util.treeCopy(demo, base);
+    Bach.Util.treeCopy(demo, base);
 
     var log = new ArrayList<String>();
     var bach = new Bach(true, base);

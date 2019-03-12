@@ -68,46 +68,7 @@ interface Util {
     return paths;
   }
 
-  /** Copy all files and directories from source to target directory. */
-  static void treeCopy(Path source, Path target) throws Exception {
-    treeCopy(source, target, __ -> true);
-  }
 
-  /** Copy selected files and directories from source to target directory. */
-  static void treeCopy(Path source, Path target, Predicate<Path> filter) throws Exception {
-    // debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
-    if (!Files.exists(source)) {
-      throw new IllegalArgumentException("source must exist: " + source);
-    }
-    if (!Files.isDirectory(source)) {
-      throw new IllegalArgumentException("source must be a directory: " + source);
-    }
-    if (Files.exists(target)) {
-      if (!Files.isDirectory(target)) {
-        throw new IllegalArgumentException("target must be a directory: " + target);
-      }
-      if (target.equals(source)) {
-        return;
-      }
-      if (target.startsWith(source)) {
-        // copy "a/" to "a/b/"...
-        throw new IllegalArgumentException("target must not a child of source");
-      }
-    }
-    try (var stream = Files.walk(source).sorted()) {
-      var paths = stream.collect(Collectors.toList());
-      for (var path : paths) {
-        var destination = target.resolve(source.relativize(path));
-        if (Files.isDirectory(path)) {
-          Files.createDirectories(destination);
-          continue;
-        }
-        if (filter.test(path)) {
-          Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-        }
-      }
-    }
-  }
 
   /** Walk directory tree structure. */
   static List<String> treeWalk(Path root) {

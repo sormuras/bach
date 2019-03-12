@@ -232,7 +232,7 @@ class UtilTests {
           "x/file-2",
           "x/file-3");
 
-      Util.treeCopy(root.resolve("x"), root.resolve("a/b/c"));
+      Bach.Util.treeCopy(root.resolve("x"), root.resolve("a/b/c"));
       assertTreeWalkMatches(
           root,
           "a",
@@ -250,7 +250,7 @@ class UtilTests {
           "x/file-2",
           "x/file-3");
 
-      Util.treeCopy(root.resolve("x"), root.resolve("x/y"));
+      Bach.Util.treeCopy(root.resolve("x"), root.resolve("x/y"));
       assertTreeWalkMatches(
           root,
           "a",
@@ -279,22 +279,22 @@ class UtilTests {
     @Test
     void copyNonExistingDirectoryFails() {
       var root = Path.of("does not exist");
-      assertThrows(IllegalArgumentException.class, () -> Util.treeCopy(root, Path.of(".")));
+      assertThrows(IllegalArgumentException.class, () -> Bach.Util.treeCopy(root, Path.of(".")));
     }
 
     @Test
     void copyFailures(@TempDir Path temp) throws Exception {
       var regular = Util.createFiles(temp, 2).get(0);
-      assertThrows(Throwable.class, () -> Util.treeCopy(regular, Path.of(".")));
+      assertThrows(Throwable.class, () -> Bach.Util.treeCopy(regular, Path.of(".")));
       var directory = Files.createDirectory(temp.resolve("directory"));
       Util.createFiles(directory, 3);
-      assertThrows(Throwable.class, () -> Util.treeCopy(directory, regular));
-      Util.treeCopy(directory, directory);
-      assertThrows(Throwable.class, () -> Util.treeCopy(temp, directory));
+      assertThrows(Throwable.class, () -> Bach.Util.treeCopy(directory, regular));
+      Bach.Util.treeCopy(directory, directory);
+      assertThrows(Throwable.class, () -> Bach.Util.treeCopy(temp, directory));
       var forbidden = Files.createDirectory(temp.resolve("forbidden"));
       try {
         Util.chmod(forbidden, false, false, true);
-        assertThrows(Throwable.class, () -> Util.treeCopy(directory, forbidden));
+        assertThrows(Throwable.class, () -> Bach.Util.treeCopy(directory, forbidden));
       } finally {
         Util.chmod(forbidden, true, true, true);
       }
