@@ -342,6 +342,7 @@ class Bach {
     void run(Bach bach, Object... args) throws Exception;
 
     static void format(Bach bach, Object... args) throws Exception {
+      bach.log.debug("format(" + List.of(args) + ")");
       var name = "google-java-format";
       var destination = USER_HOME.resolve(Path.of(".bach", "tools", name));
       var uri = URI.create(bach.get(Property.TOOL_URI_FORMAT));
@@ -965,13 +966,23 @@ class Bach {
         var paths = stream.collect(Collectors.toList());
         for (var path : paths) {
           var destination = target.resolve(source.relativize(path).toString());
+          var lastModified = Files.getLastModifiedTime(path);
           if (Files.isDirectory(path)) {
             Files.createDirectories(destination);
+            Files.setLastModifiedTime(destination, lastModified);
             continue;
           }
           if (filter.test(path)) {
-            // TODO Compare last modified time before replacing
-            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(destination)) {
+              if (lastModified.equals(Files.getLastModifiedTime(destination))) {
+                continue;
+              }
+            }
+            Files.copy(
+                path,
+                destination,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES);
           }
         }
       }
@@ -1013,14 +1024,13 @@ class Bach {
       try (var zipFileSystem = FileSystems.newFileSystem(zip, loader)) {
         var root = zipFileSystem.getPath(zipFileSystem.getSeparator());
         treeCopy(root, destination);
-      }
-      // Single subdirectory created in destination?
-      try (var stream = Files.list(destination)) {
+        // Single subdirectory in root of the zip file?
+        var stream = Files.list(root);
         var entries = stream.collect(Collectors.toList());
         if (entries.size() == 1) {
-          var single = entries.get(0);
-          if (Files.isDirectory(single)) {
-            return destination.resolve(single.getFileName());
+          var singleton = entries.get(0);
+          if (Files.isDirectory(singleton)) {
+            return destination.resolve(singleton.getFileName().toString());
           }
         }
       }
