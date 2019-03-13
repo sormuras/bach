@@ -784,8 +784,7 @@ class Bach {
       java.add("--module-path");
       java.add(Util.join(test.target, lib, cachedModules));
       java.add("--add-modules");
-      java.add(
-          "ALL-MODULE-PATH"); // TODO java.add(String.join(",", findDirectoryNames(test.target)));
+      java.add(String.join(",", Util.findDirectoryNames(test.target))); // "ALL-MODULE-PATH"?
       java.add("--class-path");
       java.add(
           download(
