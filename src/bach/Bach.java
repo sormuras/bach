@@ -365,9 +365,20 @@ class Bach {
 
     /** Run format. */
     static void format(Bach bach, boolean replace, Collection<Path> roots) throws Exception {
+      // Find all .java files in given root paths...
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        if (Files.isDirectory(root)) {
+          files.addAll(Util.findJavaFiles(root));
+        }
+      }
+      // No .java file found? Done.
+      if (files.isEmpty()) {
+        return;
+      }
       var args = new ArrayList<>();
       args.addAll(replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed"));
-      args.addAll(Util.findFiles(roots, Util::isJavaFile));
+      args.addAll(files);
       format(bach, args.toArray(Object[]::new));
     }
 
@@ -647,6 +658,8 @@ class Bach {
 
     /** Assemble all assets. */
     void assemble() throws Exception {
+      log.debug("assemble()");
+      Tool.format(Bach.this, false, Set.of(main.source, test.source));
       assembleExternalModules();
     }
 
