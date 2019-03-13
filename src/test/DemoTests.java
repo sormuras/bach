@@ -49,7 +49,7 @@ class DemoTests {
 
       assertEquals(base, bach.base);
       assertEquals(name, bach.project.name);
-      // assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+      assertEquals("1.0.0-SNAPSHOT", bach.project.version);
       var program = Bach.ModuleInfo.findProgram(base.resolve("src"));
       assertEquals("com.greetings/com.greetings.Main", program);
       var resources = Path.of("src", "test-resources");
@@ -89,7 +89,7 @@ class DemoTests {
     var expected = Path.of("src", "test-resources");
     assertEquals(base, bach.base);
     assertEquals(name, bach.project.name);
-    // TODO assertEquals("1.0.0-SNAPSHOT", bach.project.version);
+    assertEquals("1.0.0-SNAPSHOT", bach.project.version);
     var cleanTreeWalk = expected.resolve(demo.resolveSibling(name + ".clean.txt"));
     // Files.write(cleanTreeWalk, bach.utilities.treeWalk(base));
     assertLinesMatch(Files.readAllLines(cleanTreeWalk), Util.treeWalk(base));

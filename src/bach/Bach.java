@@ -407,6 +407,8 @@ class Bach {
     OFFLINE("false"),
     /** Default Maven repository used for artifact resolution. */
     MAVEN_REPOSITORY("https://repo1.maven.org/maven2"),
+    PROJECT_NAME("project"),
+    PROJECT_VERSION("1.0.0-SNAPSHOT"),
     PROJECT_LAUNCH_MODULE("<module>[/<main-class>]"),
     PROJECT_LAUNCH_OPTIONS(""),
     RUN_REDIRECT_TYPE("INHERIT"),
@@ -630,6 +632,8 @@ class Bach {
     final Realm main;
     /** Test realm. */
     final Realm test;
+    /** Version of the project. */
+    final String version;
 
     /** Initialize project properties with default values. */
     Project() {
@@ -637,8 +641,13 @@ class Bach {
       this.cache = based(".bach");
       this.cachedModules = cache.resolve("modules");
       this.lib = based("lib");
-      // TODO Get project name and version from properties.
-      this.name = base.getNameCount() > 0 ? base.toAbsolutePath().getFileName() + "" : "project";
+      this.name =
+          get(
+              Property.PROJECT_NAME.key,
+              base.getNameCount() > 0
+                  ? base.toAbsolutePath().getFileName() + ""
+                  : Property.PROJECT_NAME.defaultValue);
+      this.version = get(Property.PROJECT_VERSION);
       // Realm: "main"
       this.main =
           new Realm(
