@@ -228,9 +228,11 @@ class BachTests {
   @SwallowSystem
   void runToolThatDoesNotExistFails(SwallowSystem.Streams streams) {
     var bach = new Bach(true, Path.of(""));
+    bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "PIPE");
+
     var error = assertThrows(Error.class, () -> bach.run("does-not-exist"));
     assertEquals("Running tool does-not-exist failed!", error.getMessage());
-    assertLinesMatch(List.of("run(does-not-exist, [])", "Redirect: INHERIT"), streams.outLines());
+    assertLinesMatch(List.of("run(does-not-exist, [])", "Redirect: PIPE"), streams.outLines());
   }
 
   @Test

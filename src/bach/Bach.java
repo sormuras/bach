@@ -125,6 +125,7 @@ class Bach {
 
   /** Build all and everything. */
   public void build() throws Exception {
+    log.trace("build()");
     project.assemble();
     project.main.compile();
     project.test.compile();
@@ -133,11 +134,13 @@ class Bach {
 
   /** Delete generated binary assets. */
   public void clean() throws Exception {
+    log.trace("clean()");
     Util.treeDelete(project.bin);
   }
 
   /** Delete generated binary assets and local build cache directory. */
   public void erase() throws Exception {
+    log.trace("erase()");
     clean();
     Util.treeDelete(project.cache);
   }
@@ -168,6 +171,7 @@ class Bach {
 
   /** Print help text to the "standard" output stream. */
   public void help() {
+    log.trace("help()");
     System.out.println();
     help(System.out::println);
     System.out.println();
@@ -175,11 +179,13 @@ class Bach {
 
   /** Start main program. */
   public void launch() throws Exception {
+    log.trace("launch()");
     project.launch();
   }
 
   /** Create modular Java sample project in base directory. */
   public void scaffold() throws Exception {
+    log.trace("scaffold()");
     var uri = "https://github.com/sormuras/bach/raw/" + VERSION + "/demo/scaffold.zip";
     var zip = download(base, URI.create(uri));
     Util.unzip(zip);
@@ -228,7 +234,7 @@ class Bach {
     for (int i = 0; i < args.length; i++) {
       args[i] = arguments[i].toString();
     }
-    log.debug(String.format("run(%s, %s)", name, List.of(args)));
+    log.trace(String.format("run(%s, %s)", name, List.of(args)));
     var toolProvider = ToolProvider.findFirst(name);
     if (toolProvider.isPresent()) {
       var tool = toolProvider.get();
@@ -340,8 +346,10 @@ class Bach {
   @FunctionalInterface
   interface Tool {
 
+    /** Run this tool on the given Bach instance. */
     void run(Bach bach, Object... args) throws Exception;
 
+    /** Run format. */
     static void format(Bach bach, Object... args) throws Exception {
       bach.log.debug("format(" + List.of(args) + ")");
       var name = "google-java-format";
@@ -355,6 +363,7 @@ class Bach {
       bach.run(0, "java", arguments.toArray(Object[]::new));
     }
 
+    /** Run format. */
     static void format(Bach bach, boolean replace, Collection<Path> roots) throws Exception {
       var args = new ArrayList<>();
       args.addAll(replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed"));
@@ -362,6 +371,7 @@ class Bach {
       format(bach, args.toArray(Object[]::new));
     }
 
+    /** Run Maven. */
     static void maven(Bach bach, Object... args) throws Exception {
       bach.log.debug("maven(" + List.of(args) + ")");
       var uri = URI.create(bach.get(Property.TOOL_URI_MAVEN));
@@ -443,6 +453,11 @@ class Bach {
 
     /** Error output stream. */
     Consumer<String> err = System.err::println;
+
+    /** Log trace message unless threshold suppresses it. */
+    void trace(String message) {
+      log.log(Level.TRACE, message);
+    }
 
     /** Log debug message unless threshold suppresses it. */
     void debug(String message) {
@@ -650,9 +665,6 @@ class Bach {
         return;
       }
       log.debug("External module names: " + externals);
-      if (externals.isEmpty()) {
-        return;
-      }
       var moduleMaven =
           Property.loadProperties(
               download(
@@ -673,13 +685,13 @@ class Bach {
       for (var external : externals) {
         var uri = get("module." + external, null);
         if (uri != null) {
-          // logger.log(DEBUG, "External module {0} mapped to custom uri: {1}", external, uri);
+          log.debug(String.format("External module %s mapped to custom uri: %s", external, uri));
           uris.add(URI.create(uri));
           continue;
         }
         var mavenGA = moduleMaven.getProperty(external);
         if (mavenGA == null) {
-          // logger.log(WARNING, "External module not mapped: {0}", external);
+          log.log(Level.WARNING, String.format("External module not mapped: %s", external));
           continue;
         }
         var group = mavenGA.substring(0, mavenGA.indexOf(':'));
@@ -797,7 +809,7 @@ class Bach {
 
       /** Compile all Java sources found in this realm. */
       void compile() throws Exception {
-        log.log(Level.TRACE, String.format("%s.compile()", name));
+        log.trace(String.format("%s.compile()", name));
         if (Files.notExists(source)) {
           log.log(Level.INFO, String.format("Skip %s.compile(): path %s not found", name, source));
           return;

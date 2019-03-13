@@ -1,3 +1,6 @@
+build()
+assemble()
+>> ASSEMBLE >>
 External module names: [org.apiguardian.api, org.jooq.jool, org.junit.jupiter.api]
 >> RESOLVE EXTERNAL MODULES >>
 main.compile()
@@ -8,3 +11,5 @@ Launching JUnit Platform...
 >> RUN TEST >>
 Redirect: FILE .+
 Running tool in a new process: .+
+erase()
+clean()

@@ -1,3 +1,6 @@
+build()
+assemble()
+>> ASSEMBLE >>
 External module names: [org.apiguardian.api, org.junit.jupiter.api]
 >> ASSEMBLE >>
 main.compile()

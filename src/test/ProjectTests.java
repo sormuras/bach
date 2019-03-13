@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -105,8 +107,12 @@ class ProjectTests {
     bach.launch();
     assertLinesMatch(
         List.of(
+            "build()",
+            "assemble()",
+            ">> ASSEMBLE >>",
             "main.compile()",
             ">> BUILD >>",
+            "launch()",
             "Launching minimal/modular.Program...",
             ">> LAUNCH >>"),
         out);
@@ -114,6 +120,42 @@ class ProjectTests {
     Files.delete(base.resolve("src/minimal/modular/Program.java"));
     out.clear();
     bach.launch();
-    assertLinesMatch(List.of("No <module>[/<main-class>] supplied, no launch."), out);
+    assertLinesMatch(List.of("launch()", "No <module>[/<main-class>] supplied, no launch."), out);
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
+  void programExternals(@TempDir Path workspace) throws Exception {
+    var demo = Path.of("src", "test-resources", "program", "externals");
+    var base = workspace.resolve(demo.getFileName());
+    Bach.Util.treeCopy(demo, base);
+
+    var bach = new Bach(true, base);
+    assertNotNull(bach.properties.getProperty("module.junit3"));
+
+    var out = new ArrayList<String>();
+    var err = new ArrayList<String>();
+    bach.log.out = out::add;
+    bach.log.err = err::add;
+
+    bach.project.assemble();
+    assertLinesMatch(
+        List.of(
+            "assemble()",
+            ">> FORMAT >>",
+            "External module names: [junit3]",
+            ">> RESOLVE >>",
+            "Downloaded junit-3.7.jar successfully.",
+            "Resolved " + base.resolve(Path.of(".bach/modules/junit-3.7.jar"))),
+        out);
+    assertTrue(err.isEmpty());
+
+    out.clear();
+    bach.properties.remove("module.junit3");
+    bach.project.assemble();
+    assertLinesMatch(
+        List.of("assemble()", ">> FORMAT >>", "External module names: [junit3]", ">> RESOLVE >>"),
+        out);
+    assertLinesMatch(List.of("External module not mapped: junit3"), err);
   }
 }
