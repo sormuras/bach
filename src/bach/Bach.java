@@ -118,6 +118,13 @@ class Bach {
     return actions;
   }
 
+  /** Download tool archive and return path to it. */
+  private Path download(Property property) throws Exception {
+    var tool = Path.of(get(Property.TOOL_HOME));
+    var name = property.name().substring(9).toLowerCase(); // "TOOL_URI_XYZ" -> "xyz"
+    return download(tool.resolve(name), URI.create(get(property)));
+  }
+
   /** Download file from supplied uri to specified destination directory. */
   Path download(Path destination, URI uri) throws Exception {
     return Util.download(log::debug, Boolean.parseBoolean(get(Property.OFFLINE)), destination, uri);
@@ -352,10 +359,7 @@ class Bach {
     /** Run format. */
     static void format(Bach bach, Object... args) throws Exception {
       bach.log.debug("format(" + List.of(args) + ")");
-      var name = "google-java-format";
-      var destination = USER_HOME.resolve(Path.of(".bach", "tools", name));
-      var uri = URI.create(bach.get(Property.TOOL_URI_FORMAT));
-      var jar = bach.download(destination, uri);
+      var jar = bach.download(Property.TOOL_URI_FORMAT);
       var arguments = new ArrayList<>();
       arguments.add("-jar");
       arguments.add(jar);
@@ -385,9 +389,7 @@ class Bach {
     /** Run Maven. */
     static void maven(Bach bach, Object... args) throws Exception {
       bach.log.debug("maven(" + List.of(args) + ")");
-      var uri = URI.create(bach.get(Property.TOOL_URI_MAVEN));
-      var tools = USER_HOME.resolve(Path.of(".bach", "tools"));
-      var zip = bach.download(tools, uri);
+      var zip = bach.download(Property.TOOL_URI_MAVEN);
       bach.log.debug("unzip(" + zip + ")");
       var home = Bach.Util.unzip(zip);
       var win = System.getProperty("os.name").toLowerCase().contains("win");
@@ -413,6 +415,8 @@ class Bach {
     PROJECT_LAUNCH_OPTIONS(""),
     RUN_REDIRECT_TYPE("INHERIT"),
     RUN_REDIRECT_FILE(""), // empty: create temporary file
+    /** Home directory for downloadable tools. */
+    TOOL_HOME(USER_HOME.resolve(".bach/tool").toString()),
     /** URI to Google Java Format "all-deps" JAR. */
     TOOL_URI_FORMAT(
         "https://github.com/"
@@ -795,10 +799,7 @@ class Bach {
       java.add("--add-modules");
       java.add(String.join(",", Util.findDirectoryNames(test.target))); // "ALL-MODULE-PATH"?
       java.add("--class-path");
-      java.add(
-          download(
-              USER_HOME.resolve(Path.of(".bach", "tools", "junit-platform-console-standalone")),
-              URI.create(get(Property.TOOL_URI_JUNIT))));
+      java.add(download(Property.TOOL_URI_JUNIT));
       java.add("org.junit.platform.console.ConsoleLauncher");
       java.add("--reports-dir");
       java.add(bin.resolve("test-reports"));
