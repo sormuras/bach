@@ -19,7 +19,7 @@ class SanityTests {
     process.getOutputStream().write("var bach = new Bach()\n".getBytes());
     process.getOutputStream().write("/exit\n".getBytes());
     process.getOutputStream().flush();
-    if (!process.waitFor(23, TimeUnit.SECONDS)) {
+    if (!process.waitFor(30, TimeUnit.SECONDS)) {
       process.destroy();
     }
     var code = process.exitValue();
