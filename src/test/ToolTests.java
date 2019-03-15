@@ -28,6 +28,30 @@ class ToolTests {
   }
 
   @Nested
+  class JUnit {
+
+    @Test
+    @SwallowSystem
+    void help(SwallowSystem.Streams streams) throws Exception {
+      var bach = new Bach(true, Path.of(""));
+      bach.properties.setProperty(Bach.Property.RUN_REDIRECT_TYPE.key, "FILE");
+
+      Bach.Tool.junit(bach, "--help");
+      assertLinesMatch(
+          List.of("junit([--help])", ">> INSTALL >>", "Running tool in a new process: .+"),
+          streams.outLines());
+      assertLinesMatch(
+          List.of(
+              "",
+              "Thanks for using JUnit! Support its development at https://junit.org/sponsoring",
+              "",
+              "Usage: ConsoleLauncher .+",
+              ">> HELP >>"),
+          Files.readAllLines(Path.of(bach.get(Bach.Property.RUN_REDIRECT_FILE))));
+    }
+  }
+
+  @Nested
   class Maven {
 
     @Test

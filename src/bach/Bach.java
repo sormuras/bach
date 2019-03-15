@@ -98,6 +98,7 @@ class Bach {
     this.tools = new HashMap<>();
 
     tools.put("format", Tool::format);
+    tools.put("junit", Tool::junit);
     tools.put("maven", Tool::maven);
   }
 
@@ -384,6 +385,21 @@ class Bach {
       args.addAll(replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed"));
       args.addAll(files);
       format(bach, args.toArray(Object[]::new));
+    }
+
+    /** Run JUnit Platform Console Launcher. */
+    static void junit(Bach bach, Object... args) throws Exception {
+      bach.log.debug("junit(" + List.of(args) + ")");
+      junit(bach, new ArrayList<>(), args);
+    }
+
+    /** Run JUnit Platform Console Launcher. */
+    static void junit(Bach bach, List<Object> java, Object... args) throws Exception {
+      java.add("--class-path");
+      java.add(bach.download(Property.TOOL_URI_JUNIT));
+      java.add("org.junit.platform.console.ConsoleLauncher");
+      java.addAll(List.of(args));
+      bach.run(0, "java", java.toArray(Object[]::new));
     }
 
     /** Run Maven. */
@@ -798,13 +814,7 @@ class Bach {
       java.add(Util.join(test.target, lib, cachedModules));
       java.add("--add-modules");
       java.add(String.join(",", Util.findDirectoryNames(test.target))); // "ALL-MODULE-PATH"?
-      java.add("--class-path");
-      java.add(download(Property.TOOL_URI_JUNIT));
-      java.add("org.junit.platform.console.ConsoleLauncher");
-      java.add("--reports-dir");
-      java.add(bin.resolve("test-reports"));
-      java.add("--scan-modules");
-      run(0, "java", java.toArray(Object[]::new));
+      Tool.junit(Bach.this, java, "--reports-dir", bin.resolve("test-reports"), "--scan-modules");
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
