@@ -3,7 +3,7 @@
 echo "`basename "$0"` -- testing main variants in dry-run mode..."
 
 FEATURE='9'
-LICENSES=(GPL BCL)
+LICENSES=(GPL)   # exclude BCL from test run, it's "deprecated for removal" anyway
 OSES=(linux-x64 osx-x64 windows-x64)
 
 while [ "${FEATURE}" != '99' ]

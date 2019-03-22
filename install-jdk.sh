@@ -205,13 +205,12 @@ function determine_url() {
        # See https://github.com/sormuras/bach/issues/42 for details
        #   11-GPL) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
        11-BCL) url="${ORACLE}/11.0.2+9/f51449fcd52f4d52b93a989c5c56ed3c/jdk-11.0.2_${os}_bin.tar.gz"; return;;
-       12-GPL) url="${DOWNLOAD}/GA/jdk12/GPL/openjdk-12_linux-x64_bin.tar.gz"; return;;
     esac
 
-    # EA or RC build?
+    # EA or RC or GA build?
     local JAVA_NET="http://jdk.java.net/${feature}"
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
-    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.*${license}/.*jdk-${feature}.+${os}_bin.tar.gz$" || true)
+    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.*${license}/.*jdk-${feature}.+${os}_bin(.tar.gz|.zip)$" || true)
 
     if [[ -z ${url} ]]; then
         script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1
