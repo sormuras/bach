@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-03-20'
+    readonly script_version='2019-03-22'
 
     dry=false
     silent=false
@@ -183,6 +183,9 @@ function perform_sanity_checks() {
     if [[ ${feature} -lt 9 ]] || [[ ${feature} -gt ${latest_jdk} ]]; then
         script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
+    if [[ ${feature} -gt 11 ]] && [[ ${license} == 'BCL' ]]; then
+        script_exit "BCL licensed downloads are only supported up to JDK 11, but got: ${feature}" 3
+    fi
     if [[ -d "$target" ]]; then
         script_exit "Target directory must not exist, but it does: $(du -hs '${target}')" 3
     fi
@@ -292,7 +295,6 @@ function download_and_extract_and_set_target() {
     # Link to system certificates
     # http://openjdk.java.net/jeps/319
     # https://bugs.openjdk.java.net/browse/JDK-8196141
-    # TODO: Provide support for other distributions than Debian/Ubuntu
     if [[ ${cacerts} == true ]]; then
         mv "${target}/lib/security/cacerts" "${target}/lib/security/cacerts.jdk"
         ln -s /etc/ssl/certs/java/cacerts "${target}/lib/security/cacerts"
