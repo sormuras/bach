@@ -1,6 +1,9 @@
 dist: xenial
 language: java
 
+before_install:
+- sh ./install-jdk-tests.sh
+
 install:
 - java --version
 
