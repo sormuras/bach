@@ -265,6 +265,10 @@ function download_and_extract_and_set_target() {
         wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
     fi
 
+    if [[ ${os} == 'windows-x64' ]]; then
+        script_exit "Extracting archives on Windows isn't supported, yet" 4
+    fi
+
     verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
         tar --extract ${tar_options} -C "${workspace}"
