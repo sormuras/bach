@@ -1,8 +1,8 @@
-workflow "New workflow" {
+workflow "Execute smoke tests on push" {
   on = "push"
-  resolves = ["Test install-jdk.sh action"]
+  resolves = ["Print OpenJDK URIs"]
 }
 
-action "Test install-jdk.sh action" {
+action "Print OpenJDK URIs" {
   uses = "./.github/action/test-install-jdk-action"
 }
