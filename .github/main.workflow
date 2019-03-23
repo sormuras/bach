@@ -1,4 +1,4 @@
-workflow "Execute smoke tests on push" {
+workflow "Execute smoke tests" {
   on = "push"
   resolves = ["Print OpenJDK URIs"]
 }
