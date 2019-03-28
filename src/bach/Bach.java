@@ -440,8 +440,8 @@ class Bach {
             + "google-java-format-1.7-all-deps.jar"),
     /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_URI_JUNIT(
-        "http://central.maven.org/"
-            + "maven2/org/junit/platform/junit-platform-console-standalone/1.4.0/"
+        MAVEN_REPOSITORY.get()
+            + "/org/junit/platform/junit-platform-console-standalone/1.4.0/"
             + "junit-platform-console-standalone-1.4.0.jar"),
     /** Maven URI. */
     TOOL_URI_MAVEN(
