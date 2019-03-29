@@ -713,7 +713,7 @@ class Bach {
                   cache,
                   URI.create(
                       "https://raw.githubusercontent.com/"
-                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "sormuras/modules/master/"
                           + "module-maven.properties")));
       var moduleVersion =
           Property.loadProperties(
@@ -721,7 +721,7 @@ class Bach {
                   cache,
                   URI.create(
                       "https://raw.githubusercontent.com/"
-                          + "jodastephen/jpms-module-names/master/generated/"
+                          + "sormuras/modules/master/"
                           + "module-version.properties")));
       var uris = new ArrayList<URI>();
       for (var external : externals) {
