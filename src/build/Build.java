@@ -18,12 +18,9 @@
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /** OS-agnostic build program. */
 class Build {
@@ -73,7 +70,7 @@ class Build {
   private void compile() {
     System.out.println("\n[compile]");
     bach.run(0, "javac", "-d", targetBinMain, "src/bach/Bach.java");
-    Util.treeWalk(targetBinMain);
+    treeWalk(targetBinMain);
   }
 
   private void test() throws Exception {
@@ -89,8 +86,8 @@ class Build {
     javac.add(Bach.Util.join(targetBinMain, junit));
     javac.addAll(Bach.Util.findJavaFiles(Path.of("src", "test")));
     bach.run(0, "javac", javac.toArray(Object[]::new));
-    Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
-    Util.treeWalk(targetBinTest);
+    Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
+    treeWalk(targetBinTest);
 
     System.out.println("\n[test - run]");
     var launcher = new ArrayList<>();
@@ -157,7 +154,7 @@ class Build {
         ".");
 
     System.out.println("\nArtifacts in " + targetJars);
-    Util.treeWalk(targetJars, System.out::println);
+    treeWalk(targetJars);
   }
 
   private void validate() {
@@ -184,68 +181,17 @@ class Build {
         ".");
   }
 
-  static class Util {
-    /** Copy all files and directories from source to target directory. */
-    static void treeCopy(Path source, Path target) throws Exception {
-      treeCopy(source, target, __ -> true);
-    }
-
-    /** Copy selected files and directories from source to target directory. */
-    static void treeCopy(Path source, Path target, Predicate<Path> filter) throws Exception {
-      // debug("treeCopy(source:`%s`, target:`%s`)%n", source, target);
-      if (!Files.exists(source)) {
-        throw new IllegalArgumentException("source must exist: " + source);
-      }
-      if (!Files.isDirectory(source)) {
-        throw new IllegalArgumentException("source must be a directory: " + source);
-      }
-      if (Files.exists(target)) {
-        if (!Files.isDirectory(target)) {
-          throw new IllegalArgumentException("target must be a directory: " + target);
-        }
-        if (target.equals(source)) {
-          return;
-        }
-        if (target.startsWith(source)) {
-          // copy "a/" to "a/b/"...
-          throw new IllegalArgumentException("target must not a child of source");
-        }
-      }
-      try (var stream = Files.walk(source).sorted()) {
-        int counter = 0;
-        var paths = stream.collect(Collectors.toList());
-        for (var path : paths) {
-          var destination = target.resolve(source.relativize(path));
-          if (Files.isDirectory(path)) {
-            Files.createDirectories(destination);
-            continue;
-          }
-          if (filter.test(path)) {
-            Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
-            counter++;
-          }
-        }
-        System.out.printf("Copied %d file(s) of %d elements.%n", counter, paths.size());
-      }
-    }
-
-    /** Walk directory tree structure. */
-    static void treeWalk(Path root) {
-      treeWalk(root, System.out::println);
-    }
-
-    /** Walk directory tree structure. */
-    static void treeWalk(Path root, Consumer<String> out) {
-      try (var stream = Files.walk(root)) {
-        stream
-            .map(root::relativize)
-            .map(path -> path.toString().replace('\\', '/'))
-            .sorted()
-            .filter(Predicate.not(String::isEmpty))
-            .forEach(out);
-      } catch (Exception e) {
-        throw new Error("Walking tree failed: " + root, e);
-      }
+  /** Walk directory tree structure. */
+  private static void treeWalk(Path root) {
+    try (var stream = Files.walk(root)) {
+      stream
+          .map(root::relativize)
+          .map(path -> path.toString().replace('\\', '/'))
+          .sorted()
+          .filter(Predicate.not(String::isEmpty))
+          .forEach(System.out::println);
+    } catch (Exception e) {
+      throw new Error("Walking tree failed: " + root, e);
     }
   }
 }
