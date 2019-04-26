@@ -849,7 +849,7 @@ class Bach {
       /** Module path. */
       final String modulePath;
       /** Patch modules. */
-      Map<String, Set<Path>> patches;
+      final Map<String, Set<Path>> patches;
 
       /** Initialize this realm. */
       Realm(String name, Path source, String modulePath, Map<String, Set<Path>> patches) {
