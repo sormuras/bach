@@ -1,4 +1,6 @@
 bin
+bin/com.greetings@1.0.0-SNAPSHOT.jar
+bin/org.astro@1.0.0-SNAPSHOT.jar
 bin/realm
 bin/realm/main
 bin/realm/main/com.greetings

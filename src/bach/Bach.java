@@ -138,6 +138,7 @@ class Bach {
     project.main.compile();
     project.test.compile();
     project.test();
+    project.jar();
   }
 
   /** Delete generated binary assets. */
@@ -815,6 +816,26 @@ class Bach {
       java.add("--add-modules");
       java.add(String.join(",", Util.findDirectoryNames(test.target))); // "ALL-MODULE-PATH"?
       Tool.junit(Bach.this, java, "--reports-dir", bin.resolve("test-reports"), "--scan-modules");
+    }
+
+    void jar() {
+      if (Files.notExists(main.target)) {
+        log.log(Level.INFO, "Skip jar. No compiled classes target found: " + main.target);
+        return;
+      }
+      log.log(Level.INFO, "Jarring main module(s)...");
+      for (var directory : Util.findDirectoryNames(main.target)) {
+        var file = bin.resolve(directory + "@" + version + ".jar");
+        var jar = new ArrayList<>();
+        jar.add("--create");
+        jar.add("--file");
+        jar.add(file);
+        jar.add("-C");
+        jar.add(main.target.resolve(directory));
+        jar.add(".");
+        run(0, "jar", jar.toArray(Object[]::new));
+        run(0, "jar", "--describe-module", "--file", file);
+      }
     }
 
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */

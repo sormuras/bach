@@ -25,10 +25,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opentest4j.TestAbortedException;
 
+@ResourceLock(Resources.SYSTEM_OUT)
+@ResourceLock(Resources.SYSTEM_ERR)
 class DemoTests {
 
   @Nested

@@ -11,5 +11,7 @@ Launching JUnit Platform...
 >> RUN TEST >>
 Redirect: FILE .+
 Running tool in a new process: .+
+Jarring main module(s)...
+>> RUN JAR >>
 erase()
 clean()

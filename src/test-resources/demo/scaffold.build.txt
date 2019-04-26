@@ -27,6 +27,7 @@ bin/realm/test/scaffold/scaffold/ScaffoldMainTests.class
 bin/realm/test/scaffold/scaffold/api
 bin/realm/test/scaffold/scaffold/api/ScaffoldPlugin.class
 bin/realm/test/scaffold/scaffold/api/ScaffoldPluginTests.class
+bin/scaffold@1.0.0-SNAPSHOT.jar
 bin/test-reports
 bin/test-reports/TEST-junit-jupiter.xml
 bin/test-reports/TEST-junit-vintage.xml
