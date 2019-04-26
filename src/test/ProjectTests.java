@@ -30,6 +30,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -73,6 +75,8 @@ class ProjectTests {
   }
 
   @Test
+  @ResourceLock(Resources.SYSTEM_OUT)
+  @ResourceLock(Resources.SYSTEM_ERR)
   void buildAndLaunchMinimalProgram(@TempDir Path workspace) throws Exception {
     var demo = Path.of("src", "test-resources", "program", "minimal");
     var base = workspace.resolve(demo.getFileName());
