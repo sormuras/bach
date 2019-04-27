@@ -120,6 +120,15 @@ class ProjectTests {
             "Launching minimal/modular.Program...",
             ">> LAUNCH >>"),
         out);
+    // link
+    out.clear();
+    project.link();
+    assertLinesMatch(
+        List.of(
+            "Creating custom runtime image...",
+            ">> JLINK >>",
+            "Running provided tool in-process.+"),
+        out);
 
     Files.delete(base.resolve("src/minimal/modular/Program.java"));
     out.clear();

@@ -838,6 +838,37 @@ class Bach {
       }
     }
 
+    void link() throws Exception {
+      if (Files.notExists(main.target)) {
+        log.log(Level.INFO, "Skip link. No compiled classes target found: " + main.target);
+        return;
+      }
+      var output = bin.resolve(name);
+      if (Files.exists(output)) {
+        log.debug("Deleting existing custom runtime image...");
+        Util.treeDelete(output);
+      }
+      log.log(Level.INFO, "Creating custom runtime image...");
+      var link = new ArrayList<>();
+      link.add("--output");
+      link.add(output);
+      link.add("--strip-debug");
+      link.add("--compress=2");
+      var defaultLaunch = ModuleInfo.findProgram(main.source);
+      var launch = get(Property.PROJECT_LAUNCH_MODULE.key, defaultLaunch);
+      if (launch != null) {
+        link.add("--launcher");
+        link.add(name + "=" + launch);
+      }
+      link.add("--module-path");
+      link.add(String.join(File.pathSeparator, main.target.toString(), main.modulePath));
+      for (var directory : Util.findDirectoryNames(main.target)) {
+        link.add("--add-modules");
+        link.add(directory);
+      }
+      run(0, "jlink", link.toArray(Object[]::new));
+    }
+
     /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
     class Realm {
       /** Name of the realm. */
