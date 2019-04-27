@@ -901,6 +901,8 @@ class Bach {
         var javac = new ArrayList<>();
         javac.add("-d");
         javac.add(target);
+        javac.add("--module-version");
+        javac.add(version);
         javac.add("--module-path");
         javac.add(modulePath);
         javac.add("--module-source-path");
