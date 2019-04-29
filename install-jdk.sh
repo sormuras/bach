@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-04-18'
+    readonly script_version='2019-04-29'
 
     dry=false
     silent=false
@@ -192,7 +192,7 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    local DOWNLOAD='https://download.java.net/java'
+    local DOWNLOAD='https://download.oracle.com/java'
     local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
 
     # Archived feature or official GA build?
