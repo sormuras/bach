@@ -74,9 +74,6 @@ class Bach {
   /** Logging helper. */
   final Log log;
 
-  /** Project model. */
-  final Project project;
-
   /** User-defined properties loaded from {@code ${base}/bach.properties} file. */
   final Properties properties;
 
@@ -94,7 +91,6 @@ class Bach {
     this.base = base.normalize();
     this.properties = Property.loadProperties(base.resolve(Property.PROPERTIES.get()));
     this.log = new Log();
-    this.project = new Project();
     this.tools = new HashMap<>();
 
     tools.put("format", Tool::format);
@@ -134,24 +130,17 @@ class Bach {
   /** Build all and everything. */
   public void build() throws Exception {
     log.trace("build()");
-    project.assemble();
-    project.main.compile();
-    project.test.compile();
-    project.test();
-    project.jar();
   }
 
   /** Delete generated binary assets. */
   public void clean() throws Exception {
     log.trace("clean()");
-    Util.treeDelete(project.bin);
   }
 
   /** Delete generated binary assets and local build cache directory. */
   public void erase() throws Exception {
     log.trace("erase()");
     clean();
-    Util.treeDelete(project.cache);
   }
 
   /** Gets the property value. */
@@ -189,7 +178,6 @@ class Bach {
   /** Start main program. */
   public void launch() throws Exception {
     log.trace("launch()");
-    project.launch();
   }
 
   /** Create modular Java sample project in base directory. */
@@ -634,286 +622,6 @@ class Bach {
     private ModuleInfo(String name, Set<String> requires) {
       this.name = name;
       this.requires = Set.copyOf(requires);
-    }
-  }
-
-  /** Project model. */
-  final class Project {
-    /** Destination directory for generated binaries. */
-    final Path bin;
-    /** Root of local build cache. */
-    final Path cache;
-    /** Locally cached modules. */
-    final Path cachedModules;
-    /** User-managed 3rd-party libraries. */
-    final Path lib;
-    /** Name of the project. */
-    final String name;
-    /** Main realm. */
-    final Realm main;
-    /** Test realm. */
-    final Realm test;
-    /** Version of the project. */
-    final String version;
-
-    /** Initialize project properties with default values. */
-    Project() {
-      this.bin = based("bin");
-      this.cache = based(".bach");
-      this.cachedModules = cache.resolve("modules");
-      this.lib = based("lib");
-      this.name =
-          get(
-              Property.PROJECT_NAME.key,
-              base.getNameCount() > 0
-                  ? base.toAbsolutePath().getFileName() + ""
-                  : Property.PROJECT_NAME.defaultValue);
-      this.version = get(Property.PROJECT_VERSION);
-      // Realm: "main"
-      this.main =
-          new Realm(
-              "main",
-              findFirst("src/main/java", "src/main", "main", "src"),
-              Util.join(lib, cachedModules),
-              Map.of());
-      // Realm: "test"
-      var testSource = findFirst("src/test/java", "src/test", "test");
-      this.test =
-          new Realm(
-              "test",
-              testSource,
-              Util.join(main.target, lib, cachedModules),
-              Util.findPatchMap(List.of(testSource), List.of(main.source)));
-    }
-
-    /** Assemble all assets. */
-    void assemble() throws Exception {
-      log.debug("assemble()");
-      Tool.format(Bach.this, false, Set.of(main.source, test.source));
-      assembleExternalModules();
-    }
-
-    /** Assemble external modules. */
-    void assembleExternalModules() throws Exception {
-      // TODO get("bach.project.modules.uris", "", ",")
-      //              .map(URI::create)
-      //              .peek(uri -> log.debug("Loading %s", uri))
-      //              .forEach(uri -> new Tool.Download(uri, modules).apply(Bach.this));
-      var roots =
-          Set.of(main.source, test.source).stream()
-              .filter(Files::isDirectory)
-              .collect(Collectors.toSet());
-      var externals = ModuleInfo.findExternalModuleNames(roots);
-      if (externals.isEmpty()) {
-        return;
-      }
-      log.debug("External module names: " + externals);
-      var moduleMaven =
-          Property.loadProperties(
-              download(
-                  cache,
-                  URI.create(
-                      "https://raw.githubusercontent.com/"
-                          + "sormuras/modules/master/"
-                          + "module-maven.properties")));
-      var moduleVersion =
-          Property.loadProperties(
-              download(
-                  cache,
-                  URI.create(
-                      "https://raw.githubusercontent.com/"
-                          + "sormuras/modules/master/"
-                          + "module-version.properties")));
-      var uris = new ArrayList<URI>();
-      for (var external : externals) {
-        var uri = get("module." + external, null);
-        if (uri != null) {
-          log.debug(String.format("External module %s mapped to custom uri: %s", external, uri));
-          uris.add(URI.create(uri));
-          continue;
-        }
-        var mavenGA = moduleMaven.getProperty(external);
-        if (mavenGA == null) {
-          log.log(Level.WARNING, String.format("External module not mapped: %s", external));
-          continue;
-        }
-        var group = mavenGA.substring(0, mavenGA.indexOf(':'));
-        var artifact = mavenGA.substring(group.length() + 1);
-        var version = moduleVersion.getProperty(external);
-        uris.add(maven(group, artifact, version));
-      }
-      for (var uri : uris) {
-        var path = download(cachedModules, uri);
-        log.debug("Resolved " + path);
-      }
-    }
-
-    /** Create URI for supplied Maven coordinates. */
-    URI maven(String group, String artifact, String version) {
-      // TODO Try local repository first?
-      // Path.of(System.getProperty("user.home"), ".m2", "repository").toUri().toString();
-      var repo = get(Property.MAVEN_REPOSITORY);
-      var file = artifact + "-" + version + ".jar";
-      return URI.create(String.join("/", repo, group.replace('.', '/'), artifact, version, file));
-    }
-
-    /** Rebase path as needed. */
-    Path based(Path path) {
-      if (path.isAbsolute()) {
-        return path;
-      }
-      if (base.toAbsolutePath().equals(USER_PATH)) {
-        return path;
-      }
-      return base.resolve(path).normalize();
-    }
-
-    /** Create and rebase path as needed. */
-    Path based(String first, String... more) {
-      return based(Path.of(first, more));
-    }
-
-    Path findFirst(String... paths) {
-      return Arrays.stream(paths)
-          .map(Project.this::based)
-          .filter(Files::isDirectory)
-          .findFirst()
-          .orElse(based(paths[0]));
-    }
-
-    /** Launch main program. */
-    void launch() throws Exception {
-      if (Files.notExists(main.target)) {
-        log.log(Level.INFO, "Skip launch. No compiled classes target found: " + main.target);
-        return;
-      }
-      var defaultLaunch = ModuleInfo.findProgram(main.source);
-      var launch = get(Property.PROJECT_LAUNCH_MODULE.key, defaultLaunch);
-      if (launch == null) {
-        log.log(Level.INFO, "No <module>[/<main-class>] supplied, no launch.");
-        return;
-      }
-      log.log(Level.INFO, "Launching " + launch + "...");
-      var java = new ArrayList<>();
-      get(Property.PROJECT_LAUNCH_OPTIONS, "\\|").forEach(java::add);
-      java.add("--module-path");
-      java.add(Util.join(main.target, lib, cachedModules));
-      java.add("--module");
-      java.add(launch);
-      run(0, "java", java.toArray(Object[]::new));
-    }
-
-    /** Start test run. */
-    void test() throws Exception {
-      if (Files.notExists(test.target)) {
-        log.log(Level.INFO, "Skip test. No compiled classes target found: " + test.target);
-        return;
-      }
-      log.log(Level.INFO, "Launching JUnit Platform...");
-      var java = new ArrayList<>();
-      java.add("--module-path");
-      java.add(Util.join(test.target, lib, cachedModules));
-      java.add("--add-modules");
-      java.add(String.join(",", Util.findDirectoryNames(test.target))); // "ALL-MODULE-PATH"?
-      Tool.junit(Bach.this, java, "--reports-dir", bin.resolve("test-reports"), "--scan-modules");
-    }
-
-    void jar() {
-      if (Files.notExists(main.target)) {
-        log.log(Level.INFO, "Skip jar. No compiled classes target found: " + main.target);
-        return;
-      }
-      log.log(Level.INFO, "Jarring main module(s)...");
-      for (var directory : Util.findDirectoryNames(main.target)) {
-        var file = bin.resolve(directory + "@" + version + ".jar");
-        var jar = new ArrayList<>();
-        jar.add("--create");
-        jar.add("--file");
-        jar.add(file);
-        jar.add("-C");
-        jar.add(main.target.resolve(directory));
-        jar.add(".");
-        run(0, "jar", jar.toArray(Object[]::new));
-        run(0, "jar", "--describe-module", "--file", file);
-      }
-    }
-
-    void link() throws Exception {
-      if (Files.notExists(main.target)) {
-        log.log(Level.INFO, "Skip link. No compiled classes target found: " + main.target);
-        return;
-      }
-      var output = bin.resolve(name);
-      if (Files.exists(output)) {
-        log.debug("Deleting existing custom runtime image...");
-        Util.treeDelete(output);
-      }
-      log.log(Level.INFO, "Creating custom runtime image...");
-      var link = new ArrayList<>();
-      link.add("--output");
-      link.add(output);
-      link.add("--strip-debug");
-      link.add("--compress=2");
-      var defaultLaunch = ModuleInfo.findProgram(main.source);
-      var launch = get(Property.PROJECT_LAUNCH_MODULE.key, defaultLaunch);
-      if (launch != null) {
-        link.add("--launcher");
-        link.add(name + "=" + launch);
-      }
-      link.add("--module-path");
-      link.add(String.join(File.pathSeparator, main.target.toString(), main.modulePath));
-      for (var directory : Util.findDirectoryNames(main.target)) {
-        link.add("--add-modules");
-        link.add(directory);
-      }
-      run(0, "jlink", link.toArray(Object[]::new));
-    }
-
-    /** Building block, source set, scope, directory, named context: {@code main}, {@code test}. */
-    class Realm {
-      /** Name of the realm. */
-      final String name;
-      /** Source path. */
-      final Path source;
-      /** Target path. */
-      final Path target;
-      /** Module path. */
-      final String modulePath;
-      /** Patch modules. */
-      final Map<String, Set<Path>> patches;
-
-      /** Initialize this realm. */
-      Realm(String name, Path source, String modulePath, Map<String, Set<Path>> patches) {
-        this.name = name;
-        this.source = source;
-        this.target = bin.resolve(Path.of("realm", name));
-        this.modulePath = modulePath;
-        this.patches = patches;
-      }
-
-      /** Compile all Java sources found in this realm. */
-      void compile() throws Exception {
-        log.trace(String.format("%s.compile()", name));
-        if (Files.notExists(source)) {
-          log.log(Level.INFO, String.format("Skip %s.compile(): path %s not found", name, source));
-          return;
-        }
-        var javac = new ArrayList<>();
-        javac.add("-d");
-        javac.add(target);
-        javac.add("--module-version");
-        javac.add(version);
-        javac.add("--module-path");
-        javac.add(modulePath);
-        javac.add("--module-source-path");
-        javac.add(source);
-        for (var entry : patches.entrySet()) {
-          javac.add("--patch-module");
-          javac.add(entry.getKey() + "=" + Util.join(entry.getValue()));
-        }
-        javac.addAll(Util.findJavaFiles(source));
-        run(0, "javac", javac.toArray(Object[]::new));
-      }
     }
   }
 
