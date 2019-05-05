@@ -183,10 +183,6 @@ class Bach {
   /** Create modular Java sample project in base directory. */
   public void scaffold() throws Exception {
     log.trace("scaffold()");
-    var uri = "https://github.com/sormuras/bach/raw/" + VERSION + "/demo/scaffold.zip";
-    var zip = download(base, URI.create(uri));
-    Util.unzip(zip);
-    Files.delete(zip);
   }
 
   /** Print help text to given print stream. */
