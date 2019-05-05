@@ -198,13 +198,6 @@ class UtilTests {
     var home1 = Bach.Util.unzip(zip, one);
     assertEquals(one, home1);
     assertLinesMatch(List.of("ActionTests.java", ">>>>", "UtilTests.java"), Util.treeWalk(home1));
-
-    var two = Files.createDirectories(temp.resolve("two"));
-    var zip2 = Files.copy(zip, two.resolve(zip.getFileName()));
-    var home2 = Bach.Util.unzip(zip2);
-    assertEquals(two, home2);
-    Files.delete(zip2);
-    assertLinesMatch(List.of("ActionTests.java", ">>>>", "UtilTests.java"), Util.treeWalk(home2));
   }
 
   @Nested
