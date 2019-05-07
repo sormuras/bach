@@ -1,6 +1,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -143,8 +144,16 @@ class ModuleInfoTests {
             "com.greetings/com.greetings.Main",
             "com.greetings/com.greetings.Main",
             "fxapp/fxapp.App",
-            "lwjgl/lwjgl.HelloWorld"),
+            "lwjgl/lwjgl.HelloWorld",
+            "scaffold/scaffold.ScaffoldMain"),
         programs);
+  }
+
+  @Test
+  void findProgramInDemoScaffoldProject() throws Exception {
+    var scaffold = Path.of("demo", "scaffold");
+    assertEquals("scaffold/scaffold.ScaffoldMain", Bach.ModuleInfo.findProgram(scaffold));
+    assertNull(Bach.ModuleInfo.findProgram(scaffold.resolve("src/test")));
   }
 
   @Test

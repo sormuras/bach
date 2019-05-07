@@ -36,6 +36,7 @@ class Build {
     build.document();
     build.jar();
     build.validate();
+    build.zip();
   }
 
   private final Bach bach = new Bach(true, Path.of(""));
@@ -162,6 +163,22 @@ class Build {
 
     System.out.println("\n[validate - java -jar bach.jar banner]");
     bach.run(0, "java", "-jar", targetJars.resolve("bach.jar"), "tool", "javac", "--version");
+  }
+
+  private void zip() throws Exception {
+    System.out.println("\n[zip]");
+    Bach.Util.treeDelete(Path.of("demo/scaffold/.bach"));
+    Bach.Util.treeDelete(Path.of("demo/scaffold/bin"));
+    bach.run(
+        0,
+        "jar",
+        "--update",
+        "--file",
+        "demo/scaffold.zip",
+        "--no-manifest",
+        "-C",
+        "demo/scaffold",
+        ".");
   }
 
   /** Walk directory tree structure. */

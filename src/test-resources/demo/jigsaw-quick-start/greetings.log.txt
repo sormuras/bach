@@ -1,0 +1,7 @@
+build()
+assemble()
+>> ASSEMBLE >>
+main.compile()
+>> MAIN >>
+test.compile()
+>> TEST >>

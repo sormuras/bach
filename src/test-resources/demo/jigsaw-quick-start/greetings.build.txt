@@ -1,0 +1,15 @@
+bin
+bin/com.greetings@1.0.0-SNAPSHOT.jar
+bin/realm
+bin/realm/main
+bin/realm/main/com.greetings
+bin/realm/main/com.greetings/com
+bin/realm/main/com.greetings/com/greetings
+bin/realm/main/com.greetings/com/greetings/Main.class
+bin/realm/main/com.greetings/module-info.class
+src
+src/com.greetings
+src/com.greetings/com
+src/com.greetings/com/greetings
+src/com.greetings/com/greetings/Main.java
+src/com.greetings/module-info.java
