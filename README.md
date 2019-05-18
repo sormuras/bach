@@ -18,7 +18,9 @@ Use Java source (in [jshell]) to build your modular Java project.
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
 
-Fast-forward to [install-jdk.sh](#install-jdksh) section.
+:scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
+
+:fast_forward: Side-step to [make-java](https://github.com/sormuras/make-java) project.
 
 ## Execute Bach.java on-the-fly
 
