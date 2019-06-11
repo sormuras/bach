@@ -50,7 +50,7 @@ import java.util.stream.Stream;
 class Bach {
 
   /** Version is either {@code master} or {@link Runtime.Version#parse(String)}-compatible. */
-  public static final String VERSION = "master";
+  public static final String VERSION = "1.0.5";
 
   /** Convenient short-cut to {@code "user.home"} as a path. */
   static final Path USER_HOME = Path.of(System.getProperty("user.home"));

@@ -66,7 +66,7 @@ class ActionTests {
     new Bach().help(lines::add);
     assertLinesMatch(
         List.of(
-            "Usage of Bach.java (master):  java Bach.java [<action>...]",
+            "Usage of Bach.java (1.0.5):  java Bach.java [<action>...]",
             "Available default actions are:",
             " build        Build modular Java project in base directory.",
             " clean        Delete all generated assets - but keep caches intact.",
