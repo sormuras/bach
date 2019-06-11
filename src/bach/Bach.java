@@ -442,8 +442,8 @@ class Bach {
     /** URI to JUnit Platform Console Standalone JAR. */
     TOOL_URI_JUNIT(
         MAVEN_REPOSITORY.get()
-            + "/org/junit/platform/junit-platform-console-standalone/1.4.0/"
-            + "junit-platform-console-standalone-1.4.0.jar"),
+            + "/org/junit/platform/junit-platform-console-standalone/1.5.0-M1/"
+            + "junit-platform-console-standalone-1.5.0-M1.jar"),
     /** Maven URI. */
     TOOL_URI_MAVEN(
         "https://archive.apache.org/"

@@ -1,4 +1,5 @@
 README.md
+bach.properties
 src
 src/main
 src/main/scaffold

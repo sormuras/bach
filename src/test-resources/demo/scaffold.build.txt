@@ -4,6 +4,7 @@
 .bach/modules
 >> ./.bach/modules/junit-jupiter-api-5.4.0.jar ... >>
 README.md
+bach.properties
 bin
 bin/realm
 bin/realm/main
