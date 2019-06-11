@@ -156,6 +156,12 @@ demo
     + ...
 ```
 
+## bit.ly links
+
+- [https://bit.ly/bach-java](https://bit.ly/bach-java) :wavy_dash: [src/bach/Bach.jsh](src/bach/Bach.java)
+- [https://bit.ly/bach-jsh](https://bit.ly/bach-jsh) :wavy_dash: [src/bach/Bach.jsh](src/bach/Bach.jsh)
+- [https://bit.ly/boot-bach](https://bit.ly/boot-bach) :wavy_dash: [boot.jsh](boot.jsh)
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](http://jdk.java.net).
@@ -193,7 +199,7 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
   - `JAVA_HOME=$(./install-jdk.sh --silent --emit-java-home)`
   - `JAVA_HOME=$(./install-jdk.sh --emit-java-home | tail --lines 1)`
 
-## be free - have fun
+# be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
