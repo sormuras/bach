@@ -4,3 +4,4 @@ target/
 
 uiDesigner.xml
 workspace.xml
+*.jar
