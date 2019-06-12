@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="test-runtime-only">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/test-runtime-only" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/test-runtime-only" recursive="false" />
+  </library>
+</component>
