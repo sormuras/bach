@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/open src/bach/Bach.java
+/open BUILDING
 /open src/build/Build.java
 
 var code = 0
@@ -26,6 +26,12 @@ try {
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;
+}
+
+if (code == 0) {
+  run("javac", "-d", "target/build/main", "--module-source-path", "src/modules/*/main/java", "--module", "de.sormuras.bach");
+  run("javac", "-d", "target/build/test", "--module-path", "target/build/main" + File.pathSeparator + "lib/test", "--module-source-path", "src/modules/*/test/java", "--module", "integration");
+  exe("java", "--module-path", "target/build/test" + File.pathSeparator + "target/build/main" + File.pathSeparator + "lib/test", "--module", "integration/integration.IntegrationTests");
 }
 
 /exit code

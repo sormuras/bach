@@ -5,6 +5,7 @@ install:
 - java --version
 
 script:
+- jshell --execution local https://bit.ly/make-java
 - jshell --execution local ./build.jsh
 
 after_success:
@@ -13,11 +14,11 @@ after_success:
 #- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
 #- ./bootstrap.sh
 
-- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
-- java -Debug=true ${BACH}
+#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
+#- java -Debug=true ${BACH}
 
-- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
-- java -Debug=true ${BACH}
+#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
+#- java -Debug=true ${BACH}
 
-- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
-- java -Debug=true ${BACH}
+#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
+#- java -Debug=true ${BACH}
