@@ -42,7 +42,7 @@ Open a command shell and change into the directory containing your modular Java 
 <path/> jshell https://bit.ly/bach-jsh
 ```
 
-That's all you need to build a modular Java project.
+:sparkles: That's all you need to build a modular Java project. :sparkles:
 
 > Note: the shortened `https://bit.ly/bach-jsh` expands to https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh
 
@@ -55,110 +55,18 @@ jshell --execution=local https://bit.ly/bach-jsh
 For more information what Bach.java is doing at runtime, use:
 
 ```text
-jshell --execution=local -J-Debug=true https://bit.ly/bach-jsh
+jshell --execution=local -J-Debug https://bit.ly/bach-jsh
 ```
 
 For more details consult the output of `jshell --help`.
 
-## Bootstrap Bach.java
-
-This section will help you get started with `Bach.java` used as single file source code Java program.
-
-##### 0. Install JDK 11 or later
-Make sure you have JDK 11 or later installed and configured.
-`jshell` should be executable from any directory and print its version via: 
-```text
-<path/> jshell --version
-jshell 11.0.2
-```
-
-##### 1. Create demo directory
-Create an empty directory and change into it.
-On Windows, you may open a command prompt and enter `mkdir demo & cd demo`.
-On Linux and Mac OS, it could read `mkdir demo && cd demo`.
-
-```text
-<path/demo/> | // blinking cursor
-```
-
-##### 2. Download `Bach.java`
-Either download a copy of [Bach.java] from GitHub manually or let [jshell] do it for you:
-
-```text
-<path/demo/> jshell https://bit.ly/boot-bach
-```
-
-> Note: the shortened `https://bit.ly/boot-bach` expands to https://raw.githubusercontent.com/sormuras/bach/master/boot.jsh
-
-```text
-<path/demo/>
-.
-├── bach                 // Linux/Mac OS launch script | 
-├── bach.bat             // Windows batch file         |    Just convenient short-cuts for:
-└── .bach                //                             \__   java .bach/master/Bach.java  
-    └── master           //
-        └── Bach.java    // Java Shell Builder
-```
-
-##### 3. Scaffold, build and launch demo project
-Remember to prepend `./` before each `bach` command when running on Linux or Mac OS. 
-
-```text
-<path/demo/> bach scaffold
-<path/demo/> bach build
-<path/demo/> bach launch
-```
-
-## Available Actions
-
-`java Bach.java help` prints
-
-```text
-Usage of Bach.java (master):  java Bach.java [<action>...]
-
-Available default actions are:
- build        Build modular Java project in base directory.
- clean        Delete all generated assets - but keep caches intact.
- erase        Delete all generated assets - and also delete caches.
- help         Print this help screen on standard out... F1, F1, F1!
- launch       Start project's main program.
- tool         Run named tool consuming all remaining arguments:
-                tool <name> <args...>
-                tool java --show-version Program.java
- scaffold     Create modular Java sample project in base directory.
-```
-
 ## Directory Layout
 
-Project with one more more modules.
-
-```text
-demo
-  + src
-    + com.greetings
-    + org.astro
-    + ...
-```
-
-Project with one more more modules and test modules.
-
-```text
-demo
-  + src
-    + com.greetings
-    + org.astro
-    + ...
-  + test
-    + com.greetings
-    + org.astro
-    + ...
-    + integration
-    + ...
-```
+:construction:
 
 ## bit.ly links
 
-- [https://bit.ly/bach-java](https://bit.ly/bach-java) :wavy_dash: [src/bach/Bach.jsh](src/bach/Bach.java)
+- [https://bit.ly/bach-java](https://bit.ly/bach-java) :wavy_dash: [src/bach/Bach.java](src/bach/Bach.java)
 - [https://bit.ly/bach-jsh](https://bit.ly/bach-jsh) :wavy_dash: [src/bach/Bach.jsh](src/bach/Bach.jsh)
 - [https://bit.ly/boot-bach](https://bit.ly/boot-bach) :wavy_dash: [boot.jsh](boot.jsh)
 
