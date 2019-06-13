@@ -62,6 +62,10 @@ public class Bach {
     if (List.of("42").equals(arguments)) {
       return 42;
     }
+    if (run.dryRun) {
+      run.info("Dry-run ends here.");
+      return 0;
+    }
     return 0;
   }
 

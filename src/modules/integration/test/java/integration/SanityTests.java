@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class SanityTests {
 
   private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
-      List.of("Bach (master) initialized");
+      List.of("Bach (master) initialized", "main([])", "Dry-run ends here.");
 
   @Test
   @DisplayName("jshell Bach.jsh")
@@ -26,6 +26,7 @@ class SanityTests {
     builder.command().add("--execution=local");
     builder.command().add("-J-ea");
     builder.command().add("-J-Debug");
+    builder.command().add("-J-Dry-run");
     builder.command().add("-"); // Standard input, without interactive I/O.
     var process = builder.start();
     var source =
@@ -53,6 +54,7 @@ class SanityTests {
     var builder = new ProcessBuilder("java");
     builder.command().add("-ea");
     builder.command().add("-Debug");
+    builder.command().add("-Dry-run");
     builder.command().add("src/bach/Bach.java");
     var process = builder.start();
     process.waitFor(19, TimeUnit.SECONDS);

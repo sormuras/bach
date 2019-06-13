@@ -30,37 +30,39 @@ import org.junit.jupiter.api.Test;
 
 class RunTests {
 
-  private final TestRun testRun = new TestRun();
+  private final TestRun test = new TestRun();
 
   @Test
   void runCustomTool() {
-    assertDoesNotThrow(() -> testRun.run(new CustomTool(0)));
-    var error = assertThrows(Error.class, () -> testRun.run(new CustomTool(1)));
+    assertDoesNotThrow(() -> test.run(new CustomTool(0)));
+    var error = assertThrows(Error.class, () -> test.run(new CustomTool(1)));
     assertEquals("Tool 'custom' run failed with error code: 1", error.getMessage());
   }
 
   @Test
   void runJavaCompilerWithVersionArgument() {
-    assertDoesNotThrow(() -> testRun.run("javac", "--version"));
+    var command = new Command("javac").add("--version");
+    assertDoesNotThrow(() -> test.run(command));
     assertLinesMatch(
         List.of(
             "Running tool 'javac' with: [--version]",
             "javac " + Runtime.version().feature() + ".*",
             "Tool 'javac' successfully run."),
-        testRun.outLines());
+        test.outLines());
   }
 
   @Test
   void toDurationMillisReturnsNonZeroValue() throws InterruptedException {
     Thread.sleep(123);
-    assertTrue(testRun.toDurationMillis() != 0);
+    assertTrue(test.toDurationMillis() != 0);
   }
 
   @Test
-  void toStringContainsInterna() {
-    var run = new Run(System.Logger.Level.ERROR, null, null);
+  void toStringContains() {
+    var run = new Run(System.Logger.Level.OFF, true, null, null);
+    var expected = "Run{dryRun=true, threshold=OFF, start=" + run.start + ", out=null, err=null}";
     var actual = run.toString();
-    assertEquals("Run{threshold=ERROR, start=" + run.start + ", out=null, err=null}", actual);
+    assertEquals(expected, actual);
   }
 
   static class CustomTool implements ToolProvider {

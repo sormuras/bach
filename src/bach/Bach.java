@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-13T10:46:23.469517700Z
+// THIS FILE WAS GENERATED ON 2019-06-13T21:20:15.548355900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -77,6 +77,10 @@ public class Bach {
     run.info("main(%s)", arguments);
     if (List.of("42").equals(arguments)) {
       return 42;
+    }
+    if (run.dryRun) {
+      run.info("Dry-run ends here.");
+      return 0;
     }
     return 0;
   }
@@ -177,13 +181,17 @@ public class Bach {
 
     /** Create default Run instance. */
     public static Run system() {
+      var threshold = System.getProperties().containsKey("Debug".substring(1)) ? DEBUG : INFO;
+      var dry = System.getProperties().containsKey("Dry-run".substring(1));
       var out = new PrintWriter(System.out, true, UTF_8);
       var err = new PrintWriter(System.err, true, UTF_8);
-      return new Run(System.Logger.Level.INFO, out, err);
+      return new Run(threshold, dry, out, err);
     }
 
     /** Current logging level threshold. */
     final System.Logger.Level threshold;
+    /** Dry-run flag. */
+    final boolean dryRun;
     /** Stream to which normal and expected output should be written. */
     final PrintWriter out;
     /** Stream to which any error messages should be written. */
@@ -191,8 +199,9 @@ public class Bach {
     /** Time instant recorded on creation of this instance. */
     final Instant start;
 
-    Run(System.Logger.Level threshold, PrintWriter out, PrintWriter err) {
+    Run(System.Logger.Level threshold, boolean dryRun, PrintWriter out, PrintWriter err) {
       this.start = Instant.now();
+      this.dryRun = dryRun;
       this.threshold = threshold;
       this.out = out;
       this.err = err;
@@ -218,6 +227,11 @@ public class Bach {
       consumer.println(message);
     }
 
+    /** Run given command. */
+    void run(Command command) {
+      run(command.name, command.toStringArray());
+    }
+
     /** Run named tool, as loaded by {@link java.util.ServiceLoader} using the system class loader. */
     void run(String name, String... args) {
       run(ToolProvider.findFirst(name).orElseThrow(), args);
@@ -240,7 +254,9 @@ public class Bach {
 
     @Override
     public String toString() {
-      return String.format("Run{threshold=%s, start=%s, out=%s, err=%s}", threshold, start, out, err);
+      return String.format(
+          "Run{dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
+          dryRun, threshold, start, out, err);
     }
   }
 }

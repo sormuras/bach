@@ -55,7 +55,13 @@ class BachTests {
   @Test
   @SwallowSystem
   void callingStaticVoidMainDoesNotThrow(SwallowSystem.Streams streams) {
-    assertDoesNotThrow((Executable) Bach::main);
+    var dryRun = "Dry-run".substring(1);
+    try {
+      System.setProperty(dryRun, "");
+      assertDoesNotThrow((Executable) Bach::main);
+    } finally {
+      System.getProperties().remove(dryRun);
+    }
   }
 
   @Test

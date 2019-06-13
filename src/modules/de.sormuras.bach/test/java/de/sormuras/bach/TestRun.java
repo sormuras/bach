@@ -41,7 +41,7 @@ class TestRun extends Run {
   }
 
   private TestRun(StringWriter out, StringWriter err) {
-    super(System.Logger.Level.ALL, new PrintWriter(out), new PrintWriter(err));
+    super(System.Logger.Level.ALL, false, new PrintWriter(out), new PrintWriter(err));
     this.out = out;
     this.err = err;
   }
