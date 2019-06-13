@@ -112,6 +112,8 @@ interface Build {
     generate(dragons, SOURCE.resolve("Project.java"), imports, "  ");
     dragons.add("");
     generate(dragons, SOURCE.resolve("Command.java"), imports, "  ");
+    dragons.add("");
+    generate(dragons, SOURCE.resolve("Run.java"), imports, "  ");
     generated.addAll(indexOfDragons, dragons);
     generated.addAll(indexOfImports, imports.stream().filter(i -> !i.startsWith("import static")).collect(Collectors.toList()));
     generated.add(indexOfImports, "");
