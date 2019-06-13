@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+
+import com.ginsberg.junit.exit.ExpectSystemExitWithStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -51,13 +53,21 @@ class BachTests {
   }
 
   @Test
-  void callingStaticVoidMainDoesNotThrow() {
+  @SwallowSystem
+  void callingStaticVoidMainDoesNotThrow(SwallowSystem.Streams streams) {
     assertDoesNotThrow((Executable) Bach::main);
   }
 
   @Test
+  @ExpectSystemExitWithStatus(42)
+  @SwallowSystem
+  void callingStaticVoidMainExitsSystemWith42(SwallowSystem.Streams streams) {
+    Bach.main("42");
+  }
+
+  @Test
   void toStringReturnsNameAndVersion() {
-    var bach = new Bach();
+    var bach = new Bach(new TestRun());
     assertEquals("Bach (" + Bach.VERSION + ")", bach.toString());
   }
 }
