@@ -7,7 +7,7 @@ install:
 - unset JAVA_TOOL_OPTIONS
 - jshell --execution local https://bit.ly/make-java
 - jshell --execution local ./build.jsh
-- JARS="target/build/jars"
-- FILES="-Dfile=$JARS/bach.jar -Dsources=$JARS/bach-sources.jar -Djavadoc=$JARS/bach-javadoc.jar"
-- find $JARS
-- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+#- JARS="target/build/jars"
+#- FILES="-Dfile=$JARS/bach.jar -Dsources=$JARS/bach-sources.jar -Djavadoc=$JARS/bach-javadoc.jar"
+#- find $JARS
+#- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
