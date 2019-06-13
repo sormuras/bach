@@ -109,6 +109,8 @@ interface Build {
     int indexOfDragons = generated.size() - 1;
     dragons.add("");
     generate(dragons, SOURCE.resolve("Project.java"), imports, "  ");
+    dragons.add("");
+    generate(dragons, SOURCE.resolve("Command.java"), imports, "  ");
     generated.addAll(indexOfDragons, dragons);
     generated.addAll(indexOfImports, imports);
 
@@ -117,7 +119,7 @@ interface Build {
     Files.createDirectories(TARGET);
     Files.deleteIfExists(generatedPath);
     Files.write(generatedPath, generated);
-    System.out.println("Generated " + generatedPath);
+    System.out.println("Generated " + generatedPath + " with " + generated.size() + " lines.");
 
     // only copy if content changed - ignoring initial line, which contains the generation date
     var publishedPath = Path.of("src", "bach", "Bach.java");
