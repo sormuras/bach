@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class SanityTests {
 
   private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
-      List.of("Bach (master)", "bach master");
+      List.of("Bach (master) initialized");
 
   @Test
   @DisplayName("jshell Bach.jsh")

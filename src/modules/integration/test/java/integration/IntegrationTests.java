@@ -23,16 +23,18 @@ import de.sormuras.bach.Bach;
 import org.junit.jupiter.api.Test;
 
 public class IntegrationTests {
-  public static void main(String[] args) {
-    System.out.println(IntegrationTests.class.getModule());
-    System.out.println(IntegrationTests.class.getPackage());
-    System.out.println("class = " + IntegrationTests.class.getSimpleName());
-    System.out.println("loader = " + IntegrationTests.class.getClassLoader());
-    System.out.println("args = " + java.util.Arrays.deepToString(args));
 
-    var bach = new Bach();
-    System.out.println("bach = " + bach);
-    System.out.println("version = " + Bach.VERSION);
+  public static void main(String... args) {
+    assert "integration".equals(IntegrationTests.class.getPackage().getName());
+    assert "IntegrationTests".equals(IntegrationTests.class.getSimpleName());
+
+    var module = IntegrationTests.class.getModule();
+    if (module.isNamed()) {
+      assert "integration".equals(module.getName());
+    } else {
+      assert null == module.getName();
+      assert module.toString().startsWith("unnamed module @");
+    }
   }
 
   @Test
