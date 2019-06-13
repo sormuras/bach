@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-13T04:06:04.955513100Z
+// THIS FILE WAS GENERATED ON 2019-06-13T10:46:23.469517700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -18,13 +18,23 @@
 
 // default package
 
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.File;
+import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** Java Shell Builder. */
@@ -39,14 +49,37 @@ public class Bach {
   /** Convenient short-cut to {@code "user.dir"} as a path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
-  /** Main entry-point throwing a runtime exception on error. */
-  public static void main(String... args) {
+  /** Main entry-point making use of {@link System#exit(int)} on error. */
+  public static void main(String... arguments) {
     var bach = new Bach();
-    System.out.println(bach);
-    System.out.println(bach.project);
+    var args = List.of(arguments);
+    var code = bach.main(args);
+    if (code != 0) {
+      System.err.printf("Bach main(%s) failed with error code: %d%n", args, code);
+      System.exit(code);
+    }
   }
 
   final Project project = new Project("bach", VERSION);
+  final Run run;
+
+  public Bach() {
+    this(Run.system());
+  }
+
+  public Bach(Run run) {
+    this.run = run;
+    run.log("%s initialized", this);
+  }
+
+  /** Main entry-point, by convention, a zero status code indicates normal termination. */
+  int main(List<String> arguments) {
+    run.info("main(%s)", arguments);
+    if (List.of("42").equals(arguments)) {
+      return 42;
+    }
+    return 0;
+  }
 
   @Override
   public String toString() {
@@ -136,6 +169,78 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  /** Runtime context information. */
+  public static class Run {
+
+    /** Create default Run instance. */
+    public static Run system() {
+      var out = new PrintWriter(System.out, true, UTF_8);
+      var err = new PrintWriter(System.err, true, UTF_8);
+      return new Run(System.Logger.Level.INFO, out, err);
+    }
+
+    /** Current logging level threshold. */
+    final System.Logger.Level threshold;
+    /** Stream to which normal and expected output should be written. */
+    final PrintWriter out;
+    /** Stream to which any error messages should be written. */
+    final PrintWriter err;
+    /** Time instant recorded on creation of this instance. */
+    final Instant start;
+
+    Run(System.Logger.Level threshold, PrintWriter out, PrintWriter err) {
+      this.start = Instant.now();
+      this.threshold = threshold;
+      this.out = out;
+      this.err = err;
+    }
+
+    /** Log debug message unless threshold suppresses it. */
+    void info(String format, Object... args) {
+      log(INFO, format, args);
+    }
+
+    /** Log debug message unless threshold suppresses it. */
+    void log(String format, Object... args) {
+      log(DEBUG, format, args);
+    }
+
+    /** Log message unless threshold suppresses it. */
+    void log(System.Logger.Level level, String format, Object... args) {
+      if (level.getSeverity() < threshold.getSeverity()) {
+        return;
+      }
+      var consumer = level.getSeverity() < WARNING.getSeverity() ? out : err;
+      var message = String.format(format, args);
+      consumer.println(message);
+    }
+
+    /** Run named tool, as loaded by {@link java.util.ServiceLoader} using the system class loader. */
+    void run(String name, String... args) {
+      run(ToolProvider.findFirst(name).orElseThrow(), args);
+    }
+
+    /** Run provided tool. */
+    void run(ToolProvider tool, String... args) {
+      log("Running tool '%s' with: %s", tool.name(), List.of(args));
+      var code = tool.run(out, err, args);
+      if (code == 0) {
+        log("Tool '%s' successfully run.", tool.name());
+        return;
+      }
+      throw new Error("Tool '" + tool.name() + "' run failed with error code: " + code);
+    }
+
+    long toDurationMillis() {
+      return TimeUnit.MILLISECONDS.convert(Duration.between(start, Instant.now()));
+    }
+
+    @Override
+    public String toString() {
+      return String.format("Run{threshold=%s, start=%s, out=%s, err=%s}", threshold, start, out, err);
     }
   }
 }

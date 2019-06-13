@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.nio.file.Path;
+import java.util.List;
 
 /*BODY*/
 /** Java Shell Builder. */
@@ -32,14 +33,37 @@ public class Bach {
   /** Convenient short-cut to {@code "user.dir"} as a path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
-  /** Main entry-point throwing a runtime exception on error. */
-  public static void main(String... args) {
+  /** Main entry-point making use of {@link System#exit(int)} on error. */
+  public static void main(String... arguments) {
     var bach = new Bach();
-    System.out.println(bach);
-    System.out.println(bach.project);
+    var args = List.of(arguments);
+    var code = bach.main(args);
+    if (code != 0) {
+      System.err.printf("Bach main(%s) failed with error code: %d%n", args, code);
+      System.exit(code);
+    }
   }
 
   final Project project = new Project("bach", VERSION);
+  final Run run;
+
+  public Bach() {
+    this(Run.system());
+  }
+
+  public Bach(Run run) {
+    this.run = run;
+    run.log("%s initialized", this);
+  }
+
+  /** Main entry-point, by convention, a zero status code indicates normal termination. */
+  int main(List<String> arguments) {
+    run.info("main(%s)", arguments);
+    if (List.of("42").equals(arguments)) {
+      return 42;
+    }
+    return 0;
+  }
 
   @Override
   public String toString() {
