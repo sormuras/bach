@@ -19,7 +19,7 @@ package de.sormuras.bach;
 
 /*BODY*/
 /** Project data. */
-/*STATIC*/ class Project {
+public /*STATIC*/ class Project {
   final String name;
   final String version;
 

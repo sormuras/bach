@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-11T14:00:20.621333300Z
+// THIS FILE WAS GENERATED ON 2019-06-13T03:16:02.743530900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -47,7 +47,7 @@ public class Bach {
   }
 
   /** Project data. */
-  static class Project {
+  public static class Project {
     final String name;
     final String version;
 
