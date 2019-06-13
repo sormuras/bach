@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 interface Build {
 
@@ -112,7 +113,9 @@ interface Build {
     dragons.add("");
     generate(dragons, SOURCE.resolve("Command.java"), imports, "  ");
     generated.addAll(indexOfDragons, dragons);
-    generated.addAll(indexOfImports, imports);
+    generated.addAll(indexOfImports, imports.stream().filter(i -> !i.startsWith("import static")).collect(Collectors.toList()));
+    generated.add(indexOfImports, "");
+    generated.addAll(indexOfImports, imports.stream().filter(i -> i.startsWith("import static")).collect(Collectors.toList()));
 
     // write generated lines to temporary file
     var generatedPath = TARGET.resolve("Bach.java");
