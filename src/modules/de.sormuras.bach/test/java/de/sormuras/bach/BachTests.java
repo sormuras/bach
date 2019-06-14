@@ -19,17 +19,21 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.ginsberg.junit.exit.ExpectSystemExitWithStatus;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
-
-import com.ginsberg.junit.exit.ExpectSystemExitWithStatus;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 class BachTests {
+
+  private final TestRun test = new TestRun();
+  private final Bach bach = new Bach(test);
 
   @Test
   void userPathIsCurrentWorkingDirectory() {
@@ -65,15 +69,71 @@ class BachTests {
   }
 
   @Test
-  @ExpectSystemExitWithStatus(42)
   @SwallowSystem
-  void callingStaticVoidMainExitsSystemWith42(SwallowSystem.Streams streams) {
-    Bach.main("42");
+  @ExpectSystemExitWithStatus(1)
+  void callingStaticMainWithIllegalActionNameExitsSystemWithErrorStatus1(SwallowSystem.Streams __) {
+    Bach.main("unsupported action");
+  }
+
+  @Test
+  void runEmptyCollectionOfArgumentsPerformsDefaultAction() {
+    assertEquals(0, bach.main(List.of()));
+    assertLinesMatch(
+        List.of(
+            "Bach (master) initialized",
+            ">> INITIALIZATION >>",
+            "Performing 1 action(s)...",
+            ">> DEFAULT ACTION LINES >>"),
+        test.outLines());
+  }
+
+  @Test
+  void runEmptyCollectionOfActions() {
+    assertEquals(0, bach.run(List.of()));
+    assertLinesMatch(
+        List.of("Bach (master) initialized", "Performing 0 action(s)..."), test.outLines());
+  }
+
+  @Test
+  void runNoopActionReturnsZero() {
+    assertEquals(0, bach.run(List.of(bach -> {})));
+    assertLinesMatch(
+        List.of(
+            "Bach (master) initialized",
+            "Performing 1 action(s)...",
+            "\\Q>> de.sormuras.bach.BachTests$$Lambda$\\E.+",
+            "\\Q<< de.sormuras.bach.BachTests$$Lambda$\\E.+"),
+        test.outLines());
+  }
+
+  @Test
+  void runThrowingAction() {
+    var action = new ThrowingAction();
+    assertEquals(1, bach.run(List.of(action)));
+    assertLinesMatch(
+        List.of(
+            "Bach (master) initialized",
+            "Performing 1 action(s)...",
+            "\\Q>> de.sormuras.bach.BachTests$ThrowingAction@\\E.+"),
+        test.outLines());
+    assertLinesMatch(
+        List.of(
+            "Action " + action + " threw: java.lang.UnsupportedOperationException: 123",
+            "java.lang.UnsupportedOperationException: 123",
+            ">> STACKTRACE >>"),
+        test.errLines());
   }
 
   @Test
   void toStringReturnsNameAndVersion() {
-    var bach = new Bach(new TestRun());
     assertEquals("Bach (" + Bach.VERSION + ")", bach.toString());
+  }
+
+  private static class ThrowingAction implements Action {
+
+    @Override
+    public void perform(Bach bach) {
+      throw new UnsupportedOperationException("123");
+    }
   }
 }

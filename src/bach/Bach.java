@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-14T09:24:36.531396600Z
+// THIS FILE WAS GENERATED ON 2019-06-14T15:35:55.379212400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -18,8 +18,11 @@
 
 // default package
 
+import static java.lang.System.Logger.Level.ALL;
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -29,8 +32,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -74,15 +79,50 @@ public class Bach {
     run.log("%s initialized", this);
   }
 
+  void help() {
+    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
+    run.out.println("Available default actions are:");
+    for (var action : Action.Default.values()) {
+      var name = action.name().toLowerCase();
+      var text =
+          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
+      text.lines().forEach(run.out::println);
+    }
+  }
+
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
   int main(List<String> arguments) {
     run.info("main(%s)", arguments);
-    if (List.of("42").equals(arguments)) {
-      return 42;
+    List<Action> actions;
+    try {
+      actions = Action.actions(arguments);
+    } catch (IllegalArgumentException e) {
+      return 1;
     }
+    run.log("actions = " + actions);
     if (run.dryRun) {
       run.info("Dry-run ends here.");
       return 0;
+    }
+    run(actions);
+    return 0;
+  }
+
+  /** Execute a collection of actions sequentially on this instance. */
+  int run(Collection<? extends Action> actions) {
+    run.log("Performing %d action(s)...", actions.size());
+    for (var action : actions) {
+      try {
+        run.log(TRACE, ">> %s", action);
+        action.perform(this);
+        run.log(TRACE, "<< %s", action);
+      } catch (Exception exception) {
+        run.log(ERROR, "Action %s threw: %s", action, exception);
+        if (run.debug) {
+          exception.printStackTrace(run.err);
+        }
+        return 1;
+      }
     }
     return 0;
   }
@@ -210,7 +250,7 @@ public class Bach {
 
       private System.Logger.Level threshold() {
         if (is("debug")) {
-          return DEBUG;
+          return ALL;
         }
         var level = get("threshold").toUpperCase();
         return System.Logger.Level.valueOf(level);
@@ -327,6 +367,78 @@ public class Bach {
       return String.format(
           "Run{debug=%s, dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
           debug, dryRun, threshold, start, out, err);
+    }
+  }
+
+  /** Bach consuming no-arg action operating via side-effects. */
+  @FunctionalInterface
+  public interface Action {
+
+    /** Performs this action on the given Bach instance. */
+    void perform(Bach bach) throws Exception;
+
+    /** Transforming strings to actions. */
+    static List<Action> actions(List<String> args) {
+      var actions = new ArrayList<Action>();
+      if (args.isEmpty()) {
+        actions.add(Action.Default.HELP);
+      } else {
+        var arguments = new ArrayDeque<>(args);
+        while (!arguments.isEmpty()) {
+          var argument = arguments.removeFirst();
+          var defaultAction = Action.Default.valueOf(argument.toUpperCase());
+          var action = defaultAction.consume(arguments);
+          actions.add(action);
+        }
+      }
+      return actions;
+    }
+
+    /** Default action delegating to Bach API methods. */
+    enum Default implements Action {
+      // BUILD(Bach::build, "Build modular Java project in base directory."),
+      // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
+      // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
+      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
+      // LAUNCH(Bach::launch, "Start project's main program."),
+      TOOL(
+          null,
+          "Run named tool consuming all remaining arguments:",
+          "  tool <name> <args...>",
+          "  tool java --show-version Program.java") {
+        /** Return new Action running the named tool and consuming all remaining arguments. */
+        @Override
+        Action consume(Deque<String> arguments) {
+          var name = arguments.removeFirst();
+          var args = arguments.toArray(String[]::new);
+          arguments.clear();
+          return bach -> bach.run.run(name, args);
+        }
+      };
+
+      final Action action;
+      final String[] description;
+
+      Default(Action action, String... description) {
+        this.action = action;
+        this.description = description;
+      }
+
+      @Override
+      public void perform(Bach bach) throws Exception {
+        //        var key = "bach.action." + name().toLowerCase() + ".enabled";
+        //        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
+        //        if (!enabled) {
+        //          bach.run.info("Action " + name() + " disabled.");
+        //          return;
+        //        }
+        action.perform(bach);
+      }
+
+      /** Return this default action instance without consuming any argument. */
+      Action consume(Deque<String> arguments) {
+        return this;
+      }
     }
   }
 }

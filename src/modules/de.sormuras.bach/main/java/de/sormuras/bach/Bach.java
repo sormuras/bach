@@ -17,7 +17,11 @@
 
 package de.sormuras.bach;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.TRACE;
+
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 /*BODY*/
@@ -56,15 +60,50 @@ public class Bach {
     run.log("%s initialized", this);
   }
 
+  void help() {
+    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
+    run.out.println("Available default actions are:");
+    for (var action : Action.Default.values()) {
+      var name = action.name().toLowerCase();
+      var text =
+          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
+      text.lines().forEach(run.out::println);
+    }
+  }
+
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
   int main(List<String> arguments) {
     run.info("main(%s)", arguments);
-    if (List.of("42").equals(arguments)) {
-      return 42;
+    List<Action> actions;
+    try {
+      actions = Action.actions(arguments);
+    } catch (IllegalArgumentException e) {
+      return 1;
     }
+    run.log("actions = " + actions);
     if (run.dryRun) {
       run.info("Dry-run ends here.");
       return 0;
+    }
+    run(actions);
+    return 0;
+  }
+
+  /** Execute a collection of actions sequentially on this instance. */
+  int run(Collection<? extends Action> actions) {
+    run.log("Performing %d action(s)...", actions.size());
+    for (var action : actions) {
+      try {
+        run.log(TRACE, ">> %s", action);
+        action.perform(this);
+        run.log(TRACE, "<< %s", action);
+      } catch (Exception exception) {
+        run.log(ERROR, "Action %s threw: %s", action, exception);
+        if (run.debug) {
+          exception.printStackTrace(run.err);
+        }
+        return 1;
+      }
     }
     return 0;
   }
