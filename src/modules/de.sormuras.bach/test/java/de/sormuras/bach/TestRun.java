@@ -40,8 +40,8 @@ class TestRun extends Run {
     }
   }
 
-  final StringWriter out;
-  final StringWriter err;
+  private final StringWriter out;
+  private final StringWriter err;
 
   TestRun() {
     this(new StringWriter(), new StringWriter());
