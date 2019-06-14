@@ -20,28 +20,38 @@ import java.util.spi.ToolProvider;
 /** Runtime context information. */
 public /*STATIC*/ class Run {
 
+  /** Declares property keys and their default values. */
+  static class DefaultProperties extends Properties {
+    DefaultProperties() {
+      setProperty("debug", "false");
+      setProperty("dry-run", "false");
+      setProperty("threshold", INFO.name());
+    }
+  }
+
   /** Named property value getter. */
   private static class Configurator {
+
     final Properties properties;
 
     Configurator(Properties properties) {
       this.properties = properties;
     }
 
-    String get(String key, String defaultValue) {
-      return System.getProperty(key, properties.getProperty(key, defaultValue));
+    String get(String key) {
+      return System.getProperty(key, properties.getProperty(key));
     }
 
-    boolean is(String key, String defaultValue) {
-      var value = System.getProperty(key.substring(1), properties.getProperty(key, defaultValue));
+    boolean is(String key) {
+      var value = System.getProperty(key.substring(1), properties.getProperty(key));
       return "".equals(value) || "true".equals(value);
     }
 
     private System.Logger.Level threshold() {
-      if (is("debug", "false")) {
+      if (is("debug")) {
         return DEBUG;
       }
-      var level = get("threshold", "INFO").toUpperCase();
+      var level = get("threshold").toUpperCase();
       return System.Logger.Level.valueOf(level);
     }
   }
@@ -58,17 +68,8 @@ public /*STATIC*/ class Run {
     return new Run(home, out, err, newProperties(home));
   }
 
-  /** Create default properties. */
-  static Properties defaultProperties() {
-    var defaults = new Properties();
-    defaults.setProperty("debug", "false");
-    defaults.setProperty("dry-run", "false");
-    defaults.setProperty("threshold", INFO.name());
-    return defaults;
-  }
-
   static Properties newProperties(Path home) {
-    var properties = new Properties(defaultProperties());
+    var properties = new Properties(new DefaultProperties());
     var names = new ArrayList<String>();
     if (home.getFileName() != null) {
       names.add(home.getFileName().toString());
@@ -110,8 +111,8 @@ public /*STATIC*/ class Run {
     this.err = err;
 
     var configurator = new Configurator(properties);
-    this.debug = configurator.is("debug", "false");
-    this.dryRun = configurator.is("dry-run", "false");
+    this.debug = configurator.is("debug");
+    this.dryRun = configurator.is("dry-run");
     this.threshold = configurator.threshold();
   }
 

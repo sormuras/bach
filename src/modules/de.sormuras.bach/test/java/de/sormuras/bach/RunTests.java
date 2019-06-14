@@ -38,7 +38,8 @@ class RunTests {
 
   @Test
   void defaultProperties() {
-    var defaults = Run.defaultProperties();
+    //noinspection MismatchedQueryAndUpdateOfCollection
+    var defaults = new Run.DefaultProperties();
     assertEquals("false", defaults.getProperty("debug"));
     assertEquals("false", defaults.getProperty("dry-run"));
     assertEquals("INFO", defaults.getProperty("threshold"));
