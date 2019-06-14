@@ -24,13 +24,34 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Properties;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class RunTests {
 
   private final TestRun test = new TestRun();
+
+  @Test
+  void defaultProperties() {
+    var defaults = Run.defaultProperties();
+    assertEquals("false", defaults.getProperty("debug"));
+    assertEquals("false", defaults.getProperty("dry-run"));
+    assertEquals("INFO", defaults.getProperty("threshold"));
+    assertEquals(3, defaults.size());
+  }
+
+  @Test
+  void loadProperties(@TempDir Path home) throws Exception {
+    var path = Files.write(home.resolve("bach.properties"), new byte[] {-128});
+    var error = assertThrows(Error.class, () -> Run.newProperties(home));
+    assertEquals("Loading properties failed: " + path, error.getMessage());
+    assertEquals("Input length = 1", error.getCause().getMessage());
+  }
 
   @Test
   void runCustomTool() {
@@ -52,15 +73,26 @@ class RunTests {
   }
 
   @Test
-  void toDurationMillisReturnsNonZeroValue() throws InterruptedException {
-    Thread.sleep(123);
-    assertTrue(test.toDurationMillis() != 0);
+  void toDurationMillisReturnsPositiveValue() throws InterruptedException {
+    Thread.sleep(9);
+    assertTrue(test.toDurationMillis() > 0);
   }
 
   @Test
-  void toStringContains() {
-    var run = new Run(System.Logger.Level.OFF, true, null, null);
-    var expected = "Run{dryRun=true, threshold=OFF, start=" + run.start + ", out=null, err=null}";
+  void toStringContainsUsefulInformation() {
+    var properties = new Properties();
+    properties.setProperty("dry-run", "true");
+    properties.setProperty("threshold", System.Logger.Level.OFF.name());
+    var run = new Run(Path.of(""), null, null, properties);
+    var expected =
+        String.format(
+            "Run{debug=false,"
+                + " dryRun=true,"
+                + " threshold=OFF,"
+                + " start=%s,"
+                + " out=null,"
+                + " err=null}",
+            run.start);
     var actual = run.toString();
     assertEquals(expected, actual);
   }

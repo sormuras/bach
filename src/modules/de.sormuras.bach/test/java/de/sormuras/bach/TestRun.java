@@ -6,11 +6,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class TestRun extends Run {
+
+  static Properties newProperties() {
+    var properties = new Properties();
+    properties.setProperty("debug", "true");
+    properties.setProperty("dry-run", "false");
+    return properties;
+  }
 
   /** Walk directory tree structure. */
   static List<String> treeWalk(Path root) {
@@ -41,27 +49,10 @@ class TestRun extends Run {
   }
 
   private TestRun(StringWriter out, StringWriter err) {
-    super(System.Logger.Level.ALL, false, new PrintWriter(out), new PrintWriter(err));
+    super(Path.of(""), new PrintWriter(out), new PrintWriter(err), newProperties());
     this.out = out;
     this.err = err;
   }
-
-  //  Make make(Path home, Path work) {
-  //    var properties = new Properties();
-  //    properties.setProperty("debug", "true");
-  //    properties.setProperty("work", work.toString());
-  //    properties.setProperty("do-launch-junit-platform", "true");
-  //    var configuration = new Make.Configuration(home, properties);
-  //    return new Make(configuration);
-  //  }
-
-  //  TestRun run(int expected, Path home, Path work, String... args) {
-  //    var code = make(home, work).run(this, List.of(args));
-  //    if (expected == code) {
-  //      return this;
-  //    }
-  //    throw new AssertionError("Run finished with exit code " + code + toString());
-  //  }
 
   List<String> outLines() {
     return out.toString().lines().collect(Collectors.toList());

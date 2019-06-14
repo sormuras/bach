@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-13T21:20:15.548355900Z
+// THIS FILE WAS GENERATED ON 2019-06-14T09:10:21.067284500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -25,12 +25,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -179,17 +181,80 @@ public class Bach {
   /** Runtime context information. */
   public static class Run {
 
-    /** Create default Run instance. */
-    public static Run system() {
-      var threshold = System.getProperties().containsKey("Debug".substring(1)) ? DEBUG : INFO;
-      var dry = System.getProperties().containsKey("Dry-run".substring(1));
-      var out = new PrintWriter(System.out, true, UTF_8);
-      var err = new PrintWriter(System.err, true, UTF_8);
-      return new Run(threshold, dry, out, err);
+    /** Named property value getter. */
+    private static class Configurator {
+      final Properties properties;
+
+      Configurator(Properties properties) {
+        this.properties = properties;
+      }
+
+      String get(String key, String defaultValue) {
+        return System.getProperty(key, properties.getProperty(key, defaultValue));
+      }
+
+      boolean is(String key, String defaultValue) {
+        var value = System.getProperty(key.substring(1), properties.getProperty(key, defaultValue));
+        return "".equals(value) || "true".equals(value);
+      }
+
+      private System.Logger.Level threshold() {
+        if (is("debug", "false")) {
+          return DEBUG;
+        }
+        var level = get("threshold", "INFO").toUpperCase();
+        return System.Logger.Level.valueOf(level);
+      }
     }
 
+    /** Create default Run instance in user's current directory. */
+    public static Run system() {
+      return system(Path.of(""));
+    }
+
+    /** Create default Run instance in given home directory. */
+    public static Run system(Path home) {
+      var out = new PrintWriter(System.out, true, UTF_8);
+      var err = new PrintWriter(System.err, true, UTF_8);
+      return new Run(home, out, err, newProperties(home));
+    }
+
+    /** Create default properties. */
+    static Properties defaultProperties() {
+      var defaults = new Properties();
+      defaults.setProperty("debug", "false");
+      defaults.setProperty("dry-run", "false");
+      defaults.setProperty("threshold", INFO.name());
+      return defaults;
+    }
+
+    static Properties newProperties(Path home) {
+      var properties = new Properties(defaultProperties());
+      var names = new ArrayList<String>();
+      if (home.getFileName() != null) {
+        names.add(home.getFileName().toString());
+      }
+      names.addAll(List.of("bach", "build", ""));
+      for (var name : names) {
+        var path = home.resolve(name + ".properties");
+        if (Files.exists(path)) {
+          try (var stream = Files.newBufferedReader(path)) {
+            properties.load(stream);
+            break;
+          } catch (Exception e) {
+            throw new Error("Loading properties failed: " + path, e);
+          }
+        }
+      }
+      return properties;
+    }
+
+    /** Home directory. */
+    final Path home;
     /** Current logging level threshold. */
     final System.Logger.Level threshold;
+    /** Debug flag. */
+    final boolean debug;
     /** Dry-run flag. */
     final boolean dryRun;
     /** Stream to which normal and expected output should be written. */
@@ -199,12 +264,16 @@ public class Bach {
     /** Time instant recorded on creation of this instance. */
     final Instant start;
 
-    Run(System.Logger.Level threshold, boolean dryRun, PrintWriter out, PrintWriter err) {
+    Run(Path home, PrintWriter out, PrintWriter err, Properties properties) {
       this.start = Instant.now();
-      this.dryRun = dryRun;
-      this.threshold = threshold;
+      this.home = home;
       this.out = out;
       this.err = err;
+
+      var configurator = new Configurator(properties);
+      this.debug = configurator.is("debug", "false");
+      this.dryRun = configurator.is("dry-run", "false");
+      this.threshold = configurator.threshold();
     }
 
     /** Log debug message unless threshold suppresses it. */
@@ -255,8 +324,8 @@ public class Bach {
     @Override
     public String toString() {
       return String.format(
-          "Run{dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
-          dryRun, threshold, start, out, err);
+          "Run{debug=%s, dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
+          debug, dryRun, threshold, start, out, err);
     }
   }
 }
