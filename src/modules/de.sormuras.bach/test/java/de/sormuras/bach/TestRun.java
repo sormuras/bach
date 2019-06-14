@@ -6,18 +6,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class TestRun extends Run {
 
-  static Properties newProperties() {
-    var properties = new Properties();
-    properties.setProperty("debug", "true");
-    properties.setProperty("dry-run", "false");
-    return properties;
+  /** Force debug mode when running tests. */
+  static class TestProperties extends Run.DefaultProperties {
+    TestProperties() {
+      setProperty("debug", "true");
+    }
   }
 
   /** Walk directory tree structure. */
@@ -49,7 +48,7 @@ class TestRun extends Run {
   }
 
   private TestRun(StringWriter out, StringWriter err) {
-    super(Path.of(""), new PrintWriter(out), new PrintWriter(err), newProperties());
+    super(Path.of(""), new PrintWriter(out), new PrintWriter(err), new TestProperties());
     this.out = out;
     this.err = err;
   }
