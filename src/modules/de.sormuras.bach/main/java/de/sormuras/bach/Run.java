@@ -1,5 +1,6 @@
 package de.sormuras.bach;
 
+import static java.lang.System.Logger.Level.ALL;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
@@ -49,7 +50,7 @@ public /*STATIC*/ class Run {
 
     private System.Logger.Level threshold() {
       if (is("debug")) {
-        return DEBUG;
+        return ALL;
       }
       var level = get("threshold").toUpperCase();
       return System.Logger.Level.valueOf(level);
