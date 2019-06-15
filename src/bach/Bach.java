@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-15T05:12:15.394723700Z
+// THIS FILE WAS GENERATED ON 2019-06-15T17:53:05.958622200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -77,6 +77,7 @@ public class Bach {
   public Bach(Run run) {
     this.run = run;
     run.log(DEBUG, "%s initialized", this);
+    run.log(TRACE, "home = \"%s\"", run.home);
   }
 
   void help() {
@@ -453,18 +454,20 @@ public class Bach {
 
     @Override
     public void perform(Bach bach) throws Exception {
-      var lib = bach.run.home.resolve("lib");
-      var src = bach.run.home.resolve("src");
-      var target = bach.run.home.resolve("target/build"); // TODO bach.run.work...
+      var home = bach.run.home;
+      var work = home.resolve("target/bach"); // TODO bach.run.work...
+      var lib = home.resolve("lib");
+      var src = home.resolve("src");
 
       var libTest = lib.resolve("test");
+      var libTestJUnitPlatform = lib.resolve("test-junit-platform");
       var libTestRuntimeOnly = lib.resolve("test-runtime-only");
       var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
       var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
-      var targetMainClasses = target.resolve("main/classes");
-      var targetMainModules = Files.createDirectories(target.resolve("main/modules"));
-      var targetTestClasses = target.resolve("test/classes");
-      var targetTestModules = Files.createDirectories(target.resolve("test/modules"));
+      var targetMainClasses = work.resolve("main/classes");
+      var targetMainModules = Files.createDirectories(work.resolve("main/modules"));
+      var targetTestClasses = work.resolve("test/classes");
+      var targetTestModules = Files.createDirectories(work.resolve("test/modules"));
 
       bach.run.run(
           new Command("javac")
@@ -507,7 +510,7 @@ public class Bach {
           new Command("java")
               .add(
                   "--module-path",
-                  List.of(targetTestModules, targetMainModules, libTest, libTestRuntimeOnly))
+                  List.of(targetTestModules, targetMainModules, libTest, libTestJUnitPlatform, libTestRuntimeOnly))
               .add("--add-modules", "integration")
               .add("--module", "org.junit.platform.console")
               .add("--scan-modules");

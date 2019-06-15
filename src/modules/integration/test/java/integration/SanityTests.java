@@ -18,7 +18,11 @@ class SanityTests {
 
   private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
       List.of(
-          "Bach (master) initialized", "Bach::main([])", "actions = [HELP]", "Dry-run ends here.");
+          "Bach (master) initialized",
+          "home = \"\"",
+          "Bach::main([])",
+          "actions = [HELP]",
+          "Dry-run ends here.");
 
   @Test
   @DisplayName("jshell Bach.jsh")
