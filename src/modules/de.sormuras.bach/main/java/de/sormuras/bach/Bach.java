@@ -79,7 +79,7 @@ public class Bach {
     run.log(TRACE, "Bach::main(%s)", arguments);
     List<Action> actions;
     try {
-      actions = Action.actions(arguments);
+      actions = Action.of(arguments);
       run.log(DEBUG, "actions = " + actions);
     } catch (IllegalArgumentException e) {
       run.log(ERROR, "Converting arguments to actions failed: " + e);

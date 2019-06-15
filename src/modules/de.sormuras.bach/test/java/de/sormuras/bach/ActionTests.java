@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,35 +34,49 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class ActionTests {
 
-    @ParameterizedTest
-    @EnumSource(Action.Default.class)
-    void performActionOnEmptyDirectory(Action.Default action, @TempDir Path empty) {
-      if (action == Action.Default.HELP) {
-        return; // skip
-      }
-      var test = new TestRun();
-      var bach = new Bach(test);
+  @ParameterizedTest
+  @EnumSource(Action.Default.class)
+  void performDefaultActionOnEmptyDirectory(Action.Default action, @TempDir Path emptyHome) {
+    var test = new TestRun(emptyHome);
+    var bach = new Bach(test);
 
-      if (action.action == null) {
-        assertThrows(NullPointerException.class, () -> action.perform(bach));
-        return;
-      }
-      assertDoesNotThrow(() -> action.perform(bach));
-      var arguments = new ArrayDeque<>(List.of("a", "z"));
-      assertSame(action, action.consume(arguments));
-      assertEquals("[a, z]", arguments.toString());
+    if (action.action == null) {
+      assertThrows(NullPointerException.class, () -> action.perform(bach));
+      return;
     }
+    assertDoesNotThrow(() -> action.perform(bach));
+    var arguments = new ArrayDeque<>(List.of("a", "z"));
+    assertSame(action, action.consume(arguments));
+    assertEquals("[a, z]", arguments.toString());
+  }
 
   @Test
   void actionsForEmptyListReturnsDefaultActions() {
-    assertEquals(List.of(Action.Default.HELP), Action.actions(List.of()));
+    assertEquals(List.of(Action.Default.HELP), Action.of(List.of()));
   }
 
   @Test
   void actionsForHelpReturnsDefaultAction() {
     assertEquals(
         List.of(Action.Default.HELP, Action.Default.HELP, Action.Default.HELP),
-        Action.actions(List.of("help", "Help", "HELP")));
+        Action.of(List.of("help", "Help", "HELP")));
+  }
+
+  @Test
+  void actionForObjectFails() {
+    var e =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> Action.of("java.lang.Object", new ArrayDeque<>()));
+    assertEquals(
+        "class java.lang.Object doesn't implement interface de.sormuras.bach.Action",
+        e.getMessage());
+  }
+
+  @Test
+  void actionForJigsawBuilder() {
+    var action = Action.of(JigsawBuilder.class.getName(), new ArrayDeque<>());
+    assertSame(JigsawBuilder.class, action.getClass());
   }
 
   @Test

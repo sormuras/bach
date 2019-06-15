@@ -13,8 +13,23 @@ public interface Action {
   /** Performs this action on the given Bach instance. */
   void perform(Bach bach) throws Exception;
 
-  /** Transforming strings to actions. */
-  static List<Action> actions(List<String> args) {
+  /** Transform a name and arguments into an action object. */
+  static Action of(String name, Deque<String> arguments) {
+    try {
+      var actionClass = Class.forName(name);
+      if (Action.class.isAssignableFrom(actionClass)) {
+        return (Action) actionClass.getConstructor().newInstance();
+      }
+      throw new IllegalArgumentException(actionClass + " doesn't implement " + Action.class);
+    } catch (ReflectiveOperationException e) {
+      // fall-through
+    }
+    var defaultAction = Action.Default.valueOf(name.toUpperCase());
+    return defaultAction.consume(arguments);
+  }
+
+  /** Transform strings to actions. */
+  static List<Action> of(List<String> args) {
     var actions = new ArrayList<Action>();
     if (args.isEmpty()) {
       actions.add(Action.Default.HELP);
@@ -22,9 +37,7 @@ public interface Action {
       var arguments = new ArrayDeque<>(args);
       while (!arguments.isEmpty()) {
         var argument = arguments.removeFirst();
-        var defaultAction = Action.Default.valueOf(argument.toUpperCase());
-        var action = defaultAction.consume(arguments);
-        actions.add(action);
+        actions.add(of(argument, arguments));
       }
     }
     return actions;
