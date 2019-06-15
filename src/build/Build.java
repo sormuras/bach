@@ -116,10 +116,16 @@ interface Build {
     generate(dragons, SOURCE.resolve("Run.java"), imports, "  ");
     dragons.add("");
     generate(dragons, SOURCE.resolve("Action.java"), imports, "  ");
+    dragons.add("");
+    generate(dragons, SOURCE.resolve("JigsawBuilder.java"), imports, "  ");
     generated.addAll(indexOfDragons, dragons);
-    generated.addAll(indexOfImports, imports.stream().filter(i -> !i.startsWith("import static")).collect(Collectors.toList()));
+    generated.addAll(
+        indexOfImports,
+        imports.stream().filter(i -> !i.startsWith("import static")).collect(Collectors.toList()));
     generated.add(indexOfImports, "");
-    generated.addAll(indexOfImports, imports.stream().filter(i -> i.startsWith("import static")).collect(Collectors.toList()));
+    generated.addAll(
+        indexOfImports,
+        imports.stream().filter(i -> i.startsWith("import static")).collect(Collectors.toList()));
 
     // write generated lines to temporary file
     var generatedPath = TARGET.resolve("Bach.java");

@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-15T04:11:07.099999Z
+// THIS FILE WAS GENERATED ON 2019-06-15T05:12:15.394723700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -445,6 +445,73 @@ public class Bach {
       Action consume(Deque<String> arguments) {
         return this;
       }
+    }
+  }
+
+  /** Build, i.e. compile and package, a modular Java project. */
+  public static class JigsawBuilder implements Action {
+
+    @Override
+    public void perform(Bach bach) throws Exception {
+      var lib = bach.run.home.resolve("lib");
+      var src = bach.run.home.resolve("src");
+      var target = bach.run.home.resolve("target/build"); // TODO bach.run.work...
+
+      var libTest = lib.resolve("test");
+      var libTestRuntimeOnly = lib.resolve("test-runtime-only");
+      var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
+      var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
+      var targetMainClasses = target.resolve("main/classes");
+      var targetMainModules = Files.createDirectories(target.resolve("main/modules"));
+      var targetTestClasses = target.resolve("test/classes");
+      var targetTestModules = Files.createDirectories(target.resolve("test/modules"));
+
+      bach.run.run(
+          new Command("javac")
+              .add("-d", targetMainClasses)
+              .add("--module-source-path", "src/modules/*/main/java")
+              .add("--module-version", "1-" + bach.project.version)
+              .add("--module", "de.sormuras.bach"));
+
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(bach.run.debug, "--verbose")
+              .add("--file", targetMainModules.resolve("de.sormuras.bach.jar"))
+              .add("-C", targetMainClasses.resolve("de.sormuras.bach"))
+              .add(".")
+              .addIff(
+                  Files.isDirectory(sourceMainResources),
+                  cmd -> cmd.add("-C", sourceMainResources).add(".")));
+
+      bach.run.run(
+          new Command("javac")
+              .add("-d", targetTestClasses)
+              .add("--module-source-path", "src/modules/*/test/java")
+              .add("--module-version", "1-" + bach.project.version)
+              .add("--module-path", List.of(targetMainModules, libTest))
+              .add("--module", "integration"));
+
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(bach.run.debug, "--verbose")
+              .add("--file", targetTestModules.resolve("integration.jar"))
+              .add("-C", targetTestClasses.resolve("integration"))
+              .add(".")
+              .addIff(
+                  Files.isDirectory(sourceTestResources),
+                  cmd -> cmd.add("-C", sourceTestResources).add(".")));
+
+      var test =
+          new Command("java")
+              .add(
+                  "--module-path",
+                  List.of(targetTestModules, targetMainModules, libTest, libTestRuntimeOnly))
+              .add("--add-modules", "integration")
+              .add("--module", "org.junit.platform.console")
+              .add("--scan-modules");
+      bach.run.log(INFO, "%s %s", test.name, String.join(" ", test.list));
     }
   }
 }

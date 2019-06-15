@@ -24,18 +24,23 @@ import java.nio.file.Path;
 import java.util.List;
 
 /*BODY*/
+/** Build, i.e. compile and package, a modular Java project. */
 public /*STATIC*/ class JigsawBuilder implements Action {
 
   @Override
   public void perform(Bach bach) throws Exception {
-    var libTest = Path.of("lib/test");
-    var libTestRuntimeOnly = Path.of("lib/test-runtime-only");
-    var sourceMainResources = Path.of("src/modules", "de.sormuras.bach", "main/resources");
-    var sourceTestResources = Path.of("src/modules", "de.sormuras.bach", "test/resources");
-    var targetMainClasses = Path.of("target/build/main/classes");
-    var targetMainModules = Files.createDirectories(Path.of("target/build/main/modules"));
-    var targetTestClasses = Path.of("target/build/test/classes");
-    var targetTestModules = Files.createDirectories(Path.of("target/build/test/modules"));
+    var lib = bach.run.home.resolve("lib");
+    var src = bach.run.home.resolve("src");
+    var target = bach.run.home.resolve("target/build"); // TODO bach.run.work...
+
+    var libTest = lib.resolve("test");
+    var libTestRuntimeOnly = lib.resolve("test-runtime-only");
+    var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
+    var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
+    var targetMainClasses = target.resolve("main/classes");
+    var targetMainModules = Files.createDirectories(target.resolve("main/modules"));
+    var targetTestClasses = target.resolve("test/classes");
+    var targetTestModules = Files.createDirectories(target.resolve("test/modules"));
 
     bach.run.run(
         new Command("javac")
@@ -47,7 +52,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     bach.run.run(
         new Command("jar")
             .add("--create")
-            .addIff(true, "--verbose")
+            .addIff(bach.run.debug, "--verbose")
             .add("--file", targetMainModules.resolve("de.sormuras.bach.jar"))
             .add("-C", targetMainClasses.resolve("de.sormuras.bach"))
             .add(".")
@@ -66,7 +71,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     bach.run.run(
         new Command("jar")
             .add("--create")
-            .addIff(true, "--verbose")
+            .addIff(bach.run.debug, "--verbose")
             .add("--file", targetTestModules.resolve("integration.jar"))
             .add("-C", targetTestClasses.resolve("integration"))
             .add(".")
