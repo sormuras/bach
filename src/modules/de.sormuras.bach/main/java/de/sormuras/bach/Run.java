@@ -3,6 +3,7 @@ package de.sormuras.bach;
 import static java.lang.System.Logger.Level.ALL;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.WARNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -117,16 +118,6 @@ public /*STATIC*/ class Run {
     this.threshold = configurator.threshold();
   }
 
-  /** Log debug message unless threshold suppresses it. */
-  void info(String format, Object... args) {
-    log(INFO, format, args);
-  }
-
-  /** Log debug message unless threshold suppresses it. */
-  void log(String format, Object... args) {
-    log(DEBUG, format, args);
-  }
-
   /** Log message unless threshold suppresses it. */
   void log(System.Logger.Level level, String format, Object... args) {
     if (level.getSeverity() < threshold.getSeverity()) {
@@ -149,10 +140,10 @@ public /*STATIC*/ class Run {
 
   /** Run provided tool. */
   void run(ToolProvider tool, String... args) {
-    log("Running tool '%s' with: %s", tool.name(), List.of(args));
+    log(TRACE, "Run::run(%s, %s)", tool.name(), String.join(", ", args));
     var code = tool.run(out, err, args);
     if (code == 0) {
-      log("Tool '%s' successfully run.", tool.name());
+      log(DEBUG, "Tool '%s' successfully run.", tool.name());
       return;
     }
     throw new Error("Tool '" + tool.name() + "' run failed with error code: " + code);

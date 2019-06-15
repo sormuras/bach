@@ -67,7 +67,7 @@ class RunTests {
     assertDoesNotThrow(() -> test.run(command));
     assertLinesMatch(
         List.of(
-            "Running tool 'javac' with: [--version]",
+            "Run::run(javac, --version)",
             "javac " + Runtime.version().feature() + ".*",
             "Tool 'javac' successfully run."),
         test.outLines());

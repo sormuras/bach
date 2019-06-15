@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-14T15:35:55.379212400Z
+// THIS FILE WAS GENERATED ON 2019-06-15T03:13:18.061068Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -76,10 +76,11 @@ public class Bach {
 
   public Bach(Run run) {
     this.run = run;
-    run.log("%s initialized", this);
+    run.log(DEBUG, "%s initialized", this);
   }
 
   void help() {
+    run.log(TRACE, "Bach::help()");
     run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
     run.out.println("Available default actions are:");
     for (var action : Action.Default.values()) {
@@ -92,16 +93,17 @@ public class Bach {
 
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
   int main(List<String> arguments) {
-    run.info("main(%s)", arguments);
+    run.log(TRACE, "Bach::main(%s)", arguments);
     List<Action> actions;
     try {
       actions = Action.actions(arguments);
+      run.log(DEBUG, "actions = " + actions);
     } catch (IllegalArgumentException e) {
+      run.log(ERROR, "Converting arguments to actions failed: " + e);
       return 1;
     }
-    run.log("actions = " + actions);
     if (run.dryRun) {
-      run.info("Dry-run ends here.");
+      run.log(INFO, "Dry-run ends here.");
       return 0;
     }
     run(actions);
@@ -110,7 +112,8 @@ public class Bach {
 
   /** Execute a collection of actions sequentially on this instance. */
   int run(Collection<? extends Action> actions) {
-    run.log("Performing %d action(s)...", actions.size());
+    run.log(TRACE, "Bach::run(%s)", actions);
+    run.log(DEBUG, "Performing %d action(s)...", actions.size());
     for (var action : actions) {
       try {
         run.log(TRACE, ">> %s", action);
@@ -317,16 +320,6 @@ public class Bach {
       this.threshold = configurator.threshold();
     }
 
-    /** Log debug message unless threshold suppresses it. */
-    void info(String format, Object... args) {
-      log(INFO, format, args);
-    }
-
-    /** Log debug message unless threshold suppresses it. */
-    void log(String format, Object... args) {
-      log(DEBUG, format, args);
-    }
-
     /** Log message unless threshold suppresses it. */
     void log(System.Logger.Level level, String format, Object... args) {
       if (level.getSeverity() < threshold.getSeverity()) {
@@ -349,10 +342,10 @@ public class Bach {
 
     /** Run provided tool. */
     void run(ToolProvider tool, String... args) {
-      log("Running tool '%s' with: %s", tool.name(), List.of(args));
+      log(TRACE, "Run::run(%s, %s)", tool.name(), String.join(", ", args));
       var code = tool.run(out, err, args);
       if (code == 0) {
-        log("Tool '%s' successfully run.", tool.name());
+        log(DEBUG, "Tool '%s' successfully run.", tool.name());
         return;
       }
       throw new Error("Tool '" + tool.name() + "' run failed with error code: " + code);
