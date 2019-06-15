@@ -44,11 +44,15 @@ class TestRun extends Run {
   private final StringWriter err;
 
   TestRun() {
-    this(new StringWriter(), new StringWriter());
+    this(Path.of(""));
   }
 
-  private TestRun(StringWriter out, StringWriter err) {
-    super(Path.of(""), new PrintWriter(out), new PrintWriter(err), new TestProperties());
+  TestRun(Path home) {
+    this(home, new StringWriter(), new StringWriter());
+  }
+
+  private TestRun(Path home, StringWriter out, StringWriter err) {
+    super(home, new PrintWriter(out), new PrintWriter(err), new TestProperties());
     this.out = out;
     this.err = err;
   }
