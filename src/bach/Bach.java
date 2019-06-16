@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-16T03:31:30.013222100Z
+// THIS FILE WAS GENERATED ON 2019-06-16T04:17:39.312251300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -128,6 +128,7 @@ public class Bach {
         return 1;
       }
     }
+    run.log(DEBUG, "%s action(s) successfully performed.", actions.size());
     return 0;
   }
 

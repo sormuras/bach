@@ -111,6 +111,7 @@ public class Bach {
         return 1;
       }
     }
+    run.log(DEBUG, "%s action(s) successfully performed.", actions.size());
     return 0;
   }
 

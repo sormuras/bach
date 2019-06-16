@@ -83,7 +83,8 @@ class BachTests {
             "Bach (master) initialized",
             ">> RUN STATE LINES >>",
             "Performing 1 action(s)...",
-            ">> DEFAULT ACTION LINES >>"),
+            ">> DEFAULT ACTION LINES >>",
+            "1 action(s) successfully performed."),
         test.outLines());
   }
 
@@ -95,7 +96,8 @@ class BachTests {
             "Bach (master) initialized",
             ">> RUN STATE LINES >>",
             "Bach::run([])",
-            "Performing 0 action(s)..."),
+            "Performing 0 action(s)...",
+            "0 action(s) successfully performed."),
         test.outLines());
   }
 
@@ -109,7 +111,8 @@ class BachTests {
             "Bach::run.+",
             "Performing 1 action(s)...",
             "\\Q>> de.sormuras.bach.BachTests$$Lambda$\\E.+",
-            "\\Q<< de.sormuras.bach.BachTests$$Lambda$\\E.+"),
+            "\\Q<< de.sormuras.bach.BachTests$$Lambda$\\E.+",
+            "1 action(s) successfully performed."),
         test.outLines());
   }
 
