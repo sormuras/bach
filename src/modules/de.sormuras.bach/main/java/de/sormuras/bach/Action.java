@@ -56,6 +56,7 @@ public interface Action {
     // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
     HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
     // LAUNCH(Bach::launch, "Start project's main program."),
+    SYNC(Bach::synchronize, "Resolve required external assets, like 3rd-party modules."),
     TOOL(
         null,
         "Run named tool consuming all remaining arguments:",

@@ -100,6 +100,7 @@ class ActionTests {
             // " erase        Delete all generated assets - and also delete caches.",
             " help         Print this help screen on standard out... F1, F1, F1!",
             // " launch       Start project's main program.",
+            " sync         Resolve required external assets, like 3rd-party modules.",
             " tool         Run named tool consuming all remaining arguments:",
             "                tool <name> <args...>",
             "                tool java --show-version Program.java"),

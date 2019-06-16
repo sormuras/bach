@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-16T04:48:10.122301200Z
+// THIS FILE WAS GENERATED ON 2019-06-16T16:57:29.722615900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -28,8 +28,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -132,6 +135,51 @@ public class Bach {
     return 0;
   }
 
+  /** Resolve required external assets, like 3rd-party modules. */
+  void synchronize() throws Exception {
+    run.log(TRACE, "Bach::synchronize()");
+    synchronizeModuleUriProperties(run.home.resolve("lib"));
+    // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
+  }
+
+  private void synchronizeModuleUriProperties(Path root) throws Exception {
+    run.log(DEBUG, "Synchronizing 3rd-party module uris below %s", root);
+    if (Files.notExists(root)) {
+      run.log(DEBUG, "Directory %s doesn't exist, not synchronizing.", root);
+      return;
+    }
+    var paths = new ArrayList<Path>();
+    try (var stream = Files.walk(root)) {
+      stream
+          .filter(path -> path.getFileName().toString().equals("module-uri.properties"))
+          .forEach(paths::add);
+    }
+    var synced = new ArrayList<Path>();
+    for (var path : paths) {
+      var directory = path.getParent();
+      var downloader = new Downloader(run, directory);
+      var properties = new Properties();
+      try (var stream = Files.newInputStream(path)) {
+        properties.load(stream);
+      }
+      if (properties.isEmpty()) {
+        run.log(DEBUG, "No module uri declared in %s", path.toUri());
+        continue;
+      }
+      run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
+      for (var value : properties.values()) {
+        var string = value.toString();
+        var uri = URI.create(string);
+        uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
+        run.log(DEBUG, "Syncing %s", uri);
+        var target = downloader.download(uri);
+        synced.add(target);
+        run.log(DEBUG, " o %s", target.toUri());
+      }
+    }
+    run.log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+  }
+
   @Override
   public String toString() {
     return "Bach (" + VERSION + ")";
@@ -146,6 +194,12 @@ public class Bach {
 
     /** Transform a name and arguments into an action object. */
     static Action of(String name, Deque<String> arguments) {
+      // try {
+      //   var method = Bach.class.getMethod(name);
+      //   return bach -> method.invoke(bach);
+      // } catch (ReflectiveOperationException e) {
+      //   // fall-through
+      // }
       try {
         var actionClass = Class.forName(name);
         if (Action.class.isAssignableFrom(actionClass)) {
@@ -181,6 +235,7 @@ public class Bach {
       // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
       // LAUNCH(Bach::launch, "Start project's main program."),
+      SYNC(Bach::synchronize, "Resolve required external assets, like 3rd-party modules."),
       TOOL(
           null,
           "Run named tool consuming all remaining arguments:",
@@ -289,6 +344,70 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  /** Downloader. */
+  public static class Downloader {
+
+    /** Extract last path element from the supplied uri. */
+    static String extractFileName(URI uri) {
+      var path = uri.getPath(); // strip query and fragment elements
+      return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    /** Extract target file name either from 'Content-Disposition' header or. */
+    static String extractFileName(URLConnection connection) throws Exception {
+      var contentDisposition = connection.getHeaderField("Content-Disposition");
+      if (contentDisposition != null && contentDisposition.indexOf('=') > 0) {
+        return contentDisposition.split("=")[1].replaceAll("\"", "");
+      }
+      return extractFileName(connection.getURL().toURI());
+    }
+
+    final Run run;
+    final Path destination;
+
+    Downloader(Run run, Path destination) {
+      this.run = run;
+      this.destination = destination;
+    }
+
+    /** Download a file denoted by the specified uri. */
+    Path download(URI uri) throws Exception {
+      var fileName = extractFileName(uri);
+      var target = Files.createDirectories(destination).resolve(fileName);
+      var url = uri.toURL(); // fails for non-absolute uri
+      if (Boolean.getBoolean("offline")) { // TODO run.offline
+        if (Files.exists(target)) {
+          return target;
+        }
+        throw new IllegalStateException("Target is missing and being offline: " + target);
+      }
+      return download(url.openConnection());
+    }
+
+    /** Download a file using the given URL connection. */
+    Path download(URLConnection connection) throws Exception {
+      var target = destination.resolve(extractFileName(connection));
+      var millis = connection.getLastModified();
+      var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+      if (Files.exists(target)) {
+        var fileModified = Files.getLastModifiedTime(target);
+        if (fileModified.equals(lastModified)) {
+          run.log(TRACE, "Timestamp match: %s, %d bytes.", target.getFileName(), Files.size(target));
+          return target;
+        }
+      }
+      try (var sourceStream = connection.getInputStream()) {
+        try (var targetStream = Files.newOutputStream(target)) {
+          run.log(DEBUG, "Transferring...");
+          sourceStream.transferTo(targetStream);
+        }
+        Files.setLastModifiedTime(target, lastModified);
+      }
+      run.log(DEBUG, "Downloaded %s, %d bytes.", target.getFileName(), Files.size(target));
+      return target;
     }
   }
 
