@@ -63,7 +63,7 @@ class RunTests {
     assertLinesMatch(
         List.of(
             "home = <empty> (" + Path.of("").toAbsolutePath() + ")",
-            "work = " + Path.of("target", "bach"),
+            "work = " + Path.of("target", "test-run"),
             "debug = true",
             "dry-run = false",
             "threshold = ALL",

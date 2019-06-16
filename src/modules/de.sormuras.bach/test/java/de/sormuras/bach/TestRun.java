@@ -14,8 +14,9 @@ class TestRun extends Run {
 
   /** Force debug mode when running tests. */
   static class TestProperties extends Run.DefaultProperties {
-    TestProperties(Path home) {
+    TestProperties(Path home, Path work) {
       setProperty("home", home.toString());
+      setProperty("work", work.toString());
       setProperty("debug", "true");
     }
   }
@@ -45,15 +46,15 @@ class TestRun extends Run {
   private final StringWriter err;
 
   TestRun() {
-    this(Path.of(""));
+    this(Path.of(""), Path.of("target", "test-run"));
   }
 
-  TestRun(Path home) {
-    this(home, new StringWriter(), new StringWriter());
+  TestRun(Path home, Path work) {
+    this(home, work, new StringWriter(), new StringWriter());
   }
 
-  private TestRun(Path home, StringWriter out, StringWriter err) {
-    super(new TestProperties(home), new PrintWriter(out), new PrintWriter(err));
+  private TestRun(Path home, Path work, StringWriter out, StringWriter err) {
+    super(new TestProperties(home, work), new PrintWriter(out), new PrintWriter(err));
     this.out = out;
     this.err = err;
   }

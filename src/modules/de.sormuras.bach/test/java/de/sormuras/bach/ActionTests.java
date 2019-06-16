@@ -36,8 +36,8 @@ class ActionTests {
 
   @ParameterizedTest
   @EnumSource(Action.Default.class)
-  void performDefaultActionOnEmptyDirectory(Action.Default action, @TempDir Path emptyHome) {
-    var test = new TestRun(emptyHome);
+  void performDefaultActionOnEmptyDirectory(Action.Default action, @TempDir Path empty) {
+    var test = new TestRun(empty, empty.resolve("work"));
     var bach = new Bach(test);
 
     if (action.action == null) {
