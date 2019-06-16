@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-16T04:17:39.312251300Z
+// THIS FILE WAS GENERATED ON 2019-06-16T04:48:10.122301200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -137,19 +137,88 @@ public class Bach {
     return "Bach (" + VERSION + ")";
   }
 
-  /** Project data. */
-  public static class Project {
-    final String name;
-    final String version;
+  /** Bach consuming no-arg action operating via side-effects. */
+  @FunctionalInterface
+  public interface Action {
 
-    Project(String name, String version) {
-      this.name = name;
-      this.version = version;
+    /** Performs this action on the given Bach instance. */
+    void perform(Bach bach) throws Exception;
+
+    /** Transform a name and arguments into an action object. */
+    static Action of(String name, Deque<String> arguments) {
+      try {
+        var actionClass = Class.forName(name);
+        if (Action.class.isAssignableFrom(actionClass)) {
+          return (Action) actionClass.getConstructor().newInstance();
+        }
+        throw new IllegalArgumentException(actionClass + " doesn't implement " + Action.class);
+      } catch (ReflectiveOperationException e) {
+        // fall-through
+      }
+      var defaultAction = Action.Default.valueOf(name.toUpperCase());
+      return defaultAction.consume(arguments);
     }
 
-    @Override
-    public String toString() {
-      return name + ' ' + version;
+    /** Transform strings to actions. */
+    static List<Action> of(List<String> args) {
+      var actions = new ArrayList<Action>();
+      if (args.isEmpty()) {
+        actions.add(Action.Default.HELP);
+      } else {
+        var arguments = new ArrayDeque<>(args);
+        while (!arguments.isEmpty()) {
+          var argument = arguments.removeFirst();
+          actions.add(of(argument, arguments));
+        }
+      }
+      return actions;
+    }
+
+    /** Default action delegating to Bach API methods. */
+    enum Default implements Action {
+      // BUILD(Bach::build, "Build modular Java project in base directory."),
+      // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
+      // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
+      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
+      // LAUNCH(Bach::launch, "Start project's main program."),
+      TOOL(
+          null,
+          "Run named tool consuming all remaining arguments:",
+          "  tool <name> <args...>",
+          "  tool java --show-version Program.java") {
+        /** Return new Action running the named tool and consuming all remaining arguments. */
+        @Override
+        Action consume(Deque<String> arguments) {
+          var name = arguments.removeFirst();
+          var args = arguments.toArray(String[]::new);
+          arguments.clear();
+          return bach -> bach.run.run(name, args);
+        }
+      };
+
+      final Action action;
+      final String[] description;
+
+      Default(Action action, String... description) {
+        this.action = action;
+        this.description = description;
+      }
+
+      @Override
+      public void perform(Bach bach) throws Exception {
+        //        var key = "bach.action." + name().toLowerCase() + ".enabled";
+        //        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
+        //        if (!enabled) {
+        //          bach.run.info("Action " + name() + " disabled.");
+        //          return;
+        //        }
+        action.perform(bach);
+      }
+
+      /** Return this default action instance without consuming any argument. */
+      Action consume(Deque<String> arguments) {
+        return this;
+      }
     }
   }
 
@@ -220,6 +289,96 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  /** Build, i.e. compile and package, a modular Java project. */
+  public static class JigsawBuilder implements Action {
+
+    @Override
+    public void perform(Bach bach) throws Exception {
+      var home = bach.run.home;
+      var work = bach.run.work;
+      var lib = home.resolve("lib");
+      var src = home.resolve("src");
+
+      var libTest = lib.resolve("test");
+      var libTestJUnitPlatform = lib.resolve("test-junit-platform");
+      var libTestRuntimeOnly = lib.resolve("test-runtime-only");
+      var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
+      var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
+      var targetMainClasses = work.resolve("main/classes");
+      var targetMainModules = Files.createDirectories(work.resolve("main/modules"));
+      var targetTestClasses = work.resolve("test/classes");
+      var targetTestModules = Files.createDirectories(work.resolve("test/modules"));
+
+      bach.run.run(
+          new Command("javac")
+              .add("-d", targetMainClasses)
+              .add("--module-source-path", src + "/modules/*/main/java")
+              .add("--module-version", "1-" + bach.project.version)
+              .add("--module", "de.sormuras.bach"));
+
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(bach.run.debug, "--verbose")
+              .add("--file", targetMainModules.resolve("de.sormuras.bach.jar"))
+              .add("-C", targetMainClasses.resolve("de.sormuras.bach"))
+              .add(".")
+              .addIff(
+                  Files.isDirectory(sourceMainResources),
+                  cmd -> cmd.add("-C", sourceMainResources).add(".")));
+
+      bach.run.run(
+          new Command("javac")
+              .add("-d", targetTestClasses)
+              .add("--module-source-path", src + "/modules/*/test/java")
+              .add("--module-version", "1-" + bach.project.version)
+              .add("--module-path", List.of(targetMainModules, libTest))
+              .add("--module", "integration"));
+
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(bach.run.debug, "--verbose")
+              .add("--file", targetTestModules.resolve("integration.jar"))
+              .add("-C", targetTestClasses.resolve("integration"))
+              .add(".")
+              .addIff(
+                  Files.isDirectory(sourceTestResources),
+                  cmd -> cmd.add("-C", sourceTestResources).add(".")));
+
+      var test =
+          new Command("java")
+              .add(
+                  "--module-path",
+                  List.of(
+                      targetTestModules,
+                      targetMainModules,
+                      libTest,
+                      libTestJUnitPlatform,
+                      libTestRuntimeOnly))
+              .add("--add-modules", "integration")
+              .add("--module", "org.junit.platform.console")
+              .add("--scan-modules");
+      bach.run.log(INFO, "%s %s", test.name, String.join(" ", test.list));
+    }
+  }
+
+  /** Project data. */
+  public static class Project {
+    final String name;
+    final String version;
+
+    Project(String name, String version) {
+      this.name = name;
+      this.version = version;
+    }
+
+    @Override
+    public String toString() {
+      return name + ' ' + version;
     }
   }
 
@@ -382,165 +541,6 @@ public class Bach {
     @Override
     public String toString() {
       return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);
-    }
-  }
-
-  /** Bach consuming no-arg action operating via side-effects. */
-  @FunctionalInterface
-  public interface Action {
-
-    /** Performs this action on the given Bach instance. */
-    void perform(Bach bach) throws Exception;
-
-    /** Transform a name and arguments into an action object. */
-    static Action of(String name, Deque<String> arguments) {
-      try {
-        var actionClass = Class.forName(name);
-        if (Action.class.isAssignableFrom(actionClass)) {
-          return (Action) actionClass.getConstructor().newInstance();
-        }
-        throw new IllegalArgumentException(actionClass + " doesn't implement " + Action.class);
-      } catch (ReflectiveOperationException e) {
-        // fall-through
-      }
-      var defaultAction = Action.Default.valueOf(name.toUpperCase());
-      return defaultAction.consume(arguments);
-    }
-
-    /** Transform strings to actions. */
-    static List<Action> of(List<String> args) {
-      var actions = new ArrayList<Action>();
-      if (args.isEmpty()) {
-        actions.add(Action.Default.HELP);
-      } else {
-        var arguments = new ArrayDeque<>(args);
-        while (!arguments.isEmpty()) {
-          var argument = arguments.removeFirst();
-          actions.add(of(argument, arguments));
-        }
-      }
-      return actions;
-    }
-
-    /** Default action delegating to Bach API methods. */
-    enum Default implements Action {
-      // BUILD(Bach::build, "Build modular Java project in base directory."),
-      // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
-      // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
-      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
-      // LAUNCH(Bach::launch, "Start project's main program."),
-      TOOL(
-          null,
-          "Run named tool consuming all remaining arguments:",
-          "  tool <name> <args...>",
-          "  tool java --show-version Program.java") {
-        /** Return new Action running the named tool and consuming all remaining arguments. */
-        @Override
-        Action consume(Deque<String> arguments) {
-          var name = arguments.removeFirst();
-          var args = arguments.toArray(String[]::new);
-          arguments.clear();
-          return bach -> bach.run.run(name, args);
-        }
-      };
-
-      final Action action;
-      final String[] description;
-
-      Default(Action action, String... description) {
-        this.action = action;
-        this.description = description;
-      }
-
-      @Override
-      public void perform(Bach bach) throws Exception {
-        //        var key = "bach.action." + name().toLowerCase() + ".enabled";
-        //        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
-        //        if (!enabled) {
-        //          bach.run.info("Action " + name() + " disabled.");
-        //          return;
-        //        }
-        action.perform(bach);
-      }
-
-      /** Return this default action instance without consuming any argument. */
-      Action consume(Deque<String> arguments) {
-        return this;
-      }
-    }
-  }
-
-  /** Build, i.e. compile and package, a modular Java project. */
-  public static class JigsawBuilder implements Action {
-
-    @Override
-    public void perform(Bach bach) throws Exception {
-      var home = bach.run.home;
-      var work = bach.run.work;
-      var lib = home.resolve("lib");
-      var src = home.resolve("src");
-
-      var libTest = lib.resolve("test");
-      var libTestJUnitPlatform = lib.resolve("test-junit-platform");
-      var libTestRuntimeOnly = lib.resolve("test-runtime-only");
-      var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
-      var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
-      var targetMainClasses = work.resolve("main/classes");
-      var targetMainModules = Files.createDirectories(work.resolve("main/modules"));
-      var targetTestClasses = work.resolve("test/classes");
-      var targetTestModules = Files.createDirectories(work.resolve("test/modules"));
-
-      bach.run.run(
-          new Command("javac")
-              .add("-d", targetMainClasses)
-              .add("--module-source-path", src + "/modules/*/main/java")
-              .add("--module-version", "1-" + bach.project.version)
-              .add("--module", "de.sormuras.bach"));
-
-      bach.run.run(
-          new Command("jar")
-              .add("--create")
-              .addIff(bach.run.debug, "--verbose")
-              .add("--file", targetMainModules.resolve("de.sormuras.bach.jar"))
-              .add("-C", targetMainClasses.resolve("de.sormuras.bach"))
-              .add(".")
-              .addIff(
-                  Files.isDirectory(sourceMainResources),
-                  cmd -> cmd.add("-C", sourceMainResources).add(".")));
-
-      bach.run.run(
-          new Command("javac")
-              .add("-d", targetTestClasses)
-              .add("--module-source-path", src + "/modules/*/test/java")
-              .add("--module-version", "1-" + bach.project.version)
-              .add("--module-path", List.of(targetMainModules, libTest))
-              .add("--module", "integration"));
-
-      bach.run.run(
-          new Command("jar")
-              .add("--create")
-              .addIff(bach.run.debug, "--verbose")
-              .add("--file", targetTestModules.resolve("integration.jar"))
-              .add("-C", targetTestClasses.resolve("integration"))
-              .add(".")
-              .addIff(
-                  Files.isDirectory(sourceTestResources),
-                  cmd -> cmd.add("-C", sourceTestResources).add(".")));
-
-      var test =
-          new Command("java")
-              .add(
-                  "--module-path",
-                  List.of(
-                      targetTestModules,
-                      targetMainModules,
-                      libTest,
-                      libTestJUnitPlatform,
-                      libTestRuntimeOnly))
-              .add("--add-modules", "integration")
-              .add("--module", "org.junit.platform.console")
-              .add("--scan-modules");
-      bach.run.log(INFO, "%s %s", test.name, String.join(" ", test.list));
     }
   }
 }

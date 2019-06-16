@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,7 +77,7 @@ interface Build {
   //    System.out.println("deleted " + TARGET);
   //  }
 
-  static void generate() throws IOException {
+  static void generate() throws Exception {
     System.out.printf("%n[generate]%n%n");
 
     var imports = new TreeSet<String>();
@@ -108,16 +107,14 @@ interface Build {
     generated.add("");
     generate(generated, SOURCE.resolve("Bach.java"), imports, "");
     int indexOfDragons = generated.size() - 1;
-    dragons.add("");
-    generate(dragons, SOURCE.resolve("Project.java"), imports, "  ");
-    dragons.add("");
-    generate(dragons, SOURCE.resolve("Command.java"), imports, "  ");
-    dragons.add("");
-    generate(dragons, SOURCE.resolve("Run.java"), imports, "  ");
-    dragons.add("");
-    generate(dragons, SOURCE.resolve("Action.java"), imports, "  ");
-    dragons.add("");
-    generate(dragons, SOURCE.resolve("JigsawBuilder.java"), imports, "  ");
+    for (var dragon : generateDragons()) {
+      if (dragon.equals(SOURCE.resolve("Bach.java"))) {
+        continue;
+      }
+      System.out.println("Processing " + dragon + "...");
+      dragons.add("");
+      generate(dragons, dragon, imports, "  ");
+    }
     generated.addAll(indexOfDragons, dragons);
     generated.addAll(
         indexOfImports,
@@ -132,6 +129,7 @@ interface Build {
     Files.createDirectories(TARGET);
     Files.deleteIfExists(generatedPath);
     Files.write(generatedPath, generated);
+    System.out.println();
     System.out.println("Generated " + generatedPath + " with " + generated.size() + " lines.");
 
     // only copy if content changed - ignoring initial line, which contains the generation date
@@ -151,8 +149,16 @@ interface Build {
     }
   }
 
+  static List<Path> generateDragons() throws Exception {
+    var dragons = new ArrayList<Path>();
+    try (var stream = Files.newDirectoryStream(SOURCE, "*.java")) {
+      stream.forEach(dragons::add);
+    }
+    return dragons;
+  }
+
   static void generate(List<String> target, Path source, Set<String> imports, String indentation)
-      throws IOException {
+      throws Exception {
     var lines = Files.readAllLines(source);
     boolean head = true;
     for (var line : lines) {
