@@ -15,6 +15,12 @@ public interface Action {
 
   /** Transform a name and arguments into an action object. */
   static Action of(String name, Deque<String> arguments) {
+    // try {
+    //   var method = Bach.class.getMethod(name);
+    //   return bach -> method.invoke(bach);
+    // } catch (ReflectiveOperationException e) {
+    //   // fall-through
+    // }
     try {
       var actionClass = Class.forName(name);
       if (Action.class.isAssignableFrom(actionClass)) {
