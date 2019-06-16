@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-16T16:57:29.722615900Z
+// THIS FILE WAS GENERATED ON 2019-06-16T19:34:31.411625300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -375,6 +375,7 @@ public class Bach {
 
     /** Download a file denoted by the specified uri. */
     Path download(URI uri) throws Exception {
+      run.log(TRACE, "download(%s)", uri);
       var fileName = extractFileName(uri);
       var target = Files.createDirectories(destination).resolve(fileName);
       var url = uri.toURL(); // fails for non-absolute uri
@@ -389,24 +390,29 @@ public class Bach {
 
     /** Download a file using the given URL connection. */
     Path download(URLConnection connection) throws Exception {
-      var target = destination.resolve(extractFileName(connection));
-      var millis = connection.getLastModified();
+      var millis = connection.getLastModified(); // 0 means "unknown"
       var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+      run.log(TRACE, "Remote was modified on %s", lastModified);
+      var target = destination.resolve(extractFileName(connection));
+      run.log(TRACE, "Local target file is %s", target.toUri());
+      var file = target.getFileName().toString();
       if (Files.exists(target)) {
         var fileModified = Files.getLastModifiedTime(target);
+        run.log(TRACE, "Local last modified on %s", fileModified);
         if (fileModified.equals(lastModified)) {
-          run.log(TRACE, "Timestamp match: %s, %d bytes.", target.getFileName(), Files.size(target));
+          run.log(TRACE, "Timestamp match: %s, %d bytes.", file, Files.size(target));
           return target;
         }
+        run.log(DEBUG, "Local target file differs from remote source -- replacing it...");
       }
       try (var sourceStream = connection.getInputStream()) {
         try (var targetStream = Files.newOutputStream(target)) {
-          run.log(DEBUG, "Transferring...");
+          run.log(DEBUG, "Transferring %s...", file);
           sourceStream.transferTo(targetStream);
         }
         Files.setLastModifiedTime(target, lastModified);
       }
-      run.log(DEBUG, "Downloaded %s, %d bytes.", target.getFileName(), Files.size(target));
+      run.log(DEBUG, "Downloaded %s, %d bytes.", file, Files.size(target));
       return target;
     }
   }
