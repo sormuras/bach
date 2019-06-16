@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -154,6 +155,7 @@ interface Build {
     try (var stream = Files.newDirectoryStream(SOURCE, "*.java")) {
       stream.forEach(dragons::add);
     }
+    Collections.sort(dragons);
     return dragons;
   }
 
