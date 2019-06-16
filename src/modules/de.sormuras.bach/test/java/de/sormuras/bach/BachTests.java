@@ -81,7 +81,7 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "Bach (master) initialized",
-            ">> INITIALIZATION >>",
+            ">> RUN STATE LINES >>",
             "Performing 1 action(s)...",
             ">> DEFAULT ACTION LINES >>"),
         test.outLines());
@@ -93,7 +93,7 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "Bach (master) initialized",
-            "home = \"\"",
+            ">> RUN STATE LINES >>",
             "Bach::run([])",
             "Performing 0 action(s)..."),
         test.outLines());
@@ -105,7 +105,7 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "Bach (master) initialized",
-            "home = \"\"",
+            ">> RUN STATE LINES >>",
             "Bach::run.+",
             "Performing 1 action(s)...",
             "\\Q>> de.sormuras.bach.BachTests$$Lambda$\\E.+",
@@ -120,7 +120,7 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "Bach (master) initialized",
-            "home = \"\"",
+            ">> RUN STATE LINES >>",
             "Bach::run.+",
             "Performing 1 action(s)...",
             "\\Q>> de.sormuras.bach.BachTests$ThrowingAction@\\E.+"),

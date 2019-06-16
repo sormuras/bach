@@ -163,6 +163,18 @@ public /*STATIC*/ class Run {
     return TimeUnit.MILLISECONDS.convert(Duration.between(start, Instant.now()));
   }
 
+  void logState(System.Logger.Level level) {
+    var homePath = home.toString();
+    log(level, "home = %s", homePath.isEmpty() ? "<empty> (" + Bach.USER_PATH + ")" : homePath);
+    log(level, "work = %s", work);
+    log(level, "debug = %s", debug);
+    log(level, "dry-run = %s", dryRun);
+    log(level, "threshold = %s", threshold);
+    log(level, "out = %s", out);
+    log(level, "err = %s", err);
+    log(level, "start = %s", start);
+  }
+
   @Override
   public String toString() {
     return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);

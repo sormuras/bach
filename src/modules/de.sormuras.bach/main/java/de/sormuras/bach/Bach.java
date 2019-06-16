@@ -60,7 +60,7 @@ public class Bach {
   public Bach(Run run) {
     this.run = run;
     run.log(DEBUG, "%s initialized", this);
-    run.log(TRACE, "home = \"%s\"", run.home);
+    run.logState(TRACE);
   }
 
   void help() {

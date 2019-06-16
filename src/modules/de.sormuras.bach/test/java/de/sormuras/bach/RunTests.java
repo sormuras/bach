@@ -58,6 +58,22 @@ class RunTests {
   }
 
   @Test
+  void logState() {
+    test.logState(System.Logger.Level.TRACE);
+    assertLinesMatch(
+        List.of(
+            "home = <empty> (" + Path.of("").toAbsolutePath() + ")",
+            "work = " + Path.of("target", "bach"),
+            "debug = true",
+            "dry-run = false",
+            "threshold = ALL",
+            "out = java.io.PrintWriter@.+",
+            "err = java.io.PrintWriter@.+",
+            "start = .+"),
+        test.outLines());
+  }
+
+  @Test
   void runCustomTool() {
     assertDoesNotThrow(() -> test.run(new CustomTool(0)));
     var error = assertThrows(Error.class, () -> test.run(new CustomTool(1)));

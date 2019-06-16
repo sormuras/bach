@@ -19,7 +19,7 @@ class SanityTests {
   private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
       List.of(
           "Bach (master) initialized",
-          "home = \"\"",
+          ">> RUN STATE LINES >>",
           "Bach::main([])",
           "actions = [HELP]",
           "Dry-run ends here.");
