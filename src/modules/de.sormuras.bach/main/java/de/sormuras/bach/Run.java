@@ -25,6 +25,8 @@ public /*STATIC*/ class Run {
   /** Declares property keys and their default values. */
   static class DefaultProperties extends Properties {
     DefaultProperties() {
+      setProperty("home", "");
+      setProperty("work", "target/bach");
       setProperty("debug", "false");
       setProperty("dry-run", "false");
       setProperty("threshold", INFO.name());
@@ -56,6 +58,11 @@ public /*STATIC*/ class Run {
       var level = get("threshold").toUpperCase();
       return System.Logger.Level.valueOf(level);
     }
+
+    private Path work(Path home) {
+      var work = Path.of(get("work"));
+      return work.isAbsolute() ? work : home.resolve(work);
+    }
   }
 
   /** Create default Run instance in user's current directory. */
@@ -67,7 +74,7 @@ public /*STATIC*/ class Run {
   public static Run system(Path home) {
     var out = new PrintWriter(System.out, true, UTF_8);
     var err = new PrintWriter(System.err, true, UTF_8);
-    return new Run(home, out, err, newProperties(home));
+    return new Run(newProperties(home), out, err);
   }
 
   static Properties newProperties(Path home) {
@@ -93,6 +100,8 @@ public /*STATIC*/ class Run {
 
   /** Home directory. */
   final Path home;
+  /** Workspace directory. */
+  final Path work;
   /** Current logging level threshold. */
   final System.Logger.Level threshold;
   /** Debug flag. */
@@ -106,13 +115,14 @@ public /*STATIC*/ class Run {
   /** Time instant recorded on creation of this instance. */
   final Instant start;
 
-  Run(Path home, PrintWriter out, PrintWriter err, Properties properties) {
+  Run(Properties properties, PrintWriter out, PrintWriter err) {
     this.start = Instant.now();
-    this.home = home;
     this.out = out;
     this.err = err;
 
     var configurator = new Configurator(properties);
+    this.home = Path.of(configurator.get("home"));
+    this.work = configurator.work(home);
     this.debug = configurator.is("debug");
     this.dryRun = configurator.is("dry-run");
     this.threshold = configurator.threshold();
@@ -155,8 +165,6 @@ public /*STATIC*/ class Run {
 
   @Override
   public String toString() {
-    return String.format(
-        "Run{debug=%s, dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
-        debug, dryRun, threshold, start, out, err);
+    return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);
   }
 }

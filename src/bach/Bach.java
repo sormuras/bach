@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-15T17:53:05.958622200Z
+// THIS FILE WAS GENERATED ON 2019-06-16T03:31:30.013222100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -228,6 +228,8 @@ public class Bach {
     /** Declares property keys and their default values. */
     static class DefaultProperties extends Properties {
       DefaultProperties() {
+        setProperty("home", "");
+        setProperty("work", "target/bach");
         setProperty("debug", "false");
         setProperty("dry-run", "false");
         setProperty("threshold", INFO.name());
@@ -259,6 +261,11 @@ public class Bach {
         var level = get("threshold").toUpperCase();
         return System.Logger.Level.valueOf(level);
       }
+
+      private Path work(Path home) {
+        var work = Path.of(get("work"));
+        return work.isAbsolute() ? work : home.resolve(work);
+      }
     }
 
     /** Create default Run instance in user's current directory. */
@@ -270,7 +277,7 @@ public class Bach {
     public static Run system(Path home) {
       var out = new PrintWriter(System.out, true, UTF_8);
       var err = new PrintWriter(System.err, true, UTF_8);
-      return new Run(home, out, err, newProperties(home));
+      return new Run(newProperties(home), out, err);
     }
 
     static Properties newProperties(Path home) {
@@ -296,6 +303,8 @@ public class Bach {
 
     /** Home directory. */
     final Path home;
+    /** Workspace directory. */
+    final Path work;
     /** Current logging level threshold. */
     final System.Logger.Level threshold;
     /** Debug flag. */
@@ -309,13 +318,14 @@ public class Bach {
     /** Time instant recorded on creation of this instance. */
     final Instant start;
 
-    Run(Path home, PrintWriter out, PrintWriter err, Properties properties) {
+    Run(Properties properties, PrintWriter out, PrintWriter err) {
       this.start = Instant.now();
-      this.home = home;
       this.out = out;
       this.err = err;
 
       var configurator = new Configurator(properties);
+      this.home = Path.of(configurator.get("home"));
+      this.work = configurator.work(home);
       this.debug = configurator.is("debug");
       this.dryRun = configurator.is("dry-run");
       this.threshold = configurator.threshold();
@@ -358,9 +368,7 @@ public class Bach {
 
     @Override
     public String toString() {
-      return String.format(
-          "Run{debug=%s, dryRun=%s, threshold=%s, start=%s, out=%s, err=%s}",
-          debug, dryRun, threshold, start, out, err);
+      return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);
     }
   }
 
@@ -455,7 +463,7 @@ public class Bach {
     @Override
     public void perform(Bach bach) throws Exception {
       var home = bach.run.home;
-      var work = home.resolve("target/bach"); // TODO bach.run.work...
+      var work = bach.run.work;
       var lib = home.resolve("lib");
       var src = home.resolve("src");
 
@@ -472,7 +480,7 @@ public class Bach {
       bach.run.run(
           new Command("javac")
               .add("-d", targetMainClasses)
-              .add("--module-source-path", "src/modules/*/main/java")
+              .add("--module-source-path", src + "/modules/*/main/java")
               .add("--module-version", "1-" + bach.project.version)
               .add("--module", "de.sormuras.bach"));
 
@@ -490,7 +498,7 @@ public class Bach {
       bach.run.run(
           new Command("javac")
               .add("-d", targetTestClasses)
-              .add("--module-source-path", "src/modules/*/test/java")
+              .add("--module-source-path", src + "/modules/*/test/java")
               .add("--module-version", "1-" + bach.project.version)
               .add("--module-path", List.of(targetMainModules, libTest))
               .add("--module", "integration"));
@@ -510,7 +518,12 @@ public class Bach {
           new Command("java")
               .add(
                   "--module-path",
-                  List.of(targetTestModules, targetMainModules, libTest, libTestJUnitPlatform, libTestRuntimeOnly))
+                  List.of(
+                      targetTestModules,
+                      targetMainModules,
+                      libTest,
+                      libTestJUnitPlatform,
+                      libTestRuntimeOnly))
               .add("--add-modules", "integration")
               .add("--module", "org.junit.platform.console")
               .add("--scan-modules");

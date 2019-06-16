@@ -30,7 +30,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
   @Override
   public void perform(Bach bach) throws Exception {
     var home = bach.run.home;
-    var work = home.resolve("target/bach"); // TODO bach.run.work...
+    var work = bach.run.work;
     var lib = home.resolve("lib");
     var src = home.resolve("src");
 
@@ -47,7 +47,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     bach.run.run(
         new Command("javac")
             .add("-d", targetMainClasses)
-            .add("--module-source-path", "src/modules/*/main/java")
+            .add("--module-source-path", src + "/modules/*/main/java")
             .add("--module-version", "1-" + bach.project.version)
             .add("--module", "de.sormuras.bach"));
 
@@ -65,7 +65,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     bach.run.run(
         new Command("javac")
             .add("-d", targetTestClasses)
-            .add("--module-source-path", "src/modules/*/test/java")
+            .add("--module-source-path", src + "/modules/*/test/java")
             .add("--module-version", "1-" + bach.project.version)
             .add("--module-path", List.of(targetMainModules, libTest))
             .add("--module", "integration"));
@@ -85,7 +85,12 @@ public /*STATIC*/ class JigsawBuilder implements Action {
         new Command("java")
             .add(
                 "--module-path",
-                List.of(targetTestModules, targetMainModules, libTest, libTestJUnitPlatform, libTestRuntimeOnly))
+                List.of(
+                    targetTestModules,
+                    targetMainModules,
+                    libTest,
+                    libTestJUnitPlatform,
+                    libTestRuntimeOnly))
             .add("--add-modules", "integration")
             .add("--module", "org.junit.platform.console")
             .add("--scan-modules");

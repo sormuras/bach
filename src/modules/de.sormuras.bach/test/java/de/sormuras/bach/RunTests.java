@@ -20,14 +20,15 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Properties;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,10 +41,12 @@ class RunTests {
   void defaultProperties() {
     //noinspection MismatchedQueryAndUpdateOfCollection
     var defaults = new Run.DefaultProperties();
+    assertEquals("", defaults.getProperty("home"));
+    assertEquals("target/bach", defaults.getProperty("work"));
     assertEquals("false", defaults.getProperty("debug"));
     assertEquals("false", defaults.getProperty("dry-run"));
     assertEquals("INFO", defaults.getProperty("threshold"));
-    assertEquals(3, defaults.size());
+    assertEquals(5, defaults.size());
   }
 
   @Test
@@ -80,22 +83,19 @@ class RunTests {
   }
 
   @Test
-  void toStringContainsUsefulInformation() {
-    var properties = new Properties();
+  void toStringContainsConfiguredValues() {
+    var properties = new Run.DefaultProperties();
+    properties.setProperty("home", "run");
+    properties.setProperty("work", "space");
     properties.setProperty("dry-run", "true");
     properties.setProperty("threshold", System.Logger.Level.OFF.name());
-    var run = new Run(Path.of(""), null, null, properties);
-    var expected =
-        String.format(
-            "Run{debug=false,"
-                + " dryRun=true,"
-                + " threshold=OFF,"
-                + " start=%s,"
-                + " out=null,"
-                + " err=null}",
-            run.start);
-    var actual = run.toString();
-    assertEquals(expected, actual);
+    var run = new Run(properties, null, null);
+    assertNull(run.out);
+    assertNull(run.err);
+    assertEquals(System.Logger.Level.OFF, run.threshold);
+    assertEquals(
+        "Run{home=run, work=run" + File.separator + "space, debug=false, dryRun=true}",
+        run.toString());
   }
 
   static class CustomTool implements ToolProvider {
