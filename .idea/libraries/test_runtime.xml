@@ -2,11 +2,11 @@
   <library name="test-runtime">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/lib/test-runtime-only" />
-      <root url="file://$PROJECT_DIR$/lib/test-junit-platform" />
+      <root url="file://$PROJECT_DIR$/lib/test-runtime-junit" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
-    <jarDirectory url="file://$PROJECT_DIR$/lib/test-junit-platform" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/test-runtime-junit" recursive="false" />
     <jarDirectory url="file://$PROJECT_DIR$/lib/test-runtime-only" recursive="false" />
   </library>
 </component>
