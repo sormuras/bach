@@ -44,6 +44,7 @@ class TestRun extends Run {
 
   private final StringWriter out;
   private final StringWriter err;
+  private boolean testOffline;
 
   TestRun() {
     this(Path.of(""), Path.of("target", "test-run"));
@@ -57,6 +58,17 @@ class TestRun extends Run {
     super(new TestProperties(home, work), new PrintWriter(out), new PrintWriter(err));
     this.out = out;
     this.err = err;
+    this.testOffline = super.isOffline();
+  }
+
+  TestRun setOffline(boolean testOffline) {
+    this.testOffline = testOffline;
+    return this;
+  }
+
+  @Override
+  public boolean isOffline() {
+    return testOffline;
   }
 
   List<String> outLines() {

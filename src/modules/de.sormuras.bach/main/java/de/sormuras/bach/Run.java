@@ -46,13 +46,13 @@ public /*STATIC*/ class Run {
       return System.getProperty(key, properties.getProperty(key));
     }
 
-    boolean is(String key) {
-      var value = System.getProperty(key.substring(1), properties.getProperty(key));
+    boolean is(String key, int trimLeft) {
+      var value = System.getProperty(key.substring(trimLeft), properties.getProperty(key));
       return "".equals(value) || "true".equals(value);
     }
 
     private System.Logger.Level threshold() {
-      if (is("debug")) {
+      if (is("debug", 1)) {
         return ALL;
       }
       var level = get("threshold").toUpperCase();
@@ -108,6 +108,8 @@ public /*STATIC*/ class Run {
   final boolean debug;
   /** Dry-run flag. */
   final boolean dryRun;
+  /** Offline flag. */
+  private final boolean offline;
   /** Stream to which normal and expected output should be written. */
   final PrintWriter out;
   /** Stream to which any error messages should be written. */
@@ -123,9 +125,15 @@ public /*STATIC*/ class Run {
     var configurator = new Configurator(properties);
     this.home = Path.of(configurator.get("home"));
     this.work = configurator.work(home);
-    this.debug = configurator.is("debug");
-    this.dryRun = configurator.is("dry-run");
+    this.debug = configurator.is("debug", 1);
+    this.dryRun = configurator.is("dry-run", 1);
+    this.offline = configurator.is("offline", 0);
     this.threshold = configurator.threshold();
+  }
+
+  /** @return state of the offline flag */
+  public boolean isOffline() {
+    return offline;
   }
 
   /** Log message unless threshold suppresses it. */
