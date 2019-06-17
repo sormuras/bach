@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.TRACE;
 
 import java.net.URI;
@@ -59,11 +60,16 @@ public /*STATIC*/ class Downloader {
     var fileName = extractFileName(uri);
     var target = Files.createDirectories(destination).resolve(fileName);
     var url = uri.toURL(); // fails for non-absolute uri
-    if (Boolean.getBoolean("bach.offline")) { // TODO run.offline
+    if (run.isOffline()) {
+      run.log(DEBUG, "Offline mode is active!");
       if (Files.exists(target)) {
+        var file = target.getFileName().toString();
+        run.log(DEBUG, "Target already exists: %s, %d bytes.", file, Files.size(target));
         return target;
       }
-      throw new IllegalStateException("Target is missing and being offline: " + target);
+      var message = "Offline mode is active and target is missing: " + target;
+      run.log(ERROR, message);
+      throw new IllegalStateException(message);
     }
     return download(url.openConnection());
   }

@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-16T19:34:31.411625300Z
+// THIS FILE WAS GENERATED ON 2019-06-17T03:16:41.835621900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -379,11 +379,16 @@ public class Bach {
       var fileName = extractFileName(uri);
       var target = Files.createDirectories(destination).resolve(fileName);
       var url = uri.toURL(); // fails for non-absolute uri
-      if (Boolean.getBoolean("offline")) { // TODO run.offline
+      if (run.isOffline()) {
+        run.log(DEBUG, "Offline mode is active!");
         if (Files.exists(target)) {
+          var file = target.getFileName().toString();
+          run.log(DEBUG, "Target already exists: %s, %d bytes.", file, Files.size(target));
           return target;
         }
-        throw new IllegalStateException("Target is missing and being offline: " + target);
+        var message = "Offline mode is active and target is missing: " + target;
+        run.log(ERROR, message);
+        throw new IllegalStateException(message);
       }
       return download(url.openConnection());
     }
@@ -534,13 +539,13 @@ public class Bach {
         return System.getProperty(key, properties.getProperty(key));
       }
 
-      boolean is(String key) {
-        var value = System.getProperty(key.substring(1), properties.getProperty(key));
+      boolean is(String key, int trimLeft) {
+        var value = System.getProperty(key.substring(trimLeft), properties.getProperty(key));
         return "".equals(value) || "true".equals(value);
       }
 
       private System.Logger.Level threshold() {
-        if (is("debug")) {
+        if (is("debug", 1)) {
           return ALL;
         }
         var level = get("threshold").toUpperCase();
@@ -596,6 +601,8 @@ public class Bach {
     final boolean debug;
     /** Dry-run flag. */
     final boolean dryRun;
+    /** Offline flag. */
+    private final boolean offline;
     /** Stream to which normal and expected output should be written. */
     final PrintWriter out;
     /** Stream to which any error messages should be written. */
@@ -611,9 +618,15 @@ public class Bach {
       var configurator = new Configurator(properties);
       this.home = Path.of(configurator.get("home"));
       this.work = configurator.work(home);
-      this.debug = configurator.is("debug");
-      this.dryRun = configurator.is("dry-run");
+      this.debug = configurator.is("debug", 1);
+      this.dryRun = configurator.is("dry-run", 1);
+      this.offline = configurator.is("offline", 0);
       this.threshold = configurator.threshold();
+    }
+
+    /** @return state of the offline flag */
+    public boolean isOffline() {
+      return offline;
     }
 
     /** Log message unless threshold suppresses it. */
