@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,6 +56,13 @@ class RunTests {
     var error = assertThrows(Error.class, () -> Run.newProperties(home));
     assertEquals("Loading properties failed: " + path, error.getMessage());
     assertEquals("Input length = 1", error.getCause().getMessage());
+  }
+
+  @Test
+  void replaceVariables() {
+    assertEquals("", test.replaceVariables(""));
+    assertEquals("${}", test.replaceVariables("${}"));
+    assertEquals("test.value", test.replaceVariables("${test.key}"));
   }
 
   @Test

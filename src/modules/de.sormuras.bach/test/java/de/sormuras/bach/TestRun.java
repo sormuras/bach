@@ -18,6 +18,7 @@ class TestRun extends Run {
       setProperty("home", home.toString());
       setProperty("work", work.toString());
       setProperty("debug", "true");
+      setProperty("${test.key}", "test.value");
     }
   }
 
