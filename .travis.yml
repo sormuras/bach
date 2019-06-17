@@ -5,8 +5,9 @@ install:
 - java --version
 
 script:
-- jshell --execution local https://bit.ly/make-java
-- jshell --execution local ./build.jsh
+- java -Debug src/bach/Bach.java sync Bach$JigsawBuilder
+- TEST="$(java src/bach/Bach.java sync Bach$JigsawBuilder)"
+- $TEST
 
 after_success:
 - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
