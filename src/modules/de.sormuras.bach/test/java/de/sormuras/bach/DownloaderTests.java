@@ -26,6 +26,14 @@ class DownloaderTests {
   }
 
   @Test
+  void extractFileNameFromContentDispositionHeaderField() throws Exception {
+    var uri = URI.create("https://github.com/sormuras/bach/archive/master.zip");
+    var connection = uri.toURL().openConnection();
+    assertEquals("master.zip", Downloader.extractFileName(uri));
+    assertEquals("bach-master.zip", Downloader.extractFileName(connection));
+  }
+
+  @Test
   void relativeUriThrows() {
     var test = new TestRun();
     var downloader = new Downloader(test, Path.of(""));
