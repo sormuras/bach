@@ -13,7 +13,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.spi.ToolProvider;
@@ -62,6 +64,16 @@ public /*STATIC*/ class Run {
     private Path work(Path home) {
       var work = Path.of(get("work"));
       return work.isAbsolute() ? work : home.resolve(work);
+    }
+
+    private Map<String, String> variables() {
+      var map = new HashMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        if (name.startsWith("${") && name.endsWith("}")) {
+          map.put(name, properties.getProperty(name));
+        }
+      }
+      return Map.copyOf(map);
     }
   }
 
@@ -116,6 +128,8 @@ public /*STATIC*/ class Run {
   final PrintWriter err;
   /** Time instant recorded on creation of this instance. */
   final Instant start;
+  /** User-defined variables. */
+  final Map<String, String> variables;
 
   Run(Properties properties, PrintWriter out, PrintWriter err) {
     this.start = Instant.now();
@@ -129,6 +143,7 @@ public /*STATIC*/ class Run {
     this.dryRun = configurator.is("dry-run", 1);
     this.offline = configurator.is("offline", 0);
     this.threshold = configurator.threshold();
+    this.variables = configurator.variables();
   }
 
   /** @return state of the offline flag */
@@ -144,6 +159,15 @@ public /*STATIC*/ class Run {
     var consumer = level.getSeverity() < WARNING.getSeverity() ? out : err;
     var message = String.format(format, args);
     consumer.println(message);
+  }
+
+  /** Replace each variable key declared in the given string by its value. */
+  String replaceVariables(String string) {
+    var result = string;
+    for (var variable : variables.entrySet()) {
+      result = result.replace(variable.getKey(), variable.getValue());
+    }
+    return result;
   }
 
   /** Run given command. */

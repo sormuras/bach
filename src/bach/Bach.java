@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T04:21:48.182767800Z
+// THIS FILE WAS GENERATED ON 2019-06-17T07:18:23.835018Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -39,7 +39,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -168,7 +170,7 @@ public class Bach {
       }
       run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
       for (var value : properties.values()) {
-        var string = value.toString();
+        var string = run.replaceVariables(value.toString());
         var uri = URI.create(string);
         uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
         run.log(DEBUG, "Syncing %s", uri);
@@ -557,6 +559,16 @@ public class Bach {
         var work = Path.of(get("work"));
         return work.isAbsolute() ? work : home.resolve(work);
       }
+
+      private Map<String, String> variables() {
+        var map = new HashMap<String, String>();
+        for (var name : properties.stringPropertyNames()) {
+          if (name.startsWith("${") && name.endsWith("}")) {
+            map.put(name, properties.getProperty(name));
+          }
+        }
+        return Map.copyOf(map);
+      }
     }
 
     /** Create default Run instance in user's current directory. */
@@ -610,6 +622,8 @@ public class Bach {
     final PrintWriter err;
     /** Time instant recorded on creation of this instance. */
     final Instant start;
+    /** User-defined variables. */
+    final Map<String, String> variables;
 
     Run(Properties properties, PrintWriter out, PrintWriter err) {
       this.start = Instant.now();
@@ -623,6 +637,7 @@ public class Bach {
       this.dryRun = configurator.is("dry-run", 1);
       this.offline = configurator.is("offline", 0);
       this.threshold = configurator.threshold();
+      this.variables = configurator.variables();
     }
 
     /** @return state of the offline flag */
@@ -638,6 +653,15 @@ public class Bach {
       var consumer = level.getSeverity() < WARNING.getSeverity() ? out : err;
       var message = String.format(format, args);
       consumer.println(message);
+    }
+
+    /** Replace each variable key declared in the given string by its value. */
+    String replaceVariables(String string) {
+      var result = string;
+      for (var variable : variables.entrySet()) {
+        result = result.replace(variable.getKey(), variable.getValue());
+      }
+      return result;
     }
 
     /** Run given command. */

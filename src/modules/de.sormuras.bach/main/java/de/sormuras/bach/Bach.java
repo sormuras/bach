@@ -152,7 +152,7 @@ public class Bach {
       }
       run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
       for (var value : properties.values()) {
-        var string = value.toString();
+        var string = run.replaceVariables(value.toString());
         var uri = URI.create(string);
         uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
         run.log(DEBUG, "Syncing %s", uri);
