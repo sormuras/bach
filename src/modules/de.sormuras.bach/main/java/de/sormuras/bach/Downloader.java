@@ -56,7 +56,7 @@ public /*STATIC*/ class Downloader {
 
   /** Download a file denoted by the specified uri. */
   Path download(URI uri) throws Exception {
-    run.log(TRACE, "download(%s)", uri);
+    run.log(TRACE, "Downloader::download(%s)", uri);
     var fileName = extractFileName(uri);
     var target = Files.createDirectories(destination).resolve(fileName);
     var url = uri.toURL(); // fails for non-absolute uri
@@ -87,6 +87,7 @@ public /*STATIC*/ class Downloader {
       run.log(TRACE, "Local last modified on %s", fileModified);
       if (fileModified.equals(lastModified)) {
         run.log(TRACE, "Timestamp match: %s, %d bytes.", file, Files.size(target));
+        connection.getInputStream().close(); // release all opened resources
         return target;
       }
       run.log(DEBUG, "Local target file differs from remote source -- replacing it...");

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -106,5 +107,40 @@ class ActionTests {
             "                tool java --show-version Program.java"),
         streams.outLines());
     assertEquals(0, streams.errLines().size(), streams.toString());
+  }
+
+  @Test
+  void sync(@TempDir Path temp) throws Exception {
+    var test = new TestRun(temp, temp);
+    var bach = new Bach(test);
+
+    var a = Files.write(temp.resolve("a.txt"), List.of("// a file"));
+    var b = Files.write(temp.resolve("b.txt"), List.of("// another file"));
+    var lib = temp.resolve("lib");
+    var sub = Files.createDirectories(lib.resolve("sub"));
+    Files.writeString(lib.resolve("module-uri.properties"), "a=" + a.toUri());
+    Files.writeString(sub.resolve("module-uri.properties"), "a=" + a.toUri() + "\nb=" + b.toUri());
+
+    test.log(System.Logger.Level.TRACE, "[1]");
+    Action.Default.SYNC.perform(bach);
+
+    var empty = Files.createDirectories(lib.resolve("empty"));
+    Files.writeString(empty.resolve("module-uri.properties"), "# empty, i.e. no key-value pairs");
+    test.log(System.Logger.Level.TRACE, "[2]");
+    Action.Default.SYNC.perform(bach);
+
+    assertLinesMatch(
+        List.of(
+            ">> INIT >>",
+            "[1]",
+            ">> DOWNLOAD >>",
+            "Synchronized 3 module uri(s).",
+            "[2]",
+            ">> USE CACHE >>",
+            "Synchronized 3 module uri(s)."),
+        test.outLines());
+    assertEquals(3, test.outLines().stream().filter(line -> line.startsWith("Downloaded")).count());
+    assertEquals(3, test.outLines().stream().filter(line -> line.startsWith("Timestamp")).count());
+    assertEquals(0, test.errLines().size(), test.toString());
   }
 }

@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T03:16:41.835621900Z
+// THIS FILE WAS GENERATED ON 2019-06-17T04:21:48.182767800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -375,7 +375,7 @@ public class Bach {
 
     /** Download a file denoted by the specified uri. */
     Path download(URI uri) throws Exception {
-      run.log(TRACE, "download(%s)", uri);
+      run.log(TRACE, "Downloader::download(%s)", uri);
       var fileName = extractFileName(uri);
       var target = Files.createDirectories(destination).resolve(fileName);
       var url = uri.toURL(); // fails for non-absolute uri
@@ -406,6 +406,7 @@ public class Bach {
         run.log(TRACE, "Local last modified on %s", fileModified);
         if (fileModified.equals(lastModified)) {
           run.log(TRACE, "Timestamp match: %s, %d bytes.", file, Files.size(target));
+          connection.getInputStream().close(); // release all opened resources
           return target;
         }
         run.log(DEBUG, "Local target file differs from remote source -- replacing it...");
