@@ -5,8 +5,8 @@ install:
 - java --version
 
 script:
-- java -Debug src/bach/Bach.java sync Bach$JigsawBuilder
-- TEST="$(java src/bach/Bach.java sync Bach$JigsawBuilder)"
+- java -Debug src/bach/Bach.java sync Bach\$JigsawBuilder
+- TEST="$(java src/bach/Bach.java sync Bach\$JigsawBuilder)"
 - $TEST
 
 after_success:
