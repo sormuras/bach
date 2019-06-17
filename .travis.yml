@@ -5,6 +5,7 @@ install:
 - java --version
 
 script:
+- jshell --execution local ./build.jsh
 - java -Debug src/bach/Bach.java sync Bach\$JigsawBuilder
 - TEST="$(java src/bach/Bach.java sync Bach\$JigsawBuilder)"
 - $TEST

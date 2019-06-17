@@ -59,7 +59,7 @@ public /*STATIC*/ class Downloader {
     var fileName = extractFileName(uri);
     var target = Files.createDirectories(destination).resolve(fileName);
     var url = uri.toURL(); // fails for non-absolute uri
-    if (Boolean.getBoolean("offline")) { // TODO run.offline
+    if (Boolean.getBoolean("bach.offline")) { // TODO run.offline
       if (Files.exists(target)) {
         return target;
       }
