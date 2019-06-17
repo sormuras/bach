@@ -34,10 +34,10 @@ class BuildTests {
 
     assertLinesMatch(
         List.of(
-            "Bach (master) initialized",
-            "home = <empty> (" + home.toAbsolutePath() + ")",
-            "work = " + work,
-            ">> MORE RUN STATE LINES >>"),
+            "Bach (master) initialized for bach " + Bach.VERSION,
+            "  name = bach",
+            "  version = " + Bach.VERSION,
+            ">> RUN TRACE LINES >>"),
         test.outLines());
 
     try {

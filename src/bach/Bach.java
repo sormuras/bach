@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T08:29:22.841631100Z
+// THIS FILE WAS GENERATED ON 2019-06-17T15:05:28.763949700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -72,17 +72,25 @@ public class Bach {
     }
   }
 
-  final Project project = new Project("bach", VERSION);
   final Run run;
+  final Project project;
 
   public Bach() {
     this(Run.system());
   }
 
   public Bach(Run run) {
+    this(run, Project.of(run.home));
+  }
+
+  public Bach(Run run, Project project) {
     this.run = run;
-    run.log(DEBUG, "%s initialized", this);
-    run.logState(TRACE);
+    this.project = project;
+    run.log(DEBUG, "%s initialized for %s", this, project);
+    project.toStrings(line -> run.log(DEBUG, "  %s", line));
+    run.log(TRACE, "Run instance properties");
+    run.log(TRACE, "  class = %s", run.getClass().getSimpleName());
+    run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
   void help() {
@@ -501,17 +509,31 @@ public class Bach {
 
   /** Project data. */
   public static class Project {
+
+    public static Project of(Path home) {
+      var homeName = "" + home.toAbsolutePath().normalize().getFileName();
+      return new Project(Run.newProperties(home), homeName);
+    }
+
     final String name;
     final String version;
 
-    Project(String name, String version) {
-      this.name = name;
-      this.version = version;
+    final Path moduleSourceDirectory;
+
+    private Project(Properties properties, String defaultName) {
+      this.name = properties.getProperty("name", defaultName);
+      this.version = properties.getProperty("version", "1.0.0-SNAPSHOT");
+      this.moduleSourceDirectory = Path.of(properties.getProperty("src.modules", "src/modules"));
     }
 
     @Override
     public String toString() {
       return name + ' ' + version;
+    }
+
+    void toStrings(Consumer<String> consumer) {
+      consumer.accept("name = " + name);
+      consumer.accept("version = " + version);
     }
   }
 
@@ -689,23 +711,22 @@ public class Bach {
       return TimeUnit.MILLISECONDS.convert(Duration.between(start, Instant.now()));
     }
 
-    void logState(System.Logger.Level level) {
-      var homePath = home.toString();
-      log(level, "home = %s", homePath.isEmpty() ? "<empty> (" + Bach.USER_PATH + ")" : homePath);
-      log(level, "work = %s", work);
-      log(level, "debug = %s", debug);
-      log(level, "dry-run = %s", dryRun);
-      log(level, "offline = %s", isOffline());
-      log(level, "threshold = %s", threshold);
-      log(level, "out = %s", out);
-      log(level, "err = %s", err);
-      log(level, "start = %s", start);
-      log(level, "variables = %s", variables);
-    }
-
     @Override
     public String toString() {
       return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);
+    }
+
+    void toStrings(Consumer<String> consumer) {
+      consumer.accept("home = '" + home + "' -> " + home.toUri());
+      consumer.accept("work = '" + work + "' -> " + work.toUri());
+      consumer.accept("debug = " + debug);
+      consumer.accept("dry-run = " + dryRun);
+      consumer.accept("offline = " + isOffline());
+      consumer.accept("threshold = " + threshold);
+      consumer.accept("out = " + out);
+      consumer.accept("err = " + err);
+      consumer.accept("start = " + start);
+      consumer.accept("variables = " + variables);
     }
   }
 }

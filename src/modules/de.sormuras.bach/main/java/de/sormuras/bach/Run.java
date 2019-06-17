@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
 /*BODY*/
@@ -195,22 +196,21 @@ public /*STATIC*/ class Run {
     return TimeUnit.MILLISECONDS.convert(Duration.between(start, Instant.now()));
   }
 
-  void logState(System.Logger.Level level) {
-    var homePath = home.toString();
-    log(level, "home = %s", homePath.isEmpty() ? "<empty> (" + Bach.USER_PATH + ")" : homePath);
-    log(level, "work = %s", work);
-    log(level, "debug = %s", debug);
-    log(level, "dry-run = %s", dryRun);
-    log(level, "offline = %s", isOffline());
-    log(level, "threshold = %s", threshold);
-    log(level, "out = %s", out);
-    log(level, "err = %s", err);
-    log(level, "start = %s", start);
-    log(level, "variables = %s", variables);
-  }
-
   @Override
   public String toString() {
     return String.format("Run{home=%s, work=%s, debug=%s, dryRun=%s}", home, work, debug, dryRun);
+  }
+
+  void toStrings(Consumer<String> consumer) {
+    consumer.accept("home = '" + home + "' -> " + home.toUri());
+    consumer.accept("work = '" + work + "' -> " + work.toUri());
+    consumer.accept("debug = " + debug);
+    consumer.accept("dry-run = " + dryRun);
+    consumer.accept("offline = " + isOffline());
+    consumer.accept("threshold = " + threshold);
+    consumer.accept("out = " + out);
+    consumer.accept("err = " + err);
+    consumer.accept("start = " + start);
+    consumer.accept("variables = " + variables);
   }
 }

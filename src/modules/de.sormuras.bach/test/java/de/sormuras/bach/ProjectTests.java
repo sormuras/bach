@@ -19,20 +19,20 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ProjectTests {
 
-  private final Project project = new Project("name", "version");
-
   @Test
-  void accessPackagePrivateFields() {
-    assertEquals("name", project.name);
-    assertEquals("version", project.version);
-  }
-
-  @Test
-  void toStringReturnsNameAndVersion() {
-    assertEquals("name version", project.toString());
+  void defaultPropertiesInAnEmptyDirectory(@TempDir Path empty) {
+    var project = Project.of(empty);
+    var name = empty.getFileName().toString();
+    var version = "1.0.0-SNAPSHOT";
+    assertEquals(name, project.name);
+    assertEquals(version, project.version);
+    assertEquals(Path.of("src/modules"), project.moduleSourceDirectory);
+    assertEquals(name + ' ' + version, project.toString());
   }
 }

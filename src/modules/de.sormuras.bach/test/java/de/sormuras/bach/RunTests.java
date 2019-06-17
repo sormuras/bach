@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
@@ -65,12 +66,14 @@ class RunTests {
   }
 
   @Test
-  void logState() {
-    test.logState(System.Logger.Level.TRACE);
+  void toStrings() {
+    var work = Path.of("target", "test-run");
+    var lines = new ArrayList<String>();
+    test.toStrings(lines::add);
     assertLinesMatch(
         List.of(
-            "home = <empty> (" + Path.of("").toAbsolutePath() + ")",
-            "work = " + Path.of("target", "test-run"),
+            "home = '' -> " + Path.of("").toUri(),
+            "work = '" + work + "' -> " + work.toUri(),
             "debug = true",
             "dry-run = false",
             "offline = false",
@@ -79,7 +82,7 @@ class RunTests {
             "err = java.io.PrintWriter@.+",
             "start = .+",
             "variables = {${test.key}=test.value}"),
-        test.outLines());
+        lines);
   }
 
   @Test

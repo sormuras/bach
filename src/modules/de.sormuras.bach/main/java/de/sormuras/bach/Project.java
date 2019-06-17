@@ -17,19 +17,37 @@
 
 package de.sormuras.bach;
 
+import java.nio.file.Path;
+import java.util.Properties;
+import java.util.function.Consumer;
+
 /*BODY*/
 /** Project data. */
 public /*STATIC*/ class Project {
+
+  public static Project of(Path home) {
+    var homeName = "" + home.toAbsolutePath().normalize().getFileName();
+    return new Project(Run.newProperties(home), homeName);
+  }
+
   final String name;
   final String version;
 
-  Project(String name, String version) {
-    this.name = name;
-    this.version = version;
+  final Path moduleSourceDirectory;
+
+  private Project(Properties properties, String defaultName) {
+    this.name = properties.getProperty("name", defaultName);
+    this.version = properties.getProperty("version", "1.0.0-SNAPSHOT");
+    this.moduleSourceDirectory = Path.of(properties.getProperty("src.modules", "src/modules"));
   }
 
   @Override
   public String toString() {
     return name + ' ' + version;
+  }
+
+  void toStrings(Consumer<String> consumer) {
+    consumer.accept("name = " + name);
+    consumer.accept("version = " + version);
   }
 }

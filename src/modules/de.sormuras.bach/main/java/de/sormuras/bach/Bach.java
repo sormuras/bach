@@ -54,17 +54,25 @@ public class Bach {
     }
   }
 
-  final Project project = new Project("bach", VERSION);
   final Run run;
+  final Project project;
 
   public Bach() {
     this(Run.system());
   }
 
   public Bach(Run run) {
+    this(run, Project.of(run.home));
+  }
+
+  public Bach(Run run, Project project) {
     this.run = run;
-    run.log(DEBUG, "%s initialized", this);
-    run.logState(TRACE);
+    this.project = project;
+    run.log(DEBUG, "%s initialized for %s", this, project);
+    project.toStrings(line -> run.log(DEBUG, "  %s", line));
+    run.log(TRACE, "Run instance properties");
+    run.log(TRACE, "  class = %s", run.getClass().getSimpleName());
+    run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
   void help() {
