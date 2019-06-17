@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T07:33:36.691062300Z
+// THIS FILE WAS GENERATED ON 2019-06-17T08:29:22.841631100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -695,10 +695,12 @@ public class Bach {
       log(level, "work = %s", work);
       log(level, "debug = %s", debug);
       log(level, "dry-run = %s", dryRun);
+      log(level, "offline = %s", isOffline());
       log(level, "threshold = %s", threshold);
       log(level, "out = %s", out);
       log(level, "err = %s", err);
       log(level, "start = %s", start);
+      log(level, "variables = %s", variables);
     }
 
     @Override

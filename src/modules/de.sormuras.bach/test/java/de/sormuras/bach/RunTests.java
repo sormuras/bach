@@ -20,7 +20,6 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,10 +73,12 @@ class RunTests {
             "work = " + Path.of("target", "test-run"),
             "debug = true",
             "dry-run = false",
+            "offline = false",
             "threshold = ALL",
             "out = java.io.PrintWriter@.+",
             "err = java.io.PrintWriter@.+",
-            "start = .+"),
+            "start = .+",
+            "variables = {${test.key}=test.value}"),
         test.outLines());
   }
 

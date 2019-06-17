@@ -201,10 +201,12 @@ public /*STATIC*/ class Run {
     log(level, "work = %s", work);
     log(level, "debug = %s", debug);
     log(level, "dry-run = %s", dryRun);
+    log(level, "offline = %s", isOffline());
     log(level, "threshold = %s", threshold);
     log(level, "out = %s", out);
     log(level, "err = %s", err);
     log(level, "start = %s", start);
+    log(level, "variables = %s", variables);
   }
 
   @Override
