@@ -35,7 +35,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     var src = home.resolve("src");
 
     var libTest = lib.resolve("test");
-    var libTestJUnitPlatform = lib.resolve("test-junit-platform");
+    var libTestJUnitPlatform = lib.resolve("test-runtime-junit");
     var libTestRuntimeOnly = lib.resolve("test-runtime-only");
     var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
     var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));

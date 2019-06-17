@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T07:18:23.835018Z
+// THIS FILE WAS GENERATED ON 2019-06-17T07:33:36.691062300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -436,7 +436,7 @@ public class Bach {
       var src = home.resolve("src");
 
       var libTest = lib.resolve("test");
-      var libTestJUnitPlatform = lib.resolve("test-junit-platform");
+      var libTestJUnitPlatform = lib.resolve("test-runtime-junit");
       var libTestRuntimeOnly = lib.resolve("test-runtime-only");
       var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
       var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
