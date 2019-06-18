@@ -34,8 +34,8 @@ import java.util.Properties;
 /** Java Shell Builder. */
 public class Bach {
 
-  /** Version is either {@code master} or {@link Runtime.Version#parse(String)}-compatible. */
-  public static final String VERSION = "master";
+  /** Version of Bach, {@link Runtime.Version#parse(String)}-compatible. */
+  public static final String VERSION = "2-ea";
 
   /** Convenient short-cut to {@code "user.home"} as a path. */
   static final Path USER_HOME = Path.of(System.getProperty("user.home"));
