@@ -32,7 +32,8 @@ class ProjectTests {
     var version = "1.0.0-SNAPSHOT";
     assertEquals(name, project.name);
     assertEquals(version, project.version);
-    assertEquals(Path.of("src/modules"), project.moduleSourceDirectory);
+    assertEquals("*", project.get(Project.Property.MODULES));
+    assertEquals(Path.of("src/modules"), project.path(Project.Property.PATH_SRC_MODULES));
     assertEquals(name + ' ' + version, project.toString());
   }
 }

@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-18T06:37:12.447300Z
+// THIS FILE WAS GENERATED ON 2019-06-18T07:26:37.284661700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -512,20 +513,56 @@ public class Bach {
   /** Project data. */
   public static class Project {
 
+    /** Project property enumeration. */
+    public enum Property {
+      NAME("project", "Name of the project. Determines some file names, like documentation JAR."),
+      VERSION(
+          "1.0.0-SNAPSHOT",
+          "Version of the project. Passed to '--module-version' and other options."),
+      MODULES("*", "List of modules to build. '*' means all in PATH_SRC_MODULES."),
+      PATH_SRC_MODULES("src/modules", "This directory contains all Java module sources."),
+      ;
+
+      final String key;
+      final String defaultValue;
+      final String description;
+
+      Property(String defaultValue, String description) {
+        this.key = name().toLowerCase().replace('_', '.');
+        this.defaultValue = defaultValue;
+        this.description = description;
+      }
+
+      String get(Properties properties) {
+        return get(properties, defaultValue);
+      }
+
+      String get(Properties properties, String defaultValue) {
+        return properties.getProperty(key, defaultValue);
+      }
+    }
+
     public static Project of(Path home) {
       var homeName = "" + home.toAbsolutePath().normalize().getFileName();
       return new Project(Run.newProperties(home), homeName);
     }
 
+    final Properties properties;
     final String name;
     final String version;
 
-    final Path moduleSourceDirectory;
-
     private Project(Properties properties, String defaultName) {
-      this.name = properties.getProperty("name", defaultName);
-      this.version = properties.getProperty("version", "1.0.0-SNAPSHOT");
-      this.moduleSourceDirectory = Path.of(properties.getProperty("src.modules", "src/modules"));
+      this.properties = properties;
+      this.name = Property.NAME.get(properties, defaultName);
+      this.version = Property.VERSION.get(properties);
+    }
+
+    String get(Property property) {
+      return property.get(properties);
+    }
+
+    Path path(Property property) {
+      return Path.of(get(property));
     }
 
     @Override
@@ -534,8 +571,16 @@ public class Bach {
     }
 
     void toStrings(Consumer<String> consumer) {
+      var skips = Set.of("name", "version");
       consumer.accept("name = " + name);
       consumer.accept("version = " + version);
+      for (var property : Property.values()) {
+        var key = property.key;
+        if (skips.contains(key)) {
+          continue;
+        }
+        consumer.accept(key + " = " + get(property));
+      }
     }
   }
 

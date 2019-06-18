@@ -19,26 +19,63 @@ package de.sormuras.bach;
 
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /*BODY*/
 /** Project data. */
 public /*STATIC*/ class Project {
 
+  /** Project property enumeration. */
+  public enum Property {
+    NAME("project", "Name of the project. Determines some file names, like documentation JAR."),
+    VERSION(
+        "1.0.0-SNAPSHOT",
+        "Version of the project. Passed to '--module-version' and other options."),
+    MODULES("*", "List of modules to build. '*' means all in PATH_SRC_MODULES."),
+    PATH_SRC_MODULES("src/modules", "This directory contains all Java module sources."),
+    ;
+
+    final String key;
+    final String defaultValue;
+    final String description;
+
+    Property(String defaultValue, String description) {
+      this.key = name().toLowerCase().replace('_', '.');
+      this.defaultValue = defaultValue;
+      this.description = description;
+    }
+
+    String get(Properties properties) {
+      return get(properties, defaultValue);
+    }
+
+    String get(Properties properties, String defaultValue) {
+      return properties.getProperty(key, defaultValue);
+    }
+  }
+
   public static Project of(Path home) {
     var homeName = "" + home.toAbsolutePath().normalize().getFileName();
     return new Project(Run.newProperties(home), homeName);
   }
 
+  final Properties properties;
   final String name;
   final String version;
 
-  final Path moduleSourceDirectory;
-
   private Project(Properties properties, String defaultName) {
-    this.name = properties.getProperty("name", defaultName);
-    this.version = properties.getProperty("version", "1.0.0-SNAPSHOT");
-    this.moduleSourceDirectory = Path.of(properties.getProperty("src.modules", "src/modules"));
+    this.properties = properties;
+    this.name = Property.NAME.get(properties, defaultName);
+    this.version = Property.VERSION.get(properties);
+  }
+
+  String get(Property property) {
+    return property.get(properties);
+  }
+
+  Path path(Property property) {
+    return Path.of(get(property));
   }
 
   @Override
@@ -47,7 +84,15 @@ public /*STATIC*/ class Project {
   }
 
   void toStrings(Consumer<String> consumer) {
+    var skips = Set.of("name", "version");
     consumer.accept("name = " + name);
     consumer.accept("version = " + version);
+    for (var property : Property.values()) {
+      var key = property.key;
+      if (skips.contains(key)) {
+        continue;
+      }
+      consumer.accept(key + " = " + get(property));
+    }
   }
 }

@@ -107,7 +107,10 @@ class ActionTests {
             "                tool java --show-version Program.java",
             "Project information",
             "name = bach",
-            "version = " + Bach.VERSION),
+            "version = " + Bach.VERSION,
+            "modules = *",
+            "path.src.modules = src/modules"
+        ),
         streams.outLines());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }
