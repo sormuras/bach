@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-18T09:49:55.990707Z
+// THIS FILE WAS GENERATED ON 2019-06-18T11:47:53.137442300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -438,75 +438,63 @@ public class Bach {
   }
 
   /** Build, i.e. compile and package, a modular Java project. */
-  public static class JigsawBuilder implements Action {
+  public static class JigsawBuilder {
 
-    static List<String> modules(Project project, String realm) {
-      var userDefinedModules = project.get(Project.Property.MODULES);
-      if (!userDefinedModules.equals("*")) {
-        return List.of(userDefinedModules.split("\\s*,\\s*"));
-      }
-      // Find modules for realm...
-      var modules = new ArrayList<String>();
-      var descriptor = Path.of(realm, "java", "module-info.java");
-      DirectoryStream.Filter<Path> filter =
-          path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-      try (var stream = Files.newDirectoryStream(project.path(Project.Property.PATH_SRC), filter)) {
-        stream.forEach(directory -> modules.add(directory.getFileName().toString()));
-      } catch (Exception e) {
-        throw new Error(e);
-      }
-      return modules;
+    final Bach bach;
+    final Path bin;
+    final Path lib;
+    final Path src;
+    final String version;
+
+    JigsawBuilder(Bach bach) {
+      this.bach = bach;
+      this.version = bach.project.version;
+      this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
+      this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
+      this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
     }
 
-    @Override
-    public void perform(Bach bach) throws Exception {
-      var worker = new Worker(bach);
-      worker.compile("main");
+     void build() throws Exception {
+      compile("main");
+      compile("test", "main");
+      bach.run.log(DEBUG, "Build successful.");
     }
 
-    static class Worker {
-      final Bach bach;
-      final Path bin;
-      final Path lib;
-      final Path src;
-      final String version;
+    void compile(String realm, String... requiredRealms) throws Exception {
+      var modules = bach.project.modules(realm);
+      compile(realm, modules, requiredRealms);
+    }
 
-      Worker(Bach bach) {
-        this.bach = bach;
-        this.version = bach.project.version;
-        this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
-        this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
-        this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
+    void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
+      bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
+
+      var classes = bin.resolve(realm + "/classes");
+      var jars = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+
+      var modulePath = new ArrayList<>(bach.project.modulePath(realm, "compile", requiredRealms));
+      modulePath.add(jars);
+      for (var requiredRealm : requiredRealms) {
+        modulePath.add(bin.resolve(requiredRealm + "/modules"));
       }
 
-      void compile(String realm) throws Exception {
-        var modules = modules(bach.project, realm);
-        compile(realm, modules);
-      }
+      bach.run.run(
+          new Command("javac")
+              .add("-d", classes)
+              .add("--module-path", modulePath)
+              .add("--module-source-path", src + "/*/" + realm + "/java")
+              .add("--module-version", version)
+              .add("--module", String.join(",", modules)));
 
-      void compile(String realm, List<String> modules) throws Exception {
-        bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
-        var classes = bin.resolve(realm + "/classes");
-
+      for (var module : modules) {
+        var resources = src.resolve(Path.of(module, realm, "resources"));
         bach.run.run(
-            new Command("javac")
-                .add("-d", classes)
-                .add("--module-source-path", src + "/*/" + realm + "/java")
-                .add("--module-version", version)
-                .add("--module", String.join(",", modules)));
-
-        var jars = Files.createDirectories(bin.resolve(realm + "/modules"));
-        for (var module : modules) {
-          var resources = src.resolve(Path.of(module, realm, "resources"));
-          bach.run.run(
-              new Command("jar")
-                  .add("--create")
-                  .addIff(bach.run.debug, "--verbose")
-                  .add("--file", jars.resolve(module + '-' + version + ".jar"))
-                  .add("-C", classes.resolve(module))
-                  .add(".")
-                  .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
-        }
+            new Command("jar")
+                .add("--create")
+                .addIff(bach.run.debug, "--verbose")
+                .add("--file", jars.resolve(module + '-' + version + ".jar"))
+                .add("-C", classes.resolve(module))
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
       }
     }
   }
@@ -564,6 +552,42 @@ public class Bach {
 
     String get(Property property) {
       return property.get(properties);
+    }
+
+    List<String> modules(String realm) {
+      var userDefinedModules = get(Property.MODULES);
+      if (!userDefinedModules.equals("*")) {
+        return List.of(userDefinedModules.split("\\s*,\\s*"));
+      }
+      // Find modules for "src/.../*/${realm}/java"
+      var modules = new ArrayList<String>();
+      var descriptor = Path.of(realm, "java", "module-info.java");
+      DirectoryStream.Filter<Path> filter =
+          path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+      try (var stream = Files.newDirectoryStream(path(Property.PATH_SRC), filter)) {
+        stream.forEach(directory -> modules.add(directory.getFileName().toString()));
+      } catch (Exception e) {
+        throw new Error(e);
+      }
+      return modules;
+    }
+
+    List<Path> modulePath(String realm, String phase, String... requiredRealms) {
+      var lib = path(Property.PATH_LIB);
+      var result = new ArrayList<Path>();
+      var candidates = List.of(realm, realm + "-" + phase + "-only");
+      for (var candidate : candidates) {
+        result.add(lib.resolve(candidate));
+      }
+      for (var required : requiredRealms) {
+        if (realm.equals(required)) {
+          throw new IllegalArgumentException("Cyclic realm dependency detected! " + realm);
+        }
+        path(Property.PATH_BIN).resolve(required).resolve("modules");
+        result.addAll(modulePath(required, phase));
+      }
+      result.removeIf(Files::notExists);
+      return result;
     }
 
     Path path(Property property) {
