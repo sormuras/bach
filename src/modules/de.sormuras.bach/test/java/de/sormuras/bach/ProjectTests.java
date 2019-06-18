@@ -33,7 +33,9 @@ class ProjectTests {
     assertEquals(name, project.name);
     assertEquals(version, project.version);
     assertEquals("*", project.get(Project.Property.MODULES));
-    assertEquals(Path.of("src/modules"), project.path(Project.Property.PATH_SRC_MODULES));
+    assertEquals(Path.of("bin"), project.path(Project.Property.PATH_BIN));
+    assertEquals(Path.of("lib"), project.path(Project.Property.PATH_LIB));
+    assertEquals(Path.of("src"), project.path(Project.Property.PATH_SRC));
     assertEquals(name + ' ' + version, project.toString());
   }
 }

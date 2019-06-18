@@ -109,8 +109,9 @@ class ActionTests {
             "name = bach",
             "version = " + Bach.VERSION,
             "modules = *",
-            "path.src.modules = src/modules"
-        ),
+            "path.bin = target/bach",
+            "path.lib = lib",
+            "path.src = src/modules"),
         streams.outLines());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }

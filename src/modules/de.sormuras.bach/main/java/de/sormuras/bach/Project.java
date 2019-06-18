@@ -28,12 +28,16 @@ public /*STATIC*/ class Project {
 
   /** Project property enumeration. */
   public enum Property {
-    NAME("project", "Name of the project. Determines some file names, like documentation JAR."),
+    NAME(
+        "unnamed",
+        "Name of the project. Determines some file names, like main documentation JAR file."),
     VERSION(
         "1.0.0-SNAPSHOT",
         "Version of the project. Passed to '--module-version' and other options."),
     MODULES("*", "List of modules to build. '*' means all in PATH_SRC_MODULES."),
-    PATH_SRC_MODULES("src/modules", "This directory contains all Java module sources."),
+    PATH_BIN("bin", "Destination directory to store binary assets to."),
+    PATH_LIB("lib", "Root directory of 3rd-party modules."),
+    PATH_SRC("src", "This directory contains all Java module sources."),
     ;
 
     final String key;
