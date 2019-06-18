@@ -19,33 +19,13 @@ package de.sormuras.bach;
 
 import static java.lang.System.Logger.Level.DEBUG;
 
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 /*BODY*/
 /** Build, i.e. compile and package, a modular Java project. */
 public /*STATIC*/ class JigsawBuilder implements Action {
-
-  static List<String> modules(Project project, String realm) {
-    var userDefinedModules = project.get(Project.Property.MODULES);
-    if (!userDefinedModules.equals("*")) {
-      return List.of(userDefinedModules.split("\\s*,\\s*"));
-    }
-    // Find modules for realm...
-    var modules = new ArrayList<String>();
-    var descriptor = Path.of(realm, "java", "module-info.java");
-    DirectoryStream.Filter<Path> filter =
-        path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-    try (var stream = Files.newDirectoryStream(project.path(Project.Property.PATH_SRC), filter)) {
-      stream.forEach(directory -> modules.add(directory.getFileName().toString()));
-    } catch (Exception e) {
-      throw new Error(e);
-    }
-    return modules;
-  }
 
   @Override
   public void perform(Bach bach) throws Exception {
@@ -69,7 +49,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
     }
 
     void compile(String realm) throws Exception {
-      var modules = modules(bach.project, realm);
+      var modules = bach.project.modules(realm);
       compile(realm, modules);
     }
 

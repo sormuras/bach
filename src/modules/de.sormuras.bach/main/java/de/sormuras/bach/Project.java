@@ -17,7 +17,11 @@
 
 package de.sormuras.bach;
 
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -76,6 +80,24 @@ public /*STATIC*/ class Project {
 
   String get(Property property) {
     return property.get(properties);
+  }
+
+  List<String> modules(String realm) {
+    var userDefinedModules = get(Project.Property.MODULES);
+    if (!userDefinedModules.equals("*")) {
+      return List.of(userDefinedModules.split("\\s*,\\s*"));
+    }
+    // Find modules for "src/.../*/${realm}/java"
+    var modules = new ArrayList<String>();
+    var descriptor = Path.of(realm, "java", "module-info.java");
+    DirectoryStream.Filter<Path> filter =
+        path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+    try (var stream = Files.newDirectoryStream(path(Project.Property.PATH_SRC), filter)) {
+      stream.forEach(directory -> modules.add(directory.getFileName().toString()));
+    } catch (Exception e) {
+      throw new Error(e);
+    }
+    return modules;
   }
 
   Path path(Property property) {
