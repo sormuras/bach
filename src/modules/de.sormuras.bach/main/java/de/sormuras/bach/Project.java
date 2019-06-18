@@ -83,7 +83,7 @@ public /*STATIC*/ class Project {
   }
 
   List<String> modules(String realm) {
-    var userDefinedModules = get(Project.Property.MODULES);
+    var userDefinedModules = get(Property.MODULES);
     if (!userDefinedModules.equals("*")) {
       return List.of(userDefinedModules.split("\\s*,\\s*"));
     }
@@ -92,7 +92,7 @@ public /*STATIC*/ class Project {
     var descriptor = Path.of(realm, "java", "module-info.java");
     DirectoryStream.Filter<Path> filter =
         path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-    try (var stream = Files.newDirectoryStream(path(Project.Property.PATH_SRC), filter)) {
+    try (var stream = Files.newDirectoryStream(path(Property.PATH_SRC), filter)) {
       stream.forEach(directory -> modules.add(directory.getFileName().toString()));
     } catch (Exception e) {
       throw new Error(e);
