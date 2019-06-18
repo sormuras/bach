@@ -32,18 +32,10 @@ class BuildTests {
     var test = new TestRun(home, work);
     var bach = new Bach(test);
 
-    assertLinesMatch(
-        List.of(
-            "Bach (master) initialized for bach " + Bach.VERSION,
-            "  name = bach",
-            "  version = " + Bach.VERSION,
-            ">> RUN TRACE LINES >>"),
-        test.outLines());
-
     try {
       bach.run(List.of(new JigsawBuilder())); // TODO Use BUILD action constant.
-    } catch (Exception e) {
-      // ignore
+    } catch (Throwable t) {
+      t.printStackTrace();
     }
 
     assertLinesMatch(List.of(), test.errLines());
@@ -52,15 +44,22 @@ class BuildTests {
             ">> INIT >>",
             "Performing 1 action(s)...",
             ">> BUILD >>",
+            "Compiling main modules: [de.sormuras.bach]",
+            ">> JAVAC x1 + JAR xN >>",
             "1 action(s) successfully performed."),
         test.outLines());
     assertLinesMatch(
         List.of(
             "target",
             ">>>>",
-            "target/bach/main/modules/de.sormuras.bach.jar",
+            "target/bach/main/classes/de.sormuras.bach/de/sormuras/bach/Bach.class",
             ">>>>",
-            "target/bach/test/modules/integration.jar"),
+            "target/bach/main/classes/de.sormuras.bach/module-info.class",
+            ">>>>",
+            "target/bach/main/modules/de.sormuras.bach-" + Bach.VERSION + ".jar"
+            // ">>>>",
+            // "target/bach/test/modules/integration.jar"
+            ),
         TestRun.treeWalk(work));
   }
 }

@@ -17,83 +17,85 @@
 
 package de.sormuras.bach;
 
-import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.DEBUG;
 
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /*BODY*/
 /** Build, i.e. compile and package, a modular Java project. */
 public /*STATIC*/ class JigsawBuilder implements Action {
 
+  static List<String> modules(Project project, String realm) {
+    var userDefinedModules = project.get(Project.Property.MODULES);
+    if (!userDefinedModules.equals("*")) {
+      return List.of(userDefinedModules.split("\\s*,\\s*"));
+    }
+    // Find modules for realm...
+    var modules = new ArrayList<String>();
+    var descriptor = Path.of(realm, "java", "module-info.java");
+    DirectoryStream.Filter<Path> filter =
+        path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+    try (var stream = Files.newDirectoryStream(project.path(Project.Property.PATH_SRC), filter)) {
+      stream.forEach(directory -> modules.add(directory.getFileName().toString()));
+    } catch (Exception e) {
+      throw new Error(e);
+    }
+    return modules;
+  }
+
   @Override
   public void perform(Bach bach) throws Exception {
-    var home = bach.run.home;
-    var work = bach.run.work.resolve("target/bach");
-    var lib = home.resolve("lib");
-    var src = home.resolve("src");
+    var worker = new Worker(bach);
+    worker.compile("main");
+  }
 
-    var libTest = lib.resolve("test");
-    var libTestJUnitPlatform = lib.resolve("test-runtime-junit");
-    var libTestRuntimeOnly = lib.resolve("test-runtime-only");
-    var sourceMainResources = src.resolve(Path.of("modules", "de.sormuras.bach", "main/resources"));
-    var sourceTestResources = src.resolve(Path.of("modules", "de.sormuras.bach", "test/resources"));
-    var targetMainClasses = work.resolve("main/classes");
-    var targetMainModules = Files.createDirectories(work.resolve("main/modules"));
-    var targetTestClasses = work.resolve("test/classes");
-    var targetTestModules = Files.createDirectories(work.resolve("test/modules"));
+  static class Worker {
+    final Bach bach;
+    final Path bin;
+    final Path lib;
+    final Path src;
+    final String version;
 
-    bach.run.run(
-        new Command("javac")
-            .add("-d", targetMainClasses)
-            .add("--module-source-path", src + "/modules/*/main/java")
-            .add("--module-version", "1-" + bach.project.version)
-            .add("--module", "de.sormuras.bach"));
+    Worker(Bach bach) {
+      this.bach = bach;
+      this.version = bach.project.version;
+      this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
+      this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
+      this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
+    }
 
-    bach.run.run(
-        new Command("jar")
-            .add("--create")
-            .addIff(bach.run.debug, "--verbose")
-            .add("--file", targetMainModules.resolve("de.sormuras.bach.jar"))
-            .add("-C", targetMainClasses.resolve("de.sormuras.bach"))
-            .add(".")
-            .addIff(
-                Files.isDirectory(sourceMainResources),
-                cmd -> cmd.add("-C", sourceMainResources).add(".")));
+    void compile(String realm) throws Exception {
+      var modules = modules(bach.project, realm);
+      compile(realm, modules);
+    }
 
-    bach.run.run(
-        new Command("javac")
-            .add("-d", targetTestClasses)
-            .add("--module-source-path", src + "/modules/*/test/java")
-            .add("--module-version", "1-" + bach.project.version)
-            .add("--module-path", List.of(targetMainModules, libTest))
-            .add("--module", "integration"));
+    void compile(String realm, List<String> modules) throws Exception {
+      bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
+      var classes = bin.resolve(realm + "/classes");
 
-    bach.run.run(
-        new Command("jar")
-            .add("--create")
-            .addIff(bach.run.debug, "--verbose")
-            .add("--file", targetTestModules.resolve("integration.jar"))
-            .add("-C", targetTestClasses.resolve("integration"))
-            .add(".")
-            .addIff(
-                Files.isDirectory(sourceTestResources),
-                cmd -> cmd.add("-C", sourceTestResources).add(".")));
+      bach.run.run(
+          new Command("javac")
+              .add("-d", classes)
+              .add("--module-source-path", src + "/*/" + realm + "/java")
+              .add("--module-version", version)
+              .add("--module", String.join(",", modules)));
 
-    var test =
-        new Command("java")
-            .add(
-                "--module-path",
-                List.of(
-                    targetTestModules,
-                    targetMainModules,
-                    libTest,
-                    libTestJUnitPlatform,
-                    libTestRuntimeOnly))
-            .add("--add-modules", "integration")
-            .add("--module", "org.junit.platform.console")
-            .add("--scan-modules");
-    bach.run.log(INFO, "%s %s", test.name, String.join(" ", test.list));
+      var jars = Files.createDirectories(bin.resolve(realm + "/modules"));
+      for (var module : modules) {
+        var resources = src.resolve(Path.of(module, realm, "resources"));
+        bach.run.run(
+            new Command("jar")
+                .add("--create")
+                .addIff(bach.run.debug, "--verbose")
+                .add("--file", jars.resolve(module + '-' + version + ".jar"))
+                .add("-C", classes.resolve(module))
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
+      }
+    }
   }
 }
