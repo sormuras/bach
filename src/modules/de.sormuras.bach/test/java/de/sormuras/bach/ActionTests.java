@@ -75,9 +75,9 @@ class ActionTests {
   }
 
   @Test
-  void actionForJigsawBuilder() {
-    var action = Action.of(JigsawBuilder.class.getName(), new ArrayDeque<>());
-    assertSame(JigsawBuilder.class, action.getClass());
+  void actionForNestedNoopClass() {
+    var action = Action.of(Noop.class.getName(), new ArrayDeque<>());
+    assertSame(Noop.class, action.getClass());
   }
 
   @Test
@@ -149,5 +149,11 @@ class ActionTests {
     assertEquals(3, test.outLines().stream().filter(line -> line.startsWith("Downloaded")).count());
     assertEquals(3, test.outLines().stream().filter(line -> line.startsWith("Timestamp")).count());
     assertEquals(0, test.errLines().size(), test.toString());
+  }
+
+  public static class Noop implements Action {
+
+    @Override
+    public void perform(Bach bach) {}
   }
 }
