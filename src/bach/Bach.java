@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-18T08:12:38.158389200Z
+// THIS FILE WAS GENERATED ON 2019-06-18T08:23:30.247175900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -442,7 +442,7 @@ public class Bach {
     @Override
     public void perform(Bach bach) throws Exception {
       var home = bach.run.home;
-      var work = bach.run.work;
+      var work = bach.run.work.resolve("target/bach");
       var lib = home.resolve("lib");
       var src = home.resolve("src");
 
@@ -595,7 +595,7 @@ public class Bach {
     static class DefaultProperties extends Properties {
       DefaultProperties() {
         setProperty("home", "");
-        setProperty("work", "target/bach");
+        setProperty("work", "");
         setProperty("debug", "false");
         setProperty("dry-run", "false");
         setProperty("threshold", INFO.name());

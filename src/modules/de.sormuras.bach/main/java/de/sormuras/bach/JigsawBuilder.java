@@ -30,7 +30,7 @@ public /*STATIC*/ class JigsawBuilder implements Action {
   @Override
   public void perform(Bach bach) throws Exception {
     var home = bach.run.home;
-    var work = bach.run.work;
+    var work = bach.run.work.resolve("target/bach");
     var lib = home.resolve("lib");
     var src = home.resolve("src");
 

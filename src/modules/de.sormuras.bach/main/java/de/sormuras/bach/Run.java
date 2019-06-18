@@ -29,7 +29,7 @@ public /*STATIC*/ class Run {
   static class DefaultProperties extends Properties {
     DefaultProperties() {
       setProperty("home", "");
-      setProperty("work", "target/bach");
+      setProperty("work", "");
       setProperty("debug", "false");
       setProperty("dry-run", "false");
       setProperty("threshold", INFO.name());

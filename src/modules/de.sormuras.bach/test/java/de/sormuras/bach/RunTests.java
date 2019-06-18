@@ -43,7 +43,7 @@ class RunTests {
     //noinspection MismatchedQueryAndUpdateOfCollection
     var defaults = new Run.DefaultProperties();
     assertEquals("", defaults.getProperty("home"));
-    assertEquals("target/bach", defaults.getProperty("work"));
+    assertEquals("", defaults.getProperty("work"));
     assertEquals("false", defaults.getProperty("debug"));
     assertEquals("false", defaults.getProperty("dry-run"));
     assertEquals("INFO", defaults.getProperty("threshold"));

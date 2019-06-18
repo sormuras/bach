@@ -41,16 +41,26 @@ class BuildTests {
         test.outLines());
 
     try {
-      bach.run(List.of(new JigsawBuilder()));
+      bach.run(List.of(new JigsawBuilder())); // TODO Use BUILD action constant.
     } catch (Exception e) {
       // ignore
     }
 
     assertLinesMatch(List.of(), test.errLines());
-    assertLinesMatch(List.of(
-        ">> INIT >>",
-        "Performing 1 action(s)...",
-        ">> BUILD >>",
-        "1 action(s) successfully performed."), test.outLines());
+    assertLinesMatch(
+        List.of(
+            ">> INIT >>",
+            "Performing 1 action(s)...",
+            ">> BUILD >>",
+            "1 action(s) successfully performed."),
+        test.outLines());
+    assertLinesMatch(
+        List.of(
+            "target",
+            ">>>>",
+            "target/bach/main/modules/de.sormuras.bach.jar",
+            ">>>>",
+            "target/bach/test/modules/integration.jar"),
+        TestRun.treeWalk(work));
   }
 }
