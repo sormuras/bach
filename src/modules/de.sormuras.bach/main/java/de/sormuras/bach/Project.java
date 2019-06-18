@@ -100,6 +100,24 @@ public /*STATIC*/ class Project {
     return modules;
   }
 
+  List<Path> modulePath(String realm, String phase, String... requiredRealms) {
+    var lib = path(Property.PATH_LIB);
+    var result = new ArrayList<Path>();
+    var candidates = List.of(realm, realm + "-" + phase + "-only");
+    for (var candidate : candidates) {
+      result.add(lib.resolve(candidate));
+    }
+    for (var required : requiredRealms) {
+      if (realm.equals(required)) {
+        throw new IllegalArgumentException("Cyclic realm dependency detected! " + realm);
+      }
+      path(Property.PATH_BIN).resolve(required).resolve("modules");
+      result.addAll(modulePath(required, phase));
+    }
+    result.removeIf(Files::notExists);
+    return result;
+  }
+
   Path path(Property property) {
     return Path.of(get(property));
   }
