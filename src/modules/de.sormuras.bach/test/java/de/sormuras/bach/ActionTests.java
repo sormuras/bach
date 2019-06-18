@@ -104,7 +104,10 @@ class ActionTests {
             " sync         Resolve required external assets, like 3rd-party modules.",
             " tool         Run named tool consuming all remaining arguments:",
             "                tool <name> <args...>",
-            "                tool java --show-version Program.java"),
+            "                tool java --show-version Program.java",
+            "Project information",
+            "name = bach",
+            "version = " + Bach.VERSION),
         streams.outLines());
     assertEquals(0, streams.errLines().size(), streams.toString());
   }

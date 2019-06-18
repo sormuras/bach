@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-17T15:05:28.763949700Z
+// THIS FILE WAS GENERATED ON 2019-06-18T06:37:12.447300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -103,6 +103,8 @@ public class Bach {
           String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
       text.lines().forEach(run.out::println);
     }
+    run.out.println("Project information");
+    project.toStrings(run.out::println);
   }
 
   /** Main entry-point, by convention, a zero status code indicates normal termination. */

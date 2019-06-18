@@ -85,6 +85,8 @@ public class Bach {
           String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
       text.lines().forEach(run.out::println);
     }
+    run.out.println("Project information");
+    project.toStrings(run.out::println);
   }
 
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
