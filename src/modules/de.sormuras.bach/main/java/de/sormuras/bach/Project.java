@@ -87,24 +87,24 @@ public /*STATIC*/ class Project {
   }
 
   static List<String> modules(String realm, String userDefinedModules, Path sourceDirectory) {
-    if (!"*".equals(userDefinedModules)) {
-      var modules = userDefinedModules.split(",");
-      for (int i = 0; i < modules.length; i++) {
-        modules[i] = modules[i].strip();
+    if ("*".equals(userDefinedModules)) {
+      // Find modules for "src/.../*/${realm}/java"
+      var modules = new ArrayList<String>();
+      var descriptor = Path.of(realm, "java", "module-info.java");
+      DirectoryStream.Filter<Path> filter =
+          path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+      try (var stream = Files.newDirectoryStream(sourceDirectory, filter)) {
+        stream.forEach(directory -> modules.add(directory.getFileName().toString()));
+      } catch (Exception e) {
+        throw new Error("Scanning directory for modules failed: " + e);
       }
-      return List.of(modules);
+      return modules;
     }
-    // Find modules for "src/.../*/${realm}/java"
-    var modules = new ArrayList<String>();
-    var descriptor = Path.of(realm, "java", "module-info.java");
-    DirectoryStream.Filter<Path> filter =
-        path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-    try (var stream = Files.newDirectoryStream(sourceDirectory, filter)) {
-      stream.forEach(directory -> modules.add(directory.getFileName().toString()));
-    } catch (Exception e) {
-      throw new Error("Scanning directory for modules failed: " + e);
+    var modules = userDefinedModules.split(",");
+    for (int i = 0; i < modules.length; i++) {
+      modules[i] = modules[i].strip();
     }
-    return modules;
+    return List.of(modules);
   }
 
   List<Path> modulePath(String realm, String phase, String... requiredRealms) {
