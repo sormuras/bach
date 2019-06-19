@@ -186,7 +186,7 @@ public /*STATIC*/ class Run {
       return;
     }
     log(DEBUG, "Starting new process for '%s'", name);
-    var builder = new ProcessBuilder(name);
+    var builder = newProcessBuilder(name);
     builder.command().addAll(List.of(args));
     run(builder);
   }
@@ -201,10 +201,15 @@ public /*STATIC*/ class Run {
     log(DEBUG, "Tool '%s' successfully run.", tool.name());
   }
 
+  /** Create new process builder for the given command and inherit IO from current process. */
+  ProcessBuilder newProcessBuilder(String command) {
+    return new ProcessBuilder(command).inheritIO();
+  }
+
   void run(ProcessBuilder builder) {
     log(TRACE, "Run::run(%s)", builder);
     try {
-      var process = builder.inheritIO().start();
+      var process = builder.start();
       var code = process.waitFor();
       if (code != 0) {
         throw new Error("Process '" + process + "' failed with error code: " + code);

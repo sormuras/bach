@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T05:01:49.551821400Z
+// THIS FILE WAS GENERATED ON 2019-06-19T06:19:34.847667900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -777,7 +777,7 @@ public class Bach {
         return;
       }
       log(DEBUG, "Starting new process for '%s'", name);
-      var builder = new ProcessBuilder(name);
+      var builder = newProcessBuilder(name);
       builder.command().addAll(List.of(args));
       run(builder);
     }
@@ -792,10 +792,15 @@ public class Bach {
       log(DEBUG, "Tool '%s' successfully run.", tool.name());
     }
 
+    /** Create new process builder for the given command and inherit IO from current process. */
+    ProcessBuilder newProcessBuilder(String command) {
+      return new ProcessBuilder(command).inheritIO();
+    }
+
     void run(ProcessBuilder builder) {
       log(TRACE, "Run::run(%s)", builder);
       try {
-        var process = builder.inheritIO().start();
+        var process = builder.start();
         var code = process.waitFor();
         if (code != 0) {
           throw new Error("Process '" + process + "' failed with error code: " + code);

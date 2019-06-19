@@ -72,6 +72,11 @@ class TestRun extends Run {
     return testOffline;
   }
 
+  @Override
+  ProcessBuilder newProcessBuilder(String command) {
+    return new ProcessBuilder(command); // doesn't inherit IO
+  }
+
   List<String> outLines() {
     return out.toString().lines().collect(Collectors.toList());
   }

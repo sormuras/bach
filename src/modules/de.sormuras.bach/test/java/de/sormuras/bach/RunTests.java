@@ -110,8 +110,8 @@ class RunTests {
   class Process {
 
     @Test
-    void runJavaLauncherInDryRunMode() {
-      var command = new Command("java", "--dry-run", "src/bach/Bach.java");
+    void runJavaLauncherWithVersionOption() {
+      var command = new Command("java", "--version");
       assertDoesNotThrow(() -> test.run(command));
       assertLinesMatch(
           List.of(
@@ -132,7 +132,7 @@ class RunTests {
      */
     @Test
     void runJavaLauncherWithUnrecognizedOption() {
-      var command = new Command("java", "--unrecognized-option", "src/bach/Bach.java");
+      var command = new Command("java", "--unrecognized-option", "--version");
       var error = assertThrows(Error.class, () -> test.run(command));
       assertLinesMatch(
           List.of("Starting new process for 'java'", "Run::run\\(java.lang.ProcessBuilder@.+\\)"),
@@ -140,14 +140,6 @@ class RunTests {
       assertTrue(error.getMessage().endsWith("failed with error code: 1"), error.getMessage());
     }
 
-    /**
-     * Expected output.
-     *
-     * <pre><code>
-     *   Error: Could not find or load main class DoesNotExist.java
-     *   Caused by: java.lang.ClassNotFoundException: DoesNotExist.java
-     * </code></pre>
-     */
     @Test
     void runNonExistingProgram() {
       var command = new Command("does-not-exist");
