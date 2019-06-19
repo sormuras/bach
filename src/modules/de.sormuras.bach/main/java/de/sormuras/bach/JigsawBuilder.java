@@ -50,6 +50,10 @@ public /*STATIC*/ class JigsawBuilder {
 
   void compile(String realm, String... requiredRealms) throws Exception {
     var modules = bach.project.modules(realm);
+    if (modules.isEmpty()) {
+      bach.run.log(DEBUG, "No %s modules found", realm);
+      return;
+    }
     compile(realm, modules, requiredRealms);
   }
 
