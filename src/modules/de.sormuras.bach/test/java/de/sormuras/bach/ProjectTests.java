@@ -47,4 +47,15 @@ class ProjectTests {
     var e = assertThrows(IllegalArgumentException.class, () -> project.modulePath("r", "p", "r"));
     assertEquals("Cyclic realm dependency detected: r", e.getMessage());
   }
+
+  @Test
+  void modulesParsedFromUserDefinedModulesString() {
+    assertLinesMatch(List.of("a", "b", "c"), Project.modules("realm", " a  ,b, c ", Path.of("")));
+  }
+
+  @Test
+  void modulesFailsForScanningAnIllegalRootDirectory() {
+    var e = assertThrows(Error.class, () -> Project.modules("realm", "*", Path.of("x")));
+    assertEquals("Scanning directory for modules failed: java.nio.file.NoSuchFileException: x", e.getMessage());
+  }
 }
