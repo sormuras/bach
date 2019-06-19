@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T09:46:56.931124700Z
+// THIS FILE WAS GENERATED ON 2019-06-19T15:27:17.383067300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -95,6 +95,14 @@ public class Bach {
     run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
+  /** Build project. */
+  void build() throws Exception {
+    run.log(TRACE, "Bach::build()");
+    synchronize();
+    new JigsawBuilder(this).build();
+  }
+
+  /** Print help message with project information section. */
   void help() {
     run.log(TRACE, "Bach::help()");
     run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<task>...]");
@@ -152,7 +160,7 @@ public class Bach {
   /** Resolve required external assets, like 3rd-party modules. */
   void synchronize() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
-    synchronizeModuleUriProperties(run.home.resolve("lib"));
+    synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
 
@@ -370,6 +378,10 @@ public class Bach {
 
     void compile(String realm, String... requiredRealms) throws Exception {
       var modules = bach.project.modules(realm);
+      if (modules.isEmpty()) {
+        bach.run.log(DEBUG, "No %s modules found", realm);
+        return;
+      }
       compile(realm, modules, requiredRealms);
     }
 
@@ -598,6 +610,10 @@ public class Bach {
 
     static Properties newProperties(Path home) {
       var properties = new Properties(new DefaultProperties());
+      return loadProperties(properties, home);
+    }
+
+    static Properties loadProperties(Properties properties, Path home) {
       var names = new ArrayList<String>();
       if (home.getFileName() != null) {
         names.add(home.getFileName().toString());
@@ -785,7 +801,7 @@ public class Bach {
     static List<Task> of(List<String> args) {
       var tasks = new ArrayList<Task>();
       if (args.isEmpty()) {
-        tasks.add(Task.Default.HELP);
+        tasks.add(Default.BUILD);
       } else {
         var arguments = new ArrayDeque<>(args);
         while (!arguments.isEmpty()) {
@@ -798,7 +814,7 @@ public class Bach {
 
     /** Default task delegating to Bach API methods. */
     enum Default implements Task {
-      // BUILD(Bach::build, "Build modular Java project in base directory."),
+      BUILD(Bach::build, "Build modular Java project in base directory."),
       // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
       // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
