@@ -178,18 +178,41 @@ public /*STATIC*/ class Run {
 
   /** Run named tool, as loaded by {@link java.util.ServiceLoader} using the system class loader. */
   void run(String name, String... args) {
-    run(ToolProvider.findFirst(name).orElseThrow(), args);
+    var providedTool = ToolProvider.findFirst(name);
+    if (providedTool.isPresent()) {
+      var tool = providedTool.get();
+      log(DEBUG, "Running provided tool in-process: " + tool);
+      run(tool, args);
+      return;
+    }
+    log(DEBUG, "Starting new process for '%s'", name);
+    var builder = new ProcessBuilder(name);
+    builder.command().addAll(List.of(args));
+    run(builder);
   }
 
   /** Run provided tool. */
   void run(ToolProvider tool, String... args) {
     log(TRACE, "Run::run(%s, %s)", tool.name(), String.join(", ", args));
     var code = tool.run(out, err, args);
-    if (code == 0) {
-      log(DEBUG, "Tool '%s' successfully run.", tool.name());
-      return;
+    if (code != 0) {
+      throw new Error("Tool '" + tool.name() + "' run failed with error code: " + code);
     }
-    throw new Error("Tool '" + tool.name() + "' run failed with error code: " + code);
+    log(DEBUG, "Tool '%s' successfully run.", tool.name());
+  }
+
+  void run(ProcessBuilder builder) {
+    log(TRACE, "Run::run(%s)", builder);
+    try {
+      var process = builder.inheritIO().start();
+      var code = process.waitFor();
+      if (code != 0) {
+        throw new Error("Process '" + process + "' failed with error code: " + code);
+      }
+      log(DEBUG, "Process '%s' successfully terminated.", process);
+    } catch (Exception e) {
+      throw new Error("Starting process failed: " + e);
+    }
   }
 
   long toDurationMillis() {

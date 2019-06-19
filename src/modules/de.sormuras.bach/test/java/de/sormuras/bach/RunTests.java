@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.spi.ToolProvider;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -98,10 +99,66 @@ class RunTests {
     assertDoesNotThrow(() -> test.run(command));
     assertLinesMatch(
         List.of(
+            "Running provided tool in-process: com.sun.tools.javac.main.JavacToolProvider@.+",
             "Run::run(javac, --version)",
             "javac " + Runtime.version().feature() + ".*",
             "Tool 'javac' successfully run."),
         test.outLines());
+  }
+
+  @Nested
+  class Process {
+
+    @Test
+    void runJavaLauncherInDryRunMode() {
+      var command = new Command("java", "--dry-run", "src/bach/Bach.java");
+      assertDoesNotThrow(() -> test.run(command));
+      assertLinesMatch(
+          List.of(
+              "Starting new process for 'java'",
+              "Run::run\\(java.lang.ProcessBuilder@.+\\)",
+              "Process 'Process\\[pid=.+, exitValue=0\\]' successfully terminated."),
+          test.outLines());
+    }
+
+    /**
+     * Expected output.
+     *
+     * <pre><code>
+     *   Unrecognized option: --unrecognized-option
+     *   Error: Could not create the Java Virtual Machine.
+     *   Error: A fatal exception has occurred. Program will exit.
+     * </code></pre>
+     */
+    @Test
+    void runJavaLauncherWithUnrecognizedOption() {
+      var command = new Command("java", "--unrecognized-option", "src/bach/Bach.java");
+      var error = assertThrows(Error.class, () -> test.run(command));
+      assertLinesMatch(
+          List.of("Starting new process for 'java'", "Run::run\\(java.lang.ProcessBuilder@.+\\)"),
+          test.outLines());
+      assertTrue(error.getMessage().endsWith("failed with error code: 1"), error.getMessage());
+    }
+
+    /**
+     * Expected output.
+     *
+     * <pre><code>
+     *   Error: Could not find or load main class DoesNotExist.java
+     *   Caused by: java.lang.ClassNotFoundException: DoesNotExist.java
+     * </code></pre>
+     */
+    @Test
+    void runNonExistingProgram() {
+      var command = new Command("does-not-exist");
+      var error = assertThrows(Error.class, () -> test.run(command));
+      assertLinesMatch(
+          List.of(
+              "Starting new process for 'does-not-exist'",
+              "Run::run\\(java.lang.ProcessBuilder@.+\\)"),
+          test.outLines());
+      assertTrue(error.getMessage().startsWith("Starting process failed"), error.getMessage());
+    }
   }
 
   @Test
