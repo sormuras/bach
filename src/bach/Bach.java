@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T08:17:14.731464900Z
+// THIS FILE WAS GENERATED ON 2019-06-19T09:08:03.052423Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -555,21 +555,28 @@ public class Bach {
     }
 
     List<String> modules(String realm) {
-      var userDefinedModules = get(Property.MODULES);
-      if (!userDefinedModules.equals("*")) {
-        return List.of(userDefinedModules.split("\\s*,\\s*"));
+      return modules(realm, get(Property.MODULES), path(Property.PATH_SRC));
+    }
+
+    static List<String> modules(String realm, String userDefinedModules, Path sourceDirectory) {
+      if ("*".equals(userDefinedModules)) {
+        // Find modules for "src/.../*/${realm}/java"
+        var modules = new ArrayList<String>();
+        var descriptor = Path.of(realm, "java", "module-info.java");
+        DirectoryStream.Filter<Path> filter =
+            path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+        try (var stream = Files.newDirectoryStream(sourceDirectory, filter)) {
+          stream.forEach(directory -> modules.add(directory.getFileName().toString()));
+        } catch (Exception e) {
+          throw new Error("Scanning directory for modules failed: " + e);
+        }
+        return modules;
       }
-      // Find modules for "src/.../*/${realm}/java"
-      var modules = new ArrayList<String>();
-      var descriptor = Path.of(realm, "java", "module-info.java");
-      DirectoryStream.Filter<Path> filter =
-          path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-      try (var stream = Files.newDirectoryStream(path(Property.PATH_SRC), filter)) {
-        stream.forEach(directory -> modules.add(directory.getFileName().toString()));
-      } catch (Exception e) {
-        throw new Error(e);
+      var modules = userDefinedModules.split(",");
+      for (int i = 0; i < modules.length; i++) {
+        modules[i] = modules[i].strip();
       }
-      return modules;
+      return List.of(modules);
     }
 
     List<Path> modulePath(String realm, String phase, String... requiredRealms) {
