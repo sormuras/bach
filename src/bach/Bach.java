@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T06:40:16.883864600Z
+// THIS FILE WAS GENERATED ON 2019-06-19T08:17:14.731464900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -581,7 +581,7 @@ public class Bach {
       }
       for (var required : requiredRealms) {
         if (realm.equals(required)) {
-          throw new IllegalArgumentException("Cyclic realm dependency detected! " + realm);
+          throw new IllegalArgumentException("Cyclic realm dependency detected: " + realm);
         }
         path(Property.PATH_BIN).resolve(required).resolve("modules");
         result.addAll(modulePath(required, phase));
