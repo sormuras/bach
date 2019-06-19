@@ -75,6 +75,14 @@ public class Bach {
     run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
+  /** Build project. */
+  void build() throws Exception {
+    run.log(TRACE, "Bach::build()");
+    synchronize();
+    new JigsawBuilder(this).build();
+  }
+
+  /** Print help message with project information section. */
   void help() {
     run.log(TRACE, "Bach::help()");
     run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<task>...]");

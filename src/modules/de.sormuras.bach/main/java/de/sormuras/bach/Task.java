@@ -38,7 +38,7 @@ public interface Task {
   static List<Task> of(List<String> args) {
     var tasks = new ArrayList<Task>();
     if (args.isEmpty()) {
-      tasks.add(Task.Default.HELP);
+      tasks.add(Default.BUILD);
     } else {
       var arguments = new ArrayDeque<>(args);
       while (!arguments.isEmpty()) {
@@ -51,7 +51,7 @@ public interface Task {
 
   /** Default task delegating to Bach API methods. */
   enum Default implements Task {
-    // BUILD(Bach::build, "Build modular Java project in base directory."),
+    BUILD(Bach::build, "Build modular Java project in base directory."),
     // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
     // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
     HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
