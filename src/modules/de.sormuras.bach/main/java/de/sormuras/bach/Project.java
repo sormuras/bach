@@ -109,7 +109,7 @@ public /*STATIC*/ class Project {
     }
     for (var required : requiredRealms) {
       if (realm.equals(required)) {
-        throw new IllegalArgumentException("Cyclic realm dependency detected! " + realm);
+        throw new IllegalArgumentException("Cyclic realm dependency detected: " + realm);
       }
       path(Property.PATH_BIN).resolve(required).resolve("modules");
       result.addAll(modulePath(required, phase));

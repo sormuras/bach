@@ -18,8 +18,12 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -37,5 +41,10 @@ class ProjectTests {
     assertEquals(Path.of("lib"), project.path(Project.Property.PATH_LIB));
     assertEquals(Path.of("src"), project.path(Project.Property.PATH_SRC));
     assertEquals(name + ' ' + version, project.toString());
+
+    assertLinesMatch(List.of(), project.modules("realm"));
+    assertTrue(project.modulePath("realm", "phase").isEmpty());
+    var e = assertThrows(IllegalArgumentException.class, () -> project.modulePath("r", "p", "r"));
+    assertEquals("Cyclic realm dependency detected: r", e.getMessage());
   }
 }
