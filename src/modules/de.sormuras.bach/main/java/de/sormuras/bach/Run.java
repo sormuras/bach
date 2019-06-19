@@ -203,7 +203,11 @@ public /*STATIC*/ class Run {
 
   /** Create new process builder for the given command and inherit IO from current process. */
   ProcessBuilder newProcessBuilder(String command) {
-    return new ProcessBuilder(command).inheritIO();
+    var builder = new ProcessBuilder(command).inheritIO();
+    builder.environment().put("BACH_VERSION", Bach.VERSION);
+    builder.environment().put("BACH_HOME", home.toString());
+    builder.environment().put("BACH_WORK", work.toString());
+    return builder;
   }
 
   void run(ProcessBuilder builder) {

@@ -74,7 +74,10 @@ class TestRun extends Run {
 
   @Override
   ProcessBuilder newProcessBuilder(String command) {
-    return new ProcessBuilder(command); // doesn't inherit IO
+    return super.newProcessBuilder(command)
+        .redirectInput(ProcessBuilder.Redirect.PIPE)
+        .redirectOutput(ProcessBuilder.Redirect.PIPE)
+        .redirectError(ProcessBuilder.Redirect.PIPE);
   }
 
   List<String> outLines() {
