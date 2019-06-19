@@ -53,7 +53,7 @@ class ActionTests {
 
   @Test
   void actionsForEmptyListReturnsDefaultActions() {
-    assertEquals(List.of(Task.Default.HELP), Task.of(List.of()));
+    assertEquals(List.of(Task.Default.BUILD), Task.of(List.of()));
   }
 
   @Test
@@ -96,7 +96,7 @@ class ActionTests {
         List.of(
             "Usage of Bach.java (" + Bach.VERSION + "):  java Bach.java [<task>...]",
             "Available default tasks are:",
-            // " build        Build modular Java project in base directory.",
+            " build        Build modular Java project in base directory.",
             // " clean        Delete all generated assets - but keep caches intact.",
             // " erase        Delete all generated assets - and also delete caches.",
             " help         Print this help screen on standard out... F1, F1, F1!",

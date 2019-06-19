@@ -82,7 +82,7 @@ class RunTests {
             "out = java.io.PrintWriter@.+",
             "err = java.io.PrintWriter@.+",
             "start = .+",
-            "variables = {${test.key}=test.value}"),
+            "variables = .+"),
         lines);
   }
 

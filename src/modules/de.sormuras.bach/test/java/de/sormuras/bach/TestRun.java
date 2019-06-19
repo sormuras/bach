@@ -15,6 +15,7 @@ class TestRun extends Run {
   /** Force debug mode when running tests. */
   static class TestProperties extends Run.DefaultProperties {
     TestProperties(Path home, Path work) {
+      Run.loadProperties(this, home);
       setProperty("home", home.toString());
       setProperty("work", work.toString());
       setProperty("debug", "true");

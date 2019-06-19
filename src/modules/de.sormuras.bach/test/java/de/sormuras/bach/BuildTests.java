@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -33,10 +34,9 @@ class BuildTests {
     var bach = new Bach(test);
 
     try {
-      // bach.run(List.of(new JigsawBuilder(bach))); // TODO Use BUILD action constant.
-      new JigsawBuilder(bach).build();
+      bach.build();
     } catch (Throwable t) {
-      t.printStackTrace();
+      fail(t);
     }
 
     assertLinesMatch(List.of(), test.errLines());
