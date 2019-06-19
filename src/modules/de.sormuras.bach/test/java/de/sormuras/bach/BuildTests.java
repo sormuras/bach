@@ -47,7 +47,12 @@ class BuildTests {
             ">> BUILD MAIN MODULES >>",
             "Compiling test modules: [integration]",
             ">> BUILD TEST MODULES >>",
-            "Build successful."),
+            "Build successful.",
+            ">> JUNIT >>",
+            "[         4 tests successful      ]",
+            "[         0 tests failed          ]",
+            "",
+            "JUnit successful."),
         test.outLines());
     assertLinesMatch(
         List.of(

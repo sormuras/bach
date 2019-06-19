@@ -110,7 +110,10 @@ public /*STATIC*/ class Project {
   List<Path> modulePath(String realm, String phase, String... requiredRealms) {
     var lib = path(Property.PATH_LIB);
     var result = new ArrayList<Path>();
-    var candidates = List.of(realm, realm + "-" + phase + "-only");
+    if ("runtime".equals(phase)) {
+      result.add(path(Property.PATH_BIN).resolve(realm).resolve("modules"));
+    }
+    var candidates = List.of(realm, realm + "-" + phase + "-junit", realm + "-" + phase + "-only");
     for (var candidate : candidates) {
       result.add(lib.resolve(candidate));
     }

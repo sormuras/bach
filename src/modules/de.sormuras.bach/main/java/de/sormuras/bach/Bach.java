@@ -80,6 +80,7 @@ public class Bach {
     run.log(TRACE, "Bach::build()");
     synchronize();
     new JigsawBuilder(this).build();
+    new JUnitPlatformLauncher(this).call();
   }
 
   /** Print help message with project information section. */

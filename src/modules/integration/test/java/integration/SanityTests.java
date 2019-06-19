@@ -20,7 +20,7 @@ class SanityTests {
       List.of(
           ">> INITIALIZATION >>",
           "Bach::main([])",
-          "actions = [HELP]",
+          "tasks = [BUILD]",
           "Dry-run ends here.");
 
   @Test
