@@ -77,12 +77,12 @@ public class Bach {
 
   void help() {
     run.log(TRACE, "Bach::help()");
-    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
-    run.out.println("Available default actions are:");
-    for (var action : Action.Default.values()) {
-      var name = action.name().toLowerCase();
+    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<task>...]");
+    run.out.println("Available default tasks are:");
+    for (var task : Task.Default.values()) {
+      var name = task.name().toLowerCase();
       var text =
-          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
+          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), task.description);
       text.lines().forEach(run.out::println);
     }
     run.out.println("Project information");
@@ -92,40 +92,40 @@ public class Bach {
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
   int main(List<String> arguments) {
     run.log(TRACE, "Bach::main(%s)", arguments);
-    List<Action> actions;
+    List<Task> tasks;
     try {
-      actions = Action.of(arguments);
-      run.log(DEBUG, "actions = " + actions);
+      tasks = Task.of(arguments);
+      run.log(DEBUG, "tasks = " + tasks);
     } catch (IllegalArgumentException e) {
-      run.log(ERROR, "Converting arguments to actions failed: " + e);
+      run.log(ERROR, "Converting arguments to tasks failed: " + e);
       return 1;
     }
     if (run.dryRun) {
       run.log(INFO, "Dry-run ends here.");
       return 0;
     }
-    run(actions);
+    run(tasks);
     return 0;
   }
 
-  /** Execute a collection of actions sequentially on this instance. */
-  int run(Collection<? extends Action> actions) {
-    run.log(TRACE, "Bach::run(%s)", actions);
-    run.log(DEBUG, "Performing %d action(s)...", actions.size());
-    for (var action : actions) {
+  /** Execute a collection of tasks sequentially on this instance. */
+  int run(Collection<? extends Task> tasks) {
+    run.log(TRACE, "Bach::run(%s)", tasks);
+    run.log(DEBUG, "Performing %d task(s)...", tasks.size());
+    for (var task : tasks) {
       try {
-        run.log(TRACE, ">> %s", action);
-        action.perform(this);
-        run.log(TRACE, "<< %s", action);
+        run.log(TRACE, ">> %s", task);
+        task.perform(this);
+        run.log(TRACE, "<< %s", task);
       } catch (Exception exception) {
-        run.log(ERROR, "Action %s threw: %s", action, exception);
+        run.log(ERROR, "Task %s threw: %s", task, exception);
         if (run.debug) {
           exception.printStackTrace(run.err);
         }
         return 1;
       }
     }
-    run.log(DEBUG, "%s action(s) successfully performed.", actions.size());
+    run.log(DEBUG, "%s task(s) successfully performed.", tasks.size());
     return 0;
   }
 

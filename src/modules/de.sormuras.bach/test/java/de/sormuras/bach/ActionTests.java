@@ -36,12 +36,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 class ActionTests {
 
   @ParameterizedTest
-  @EnumSource(Action.Default.class)
-  void performDefaultActionOnEmptyDirectory(Action.Default action, @TempDir Path empty) {
+  @EnumSource(Task.Default.class)
+  void performDefaultActionOnEmptyDirectory(Task.Default action, @TempDir Path empty) {
     var test = new TestRun(empty, empty.resolve("work"));
     var bach = new Bach(test);
 
-    if (action.action == null) {
+    if (action.task == null) {
       assertThrows(NullPointerException.class, () -> action.perform(bach));
       return;
     }
@@ -53,14 +53,14 @@ class ActionTests {
 
   @Test
   void actionsForEmptyListReturnsDefaultActions() {
-    assertEquals(List.of(Action.Default.HELP), Action.of(List.of()));
+    assertEquals(List.of(Task.Default.HELP), Task.of(List.of()));
   }
 
   @Test
   void actionsForHelpReturnsDefaultAction() {
     assertEquals(
-        List.of(Action.Default.HELP, Action.Default.HELP, Action.Default.HELP),
-        Action.of(List.of("help", "Help", "HELP")));
+        List.of(Task.Default.HELP, Task.Default.HELP, Task.Default.HELP),
+        Task.of(List.of("help", "Help", "HELP")));
   }
 
   @Test
@@ -68,21 +68,21 @@ class ActionTests {
     var e =
         assertThrows(
             IllegalArgumentException.class,
-            () -> Action.of("java.lang.Object", new ArrayDeque<>()));
+            () -> Task.of("java.lang.Object", new ArrayDeque<>()));
     assertEquals(
-        "class java.lang.Object doesn't implement interface de.sormuras.bach.Action",
+        "class java.lang.Object doesn't implement interface de.sormuras.bach.Task",
         e.getMessage());
   }
 
   @Test
   void actionForNestedNoopClass() {
-    var action = Action.of(Noop.class.getName(), new ArrayDeque<>());
+    var action = Task.of(Noop.class.getName(), new ArrayDeque<>());
     assertSame(Noop.class, action.getClass());
   }
 
   @Test
   void toolConsumesArgumentsAndCreatesNewActionInstance() {
-    var action = Action.Default.TOOL;
+    var action = Task.Default.TOOL;
     var arguments = new ArrayDeque<>(List.of("a", "z"));
     assertNotSame(action, action.consume(arguments));
     assertEquals("[]", arguments.toString());
@@ -94,8 +94,8 @@ class ActionTests {
     new Bach().help();
     assertLinesMatch(
         List.of(
-            "Usage of Bach.java (" + Bach.VERSION + "):  java Bach.java [<action>...]",
-            "Available default actions are:",
+            "Usage of Bach.java (" + Bach.VERSION + "):  java Bach.java [<task>...]",
+            "Available default tasks are:",
             // " build        Build modular Java project in base directory.",
             // " clean        Delete all generated assets - but keep caches intact.",
             // " erase        Delete all generated assets - and also delete caches.",
@@ -129,12 +129,12 @@ class ActionTests {
     Files.writeString(sub.resolve("module-uri.properties"), "a=" + a.toUri() + "\nb=" + b.toUri());
 
     test.log(System.Logger.Level.TRACE, "[1]");
-    Action.Default.SYNC.perform(bach);
+    Task.Default.SYNC.perform(bach);
 
     var empty = Files.createDirectories(lib.resolve("empty"));
     Files.writeString(empty.resolve("module-uri.properties"), "# empty, i.e. no key-value pairs");
     test.log(System.Logger.Level.TRACE, "[2]");
-    Action.Default.SYNC.perform(bach);
+    Task.Default.SYNC.perform(bach);
 
     assertLinesMatch(
         List.of(
@@ -151,7 +151,7 @@ class ActionTests {
     assertEquals(0, test.errLines().size(), test.toString());
   }
 
-  public static class Noop implements Action {
+  public static class Noop implements Task {
 
     @Override
     public void perform(Bach bach) {}

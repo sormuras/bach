@@ -71,62 +71,62 @@ class BachTests {
   @Test
   @SwallowSystem
   @ExpectSystemExitWithStatus(1)
-  void callingStaticMainWithIllegalActionNameExitsSystemWithErrorStatus1(SwallowSystem.Streams __) {
-    Bach.main("unsupported action");
+  void callingStaticMainWithIllegalTaskNameExitsSystemWithErrorStatus1(SwallowSystem.Streams __) {
+    Bach.main("unsupported task");
   }
 
   @Test
-  void runEmptyCollectionOfArgumentsPerformsDefaultAction() {
+  void runEmptyCollectionOfArgumentsPerformsDefaultTask() {
     assertEquals(0, bach.main(List.of()));
     assertLinesMatch(
         List.of(
             ">> INITIALIZATION >>",
-            "Performing 1 action(s)...",
-            ">> DEFAULT ACTION LINES >>",
-            "1 action(s) successfully performed."),
+            "Performing 1 task(s)...",
+            ">> DEFAULT TASK LINES >>",
+            "1 task(s) successfully performed."),
         test.outLines());
   }
 
   @Test
-  void runEmptyCollectionOfActions() {
+  void runEmptyCollectionOfTasks() {
     assertEquals(0, bach.run(List.of()));
     assertLinesMatch(
         List.of(
             ">> INITIALIZATION >>",
             "Bach::run([])",
-            "Performing 0 action(s)...",
-            "0 action(s) successfully performed."),
+            "Performing 0 task(s)...",
+            "0 task(s) successfully performed."),
         test.outLines());
   }
 
   @Test
-  void runNoopActionReturnsZero() {
+  void runNoopTaskReturnsZero() {
     assertEquals(0, bach.run(List.of(bach -> {})));
     assertLinesMatch(
         List.of(
             ">> INITIALIZATION >>",
             "Bach::run.+",
-            "Performing 1 action(s)...",
+            "Performing 1 task(s)...",
             "\\Q>> de.sormuras.bach.BachTests$$Lambda$\\E.+",
             "\\Q<< de.sormuras.bach.BachTests$$Lambda$\\E.+",
-            "1 action(s) successfully performed."),
+            "1 task(s) successfully performed."),
         test.outLines());
   }
 
   @Test
-  void runThrowingAction() {
-    var action = new ThrowingAction();
-    assertEquals(1, bach.run(List.of(action)));
+  void runThrowingTask() {
+    var task = new ThrowingTask();
+    assertEquals(1, bach.run(List.of(task)));
     assertLinesMatch(
         List.of(
             ">> INITIALIZATION >>",
             "Bach::run.+",
-            "Performing 1 action(s)...",
-            "\\Q>> de.sormuras.bach.BachTests$ThrowingAction@\\E.+"),
+            "Performing 1 task(s)...",
+            "\\Q>> de.sormuras.bach.BachTests$ThrowingTask@\\E.+"),
         test.outLines());
     assertLinesMatch(
         List.of(
-            "Action " + action + " threw: java.lang.UnsupportedOperationException: 123",
+            "Task " + task + " threw: java.lang.UnsupportedOperationException: 123",
             "java.lang.UnsupportedOperationException: 123",
             ">> STACKTRACE >>"),
         test.errLines());
@@ -137,7 +137,7 @@ class BachTests {
     assertEquals("Bach (" + Bach.VERSION + ")", bach.toString());
   }
 
-  private static class ThrowingAction implements Action {
+  private static class ThrowingTask implements Task {
 
     @Override
     public void perform(Bach bach) {

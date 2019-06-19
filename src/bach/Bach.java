@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T09:08:03.052423Z
+// THIS FILE WAS GENERATED ON 2019-06-19T09:46:56.931124700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -97,12 +97,12 @@ public class Bach {
 
   void help() {
     run.log(TRACE, "Bach::help()");
-    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<action>...]");
-    run.out.println("Available default actions are:");
-    for (var action : Action.Default.values()) {
-      var name = action.name().toLowerCase();
+    run.out.println("Usage of Bach.java (" + VERSION + "):  java Bach.java [<task>...]");
+    run.out.println("Available default tasks are:");
+    for (var task : Task.Default.values()) {
+      var name = task.name().toLowerCase();
       var text =
-          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), action.description);
+          String.format(" %-9s    ", name) + String.join('\n' + " ".repeat(14), task.description);
       text.lines().forEach(run.out::println);
     }
     run.out.println("Project information");
@@ -112,40 +112,40 @@ public class Bach {
   /** Main entry-point, by convention, a zero status code indicates normal termination. */
   int main(List<String> arguments) {
     run.log(TRACE, "Bach::main(%s)", arguments);
-    List<Action> actions;
+    List<Task> tasks;
     try {
-      actions = Action.of(arguments);
-      run.log(DEBUG, "actions = " + actions);
+      tasks = Task.of(arguments);
+      run.log(DEBUG, "tasks = " + tasks);
     } catch (IllegalArgumentException e) {
-      run.log(ERROR, "Converting arguments to actions failed: " + e);
+      run.log(ERROR, "Converting arguments to tasks failed: " + e);
       return 1;
     }
     if (run.dryRun) {
       run.log(INFO, "Dry-run ends here.");
       return 0;
     }
-    run(actions);
+    run(tasks);
     return 0;
   }
 
-  /** Execute a collection of actions sequentially on this instance. */
-  int run(Collection<? extends Action> actions) {
-    run.log(TRACE, "Bach::run(%s)", actions);
-    run.log(DEBUG, "Performing %d action(s)...", actions.size());
-    for (var action : actions) {
+  /** Execute a collection of tasks sequentially on this instance. */
+  int run(Collection<? extends Task> tasks) {
+    run.log(TRACE, "Bach::run(%s)", tasks);
+    run.log(DEBUG, "Performing %d task(s)...", tasks.size());
+    for (var task : tasks) {
       try {
-        run.log(TRACE, ">> %s", action);
-        action.perform(this);
-        run.log(TRACE, "<< %s", action);
+        run.log(TRACE, ">> %s", task);
+        task.perform(this);
+        run.log(TRACE, "<< %s", task);
       } catch (Exception exception) {
-        run.log(ERROR, "Action %s threw: %s", action, exception);
+        run.log(ERROR, "Task %s threw: %s", task, exception);
         if (run.debug) {
           exception.printStackTrace(run.err);
         }
         return 1;
       }
     }
-    run.log(DEBUG, "%s action(s) successfully performed.", actions.size());
+    run.log(DEBUG, "%s task(s) successfully performed.", tasks.size());
     return 0;
   }
 
@@ -197,98 +197,6 @@ public class Bach {
   @Override
   public String toString() {
     return "Bach (" + VERSION + ")";
-  }
-
-  /** Bach consuming no-arg action operating via side-effects. */
-  @FunctionalInterface
-  public interface Action {
-
-    /** Performs this action on the given Bach instance. */
-    void perform(Bach bach) throws Exception;
-
-    /** Transform a name and arguments into an action object. */
-    static Action of(String name, Deque<String> arguments) {
-      // try {
-      //   var method = Bach.class.getMethod(name);
-      //   return bach -> method.invoke(bach);
-      // } catch (ReflectiveOperationException e) {
-      //   // fall-through
-      // }
-      try {
-        var actionClass = Class.forName(name);
-        if (Action.class.isAssignableFrom(actionClass)) {
-          return (Action) actionClass.getConstructor().newInstance();
-        }
-        throw new IllegalArgumentException(actionClass + " doesn't implement " + Action.class);
-      } catch (ReflectiveOperationException e) {
-        // fall-through
-      }
-      var defaultAction = Action.Default.valueOf(name.toUpperCase());
-      return defaultAction.consume(arguments);
-    }
-
-    /** Transform strings to actions. */
-    static List<Action> of(List<String> args) {
-      var actions = new ArrayList<Action>();
-      if (args.isEmpty()) {
-        actions.add(Action.Default.HELP);
-      } else {
-        var arguments = new ArrayDeque<>(args);
-        while (!arguments.isEmpty()) {
-          var argument = arguments.removeFirst();
-          actions.add(of(argument, arguments));
-        }
-      }
-      return actions;
-    }
-
-    /** Default action delegating to Bach API methods. */
-    enum Default implements Action {
-      // BUILD(Bach::build, "Build modular Java project in base directory."),
-      // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
-      // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
-      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
-      // LAUNCH(Bach::launch, "Start project's main program."),
-      SYNC(Bach::synchronize, "Resolve required external assets, like 3rd-party modules."),
-      TOOL(
-          null,
-          "Run named tool consuming all remaining arguments:",
-          "  tool <name> <args...>",
-          "  tool java --show-version Program.java") {
-        /** Return new Action running the named tool and consuming all remaining arguments. */
-        @Override
-        Action consume(Deque<String> arguments) {
-          var name = arguments.removeFirst();
-          var args = arguments.toArray(String[]::new);
-          arguments.clear();
-          return bach -> bach.run.run(name, args);
-        }
-      };
-
-      final Action action;
-      final String[] description;
-
-      Default(Action action, String... description) {
-        this.action = action;
-        this.description = description;
-      }
-
-      @Override
-      public void perform(Bach bach) throws Exception {
-        //        var key = "bach.action." + name().toLowerCase() + ".enabled";
-        //        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
-        //        if (!enabled) {
-        //          bach.run.info("Action " + name() + " disabled.");
-        //          return;
-        //        }
-        action.perform(bach);
-      }
-
-      /** Return this default action instance without consuming any argument. */
-      Action consume(Deque<String> arguments) {
-        return this;
-      }
-    }
   }
 
   /** Command-line program argument list builder. */
@@ -842,6 +750,98 @@ public class Bach {
       consumer.accept("err = " + err);
       consumer.accept("start = " + start);
       consumer.accept("variables = " + variables);
+    }
+  }
+
+  /** Bach consuming no-arg task operating via side-effects. */
+  @FunctionalInterface
+  public interface Task {
+
+    /** Performs this task on the given Bach instance. */
+    void perform(Bach bach) throws Exception;
+
+    /** Transform a name and arguments into a task object. */
+    static Task of(String name, Deque<String> arguments) {
+      // try {
+      //   var method = Bach.class.getMethod(name);
+      //   return bach -> method.invoke(bach);
+      // } catch (ReflectiveOperationException e) {
+      //   // fall-through
+      // }
+      try {
+        var taskClass = Class.forName(name);
+        if (Task.class.isAssignableFrom(taskClass)) {
+          return (Task) taskClass.getConstructor().newInstance();
+        }
+        throw new IllegalArgumentException(taskClass + " doesn't implement " + Task.class);
+      } catch (ReflectiveOperationException e) {
+        // fall-through
+      }
+      var defaultTask = Task.Default.valueOf(name.toUpperCase());
+      return defaultTask.consume(arguments);
+    }
+
+    /** Transform strings to tasks. */
+    static List<Task> of(List<String> args) {
+      var tasks = new ArrayList<Task>();
+      if (args.isEmpty()) {
+        tasks.add(Task.Default.HELP);
+      } else {
+        var arguments = new ArrayDeque<>(args);
+        while (!arguments.isEmpty()) {
+          var argument = arguments.removeFirst();
+          tasks.add(of(argument, arguments));
+        }
+      }
+      return tasks;
+    }
+
+    /** Default task delegating to Bach API methods. */
+    enum Default implements Task {
+      // BUILD(Bach::build, "Build modular Java project in base directory."),
+      // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
+      // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
+      HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
+      // LAUNCH(Bach::launch, "Start project's main program."),
+      SYNC(Bach::synchronize, "Resolve required external assets, like 3rd-party modules."),
+      TOOL(
+          null,
+          "Run named tool consuming all remaining arguments:",
+          "  tool <name> <args...>",
+          "  tool java --show-version Program.java") {
+        /** Return new Task instance running the named tool and consuming all remaining arguments. */
+        @Override
+        Task consume(Deque<String> arguments) {
+          var name = arguments.removeFirst();
+          var args = arguments.toArray(String[]::new);
+          arguments.clear();
+          return bach -> bach.run.run(name, args);
+        }
+      };
+
+      final Task task;
+      final String[] description;
+
+      Default(Task task, String... description) {
+        this.task = task;
+        this.description = description;
+      }
+
+      @Override
+      public void perform(Bach bach) throws Exception {
+        //        var key = "bach.task." + name().toLowerCase() + ".enabled";
+        //        var enabled = Boolean.parseBoolean(bach.get(key, "true"));
+        //        if (!enabled) {
+        //          bach.run.info("Task " + name() + " disabled.");
+        //          return;
+        //        }
+        task.perform(bach);
+      }
+
+      /** Return this default task instance without consuming any argument. */
+      Task consume(Deque<String> arguments) {
+        return this;
+      }
     }
   }
 }
