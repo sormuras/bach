@@ -33,58 +33,56 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class ActionTests {
+class TaskTests {
 
   @ParameterizedTest
   @EnumSource(Task.Default.class)
-  void performDefaultActionOnEmptyDirectory(Task.Default action, @TempDir Path empty) {
+  void performDefaultTaskOnEmptyDirectory(Task.Default task, @TempDir Path empty) {
     var test = new TestRun(empty, empty.resolve("work"));
     var bach = new Bach(test);
 
-    if (action.task == null) {
-      assertThrows(NullPointerException.class, () -> action.perform(bach));
+    if (task.task == null) {
+      assertThrows(NullPointerException.class, () -> task.perform(bach));
       return;
     }
-    assertDoesNotThrow(() -> action.perform(bach));
+    assertDoesNotThrow(() -> task.perform(bach));
     var arguments = new ArrayDeque<>(List.of("a", "z"));
-    assertSame(action, action.consume(arguments));
+    assertSame(task, task.consume(arguments));
     assertEquals("[a, z]", arguments.toString());
   }
 
   @Test
-  void actionsForEmptyListReturnsDefaultActions() {
+  void tasksForEmptyListReturnsDefaultTasks() {
     assertEquals(List.of(Task.Default.BUILD), Task.of(List.of()));
   }
 
   @Test
-  void actionsForHelpReturnsDefaultAction() {
+  void tasksForHelpReturnsDefaultTask() {
     assertEquals(
         List.of(Task.Default.HELP, Task.Default.HELP, Task.Default.HELP),
         Task.of(List.of("help", "Help", "HELP")));
   }
 
   @Test
-  void actionForObjectFails() {
+  void taskForObjectFails() {
     var e =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> Task.of("java.lang.Object", new ArrayDeque<>()));
+            IllegalArgumentException.class, () -> Task.of("java.lang.Object", new ArrayDeque<>()));
     assertEquals(
-        "class java.lang.Object doesn't implement interface de.sormuras.bach.Task",
-        e.getMessage());
+        "class java.lang.Object doesn't implement interface de.sormuras.bach.Task", e.getMessage());
   }
 
   @Test
-  void actionForNestedNoopClass() {
-    var action = Task.of(Noop.class.getName(), new ArrayDeque<>());
-    assertSame(Noop.class, action.getClass());
+  void taskForNestedNoopClass() {
+    var task = Task.of(Noop.class.getName(), new ArrayDeque<>());
+    assertSame(Noop.class, task.getClass());
   }
 
   @Test
-  void toolConsumesArgumentsAndCreatesNewActionInstance() {
-    var action = Task.Default.TOOL;
+  void toolConsumesArgumentsAndCreatesNewTaskInstance() {
+    var task = Task.Default.TOOL;
     var arguments = new ArrayDeque<>(List.of("a", "z"));
-    assertNotSame(action, action.consume(arguments));
+    assertNotSame(task, task.consume(arguments));
     assertEquals("[]", arguments.toString());
   }
 
