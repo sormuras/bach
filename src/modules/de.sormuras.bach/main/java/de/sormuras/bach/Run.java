@@ -92,6 +92,10 @@ public /*STATIC*/ class Run {
 
   static Properties newProperties(Path home) {
     var properties = new Properties(new DefaultProperties());
+    return loadProperties(properties, home);
+  }
+
+  static Properties loadProperties(Properties properties, Path home) {
     var names = new ArrayList<String>();
     if (home.getFileName() != null) {
       names.add(home.getFileName().toString());
