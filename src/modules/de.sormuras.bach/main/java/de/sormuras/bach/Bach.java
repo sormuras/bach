@@ -132,7 +132,7 @@ public class Bach {
   /** Resolve required external assets, like 3rd-party modules. */
   void synchronize() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
-    synchronizeModuleUriProperties(run.home.resolve("lib"));
+    synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
 
