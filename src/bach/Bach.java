@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-19T20:47:56.222741100Z
+// THIS FILE WAS GENERATED ON 2019-06-20T03:11:23.259159300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -527,7 +527,9 @@ public class Bach {
         var args = junit.toStringArray();
         var result = execute.invoke(null, new PrintStream(out), new PrintStream(err), args);
         run.out.write(out.toString());
+        run.out.flush();
         run.err.write(err.toString());
+        run.err.flush();
         var code = (int) result.getClass().getMethod("getExitCode").invoke(result);
         if (code != 0) {
           throw new AssertionError("JUnit run exited with code " + code);
