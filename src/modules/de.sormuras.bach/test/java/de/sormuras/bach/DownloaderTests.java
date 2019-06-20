@@ -25,6 +25,7 @@ class DownloaderTests {
     assertEquals("a.b", Downloader.extractFileName(URI.create(uri)));
   }
 
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   @Test
   void extractFileNameFromContentDispositionHeaderField() throws Exception {
     var uri = URI.create("https://github.com/sormuras/bach/archive/master.zip");
@@ -41,7 +42,7 @@ class DownloaderTests {
     assertTrue(e.getMessage().contains("URI is not absolute"));
   }
 
-  @DisabledIfSystemProperty(named = "bach.offline", matches = "true")
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   @ParameterizedTest
   @ValueSource(strings = {"http", "https"})
   void downloadLicenseFromApacheOrg(String protocol, @TempDir Path temp) throws Exception {

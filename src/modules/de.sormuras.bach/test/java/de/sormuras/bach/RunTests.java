@@ -77,7 +77,7 @@ class RunTests {
             "work = '" + work + "' -> " + work.toUri(),
             "debug = true",
             "dry-run = false",
-            "offline = false",
+            "offline = " + test.isOffline(),
             "threshold = ALL",
             "out = java.io.PrintWriter@.+",
             "err = java.io.PrintWriter@.+",

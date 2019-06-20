@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -115,6 +116,7 @@ class TaskTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   void sync(@TempDir Path temp) throws Exception {
     var test = new TestRun(temp, temp);
     var bach = new Bach(test);
