@@ -76,13 +76,13 @@ class BachTests {
   }
 
   @Test
-  void runEmptyCollectionOfArgumentsPerformsDefaultTask() {
-    assertEquals(0, bach.main(List.of()));
+  void runHelpTaskViaName() {
+    assertEquals(0, bach.main(List.of("help")));
     assertLinesMatch(
         List.of(
             ">> INITIALIZATION >>",
             "Performing 1 task(s)...",
-            ">> DEFAULT TASK LINES >>",
+            ">> HELP TASK LINES >>",
             "1 task(s) successfully performed."),
         test.outLines());
   }
