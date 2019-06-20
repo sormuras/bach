@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-20T03:23:01.837539900Z
+// THIS FILE WAS GENERATED ON 2019-06-20T03:48:51.191279800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -169,6 +169,10 @@ public class Bach {
   /** Resolve required external assets, like 3rd-party modules. */
   void synchronize() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
+    if (run.isOffline()) {
+      run.log(INFO, "Offline mode is active, no synchronization.");
+      return;
+    }
     synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
