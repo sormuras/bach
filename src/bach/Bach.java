@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-20T03:11:23.259159300Z
+// THIS FILE WAS GENERATED ON 2019-06-20T03:23:01.837539900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -362,72 +362,6 @@ public class Bach {
     }
   }
 
-  /** Build, i.e. compile and package, a modular Java project. */
-  public static class JigsawBuilder {
-
-    final Bach bach;
-    final Path bin;
-    final Path lib;
-    final Path src;
-    final String version;
-
-    JigsawBuilder(Bach bach) {
-      this.bach = bach;
-      this.version = bach.project.version;
-      this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
-      this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
-      this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
-    }
-
-     void build() throws Exception {
-      compile("main");
-      compile("test", "main");
-      bach.run.log(DEBUG, "Build successful.");
-    }
-
-    void compile(String realm, String... requiredRealms) throws Exception {
-      var modules = bach.project.modules(realm);
-      if (modules.isEmpty()) {
-        bach.run.log(DEBUG, "No %s modules found", realm);
-        return;
-      }
-      compile(realm, modules, requiredRealms);
-    }
-
-    void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
-      bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
-
-      var classes = bin.resolve(realm + "/classes");
-      var jars = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
-
-      var modulePath = new ArrayList<>(bach.project.modulePath(realm, "compile", requiredRealms));
-      modulePath.add(jars);
-      for (var requiredRealm : requiredRealms) {
-        modulePath.add(bin.resolve(requiredRealm + "/modules"));
-      }
-
-      bach.run.run(
-          new Command("javac")
-              .add("-d", classes)
-              .add("--module-path", modulePath)
-              .add("--module-source-path", src + "/*/" + realm + "/java")
-              .add("--module-version", version)
-              .add("--module", String.join(",", modules)));
-
-      for (var module : modules) {
-        var resources = src.resolve(Path.of(module, realm, "resources"));
-        bach.run.run(
-            new Command("jar")
-                .add("--create")
-                .addIff(bach.run.debug, "--verbose")
-                .add("--file", jars.resolve(module + '-' + version + ".jar"))
-                .add("-C", classes.resolve(module))
-                .add(".")
-                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
-      }
-    }
-  }
-
   /** Launch the JUnit Platform Console using compiled test modules. */
   public static class JUnitPlatformLauncher implements Callable<Integer> {
 
@@ -538,6 +472,72 @@ public class Bach {
         throw new Error("ConsoleLauncher.execute(...) failed: " + t, t);
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
+      }
+    }
+  }
+
+  /** Build, i.e. compile and package, a modular Java project. */
+  public static class JigsawBuilder {
+
+    final Bach bach;
+    final Path bin;
+    final Path lib;
+    final Path src;
+    final String version;
+
+    JigsawBuilder(Bach bach) {
+      this.bach = bach;
+      this.version = bach.project.version;
+      this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
+      this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
+      this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
+    }
+
+     void build() throws Exception {
+      compile("main");
+      compile("test", "main");
+      bach.run.log(DEBUG, "Build successful.");
+    }
+
+    void compile(String realm, String... requiredRealms) throws Exception {
+      var modules = bach.project.modules(realm);
+      if (modules.isEmpty()) {
+        bach.run.log(DEBUG, "No %s modules found", realm);
+        return;
+      }
+      compile(realm, modules, requiredRealms);
+    }
+
+    void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
+      bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
+
+      var classes = bin.resolve(realm + "/classes");
+      var jars = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+
+      var modulePath = new ArrayList<>(bach.project.modulePath(realm, "compile", requiredRealms));
+      modulePath.add(jars);
+      for (var requiredRealm : requiredRealms) {
+        modulePath.add(bin.resolve(requiredRealm + "/modules"));
+      }
+
+      bach.run.run(
+          new Command("javac")
+              .add("-d", classes)
+              .add("--module-path", modulePath)
+              .add("--module-source-path", src + "/*/" + realm + "/java")
+              .add("--module-version", version)
+              .add("--module", String.join(",", modules)));
+
+      for (var module : modules) {
+        var resources = src.resolve(Path.of(module, realm, "resources"));
+        bach.run.run(
+            new Command("jar")
+                .add("--create")
+                .addIff(bach.run.debug, "--verbose")
+                .add("--file", jars.resolve(module + '-' + version + ".jar"))
+                .add("-C", classes.resolve(module))
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
       }
     }
   }
