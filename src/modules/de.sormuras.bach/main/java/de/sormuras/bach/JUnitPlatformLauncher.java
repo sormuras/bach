@@ -114,7 +114,9 @@ public /*STATIC*/ class JUnitPlatformLauncher implements Callable<Integer> {
       var args = junit.toStringArray();
       var result = execute.invoke(null, new PrintStream(out), new PrintStream(err), args);
       run.out.write(out.toString());
+      run.out.flush();
       run.err.write(err.toString());
+      run.err.flush();
       var code = (int) result.getClass().getMethod("getExitCode").invoke(result);
       if (code != 0) {
         throw new AssertionError("JUnit run exited with code " + code);
