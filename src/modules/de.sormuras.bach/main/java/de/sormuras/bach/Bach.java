@@ -141,6 +141,10 @@ public class Bach {
   /** Resolve required external assets, like 3rd-party modules. */
   void synchronize() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
+    if (run.isOffline()) {
+      run.log(INFO, "Offline mode is active, no synchronization.");
+      return;
+    }
     synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
