@@ -6,9 +6,6 @@ install:
 
 script:
 - jshell --execution local ./build.jsh
-- java -Debug src/bach/Bach.java sync
-#- TEST="$(java src/bach/Bach.java sync Bach\$JigsawBuilder)"
-#- $TEST
 
 after_success:
 - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
