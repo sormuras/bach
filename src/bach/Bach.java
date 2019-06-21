@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-20T03:48:51.191279800Z
+// THIS FILE WAS GENERATED ON 2019-06-21T21:20:19.651540900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -90,7 +90,7 @@ public class Bach {
   }
 
   public Bach(Run run) {
-    this(run, Project.of(run.home));
+    this(run, Project.of(run.home, run.work));
   }
 
   public Bach(Run run, Project project) {
@@ -173,7 +173,7 @@ public class Bach {
       run.log(INFO, "Offline mode is active, no synchronization.");
       return;
     }
-    synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
+    synchronizeModuleUriProperties(project.lib);
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
 
@@ -506,7 +506,7 @@ public class Bach {
     void compile(String realm, String... requiredRealms) throws Exception {
       var modules = bach.project.modules(realm);
       if (modules.isEmpty()) {
-        bach.run.log(DEBUG, "No %s modules found", realm);
+        bach.run.log(DEBUG, "No %s modules found.", realm);
         return;
       }
       compile(realm, modules, requiredRealms);
@@ -557,7 +557,7 @@ public class Bach {
       VERSION(
           "1.0.0-SNAPSHOT",
           "Version of the project. Passed to '--module-version' and other options."),
-      MODULES("*", "List of modules to build. '*' means all in PATH_SRC_MODULES."),
+      MODULES("*", "List of modules to build. '*' means all in PATH_SRC."),
       PATH_BIN("bin", "Destination directory to store binary assets to."),
       PATH_LIB("lib", "Root directory of 3rd-party modules."),
       PATH_SRC("src", "This directory contains all Java module sources."),
@@ -582,19 +582,26 @@ public class Bach {
       }
     }
 
-    public static Project of(Path home) {
-      var homeName = "" + home.toAbsolutePath().normalize().getFileName();
-      return new Project(Run.newProperties(home), homeName);
+    public static Project of(Path home, Path work) {
+      return new Project(home, work);
     }
 
     final Properties properties;
     final String name;
     final String version;
 
-    private Project(Properties properties, String defaultName) {
-      this.properties = properties;
-      this.name = Property.NAME.get(properties, defaultName);
+    final Path bin;
+    final Path lib;
+    final Path src;
+
+    private Project(Path home, Path work) {
+      this.properties = Run.newProperties(home);
+      this.name = Property.NAME.get(properties, "" + home.toAbsolutePath().normalize().getFileName());
       this.version = Property.VERSION.get(properties);
+
+      this.bin = work.resolve(path(Property.PATH_BIN));
+      this.lib = home.resolve(path(Property.PATH_LIB));
+      this.src = home.resolve(path(Property.PATH_SRC));
     }
 
     String get(Property property) {
@@ -602,12 +609,15 @@ public class Bach {
     }
 
     List<String> modules(String realm) {
-      return modules(realm, get(Property.MODULES), path(Property.PATH_SRC));
+      return modules(realm, get(Property.MODULES), src);
     }
 
     static List<String> modules(String realm, String userDefinedModules, Path sourceDirectory) {
       if ("*".equals(userDefinedModules)) {
         // Find modules for "src/.../*/${realm}/java"
+        if (Files.notExists(sourceDirectory)) {
+          return List.of();
+        }
         var modules = new ArrayList<String>();
         var descriptor = Path.of(realm, "java", "module-info.java");
         DirectoryStream.Filter<Path> filter =
@@ -627,10 +637,9 @@ public class Bach {
     }
 
     List<Path> modulePath(String realm, String phase, String... requiredRealms) {
-      var lib = path(Property.PATH_LIB);
       var result = new ArrayList<Path>();
       if ("runtime".equals(phase)) {
-        result.add(path(Property.PATH_BIN).resolve(realm).resolve("modules"));
+        result.add(bin.resolve(realm).resolve("modules"));
       }
       var candidates = List.of(realm, realm + "-" + phase + "-junit", realm + "-" + phase + "-only");
       for (var candidate : candidates) {
@@ -640,7 +649,7 @@ public class Bach {
         if (realm.equals(required)) {
           throw new IllegalArgumentException("Cyclic realm dependency detected: " + realm);
         }
-        path(Property.PATH_BIN).resolve(required).resolve("modules");
+        bin.resolve(required).resolve("modules");
         result.addAll(modulePath(required, phase));
       }
       result.removeIf(Files::notExists);
