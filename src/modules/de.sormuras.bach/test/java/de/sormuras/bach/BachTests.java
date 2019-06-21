@@ -58,7 +58,7 @@ class BachTests {
 
   @Test
   @SwallowSystem
-  void callingStaticVoidMainDoesNotThrow(SwallowSystem.Streams streams) {
+  void callingStaticVoidMainDoesNotThrow() {
     var dryRun = "Dry-run".substring(1);
     try {
       System.setProperty(dryRun, "");
@@ -71,7 +71,7 @@ class BachTests {
   @Test
   @SwallowSystem
   @ExpectSystemExitWithStatus(1)
-  void callingStaticMainWithIllegalTaskNameExitsSystemWithErrorStatus1(SwallowSystem.Streams __) {
+  void callingStaticMainWithIllegalTaskNameExitsSystemWithErrorStatus1() {
     Bach.main("unsupported task");
   }
 

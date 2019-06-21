@@ -9,6 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -24,17 +25,28 @@ import org.junit.jupiter.api.parallel.Resources;
 @ExtendWith(SwallowSystem.Extension.class)
 public @interface SwallowSystem {
 
-  class Extension implements ParameterResolver {
+  class Extension implements BeforeEachCallback, ParameterResolver {
 
     @Override
-    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext context) {
-      return parameterContext.getParameter().getType() == Streams.class;
+    public void beforeEach(ExtensionContext context) {
+      getOrComputeStreamsIfAbsent(context);
     }
 
     @Override
-    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext context) {
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext context) {
+      var isTestMethod = context.getTestMethod().isPresent();
+      var isStreamsParameter = parameterContext.getParameter().getType() == Streams.class;
+      return isTestMethod && isStreamsParameter;
+    }
+
+    @Override
+    public Streams resolveParameter(ParameterContext parameterContext, ExtensionContext context) {
+      return getOrComputeStreamsIfAbsent(context);
+    }
+
+    private Streams getOrComputeStreamsIfAbsent(ExtensionContext context) {
       var store = context.getStore(Namespace.create(getClass(), context.getRequiredTestMethod()));
-      return store.getOrComputeIfAbsent(Streams.class, key -> new Streams());
+      return store.getOrComputeIfAbsent(Streams.class);
     }
   }
 
