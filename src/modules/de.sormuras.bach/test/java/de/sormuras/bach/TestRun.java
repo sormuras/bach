@@ -57,7 +57,7 @@ class TestRun extends Run {
   }
 
   private TestRun(Path home, Path work, StringWriter out, StringWriter err) {
-    super(new TestProperties(home, work), new PrintWriter(out), new PrintWriter(err));
+    super(new TestProperties(home, work), new PrintWriter(out, true), new PrintWriter(err, true));
     this.out = out;
     this.err = err;
     this.testOffline = super.isOffline();
