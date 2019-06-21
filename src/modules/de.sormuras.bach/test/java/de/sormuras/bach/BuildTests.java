@@ -17,35 +17,82 @@
 
 package de.sormuras.bach;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class BuildTests {
 
   @Test
-  void buildBach(@TempDir Path work) {
-    var home = Path.of("");
-    var test = new TestRun(home, work);
-    var bach = new Bach(test);
+  void buildMinimalProject(@TempDir Path temp) throws Exception {
+    var src = Files.createDirectories(temp.resolve("src"));
+    var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
+    Files.write(m.resolve("module-info.java"), List.of("module m {}"));
 
-    try {
-      bach.build();
-    } catch (Throwable t) {
-      fail(t);
-    }
+    assertLinesMatch(
+        List.of(
+            "src",
+            ">>>>",
+            "src/m/main/java/module-info.java"),
+        TestRun.treeWalk(temp));
+
+    var test = new TestRun(temp, temp);
+    var bach = new Bach(test);
+    assertDoesNotThrow(bach::build, test::toString); // not test.toString()
 
     assertLinesMatch(List.of(), test.errLines());
     assertLinesMatch(
         List.of(
             ">> INIT >>",
-            "Compiling main modules: [de.sormuras.bach]",
+            "Compiling main modules: [m]",
             ">> BUILD MAIN MODULES >>",
-            "Compiling test modules: [integration]",
+            "No test modules found.",
+            "Build successful."),
+        test.outLines());
+    assertLinesMatch(
+        List.of(
+            ">>>>",
+            "main/classes/m/module-info.class",
+            "main/modules",
+            "main/modules/m-1.0.0-SNAPSHOT.jar"),
+        TestRun.treeWalk(temp.resolve(bach.project.path(Project.Property.PATH_BIN))));
+  }
+
+  @Test
+  @Disabled
+  void buildMinimalProjectWithTest(@TempDir Path temp) throws Exception {
+    var src = Files.createDirectories(temp.resolve("src"));
+    var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
+    var t = Files.createDirectories(src.resolve("t").resolve("test").resolve("java"));
+    Files.write(m.resolve("module-info.java"), List.of("module m {}"));
+    Files.write(t.resolve("module-info.java"), List.of("open module t {}"));
+
+    assertLinesMatch(
+        List.of(
+            "src",
+            ">>>>",
+            "src/m/main/java/module-info.java",
+            ">>>>",
+            "src/t/test/java/module-info.java"),
+        TestRun.treeWalk(temp));
+
+    var test = new TestRun(temp, temp);
+    var bach = new Bach(test);
+    assertDoesNotThrow(bach::build, test::toString); // not test.toString()
+
+    assertLinesMatch(List.of(), test.errLines());
+    assertLinesMatch(
+        List.of(
+            ">> INIT >>",
+            "Compiling main modules: [m]",
+            ">> BUILD MAIN MODULES >>",
+            "Compiling test modules: [t]",
             ">> BUILD TEST MODULES >>",
             "Build successful.",
             ">> JUNIT >>",
@@ -65,6 +112,6 @@ class BuildTests {
             "target/bach/main/modules/de.sormuras.bach-" + Bach.VERSION + ".jar",
             ">>>>",
             "target/bach/test/modules/integration-" + Bach.VERSION + ".jar"),
-        TestRun.treeWalk(work));
+        TestRun.treeWalk(temp));
   }
 }
