@@ -32,15 +32,16 @@ class ProjectTests {
 
   @Test
   void defaultPropertiesInAnEmptyDirectory(@TempDir Path empty) {
-    var project = Project.of(empty);
+    var project = Project.of(empty, empty);
     var name = empty.getFileName().toString();
     var version = "1.0.0-SNAPSHOT";
     assertEquals(name, project.name);
     assertEquals(version, project.version);
+    assertEquals("{}", project.properties.toString());
     assertEquals("*", project.get(Project.Property.MODULES));
-    assertEquals(Path.of("bin"), project.path(Project.Property.PATH_BIN));
-    assertEquals(Path.of("lib"), project.path(Project.Property.PATH_LIB));
-    assertEquals(Path.of("src"), project.path(Project.Property.PATH_SRC));
+    assertEquals(empty.resolve("bin"), project.bin);
+    assertEquals(empty.resolve("lib"),  project.lib);
+    assertEquals(empty.resolve("src"), project.src);
     assertEquals(name + ' ' + version, project.toString());
 
     assertLinesMatch(List.of(), project.modules("realm"));

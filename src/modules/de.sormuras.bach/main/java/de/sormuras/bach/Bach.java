@@ -62,7 +62,7 @@ public class Bach {
   }
 
   public Bach(Run run) {
-    this(run, Project.of(run.home));
+    this(run, Project.of(run.home, run.work));
   }
 
   public Bach(Run run, Project project) {
@@ -145,7 +145,7 @@ public class Bach {
       run.log(INFO, "Offline mode is active, no synchronization.");
       return;
     }
-    synchronizeModuleUriProperties(run.home.resolve(project.path(Project.Property.PATH_LIB)));
+    synchronizeModuleUriProperties(project.lib);
     // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
   }
 
