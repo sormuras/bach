@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,11 @@ class ProjectTests {
 
   @Test
   void modulesFailsForScanningAnIllegalRootDirectory() {
-    var e = assertThrows(Error.class, () -> Project.modules("realm", "*", Path.of("x")));
-    assertEquals("Scanning directory for modules failed: java.nio.file.NoSuchFileException: x", e.getMessage());
+    var readme = Path.of("README.md");
+    assertTrue(Files.isRegularFile(readme), "Not a regular file?! " + readme);
+    var e = assertThrows(Error.class, () -> Project.modules("realm", "*", readme));
+    assertEquals(
+        "Scanning directory for modules failed: java.nio.file.NotDirectoryException: README.md",
+        e.getMessage());
   }
 }

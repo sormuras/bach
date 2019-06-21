@@ -89,6 +89,9 @@ public /*STATIC*/ class Project {
   static List<String> modules(String realm, String userDefinedModules, Path sourceDirectory) {
     if ("*".equals(userDefinedModules)) {
       // Find modules for "src/.../*/${realm}/java"
+      if (Files.notExists(sourceDirectory)) {
+        return List.of();
+      }
       var modules = new ArrayList<String>();
       var descriptor = Path.of(realm, "java", "module-info.java");
       DirectoryStream.Filter<Path> filter =
