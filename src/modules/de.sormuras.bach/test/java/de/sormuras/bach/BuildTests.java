@@ -19,11 +19,12 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -65,8 +66,8 @@ class BuildTests {
   }
 
   @Test
-  @Disabled
   void buildMinimalProjectWithTest(@TempDir Path temp) throws Exception {
+    Files.write(temp.resolve(".properties"), List.of("path.lib=" + Bach.USER_PATH.resolve("lib").toUri()));
     var src = Files.createDirectories(temp.resolve("src"));
     var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
     var t = Files.createDirectories(src.resolve("t").resolve("test").resolve("java"));
@@ -75,6 +76,7 @@ class BuildTests {
 
     assertLinesMatch(
         List.of(
+            ".properties",
             "src",
             ">>>>",
             "src/m/main/java/module-info.java",
@@ -82,11 +84,11 @@ class BuildTests {
             "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
 
-    var test = new TestRun(temp, temp);
+    var test = new TestRun(temp, temp).setOffline(true); // don't sync, using Bach's "lib" directory
     var bach = new Bach(test);
-    assertDoesNotThrow(bach::build, test::toString); // not test.toString()
-
-    assertLinesMatch(List.of(), test.errLines());
+    var e = assertThrows(Error.class, bach::build, test::toString); // not test.toString()
+    assertTrue(e.getMessage().startsWith("No tests found:"));
+    assertLinesMatch(List.of("No tests found.+"), test.errLines());
     assertLinesMatch(
         List.of(
             ">> INIT >>",
@@ -96,22 +98,21 @@ class BuildTests {
             ">> BUILD TEST MODULES >>",
             "Build successful.",
             ">> JUNIT >>",
-            "[         4 tests successful      ]",
+            "[         0 tests successful      ]",
             "[         0 tests failed          ]",
-            "",
-            "JUnit successful."),
+            ""),
         test.outLines());
     assertLinesMatch(
         List.of(
-            "target",
-            ">>>>",
-            "target/bach/main/classes/de.sormuras.bach/de/sormuras/bach/Bach.class",
-            ">>>>",
-            "target/bach/main/classes/de.sormuras.bach/module-info.class",
-            ">>>>",
-            "target/bach/main/modules/de.sormuras.bach-" + Bach.VERSION + ".jar",
-            ">>>>",
-            "target/bach/test/modules/integration-" + Bach.VERSION + ".jar"),
+            ".properties",
+                "bin",
+                ">> BIN MAIN >>",
+                "bin/main/modules/m-1.0.0-SNAPSHOT.jar",
+                ">> BIN MAIN >>",
+                "bin/test/modules/t-1.0.0-SNAPSHOT.jar",
+                "src",
+                ">> SOURCES >>",
+                "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
   }
 }
