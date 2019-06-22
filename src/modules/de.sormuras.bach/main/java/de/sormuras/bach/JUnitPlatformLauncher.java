@@ -2,6 +2,7 @@ package de.sormuras.bach;
 
 import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -118,13 +119,25 @@ public /*STATIC*/ class JUnitPlatformLauncher implements Callable<Integer> {
       run.err.write(err.toString());
       run.err.flush();
       var code = (int) result.getClass().getMethod("getExitCode").invoke(result);
-      if (code != 0) {
-        throw new AssertionError("JUnit run exited with code " + code);
+      if (code == 0) {
+        return;
       }
-    } catch (Throwable t) {
-      throw new Error("ConsoleLauncher.execute(...) failed: " + t, t);
+      if (code == 1) {
+        throwAssertionError("Test failure(s) detected: ", junit);
+      }
+      if (code == 2) {
+        throwAssertionError("No tests found: %s", junit);
+      }
+      throw new AssertionError("JUnit run exited with code " + code);
+    } catch (Exception e) {
+      throw new Error("ConsoleLauncher.execute(...) failed: " + e, e);
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
     }
+  }
+
+  private void throwAssertionError(String format, Object... args) {
+    run.log(ERROR, format, args);
+    throw new AssertionError(String.format(format, args));
   }
 }
