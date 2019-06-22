@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-21T21:20:19.651540900Z
+// THIS FILE WAS GENERATED ON 2019-06-22T08:37:50.414358500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -107,7 +107,7 @@ public class Bach {
   void build() throws Exception {
     run.log(TRACE, "Bach::build()");
     synchronize();
-    new JigsawBuilder(this).build();
+    new JigsawBuilder(this).call();
     new JUnitPlatformLauncher(this).call();
   }
 
@@ -469,19 +469,31 @@ public class Bach {
         run.err.write(err.toString());
         run.err.flush();
         var code = (int) result.getClass().getMethod("getExitCode").invoke(result);
-        if (code != 0) {
-          throw new AssertionError("JUnit run exited with code " + code);
+        if (code == 0) {
+          return;
         }
-      } catch (Throwable t) {
-        throw new Error("ConsoleLauncher.execute(...) failed: " + t, t);
+        if (code == 1) {
+          throwAssertionError("Test failure(s) detected: ", junit);
+        }
+        if (code == 2) {
+          throwAssertionError("No tests found: %s", junit);
+        }
+        throw new AssertionError("JUnit run exited with code " + code);
+      } catch (Exception e) {
+        throw new Error("ConsoleLauncher.execute(...) failed: " + e, e);
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
       }
     }
+
+    private void throwAssertionError(String format, Object... args) {
+      run.log(ERROR, format, args);
+      throw new AssertionError(String.format(format, args));
+    }
   }
 
   /** Build, i.e. compile and package, a modular Java project. */
-  public static class JigsawBuilder {
+  public static class JigsawBuilder implements Callable<Integer> {
 
     final Bach bach;
     final Path bin;
@@ -497,10 +509,11 @@ public class Bach {
       this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
     }
 
-     void build() throws Exception {
+     public Integer call() throws Exception {
       compile("main");
       compile("test", "main");
       bach.run.log(DEBUG, "Build successful.");
+      return 0;
     }
 
     void compile(String realm, String... requiredRealms) throws Exception {
@@ -657,7 +670,13 @@ public class Bach {
     }
 
     Path path(Property property) {
-      return Path.of(get(property));
+      var value = get(property);
+      try {
+        return Path.of(URI.create(value));
+      } catch (IllegalArgumentException e) {
+        // fall-through
+      }
+      return Path.of(value);
     }
 
     @Override
