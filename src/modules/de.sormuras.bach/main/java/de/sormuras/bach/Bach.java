@@ -79,7 +79,7 @@ public class Bach {
   void build() throws Exception {
     run.log(TRACE, "Bach::build()");
     synchronize();
-    new JigsawBuilder(this).build();
+    new JigsawBuilder(this).call();
     new JUnitPlatformLauncher(this).call();
   }
 

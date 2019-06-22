@@ -23,10 +23,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /*BODY*/
 /** Build, i.e. compile and package, a modular Java project. */
-public /*STATIC*/ class JigsawBuilder {
+public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
 
   final Bach bach;
   final Path bin;
@@ -42,10 +43,11 @@ public /*STATIC*/ class JigsawBuilder {
     this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
   }
 
-   void build() throws Exception {
+   public Integer call() throws Exception {
     compile("main");
     compile("test", "main");
     bach.run.log(DEBUG, "Build successful.");
+    return 0;
   }
 
   void compile(String realm, String... requiredRealms) throws Exception {
