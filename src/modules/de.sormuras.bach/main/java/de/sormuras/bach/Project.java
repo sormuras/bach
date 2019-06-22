@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +139,13 @@ public /*STATIC*/ class Project {
   }
 
   Path path(Property property) {
-    return Path.of(get(property));
+    var value = get(property);
+    try {
+      return Path.of(URI.create(value));
+    } catch (IllegalArgumentException e) {
+      // fall-through
+    }
+    return Path.of(value);
   }
 
   @Override
