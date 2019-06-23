@@ -23,12 +23,10 @@ public /*STATIC*/ class JUnitPlatformLauncher implements Callable<Integer> {
   final Run run;
   final Path bin;
   final Path lib;
-  final String version;
 
   JUnitPlatformLauncher(Bach bach) {
     this.bach = bach;
     this.run = bach.run;
-    this.version = bach.project.version;
     this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
     this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
   }
