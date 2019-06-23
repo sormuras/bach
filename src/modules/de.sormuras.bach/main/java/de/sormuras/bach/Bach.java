@@ -71,12 +71,19 @@ public class Bach {
     run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
-  /** Build project. */
+  /** Build project: synchronize, compile, test, document. */
   void build() throws Exception {
     run.log(TRACE, "Bach::build()");
     sync();
+    compile();
+    test();
+    run.log(DEBUG, "Build successful.");
+  }
+
+  /** Compile modules. */
+  void compile() throws Exception {
+    run.log(TRACE, "Bach::compile()");
     new JigsawBuilder(this).call();
-    new JUnitPlatformLauncher(this).call();
   }
 
   /** Print help message with project information section. */
@@ -137,6 +144,12 @@ public class Bach {
   void sync() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
     new Synchronizer(this).call();
+  }
+
+  /** Launch the JUnit Platform Console. */
+  void test() throws Exception {
+    run.log(TRACE, "Bach::test()");
+    new JUnitPlatformLauncher(this).call();
   }
 
   @Override
