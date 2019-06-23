@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-22T08:37:50.414358500Z
+// THIS FILE WAS GENERATED ON 2019-06-23T05:29:22.154646400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -103,12 +103,19 @@ public class Bach {
     run.toStrings(line -> run.log(TRACE, "  %s", line));
   }
 
-  /** Build project. */
+  /** Build project: synchronize, compile, test, document. */
   void build() throws Exception {
     run.log(TRACE, "Bach::build()");
-    synchronize();
+    sync();
+    compile();
+    test();
+    run.log(DEBUG, "Build successful.");
+  }
+
+  /** Compile modules. */
+  void compile() throws Exception {
+    run.log(TRACE, "Bach::compile()");
     new JigsawBuilder(this).call();
-    new JUnitPlatformLauncher(this).call();
   }
 
   /** Print help message with project information section. */
@@ -141,8 +148,7 @@ public class Bach {
       run.log(INFO, "Dry-run ends here.");
       return 0;
     }
-    run(tasks);
-    return 0;
+    return run(tasks);
   }
 
   /** Execute a collection of tasks sequentially on this instance. */
@@ -167,52 +173,15 @@ public class Bach {
   }
 
   /** Resolve required external assets, like 3rd-party modules. */
-  void synchronize() throws Exception {
+  void sync() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
-    if (run.isOffline()) {
-      run.log(INFO, "Offline mode is active, no synchronization.");
-      return;
-    }
-    synchronizeModuleUriProperties(project.lib);
-    // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
+    new Synchronizer(this).call();
   }
 
-  private void synchronizeModuleUriProperties(Path root) throws Exception {
-    run.log(DEBUG, "Synchronizing 3rd-party module uris below %s", root);
-    if (Files.notExists(root)) {
-      run.log(DEBUG, "Directory %s doesn't exist, not synchronizing.", root);
-      return;
-    }
-    var paths = new ArrayList<Path>();
-    try (var stream = Files.walk(root)) {
-      stream
-          .filter(path -> path.getFileName().toString().equals("module-uri.properties"))
-          .forEach(paths::add);
-    }
-    var synced = new ArrayList<Path>();
-    for (var path : paths) {
-      var directory = path.getParent();
-      var downloader = new Downloader(run, directory);
-      var properties = new Properties();
-      try (var stream = Files.newInputStream(path)) {
-        properties.load(stream);
-      }
-      if (properties.isEmpty()) {
-        run.log(DEBUG, "No module uri declared in %s", path.toUri());
-        continue;
-      }
-      run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
-      for (var value : properties.values()) {
-        var string = run.replaceVariables(value.toString());
-        var uri = URI.create(string);
-        uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
-        run.log(DEBUG, "Syncing %s", uri);
-        var target = downloader.download(uri);
-        synced.add(target);
-        run.log(DEBUG, " o %s", target.toUri());
-      }
-    }
-    run.log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+  /** Launch the JUnit Platform Console. */
+  void test() throws Exception {
+    run.log(TRACE, "Bach::test()");
+    new JUnitPlatformLauncher(this).call();
   }
 
   @Override
@@ -373,18 +342,17 @@ public class Bach {
     final Run run;
     final Path bin;
     final Path lib;
-    final String version;
 
     JUnitPlatformLauncher(Bach bach) {
       this.bach = bach;
       this.run = bach.run;
-      this.version = bach.project.version;
       this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
       this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
     }
 
     @Override
     public Integer call() throws Exception {
+      run.log(TRACE, "JUnitPlatformLauncher::call()");
       var modules = bach.project.modules("test");
       if (modules.isEmpty()) {
         return 0;
@@ -509,10 +477,10 @@ public class Bach {
       this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
     }
 
-     public Integer call() throws Exception {
+    public Integer call() throws Exception {
+      bach.run.log(TRACE, "JigsawBuilder::call()");
       compile("main");
       compile("test", "main");
-      bach.run.log(DEBUG, "Build successful.");
       return 0;
     }
 
@@ -523,6 +491,7 @@ public class Bach {
         return;
       }
       compile(realm, modules, requiredRealms);
+      bach.run.log(DEBUG, "Jigsaw %s compilation successful.", realm);
     }
 
     void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
@@ -927,6 +896,67 @@ public class Bach {
     }
   }
 
+  /** Launch the JUnit Platform Console using compiled test modules. */
+  public static class Synchronizer implements Callable<Integer> {
+
+    final Bach bach;
+    final Run run;
+
+    Synchronizer(Bach bach) {
+      this.bach = bach;
+      this.run = bach.run;
+    }
+
+    /** Resolve required external assets, like 3rd-party modules. */
+    @Override
+    public Integer call() throws Exception {
+      run.log(TRACE, "Synchronizer::call()");
+      if (run.isOffline()) {
+        run.log(INFO, "Offline mode is active, no synchronization.");
+        return 0;
+      }
+      sync(bach.project.lib, "module-uri.properties");
+      // TODO syncMissingLibrariesByParsingModuleDescriptors();
+      return 0;
+    }
+
+    private void sync(Path root, String fileName) throws Exception {
+      run.log(DEBUG, "Synchronizing 3rd-party module uris below: %s", root.toUri());
+      if (Files.notExists(root)) {
+        run.log(DEBUG, "Not synchronizing because directory doesn't exist: %s", root);
+        return;
+      }
+      var paths = new ArrayList<Path>();
+      try (var stream = Files.walk(root)) {
+        stream.filter(path -> path.getFileName().toString().equals(fileName)).forEach(paths::add);
+      }
+      var synced = new ArrayList<Path>();
+      for (var path : paths) {
+        var directory = path.getParent();
+        var downloader = new Downloader(run, directory);
+        var properties = new Properties();
+        try (var stream = Files.newInputStream(path)) {
+          properties.load(stream);
+        }
+        if (properties.isEmpty()) {
+          run.log(DEBUG, "No module uri declared in %s", path.toUri());
+          continue;
+        }
+        run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
+        for (var value : properties.values()) {
+          var string = run.replaceVariables(value.toString());
+          var uri = URI.create(string);
+          uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
+          run.log(DEBUG, "Syncing %s", uri);
+          var target = downloader.download(uri);
+          synced.add(target);
+          run.log(DEBUG, " o %s", target.toUri());
+        }
+      }
+      run.log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+    }
+  }
+
   /** Bach consuming no-arg task operating via side-effects. */
   @FunctionalInterface
   public interface Task {
@@ -973,11 +1003,13 @@ public class Bach {
     /** Default task delegating to Bach API methods. */
     enum Default implements Task {
       BUILD(Bach::build, "Build modular Java project in base directory."),
+      COMPILE(Bach::compile, "Compile (javac and jar) sources to binary assets."),
       // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
       // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
       // LAUNCH(Bach::launch, "Start project's main program."),
-      SYNC(Bach::synchronize, "Resolve required external assets, like 3rd-party modules."),
+      SYNC(Bach::sync, "Resolve required external assets, like 3rd-party modules."),
+      TEST(Bach::test, "Launch the JUnit Platform Console scanning modules for tests."),
       TOOL(
           null,
           "Run named tool consuming all remaining arguments:",
