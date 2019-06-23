@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-23T05:29:22.154646400Z
+// THIS FILE WAS GENERATED ON 2019-06-23T07:19:45.585699300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -413,7 +413,6 @@ public class Bach {
     }
 
     private void launchJUnitPlatformConsole(Run run, ClassLoader loader, Command junit) {
-      run.log(DEBUG, "__CHECK__");
       run.log(DEBUG, "Launching JUnit Platform Console: %s", junit.list);
       run.log(DEBUG, "Using class loader: %s - %s", loader.getName(), loader);
       var currentThread = Thread.currentThread();
@@ -498,10 +497,11 @@ public class Bach {
       bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
 
       var classes = bin.resolve(realm + "/classes");
-      var jars = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+      var binModules = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+      var binSources = Files.createDirectories(bin.resolve(realm + "/sources"));
 
       var modulePath = new ArrayList<>(bach.project.modulePath(realm, "compile", requiredRealms));
-      modulePath.add(jars);
+      modulePath.add(binModules);
       for (var requiredRealm : requiredRealms) {
         modulePath.add(bin.resolve(requiredRealm + "/modules"));
       }
@@ -520,8 +520,16 @@ public class Bach {
             new Command("jar")
                 .add("--create")
                 .addIff(bach.run.debug, "--verbose")
-                .add("--file", jars.resolve(module + '-' + version + ".jar"))
+                .add("--file", binModules.resolve(module + '-' + version + ".jar"))
                 .add("-C", classes.resolve(module))
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
+        bach.run.run(
+            new Command("jar")
+                .add("--create")
+                .addIff(bach.run.debug, "--verbose")
+                .add("--file", binSources.resolve(module + '-' + version + "-sources.jar"))
+                .add("-C", src.resolve(Path.of(module, realm, "java")))
                 .add(".")
                 .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
       }
