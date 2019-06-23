@@ -97,6 +97,7 @@ class TaskTests {
             "Available default tasks are:",
             " build        Build modular Java project in base directory.",
             " compile      Compile (javac and jar) sources to binary assets.",
+            " document     Generate documentation for this project.",
             // " clean        Delete all generated assets - but keep caches intact.",
             // " erase        Delete all generated assets - and also delete caches.",
             " help         Print this help screen on standard out... F1, F1, F1!",

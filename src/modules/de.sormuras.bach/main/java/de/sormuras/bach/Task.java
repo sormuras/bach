@@ -53,6 +53,7 @@ public interface Task {
   enum Default implements Task {
     BUILD(Bach::build, "Build modular Java project in base directory."),
     COMPILE(Bach::compile, "Compile (javac and jar) sources to binary assets."),
+    DOCUMENT(Bach::document, "Generate documentation for this project."),
     // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
     // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
     HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),

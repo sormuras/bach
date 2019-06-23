@@ -79,12 +79,12 @@ public /*STATIC*/ class Run {
   }
 
   /** Create default Run instance in user's current directory. */
-  public static Run system() {
+  static Run system() {
     return system(Path.of(""));
   }
 
   /** Create default Run instance in given home directory. */
-  public static Run system(Path home) {
+  static Run system(Path home) {
     var out = new PrintWriter(System.out, true, UTF_8);
     var err = new PrintWriter(System.err, true, UTF_8);
     return new Run(newProperties(home), out, err);

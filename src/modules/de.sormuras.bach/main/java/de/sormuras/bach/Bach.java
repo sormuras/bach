@@ -77,6 +77,7 @@ public class Bach {
     sync();
     compile();
     test();
+    document();
     run.log(DEBUG, "Build successful.");
   }
 
@@ -84,6 +85,12 @@ public class Bach {
   void compile() throws Exception {
     run.log(TRACE, "Bach::compile()");
     new JigsawBuilder(this).call();
+  }
+
+  /** Generate documentation for given modular realm. */
+  void document() throws Exception {
+    run.log(TRACE, "Bach::document()");
+    new DocumentationGenerator(this).call();
   }
 
   /** Print help message with project information section. */

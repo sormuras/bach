@@ -36,8 +36,7 @@ class BuildTests {
     var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
     Files.write(m.resolve("module-info.java"), List.of("module m {}"));
 
-    assertLinesMatch(
-        List.of("src/m/main/java/module-info.java"), TestRun.treeWalk(temp));
+    assertLinesMatch(List.of("src/m/main/java/module-info.java"), TestRun.treeWalk(temp));
 
     var test = new TestRun(temp, temp);
     var bach = new Bach(test);
@@ -56,6 +55,7 @@ class BuildTests {
     assertLinesMatch(
         List.of(
             "main/classes/m/module-info.class",
+            ">> main/javadoc/**/ >>",
             "main/modules/m-1.0.0-SNAPSHOT.jar",
             "main/sources/m-1.0.0-SNAPSHOT-sources.jar"),
         TestRun.treeWalk(temp.resolve(bach.project.path(Project.Property.PATH_BIN))));
@@ -73,9 +73,7 @@ class BuildTests {
 
     assertLinesMatch(
         List.of(
-            ".properties",
-            "src/m/main/java/module-info.java",
-            "src/t/test/java/module-info.java"),
+            ".properties", "src/m/main/java/module-info.java", "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
 
     var test = new TestRun(temp, temp).setOffline(true); // don't sync, using Bach's "lib" directory
