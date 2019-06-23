@@ -37,7 +37,7 @@ class BuildTests {
     Files.write(m.resolve("module-info.java"), List.of("module m {}"));
 
     assertLinesMatch(
-        List.of("src", ">>>>", "src/m/main/java/module-info.java"), TestRun.treeWalk(temp));
+        List.of("src/m/main/java/module-info.java"), TestRun.treeWalk(temp));
 
     var test = new TestRun(temp, temp);
     var bach = new Bach(test);
@@ -55,10 +55,9 @@ class BuildTests {
         test.outLines());
     assertLinesMatch(
         List.of(
-            ">>>>",
             "main/classes/m/module-info.class",
-            "main/modules",
-            "main/modules/m-1.0.0-SNAPSHOT.jar"),
+            "main/modules/m-1.0.0-SNAPSHOT.jar",
+            "main/sources/m-1.0.0-SNAPSHOT-sources.jar"),
         TestRun.treeWalk(temp.resolve(bach.project.path(Project.Property.PATH_BIN))));
   }
 
@@ -75,10 +74,7 @@ class BuildTests {
     assertLinesMatch(
         List.of(
             ".properties",
-            "src",
-            ">>>>",
             "src/m/main/java/module-info.java",
-            ">>>>",
             "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
 
@@ -104,13 +100,14 @@ class BuildTests {
     assertLinesMatch(
         List.of(
             ".properties",
-            "bin",
-            ">> BIN MAIN >>",
+            "bin/main/classes/m/module-info.class",
             "bin/main/modules/m-1.0.0-SNAPSHOT.jar",
-            ">> BIN MAIN >>",
+            "bin/main/sources/m-1.0.0-SNAPSHOT-sources.jar",
+            "bin/test/classes/t/module-info.class",
+            ">> TEST REPORTS >>",
             "bin/test/modules/t-1.0.0-SNAPSHOT.jar",
-            "src",
-            ">> SOURCES >>",
+            "bin/test/sources/t-1.0.0-SNAPSHOT-sources.jar",
+            "src/m/main/java/module-info.java",
             "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
   }

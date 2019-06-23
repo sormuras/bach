@@ -65,10 +65,11 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
     bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
 
     var classes = bin.resolve(realm + "/classes");
-    var jars = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+    var binModules = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
+    var binSources = Files.createDirectories(bin.resolve(realm + "/sources"));
 
     var modulePath = new ArrayList<>(bach.project.modulePath(realm, "compile", requiredRealms));
-    modulePath.add(jars);
+    modulePath.add(binModules);
     for (var requiredRealm : requiredRealms) {
       modulePath.add(bin.resolve(requiredRealm + "/modules"));
     }
@@ -87,8 +88,16 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
           new Command("jar")
               .add("--create")
               .addIff(bach.run.debug, "--verbose")
-              .add("--file", jars.resolve(module + '-' + version + ".jar"))
+              .add("--file", binModules.resolve(module + '-' + version + ".jar"))
               .add("-C", classes.resolve(module))
+              .add(".")
+              .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(bach.run.debug, "--verbose")
+              .add("--file", binSources.resolve(module + '-' + version + "-sources.jar"))
+              .add("-C", src.resolve(Path.of(module, realm, "java")))
               .add(".")
               .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add(".")));
     }
