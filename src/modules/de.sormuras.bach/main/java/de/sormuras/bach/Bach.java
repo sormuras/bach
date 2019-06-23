@@ -113,8 +113,7 @@ public class Bach {
       run.log(INFO, "Dry-run ends here.");
       return 0;
     }
-    run(tasks);
-    return 0;
+    return run(tasks);
   }
 
   /** Execute a collection of tasks sequentially on this instance. */
