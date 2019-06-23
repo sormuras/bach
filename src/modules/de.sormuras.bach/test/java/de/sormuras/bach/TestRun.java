@@ -25,15 +25,21 @@ class TestRun extends Run {
 
   /** Walk directory tree structure. */
   static List<String> treeWalk(Path root) {
+    return treeWalk(root, Files::isRegularFile);
+  }
+
+  /** Walk directory tree structure. */
+  static List<String> treeWalk(Path root, Predicate<? super Path> filter) {
     var lines = new ArrayList<String>();
-    treeWalk(root, lines::add);
+    treeWalk(root, filter, lines::add);
     return lines;
   }
 
   /** Walk directory tree structure. */
-  static void treeWalk(Path root, Consumer<String> out) {
+  static void treeWalk(Path root, Predicate<? super Path> filter, Consumer<String> out) {
     try (var stream = Files.walk(root)) {
       stream
+          .filter(filter)
           .map(root::relativize)
           .map(path -> path.toString().replace('\\', '/'))
           .sorted()
