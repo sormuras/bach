@@ -52,11 +52,13 @@ public interface Task {
   /** Default task delegating to Bach API methods. */
   enum Default implements Task {
     BUILD(Bach::build, "Build modular Java project in base directory."),
+    COMPILE(Bach::compile, "Compile (javac and jar) sources to binary assets."),
     // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
     // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
     HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
     // LAUNCH(Bach::launch, "Start project's main program."),
     SYNC(Bach::sync, "Resolve required external assets, like 3rd-party modules."),
+    TEST(Bach::test, "Launch the JUnit Platform Console scanning modules for tests."),
     TOOL(
         null,
         "Run named tool consuming all remaining arguments:",
