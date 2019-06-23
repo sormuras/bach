@@ -78,7 +78,7 @@ public class Bach {
   /** Build project. */
   void build() throws Exception {
     run.log(TRACE, "Bach::build()");
-    synchronize();
+    sync();
     new JigsawBuilder(this).call();
     new JUnitPlatformLauncher(this).call();
   }
@@ -138,17 +138,17 @@ public class Bach {
   }
 
   /** Resolve required external assets, like 3rd-party modules. */
-  void synchronize() throws Exception {
+  void sync() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
     if (run.isOffline()) {
       run.log(INFO, "Offline mode is active, no synchronization.");
       return;
     }
-    synchronizeModuleUriProperties(project.lib);
-    // TODO synchronizeMissingLibrariesByParsingModuleDescriptors();
+    syncModuleUriProperties(project.lib);
+    // TODO syncMissingLibrariesByParsingModuleDescriptors();
   }
 
-  private void synchronizeModuleUriProperties(Path root) throws Exception {
+  private void syncModuleUriProperties(Path root) throws Exception {
     run.log(DEBUG, "Synchronizing 3rd-party module uris below %s", root);
     if (Files.notExists(root)) {
       run.log(DEBUG, "Directory %s doesn't exist, not synchronizing.", root);
