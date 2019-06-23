@@ -95,7 +95,6 @@ public /*STATIC*/ class JUnitPlatformLauncher implements Callable<Integer> {
   }
 
   private void launchJUnitPlatformConsole(Run run, ClassLoader loader, Command junit) {
-    run.log(DEBUG, "__CHECK__");
     run.log(DEBUG, "Launching JUnit Platform Console: %s", junit.list);
     run.log(DEBUG, "Using class loader: %s - %s", loader.getName(), loader);
     var currentThread = Thread.currentThread();
