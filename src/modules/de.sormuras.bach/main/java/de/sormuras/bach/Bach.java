@@ -22,13 +22,9 @@ import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.TRACE;
 
-import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
 
 /*BODY*/
 /** Java Shell Builder. */
@@ -140,50 +136,7 @@ public class Bach {
   /** Resolve required external assets, like 3rd-party modules. */
   void sync() throws Exception {
     run.log(TRACE, "Bach::synchronize()");
-    if (run.isOffline()) {
-      run.log(INFO, "Offline mode is active, no synchronization.");
-      return;
-    }
-    syncModuleUriProperties(project.lib);
-    // TODO syncMissingLibrariesByParsingModuleDescriptors();
-  }
-
-  private void syncModuleUriProperties(Path root) throws Exception {
-    run.log(DEBUG, "Synchronizing 3rd-party module uris below %s", root);
-    if (Files.notExists(root)) {
-      run.log(DEBUG, "Directory %s doesn't exist, not synchronizing.", root);
-      return;
-    }
-    var paths = new ArrayList<Path>();
-    try (var stream = Files.walk(root)) {
-      stream
-          .filter(path -> path.getFileName().toString().equals("module-uri.properties"))
-          .forEach(paths::add);
-    }
-    var synced = new ArrayList<Path>();
-    for (var path : paths) {
-      var directory = path.getParent();
-      var downloader = new Downloader(run, directory);
-      var properties = new Properties();
-      try (var stream = Files.newInputStream(path)) {
-        properties.load(stream);
-      }
-      if (properties.isEmpty()) {
-        run.log(DEBUG, "No module uri declared in %s", path.toUri());
-        continue;
-      }
-      run.log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
-      for (var value : properties.values()) {
-        var string = run.replaceVariables(value.toString());
-        var uri = URI.create(string);
-        uri = uri.isAbsolute() ? uri : run.home.resolve(string).toUri();
-        run.log(DEBUG, "Syncing %s", uri);
-        var target = downloader.download(uri);
-        synced.add(target);
-        run.log(DEBUG, " o %s", target.toUri());
-      }
-    }
-    run.log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+    new Synchronizer(this).call();
   }
 
   @Override
