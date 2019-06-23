@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-23T07:19:45.585699300Z
+// THIS FILE WAS GENERATED ON 2019-06-23T09:29:54.427846Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -109,6 +109,7 @@ public class Bach {
     sync();
     compile();
     test();
+    document();
     run.log(DEBUG, "Build successful.");
   }
 
@@ -116,6 +117,12 @@ public class Bach {
   void compile() throws Exception {
     run.log(TRACE, "Bach::compile()");
     new JigsawBuilder(this).call();
+  }
+
+  /** Generate documentation for given modular realm. */
+  void document() throws Exception {
+    run.log(TRACE, "Bach::document()");
+    new DocumentationGenerator(this).call();
   }
 
   /** Print help message with project information section. */
@@ -256,6 +263,65 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  /** Generate documentation. */
+  public static class DocumentationGenerator implements Callable<Integer> {
+
+    final Bach bach;
+    final Project project;
+
+    DocumentationGenerator(Bach bach) {
+      this.bach = bach;
+      this.project = bach.project;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+      bach.run.log(TRACE, "DocumentationGenerator::call()");
+      document("main");
+      return 0;
+    }
+
+    private void document(String realm) {
+      var modules = bach.project.modules(realm);
+      if (modules.isEmpty()) {
+        bach.run.log(DEBUG, "No %s modules found.", realm);
+        return;
+      }
+      var documentation = project.bin.resolve(realm).resolve("documentation");
+      var destination = documentation.resolve("javadoc");
+      var moduleSourcePath = project.src + "/*/" + realm + "/java";
+      var javaSources = new ArrayList<String>();
+      javaSources.add(moduleSourcePath);
+      for (var release = 7; release <= Runtime.version().feature(); release++) {
+        var separator = File.separator;
+        javaSources.add(project.src + separator + "*" + separator + "java-" + release);
+      }
+      bach.run.run(
+          new Command("javadoc")
+              .addIff(false, "-verbose")
+              .add("-encoding", "UTF-8")
+              .add("-quiet")
+              .add("-windowtitle", project.name)
+              .add("-d", destination)
+              .add("--module-source-path", String.join(File.pathSeparator, javaSources))
+              .add("--module", String.join(",", modules)));
+
+      //    var modulePath = realm.modulePath("compile");
+      //    if (!modulePath.isEmpty()) {
+      //      javadoc.add("--module-path", modulePath);
+      //    }
+
+      var javadocJar = documentation.resolve(project.name + "-" + project.version + "-javadoc.jar");
+      bach.run.run(
+          new Command("jar")
+              .add("--create")
+              .addIff(false, "--verbose")
+              .add("--file", javadocJar)
+              .add("-C", destination)
+              .add("."));
     }
   }
 
@@ -732,12 +798,12 @@ public class Bach {
     }
 
     /** Create default Run instance in user's current directory. */
-    public static Run system() {
+    static Run system() {
       return system(Path.of(""));
     }
 
     /** Create default Run instance in given home directory. */
-    public static Run system(Path home) {
+    static Run system(Path home) {
       var out = new PrintWriter(System.out, true, UTF_8);
       var err = new PrintWriter(System.err, true, UTF_8);
       return new Run(newProperties(home), out, err);
@@ -1012,6 +1078,7 @@ public class Bach {
     enum Default implements Task {
       BUILD(Bach::build, "Build modular Java project in base directory."),
       COMPILE(Bach::compile, "Compile (javac and jar) sources to binary assets."),
+      DOCUMENT(Bach::document, "Generate documentation for this project."),
       // CLEAN(Bach::clean, "Delete all generated assets - but keep caches intact."),
       // ERASE(Bach::erase, "Delete all generated assets - and also delete caches."),
       HELP(Bach::help, "Print this help screen on standard out... F1, F1, F1!"),
