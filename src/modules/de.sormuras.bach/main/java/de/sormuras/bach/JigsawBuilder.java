@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.TRACE;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,10 +44,10 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
     this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
   }
 
-   public Integer call() throws Exception {
+  public Integer call() throws Exception {
+    bach.run.log(TRACE, "JigsawBuilder::call()");
     compile("main");
     compile("test", "main");
-    bach.run.log(DEBUG, "Build successful.");
     return 0;
   }
 
@@ -57,6 +58,7 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
       return;
     }
     compile(realm, modules, requiredRealms);
+    bach.run.log(DEBUG, "Jigsaw %s compilation successful.", realm);
   }
 
   void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {

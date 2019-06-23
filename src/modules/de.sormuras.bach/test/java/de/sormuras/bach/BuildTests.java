@@ -37,11 +37,7 @@ class BuildTests {
     Files.write(m.resolve("module-info.java"), List.of("module m {}"));
 
     assertLinesMatch(
-        List.of(
-            "src",
-            ">>>>",
-            "src/m/main/java/module-info.java"),
-        TestRun.treeWalk(temp));
+        List.of("src", ">>>>", "src/m/main/java/module-info.java"), TestRun.treeWalk(temp));
 
     var test = new TestRun(temp, temp);
     var bach = new Bach(test);
@@ -54,6 +50,7 @@ class BuildTests {
             "Compiling main modules: [m]",
             ">> BUILD MAIN MODULES >>",
             "No test modules found.",
+            ">> TEST (NOOP) >>",
             "Build successful."),
         test.outLines());
     assertLinesMatch(
@@ -67,7 +64,8 @@ class BuildTests {
 
   @Test
   void buildMinimalProjectWithTest(@TempDir Path temp) throws Exception {
-    Files.write(temp.resolve(".properties"), List.of("path.lib=" + Bach.USER_PATH.resolve("lib").toUri()));
+    Files.write(
+        temp.resolve(".properties"), List.of("path.lib=" + Bach.USER_PATH.resolve("lib").toUri()));
     var src = Files.createDirectories(temp.resolve("src"));
     var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
     var t = Files.createDirectories(src.resolve("t").resolve("test").resolve("java"));
@@ -94,9 +92,10 @@ class BuildTests {
             ">> INIT >>",
             "Compiling main modules: [m]",
             ">> BUILD MAIN MODULES >>",
+            "Jigsaw main compilation successful.",
             "Compiling test modules: [t]",
             ">> BUILD TEST MODULES >>",
-            "Build successful.",
+            "Jigsaw test compilation successful.",
             ">> JUNIT >>",
             "[         0 tests successful      ]",
             "[         0 tests failed          ]",
@@ -105,14 +104,14 @@ class BuildTests {
     assertLinesMatch(
         List.of(
             ".properties",
-                "bin",
-                ">> BIN MAIN >>",
-                "bin/main/modules/m-1.0.0-SNAPSHOT.jar",
-                ">> BIN MAIN >>",
-                "bin/test/modules/t-1.0.0-SNAPSHOT.jar",
-                "src",
-                ">> SOURCES >>",
-                "src/t/test/java/module-info.java"),
+            "bin",
+            ">> BIN MAIN >>",
+            "bin/main/modules/m-1.0.0-SNAPSHOT.jar",
+            ">> BIN MAIN >>",
+            "bin/test/modules/t-1.0.0-SNAPSHOT.jar",
+            "src",
+            ">> SOURCES >>",
+            "src/t/test/java/module-info.java"),
         TestRun.treeWalk(temp));
   }
 }

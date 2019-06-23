@@ -3,6 +3,7 @@ package de.sormuras.bach;
 import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.TRACE;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -33,6 +34,7 @@ public /*STATIC*/ class JUnitPlatformLauncher implements Callable<Integer> {
 
   @Override
   public Integer call() throws Exception {
+    run.log(TRACE, "JUnitPlatformLauncher::call()");
     var modules = bach.project.modules("test");
     if (modules.isEmpty()) {
       return 0;
