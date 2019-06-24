@@ -51,8 +51,7 @@ class BuildTests {
             "No test modules found.",
             ">> TEST (NOOP) >>",
             "Bach::summary()",
-            "Module(s) stored in .+",
-            "-> .+ m-1.0.0-SNAPSHOT.jar",
+            ">> MODULE DESCRIPTION >>",
             "Build successful."),
         test.outLines());
     assertLinesMatch(
@@ -65,7 +64,7 @@ class BuildTests {
   }
 
   @Test
-  void buildMinimalProjectWithTest(@TempDir Path temp) throws Exception {
+  void buildMinimalProjectWithEmptyTestModule(@TempDir Path temp) throws Exception {
     Files.write(
         temp.resolve(".properties"), List.of("path.lib=" + Bach.USER_PATH.resolve("lib").toUri()));
     var src = Files.createDirectories(temp.resolve("src"));
@@ -110,6 +109,69 @@ class BuildTests {
             "bin/test/sources/t-1.0.0-SNAPSHOT-sources.jar",
             "src/m/main/java/module-info.java",
             "src/t/test/java/module-info.java"),
+        TestRun.treeWalk(temp));
+  }
+
+  @Test
+  void buildMinimalProjectWithSingleTest(@TempDir Path temp) throws Exception {
+    Files.write(
+        temp.resolve(".properties"), List.of("path.lib=" + Bach.USER_PATH.resolve("lib").toUri()));
+    var src = Files.createDirectories(temp.resolve("src"));
+    var m = Files.createDirectories(src.resolve("m").resolve("main").resolve("java"));
+    var t = Files.createDirectories(src.resolve("t").resolve("test").resolve("java"));
+    Files.write(m.resolve("module-info.java"), List.of("module m {}"));
+    Files.write(t.resolve("module-info.java"), List.of("open module t {}"));
+    Files.write(
+        Files.createDirectories(t.resolve("t")).resolve("Test.java"),
+        List.of(
+            "package t;",
+            "",
+            "public class Test {",
+            "  public static void main(String... args) {}",
+            "}"));
+
+    assertLinesMatch(
+        List.of(
+            ".properties",
+            "src/m/main/java/module-info.java",
+            "src/t/test/java/module-info.java",
+            "src/t/test/java/t/Test.java"),
+        TestRun.treeWalk(temp));
+
+    var test = new TestRun(temp, temp).setOffline(true); // don't sync, using Bach's "lib" directory
+    var bach = new Bach(test);
+    assertDoesNotThrow(bach::build, test::toString); // not test.toString()
+    assertLinesMatch(List.of(), test.errLines());
+    assertLinesMatch(
+        List.of(
+            ">> INTRO >>",
+            "Compiling main modules: [m]",
+            ">> BUILD MAIN MODULES >>",
+            "Jigsaw main compilation successful.",
+            "Compiling test modules: [t]",
+            ">> BUILD TEST MODULES >>",
+            "Jigsaw test compilation successful.",
+            ">> JUNIT >>",
+            "[         1 tests successful      ]",
+            "[         0 tests failed          ]",
+            ">> DOCUMENTATION + SUMMARY >>",
+            "Build successful."),
+        test.outLines());
+    assertLinesMatch(
+        List.of(
+            ".properties",
+            "bin/main/classes/m/module-info.class",
+            ">> DOCUMENTATION >>",
+            "bin/main/modules/m-1.0.0-SNAPSHOT.jar",
+            "bin/main/sources/m-1.0.0-SNAPSHOT-sources.jar",
+            "bin/test/classes/t/module-info.class",
+            "bin/test/classes/t/t/Test.class",
+            ">> TEST REPORTS >>",
+            "bin/test/modules/t-1.0.0-SNAPSHOT.jar",
+            "bin/test/sources/t-1.0.0-SNAPSHOT-sources.jar",
+            "src/m/main/java/module-info.java",
+            "src/t/test/java/module-info.java",
+            "src/t/test/java/t/Test.java"),
         TestRun.treeWalk(temp));
   }
 }
