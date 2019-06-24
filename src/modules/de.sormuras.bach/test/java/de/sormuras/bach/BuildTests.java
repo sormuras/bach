@@ -50,6 +50,9 @@ class BuildTests {
             ">> BUILD MAIN MODULES >>",
             "No test modules found.",
             ">> TEST (NOOP) >>",
+            "Bach::summary()",
+            "Module(s) stored in .+",
+            "-> .+ m-1.0.0-SNAPSHOT.jar",
             "Build successful."),
         test.outLines());
     assertLinesMatch(
@@ -58,7 +61,7 @@ class BuildTests {
             ">> main/javadoc/**/ >>",
             "main/modules/m-1.0.0-SNAPSHOT.jar",
             "main/sources/m-1.0.0-SNAPSHOT-sources.jar"),
-        TestRun.treeWalk(temp.resolve(bach.project.path(Project.Property.PATH_BIN))));
+        TestRun.treeWalk(temp.resolve(bach.project.bin)));
   }
 
   @Test
