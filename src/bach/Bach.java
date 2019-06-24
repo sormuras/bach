@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-23T09:29:54.427846Z
+// THIS FILE WAS GENERATED ON 2019-06-24T09:41:44.361562600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -110,6 +110,7 @@ public class Bach {
     compile();
     test();
     document();
+    summary();
     run.log(DEBUG, "Build successful.");
   }
 
@@ -189,6 +190,24 @@ public class Bach {
   void test() throws Exception {
     run.log(TRACE, "Bach::test()");
     new JUnitPlatformLauncher(this).call();
+  }
+
+  /** Print summary. */
+  void summary() throws Exception {
+    run.log(TRACE, "Bach::summary()");
+    var mainModules = project.bin.resolve("main").resolve("modules");
+    if (Files.notExists(mainModules)) {
+      run.log(DEBUG, "No main modules binary directory available.");
+      return;
+    }
+    try (var stream = Files.newDirectoryStream(mainModules, "*.jar")) {
+      run.log(INFO, "Module(s) stored in %s", mainModules.toUri());
+      for (var jar : stream) {
+        run.log(INFO, "-> %,9d %s", Files.size(jar), jar.getFileName());
+        run.run(new Command("jar").add("--describe-module").add("--file", jar));
+      }
+    }
+
   }
 
   @Override
