@@ -40,7 +40,11 @@ public class Bach {
   /** Convenient short-cut to {@code "user.dir"} as a path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
-  /** Main entry-point making use of {@link System#exit(int)} on error. */
+  /**
+   * Main entry-point making use of {@link System#exit(int)} on error.
+   *
+   * @param arguments task name(s) and their argument(s)
+   */
   public static void main(String... arguments) {
     var bach = new Bach();
     var args = List.of(arguments);
@@ -176,7 +180,6 @@ public class Bach {
         run.run(new Command("jar").add("--describe-module").add("--file", jar));
       }
     }
-
   }
 
   @Override

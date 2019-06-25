@@ -10,10 +10,21 @@ import java.util.List;
 @FunctionalInterface
 public interface Task {
 
-  /** Performs this task on the given Bach instance. */
+  /**
+   * Performs this task on the given Bach instance.
+   *
+   * @param bach instance to work on
+   * @throws Exception if an issue occurs
+   */
   void perform(Bach bach) throws Exception;
 
-  /** Transform a name and arguments into a task object. */
+  /**
+   * Transform a name and arguments into a task object.
+   *
+   * @param name name of the task to transform
+   * @param arguments arguments to be passed to the task instance
+   * @return an instance of {@link Task}
+   */
   static Task of(String name, Deque<String> arguments) {
     // try {
     //   var method = Bach.class.getMethod(name);
@@ -34,7 +45,12 @@ public interface Task {
     return defaultTask.consume(arguments);
   }
 
-  /** Transform strings to tasks. */
+  /**
+   * Transform strings to tasks.
+   *
+   * @param args strings to transform
+   * @return list of task instances
+   */
   static List<Task> of(List<String> args) {
     var tasks = new ArrayList<Task>();
     if (args.isEmpty()) {
