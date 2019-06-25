@@ -60,6 +60,11 @@ public /*STATIC*/ class Command {
     return condition ? add(argument) : this;
   }
 
+  /** Add two arguments iff the conditions is {@code true}. */
+  Command addIff(boolean condition, Object key, Object value) {
+    return condition ? add(key, value) : this;
+  }
+
   /** Let the consumer visit, usually modify, this instance iff the conditions is {@code true}. */
   Command addIff(boolean condition, Consumer<Command> visitor) {
     if (condition) {

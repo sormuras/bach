@@ -40,12 +40,12 @@ class CommandTests {
             .add("d", "e")
             .add("f")
             .addIff(true, "g")
-            .addIff(false, "X")
+            .addIff(false, "X", "Y")
             .add("h", List.of(Path.of("i0"), Path.of("i1")))
             .add("j", List.of(Path.of("k")))
             .add("l", List.of(Path.of("m")), s -> "n=" + s)
             .addIff(true, args -> args.add("o"))
-            .addIff(false, args -> args.add("Y"))
+            .addIff(false, args -> args.add("Z"))
             .toStringArray());
   }
 }
