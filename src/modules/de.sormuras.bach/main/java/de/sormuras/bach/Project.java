@@ -90,6 +90,14 @@ public /*STATIC*/ class Project {
     return property.get(properties);
   }
 
+  String get(String key) {
+    return properties.getProperty(key);
+  }
+
+  String get(String key, String defaultValue) {
+    return properties.getProperty(key, defaultValue);
+  }
+
   List<String> modules(String realm) {
     return modules(realm, get(Property.MODULES), src);
   }
