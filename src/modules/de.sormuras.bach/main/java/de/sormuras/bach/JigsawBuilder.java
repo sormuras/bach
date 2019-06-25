@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.TRACE;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,17 +32,9 @@ import java.util.concurrent.Callable;
 public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
 
   final Bach bach;
-  final Path bin;
-  final Path lib;
-  final Path src;
-  final String version;
 
   JigsawBuilder(Bach bach) {
     this.bach = bach;
-    this.version = bach.project.version;
-    this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
-    this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
-    this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
   }
 
   public Integer call() throws Exception {
@@ -64,6 +57,7 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
   void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
     bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
 
+    var bin = bach.project.bin;
     var classes = bin.resolve(realm + "/classes");
     var binModules = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
     var binSources = Files.createDirectories(bin.resolve(realm + "/sources"));
@@ -73,12 +67,20 @@ public /*STATIC*/ class JigsawBuilder implements Callable<Integer> {
     for (var requiredRealm : requiredRealms) {
       modulePath.add(bin.resolve(requiredRealm + "/modules"));
     }
+    var src = bach.project.src;
+    var moduleSourcePath = String.join(File.separator, src.toString(), "*", realm, "java");
 
+    var version = bach.project.version;
+    var preview = "enable".equals(bach.project.get(realm + ".javac.preview"));
+    var defaultRelease = preview ? "" + Runtime.version().feature() : null;
+    var release = bach.project.get(realm + ".javac.release", defaultRelease);
     bach.run.run(
         new Command("javac")
             .add("-d", classes)
+            .addIff(preview,"--enable-preview")
+            .addIff(release != null, "--release", release)
             .add("--module-path", modulePath)
-            .add("--module-source-path", src + "/*/" + realm + "/java")
+            .add("--module-source-path", moduleSourcePath)
             .add("--module-version", version)
             .add("--module", String.join(",", modules)));
 
