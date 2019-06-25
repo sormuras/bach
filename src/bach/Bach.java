@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-06-24T09:41:44.361562600Z
+// THIS FILE WAS GENERATED ON 2019-06-25T08:36:48.952853500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -71,7 +71,11 @@ public class Bach {
   /** Convenient short-cut to {@code "user.dir"} as a path. */
   static final Path USER_PATH = Path.of(System.getProperty("user.dir"));
 
-  /** Main entry-point making use of {@link System#exit(int)} on error. */
+  /**
+   * Main entry-point making use of {@link System#exit(int)} on error.
+   *
+   * @param arguments task name(s) and their argument(s)
+   */
   public static void main(String... arguments) {
     var bach = new Bach();
     var args = List.of(arguments);
@@ -207,7 +211,6 @@ public class Bach {
         run.run(new Command("jar").add("--describe-module").add("--file", jar));
       }
     }
-
   }
 
   @Override
@@ -263,6 +266,11 @@ public class Bach {
     /** Add a single argument iff the conditions is {@code true}. */
     Command addIff(boolean condition, Object argument) {
       return condition ? add(argument) : this;
+    }
+
+    /** Add two arguments iff the conditions is {@code true}. */
+    Command addIff(boolean condition, Object key, Object value) {
+      return condition ? add(key, value) : this;
     }
 
     /** Let the consumer visit, usually modify, this instance iff the conditions is {@code true}. */
@@ -548,17 +556,9 @@ public class Bach {
   public static class JigsawBuilder implements Callable<Integer> {
 
     final Bach bach;
-    final Path bin;
-    final Path lib;
-    final Path src;
-    final String version;
 
     JigsawBuilder(Bach bach) {
       this.bach = bach;
-      this.version = bach.project.version;
-      this.bin = bach.run.work.resolve(bach.project.path(Project.Property.PATH_BIN));
-      this.lib = bach.run.home.resolve(bach.project.path(Project.Property.PATH_LIB));
-      this.src = bach.run.home.resolve(bach.project.path(Project.Property.PATH_SRC));
     }
 
     public Integer call() throws Exception {
@@ -581,6 +581,7 @@ public class Bach {
     void compile(String realm, List<String> modules, String... requiredRealms) throws Exception {
       bach.run.log(DEBUG, "Compiling %s modules: %s", realm, modules);
 
+      var bin = bach.project.bin;
       var classes = bin.resolve(realm + "/classes");
       var binModules = Files.createDirectories(bin.resolve(realm + "/modules")); // "own" jars
       var binSources = Files.createDirectories(bin.resolve(realm + "/sources"));
@@ -590,12 +591,20 @@ public class Bach {
       for (var requiredRealm : requiredRealms) {
         modulePath.add(bin.resolve(requiredRealm + "/modules"));
       }
+      var src = bach.project.src;
+      var moduleSourcePath = String.join(File.separator, src.toString(), "*", realm, "java");
 
+      var version = bach.project.version;
+      var preview = "enable".equals(bach.project.get(realm + ".javac.preview"));
+      var defaultRelease = preview ? "" + Runtime.version().feature() : null;
+      var release = bach.project.get(realm + ".javac.release", defaultRelease);
       bach.run.run(
           new Command("javac")
               .add("-d", classes)
+              .addIff(preview,"--enable-preview")
+              .addIff(release != null, "--release", release)
               .add("--module-path", modulePath)
-              .add("--module-source-path", src + "/*/" + realm + "/java")
+              .add("--module-source-path", moduleSourcePath)
               .add("--module-version", version)
               .add("--module", String.join(",", modules)));
 
@@ -681,6 +690,14 @@ public class Bach {
 
     String get(Property property) {
       return property.get(properties);
+    }
+
+    String get(String key) {
+      return properties.getProperty(key);
+    }
+
+    String get(String key, String defaultValue) {
+      return properties.getProperty(key, defaultValue);
     }
 
     List<String> modules(String realm) {
@@ -1054,10 +1071,21 @@ public class Bach {
   @FunctionalInterface
   public interface Task {
 
-    /** Performs this task on the given Bach instance. */
+    /**
+     * Performs this task on the given Bach instance.
+     *
+     * @param bach instance to work on
+     * @throws Exception if an issue occurs
+     */
     void perform(Bach bach) throws Exception;
 
-    /** Transform a name and arguments into a task object. */
+    /**
+     * Transform a name and arguments into a task object.
+     *
+     * @param name name of the task to transform
+     * @param arguments arguments to be passed to the task instance
+     * @return an instance of {@link Task}
+     */
     static Task of(String name, Deque<String> arguments) {
       // try {
       //   var method = Bach.class.getMethod(name);
@@ -1078,7 +1106,12 @@ public class Bach {
       return defaultTask.consume(arguments);
     }
 
-    /** Transform strings to tasks. */
+    /**
+     * Transform strings to tasks.
+     *
+     * @param args strings to transform
+     * @return list of task instances
+     */
     static List<Task> of(List<String> args) {
       var tasks = new ArrayList<Task>();
       if (args.isEmpty()) {
