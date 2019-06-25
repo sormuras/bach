@@ -1,25 +1,74 @@
 dist: xenial
-language: java
+language: generic
 
-install:
-- java --version
+env:
+  global:
+    - "PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'"
 
+env:
+  - FEATURE=7
+    LICENSE=GPL
+  - FEATURE=8
+    LICENSE=GPL
+  - FEATURE=8
+    LICENSE=BCL
+  - FEATURE=9
+    LICENSE=GPL
+  - FEATURE=9
+    LICENSE=BCL
+  - FEATURE=10
+    LICENSE=GPL
+  - FEATURE=10
+    LICENSE=BCL
+  - FEATURE=11
+    LICENSE=GPL
+  - FEATURE=11
+    LICENSE=BCL
+  - FEATURE=12
+    LICENSE=GPL
+  - FEATURE=12
+    LICENSE=BCL
+  - FEATURE=ea
+    LICENSE=GPL
+  - FEATURE=ea
+    LICENSE=BCL
+  
 script:
-- jshell --execution local ./build.jsh
+  - |
+    JAVA_HOME=$(set -o pipefail -o errexit; exec 3>&2;
+                ./install-jdk.sh -f $FEATURE -l $LICENSE --emit-java-home | tee /dev/fd/3 | tail --lines 1;
+                exec 3>&-)
+  - export PATH="${JAVA_HOME}/bin:$PATH"
+  - which java
+  - java -version
+  
+matrix:
+  include:
+    env:
+      FEATURE=
+      LICENSE=
+  
+    language: java
 
-after_success:
-- BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
+    install:
+    - java --version
 
-- java -Debug ${BACH} help
+    script:
+    - jshell --execution local ./build.jsh
 
-#- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-#- ./bootstrap.sh
+    after_success:
+    - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
 
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
-#- java -Debug=true ${BACH}
+    - java -Debug ${BACH} help
 
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
-#- java -Debug=true ${BACH}
+    #- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
+    #- ./bootstrap.sh
 
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
-#- java -Debug=true ${BACH}
+    #- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
+    #- java -Debug=true ${BACH}
+
+    #- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
+    #- java -Debug=true ${BACH}
+
+    #- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
+    #- java -Debug=true ${BACH}
