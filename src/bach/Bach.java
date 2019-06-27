@@ -19,6 +19,7 @@
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -301,8 +302,11 @@ public class Bach {
   class Project {
     final String name = home.toAbsolutePath().normalize().getFileName().toString();
     final String version = "1.0.0-SNAPSHOT";
-    final Path modulesDirectory = Path.of(System.getProperty("bach.modules.directory", "src"));
-    final List<String> modules = Util.findDirectoryNames(home.resolve(modulesDirectory));
+    final Path modulesDirectory = home.resolve(Path.of(System.getProperty("bach.modules.directory", "src")));
+    final List<String> modules = Util.findDirectoryNames(modulesDirectory);
+
+    final Realm main = new Realm("main");
+    final Realm test = new Realm("test");
 
     void toStrings(Consumer<String> consumer) {
       consumer.accept("Project properties");
@@ -310,16 +314,48 @@ public class Bach {
       consumer.accept("  version = " + version);
       consumer.accept("  modulesDirectory = " + modulesDirectory);
       consumer.accept("  modules = " + modules);
+      consumer.accept("Realm 'main' properties");
+      consumer.accept("  main.modules = " + main.modules);
+      consumer.accept("Realm 'test' properties");
+      consumer.accept("  test.modules = " + test.modules);
+    }
+
+    /** Project realm: main or test. */
+    class Realm {
+      final String name;
+      final Path offset;
+      final List<String> modules;
+
+      Realm(String name) {
+        this.name = name;
+        this.offset = Path.of(name, "java");
+        this.modules = modules();
+      }
+
+      List<String> modules() {
+        if (Files.notExists(modulesDirectory)) {
+          return List.of();
+        }
+        var descriptor = Path.of(name, "java", "module-info.java");
+        DirectoryStream.Filter<Path> filter =
+            path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
+        return Util.findDirectoryEntries(modulesDirectory, filter);
+      }
     }
   }
 
+  /** Static helpers. */
   static class Util {
     static List<String> findDirectoryNames(Path sourceDirectory) {
+      return findDirectoryEntries(sourceDirectory, Files::isDirectory);
+    }
+
+    static List<String> findDirectoryEntries(Path sourceDirectory, DirectoryStream.Filter<Path> filter) {
       var names = new ArrayList<String>();
-      try (var stream = Files.newDirectoryStream(sourceDirectory, Files::isDirectory)) {
+      try (var stream = Files.newDirectoryStream(sourceDirectory, filter)) {
         stream.forEach(directory -> names.add(directory.getFileName().toString()));
       } catch (Exception e) {
-        throw new Error("Scanning directory for directories failed: " + e);
+        throw new Error("Scanning directory entries failed: " + e);
       }
       return names;
     }

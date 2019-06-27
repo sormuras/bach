@@ -19,6 +19,10 @@ class DemoTests {
             "Bach .+ initialized.",
             ">> INFO >>",
             "  modules = [a]",
+            ">> MAIN >>",
+            "  main.modules = [a]",
+            ">> TEST >>",
+            "  test.modules = []",
             ">> BUILD >>",
             "Bach::build() end."),
         demo.lines());
