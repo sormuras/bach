@@ -12,16 +12,22 @@ class DemoTests {
 
   @Test
   void demo000(@TempDir Path work) {
-    var demo = Demo.build(Path.of("demo", "000-main(a)"), work);
+    var demo = Demo.build("000-main(a)", work);
     assertLinesMatch(List.of(), demo.errors());
     assertLinesMatch(
-        List.of("Bach .+ initialized.", ">> BUILD >>", "Bach::build() end."), demo.lines());
+        List.of(
+            "Bach .+ initialized.",
+            ">> INFO >>",
+            "  modules = [a]",
+            ">> BUILD >>",
+            "Bach::build() end."),
+        demo.lines());
   }
 
   static class Demo {
 
-    static Demo build(Path home, Path work) {
-      var demo = new Demo(home, work);
+    static Demo build(String name, Path work) {
+      var demo = new Demo(Path.of("src","demo", name), work);
       demo.bach.build();
       return demo;
     }

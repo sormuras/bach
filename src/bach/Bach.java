@@ -19,6 +19,7 @@
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -57,6 +58,7 @@ public class Bach {
   private final Path home;
   private final Path work;
   private final Runner runner;
+  private final Project project;
 
   Bach() {
     this(new PrintWriter(System.out, true), new PrintWriter(System.err, true));
@@ -78,6 +80,7 @@ public class Bach {
     this.work = work;
     this.verbose = verbose;
     this.runner = new Runner();
+    this.project = new Project();
     log("Bach %s initialized.", VERSION);
   }
 
@@ -96,10 +99,11 @@ public class Bach {
     out.println("  home = '" + home + "'");
     out.println("  work = '" + work + "'");
     out.println("  verbose = " + verbose);
+    project.toStrings(out::println);
     log("Bach::info() end.");
   }
 
-  /** Build the project.  */
+  /** Build the project. */
   public void build() {
     log("Bach::build()");
     if (verbose) {
@@ -290,6 +294,34 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  /** Project information. */
+  class Project {
+    final String name = home.toAbsolutePath().normalize().getFileName().toString();
+    final String version = "1.0.0-SNAPSHOT";
+    final Path modulesDirectory = Path.of(System.getProperty("bach.modules.directory", "src"));
+    final List<String> modules = Util.findDirectoryNames(home.resolve(modulesDirectory));
+
+    void toStrings(Consumer<String> consumer) {
+      consumer.accept("Project properties");
+      consumer.accept("  name = " + name);
+      consumer.accept("  version = " + version);
+      consumer.accept("  modulesDirectory = " + modulesDirectory);
+      consumer.accept("  modules = " + modules);
+    }
+  }
+
+  static class Util {
+    static List<String> findDirectoryNames(Path sourceDirectory) {
+      var names = new ArrayList<String>();
+      try (var stream = Files.newDirectoryStream(sourceDirectory, Files::isDirectory)) {
+        stream.forEach(directory -> names.add(directory.getFileName().toString()));
+      } catch (Exception e) {
+        throw new Error("Scanning directory for directories failed: " + e);
+      }
+      return names;
     }
   }
 }
