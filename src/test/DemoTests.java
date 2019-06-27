@@ -28,6 +28,15 @@ class DemoTests {
         demo.lines());
   }
 
+  @Test
+  void demo010(@TempDir Path work) {
+    var demo = Demo.build("010-main(a,b,c)", work);
+    assertLinesMatch(List.of(), demo.errors());
+    assertLinesMatch(
+        List.of(">> INFO >>", "  modules = [a, b, c]", ">> BUILD >>", "Bach::build() end."),
+        demo.lines());
+  }
+
   static class Demo {
 
     static Demo build(String name, Path work) {
