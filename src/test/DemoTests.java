@@ -15,23 +15,23 @@ class DemoTests {
     var demo = Demo.build("000-main(a)", work);
     assertLinesMatch(List.of(), demo.errors());
     assertLinesMatch(
-        List.of(
-            "Bach .+ initialized.",
-            ">> INFO >>",
-            "  modules = [a]",
-            ">> MAIN >>",
-            "  main.modules = [a]",
-            ">> TEST >>",
-            "  test.modules = []",
-            ">> BUILD >>",
-            "Bach::build() end."),
+        List.of(">> INFO >>", "  modules = [a]", ">> BUILD >>", "Bach::build() end."),
+        demo.lines());
+  }
+
+  @Test
+  void demo001(@TempDir Path work) {
+    var demo = Demo.build("001-test(t)", work);
+    assertLinesMatch(List.of(), demo.errors());
+    assertLinesMatch(
+        List.of(">> INFO >>", "  modules = [t]", ">> BUILD >>", "Bach::build() end."),
         demo.lines());
   }
 
   static class Demo {
 
     static Demo build(String name, Path work) {
-      var demo = new Demo(Path.of("src","demo", name), work);
+      var demo = new Demo(Path.of("src", "demo", name), work);
       demo.bach.build();
       return demo;
     }
