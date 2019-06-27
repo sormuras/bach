@@ -97,6 +97,7 @@ public class Bach {
     out.println("Bach information");
     out.println("  out = " + out);
     out.println("  err = " + err);
+    out.println("  cwd = " + Path.of(System.getProperty("user.dir")));
     out.println("  home = '" + home + "'");
     out.println("  work = '" + work + "'");
     out.println("  verbose = " + verbose);
@@ -110,8 +111,82 @@ public class Bach {
     if (verbose) {
       info();
     }
-    // compile, jar, package, document, ...
+    compile();
     log("Bach::build() end.");
+  }
+
+  /** Compile all modules. */
+  public void compile() {
+    log("Bach::compile()");
+    compile(project.main);
+    compile(project.test);
+    log("Bach::compile() end.");
+  }
+
+  void compile(Project.Realm realm) {
+    log("Bach::compile(%s)", realm.name);
+    if (realm.modules.isEmpty()) {
+      log("Bach::compile(%s) end -- no modules to compile.", realm.name);
+      return;
+    }
+    try {
+      compile(realm, realm.modules);
+    } catch (Exception e) {
+      throw new Error("Compiling realm " + realm.name + " failed!", e);
+    }
+  }
+
+  private void compile(Project.Realm realm, List<String> modules) throws Exception {
+    var javac =
+        new Command("javac")
+            .add("-d", realm.binClasses)
+            .add("-encoding", "UTF-8")
+            .add("-parameters")
+            .add("-Xlint")
+            .addIff(realm.preview, "--enable-preview")
+            .addIff(realm.release != null, "--release", realm.release)
+            // .add("--module-path", modulePath)
+            .add("--module-source-path", realm.moduleSourcePath)
+            .add("--module-version", project.version)
+            .add("--module", String.join(",", modules));
+    if (runner.run(javac) != 0) {
+      log("Bach::compile(%s) failed!", realm.name);
+      return;
+    }
+    var realmModules = Files.createDirectories(realm.binModules);
+    var realmSources = Files.createDirectories(realm.binSources);
+    for (var module : modules) {
+      var moduleNameDashVersion = module + '-' + project.version;
+      var modularJar = realmModules.resolve(moduleNameDashVersion + ".jar");
+      var sourcesJar = realmSources.resolve(moduleNameDashVersion + "-sources.jar");
+      var resources = realm.srcResources;
+      var jarModule =
+          new Command("jar")
+              .add("--create")
+              .add("--file", modularJar)
+              .addIff(verbose, "--verbose")
+              .add("-C", realm.binClasses.resolve(module))
+              .add(".")
+              .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+      var jarSources =
+          new Command("jar")
+              .add("--create")
+              .add("--file", sourcesJar)
+              .addIff(verbose, "--verbose")
+              .add("--no-manifest")
+              .add("-C", project.src.resolve(module).resolve(realm.offset))
+              .add(".")
+              .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+      if (runner.run(jarModule) != 0) {
+        log("Creating " + realm.name + " modular jar failed: ", modularJar);
+        return;
+      }
+      if ( runner.run(jarSources) != 0) {
+        log("Creating " + realm.name + " sources jar failed: ", sourcesJar);
+        return;
+      }
+    }
+    log("Bach::compile(realm=%s) end.", realm.name);
   }
 
   /** Main-entry point converting strings to commands and executing each. */
@@ -302,8 +377,10 @@ public class Bach {
   class Project {
     final String name = home.toAbsolutePath().normalize().getFileName().toString();
     final String version = "1.0.0-SNAPSHOT";
-    final Path modulesDirectory = home.resolve(Path.of(System.getProperty("bach.modules.directory", "src")));
-    final List<String> modules = Util.findDirectoryNames(modulesDirectory);
+
+    final Path bin = work.resolve(Path.of(System.getProperty("bach.bin", "bin")));
+    final Path src = home.resolve(Path.of(System.getProperty("bach.src", "src")));
+    final List<String> modules = Util.findDirectoryNames(src);
 
     final Realm main = new Realm("main");
     final Realm test = new Realm("test");
@@ -312,48 +389,77 @@ public class Bach {
       consumer.accept("Project properties");
       consumer.accept("  name = " + name);
       consumer.accept("  version = " + version);
-      consumer.accept("  modulesDirectory = " + modulesDirectory);
+      consumer.accept("  modulesDirectory = " + src);
       consumer.accept("  modules = " + modules);
-      consumer.accept("Realm 'main' properties");
-      consumer.accept("  main.modules = " + main.modules);
-      consumer.accept("Realm 'test' properties");
-      consumer.accept("  test.modules = " + test.modules);
+      main.toStrings(consumer);
+      test.toStrings(consumer);
     }
 
     /** Project realm: main or test. */
     class Realm {
       final String name;
       final Path offset;
+      final String moduleSourcePath;
       final List<String> modules;
+      final boolean preview;
+      final String release;
+      final Path srcResources;
+      final Path binClasses;
+      final Path binModules;
+      final Path binSources;
 
       Realm(String name) {
         this.name = name;
         this.offset = Path.of(name, "java");
+        this.moduleSourcePath = moduleSourcePath();
         this.modules = modules();
+        this.preview = Boolean.getBoolean("bach." + name + ".preview");
+        this.release = System.getProperty("bach." + name + ".release", null);
+
+        this.srcResources = src.resolve(name).resolve("resources");
+        this.binClasses = bin.resolve(name).resolve("compiled").resolve("classes");
+        this.binModules = bin.resolve(name).resolve("modules");
+        this.binSources = bin.resolve(name).resolve("sources");
       }
 
       List<String> modules() {
-        if (Files.notExists(modulesDirectory)) {
+        if (Files.notExists(src)) {
           return List.of();
         }
         var descriptor = Path.of(name, "java", "module-info.java");
         DirectoryStream.Filter<Path> filter =
             path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-        return Util.findDirectoryEntries(modulesDirectory, filter);
+        return Util.findDirectoryEntries(src, filter);
+      }
+
+      String moduleSourcePath() {
+        var base = src.toString();
+        var path = offset.toString();
+        if (path.isEmpty()) {
+          return base;
+        }
+        return String.join(File.separator, base, "*", path);
+      }
+
+      void toStrings(Consumer<String> consumer) {
+        consumer.accept("Realm '" + name + "' properties");
+        consumer.accept("  modules = " + modules);
+        consumer.accept("  offset = " + offset);
+        consumer.accept("  moduleSourcePath = " + moduleSourcePath);
       }
     }
   }
 
   /** Static helpers. */
   static class Util {
-    static List<String> findDirectoryNames(Path sourceDirectory) {
-      return findDirectoryEntries(sourceDirectory, Files::isDirectory);
+    static List<String> findDirectoryNames(Path directory) {
+      return findDirectoryEntries(directory, Files::isDirectory);
     }
 
-    static List<String> findDirectoryEntries(Path sourceDirectory, DirectoryStream.Filter<Path> filter) {
+    static List<String> findDirectoryEntries(Path directory, DirectoryStream.Filter<Path> filter) {
       var names = new ArrayList<String>();
-      try (var stream = Files.newDirectoryStream(sourceDirectory, filter)) {
-        stream.forEach(directory -> names.add(directory.getFileName().toString()));
+      try (var stream = Files.newDirectoryStream(directory, filter)) {
+        stream.forEach(entry -> names.add(entry.getFileName().toString()));
       } catch (Exception e) {
         throw new Error("Scanning directory entries failed: " + e);
       }
