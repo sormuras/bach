@@ -1,1 +1,3 @@
-module a {}
+module a {
+  exports a;
+}
