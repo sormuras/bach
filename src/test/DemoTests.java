@@ -1,46 +1,37 @@
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
 
 class DemoTests {
 
-  @Test
-  void demo000(@TempDir Path work) {
-    var demo = Demo.build("000-main(a)", work);
-    assertLinesMatch(List.of(), demo.errors());
-    assertLinesMatch(
-        List.of(">> INFO >>", "  modules = [a]", ">> BUILD >>", "Bach::build() end."),
-        demo.lines());
+  private static final Path DEMO = Path.of("src", "demo");
+
+  @TestFactory
+  Stream<DynamicTest> demo(@TempDir Path work) {
+    return Bach.Util.findDirectoryNames(DEMO).stream()
+        .map(name -> dynamicTest(name, () -> demo(name, work.resolve(name))));
   }
 
-  @Test
-  void demo001(@TempDir Path work) {
-    var demo = Demo.build("001-test(t)", work);
+  private void demo(String name, Path work) throws Exception {
+    var demo = Demo.build(name, Files.createDirectories(work));
     assertLinesMatch(List.of(), demo.errors());
-    assertLinesMatch(
-        List.of(">> INFO >>", "  modules = [t]", ">> BUILD >>", "Bach::build() end."),
-        demo.lines());
-  }
-
-  @Test
-  void demo010(@TempDir Path work) {
-    var demo = Demo.build("010-main(a,b,c)", work);
-    assertLinesMatch(List.of(), demo.errors());
-    assertLinesMatch(
-        List.of(">> INFO >>", "  modules = [a, b, c]", ">> BUILD >>", "Bach::build() end."),
-        demo.lines());
+    assertLinesMatch(List.of(">> BUILD >>", "Bach::build() end."), demo.lines());
   }
 
   static class Demo {
 
     static Demo build(String name, Path work) {
-      var demo = new Demo(Path.of("src", "demo", name), work);
+      var demo = new Demo(DEMO.resolve(name), work);
       demo.bach.build();
       return demo;
     }
