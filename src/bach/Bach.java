@@ -96,6 +96,7 @@ public class Bach {
     out.println("  home = '" + home + "'");
     out.println("  work = '" + work + "'");
     out.println("  verbose = " + verbose);
+    log("Bach::info() end.");
   }
 
   /** Build the project.  */
@@ -105,6 +106,7 @@ public class Bach {
       info();
     }
     // compile, jar, package, document, ...
+    log("Bach::build() end.");
   }
 
   /** Main-entry point converting strings to commands and executing each. */
