@@ -18,7 +18,9 @@
 // default package
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,6 +114,7 @@ public class Bach {
       info();
     }
     compile();
+    summary();
     log("Bach::build() end.");
   }
 
@@ -181,12 +184,32 @@ public class Bach {
         log("Creating " + realm.name + " modular jar failed: ", modularJar);
         return;
       }
-      if ( runner.run(jarSources) != 0) {
+      if (runner.run(jarSources) != 0) {
         log("Creating " + realm.name + " sources jar failed: ", sourcesJar);
         return;
       }
     }
     log("Bach::compile(realm=%s) end.", realm.name);
+  }
+
+  /** Print build summary. */
+  public void summary() {
+    log("Bach::summary()");
+    if (verbose && Files.isDirectory(project.main.binModules)) {
+      for (var jar : Util.findDirectoryEntries(project.main.binModules, "*.jar")) {
+        log("%s", jar);
+        log("%d bytes", Util.size(jar));
+        runner.run(new Command("jar", "--describe-module", "--file", jar));
+      }
+      runner.run(
+          new Command(
+              "jdeps",
+              "--module-path",
+              project.main.binModules,
+              "--check",
+              String.join(",", project.main.modules)));
+    }
+    log("Bach::summary() end.");
   }
 
   /** Main-entry point converting strings to commands and executing each. */
@@ -452,6 +475,14 @@ public class Bach {
 
   /** Static helpers. */
   static class Util {
+    static long size(Path path) {
+      try {
+        return Files.size(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
     static List<String> findDirectoryNames(Path directory) {
       return findDirectoryEntries(directory, Files::isDirectory);
     }
@@ -464,6 +495,16 @@ public class Bach {
         throw new Error("Scanning directory entries failed: " + e);
       }
       return names;
+    }
+
+    static List<Path> findDirectoryEntries(Path directory, String glob) {
+      var paths = new ArrayList<Path>();
+      try (var stream = Files.newDirectoryStream(directory, glob)) {
+        stream.forEach(paths::add);
+      } catch (Exception e) {
+        throw new Error("Scanning directory entries failed: " + e);
+      }
+      return paths;
     }
   }
 }
