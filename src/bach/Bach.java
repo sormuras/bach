@@ -232,6 +232,11 @@ public class Bach {
     log("Bach::summary() end.");
   }
 
+  /** Print the version string. */
+  public void version() {
+    out.println(VERSION);
+  }
+
   /** Main-entry point converting strings to commands and executing each. */
   int main(List<String> arguments) {
     log("Bach::main(%s)", arguments);
