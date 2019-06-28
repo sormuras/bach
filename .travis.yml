@@ -10,16 +10,8 @@ script:
 after_success:
 - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
 
-- java -Debug ${BACH} help
+- cd "${TRAVIS_BUILD_DIR}/src/demo/000-main(a)"
+- java ${BACH}
 
-#- cd $TRAVIS_BUILD_DIR/demo/00-bootstrap
-#- ./bootstrap.sh
-
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings
-#- java -Debug=true ${BACH}
-
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world
-#- java -Debug=true ${BACH}
-
-#- cd ${TRAVIS_BUILD_DIR}/demo/jigsaw-quick-start/greetings-world-with-main-and-test
-#- java -Debug=true ${BACH}
+- cd "${TRAVIS_BUILD_DIR}/src/demo/010-main(a,b,c)"
+- java ${BACH}
