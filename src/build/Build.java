@@ -72,13 +72,13 @@ class Build {
   }
 
   private void test() throws Exception {
-    System.out.println("\n[test - download]");
+    System.out.println("\n[test // download]");
     var uri =
         URI.create(
             "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0-RC2/junit-platform-console-standalone-1.5.0-RC2.jar");
     var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
 
-    System.out.println("\n[test - compile]");
+    System.out.println("\n[test // compile]");
     var javac = new ArrayList<>();
     javac.add("-d");
     javac.add(targetBinTest);
@@ -89,7 +89,7 @@ class Build {
     // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
     treeWalk(targetBinTest);
 
-    System.out.println("\n[test - run]");
+    System.out.println("\n[test // run]");
     var launcher = new ArrayList<>();
     launcher.add("-ea");
     launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
@@ -160,10 +160,12 @@ class Build {
   private void validate() {
     var jar = targetJars.resolve("bach-" + Bach.VERSION + ".jar");
 
-    System.out.println("\n[validate - jdeps]");
+    System.out.println("\n[validate // jdeps]");
     bach.run(0, "jdeps", "-summary", "-recursive", jar);
 
-    System.out.println("\n[validate - java -jar bach.jar ...]");
+    System.out.println("\n[validate // java -jar bach.jar ...]");
+    System.out.print("Bach ");
+    bach.run(0, "java", "-jar", jar, "version");
     bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
   }
 
