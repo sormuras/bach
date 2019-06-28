@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
@@ -201,10 +202,18 @@ public class Bach {
   /** Print build summary. */
   public void summary() {
     log("Bach::summary()");
-    if (verbose && Files.isDirectory(project.main.binModules)) {
-      for (var jar : Util.findDirectoryEntries(project.main.binModules, "*.jar")) {
-        log("%s", jar);
-        log("%d bytes", Util.size(jar));
+    var path = project.main.binModules;
+    if (Files.notExists(path)) {
+      out.println("No module destination directory created: " + path.toUri());
+      return;
+    }
+    var jars = Util.findFiles(List.of(path), Util::isJarFile);
+    if (jars.isEmpty()) {
+      out.printf("No module created for %s%n", project.name);
+      return;
+    }
+    if (verbose) {
+      for (var jar : jars) {
         runner.run(new Command("jar", "--describe-module", "--file", jar));
       }
       runner.run(
@@ -214,6 +223,11 @@ public class Bach {
               project.main.binModules,
               "--check",
               String.join(",", project.main.modules)));
+    }
+    out.printf("%d module(s) created for %s in %s:%n", jars.size(), project.name, path.toUri());
+    for (var jar : jars) {
+      var module = ModuleFinder.of(jar).findAll().iterator().next().descriptor();
+      out.printf(" -> %9d %s <- %s%n", Util.size(jar), jar.getFileName(), module);
     }
     log("Bach::summary() end.");
   }
@@ -423,7 +437,7 @@ public class Bach {
   /** Project information. */
   class Project {
     final String name = home.toAbsolutePath().normalize().getFileName().toString();
-    final String version = "1.0.0-SNAPSHOT";
+    final String version = System.getProperty("bach.project.version", "1.0.0-SNAPSHOT");
 
     final Path bin = work.resolve(Path.of(System.getProperty("bach.bin", "bin")));
     final Path src = home.resolve(Path.of(System.getProperty("bach.src", "src")));
@@ -590,24 +604,26 @@ public class Bach {
       try (var stream = Files.newDirectoryStream(directory, glob)) {
         stream.forEach(paths::add);
       } catch (Exception e) {
-        throw new Error("Scanning directory entries failed: " + e);
+        throw new Error("Scanning directory entries failed: " + e, e);
       }
       return paths;
     }
 
     /** List all regular files matching the given filter. */
-    static List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) throws Exception {
+    static List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) {
       var files = new ArrayList<Path>();
       for (var root : roots) {
         try (var stream = Files.walk(root)) {
           stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
+        } catch (Exception e) {
+          throw new Error("Scanning directory '" + root + "' failed: " + e, e);
         }
       }
       return files;
     }
 
     /** List all regular Java files in given root directory. */
-    static List<Path> findJavaFiles(Path root) throws Exception {
+    static List<Path> findJavaFiles(Path root) {
       return findFiles(List.of(root), Util::isJavaFile);
     }
 
@@ -620,6 +636,11 @@ public class Bach {
         }
       }
       return false;
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJarFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
     }
 
     /** Join supplied paths into a single string joined by current path separator. */
