@@ -1,5 +1,4 @@
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -17,9 +16,13 @@ class DemoTests {
   private static final Path DEMO = Path.of("src", "demo");
 
   @TestFactory
-  Stream<DynamicTest> demo(@TempDir Path work) {
-    return Bach.Util.findDirectoryNames(DEMO).stream()
-        .map(name -> dynamicTest(name, () -> demo(name, work.resolve(name))));
+  Stream<DynamicTest> demo(@TempDir Path temp) {
+    return Bach.Util.findDirectoryNames(DEMO).stream().map(name -> newDynamicTest(name, temp));
+  }
+
+  private DynamicTest newDynamicTest(String name, Path temp) {
+    var uri = DEMO.resolve(name).resolve("src/a/main/java/module-info.java").toUri();
+    return DynamicTest.dynamicTest(name, uri, () -> demo(name, temp.resolve(name)));
   }
 
   private void demo(String name, Path work) throws Exception {
@@ -28,12 +31,13 @@ class DemoTests {
     assertLinesMatch(List.of(">> BUILD >>", "Bach::build() end."), demo.lines());
   }
 
-  static class Demo {
+  static class Demo implements AutoCloseable {
 
     static Demo build(String name, Path work) {
-      var demo = new Demo(DEMO.resolve(name), work);
-      demo.bach.build();
-      return demo;
+      try (var demo = new Demo(DEMO.resolve(name), work)) {
+        demo.bach.build();
+        return demo;
+      }
     }
 
     final StringWriter out, err;
@@ -43,6 +47,12 @@ class DemoTests {
       this.out = new StringWriter();
       this.err = new StringWriter();
       this.bach = new Bach(new PrintWriter(out), new PrintWriter(err), home, work, true);
+    }
+
+    @Override
+    public void close() {
+      out.flush();
+      err.flush();
     }
 
     List<String> lines() {
