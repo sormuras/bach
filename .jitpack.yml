@@ -5,8 +5,9 @@ jdk: openjdk11
 
 install:
 - unset JAVA_TOOL_OPTIONS
-- jshell --execution local ./build.jsh
-#- JARS="target/build/jars"
-#- FILES="-Dfile=$JARS/bach.jar -Dsources=$JARS/bach-sources.jar -Djavadoc=$JARS/bach-javadoc.jar"
-#- find $JARS
-#- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+- ./build.jsh
+- JARS="target/build/jars"
+- BACH_VERSION="bach-$(java src/bach/Bach.java version)"
+- FILES="-Dfile=$JARS/$BACH_VERSION.jar -Dsources=$JARS/$BACH_VERSION-sources.jar -Djavadoc=$JARS/$BACH_VERSION-javadoc.jar"
+- find $JARS
+- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
