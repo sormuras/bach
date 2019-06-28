@@ -15,144 +15,169 @@
  * limitations under the License.
  */
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
-interface Build {
+/** OS-agnostic build program. */
+class Build {
 
-  Path SOURCE = Paths.get("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
-  Path TARGET = Paths.get("target", "build");
-
-  static void main(String... args) {
-    try {
-      generate();
-      build();
-    } catch (Throwable throwable) {
-      System.err.printf("Build failed due to: %s%n", throwable);
-      throwable.printStackTrace();
-      System.exit(1);
-    }
+  /** Main entry-point throwing runtime exception on error. */
+  public static void main(String... args) throws Exception {
+    System.out.println("\nBuilding Bach.java " + Bach.VERSION + "...");
+    var build = new Build();
+    build.clean();
+    // build.format();
+    build.compile();
+    build.test();
+    build.document();
+    build.jar();
+    build.validate();
   }
 
-  static void generate() throws Exception {
-    System.out.printf("%n[generate]%n%n");
+  private final Bach bach = new Bach();
+  private final Path target = Path.of("target", "build");
+  private final Path targetBinMain = target.resolve("bin/main");
+  private final Path targetBinTest = target.resolve("bin/test");
+  private final Path targetJavadoc = target.resolve("javadoc");
+  private final Path targetJars = target.resolve("jars");
 
-    var imports = new TreeSet<String>();
-    var dragons = new ArrayList<String>();
-    var generated = new ArrayList<String>();
-    generated.add("// THIS FILE WAS GENERATED ON " + Instant.now());
-    generated.add("/*");
-    generated.add(" * Bach - Java Shell Builder");
-    generated.add(" * Copyright (C) 2019 Christian Stein");
-    generated.add(" *");
-    generated.add(" * Licensed under the Apache License, Version 2.0 (the \"License\");");
-    generated.add(" * you may not use this file except in compliance with the License.");
-    generated.add(" * You may obtain a copy of the License at");
-    generated.add(" *");
-    generated.add(" *     https://www.apache.org/licenses/LICENSE-2.0");
-    generated.add(" *");
-    generated.add(" * Unless required by applicable law or agreed to in writing, software");
-    generated.add(" * distributed under the License is distributed on an \"AS IS\" BASIS,");
-    generated.add(" * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.");
-    generated.add(" * See the License for the specific language governing permissions and");
-    generated.add(" * limitations under the License.");
-    generated.add(" */");
-    generated.add("");
-    generated.add("// default package");
-    generated.add("");
-    int indexOfImports = generated.size();
-    generated.add("");
-    generate(generated, SOURCE.resolve("Bach.java"), imports, "");
-    int indexOfDragons = generated.size() - 1;
-    for (var dragon : generateDragons()) {
-      if (dragon.equals(SOURCE.resolve("Bach.java"))) {
-        continue;
-      }
-      System.out.println("Processing " + dragon + "...");
-      dragons.add("");
-      generate(dragons, dragon, imports, "  ");
-    }
-    generated.addAll(indexOfDragons, dragons);
-    generated.addAll(
-        indexOfImports,
-        imports.stream().filter(i -> !i.startsWith("import static")).collect(Collectors.toList()));
-    generated.add(indexOfImports, "");
-    generated.addAll(
-        indexOfImports,
-        imports.stream().filter(i -> i.startsWith("import static")).collect(Collectors.toList()));
+  private void clean() throws Exception {
+    System.out.println("\n[clean]");
 
-    // write generated lines to temporary file
-    var generatedPath = TARGET.resolve("Bach.java");
-    Files.createDirectories(TARGET);
-    Files.deleteIfExists(generatedPath);
-    Files.write(generatedPath, generated);
-    System.out.println();
-    System.out.println("Generated " + generatedPath + " with " + generated.size() + " lines.");
-
-    // only copy if content changed - ignoring initial line, which contains the generation date
-    var publishedPath = Path.of("src", "bach", "Bach.java");
-    var published = Files.readAllLines(publishedPath);
-    published.set(0, "");
-    generated.set(0, "");
-    int publishedHash = published.hashCode();
-    int temporaryHash = generated.hashCode();
-    System.out.println("Generated hash code is 0x" + Integer.toHexString(temporaryHash));
-    System.out.println("Published hash code is 0x" + Integer.toHexString(publishedHash));
-    if (publishedHash != temporaryHash) {
-      publishedPath.toFile().setWritable(true);
-      Files.copy(generatedPath, publishedPath, StandardCopyOption.REPLACE_EXISTING);
-      publishedPath.toFile().setWritable(false);
-      System.out.println("New version of Bach.java generated - don't forget to publish it!");
-      System.out.println("Generated hash code is 0x" + Integer.toHexString(temporaryHash));
-    }
+    Bach.Util.treeDelete(targetBinMain);
+    Bach.Util.treeDelete(targetBinTest);
+    Bach.Util.treeDelete(targetJavadoc);
+    Bach.Util.treeDelete(targetJars);
   }
 
-  static List<Path> generateDragons() throws Exception {
-    var dragons = new ArrayList<Path>();
-    try (var stream = Files.newDirectoryStream(SOURCE, "*.java")) {
-      stream.forEach(dragons::add);
-    }
-    dragons.sort(Comparator.comparing(Path::toString));
-    return dragons;
+  //  private void format() throws Exception {
+  //    System.out.println("\n[format]");
+  //
+  //    var roots =
+  //        List.of(
+  //            Path.of("demo"),
+  //            Path.of("src", "bach"),
+  //            Path.of("src", "build"),
+  //            Path.of("src", "test"));
+  //    Bach.Tool.format(bach, Boolean.getBoolean("bach.format.replace"), roots);
+  //  }
+
+  private void compile() {
+    System.out.println("\n[compile]");
+    bach.run(0, "javac", "-d", targetBinMain, "src/bach/Bach.java");
+    treeWalk(targetBinMain);
   }
 
-  static void generate(List<String> target, Path source, Set<String> imports, String indentation)
-      throws Exception {
-    var lines = Files.readAllLines(source);
-    boolean head = true;
-    for (var line : lines) {
-      if (head) {
-        if (line.startsWith("import")) {
-          imports.add(line);
-        }
-        if (line.equals("/*BODY*/")) {
-          head = false;
-        }
-        continue;
-      }
-      if (line.isEmpty()) {
-        target.add("");
-        continue;
-      }
-      var newLine = indentation + line.replace("/*STATIC*/", "static");
-      target.add(newLine);
-    }
+  private void test() throws Exception {
+    System.out.println("\n[test - download]");
+    var uri =
+        URI.create(
+            "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0-RC2/junit-platform-console-standalone-1.5.0-RC2.jar");
+    var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
+
+    System.out.println("\n[test - compile]");
+    var javac = new ArrayList<>();
+    javac.add("-d");
+    javac.add(targetBinTest);
+    javac.add("--class-path");
+    javac.add(Bach.Util.join(targetBinMain, junit));
+    javac.addAll(Bach.Util.findJavaFiles(Path.of("src", "test")));
+    bach.run(0, "javac", javac.toArray(Object[]::new));
+    // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
+    treeWalk(targetBinTest);
+
+    System.out.println("\n[test - run]");
+    var launcher = new ArrayList<>();
+    launcher.add("-ea");
+    launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
+    launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
+    launcher.add("--class-path");
+    launcher.add(Bach.Util.join(targetBinTest, targetBinMain, junit));
+    launcher.add("org.junit.platform.console.ConsoleLauncher");
+    launcher.add("--scan-class-path");
+    bach.run(0, "java", launcher.toArray(Object[]::new));
   }
 
-  static void build() throws Exception {
-    System.out.printf("%n[build]%n%n");
+  private void document() throws Exception {
+    System.out.println("\n[document]");
+    Files.createDirectories(targetJavadoc);
+    bach.run(
+        0,
+        "javadoc",
+        "-d",
+        targetJavadoc,
+        "-package",
+        "-quiet",
+        "-keywords",
+        "-html5",
+        "-linksource",
+        "-Xdoclint:all,-missing",
+        "-link",
+        "https://docs.oracle.com/en/java/javase/11/docs/api/",
+        "src/bach/Bach.java");
+  }
 
-    System.setProperty("debug".substring(1), "true");
-    var bach = new Bach();
-    bach.build();
+  private void jar() throws Exception {
+    System.out.println("\n[jar]");
+    Files.createDirectories(targetJars);
+    bach.run(
+        0,
+        "jar",
+        "--create",
+        "--file",
+        targetJars.resolve("bach-" + Bach.VERSION + ".jar"),
+        "--main-class",
+        "Bach",
+        "-C",
+        targetBinMain,
+        ".");
+    bach.run(
+        0,
+        "jar",
+        "--create",
+        "--file",
+        targetJars.resolve("bach-" + Bach.VERSION + "-sources.jar"),
+        "-C",
+        "src/bach",
+        ".");
+    bach.run(
+        0,
+        "jar",
+        "--create",
+        "--file",
+        targetJars.resolve("bach-" + Bach.VERSION + "-javadoc.jar"),
+        "-C",
+        targetJavadoc,
+        ".");
+
+    System.out.println("\nArtifacts in " + targetJars.toUri());
+    treeWalk(targetJars);
+  }
+
+  private void validate() {
+    var jar = targetJars.resolve("bach-" + Bach.VERSION + ".jar");
+
+    System.out.println("\n[validate - jdeps]");
+    bach.run(0, "jdeps", "-summary", "-recursive", jar);
+
+    System.out.println("\n[validate - java -jar bach.jar ...]");
+    bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
+  }
+
+  /** Walk directory tree structure. */
+  private static void treeWalk(Path root) {
+    try (var stream = Files.walk(root)) {
+      stream
+          .map(root::relativize)
+          .map(path -> path.toString().replace('\\', '/'))
+          .sorted()
+          .filter(Predicate.not(String::isEmpty))
+          .forEach(System.out::println);
+    } catch (Exception e) {
+      throw new Error("Walking tree failed: " + root, e);
+    }
   }
 }

@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
-/open src/build/Build.java
 /open src/bach/Bach.java
+/open src/build/Build.java
 
 var code = 0
 try {
-  Build.generate();
-  Build.build(); // needs `/open src/bach/Bach.java`
+  Build.main();
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;
