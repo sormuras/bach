@@ -21,14 +21,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLConnection;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -126,7 +132,7 @@ public class Bach {
     log("Bach::compile() end.");
   }
 
-  void compile(Project.Realm realm) {
+  private void compile(Project.Realm realm) {
     log("Bach::compile(%s)", realm.name);
     if (realm.modules.isEmpty()) {
       log("Bach::compile(%s) end -- no modules to compile.", realm.name);
@@ -223,9 +229,26 @@ public class Bach {
     return runner.run(commands);
   }
 
+  /** Execute the named tool and throw an error the expected and actual exit values aren't equal. */
+  void run(int expected, String name, Object... arguments) {
+    log("Bach::run(%d, %s, %s)", expected, name, List.of(arguments));
+    var actual = run(name, arguments);
+    if (expected != actual) {
+      var command = name + (arguments.length == 0 ? "" : " " + List.of(arguments));
+      throw new Error("Expected " + expected + ", but got " + actual + " as result of: " + command);
+    }
+  }
+
+  /** Execute the named tool and return its exit value. */
+  int run(String name, Object... arguments) {
+    log("Bach::run(%s, %s)", name, List.of(arguments));
+    return runner.run(new Command(name, arguments));
+  }
+
   /** Runtime context. */
   class Runner {
 
+    /** Transmute strings to commands. */
     List<Command> commands(List<String> strings) {
       var commands = new ArrayList<Command>();
       var deque = new ArrayDeque<>(strings);
@@ -306,6 +329,7 @@ public class Bach {
       return builder;
     }
 
+    /** Start new process and wait for its termination. */
     int run(ProcessBuilder builder) {
       log("Bach::run(%s)", builder);
       try {
@@ -475,18 +499,81 @@ public class Bach {
 
   /** Static helpers. */
   static class Util {
-    static long size(Path path) {
+
+    /** Download a file denoted by the specified uri. */
+    static Path download(Path destination, URI uri, boolean offline) throws Exception {
+      // run.log(TRACE, "Downloader::download(%s)", uri);
+      var fileName = extractFileName(uri);
+      var target = Files.createDirectories(destination).resolve(fileName);
+      var url = uri.toURL(); // fails for non-absolute uri
+      if (offline) {
+        // run.log(DEBUG, "Offline mode is active!");
+        if (Files.exists(target)) {
+          // var file = target.getFileName().toString();
+          // run.log(DEBUG, "Target already exists: %s, %d bytes.", file, size(target));
+          return target;
+        }
+        var message = "Offline mode is active and target is missing: " + target;
+        // run.log(ERROR, message);
+        throw new IllegalStateException(message);
+      }
+      return download(destination, url.openConnection());
+    }
+
+    /** Download a file using the given URL connection. */
+    static Path download(Path destination, URLConnection connection) throws Exception {
+      var millis = connection.getLastModified(); // 0 means "unknown"
+      var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+      // run.log(TRACE, "Remote was modified on %s", lastModified);
+      var target = destination.resolve(extractFileName(connection));
+      // run.log(TRACE, "Local target file is %s", target.toUri());
+      // var file = target.getFileName().toString();
+      if (Files.exists(target)) {
+        var fileModified = Files.getLastModifiedTime(target);
+        // run.log(TRACE, "Local last modified on %s", fileModified);
+        if (fileModified.equals(lastModified)) {
+          // run.log(TRACE, "Timestamp match: %s, %d bytes.", file, size(target));
+          connection.getInputStream().close(); // release all opened resources
+          return target;
+        }
+        // run.log(DEBUG, "Local target file differs from remote source -- replacing it...");
+      }
+      try (var sourceStream = connection.getInputStream()) {
+        try (var targetStream = Files.newOutputStream(target)) {
+          // run.log(DEBUG, "Transferring %s...", file);
+          sourceStream.transferTo(targetStream);
+        }
+        Files.setLastModifiedTime(target, lastModified);
+      }
+      // run.log(DEBUG, "Downloaded %s, %d bytes.", file, Files.size(target));
+      return target;
+    }
+
+    /** Extract last path element from the supplied uri. */
+    static String extractFileName(URI uri) {
+      var path = uri.getPath(); // strip query and fragment elements
+      return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    /** Extract target file name either from 'Content-Disposition' header or. */
+    static String extractFileName(URLConnection connection) {
+      var contentDisposition = connection.getHeaderField("Content-Disposition");
+      if (contentDisposition != null && contentDisposition.indexOf('=') > 0) {
+        return contentDisposition.split("=")[1].replaceAll("\"", "");
+      }
       try {
-        return Files.size(path);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+        return extractFileName(connection.getURL().toURI());
+      } catch (URISyntaxException e) {
+        throw new Error("URL connection returned invalid URL?!", e);
       }
     }
 
+    /** List names of all directories found in given directory. */
     static List<String> findDirectoryNames(Path directory) {
       return findDirectoryEntries(directory, Files::isDirectory);
     }
 
+    /** List paths of all entries found in given directory after applying the filter. */
     static List<String> findDirectoryEntries(Path directory, DirectoryStream.Filter<Path> filter) {
       var names = new ArrayList<String>();
       try (var stream = Files.newDirectoryStream(directory, filter)) {
@@ -497,6 +584,7 @@ public class Bach {
       return names;
     }
 
+    /** List paths of all entries found in given directory after applying the glob pattern. */
     static List<Path> findDirectoryEntries(Path directory, String glob) {
       var paths = new ArrayList<Path>();
       try (var stream = Files.newDirectoryStream(directory, glob)) {
@@ -505,6 +593,85 @@ public class Bach {
         throw new Error("Scanning directory entries failed: " + e);
       }
       return paths;
+    }
+
+    /** List all regular files matching the given filter. */
+    static List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) throws Exception {
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
+        }
+      }
+      return files;
+    }
+
+    /** List all regular Java files in given root directory. */
+    static List<Path> findJavaFiles(Path root) throws Exception {
+      return findFiles(List.of(root), Util::isJavaFile);
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        var name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.indexOf('.') == name.length() - 5; // single dot in filename
+        }
+      }
+      return false;
+    }
+
+    /** Join supplied paths into a single string joined by current path separator. */
+    static String join(Collection<?> paths) {
+      return paths.stream().map(Object::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /** Join supplied paths into a single string joined by current path separator. */
+    static String join(Path path, Path... more) {
+      if (more.length == 0) {
+        return path.toString();
+      }
+      var strings = new String[1 + more.length];
+      strings[0] = path.toString();
+      for (var i = 0; i < more.length; i++) {
+        strings[1 + i] = more[i].toString();
+      }
+      return String.join(File.pathSeparator, strings);
+    }
+
+    /** Returns the size of a file in bytes. */
+    static long size(Path path) {
+      try {
+        return Files.size(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    /** Delete all files and directories from and including the root directory. */
+    static void treeDelete(Path root) throws Exception {
+      treeDelete(root, __ -> true);
+    }
+
+    /** Delete selected files and directories from and including the root directory. */
+    static void treeDelete(Path root, Predicate<Path> filter) throws Exception {
+      // trivial case: delete existing empty directory or single file
+      if (filter.test(root)) {
+        try {
+          Files.deleteIfExists(root);
+          return;
+        } catch (DirectoryNotEmptyException ignored) {
+          // fall-through
+        }
+      }
+      // default case: walk the tree...
+      try (var stream = Files.walk(root)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      }
     }
   }
 }
