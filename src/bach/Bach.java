@@ -34,6 +34,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -159,6 +160,14 @@ public class Bach {
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules));
+    if (realm == project.test) {
+      for (var module : modules) {
+        if (project.main.modules.contains(module)) {
+          // javac.add("--patch-module", module + "=" + project.main.binClasses.resolve(module));
+          javac.add("--patch-module", module + "=" + project.main.moduleSourcePath.replace("*", module));
+        }
+      }
+    }
     if (runner.run(javac) != 0) {
       throw new IllegalStateException("javac failed");
     }
@@ -183,7 +192,7 @@ public class Bach {
               .add("--file", sourcesJar)
               .addIff(verbose, "--verbose")
               .add("--no-manifest")
-              .add("-C", project.src.resolve(module).resolve(realm.offset))
+              .add("-C", project.src.resolve(module).resolve(realm.name).resolve("java"))
               .add(".")
               .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
       if (runner.run(jarModule) != 0) {
@@ -467,7 +476,6 @@ public class Bach {
     /** Project realm: main or test. */
     class Realm {
       final String name;
-      final Path offset;
       final String moduleSourcePath;
       final List<String> modules;
       final List<Path> modulePath;
@@ -480,9 +488,6 @@ public class Bach {
 
       Realm(String name, Path... initialModulePath) {
         this.name = name;
-        this.offset = Path.of(name, "java");
-        this.moduleSourcePath = moduleSourcePath();
-        this.modules = modules();
         this.modulePath = List.of(initialModulePath);
         this.preview = Boolean.getBoolean("bach." + name + ".preview");
         this.release = System.getProperty("bach." + name + ".release", null);
@@ -491,32 +496,35 @@ public class Bach {
         this.binClasses = bin.resolve(name).resolve("compiled").resolve("classes");
         this.binModules = bin.resolve(name).resolve("modules");
         this.binSources = bin.resolve(name).resolve("sources");
-      }
 
-      List<String> modules() {
         if (Files.notExists(src)) {
-          return List.of();
+          this.moduleSourcePath = src.toString();
+          this.modules = List.of();
+          return;
         }
-        var descriptor = offset.resolve("module-info.java");
-        DirectoryStream.Filter<Path> filter =
-            path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
-        return Util.findDirectoryEntries(src, filter);
-      }
-
-      String moduleSourcePath() {
-        var base = src.toString();
-        var path = offset.toString();
-        if (path.isEmpty()) {
-          return base;
+        var modules = new ArrayList<String>();
+        var moduleSourcePaths = new TreeSet<String>();
+        var declarations = Util.findFiles(List.of(src), Util::isModuleInfo);
+        for (var declaration : declarations) {
+          var relative = src.relativize(declaration); //  <module>/<realm>/.../module-info.java
+          var module = relative.getName(0).toString();
+          var realm = relative.getName(1).toString();
+          if (!name.equals(realm)) {
+            continue;
+          }
+          modules.add(module);
+          var offset = relative.subpath(1, relative.getNameCount() - 1);
+          moduleSourcePaths.add(String.join(File.separator, src.toString(), "*", offset.toString()));
         }
-        return String.join(File.separator, base, "*", path);
+        this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
+        this.modules = List.copyOf(modules);
       }
 
       void toStrings(Consumer<String> consumer) {
+        var prefix = "  " + name + '.';
         consumer.accept("Realm '" + name + "' properties");
-        consumer.accept("  modules = " + modules);
-        consumer.accept("  offset = " + offset);
-        consumer.accept("  moduleSourcePath = " + moduleSourcePath);
+        consumer.accept(prefix + "modules = " + modules);
+        consumer.accept(prefix + "moduleSourcePath = " + moduleSourcePath);
       }
     }
   }
@@ -651,6 +659,11 @@ public class Bach {
     /** Test supplied path for pointing to a Java source compilation unit. */
     static boolean isJarFile(Path path) {
       return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
+    }
+
+    /** Test supplied path for pointing to a Java module declaration source compilation unit. */
+    static boolean isModuleInfo(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
 
     /** Join supplied paths into a single string joined by current path separator. */
