@@ -155,7 +155,7 @@ public class Bach {
             .add("-Xlint")
             .addIff(realm.preview, "--enable-preview")
             .addIff(realm.release != null, "--release", realm.release)
-            // .add("--module-path", modulePath)
+            .add("--module-path", realm.modulePath)
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules));
@@ -452,7 +452,7 @@ public class Bach {
     final List<String> modules = Util.findDirectoryNames(src);
 
     final Realm main = new Realm("main");
-    final Realm test = new Realm("test");
+    final Realm test = new Realm("test", main.binModules);
 
     void toStrings(Consumer<String> consumer) {
       consumer.accept("Project properties");
@@ -470,6 +470,7 @@ public class Bach {
       final Path offset;
       final String moduleSourcePath;
       final List<String> modules;
+      final List<Path> modulePath;
       final boolean preview;
       final String release;
       final Path srcResources;
@@ -477,11 +478,12 @@ public class Bach {
       final Path binModules;
       final Path binSources;
 
-      Realm(String name) {
+      Realm(String name, Path... initialModulePath) {
         this.name = name;
         this.offset = Path.of(name, "java");
         this.moduleSourcePath = moduleSourcePath();
         this.modules = modules();
+        this.modulePath = List.of(initialModulePath);
         this.preview = Boolean.getBoolean("bach." + name + ".preview");
         this.release = System.getProperty("bach." + name + ".release", null);
 
@@ -495,7 +497,7 @@ public class Bach {
         if (Files.notExists(src)) {
           return List.of();
         }
-        var descriptor = Path.of(name, "java", "module-info.java");
+        var descriptor = offset.resolve("module-info.java");
         DirectoryStream.Filter<Path> filter =
             path -> Files.isDirectory(path) && Files.exists(path.resolve(descriptor));
         return Util.findDirectoryEntries(src, filter);
