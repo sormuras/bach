@@ -160,8 +160,7 @@ public class Bach {
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules));
     if (runner.run(javac) != 0) {
-      log("Bach::compile(%s) failed!", realm.name);
-      return;
+      throw new IllegalStateException("javac failed");
     }
     var realmModules = Files.createDirectories(realm.binModules);
     var realmSources = Files.createDirectories(realm.binSources);
