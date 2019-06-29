@@ -387,15 +387,19 @@ public class Bach {
       return add(key).add(value);
     }
 
-    /** Add two arguments, i.e. the key and the paths joined by system's path separator. */
+    /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
     Command add(Object key, Collection<Path> paths) {
       return add(key, paths, UnaryOperator.identity());
     }
 
-    /** Add two arguments, i.e. the key and the paths joined by system's path separator. */
+    /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
     Command add(Object key, Collection<Path> paths, UnaryOperator<String> operator) {
-      var stream = paths.stream() /*.filter(Files::isDirectory)*/.map(Object::toString);
-      return add(key, operator.apply(stream.collect(Collectors.joining(File.pathSeparator))));
+      var stream = paths.stream().filter(Files::isDirectory).map(Object::toString);
+      var value = stream.collect(Collectors.joining(File.pathSeparator));
+      if (value.isEmpty()) {
+        return this;
+      }
+      return add(key, operator.apply(value));
     }
 
     /** Add all arguments by invoking {@link #add(Object)} for each element. */
