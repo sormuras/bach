@@ -75,7 +75,7 @@ class Build {
     System.out.println("\n[test // download]");
     var uri =
         URI.create(
-            "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0-RC2/junit-platform-console-standalone-1.5.0-RC2.jar");
+            "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0/junit-platform-console-standalone-1.5.0.jar");
     var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
 
     System.out.println("\n[test // compile]");
