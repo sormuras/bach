@@ -362,7 +362,7 @@ public class Bach {
       } catch (NoSuchMethodException e) {
         // fall-through
       } catch (ReflectiveOperationException e) {
-        e.printStackTrace(err);
+        e.getCause().printStackTrace(err);
         return 1;
       }
 
