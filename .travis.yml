@@ -15,3 +15,6 @@ after_success:
 
 - cd "${TRAVIS_BUILD_DIR}/src/demo/010-main(a,b,c)"
 - java ${BACH}
+
+- cd "${TRAVIS_BUILD_DIR}/src/demo/100-main-a-test-a,t"
+- java ${BACH}
