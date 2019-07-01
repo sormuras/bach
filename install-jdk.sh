@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-01-GAMMA'
+    readonly script_version='2019-07-02'
 
     dry=false
     silent=false
@@ -275,8 +275,10 @@ function download_and_extract_and_set_target() {
             mkdir --parents "${target}"
             tar --extract ${tar_options} -C "${target}" --strip-components=1
         else
+            # 3 = <jdk>/Contents/Home (by AdoptOpenJDK)  4 = ./<jdk>/Contents/Home (by OpenJDK)
+            local components=3; if [[ ${url} == "https://download.java.net/java"* ]]; then components=4; fi
             mkdir -p "${target}"
-            tar --extract ${tar_options} -C "${target}" --strip-components=4 # . / <jdk> / Contents / Home
+            tar --extract ${tar_options} -C "${target}" --strip-components=${components}
         fi
     fi
 
