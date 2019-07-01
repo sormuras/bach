@@ -31,7 +31,7 @@ function initialize() {
     emit_java_home=false
 
     feature='ea'
-    readonly license='GPL' # Force GPLv2+CE
+    license='GPL' # Force GPLv2+CE
     os='?'
     url='?'
     workspace="${HOME}"
