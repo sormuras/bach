@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-06-25'
+    readonly script_version='2019-07-01-ALPHA'
 
     dry=false
     silent=false
@@ -31,7 +31,7 @@ function initialize() {
     emit_java_home=false
 
     feature='ea'
-    license='GPL'
+    readonly license='GPL' # Force GPLv2+CE
     os='?'
     url='?'
     workspace="${HOME}"
@@ -42,7 +42,7 @@ function initialize() {
 function usage() {
 cat << EOF
 Usage: ${script_name} [OPTION]...
-Download and extract the latest-and-greatest JDK from java.net or Oracle.
+Download and extract latest-and-greatest JDK from https://jdk.java.net or https://adoptopenjdk.net
 
 Version: ${script_version}
 Options:
@@ -53,8 +53,7 @@ Options:
   -v|--verbose              Displays verbose output
 
   -f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
-  -l|--license GPL|BCL      License defaults to "GPL", BCL also indicates OTN-LA for Oracle Java SE
-  -o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
+  -o|--os linux-x64|osx-x64 Operating system identifier
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
   -t|--target PATH          Target directory, defaults to first component of the tarball
@@ -119,7 +118,8 @@ function parse_options() {
                 shift
                 ;;
             -l|-L|--license)
-                license="$1"
+                # license="$1"
+                say "Ignoring license option: $1 -- using GPLv2+CE by default"
                 verbose "license=${license}"
                 shift
                 ;;
@@ -183,9 +183,6 @@ function perform_sanity_checks() {
     if [[ ${feature} -lt 9 ]] || [[ ${feature} -gt ${latest_jdk} ]]; then
         script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
-    if [[ ${feature} -gt 11 ]] && [[ ${license} == 'BCL' ]]; then
-        script_exit "BCL licensed downloads are only supported up to JDK 11, but got: ${feature}" 3
-    fi
     if [[ -d "$target" ]]; then
         script_exit "Target directory must not exist, but it does: $(du -hs '${target}')" 3
     fi
@@ -193,16 +190,12 @@ function perform_sanity_checks() {
 
 function determine_url() {
     local DOWNLOAD='https://download.java.net/java'
-    local ORACLE='http://download.oracle.com/otn-pub/java/jdk'
 
     # Archived feature or official GA build?
     case "${feature}-${license}" in
         9-GPL) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
-        9-BCL) url="${ORACLE}/9.0.4+11/c2514751926b4512b076cc82f959763f/jdk-9.0.4_${os}_bin.tar.gz"; return;;
        10-GPL) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
-       10-BCL) url="${ORACLE}/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_${os}_bin.tar.gz"; return;;
        11-GPL) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
-       11-BCL) url="${ORACLE}/11.0.3+12/37f5e150db5247ab9333b11c1dddcd30/jdk-11.0.3_${os}_bin.tar.gz"; return;;
        12-GPL) url="${DOWNLOAD}/GA/jdk12.0.1/69cfe15208a647278a19ef0990eea691/12/GPL/openjdk-12.0.1_${os}_bin.tar.gz"; return;;
     esac
 
@@ -258,11 +251,7 @@ function download_and_extract_and_set_target() {
 
     say "Downloading JDK from ${url}..."
     verbose "Using wget options: ${wget_options}"
-    if [[ ${license} == 'GPL' ]]; then
-        wget ${wget_options} ${url}
-    else
-        wget ${wget_options} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url}
-    fi
+    wget ${wget_options} ${url}
 
     if [[ ${os} == 'windows-x64' ]]; then
         script_exit "Extracting archives on Windows isn't supported, yet" 4
