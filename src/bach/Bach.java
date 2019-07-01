@@ -437,7 +437,7 @@ public class Bach {
 
     /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
     Command add(Object key, Collection<Path> paths, UnaryOperator<String> operator) {
-      var stream = paths.stream().filter(Files::isDirectory).map(Object::toString);
+      var stream = paths.stream().filter(Files::exists).map(Object::toString);
       var value = stream.collect(Collectors.joining(File.pathSeparator));
       if (value.isEmpty()) {
         return this;
