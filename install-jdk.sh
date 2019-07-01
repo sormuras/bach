@@ -270,20 +270,22 @@ function download_and_extract_and_set_target() {
         else
             target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
         fi
+        verbose "Set target to: ${target}"
     else
+        echo "Using custom target: ${target}"
         if [[ "$OSTYPE" != "darwin"* ]]; then
             mkdir --parents "${target}"
             tar --extract ${tar_options} -C "${target}" --strip-components=1
         else
             # 3 = <jdk>/Contents/Home (by AdoptOpenJDK)  4 = ./<jdk>/Contents/Home (by OpenJDK)
             local components=3; if [[ ${url} == "https://download.java.net/java"* ]]; then components=4; fi
+            verbose "Strip components: ${components}"
             mkdir -p "${target}"
             tar --extract ${tar_options} -C "${target}" --strip-components=${components}
         fi
     fi
 
     if [[ ${verbose} == true ]]; then
-        echo "Set target to: ${target}"
         echo "Content of target directory:"
         ls "${target}"
         echo "Content of release file:"
