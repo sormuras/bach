@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-01-BETA'
+    readonly script_version='2019-07-01-GAMMA'
 
     dry=false
     silent=false
@@ -195,7 +195,7 @@ function determine_url() {
         local type='jdk'
         local os_name=${os%-*}
         if [[ "$os_name" == "osx" ]]; then
-          os='mac'
+          os_name='mac'
         fi
         local os_arch=${os#*-}
         local release='latest'
