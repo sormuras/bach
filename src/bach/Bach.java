@@ -548,8 +548,8 @@ public class Bach {
             continue;
           }
           modules.add(module);
-          var offset = relative.subpath(1, relative.getNameCount() - 1);
-          moduleSourcePaths.add(String.join(File.separator, src.toString(), "*", offset.toString()));
+          var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
+          moduleSourcePaths.add(String.join(File.separator, src.toString(), "*", offset));
         }
         this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
         this.modules = List.copyOf(modules);
