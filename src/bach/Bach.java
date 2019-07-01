@@ -296,6 +296,33 @@ public class Bach {
       return commands;
     }
 
+    void printCommandDetails(String command, String... args) {
+      if (args.length < 2) {
+        out.printf("%s%s%n", command, (args.length == 1 ? " " + args[0] : ""));
+        out.println();
+        return;
+      }
+      out.printf("%s with %d arguments%n", command, args.length);
+      var simple = true;
+      var indent = 8;
+      var max = 100; // line length
+      for (String arg : args) {
+        indent = simple ? 8 : arg.startsWith("-") ? 8 : 10;
+        simple = !arg.startsWith("-");
+        if (arg.length() > max) {
+          if (arg.contains(File.pathSeparator)) {
+            for (String path : arg.split(File.pathSeparator)) {
+              out.printf("%-10s%s%n", "", path);
+            }
+            continue;
+          }
+          arg = arg.substring(0, max - 5) + "[...]";
+        }
+        out.printf("%-" + indent + "s%s%n", "", arg);
+      }
+      out.println();
+    }
+
     /** Run given list of of commands sequentially and fail-fast on non-zero result. */
     int run(List<Command> commands) {
       log("Running %s command(s): %s", commands.size(), commands);
@@ -317,6 +344,9 @@ public class Bach {
      * Run named tool, as loaded by {@link java.util.ServiceLoader} using the system class loader.
      */
     int run(String name, String... args) {
+      if (verbose) {
+        printCommandDetails(name, args);
+      }
       var providedTool = ToolProvider.findFirst(name);
       if (providedTool.isPresent()) {
         var tool = providedTool.get();
