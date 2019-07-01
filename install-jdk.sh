@@ -249,10 +249,10 @@ EOF
 
 function download_and_extract_and_set_target() {
     local quiet='--quiet'; if [[ ${verbose} == true ]]; then quiet=''; fi
-    local local="--directory-prefix ${workspace} --output-document=jdk-${feature}.tar.gz"
+    local local="--directory-prefix ${workspace} --output-document=jdk.tar.gz"
     local remote='--timestamping --continue'
     local wget_options="${quiet} ${local} ${remote}"
-    local tar_options="--file jdk-${feature}.tar.gz"
+    local tar_options="--file jdk.tar.gz"
 
     say "Downloading JDK from ${url}..."
     verbose "Using wget options: ${wget_options}"
