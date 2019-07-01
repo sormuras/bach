@@ -165,10 +165,12 @@ public class Bach {
             .add("--module", String.join(",", modules));
     if (realm == project.test) {
       for (var module : modules) {
-        if (project.main.modules.contains(module)) {
-          // javac.add("--patch-module", module + "=" + project.main.binClasses.resolve(module));
-          javac.add("--patch-module", module + "=" + project.main.moduleSourcePath.replace("*", module));
+        if (!project.main.modules.contains(module)) {
+          continue;
         }
+        var patch = project.main.binClasses.resolve(module);
+        // patch = project.main.moduleSourcePath.replace("*", module);
+        javac.add("--patch-module", module + "=" + patch);
       }
     }
     if (runner.run(javac) != 0) {
