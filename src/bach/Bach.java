@@ -567,6 +567,19 @@ public class Bach {
   /** Static helpers. */
   static class Util {
 
+    /** Download an artifact from a Maven 2 repository specified by its GAV coordinates. */
+    static Path download(Path destination, String group, String artifact, String version) {
+      var host = "https://repo1.maven.org/maven2";
+      var path = group.replace('.', '/');
+      var file = artifact + '-' + version + ".jar";
+      var uri = URI.create(String.join("/", host, path, artifact, version, file));
+      try {
+        return download(destination, uri, Boolean.getBoolean("bach.offline"));
+      } catch (Exception e) {
+        throw new Error("Download failed!", e);
+      }
+    }
+
     /** Download a file denoted by the specified uri. */
     static Path download(Path destination, URI uri, boolean offline) throws Exception {
       // run.log(TRACE, "Downloader::download(%s)", uri);
