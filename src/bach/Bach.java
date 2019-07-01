@@ -82,18 +82,25 @@ public class Bach {
     this(
         out,
         err,
+        ProcessBuilder::inheritIO,
         Path.of(System.getProperty("bach.home", "")),
         Path.of(System.getProperty("bach.work", "")),
         Boolean.getBoolean("bach.verbose"));
   }
 
-  Bach(PrintWriter out, PrintWriter err, Path home, Path work, boolean verbose) {
+  Bach(
+      PrintWriter out,
+      PrintWriter err,
+      UnaryOperator<ProcessBuilder> redirectIO,
+      Path home,
+      Path work,
+      boolean verbose) {
     this.out = out;
     this.err = err;
+    this.runner = new Runner(redirectIO);
     this.home = home;
     this.work = work;
     this.verbose = verbose;
-    this.runner = new Runner();
     this.project = new Project();
     log("Bach %s initialized.", VERSION);
   }
@@ -125,6 +132,7 @@ public class Bach {
       info();
     }
     compile();
+    test();
     summary();
     log("Bach::build() end.");
   }
@@ -212,6 +220,17 @@ public class Bach {
     log("Bach::compile(realm=%s) end.", realm.name);
   }
 
+  /** Launch JUnit Platform for all test modules. */
+  public void test() {
+    log("Bach::test()");
+    if (Files.notExists(project.test.binClasses)) {
+      out.println("Bach::test() end - no compiled test classes found.");
+      return;
+    }
+    new Tester().test(project.test.modules);
+    log("Bach::test() end.");
+  }
+
   /** Print build summary. */
   public void summary() {
     log("Bach::summary()");
@@ -279,6 +298,12 @@ public class Bach {
 
   /** Runtime context. */
   class Runner {
+
+    private final UnaryOperator<ProcessBuilder> redirectIO;
+
+    Runner(UnaryOperator<ProcessBuilder> redirectIO) {
+      this.redirectIO = redirectIO;
+    }
 
     /** Transmute strings to commands. */
     List<Command> commands(List<String> strings) {
@@ -367,9 +392,12 @@ public class Bach {
       }
 
       log("Starting new process for '%s'", name);
-      var processBuilder = newProcessBuilder(name);
+      var processBuilder = new ProcessBuilder(name);
       processBuilder.command().addAll(List.of(args));
-      return run(processBuilder);
+      processBuilder.environment().put("BACH_VERSION", Bach.VERSION);
+      processBuilder.environment().put("BACH_HOME", home.toString());
+      processBuilder.environment().put("BACH_WORK", work.toString());
+      return run(redirectIO.apply(processBuilder));
     }
 
     /** Run provided tool. */
@@ -382,20 +410,11 @@ public class Bach {
       return code;
     }
 
-    /** Create new process builder for the given command and inherit IO from current process. */
-    ProcessBuilder newProcessBuilder(String command) {
-      var builder = new ProcessBuilder(command).inheritIO();
-      builder.environment().put("BACH_VERSION", Bach.VERSION);
-      builder.environment().put("BACH_HOME", home.toString());
-      builder.environment().put("BACH_WORK", work.toString());
-      return builder;
-    }
-
     /** Start new process and wait for its termination. */
-    int run(ProcessBuilder builder) {
-      log("Bach::run(%s)", builder);
+    int run(ProcessBuilder processBuilder) {
+      log("Bach::run(%s)", processBuilder);
       try {
-        var process = builder.start();
+        var process = processBuilder.start();
         var code = process.waitFor();
         if (code == 0) {
           log("Process '%s' successfully terminated.", process);
@@ -561,6 +580,57 @@ public class Bach {
         consumer.accept(prefix + "modules = " + modules);
         consumer.accept(prefix + "moduleSourcePath = " + moduleSourcePath);
       }
+    }
+  }
+
+  /** JUnit Platform Launcher. */
+  class Tester {
+
+    final Path junit =
+        Util.download(
+            USER_HOME.resolve(".bach/tool/junit"),
+            "org.junit.platform",
+            "junit-platform-console-standalone",
+            "1.5.0");
+    final Path mainRunner =
+        Util.download(
+            work.resolve("lib/test-runtime-only"),
+            "de.sormuras.mainrunner",
+            "de.sormuras.mainrunner.engine",
+            "2.0.5");
+
+    void check(int code) {
+      if (code == 2) {
+        throw new Error("No tests found!");
+      }
+      if (code != 0) {
+        throw new Error("Test run failed!");
+      }
+    }
+
+    void test(List<String> modules) {
+      modules.forEach(this::testClassPath);
+    }
+
+    void testClassPath(String module) {
+      var classPath = new ArrayList<Path>();
+      if (Files.isDirectory(project.test.binClasses)) {
+        classPath.add(project.test.binClasses.resolve(module));
+      }
+      if (Files.isDirectory(project.main.binModules)) {
+        classPath.addAll(Util.findDirectoryEntries(project.main.binModules, "*.jar"));
+      }
+      classPath.add(junit);
+      classPath.add(mainRunner);
+
+      var java =
+          new Command("java")
+              .add("-ea")
+              .add("--class-path", classPath)
+              .add("org.junit.platform.console.ConsoleLauncher")
+              .add("--fail-if-no-tests")
+              .add("--scan-class-path");
+      check(runner.run(java));
     }
   }
 
