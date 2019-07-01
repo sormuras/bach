@@ -268,7 +268,8 @@ function download_and_extract_and_set_target() {
         if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | grep 'bin/javac' | tr '/' '\n' | tail -3 | head -1)
         else
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+            local field=2; if [[ ${url} == "https://download.java.net/java"* ]]; then field=1; fi
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f ${field} -d '/' -)/Contents/Home
         fi
         verbose "Set target to: ${target}"
     else
