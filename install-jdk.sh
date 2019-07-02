@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-02'
+    readonly script_version='2019-07-02-II'
 
     dry=false
     silent=false
@@ -297,8 +297,11 @@ function download_and_extract_and_set_target() {
     # https://openjdk.java.net/jeps/319
     # https://bugs.openjdk.java.net/browse/JDK-8196141
     if [[ ${cacerts} == true ]]; then
-        mv "${target}/lib/security/cacerts" "${target}/lib/security/cacerts.jdk"
-        ln -s /etc/ssl/certs/java/cacerts "${target}/lib/security/cacerts"
+        local directory="${target}/lib/security/cacerts"
+        if [[ -f "${directory}" ]]; then
+            mv "${directory}" "${directory}.jdk"
+        fi
+        ln -s /etc/ssl/certs/java/cacerts "${directory}"
     fi
 }
 
