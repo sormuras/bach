@@ -609,6 +609,7 @@ public class Bach {
     }
 
     void test(List<String> modules) {
+      modules.forEach(this::testModulePath);
       modules.forEach(this::testClassPath);
     }
 
@@ -630,6 +631,34 @@ public class Bach {
               .add("org.junit.platform.console.ConsoleLauncher")
               .add("--fail-if-no-tests")
               .add("--scan-class-path");
+      check(runner.run(java));
+    }
+
+    void testModulePath(String module) {
+      var classPath = new ArrayList<Path>();
+      classPath.add(junit);
+      classPath.add(mainRunner);
+
+      var modulePath = new ArrayList<Path>();
+      modulePath.add(project.test.binModules);
+      if (Files.isDirectory(project.main.binModules)) {
+        modulePath.add(project.main.binModules);
+      }
+      var java =
+          new Command("java")
+              .add("-ea")
+              .add("--module-path", modulePath)
+              .add("--add-modules", module);
+      if (project.main.modules.contains(module)) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        var modularJar = project.main.binModules.resolve(moduleNameDashVersion + ".jar");
+        var patch = modularJar.toString();
+        java.add("--patch-module", module + "=" + patch);
+      }
+      java.add("--class-path", classPath)
+          .add("org.junit.platform.console.ConsoleLauncher")
+          .add("--fail-if-no-tests")
+          .add("--select-module", module);
       check(runner.run(java));
     }
   }
