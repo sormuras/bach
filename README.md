@@ -72,8 +72,8 @@ For more details consult the output of `jshell --help`.
 
 # install-jdk.sh
 
-`install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](http://jdk.java.net).
-It supports GA releases and builds provided by [Oracle](http://www.oracle.com/technetwork/java/javase/terms/license/index.html) as well. 
+`install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
+It supports GA releases and archived builds provided by [AdoptOpenJDK](https://adoptopenjdk.net) as well. 
 
 #### Options of `install-jdk.sh`
 ```
@@ -83,11 +83,11 @@ It supports GA releases and builds provided by [Oracle](http://www.oracle.com/te
 -e|--emit-java-home       Print value of "JAVA_HOME" to stdout (ignores silent mode)
 -v|--verbose              Displays verbose output
 
--f|--feature 9|10|...|ea  JDK feature release number, defaults to "ea"
--o|--os linux-x64|osx-x64 Operating system identifier (works best with GPL license)
+-f|--feature 8|11|...|ea  JDK feature release number, defaults to "ea"
+-o|--os linux-x64|osx-x64 Operating system identifier
 -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
 -w|--workspace PATH       Working directory defaults to user's ${HOME}
--t|--target PATH          Target directory, defaults to first component of the tarball
+-t|--target PATH          Target directory, defaults to first real component of the tarball
 -c|--cacerts              Link system CA certificates (currently only Debian/Ubuntu is supported)
 ```
 
