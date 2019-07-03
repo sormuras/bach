@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-02-II'
+    readonly script_version='2019-07-03'
 
     dry=false
     silent=false
@@ -300,8 +300,10 @@ function download_and_extract_and_set_target() {
         local directory="${target}/lib/security/cacerts"
         if [[ -f "${directory}" ]]; then
             mv "${directory}" "${directory}.jdk"
+            ln -s /etc/ssl/certs/java/cacerts "${directory}"
+        else
+            verbose "Directory ${directory} doesn't exist, didn't link system CA certificates."
         fi
-        ln -s /etc/ssl/certs/java/cacerts "${directory}"
     fi
 }
 
