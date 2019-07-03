@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 /** OS-agnostic build program. */
@@ -84,7 +85,7 @@ class Build {
     javac.add(targetBinTest);
     javac.add("--class-path");
     javac.add(Bach.Util.join(targetBinMain, junit));
-    javac.addAll(Bach.Util.findJavaFiles(Path.of("src", "test")));
+    javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
     bach.run(0, "javac", javac.toArray(Object[]::new));
     // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
     treeWalk(targetBinTest);

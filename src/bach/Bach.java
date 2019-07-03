@@ -239,7 +239,7 @@ public class Bach {
       out.println("No module destination directory created: " + path.toUri());
       return;
     }
-    var jars = Util.findFiles(List.of(path), Util::isJarFile);
+    var jars = Util.find(List.of(path), Util::isJarFile);
     if (jars.isEmpty()) {
       out.printf("No module created for %s%n", project.name);
       return;
@@ -558,7 +558,7 @@ public class Bach {
         }
         var modules = new ArrayList<String>();
         var moduleSourcePaths = new TreeSet<String>();
-        var declarations = Util.findFiles(List.of(src), Util::isModuleInfo);
+        var declarations = Util.find(List.of(src), Util::isModuleInfo);
         for (var declaration : declarations) {
           var relative = src.relativize(declaration); //  <module>/<realm>/.../module-info.java
           var module = relative.getName(0).toString();
@@ -774,22 +774,17 @@ public class Bach {
       return paths;
     }
 
-    /** List all regular files matching the given filter. */
-    static List<Path> findFiles(Collection<Path> roots, Predicate<Path> filter) {
+    /** List all paths matching the given filter starting at given root paths. */
+    static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
       var files = new ArrayList<Path>();
       for (var root : roots) {
         try (var stream = Files.walk(root)) {
-          stream.filter(Files::isRegularFile).filter(filter).forEach(files::add);
+          stream.filter(filter).forEach(files::add);
         } catch (Exception e) {
           throw new Error("Scanning directory '" + root + "' failed: " + e, e);
         }
       }
       return files;
-    }
-
-    /** List all regular Java files in given root directory. */
-    static List<Path> findJavaFiles(Path root) {
-      return findFiles(List.of(root), Util::isJavaFile);
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */
