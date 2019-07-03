@@ -27,14 +27,19 @@ class DemoTests {
   }
 
   private static void demo(String name, Path work) throws Exception {
-    try {
-      var demo = Demo.build(name, Files.createDirectories(work));
+    var demo = new Demo(DEMO.resolve(name), Files.createDirectories(work));
+    try (demo) {
+      demo.bach.build();
       assertLinesMatch(List.of(), demo.errors());
       assertLinesMatch(List.of(">> BUILD >>", "Bach::build() end."), demo.lines());
     } catch (Throwable throwable) {
       if (expected(name, work, throwable)) {
         return;
       }
+      System.out.println(demo.outputWriter);
+      Files.readAllLines(work.resolve("process-out.txt")).forEach(System.out::println);
+      System.err.println(demo.errorWriter);
+      Files.readAllLines(work.resolve("process-err.txt")).forEach(System.err::println);
       throw throwable;
     }
   }
@@ -55,13 +60,6 @@ class DemoTests {
   }
 
   static class Demo implements AutoCloseable {
-
-    static Demo build(String name, Path work) {
-      try (var demo = new Demo(DEMO.resolve(name), work)) {
-        demo.bach.build();
-        return demo;
-      }
-    }
 
     final StringWriter outputWriter, errorWriter; // for internal/in-process messages
     final Path outputPath, errorPath; // for external processes
