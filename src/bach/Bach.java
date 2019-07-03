@@ -629,8 +629,13 @@ public class Bach {
               .add("-ea")
               .add("--class-path", classPath)
               .add("org.junit.platform.console.ConsoleLauncher")
-              .add("--fail-if-no-tests")
-              .add("--scan-class-path");
+              .add("--fail-if-no-tests");
+      // Select each package, as "--scan-class-path" also finds main programs
+      Util.find(List.of(project.test.binClasses.resolve(module)), Files::isDirectory).stream()
+          .map(path -> project.test.binClasses.resolve(module).relativize(path))
+          .map(Path::toString)
+          .filter(Predicate.not(String::isEmpty))
+          .forEach(path -> java.add("--select-package", path));
       check(runner.run(java));
     }
 
