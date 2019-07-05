@@ -11,6 +11,7 @@ public class ModulesTests {
     minimalisticModuleDeclaration();
     moduleDeclarationWithSingleReadEdge();
     moduleDeclarationWithRequiresAndVersion();
+    findSystemModuleNames();
     findExternalModuleNames();
   }
 
@@ -25,6 +26,13 @@ public class ModulesTests {
     var requires = computeRequiresMap(descriptor);
     assert "a".equals(descriptor.name()) : descriptor;
     assert Set.of("b", "java.base").equals(requires.keySet()) : descriptor;
+  }
+
+  private static void findSystemModuleNames() {
+    var names = Modules.findSystemModuleNames();
+    assert names.contains("java.base") : names;
+    assert names.contains("java.se") : names;
+    assert names.contains("java.xml") : names;
   }
 
   private static void moduleDeclarationWithRequiresAndVersion() {
