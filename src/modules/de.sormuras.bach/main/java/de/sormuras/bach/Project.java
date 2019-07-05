@@ -1,13 +1,19 @@
 package de.sormuras.bach;
 
+import java.io.File;
 import java.io.PrintWriter;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -17,7 +23,9 @@ public class Project {
   /** Supported property keys, default values, and descriptions. */
   public enum Property {
     NAME("project", "Name of the project."),
-    VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class.getSimpleName()),
+    VERSION(
+        "1.0.0-SNAPSHOT",
+        "Version of the project. Must be parse-able by " + Version.class.getSimpleName()),
     // Paths
     PATH_SOURCES("src", "Path to directory containing all Java module sources."),
     // Default options for various tools
@@ -29,7 +37,7 @@ public class Project {
     final String description;
 
     Property(String defaultValue, String description) {
-      this.key =name().replace('_', '.').toLowerCase();
+      this.key = name().replace('_', '.').toLowerCase();
       this.defaultValue = defaultValue;
       this.description = description;
     }
@@ -49,7 +57,7 @@ public class Project {
 
   public static void help(PrintWriter writer) {
     writer.println("Properties");
-    for(var property : Property.values()) {
+    for (var property : Property.values()) {
       writer.println(property.key + " -> " + property.description);
       writer.println(property.key + " -> " + property.defaultValue);
     }
@@ -60,7 +68,7 @@ public class Project {
       throw new IllegalArgumentException("Expected .properties file: '" + properties + "'");
     }
     var home = Optional.ofNullable(properties.getParent()).orElse(Path.of(""));
-    return of(home, Util.newProperties(properties));
+    return of(home, Util.loadProperties(properties));
   }
 
   private static Project of(Path home, Properties properties) {
@@ -82,11 +90,17 @@ public class Project {
   final Paths paths;
   final Options options;
 
+  final MainRealm main;
+  final TestRealm test;
+
   private Project(String name, Version version, Paths paths, Options options) {
     this.name = name;
     this.version = version;
     this.paths = paths;
     this.options = options;
+
+    this.main = new MainRealm();
+    this.test = new TestRealm(main);
   }
 
   @Override
@@ -96,7 +110,66 @@ public class Project {
         .add("version=" + version)
         .add("paths=" + paths)
         .add("options=" + options)
+        .add("main=" + main)
+        .add("test=" + test)
         .toString();
+  }
+
+  abstract class Realm {
+    final String name;
+    final String moduleSourcePath;
+    final Map<String, ModuleDescriptor> modules;
+
+    Realm(String name) {
+      this.name = name;
+
+      var moduleSourcePaths = new TreeSet<String>();
+      var modules = new TreeMap<String, ModuleDescriptor>();
+      var declarations = Util.find(Util::isModuleInfo, paths.sources);
+      for (var declaration : declarations) {
+        //  <module>/<realm>/.../module-info.java
+        var relative = paths.sources.relativize(declaration);
+        var module = relative.getName(0).toString();
+        var realm = relative.getName(1).toString();
+        if (!options.modules.contains(module)) {
+          continue; // module not selected in this project's configuration
+        }
+        if (!name.equals(realm)) {
+          continue; // not our realm
+        }
+        modules.put(module, ModuleDescriptor.newModule(module).build());
+        var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
+        moduleSourcePaths.add(String.join(File.separator, paths.sources.toString(), "*", offset));
+      }
+      this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
+      this.modules = Collections.unmodifiableMap(modules);
+    }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("moduleSourcePath='" + moduleSourcePath + "'")
+          .add("modules=" + modules)
+          .toString();
+    }
+  }
+
+  class MainRealm extends Realm {
+
+    MainRealm() {
+      super("main");
+    }
+  }
+
+  class TestRealm extends Realm {
+
+    final MainRealm main;
+
+    TestRealm(MainRealm main) {
+      super("test");
+      this.main = main;
+    }
   }
 
   /** Directories, files and other paths. */

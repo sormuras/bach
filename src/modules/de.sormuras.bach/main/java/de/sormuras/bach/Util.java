@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /** Static utilities. */
@@ -43,6 +44,20 @@ class Util {
     return names;
   }
 
+  /** List all paths matching the given filter starting at given root paths. */
+  static List<Path> find(Predicate<Path> filter, Path... roots) {
+    var paths = new ArrayList<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(filter).forEach(paths::add);
+      } catch (Exception e) {
+        throw new Error("Scanning directory '" + root + "' failed: " + e, e);
+      }
+    }
+    Collections.sort(paths);
+    return paths;
+  }
+
   /** Gets a property value indicated by the specified {@code key}. */
   static String get(String key, Properties properties, Supplier<Object> defaultValueSupplier) {
     return Optional.ofNullable(System.getProperty(assigned(key, "key")))
@@ -51,7 +66,13 @@ class Util {
         .orElse(Objects.toString(assigned(defaultValueSupplier, "defaultValueSupplier").get()));
   }
 
-  static Properties newProperties(Path path) {
+  /** Test supplied path for pointing to a Java module declaration source compilation unit. */
+  static boolean isModuleInfo(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
+  }
+
+  /** Load specified properties file. */
+  static Properties loadProperties(Path path) {
     var properties = new Properties();
     try (var reader = Files.newBufferedReader(path)) {
       properties.load(reader);
