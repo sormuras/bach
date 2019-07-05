@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="de.sormuras.bach (main)" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="test" level="project" />
   </component>
 </module>
