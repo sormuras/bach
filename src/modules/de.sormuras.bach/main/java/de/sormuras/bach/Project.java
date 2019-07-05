@@ -71,12 +71,21 @@ public class Project {
     }
   }
 
-  public static Project of(Path properties) {
-    if (!Files.isRegularFile(properties)) {
-      throw new IllegalArgumentException("Expected .properties file: '" + properties + "'");
+  /** Create project based on the given path, either a directory or a properties file. */
+  public static Project of(Path path) {
+    if (Files.isDirectory(path)) {
+      var directory = Objects.toString(path.getFileName(), Property.NAME.defaultValue);
+      var names = List.of(directory, "bach", "");
+      for (var name : names) {
+        var file = path.resolve(name + ".properties");
+        if (Files.isRegularFile(file)) {
+          return of(path, Util.loadProperties(file));
+        }
+      }
+      return of(path, new Properties());
     }
-    var home = Optional.ofNullable(properties.getParent()).orElse(Path.of(""));
-    return of(home, Util.loadProperties(properties));
+    var home = Optional.ofNullable(path.getParent()).orElse(Path.of(""));
+    return of(home, Util.loadProperties(path));
   }
 
   private static Project of(Path home, Properties properties) {

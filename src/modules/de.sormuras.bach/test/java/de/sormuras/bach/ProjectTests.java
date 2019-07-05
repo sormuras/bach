@@ -13,7 +13,7 @@ public class ProjectTests {
   }
 
   private static void checkProjectProperties() {
-    var project = Project.of(Path.of("bach.properties"));
+    var project = Project.of(Path.of(""));
     assert "bach".equals(project.name) : "expected 'bach' as name, but got: " + project.name;
     assert "2-ea".equals(project.version.toString());
     assert Path.of("").equals(project.paths.home);
