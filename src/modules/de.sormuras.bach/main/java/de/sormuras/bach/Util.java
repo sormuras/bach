@@ -2,6 +2,8 @@ package de.sormuras.bach;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,11 +13,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 /** Static utilities. */
 class Util {
+  private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+(.+)\\s*\\{.*");
+  private static final Pattern MODULE_REQUIRES_PATTERN =
+      Pattern.compile(
+          "(?:requires)" // key word
+              + "(?:\\s+[\\w.]+)?" // optional modifiers
+              + "\\s+([\\w.]+)" // module name
+              + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional version
+              + ";.*"); // end marker
 
   /** Assigned returns P if P is non-nil and throws an exception if P is nil. */
   static <T> T assigned(T object) {
@@ -80,5 +92,24 @@ class Util {
       throw new UncheckedIOException("Reading properties failed: " + path, e);
     }
     return properties;
+  }
+
+  /** Simplistic module declaration parser. */
+  static ModuleDescriptor parseModuleDeclaration(String source) {
+    var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
+    if (!nameMatcher.find()) {
+      throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
+    }
+    var name = nameMatcher.group(1).trim();
+    var builder = ModuleDescriptor.newModule(name);
+    var requiresMatcher = MODULE_REQUIRES_PATTERN.matcher(source);
+    while (requiresMatcher.find()) {
+      var requiredName = requiresMatcher.group(1);
+      Optional.ofNullable(requiresMatcher.group(2))
+          .ifPresentOrElse(
+              version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+              () -> builder.requires(requiredName));
+    }
+    return builder.build();
   }
 }
