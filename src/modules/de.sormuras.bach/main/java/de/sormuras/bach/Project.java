@@ -154,7 +154,7 @@ public class Project {
         if (!name.equals(realm)) {
           continue; // not our realm
         }
-        var descriptor = Util.parseModuleDeclaration(declaration);
+        var descriptor = Modules.parseDeclaration(declaration);
         if (!module.equals(descriptor.name())) {
           throw new AssertionError("Expected '" + module + "', but got: " + descriptor.name());
         }
