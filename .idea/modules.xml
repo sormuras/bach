@@ -3,6 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.iml" filepath="$PROJECT_DIR$/.idea/bach.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach (main).iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach (main).iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach (test).iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach (test).iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/integration.iml" filepath="$PROJECT_DIR$/.idea/integration.iml" />
     </modules>
   </component>
 </project>
