@@ -11,6 +11,7 @@ public class ModulesTests {
     minimalisticModuleDeclaration();
     moduleDeclarationWithSingleReadEdge();
     moduleDeclarationWithRequiresAndVersion();
+    findExternalModuleNames();
   }
 
   private static void minimalisticModuleDeclaration() {
@@ -32,6 +33,17 @@ public class ModulesTests {
     assert "a".equals(descriptor.name());
     assert Set.of("b", "java.base").equals(requires.keySet()) : descriptor;
     assert "1.2".equals(requires.get("b").compiledVersion().orElseThrow().toString()) : descriptor;
+  }
+
+  private static void findExternalModuleNames() {
+    assert Modules.findExternalModuleNames(Set.of()).isEmpty();
+    var a = Modules.parseDeclaration("module a { requires java.scripting; }");
+    assert Modules.findExternalModuleNames(Set.of(a)).isEmpty() : a;
+    var b = Modules.parseDeclaration("module b { requires a; }");
+    assert Modules.findExternalModuleNames(Set.of(a, b)).isEmpty() : b;
+    assert Modules.findExternalModuleNames(Set.of(b)).equals(Set.of("a")) : b;
+    var c = Modules.parseDeclaration("module c { requires a; \n requires b; }");
+    assert Modules.findExternalModuleNames(Set.of(a, b, c)).isEmpty() : c;
   }
 
   private static Map<String, Requires> computeRequiresMap(ModuleDescriptor descriptor) {
