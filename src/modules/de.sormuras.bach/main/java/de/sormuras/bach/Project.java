@@ -155,9 +155,7 @@ public class Project {
           continue; // not our realm
         }
         var descriptor = Modules.parseDeclaration(declaration);
-        if (!module.equals(descriptor.name())) {
-          throw new AssertionError("Expected '" + module + "', but got: " + descriptor.name());
-        }
+        assert module.equals(descriptor.name()) : module + " expected, but got: " + descriptor;
         modules.put(module, descriptor);
         var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
         moduleSourcePaths.add(String.join(File.separator, paths.sources.toString(), "*", offset));
