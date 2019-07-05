@@ -3,10 +3,10 @@ package de.sormuras.bach;
 import java.lang.module.ModuleDescriptor;
 import java.util.Set;
 
-public class UtilParseModuleDeclarationTest {
+public class ModulesParseTextBlockDeclarationTest {
 
   public static void main(String[] args) {
-        var descriptor = Util.parseModuleDeclaration("""
+        var descriptor = Modules.parseDeclaration("""
         module foo.bar { // 3.3-ALPHA
           requires foo.bax; // @1.3
           requires foo.bay/*342*/;

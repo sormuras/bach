@@ -5,6 +5,7 @@ public class AllTests {
     System.out.println(Project.class + " is in " + Project.class.getModule());
     ProjectTests.main(args);
     UtilTests.main(args);
-    UtilParseModuleDeclarationTest.main(args);
+    ModulesTests.main(args);
+    ModulesParseTextBlockDeclarationTest.main(args);
   }
 }
