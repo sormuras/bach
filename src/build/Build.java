@@ -15,11 +15,8 @@
  * limitations under the License.
  */
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 
 /** OS-agnostic build program. */
@@ -29,30 +26,30 @@ class Build {
   public static void main(String... args) throws Exception {
     System.out.println("\nBuilding Bach.java " + Bach.VERSION + "...");
     var build = new Build();
-    build.clean();
+    // build.clean();
     // build.format();
     build.compile();
-    build.test();
+    // build.test();
     build.document();
     build.jar();
     build.validate();
   }
 
-  private final Bach bach = new Bach();
+  private final Bach bach = Bach.of();
   private final Path target = Path.of("target", "build");
   private final Path targetBinMain = target.resolve("bin/main");
   private final Path targetBinTest = target.resolve("bin/test");
   private final Path targetJavadoc = target.resolve("javadoc");
   private final Path targetJars = target.resolve("jars");
 
-  private void clean() throws Exception {
-    System.out.println("\n[clean]");
-
-    Bach.Util.treeDelete(targetBinMain);
-    Bach.Util.treeDelete(targetBinTest);
-    Bach.Util.treeDelete(targetJavadoc);
-    Bach.Util.treeDelete(targetJars);
-  }
+  //  private void clean() throws Exception {
+  //    System.out.println("\n[clean]");
+  //
+  //    Bach.Util.treeDelete(targetBinMain);
+  //    Bach.Util.treeDelete(targetBinTest);
+  //    Bach.Util.treeDelete(targetJavadoc);
+  //    Bach.Util.treeDelete(targetJars);
+  //  }
 
   //  private void format() throws Exception {
   //    System.out.println("\n[format]");
@@ -72,35 +69,36 @@ class Build {
     treeWalk(targetBinMain);
   }
 
-  private void test() throws Exception {
-    System.out.println("\n[test // download]");
-    var uri =
-        URI.create(
-            "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0/junit-platform-console-standalone-1.5.0.jar");
-    var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
-
-    System.out.println("\n[test // compile]");
-    var javac = new ArrayList<>();
-    javac.add("-d");
-    javac.add(targetBinTest);
-    javac.add("--class-path");
-    javac.add(Bach.Util.join(targetBinMain, junit));
-    javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
-    bach.run(0, "javac", javac.toArray(Object[]::new));
-    // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
-    treeWalk(targetBinTest);
-
-    System.out.println("\n[test // run]");
-    var launcher = new ArrayList<>();
-    launcher.add("-ea");
-    launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
-    launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
-    launcher.add("--class-path");
-    launcher.add(Bach.Util.join(targetBinTest, targetBinMain, junit));
-    launcher.add("org.junit.platform.console.ConsoleLauncher");
-    launcher.add("--scan-class-path");
-    bach.run(0, "java", launcher.toArray(Object[]::new));
-  }
+  //  private void test() throws Exception {
+  //    System.out.println("\n[test // download]");
+  //    var uri =
+  //        URI.create(
+  //
+  // "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0/junit-platform-console-standalone-1.5.0.jar");
+  //    var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
+  //
+  //    System.out.println("\n[test // compile]");
+  //    var javac = new ArrayList<>();
+  //    javac.add("-d");
+  //    javac.add(targetBinTest);
+  //    javac.add("--class-path");
+  //    javac.add(Bach.Util.join(targetBinMain, junit));
+  //    javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
+  //    bach.run(0, "javac", javac.toArray(Object[]::new));
+  //    // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
+  //    treeWalk(targetBinTest);
+  //
+  //    System.out.println("\n[test // run]");
+  //    var launcher = new ArrayList<>();
+  //    launcher.add("-ea");
+  //    launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
+  //    launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
+  //    launcher.add("--class-path");
+  //    launcher.add(Bach.Util.join(targetBinTest, targetBinMain, junit));
+  //    launcher.add("org.junit.platform.console.ConsoleLauncher");
+  //    launcher.add("--scan-class-path");
+  //    bach.run(0, "java", launcher.toArray(Object[]::new));
+  //  }
 
   private void document() throws Exception {
     System.out.println("\n[document]");
@@ -164,10 +162,10 @@ class Build {
     System.out.println("\n[validate // jdeps]");
     bach.run(0, "jdeps", "-summary", "-recursive", jar);
 
-    System.out.println("\n[validate // java -jar bach.jar ...]");
-    System.out.print("Bach ");
-    bach.run(0, "java", "-jar", jar, "version");
-    bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
+    // System.out.println("\n[validate // java -jar bach.jar ...]");
+    // System.out.print("Bach ");
+    // bach.run(0, "java", "-jar", jar, "version");
+    // bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
   }
 
   /** Walk directory tree structure. */
