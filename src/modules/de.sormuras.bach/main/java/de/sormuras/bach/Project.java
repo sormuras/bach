@@ -154,7 +154,11 @@ public class Project {
         if (!name.equals(realm)) {
           continue; // not our realm
         }
-        modules.put(module, ModuleDescriptor.newModule(module).build());
+        var descriptor = Util.parseModuleDeclaration(declaration);
+        if (!module.equals(descriptor.name())) {
+          throw new AssertionError("Expected '" + module + "', but got: " + descriptor.name());
+        }
+        modules.put(module, descriptor);
         var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
         moduleSourcePaths.add(String.join(File.separator, paths.sources.toString(), "*", offset));
       }

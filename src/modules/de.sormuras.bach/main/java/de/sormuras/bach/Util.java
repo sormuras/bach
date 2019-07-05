@@ -95,6 +95,18 @@ class Util {
   }
 
   /** Simplistic module declaration parser. */
+  static ModuleDescriptor parseModuleDeclaration(Path path) {
+    if (!isModuleInfo(path)) {
+      throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
+    }
+    try {
+      return parseModuleDeclaration(Files.readString(path));
+    } catch (IOException e) {
+      throw new UncheckedIOException("Reading module declaration failed: " + path, e);
+    }
+  }
+
+  /** Simplistic module declaration parser. */
   static ModuleDescriptor parseModuleDeclaration(String source) {
     var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
     if (!nameMatcher.find()) {
