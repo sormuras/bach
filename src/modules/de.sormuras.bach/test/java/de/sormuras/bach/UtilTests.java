@@ -1,9 +1,11 @@
 package de.sormuras.bach;
 
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class UtilTests {
@@ -33,22 +35,24 @@ public class UtilTests {
 
   private static void moduleDeclarationWithSingleReadEdge() {
     var descriptor = Util.parseModuleDeclaration("module a{requires b;}");
-    var requires = new HashMap<String, ModuleDescriptor.Requires>();
-    for (var dependence : descriptor.requires()) {
-      requires.put(dependence.name(), dependence);
-    }
+    var requires = computeRequiresMap(descriptor);
     assert "a".equals(descriptor.name()) : descriptor;
     assert Set.of("b", "java.base").equals(requires.keySet()) : descriptor;
   }
 
   private static void moduleDeclarationWithRequiresAndVersion() {
     var descriptor = Util.parseModuleDeclaration("module a{requires b/*1.2*/;}");
-    var requires = new HashMap<String, ModuleDescriptor.Requires>();
-    for (var dependence : descriptor.requires()) {
-      requires.put(dependence.name(), dependence);
-    }
+    var requires = computeRequiresMap(descriptor);
     assert "a".equals(descriptor.name());
     assert Set.of("b", "java.base").equals(requires.keySet()) : descriptor;
     assert "1.2".equals(requires.get("b").compiledVersion().orElseThrow().toString()) : descriptor;
+  }
+
+  private static Map<String, Requires> computeRequiresMap(ModuleDescriptor descriptor) {
+    var requires = new HashMap<String, Requires>();
+    for (var dependence : descriptor.requires()) {
+      requires.put(dependence.name(), dependence);
+    }
+    return requires;
   }
 }
