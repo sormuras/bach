@@ -134,10 +134,18 @@ public class Project {
         .toString();
   }
 
-  abstract class Realm {
+  /** Emit useful information via the given consumer. */
+  public void toStrings(Consumer<String> consumer) {
+    consumer.accept(String.format("Project %s %s", name, version));
+    consumer.accept(String.format("Modules = %s", options.modules));
+    main.toStrings(consumer);
+    test.toStrings(consumer);
+  }
+
+  public abstract class Realm {
     final String name;
     final String moduleSourcePath;
-    final Map<String, ModuleDescriptor> modules;
+    final Map<String, ModuleDescriptor> declaredModules;
     final Set<String> externalModules;
 
     Realm(String name) {
@@ -164,7 +172,7 @@ public class Project {
         moduleSourcePaths.add(String.join(File.separator, paths.sources.toString(), "*", offset));
       }
       this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
-      this.modules = Collections.unmodifiableMap(modules);
+      this.declaredModules = Collections.unmodifiableMap(modules);
       this.externalModules = Modules.findExternalModuleNames(modules.values());
     }
 
@@ -173,8 +181,16 @@ public class Project {
       return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
           .add("name='" + name + "'")
           .add("moduleSourcePath='" + moduleSourcePath + "'")
-          .add("modules=" + modules)
+          .add("declaredModules=" + declaredModules)
+          .add("externalModules=" + externalModules)
           .toString();
+    }
+
+    /** Emit useful information via the given consumer. */
+    void toStrings(Consumer<String> consumer) {
+      consumer.accept(String.format("Realm '%s'", name));
+      consumer.accept(String.format("Declared modules = %s", declaredModules.keySet()));
+      consumer.accept(String.format("External modules = %s", externalModules));
     }
   }
 
