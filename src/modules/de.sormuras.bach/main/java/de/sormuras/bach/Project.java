@@ -99,7 +99,8 @@ public class Project {
     var paths = new Paths(home, sources);
     // options...
     var modules = Options.modules(Property.OPTIONS_MODULES.get(properties), sources);
-    var options = new Options(modules, Property.OPTIONS_JAVAC.lines(properties));
+    var javac = Property.OPTIONS_JAVAC.lines(properties);
+    var options = new Options(modules, javac);
 
     return new Project(name, version, paths, options);
   }
