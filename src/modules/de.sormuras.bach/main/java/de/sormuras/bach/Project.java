@@ -12,9 +12,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -136,6 +138,7 @@ public class Project {
     final String name;
     final String moduleSourcePath;
     final Map<String, ModuleDescriptor> modules;
+    final Set<String> externalModules;
 
     Realm(String name) {
       this.name = name;
@@ -162,6 +165,7 @@ public class Project {
       }
       this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
       this.modules = Collections.unmodifiableMap(modules);
+      this.externalModules = Modules.findExternalModuleNames(modules.values());
     }
 
     @Override

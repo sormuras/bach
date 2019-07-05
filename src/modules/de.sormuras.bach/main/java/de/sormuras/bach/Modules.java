@@ -7,6 +7,7 @@ import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -33,7 +34,7 @@ public class Modules {
   }
 
   /** Calculate external module names. */
-  static Set<String> findExternalModuleNames(Set<ModuleDescriptor> descriptors) {
+  static Set<String> findExternalModuleNames(Collection<ModuleDescriptor> descriptors) {
     var declaredModules = new TreeSet<String>();
     var requiredModules = new TreeSet<String>();
     for (var descriptor : descriptors) {
