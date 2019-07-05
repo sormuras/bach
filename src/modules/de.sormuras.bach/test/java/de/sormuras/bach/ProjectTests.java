@@ -7,7 +7,6 @@ import java.util.List;
 
 public class ProjectTests {
   public static void main(String[] args) {
-    System.out.println(Project.class + " is in " + Project.class.getModule());
     checkProjectProperties();
     checkHelp();
   }
