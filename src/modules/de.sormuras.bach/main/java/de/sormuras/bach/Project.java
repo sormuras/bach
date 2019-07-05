@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -22,14 +23,21 @@ public class Project {
 
   /** Supported property keys, default values, and descriptions. */
   public enum Property {
+    /** Name of the project. */
     NAME("project", "Name of the project."),
-    VERSION(
-        "1.0.0-SNAPSHOT",
-        "Version of the project. Must be parse-able by " + Version.class.getSimpleName()),
+    /**
+     * Version of the project.
+     *
+     * @see Version#parse(String)
+     */
+    VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class),
     // Paths
+    /** Path to directory containing all Java module sources. */
     PATH_SOURCES("src", "Path to directory containing all Java module sources."),
     // Default options for various tools
+    /** List of modules to compile, or '*' indicating all modules. */
     OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
+    /** Options passed to all 'javac' calls. */
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to all 'javac' calls.");
 
     final String key;
