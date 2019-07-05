@@ -18,10 +18,10 @@ public class Project {
   public enum Property {
     NAME("project", "Name of the project."),
     VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class.getSimpleName()),
-    MODULES("*", "List of modules to compile, or '*' indicating all modules."),
     // Paths
     PATH_SOURCES("src", "Path to directory containing all Java module sources."),
     // Default options for various tools
+    OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to all 'javac' calls.");
 
     final String key;
@@ -71,17 +71,10 @@ public class Project {
     var sources = home.resolve(Property.PATH_SOURCES.get(properties));
     var paths = new Paths(home, sources);
     // options...
-    var modules = modules(Property.MODULES.get(properties), sources);
+    var modules = Options.modules(Property.OPTIONS_MODULES.get(properties), sources);
     var options = new Options(modules, Property.OPTIONS_JAVAC.lines(properties));
 
     return new Project(name, version, paths, options);
-  }
-
-  private static List<String> modules(String modules, Path sources) {
-    if ("*".equals(modules)) {
-      return Util.findDirectoryNames(sources);
-    }
-    return List.of(modules.split(","));
   }
 
   final String name;
@@ -127,6 +120,14 @@ public class Project {
 
   /** Default options passed to various tools. */
   static class Options {
+
+    static List<String> modules(String modules, Path sources) {
+      if ("*".equals(modules)) {
+        return Util.findDirectoryNames(sources);
+      }
+      return List.of(modules.split(","));
+    }
+
     final List<String> modules;
     final List<String> javac;
 
