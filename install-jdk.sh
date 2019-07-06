@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-03'
+    readonly script_version='2019-07-06'
 
     dry=false
     silent=false
@@ -42,7 +42,7 @@ function initialize() {
 function usage() {
 cat << EOF
 Usage: ${script_name} [OPTION]...
-Download and extract latest-and-greatest JDK from https://jdk.java.net or https://adoptopenjdk.net
+Download and extract latest-and-greatest JDK from https://jdk.java.net
 
 Version: ${script_version}
 Options:
@@ -52,7 +52,7 @@ Options:
   -e|--emit-java-home       Print value of "JAVA_HOME" to stdout (ignores silent mode)
   -v|--verbose              Displays verbose output
 
-  -f|--feature 8|11|...|ea  JDK feature release number, defaults to "ea"
+  -f|--feature 11|12|...|ea JDK feature release number, defaults to "ea"
   -o|--os linux-x64|osx-x64 Operating system identifier
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
@@ -159,8 +159,8 @@ function determine_latest_jdk() {
     local curl_result
     local url
 
-    verbose "Determine latest JDK feature release number"
     number=14
+    verbose "Determine latest JDK feature release number, starting with ${number}"
     while [[ ${number} != 99 ]]
     do
       url="https://jdk.java.net/${number}"
@@ -180,8 +180,8 @@ function perform_sanity_checks() {
     if [[ ${feature} == '?' ]] || [[ ${feature} == 'ea' ]]; then
         feature=${latest_jdk}
     fi
-    if [[ ${feature} -lt 8 ]] || [[ ${feature} -gt ${latest_jdk} ]]; then
-        script_exit "Expected feature release number in range of 8 to ${latest_jdk}, but got: ${feature}" 3
+    if [[ ${feature} -lt 9 ]] || [[ ${feature} -gt ${latest_jdk} ]]; then
+        script_exit "Expected feature release number in range of 9 to ${latest_jdk}, but got: ${feature}" 3
     fi
     if [[ -d "$target" ]]; then
         script_exit "Target directory must not exist, but it does: $(du -hs '${target}')" 3
@@ -189,25 +189,18 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    # An official GA build or an archived feature? Let AdoptOpenJDK API determine the URL
-    # Find API details at https://api.adoptopenjdk.net
-    if [[ ${feature} -lt 13 ]]; then
-        local type='jdk'
-        local os_name=${os%-*}
-        if [[ "$os_name" == "osx" ]]; then
-          os_name='mac'
-        fi
-        local os_arch=${os#*-}
-        local release='latest'
-        local heap_size='normal'
-        local openjdk_impl='hotspot'
-        url="https://api.adoptopenjdk.net/v2/binary/releases/openjdk${feature}?type=${type}&os=${os_name}&arch=${os_arch}&release=${release}&heap_size=${heap_size}&openjdk_impl=${openjdk_impl}"
-        return
-    fi
-
-    # EA or RC build? Grab URL from HTML source of jdk.java.net/${feature}
     local JAVA_NET="https://jdk.java.net/${feature}"
     local DOWNLOAD='https://download.java.net/java'
+
+    # An official GA build or an archived feature? Use predefined URL
+    case "${feature}" in
+        9) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
+       10) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
+       11) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
+       12) url="${DOWNLOAD}/GA/jdk12.0.1/69cfe15208a647278a19ef0990eea691/12/GPL/openjdk-12.0.1_${os}_bin.tar.gz"; return;;
+    esac
+
+    # EA or RC build? Grab URL from HTML source of jdk.java.net/${feature}
     local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
     url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.*${license}/.*jdk-${feature}.+${os}_bin(.tar.gz|.zip)$" || true)
 
@@ -240,8 +233,7 @@ function print_variables() {
 cat << EOF
 Variables:
   feature = ${feature}
-  license = ${license}
-       os = ${os} // os_name=${os%-*} os_arch=${os#*-}
+       os = ${os}
       url = ${url}
    status = ${status}
 EOF
@@ -268,8 +260,7 @@ function download_and_extract_and_set_target() {
         if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | grep 'bin/javac' | tr '/' '\n' | tail -3 | head -1)
         else
-            local field=1; if [[ ${url} == "https://download.java.net/java"* ]]; then field=2; fi
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f ${field} -d '/' -)/Contents/Home
+            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
         fi
         verbose "Set target to: ${target}"
     else
@@ -278,11 +269,8 @@ function download_and_extract_and_set_target() {
             mkdir --parents "${target}"
             tar --extract ${tar_options} -C "${target}" --strip-components=1
         else
-            # 3 = <jdk>/Contents/Home (by AdoptOpenJDK)  4 = ./<jdk>/Contents/Home (by OpenJDK)
-            local components=3; if [[ ${url} == "https://download.java.net/java"* ]]; then components=4; fi
-            verbose "Strip components: ${components}"
             mkdir -p "${target}"
-            tar --extract ${tar_options} -C "${target}" --strip-components=${components}
+            tar --extract ${tar_options} -C "${target}" --strip-components=4
         fi
     fi
 
