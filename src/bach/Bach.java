@@ -63,18 +63,16 @@ public class Bach {
   final Runner runner;
 
   Bach(PrintWriter out, PrintWriter err, Map<String, Tool> tools) {
-    this.out = out;
-    this.err = err;
-    this.tools = tools;
+    this.out = Util.assigned(out, "out");
+    this.err = Util.assigned(err, "err");
+    this.tools = Util.assigned(tools, "tools");
     this.runner = new Runner();
   }
 
   /** Main-entry point running tools indicated by the given arguments. */
   public int main(List<String> arguments) {
     out.println("Bach.java " + VERSION);
-    out.println("  arguments=" + arguments);
-    out.println("  out=" + out);
-    out.println("  err=" + err);
+    out.println("  arguments=" + Util.assigned(arguments, "arguments"));
     out.println("  tools=" + tools);
     for (var name : arguments) {
       var code = runner.run(name);

@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
@@ -19,6 +20,14 @@ class BachTests {
   void mainWithIllegalArgument() {
     var e = assertThrows(Error.class, () -> Bach.main("illegal argument"));
     assertEquals("Bach.main(\"illegal argument\") failed with error code: 42", e.getMessage());
+  }
+
+  @Test
+  void defaultValues() {
+    var bach = Bach.of();
+    assertNotNull(bach.out);
+    assertNotNull(bach.err);
+    assertNotNull(bach.tools);
   }
 
   @Test
