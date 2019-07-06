@@ -23,11 +23,11 @@ class BachTests {
   }
 
   @Test
-  void defaultValues() {
+  void defaultValuesAreAssigned() {
     var bach = Bach.of();
     assertNotNull(bach.out);
     assertNotNull(bach.err);
-    assertNotNull(bach.tools);
+    assertNotNull(bach.configuration);
   }
 
   @Test

@@ -1,8 +1,15 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
 class UtilTests {
+
+  @Test
+  void newFails() {
+    assertThrows(Error.class, Bach.Util::new);
+  }
+
   @Test
   void join() {
     assertEquals("<empty>", Bach.Util.join());
