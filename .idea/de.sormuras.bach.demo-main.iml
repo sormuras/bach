@@ -2,8 +2,8 @@
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_11" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/modules/de.sormuras.bach/main">
-      <sourceFolder url="file://$MODULE_DIR$/src/modules/de.sormuras.bach/main/java" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/src/demo/de.sormuras.bach.demo/main">
+      <sourceFolder url="file://$MODULE_DIR$/src/demo/de.sormuras.bach.demo/main/java" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
