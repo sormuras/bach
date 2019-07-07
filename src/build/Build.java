@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 /** OS-agnostic build program. */
@@ -29,7 +32,7 @@ class Build {
     // build.clean();
     // build.format();
     build.compile();
-    // build.test();
+    build.test();
     build.document();
     build.jar();
     build.validate();
@@ -69,37 +72,40 @@ class Build {
     treeWalk(targetBinMain);
   }
 
-  //  private void test() throws Exception {
-  //    System.out.println("\n[test // download]");
-  //    var uri =
-  //        URI.create(
-  //
-  // "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.0/junit-platform-console-standalone-1.5.0.jar");
-  //    var junit = Bach.Util.download(target, uri, Boolean.getBoolean("bach.offline"));
-  //
-  //    System.out.println("\n[test // compile]");
-  //    var javac = new ArrayList<>();
-  //    javac.add("-d");
-  //    javac.add(targetBinTest);
-  //    javac.add("--class-path");
-  //    javac.add(Bach.Util.join(targetBinMain, junit));
-  //    javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
-  //    bach.run(0, "javac", javac.toArray(Object[]::new));
-  //    // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
-  //    treeWalk(targetBinTest);
-  //
-  //    System.out.println("\n[test // run]");
-  //    var launcher = new ArrayList<>();
-  //    launcher.add("-ea");
-  //    launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
-  //    launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
-  //    launcher.add("--class-path");
-  //    launcher.add(Bach.Util.join(targetBinTest, targetBinMain, junit));
-  //    launcher.add("org.junit.platform.console.ConsoleLauncher");
-  //    launcher.add("--scan-class-path");
-  //    launcher.add("--fail-if-no-tests");
-  //    bach.run(0, "java", launcher.toArray(Object[]::new));
-  //  }
+  private void test() {
+    System.out.println("\n[test // download]");
+    var junit =
+        bach.new Downloader(Bach.USER_HOME.resolve(".bach/tool/junit"))
+            .download("org.junit.platform", "junit-platform-console-standalone", "1.5.0");
+
+    System.out.println("\n[test // compile]");
+    var javac = new ArrayList<>();
+    javac.add("-d");
+    javac.add(targetBinTest);
+    javac.add("--class-path");
+    javac.add(String.join(File.pathSeparator, targetBinMain.toString(), junit.toString()));
+    javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
+    bach.run(0, "javac", javac.toArray(Object[]::new));
+    // Bach.Util.treeCopy(Path.of("src/test-resources"), targetBinTest);
+    treeWalk(targetBinTest);
+
+    System.out.println("\n[test // run]");
+    var launcher = new ArrayList<>();
+    launcher.add("-ea");
+    launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
+    launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
+    launcher.add("--class-path");
+    launcher.add(
+        String.join(
+            File.pathSeparator,
+            targetBinTest.toString(),
+            targetBinMain.toString(),
+            junit.toString()));
+    launcher.add("org.junit.platform.console.ConsoleLauncher");
+    launcher.add("--scan-class-path");
+    launcher.add("--fail-if-no-tests");
+    bach.run(0, "java", launcher.toArray(Object[]::new));
+  }
 
   private void document() throws Exception {
     System.out.println("\n[document]");
@@ -110,7 +116,7 @@ class Build {
         "-d",
         targetJavadoc,
         "-package",
-        "-quiet",
+        // "-quiet",
         "-keywords",
         "-html5",
         "-linksource",

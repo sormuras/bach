@@ -18,17 +18,23 @@
 // default package
 
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
@@ -48,6 +55,9 @@ public class Bach {
 
   /** Version of Bach, {@link Runtime.Version#parse(String)}-compatible. */
   public static final String VERSION = "2-ea";
+
+  /** Convenient short-cut to {@code "user.home"} as a path. */
+  public static final Path USER_HOME = Path.of(System.getProperty("user.home"));
 
   /**
    * Create new Bach instance with default properties.
@@ -367,6 +377,97 @@ public class Bach {
     }
   }
 
+  /** Download helper. */
+  class Downloader {
+    final Path destination;
+
+    Downloader(Path destination) {
+      this.destination = destination;
+    }
+
+    /** Download an artifact from a Maven 2 repository specified by its GAV coordinates. */
+    Path download(String group, String artifact, String version) {
+      log(TRACE, "Downloader::download(%s, %s, %s)", group, artifact, version);
+      var host = "https://repo1.maven.org/maven2";
+      var path = group.replace('.', '/');
+      var file = artifact + '-' + version + ".jar";
+      var uri = URI.create(String.join("/", host, path, artifact, version, file));
+      try {
+        return download(uri, Boolean.getBoolean("bach.offline"));
+      } catch (IOException e) {
+        throw new UncheckedIOException("Download failed!", e);
+      }
+    }
+
+    /** Download a file denoted by the specified uri. */
+    Path download(URI uri, boolean offline) throws IOException {
+      log(TRACE, "Downloader::download(%s)", uri);
+      var fileName = extractFileName(uri);
+      var target = Files.createDirectories(destination).resolve(fileName);
+      var url = uri.toURL(); // fails for non-absolute uri
+      if (offline) {
+        log(DEBUG, "Offline mode is active!");
+        if (Files.exists(target)) {
+          var file = target.getFileName().toString();
+          log(DEBUG, "Target already exists: %s, %d bytes.", file, Files.size(target));
+          return target;
+        }
+        var message = "Offline mode is active and target is missing: " + target;
+        log(ERROR, message);
+        throw new IllegalStateException(message);
+      }
+      return download(url.openConnection());
+    }
+
+    /** Download a file using the given URL connection. */
+    Path download(URLConnection connection) throws IOException {
+      var millis = connection.getLastModified(); // 0 means "unknown"
+      var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+      log(TRACE, "Remote was modified on %s", lastModified);
+      var target = destination.resolve(extractFileName(connection));
+      log(TRACE, "Local target file is %s", target.toUri());
+      var file = target.getFileName().toString();
+      if (Files.exists(target)) {
+        var fileModified = Files.getLastModifiedTime(target);
+        log(TRACE, "Local last modified on %s", fileModified);
+        if (fileModified.equals(lastModified)) {
+          log(TRACE, "Timestamp match: %s, %d bytes.", file, Files.size(target));
+          connection.getInputStream().close(); // release all opened resources
+          return target;
+        }
+        log(DEBUG, "Local target file differs from remote source -- replacing it...");
+      }
+      log(INFO, ">> download(%s)", connection.getURL());
+      try (var sourceStream = connection.getInputStream()) {
+        try (var targetStream = Files.newOutputStream(target)) {
+          sourceStream.transferTo(targetStream);
+        }
+        Files.setLastModifiedTime(target, lastModified);
+      }
+      log(DEBUG, "Downloaded %s [%d bytes from %s]", file, Files.size(target), lastModified);
+      return target;
+    }
+
+    /** Extract last path element from the supplied uri. */
+    String extractFileName(URI uri) {
+      var path = uri.getPath(); // strip query and fragment elements
+      return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    /** Extract target file name either from 'Content-Disposition' header or. */
+    String extractFileName(URLConnection connection) {
+      var contentDisposition = connection.getHeaderField("Content-Disposition");
+      if (contentDisposition != null && contentDisposition.indexOf('=') > 0) {
+        return contentDisposition.split("=")[1].replaceAll("\"", "");
+      }
+      try {
+        return extractFileName(connection.getURL().toURI());
+      } catch (URISyntaxException e) {
+        throw new Error("URL connection returned invalid URL?!", e);
+      }
+    }
+  }
+
   /** Custom tool interface. */
   @FunctionalInterface
   public interface Tool {
@@ -392,6 +493,39 @@ public class Bach {
     static <T> T assigned(T object, String name) {
       return Objects.requireNonNull(object, name + " must not be null");
     }
+    /** List all paths matching the given filter starting at given root paths. */
+    static List<Path> find(Iterable<Path> roots, Predicate<Path> filter) {
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(filter).forEach(files::add);
+        } catch (Exception e) {
+          throw new Error("Scanning directory '" + root + "' failed: " + e, e);
+        }
+      }
+      return files;
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        var name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.indexOf('.') == name.length() - 5; // single dot in filename
+        }
+      }
+      return false;
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJarFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
+    }
+
+    /** Test supplied path for pointing to a Java module declaration source compilation unit. */
+    static boolean isModuleInfo(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
+    }
 
     /** List names of all directories found in given directory. */
     static List<String> findDirectoryNames(Path directory) {
@@ -411,7 +545,7 @@ public class Bach {
     }
 
     /** Find native foundation tool, an executable program in given paths. */
-    static Optional<Path> findExecutable(List<Path> paths, String name) {
+    static Optional<Path> findExecutable(Iterable<Path> paths, String name) {
       try {
         for (var path : paths) {
           for (var suffix : List.of("", ".exe")) {
