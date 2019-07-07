@@ -97,6 +97,7 @@ class Build {
   //    launcher.add(Bach.Util.join(targetBinTest, targetBinMain, junit));
   //    launcher.add("org.junit.platform.console.ConsoleLauncher");
   //    launcher.add("--scan-class-path");
+  //    launcher.add("--fail-if-no-tests");
   //    bach.run(0, "java", launcher.toArray(Object[]::new));
   //  }
 
@@ -162,10 +163,9 @@ class Build {
     System.out.println("\n[validate // jdeps]");
     bach.run(0, "jdeps", "-summary", "-recursive", jar);
 
-    // System.out.println("\n[validate // java -jar bach.jar ...]");
-    // System.out.print("Bach ");
-    // bach.run(0, "java", "-jar", jar, "version");
-    // bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
+    System.out.println("\n[validate // java -jar bach.jar ...]");
+    bach.run(0, "java", "-jar", jar, "version");
+    bach.run(0, "java", "-jar", jar, "tool", "javac", "--version");
   }
 
   /** Walk directory tree structure. */

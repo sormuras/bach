@@ -132,6 +132,12 @@ public class Bach {
     }
   }
 
+  /** Print Bach's version to the standard output stream. */
+  public int version() {
+    out.println(VERSION);
+    return 0;
+  }
+
   /** Common properties. */
   static class Configuration {
 
@@ -240,7 +246,8 @@ public class Bach {
     private static Configuration of(Path home, Path work, Properties properties) {
       // basics...
       var debug = System.getProperty("debug".substring(1)) != null;
-      var basic = new Basic(debug ? ALL : INFO, Map.of());
+      var level = debug ? ALL : INFO;
+      var basic = new Basic(level, Tool.API, ProcessBuilder::inheritIO);
       // project...
       var name = Property.NAME.get(properties, () -> home.toAbsolutePath().getFileName());
       var version = Version.parse(Property.VERSION.get(properties));
@@ -307,11 +314,14 @@ public class Bach {
   @FunctionalInterface
   public interface Tool {
 
+    /** Default tools. */
+    Map<String, Tool> API = Map.of("version", Bach::version);
+
     default String name() {
-      return getClass().getSimpleName();
+      return getClass().getName();
     }
 
-    int run(Object... arguments);
+    int run(Bach bach);
   }
 
   /** Static helper. */
