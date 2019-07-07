@@ -93,6 +93,7 @@ public class Bach {
   /** Tool caller. */
   final Runner runner;
 
+  /** Initialize this instance with text-based "log" writers and a configuration. */
   Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
     this.out = Util.assigned(out, "out");
     this.err = Util.assigned(err, "err");
@@ -358,7 +359,7 @@ public class Bach {
         return run(configuration.basic.redirectIO.apply(processBuilder));
       }
 
-      log(WARNING, "Unknown tool '%s'", name);
+      log(ERROR, "Unknown tool '%s'", name);
       return 42;
     }
 
