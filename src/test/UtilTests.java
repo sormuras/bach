@@ -1,6 +1,9 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class UtilTests {
@@ -18,5 +21,11 @@ class UtilTests {
     assertEquals("\"1\"", Bach.Util.join(1));
     assertEquals("\"1\", \"2\"", Bach.Util.join(1, 2));
     assertEquals("\"1\", \"2\", \"3\"", Bach.Util.join(1, 2, 3));
+  }
+
+  @Test
+  void findJavaLauncher() {
+    var javaHome = Path.of(System.getProperty("java.home"));
+    assertTrue(Bach.Util.findExecutable(List.of(javaHome.resolve("bin")), "java").isPresent());
   }
 }

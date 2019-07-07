@@ -28,7 +28,9 @@ import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -103,8 +106,16 @@ public class Bach {
     log(DEBUG, "  arguments=" + Util.assigned(arguments, "arguments"));
     log(DEBUG, "Configuration");
     log(DEBUG, "  tools=" + configuration.basic.tools);
-    for (var name : arguments) {
-      var code = runner.run(name);
+    ServiceLoader.load(ToolProvider.class).forEach(it -> log(DEBUG, "  %-7s -> %s", it.name(), it));
+
+    var deque = new ArrayDeque<>(arguments);
+    while (!deque.isEmpty()) {
+      var argument = deque.removeFirst();
+      if ("tool".equals(argument)) {
+        var name = deque.removeFirst();
+        return runner.run(name, deque.toArray(Object[]::new));
+      }
+      var code = runner.run(argument);
       if (code != 0) {
         return code;
       }
@@ -330,6 +341,23 @@ public class Bach {
       }
       Collections.sort(names);
       return names;
+    }
+
+    /** Find native foundation tool, an executable program in given paths. */
+    static Optional<Path> findExecutable(List<Path> paths, String name) {
+      try {
+        for (var path : paths) {
+          for (var suffix : List.of("", ".exe")) {
+            var program = path.resolve(name + suffix);
+            if (Files.isRegularFile(program) && Files.isExecutable(program)) {
+              return Optional.of(program);
+            }
+          }
+        }
+      } catch (InvalidPathException e) {
+        // fall-through
+      }
+      return Optional.empty();
     }
 
     /** Gets a property value indicated by the specified {@code key}. */
