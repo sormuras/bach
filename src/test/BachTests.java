@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -37,6 +38,16 @@ class BachTests {
 
   @Test
   void mainWithListOfCustomTools() {
-    assertEquals(0, new Probe().bach.main(List.of("noop", "noop")));
+    var probe = new Probe();
+    assertEquals(0, probe.bach.main(List.of("version", "noop")));
+    assertLinesMatch(
+        List.of(
+            ">> INIT >>",
+            ">> version(<empty>)",
+            "Running API tool named \\QBach$Tool$$Lambda\\E.+",
+            Bach.VERSION,
+            ">> noop(<empty>)",
+            "Running configured tool named 'Probe$NoopTool'..."),
+        probe.lines());
   }
 }

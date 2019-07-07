@@ -233,27 +233,39 @@ public class Bach {
       }
     }
 
-    /** Create project based on the given path, either a directory or a properties file. */
-    public static Configuration of(Path path) {
-      if (Files.isDirectory(path)) {
-        var directory = Objects.toString(path.getFileName(), Property.NAME.defaultValue);
-        for (var name : List.of(directory, "bach", "")) {
-          var file = path.resolve(name + ".properties");
-          if (Files.isRegularFile(file)) {
-            return of(path, path, Util.loadProperties(file));
-          }
-        }
-        return of(path, path, new Properties());
+    /** Create new properties potentially loading contents from the given path. */
+    private static Properties properties(Path path) {
+      if (Files.isRegularFile(path)) {
+        return Util.loadProperties(path);
       }
-      var home = Optional.ofNullable(path.getParent()).orElse(Path.of(""));
-      return of(home, home, Util.loadProperties(path));
+      assert Files.isDirectory(path) : "Expected a directory, but got: " + path;
+      var directory = Objects.toString(path.getFileName(), Property.NAME.defaultValue);
+      for (var name : List.of(directory, "bach", "")) {
+        var file = path.resolve(name + ".properties");
+        if (Files.isRegularFile(file)) {
+          return Util.loadProperties(file);
+        }
+      }
+      return new Properties();
     }
 
-    private static Configuration of(Path home, Path work, Properties properties) {
-      // basics...
+    /** Create configuration based on the given path, either a directory or a properties file. */
+    public static Configuration of(Path path) {
       var debug = System.getProperty("debug".substring(1)) != null;
-      var level = debug ? ALL : INFO;
-      var basic = new Basic(level, Tool.API, ProcessBuilder::inheritIO);
+      var level = debug ? DEBUG : INFO;
+      var basic = new Basic(level, Map.of(), ProcessBuilder::inheritIO);
+
+      var parent = Optional.ofNullable(path.getParent()).orElse(Path.of(""));
+      var home = Files.isDirectory(path) ? path : parent;
+      return of(basic, home, home, properties(path));
+    }
+
+    /** Create configuration using given basics and scanning home directory for properties. */
+    static Configuration of(Basic basic, Path home, Path work) {
+      return of(basic, home, work, properties(home));
+    }
+
+    private static Configuration of(Basic basic, Path home, Path work, Properties properties) {
       // project...
       var name = Property.NAME.get(properties, () -> home.toAbsolutePath().getFileName());
       var version = Version.parse(Property.VERSION.get(properties));
