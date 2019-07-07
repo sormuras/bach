@@ -30,7 +30,7 @@ class Build {
     System.out.println("\nBuilding Bach.java " + Bach.VERSION + "...");
     var build = new Build();
     // build.clean();
-    // build.format();
+    build.format();
     build.compile();
     build.test();
     build.document();
@@ -54,17 +54,17 @@ class Build {
   //    Bach.Util.treeDelete(targetJars);
   //  }
 
-  //  private void format() throws Exception {
-  //    System.out.println("\n[format]");
-  //
-  //    var roots =
-  //        List.of(
-  //            Path.of("demo"),
-  //            Path.of("src", "bach"),
-  //            Path.of("src", "build"),
-  //            Path.of("src", "test"));
-  //    Bach.Tool.format(bach, Boolean.getBoolean("bach.format.replace"), roots);
-  //  }
+  private void format() {
+    System.out.println("\n[format]");
+
+    var roots =
+        List.of(
+            Path.of("demo"),
+            Path.of("src", "bach"),
+            Path.of("src", "build"),
+            Path.of("src", "test"));
+    bach.new Formatter().format(roots, Boolean.getBoolean("bach.format.replace"));
+  }
 
   private void compile() {
     System.out.println("\n[compile]");
