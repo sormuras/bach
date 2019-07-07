@@ -17,7 +17,6 @@
 
 // default package
 
-import static java.lang.System.Logger.Level.ALL;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
@@ -40,6 +39,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -188,10 +188,16 @@ public class Bach {
       final System.Logger.Level threshold;
       /** Custom tool map. */
       final Map<String, Tool> tools;
+      /** Process builder mutator. */
+      private final UnaryOperator<ProcessBuilder> redirectIO;
 
-      Basic(System.Logger.Level threshold, Map<String, Tool> tools) {
+      Basic(
+          System.Logger.Level threshold,
+          Map<String, Tool> tools,
+          UnaryOperator<ProcessBuilder> redirectIO) {
         this.threshold = threshold;
         this.tools = tools;
+        this.redirectIO = redirectIO;
       }
     }
 
@@ -297,16 +303,55 @@ public class Bach {
 
     /** Run named tool with specified arguments returning an error code. */
     int run(String name, Object... arguments) {
-      log(INFO, ">> %s(%s)%n", name, Util.join(arguments));
-      var tool = configuration.basic.tools.get(name);
-      if (tool != null) {
-        log(DEBUG, "Calling tool named '%s'...", tool.name());
-        return tool.run(arguments);
+      log(INFO, ">> %s(%s)", name, Util.join(arguments));
+
+      var configuredTool = configuration.basic.tools.get(name);
+      if (configuredTool != null) {
+        log(DEBUG, "Running configured tool named '%s'...", configuredTool.name());
+        return configuredTool.run(Bach.this);
       }
-      var provider = ToolProvider.findFirst(name);
-      return provider
-          .map(toolProvider -> toolProvider.run(out, err, Util.strings(arguments)))
-          .orElse(42);
+
+      var providedTool = ToolProvider.findFirst(name);
+      if (providedTool.isPresent()) {
+        var tool = providedTool.get();
+        log(DEBUG, "Running provided tool: %s", tool);
+        return tool.run(out, err, Util.strings(arguments));
+      }
+
+      var apiTool = Tool.API.get(name);
+      if (apiTool != null) {
+        log(DEBUG, "Running API tool named %s", apiTool.name());
+        return apiTool.run(Bach.this);
+      }
+
+      var javaBinaries = Path.of(System.getProperty("java.home")).resolve("bin");
+      var javaExecutable = Util.findExecutable(List.of(javaBinaries), name);
+      if (javaExecutable.isPresent()) {
+        var processBuilder = new ProcessBuilder(javaExecutable.get().toString());
+        processBuilder.command().addAll(List.of(Util.strings(arguments)));
+        processBuilder.environment().put("BACH_VERSION", Bach.VERSION);
+        processBuilder.environment().put("BACH_HOME", configuration.paths.home.toString());
+        processBuilder.environment().put("BACH_WORK", configuration.paths.work.toString());
+        log(DEBUG, "Starting new process: %s", processBuilder);
+        return run(configuration.basic.redirectIO.apply(processBuilder));
+      }
+
+      log(WARNING, "Unknown tool '%s'", name);
+      return 42;
+    }
+
+    /** Start new process and wait for its termination. */
+    int run(ProcessBuilder processBuilder) {
+      try {
+        var process = processBuilder.start();
+        var code = process.waitFor();
+        if (code == 0) {
+          log(DEBUG, "Process '%s' successfully terminated.", process);
+        }
+        return code;
+      } catch (Exception e) {
+        throw new Error("Starting process failed: " + e);
+      }
     }
   }
 
