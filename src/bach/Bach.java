@@ -102,7 +102,7 @@ public class Bach {
   }
 
   /** Log message unless threshold suppresses it. */
-  public void log(System.Logger.Level level, String format, Object... args) {
+  private void log(System.Logger.Level level, String format, Object... args) {
     if (level.getSeverity() < configuration.basic.threshold.getSeverity()) {
       return;
     }
@@ -112,7 +112,7 @@ public class Bach {
   }
 
   /** Main-entry point running tools indicated by the given arguments. */
-  public int main(List<String> arguments) {
+  int main(List<String> arguments) {
     log(INFO, "Bach.java " + VERSION + " building " + configuration.project);
     log(DEBUG, "  arguments=" + Util.assigned(arguments, "arguments"));
     log(DEBUG, "Configuration");
@@ -135,7 +135,7 @@ public class Bach {
   }
 
   /** Run named tool with specified arguments asserting an expected error code. */
-  public void run(int expected, String name, Object... arguments) {
+  void run(int expected, String name, Object... arguments) {
     var code = runner.run(name, arguments);
     if (code != expected) {
       var message = "Tool %s(%s) returned %d, but expected %d";
@@ -147,6 +147,11 @@ public class Bach {
   public int version() {
     out.println(VERSION);
     return 0;
+  }
+
+  /** Format all Java source files of the project in-place. */
+  public int format() {
+    return new Formatter().format(List.of(configuration.paths.sources), true);
   }
 
   /** Common properties. */
@@ -393,35 +398,35 @@ public class Bach {
       var path = group.replace('.', '/');
       var file = artifact + '-' + version + ".jar";
       var uri = URI.create(String.join("/", host, path, artifact, version, file));
+      return download(uri, Boolean.getBoolean("bach.offline"));
+    }
+
+    /** Download a file denoted by the specified uri. */
+    Path download(URI uri, boolean offline) {
+      log(TRACE, "Downloader::download(%s)", uri);
       try {
-        return download(uri, Boolean.getBoolean("bach.offline"));
+        var fileName = extractFileName(uri);
+        var target = Files.createDirectories(destination).resolve(fileName);
+        var url = uri.toURL(); // fails for non-absolute uri
+        if (offline) {
+          log(DEBUG, "Offline mode is active!");
+          if (Files.exists(target)) {
+            var file = target.getFileName().toString();
+            log(DEBUG, "Target already exists: %s, %d bytes.", file, Files.size(target));
+            return target;
+          }
+          var message = "Offline mode is active and target is missing: " + target;
+          log(ERROR, message);
+          throw new IllegalStateException(message);
+        }
+        return download(uri, url.openConnection());
       } catch (IOException e) {
         throw new UncheckedIOException("Download failed!", e);
       }
     }
 
-    /** Download a file denoted by the specified uri. */
-    Path download(URI uri, boolean offline) throws IOException {
-      log(TRACE, "Downloader::download(%s)", uri);
-      var fileName = extractFileName(uri);
-      var target = Files.createDirectories(destination).resolve(fileName);
-      var url = uri.toURL(); // fails for non-absolute uri
-      if (offline) {
-        log(DEBUG, "Offline mode is active!");
-        if (Files.exists(target)) {
-          var file = target.getFileName().toString();
-          log(DEBUG, "Target already exists: %s, %d bytes.", file, Files.size(target));
-          return target;
-        }
-        var message = "Offline mode is active and target is missing: " + target;
-        log(ERROR, message);
-        throw new IllegalStateException(message);
-      }
-      return download(url.openConnection());
-    }
-
     /** Download a file using the given URL connection. */
-    Path download(URLConnection connection) throws IOException {
+    Path download(URI uri, URLConnection connection) throws IOException {
       var millis = connection.getLastModified(); // 0 means "unknown"
       var lastModified = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
       log(TRACE, "Remote was modified on %s", lastModified);
@@ -438,7 +443,7 @@ public class Bach {
         }
         log(DEBUG, "Local target file differs from remote source -- replacing it...");
       }
-      log(INFO, ">> download(%s)", connection.getURL());
+      log(INFO, ">> download(%s)", uri);
       try (var sourceStream = connection.getInputStream()) {
         try (var targetStream = Files.newOutputStream(target)) {
           sourceStream.transferTo(targetStream);
@@ -469,12 +474,45 @@ public class Bach {
     }
   }
 
+  /** Format Java source files. */
+  class Formatter {
+
+    /** Run format. */
+    int format(Object... args) {
+      log(TRACE, "format(%s)", Util.join(args));
+      var uri =
+          URI.create(
+              "https://github.com/"
+                  + "google/google-java-format/releases/download/google-java-format-1.7/"
+                  + "google-java-format-1.7-all-deps.jar");
+      var downloader = new Downloader(USER_HOME.resolve(".bach/tool/format"));
+      var jar = downloader.download(uri, Boolean.getBoolean("bach.offline"));
+      var arguments = new ArrayList<>();
+      arguments.add("-jar");
+      arguments.add(jar);
+      arguments.addAll(List.of(args));
+      return runner.run("java", arguments.toArray(Object[]::new));
+    }
+
+    /** Run format. */
+    int format(Iterable<Path> roots, boolean replace) {
+      var files = Util.find(roots, Util::isJavaFile);
+      if (files.isEmpty()) {
+        return 0;
+      }
+      var args = new ArrayList<>();
+      args.addAll(replace ? List.of("--replace") : List.of("--dry-run", "--set-exit-if-changed"));
+      args.addAll(files);
+      return format(args.toArray(Object[]::new));
+    }
+  }
+
   /** Custom tool interface. */
   @FunctionalInterface
   public interface Tool {
 
     /** Default tools. */
-    Map<String, Tool> API = Map.of("version", Bach::version);
+    Map<String, Tool> API = Map.of("format", Bach::format, "version", Bach::version);
 
     default String name() {
       return getClass().getName();
