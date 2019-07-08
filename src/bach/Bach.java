@@ -155,6 +155,20 @@ public class Bach {
     return new Formatter().format(List.of(configuration.paths.sources), true);
   }
 
+  /** Print usage help. */
+  public int help() {
+    out.println("Usage: Bach.java <options>");
+    out.println("");
+    out.println("Properties, passed via '-D' or a .properties file");
+    for (var property : Property.values()) {
+      out.println(property.key);
+      out.println("  " + property.description);
+      out.println("  Configured to: " + configuration.actual(property).replace('\n', ' '));
+      out.println("  Default value: " + property.defaultValue.replace('\n', ' '));
+    }
+    return 0;
+  }
+
   /** Supported property keys with default values and descriptions. */
   enum Property {
     /** Name of the project. */
@@ -526,7 +540,8 @@ public class Bach {
   public interface Tool {
 
     /** Default tools. */
-    Map<String, Tool> API = Map.of("format", Bach::format, "version", Bach::version);
+    Map<String, Tool> API =
+        Map.of("format", Bach::format, "help", Bach::help, "version", Bach::version);
 
     default String name() {
       return getClass().getName();
