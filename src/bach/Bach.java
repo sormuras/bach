@@ -553,7 +553,7 @@ public class Bach {
   /** Static helper. */
   static class Util {
 
-    Util() {
+    private Util() {
       throw new Error();
     }
 

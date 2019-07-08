@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,7 +12,17 @@ class UtilTests {
 
   @Test
   void newFails() {
-    assertThrows(Error.class, Bach.Util::new);
+    var e =
+        assertThrows(
+            ReflectiveOperationException.class,
+            () -> {
+              var constructor = Bach.Util.class.getDeclaredConstructor();
+              constructor.trySetAccessible();
+              constructor.newInstance();
+            });
+    var cause = e.getCause();
+    assertEquals(Error.class, cause.getClass());
+    assertNull(cause.getMessage());
   }
 
   @Test
