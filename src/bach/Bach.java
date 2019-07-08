@@ -93,6 +93,8 @@ public class Bach {
   final Configuration configuration;
   /** Tool caller. */
   final Runner runner;
+  /** Modular project model instance. */
+  final Project project;
 
   /** Initialize this instance with text-based "log" writers and a configuration. */
   Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
@@ -100,11 +102,12 @@ public class Bach {
     this.err = Util.assigned(err, "err");
     this.configuration = Util.assigned(configuration, "configuration");
     this.runner = new Runner();
+    this.project = new Project();
   }
 
   /** Log message unless threshold suppresses it. */
   private void log(System.Logger.Level level, String format, Object... args) {
-    if (level.getSeverity() < configuration.basic.threshold.getSeverity()) {
+    if (level.getSeverity() < configuration.basic.threshold().getSeverity()) {
       return;
     }
     var consumer = level.getSeverity() < WARNING.getSeverity() ? out : err;
@@ -114,11 +117,20 @@ public class Bach {
 
   /** Main-entry point running tools indicated by the given arguments. */
   int main(List<String> arguments) {
-    log(INFO, "Bach.java " + VERSION + " building " + configuration.project);
-    log(DEBUG, "  arguments=" + Util.assigned(arguments, "arguments"));
+    log(INFO, "Bach.java %s building %s", VERSION, project);
+    log(DEBUG, "  arguments=%s", Util.assigned(arguments, "arguments"));
     log(DEBUG, "Configuration");
-    log(DEBUG, "  tools=" + configuration.basic.tools);
-    ServiceLoader.load(ToolProvider.class).forEach(it -> log(DEBUG, "  %-7s -> %s", it.name(), it));
+    log(DEBUG, "  home='%s'", configuration.home);
+    log(DEBUG, "  work='%s'", configuration.work);
+    log(DEBUG, "  javac=%s", String.join(", ", configuration.lines(Property.OPTIONS_JAVAC)));
+    log(DEBUG, "Tools");
+    log(DEBUG, "  api=%s", Util.sorted(Tool.API));
+    log(DEBUG, "  basic=%s", Util.sorted(configuration.basic.tools()));
+    log(DEBUG, "  provided=%s", Tool.PROVIDED);
+    log(DEBUG, "Project");
+    log(DEBUG, "  name=%s", project.name);
+    log(DEBUG, "  version=%s", project.name);
+    log(DEBUG, "  modules=%s", project.modules);
 
     var deque = new ArrayDeque<>(arguments);
     while (!deque.isEmpty()) {
@@ -152,7 +164,7 @@ public class Bach {
 
   /** Format all Java source files of the project in-place. */
   public int format() {
-    return new Formatter().format(List.of(configuration.paths.sources), true);
+    return new Formatter().format(List.of(configuration.path(Property.PATH_SOURCES)), true);
   }
 
   /** Print usage help. */
@@ -163,7 +175,7 @@ public class Bach {
     for (var property : Property.values()) {
       out.println(property.key);
       out.println("  " + property.description);
-      out.println("  Configured to: " + configuration.actual(property).replace('\n', ' '));
+      out.println("  Configured to: " + configuration.get(property).replace('\n', ' '));
       out.println("  Default value: " + property.defaultValue.replace('\n', ' '));
     }
     return 0;
@@ -177,11 +189,11 @@ public class Bach {
     /** Version of the project. */
     VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class),
 
+    /** List of modules to compile, or '*' indicating all modules. */
+    MODULES("*", "List of modules to compile, or '*' indicating all modules."),
+
     /** Path to directory containing all Java module sources. */
     PATH_SOURCES("src", "Path to directory containing all Java module sources."),
-
-    /** List of modules to compile, or '*' indicating all modules. */
-    OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
 
     /** Options passed to all 'javac' calls. */
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
@@ -204,63 +216,38 @@ public class Bach {
     }
   }
 
-  /** Configuration support. */
+  /** Configuration. */
   static class Configuration {
 
-    /** Common properties. */
+    /** Basic setup fixtures. */
     static class Basic {
-      /** Current logging level threshold. */
-      final System.Logger.Level threshold;
+      /** Logger level threshold. */
+      System.Logger.Level threshold() {
+        var debug = System.getProperty("debug".substring(1)) != null;
+        return debug ? DEBUG : INFO;
+      }
+
       /** Custom tool map. */
-      final Map<String, Tool> tools;
-      /** Process builder mutator. */
-      final UnaryOperator<ProcessBuilder> redirectIO;
+      Map<String, Tool> tools() {
+        return Map.of();
+      }
 
-      Basic(
-          System.Logger.Level threshold,
-          Map<String, Tool> tools,
-          UnaryOperator<ProcessBuilder> redirectIO) {
-        this.threshold = threshold;
-        this.tools = Map.copyOf(tools);
-        this.redirectIO = redirectIO;
+      /** ProcessBuilder mutator. */
+      UnaryOperator<ProcessBuilder> redirectIO() {
+        return ProcessBuilder::inheritIO;
       }
     }
 
-    /** Directories, files and other paths. */
-    class Paths {
-      final Path home;
-      final Path work;
-      final Path sources;
-
-      Paths(Path home, Path work) {
-        this.home = home;
-        this.work = work;
-        this.sources = home.resolve(get(Property.PATH_SOURCES));
-      }
+    /** Gets a property value indicated by the specified {@code key}. */
+    static String get(String key, Properties properties, Supplier<Object> defaultSupplier) {
+      return Optional.ofNullable(System.getProperty(Util.assigned(key, "key")))
+          .or(() -> Optional.ofNullable(Util.assigned(properties, "properties").getProperty(key)))
+          .or(() -> Optional.ofNullable(System.getenv("BACH_" + key.toUpperCase())))
+          .orElse(Objects.toString(Util.assigned(defaultSupplier, "defaultSupplier").get()));
     }
 
-    /** Default options passed to various tools. */
-    class Options {
-
-      final List<String> modules = modules(get(Property.OPTIONS_MODULES));
-      final List<String> javac = lines(Property.OPTIONS_JAVAC);
-
-      private List<String> modules(String modules) {
-        if ("*".equals(modules)) {
-          return Util.findDirectoryNames(paths.sources);
-        }
-        return List.of(modules.split("\\s*,\\s*"));
-      }
-    }
-
-    /** Default uris. */
-    class Uris {
-
-      final URI toolFormat = uri(Property.URI_TOOL_FORMAT);
-    }
-
-    /** Create new properties potentially loading contents from the given path. */
-    private static Properties properties(Path path) {
+    /** Create new properties instance potentially loading contents from the given path. */
+    static Properties properties(Path path) {
       if (Files.isRegularFile(path)) {
         return Util.loadProperties(path);
       }
@@ -277,13 +264,9 @@ public class Bach {
 
     /** Create configuration based on the given path, either a directory or a properties file. */
     public static Configuration of(Path path) {
-      var debug = System.getProperty("debug".substring(1)) != null;
-      var level = debug ? DEBUG : INFO;
-      var basic = new Basic(level, Map.of(), ProcessBuilder::inheritIO);
-
       var parent = Optional.ofNullable(path.getParent()).orElse(Path.of(""));
       var home = Files.isDirectory(path) ? path : parent;
-      return new Configuration(basic, home, home, properties(path));
+      return new Configuration(new Basic(), home, home, properties(path));
     }
 
     /** Create configuration using given basics and scanning home directory for properties. */
@@ -291,49 +274,31 @@ public class Bach {
       return new Configuration(basic, home, work, properties(home));
     }
 
-    final Map<Property, Object> map;
-    final Properties properties;
     final Basic basic;
-    final Paths paths;
-    final Options options;
-    final Uris uris;
-    final Project project;
+    final Path home;
+    final Path work;
+    final Map<Property, String> map;
 
-    private Configuration(Basic basic, Path home, Path work, Properties properties) {
-      this.map = new EnumMap<>(Property.class);
+    Configuration(Basic basic, Path home, Path work, Properties properties) {
       this.basic = basic;
-      this.properties = properties;
-      this.paths = new Paths(home, work);
-      this.options = new Options();
-      this.uris = new Uris();
-      this.project = new Project(this);
-    }
-
-    String actual(Property property) {
-      var value = Objects.toString(map.getOrDefault(property, property.defaultValue));
-      return value + actualUnrolled(property);
-    }
-
-    String actualUnrolled(Property property) {
-      switch (property) {
-        case OPTIONS_MODULES:
-          return " -> " + String.join(",", options.modules);
+      this.home = home;
+      this.work = work;
+      this.map = new EnumMap<>(Property.class);
+      for (var property : Property.values()) {
+        map.put(property, get(property.key, properties, () -> property.defaultValue));
       }
-      return "";
     }
 
     String get(Property property) {
-      return get(property, () -> property.defaultValue);
-    }
-
-    String get(Property property, Supplier<Object> defaultValueSupplier) {
-      var value = Util.get(property.key, properties, defaultValueSupplier);
-      map.putIfAbsent(property, value);
-      return value;
+      return map.get(property);
     }
 
     List<String> lines(Property property) {
       return get(property).lines().collect(Collectors.toList());
+    }
+
+    Path path(Property property) {
+      return Path.of(get(property));
     }
 
     URI uri(Property property) {
@@ -342,14 +307,24 @@ public class Bach {
   }
 
   /** Modular project model. */
-  static class Project {
+  class Project {
     final String name;
     final Version version;
+    final List<String> modules;
 
-    Project(Configuration configuration) {
-      var directory = configuration.paths.home.toAbsolutePath();
-      this.name = configuration.get(Property.NAME, directory::getFileName);
+    Project() {
+      var directoryName = Objects.toString(configuration.home.toAbsolutePath().getFileName());
+      this.name = configuration.map.getOrDefault(Property.NAME, directoryName);
       this.version = Version.parse(configuration.get(Property.VERSION));
+      this.modules = modules();
+    }
+
+    private List<String> modules() {
+      var modules = configuration.get(Property.MODULES);
+      if ("*".equals(modules)) {
+        return Util.findDirectoryNames(configuration.path(Property.PATH_SOURCES));
+      }
+      return List.of(modules.split("\\s*,\\s*"));
     }
 
     @Override
@@ -365,7 +340,7 @@ public class Bach {
     int run(String name, Object... arguments) {
       log(INFO, ">> %s(%s)", name, Util.join(arguments));
 
-      var configuredTool = configuration.basic.tools.get(name);
+      var configuredTool = configuration.basic.tools().get(name);
       if (configuredTool != null) {
         log(DEBUG, "Running configured tool named '%s'...", configuredTool.name());
         return configuredTool.run(Bach.this);
@@ -390,10 +365,10 @@ public class Bach {
         var processBuilder = new ProcessBuilder(javaExecutable.get().toString());
         processBuilder.command().addAll(List.of(Util.strings(arguments)));
         processBuilder.environment().put("BACH_VERSION", Bach.VERSION);
-        processBuilder.environment().put("BACH_HOME", configuration.paths.home.toString());
-        processBuilder.environment().put("BACH_WORK", configuration.paths.work.toString());
+        processBuilder.environment().put("BACH_HOME", configuration.home.toString());
+        processBuilder.environment().put("BACH_WORK", configuration.work.toString());
         log(DEBUG, "Starting new process: %s", processBuilder);
-        return run(configuration.basic.redirectIO.apply(processBuilder));
+        return run(configuration.basic.redirectIO().apply(processBuilder));
       }
 
       log(ERROR, "Unknown tool '%s', returning non-zero error code", name);
@@ -512,7 +487,7 @@ public class Bach {
     /** Run format. */
     int format(Object... args) {
       log(TRACE, "format(%s)", Util.join(args));
-      var uri = configuration.uris.toolFormat;
+      var uri = configuration.uri(Property.URI_TOOL_FORMAT);
       var downloader = new Downloader(USER_HOME.resolve(".bach/tool/format"));
       var jar = downloader.download(uri, Boolean.getBoolean("bach.offline"));
       var arguments = new ArrayList<>();
@@ -542,6 +517,14 @@ public class Bach {
     /** Default tools. */
     Map<String, Tool> API =
         Map.of("format", Bach::format, "help", Bach::help, "version", Bach::version);
+
+    /** Tools provided by the Java runtime. */
+    List<String> PROVIDED =
+        ServiceLoader.load(ToolProvider.class).stream()
+            .map(ServiceLoader.Provider::get)
+            .map(ToolProvider::name)
+            .sorted()
+            .collect(Collectors.toList());
 
     default String name() {
       return getClass().getName();
@@ -629,14 +612,6 @@ public class Bach {
       return Optional.empty();
     }
 
-    /** Gets a property value indicated by the specified {@code key}. */
-    static String get(String key, Properties properties, Supplier<Object> defaultValueSupplier) {
-      return Optional.ofNullable(System.getProperty(assigned(key, "key")))
-          .or(() -> Optional.ofNullable(assigned(properties, "properties").getProperty(key)))
-          .or(() -> Optional.ofNullable(System.getenv("BACH_" + key.toUpperCase())))
-          .orElse(Objects.toString(assigned(defaultValueSupplier, "defaultValueSupplier").get()));
-    }
-
     /** Join an array of objects into a human-readable string. */
     @SafeVarargs
     static <T> String join(T... objects) {
@@ -656,6 +631,11 @@ public class Bach {
         throw new UncheckedIOException("Reading properties failed: " + path, e);
       }
       return properties;
+    }
+
+    /** Convert keys of the given map to a sorted list of each keys' string representation. */
+    static List<String> sorted(Map<?, ?> map) {
+      return map.keySet().stream().map(Object::toString).sorted().collect(Collectors.toList());
     }
 
     /** Convert given array of objects to an array of strings. */
