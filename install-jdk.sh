@@ -310,7 +310,7 @@ function main() {
     export JAVA_HOME=$(cd "${target}"; pwd)
     export PATH=${JAVA_HOME}/bin:$PATH
 
-    if [[ ${silent} == false ]]; then java -Xmx32m -version; fi
+    if [[ ${silent} == false ]]; then java -Xmx100m -version; fi
     if [[ ${emit_java_home} == true ]]; then echo "${JAVA_HOME}"; fi
 }
 
