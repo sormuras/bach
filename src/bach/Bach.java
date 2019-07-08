@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -184,7 +183,13 @@ public class Bach {
   /** Supported property keys with default values and descriptions. */
   enum Property {
     /** Name of the project. */
-    NAME("project", "Name of the project."),
+    NAME("project", "Name of the project.") {
+      @Override
+      String defaultValue(Configuration configuration) {
+        var name = configuration.home.normalize().toAbsolutePath().getFileName();
+        return name != null ? name.toString() : defaultValue;
+      }
+    },
 
     /** Version of the project. */
     VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class),
@@ -214,6 +219,18 @@ public class Bach {
       this.defaultValue = defaultValue;
       this.description = description;
     }
+
+    String defaultValue(Configuration configuration) {
+      return defaultValue;
+    }
+
+    /** Gets a property value indicated by the specified {@code key}. */
+    String get(Configuration configuration, Properties properties) {
+      return Optional.ofNullable(System.getProperty(Util.assigned(key, "key")))
+          .or(() -> Optional.ofNullable(Util.assigned(properties, "properties").getProperty(key)))
+          .or(() -> Optional.ofNullable(System.getenv("BACH_" + key.toUpperCase())))
+          .orElse(defaultValue(configuration));
+    }
   }
 
   /** Configuration. */
@@ -236,14 +253,6 @@ public class Bach {
       UnaryOperator<ProcessBuilder> redirectIO() {
         return ProcessBuilder::inheritIO;
       }
-    }
-
-    /** Gets a property value indicated by the specified {@code key}. */
-    static String get(String key, Properties properties, Supplier<Object> defaultSupplier) {
-      return Optional.ofNullable(System.getProperty(Util.assigned(key, "key")))
-          .or(() -> Optional.ofNullable(Util.assigned(properties, "properties").getProperty(key)))
-          .or(() -> Optional.ofNullable(System.getenv("BACH_" + key.toUpperCase())))
-          .orElse(Objects.toString(Util.assigned(defaultSupplier, "defaultSupplier").get()));
     }
 
     /** Create new properties instance potentially loading contents from the given path. */
@@ -285,7 +294,7 @@ public class Bach {
       this.work = work;
       this.map = new EnumMap<>(Property.class);
       for (var property : Property.values()) {
-        map.put(property, get(property.key, properties, () -> property.defaultValue));
+        map.put(property, property.get(this, properties));
       }
     }
 
@@ -313,8 +322,7 @@ public class Bach {
     final List<String> modules;
 
     Project() {
-      var directoryName = Objects.toString(configuration.home.toAbsolutePath().getFileName());
-      this.name = configuration.map.getOrDefault(Property.NAME, directoryName);
+      this.name = configuration.get(Property.NAME);
       this.version = Version.parse(configuration.get(Property.VERSION));
       this.modules = modules();
     }
