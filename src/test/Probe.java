@@ -6,9 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-class Probe {
+class Probe extends Bach.Configuration.Basic {
 
   private final StringWriter out = new StringWriter();
   private final StringWriter err = new StringWriter();
@@ -27,12 +28,7 @@ class Probe {
     }
     var random = Math.random();
     this.redirected = work.resolve("probe-output-" + random + ".txt");
-    var basic =
-        new Bach.Configuration.Basic(
-            System.Logger.Level.ALL,
-            Map.of("noop", new NoopTool(), "fail", __ -> 1),
-            it -> it.redirectOutput(redirected.toFile()).redirectErrorStream(true));
-    var configuration = Bach.Configuration.of(basic, home, work);
+    var configuration = Bach.Configuration.of(this, home, work);
     this.bach = new Bach(new PrintWriter(out), new PrintWriter(err), configuration);
   }
 
@@ -42,6 +38,21 @@ class Probe {
 
   List<String> errors() {
     return err.toString().lines().collect(Collectors.toList());
+  }
+
+  @Override
+  UnaryOperator<ProcessBuilder> redirectIO() {
+    return it -> it.redirectOutput(redirected.toFile()).redirectErrorStream(true);
+  }
+
+  @Override
+  System.Logger.Level threshold() {
+    return System.Logger.Level.ALL;
+  }
+
+  @Override
+  Map<String, Bach.Tool> tools() {
+    return Map.of("noop", new NoopTool(), "fail", __ -> 1);
   }
 
   @Override

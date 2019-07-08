@@ -29,6 +29,7 @@ class BachTests {
     assertNotNull(bach.out);
     assertNotNull(bach.err);
     assertNotNull(bach.configuration);
+    assertNotNull(bach.project);
   }
 
   @Test
