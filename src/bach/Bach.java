@@ -174,7 +174,13 @@ public class Bach {
       /** List of modules to compile, or '*' indicating all modules. */
       OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
       /** Options passed to all 'javac' calls. */
-      OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls.");
+      OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
+      /** Google Java Format Uniform Resource Identifier. */
+      URI_TOOL_FORMAT(
+          "https://github.com/"
+              + "google/google-java-format/releases/download/google-java-format-1.7/"
+              + "google-java-format-1.7-all-deps.jar",
+          "Google Java Format (all-deps) JAR.");
 
       final String key;
       final String defaultValue;
@@ -196,6 +202,10 @@ public class Bach {
 
       List<String> lines(Properties properties) {
         return get(properties).lines().collect(Collectors.toList());
+      }
+
+      URI uri(Properties properties) {
+        return URI.create(get(properties));
       }
     }
 
@@ -249,6 +259,16 @@ public class Bach {
       }
     }
 
+    /** Default uris. */
+    static class Uris {
+
+      final URI toolFormat;
+
+      Uris(Properties properties) {
+        this.toolFormat = Property.URI_TOOL_FORMAT.uri(properties);
+      }
+    }
+
     /** Create new properties potentially loading contents from the given path. */
     private static Properties properties(Path path) {
       if (Files.isRegularFile(path)) {
@@ -293,20 +313,24 @@ public class Bach {
       var modules = Options.modules(Property.OPTIONS_MODULES.get(properties), sources);
       var javac = Property.OPTIONS_JAVAC.lines(properties);
       var options = new Options(modules, javac);
+      // uris...
+      var uris = new Uris(properties);
 
-      return new Configuration(basic, project, paths, options);
+      return new Configuration(basic, project, paths, options, uris);
     }
 
     final Basic basic;
     final Project project;
     final Paths paths;
     final Options options;
+    final Uris uris;
 
-    Configuration(Basic basic, Project project, Paths paths, Options options) {
+    Configuration(Basic basic, Project project, Paths paths, Options options, Uris uris) {
       this.basic = basic;
       this.project = project;
       this.paths = paths;
       this.options = options;
+      this.uris = uris;
     }
   }
 
@@ -480,11 +504,7 @@ public class Bach {
     /** Run format. */
     int format(Object... args) {
       log(TRACE, "format(%s)", Util.join(args));
-      var uri =
-          URI.create(
-              "https://github.com/"
-                  + "google/google-java-format/releases/download/google-java-format-1.7/"
-                  + "google-java-format-1.7-all-deps.jar");
+      var uri = configuration.uris.toolFormat;
       var downloader = new Downloader(USER_HOME.resolve(".bach/tool/format"));
       var jar = downloader.download(uri, Boolean.getBoolean("bach.offline"));
       var arguments = new ArrayList<>();
