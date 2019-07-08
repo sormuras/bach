@@ -38,6 +38,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -187,85 +188,61 @@ public class Bach {
       this.defaultValue = defaultValue;
       this.description = description;
     }
-
-    String get(Properties properties) {
-      return get(properties, () -> defaultValue);
-    }
-
-    String get(Properties properties, Supplier<Object> defaultValueSupplier) {
-      return Util.get(key, properties, defaultValueSupplier);
-    }
-
-    List<String> lines(Properties properties) {
-      return get(properties).lines().collect(Collectors.toList());
-    }
-
-    URI uri(Properties properties) {
-      return URI.create(get(properties));
-    }
   }
 
-  /** Common properties. */
+  /** Configuration support. */
   static class Configuration {
 
+    /** Common properties. */
     static class Basic {
       /** Current logging level threshold. */
       final System.Logger.Level threshold;
       /** Custom tool map. */
       final Map<String, Tool> tools;
       /** Process builder mutator. */
-      private final UnaryOperator<ProcessBuilder> redirectIO;
+      final UnaryOperator<ProcessBuilder> redirectIO;
 
       Basic(
           System.Logger.Level threshold,
           Map<String, Tool> tools,
           UnaryOperator<ProcessBuilder> redirectIO) {
         this.threshold = threshold;
-        this.tools = tools;
+        this.tools = Map.copyOf(tools);
         this.redirectIO = redirectIO;
       }
     }
 
     /** Directories, files and other paths. */
-    static class Paths {
+    class Paths {
       final Path home;
       final Path work;
       final Path sources;
 
-      Paths(Properties properties, Path home, Path work) {
+      Paths(Path home, Path work) {
         this.home = home;
         this.work = work;
-        this.sources = home.resolve(Property.PATH_SOURCES.get(properties));
+        this.sources = home.resolve(get(Property.PATH_SOURCES));
       }
     }
 
     /** Default options passed to various tools. */
-    static class Options {
+    class Options {
 
-      static List<String> modules(String modules, Path sources) {
+      final List<String> modules = modules(get(Property.OPTIONS_MODULES));
+      final List<String> javac = lines(Property.OPTIONS_JAVAC);
+
+      private List<String> modules(String modules) {
         if ("*".equals(modules)) {
-          return Util.findDirectoryNames(sources);
+          return Util.findDirectoryNames(paths.sources);
         }
         return List.of(modules.split("\\s*,\\s*"));
-      }
-
-      final List<String> modules;
-      final List<String> javac;
-
-      Options(Properties properties, Paths paths) {
-        this.modules = modules(Property.OPTIONS_MODULES.get(properties), paths.sources);
-        this.javac = Property.OPTIONS_JAVAC.lines(properties);
       }
     }
 
     /** Default uris. */
-    static class Uris {
+    class Uris {
 
-      final URI toolFormat;
-
-      Uris(Properties properties) {
-        this.toolFormat = Property.URI_TOOL_FORMAT.uri(properties);
-      }
+      final URI toolFormat = uri(Property.URI_TOOL_FORMAT);
     }
 
     /** Create new properties potentially loading contents from the given path. */
@@ -292,35 +269,61 @@ public class Bach {
 
       var parent = Optional.ofNullable(path.getParent()).orElse(Path.of(""));
       var home = Files.isDirectory(path) ? path : parent;
-      return of(basic, home, home, properties(path));
+      return new Configuration(basic, home, home, properties(path));
     }
 
     /** Create configuration using given basics and scanning home directory for properties. */
     static Configuration of(Basic basic, Path home, Path work) {
-      return of(basic, home, work, properties(home));
+      return new Configuration(basic, home, work, properties(home));
     }
 
-    private static Configuration of(Basic basic, Path home, Path work, Properties properties) {
-      var paths = new Paths(properties, home, work);
-      var options = new Options(properties, paths);
-      var project = new Project(properties, home);
-      var uris = new Uris(properties);
-
-      return new Configuration(basic, paths, options, project, uris);
-    }
-
+    final Map<Property, Object> map;
+    final Properties properties;
     final Basic basic;
-    final Project project;
     final Paths paths;
     final Options options;
     final Uris uris;
+    final Project project;
 
-    Configuration(Basic basic, Paths paths, Options options, Project project, Uris uris) {
+    private Configuration(Basic basic, Path home, Path work, Properties properties) {
+      this.map = new EnumMap<>(Property.class);
       this.basic = basic;
-      this.project = project;
-      this.paths = paths;
-      this.options = options;
-      this.uris = uris;
+      this.properties = properties;
+      this.paths = new Paths(home, work);
+      this.options = new Options();
+      this.uris = new Uris();
+      this.project = new Project(this);
+    }
+
+    String actual(Property property) {
+      var value = Objects.toString(map.getOrDefault(property, property.defaultValue));
+      return value + actualUnrolled(property);
+    }
+
+    String actualUnrolled(Property property) {
+      switch (property) {
+        case OPTIONS_MODULES:
+          return " -> " + String.join(",", options.modules);
+      }
+      return "";
+    }
+
+    String get(Property property) {
+      return get(property, () -> property.defaultValue);
+    }
+
+    String get(Property property, Supplier<Object> defaultValueSupplier) {
+      var value = Util.get(property.key, properties, defaultValueSupplier);
+      map.putIfAbsent(property, value);
+      return value;
+    }
+
+    List<String> lines(Property property) {
+      return get(property).lines().collect(Collectors.toList());
+    }
+
+    URI uri(Property property) {
+      return URI.create(get(property));
     }
   }
 
@@ -329,9 +332,10 @@ public class Bach {
     final String name;
     final Version version;
 
-    Project(Properties properties, Path home) {
-      this.name = Property.NAME.get(properties, () -> home.toAbsolutePath().getFileName());
-      this.version = Version.parse(Property.VERSION.get(properties));
+    Project(Configuration configuration) {
+      var directory = configuration.paths.home.toAbsolutePath();
+      this.name = configuration.get(Property.NAME, directory::getFileName);
+      this.version = Version.parse(configuration.get(Property.VERSION));
     }
 
     @Override
