@@ -154,60 +154,59 @@ public class Bach {
     return new Formatter().format(List.of(configuration.paths.sources), true);
   }
 
+  /** Supported property keys with default values and descriptions. */
+  enum Property {
+    /** Name of the project. */
+    NAME("project", "Name of the project."),
+
+    /** Version of the project. */
+    VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class),
+
+    /** Path to directory containing all Java module sources. */
+    PATH_SOURCES("src", "Path to directory containing all Java module sources."),
+
+    /** List of modules to compile, or '*' indicating all modules. */
+    OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
+
+    /** Options passed to all 'javac' calls. */
+    OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
+
+    /** Google Java Format Uniform Resource Identifier. */
+    URI_TOOL_FORMAT(
+        "https://github.com/"
+            + "google/google-java-format/releases/download/google-java-format-1.7/"
+            + "google-java-format-1.7-all-deps.jar",
+        "Google Java Format (all-deps) JAR.");
+
+    final String key;
+    final String defaultValue;
+    final String description;
+
+    Property(String defaultValue, String description) {
+      this.key = name().replace('_', '.').toLowerCase();
+      this.defaultValue = defaultValue;
+      this.description = description;
+    }
+
+    String get(Properties properties) {
+      return get(properties, () -> defaultValue);
+    }
+
+    String get(Properties properties, Supplier<Object> defaultValueSupplier) {
+      return Util.get(key, properties, defaultValueSupplier);
+    }
+
+    List<String> lines(Properties properties) {
+      return get(properties).lines().collect(Collectors.toList());
+    }
+
+    URI uri(Properties properties) {
+      return URI.create(get(properties));
+    }
+  }
+
   /** Common properties. */
   static class Configuration {
-
-    /** Supported property keys with default values and descriptions. */
-    enum Property {
-      /** Name of the project. */
-      NAME("project", "Name of the project."),
-      /**
-       * Version of the project.
-       *
-       * @see Version#parse(String)
-       */
-      VERSION("1.0.0-SNAPSHOT", "Version of the project. Must be parse-able by " + Version.class),
-      // Paths
-      /** Path to directory containing all Java module sources. */
-      PATH_SOURCES("src", "Path to directory containing all Java module sources."),
-      // Default options for various tools
-      /** List of modules to compile, or '*' indicating all modules. */
-      OPTIONS_MODULES("*", "List of modules to compile, or '*' indicating all modules."),
-      /** Options passed to all 'javac' calls. */
-      OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
-      /** Google Java Format Uniform Resource Identifier. */
-      URI_TOOL_FORMAT(
-          "https://github.com/"
-              + "google/google-java-format/releases/download/google-java-format-1.7/"
-              + "google-java-format-1.7-all-deps.jar",
-          "Google Java Format (all-deps) JAR.");
-
-      final String key;
-      final String defaultValue;
-      final String description;
-
-      Property(String defaultValue, String description) {
-        this.key = name().replace('_', '.').toLowerCase();
-        this.defaultValue = defaultValue;
-        this.description = description;
-      }
-
-      String get(Properties properties) {
-        return get(properties, () -> defaultValue);
-      }
-
-      String get(Properties properties, Supplier<Object> defaultValueSupplier) {
-        return Util.get(key, properties, defaultValueSupplier);
-      }
-
-      List<String> lines(Properties properties) {
-        return get(properties).lines().collect(Collectors.toList());
-      }
-
-      URI uri(Properties properties) {
-        return URI.create(get(properties));
-      }
-    }
 
     static class Basic {
       /** Current logging level threshold. */
@@ -233,10 +232,10 @@ public class Bach {
       final Path work;
       final Path sources;
 
-      Paths(Path home, Path work, Path sources) {
+      Paths(Properties properties, Path home, Path work) {
         this.home = home;
         this.work = work;
-        this.sources = sources;
+        this.sources = home.resolve(Property.PATH_SOURCES.get(properties));
       }
     }
 
@@ -247,15 +246,15 @@ public class Bach {
         if ("*".equals(modules)) {
           return Util.findDirectoryNames(sources);
         }
-        return List.of(modules.split(","));
+        return List.of(modules.split("\\s*,\\s*"));
       }
 
       final List<String> modules;
       final List<String> javac;
 
-      Options(List<String> modules, List<String> javac) {
-        this.modules = modules;
-        this.javac = javac;
+      Options(Properties properties, Paths paths) {
+        this.modules = modules(Property.OPTIONS_MODULES.get(properties), paths.sources);
+        this.javac = Property.OPTIONS_JAVAC.lines(properties);
       }
     }
 
@@ -302,21 +301,12 @@ public class Bach {
     }
 
     private static Configuration of(Basic basic, Path home, Path work, Properties properties) {
-      // project...
-      var name = Property.NAME.get(properties, () -> home.toAbsolutePath().getFileName());
-      var version = Version.parse(Property.VERSION.get(properties));
-      var project = new Project(name, version);
-      // paths...
-      var sources = home.resolve(Property.PATH_SOURCES.get(properties));
-      var paths = new Paths(home, work, sources);
-      // options...
-      var modules = Options.modules(Property.OPTIONS_MODULES.get(properties), sources);
-      var javac = Property.OPTIONS_JAVAC.lines(properties);
-      var options = new Options(modules, javac);
-      // uris...
+      var paths = new Paths(properties, home, work);
+      var options = new Options(properties, paths);
+      var project = new Project(properties, home);
       var uris = new Uris(properties);
 
-      return new Configuration(basic, project, paths, options, uris);
+      return new Configuration(basic, paths, options, project, uris);
     }
 
     final Basic basic;
@@ -325,7 +315,7 @@ public class Bach {
     final Options options;
     final Uris uris;
 
-    Configuration(Basic basic, Project project, Paths paths, Options options, Uris uris) {
+    Configuration(Basic basic, Paths paths, Options options, Project project, Uris uris) {
       this.basic = basic;
       this.project = project;
       this.paths = paths;
@@ -339,9 +329,9 @@ public class Bach {
     final String name;
     final Version version;
 
-    Project(String name, Version version) {
-      this.name = name;
-      this.version = version;
+    Project(Properties properties, Path home) {
+      this.name = Property.NAME.get(properties, () -> home.toAbsolutePath().getFileName());
+      this.version = Version.parse(Property.VERSION.get(properties));
     }
 
     @Override
@@ -388,7 +378,7 @@ public class Bach {
         return run(configuration.basic.redirectIO.apply(processBuilder));
       }
 
-      log(ERROR, "Unknown tool '%s'", name);
+      log(ERROR, "Unknown tool '%s', returning non-zero error code", name);
       return 42;
     }
 
