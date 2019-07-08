@@ -10,11 +10,5 @@ script:
 after_success:
 - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
 
-- cd "${TRAVIS_BUILD_DIR}/src/demo/000-main(a)"
-- java ${BACH}
-
-- cd "${TRAVIS_BUILD_DIR}/src/demo/010-main(a,b,c)"
-- java ${BACH}
-
-- cd "${TRAVIS_BUILD_DIR}/src/demo/100-main-a-test-a,t"
+- cd "${TRAVIS_BUILD_DIR}/demo"
 - java ${BACH}
