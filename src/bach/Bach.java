@@ -30,6 +30,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -653,6 +654,31 @@ public class Bach {
         list.add(Objects.toString(object, null));
       }
       return list.toArray(String[]::new);
+    }
+
+    /** Delete all files and directories from and including the root directory. */
+    static void treeDelete(Path root) throws Exception {
+      treeDelete(root, __ -> true);
+    }
+
+    /** Delete selected files and directories from and including the root directory. */
+    static void treeDelete(Path root, Predicate<Path> filter) throws Exception {
+      // trivial case: delete existing empty directory or single file
+      if (filter.test(root)) {
+        try {
+          Files.deleteIfExists(root);
+          return;
+        } catch (DirectoryNotEmptyException ignored) {
+          // fall-through
+        }
+      }
+      // default case: walk the tree...
+      try (var stream = Files.walk(root)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      }
     }
   }
 }

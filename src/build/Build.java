@@ -29,7 +29,7 @@ class Build {
   public static void main(String... args) throws Exception {
     System.out.println("\nBuilding Bach.java " + Bach.VERSION + "...");
     var build = new Build();
-    // build.clean();
+    build.clean();
     build.format();
     build.compile();
     build.test();
@@ -39,20 +39,17 @@ class Build {
   }
 
   private final Bach bach = Bach.of();
-  private final Path target = Path.of("target", "build");
+  private final Path target = Path.of("target/build");
   private final Path targetBinMain = target.resolve("bin/main");
   private final Path targetBinTest = target.resolve("bin/test");
   private final Path targetJavadoc = target.resolve("javadoc");
   private final Path targetJars = target.resolve("jars");
 
-  //  private void clean() throws Exception {
-  //    System.out.println("\n[clean]");
-  //
-  //    Bach.Util.treeDelete(targetBinMain);
-  //    Bach.Util.treeDelete(targetBinTest);
-  //    Bach.Util.treeDelete(targetJavadoc);
-  //    Bach.Util.treeDelete(targetJars);
-  //  }
+  private void clean() throws Exception {
+    System.out.println("\n[clean]");
+
+    Bach.Util.treeDelete(target);
+  }
 
   private void format() {
     System.out.println("\n[format]");
