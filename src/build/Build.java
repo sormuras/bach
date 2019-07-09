@@ -79,6 +79,9 @@ class Build {
     var javac = new ArrayList<>();
     javac.add("-d");
     javac.add(targetBinTest);
+    javac.add("--enable-preview");
+    javac.add("--release");
+    javac.add(Runtime.version().feature());
     javac.add("--class-path");
     javac.add(String.join(File.pathSeparator, targetBinMain.toString(), junit.toString()));
     javac.addAll(Bach.Util.find(List.of(Path.of("src", "test")), Bach.Util::isJavaFile));
@@ -89,6 +92,7 @@ class Build {
     System.out.println("\n[test // run]");
     var launcher = new ArrayList<>();
     launcher.add("-ea");
+    launcher.add("--enable-preview");
     launcher.add("-Djunit.jupiter.execution.parallel.enabled=true");
     launcher.add("-Djunit.jupiter.execution.parallel.mode.default=concurrent");
     launcher.add("--class-path");
