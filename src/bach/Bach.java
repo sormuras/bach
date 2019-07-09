@@ -174,7 +174,18 @@ public class Bach {
 
   /** Format all Java source files of the project in-place. */
   public int format() {
-    return new Formatter().format(List.of(configuration.path(Property.PATH_SOURCES)), true);
+    return new Formatter().format(List.of(project.sources), true);
+  }
+
+  /** Resolve required external assets, like 3rd-party modules. */
+  public int sync() {
+    if (configuration.basic.isOffline()) {
+      log(DEBUG, "Offline mode is active, no synchronization.");
+      return 0;
+    }
+    new Synchronizer().sync(project.library, "module-uri.properties");
+    // TODO syncMissingLibrariesByParsingModuleDescriptors();
+    return 0;
   }
 
   /** Print usage help. */
@@ -210,6 +221,9 @@ public class Bach {
 
     /** Path to directory containing all Java module sources. */
     PATH_SOURCES("src", "Path to directory containing all Java module sources."),
+
+    /** Path to directory containing all required Java modules. */
+    PATH_LIBRARY("lib", "Path to directory containing all required Java modules."),
 
     /** Options passed to all 'javac' calls. */
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
@@ -249,6 +263,10 @@ public class Bach {
 
     /** Basic setup fixtures. */
     static class Basic {
+      boolean isOffline() {
+        return System.getProperty("offline") != null;
+      }
+
       /** Logger level threshold. */
       System.Logger.Level threshold() {
         var debug = System.getProperty("debug".substring(1)) != null;
@@ -330,6 +348,7 @@ public class Bach {
   class Project {
     final String name;
     final Version version;
+    final Path sources, library;
     final List<String> modules;
 
     final MainRealm main;
@@ -338,6 +357,8 @@ public class Bach {
     Project() {
       this.name = configuration.get(Property.NAME);
       this.version = Version.parse(configuration.get(Property.VERSION));
+      this.sources = configuration.home.resolve(configuration.path(Property.PATH_SOURCES));
+      this.library = configuration.home.resolve(configuration.path(Property.PATH_LIBRARY));
       this.modules = modules();
       this.main = new MainRealm();
       this.test = new TestRealm(main);
@@ -346,7 +367,7 @@ public class Bach {
     private List<String> modules() {
       var modules = configuration.get(Property.MODULES);
       if ("*".equals(modules)) {
-        return Util.findDirectoryNames(configuration.path(Property.PATH_SOURCES));
+        return Util.findDirectoryNames(sources);
       }
       return List.of(modules.split("\\s*,\\s*"));
     }
@@ -365,7 +386,6 @@ public class Bach {
       Realm(String name) {
         this.name = name;
 
-        var sources = configuration.path(Property.PATH_SOURCES);
         var moduleSourcePaths = new TreeSet<String>();
         var descriptors = new TreeMap<String, ModuleDescriptor>();
         var declarations = Util.find(sources, Util::isModuleInfo);
@@ -489,17 +509,17 @@ public class Bach {
       var path = group.replace('.', '/');
       var file = artifact + '-' + version + ".jar";
       var uri = URI.create(String.join("/", host, path, artifact, version, file));
-      return download(uri, Boolean.getBoolean("bach.offline"));
+      return download(uri);
     }
 
     /** Download a file denoted by the specified uri. */
-    Path download(URI uri, boolean offline) {
+    Path download(URI uri) {
       log(TRACE, "Downloader::download(%s)", uri);
       try {
         var fileName = extractFileName(uri);
         var target = Files.createDirectories(destination).resolve(fileName);
         var url = uri.toURL(); // fails for non-absolute uri
-        if (offline) {
+        if (configuration.basic.isOffline()) {
           log(DEBUG, "Offline mode is active!");
           if (Files.exists(target)) {
             var file = target.getFileName().toString();
@@ -573,7 +593,7 @@ public class Bach {
       log(TRACE, "format(%s)", Util.join(args));
       var uri = configuration.uri(Property.URI_TOOL_FORMAT);
       var downloader = new Downloader(USER_HOME.resolve(".bach/tool/format"));
-      var jar = downloader.download(uri, Boolean.getBoolean("bach.offline"));
+      var jar = downloader.download(uri);
       var arguments = new ArrayList<>();
       arguments.add("-jar");
       arguments.add(jar);
@@ -594,13 +614,51 @@ public class Bach {
     }
   }
 
+  /** Resolve external modules. */
+  class Synchronizer {
+
+    void sync(Path root, String fileName) {
+      log(DEBUG, "Synchronizing 3rd-party module uris below: %s", root.toUri());
+      if (Files.notExists(root)) {
+        log(DEBUG, "Not synchronizing because directory doesn't exist: %s", root);
+        return;
+      }
+      var paths = Util.find(Set.of(root), path -> path.getFileName().toString().equals(fileName));
+      var synced = new ArrayList<Path>();
+      for (var path : paths) {
+        var directory = path.getParent();
+        var downloader = new Downloader(directory);
+        var properties = Util.loadProperties(path);
+        if (properties.isEmpty()) {
+          log(DEBUG, "No module uri declared in %s", path.toUri());
+          continue;
+        }
+        log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
+        for (var value : properties.values()) {
+          var string = value.toString();
+          var uri = URI.create(string);
+          uri = uri.isAbsolute() ? uri : configuration.home.resolve(string).toUri();
+          log(DEBUG, "Syncing %s", uri);
+          var target = downloader.download(uri);
+          synced.add(target);
+          log(DEBUG, " o %s", target.toUri());
+        }
+      }
+      log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+    }
+  }
+
   /** Custom tool interface. */
   @FunctionalInterface
   public interface Tool {
 
     /** Default tools. */
     Map<String, Tool> API =
-        Map.of("format", Bach::format, "help", Bach::help, "version", Bach::version);
+        Map.of(
+            "format", Bach::format,
+            "help", Bach::help,
+            "sync", Bach::sync,
+            "version", Bach::version);
 
     /** Tools provided by the Java runtime. */
     List<String> PROVIDED =
