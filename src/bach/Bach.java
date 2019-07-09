@@ -23,6 +23,7 @@ import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.WARNING;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
@@ -50,6 +51,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -328,10 +330,15 @@ public class Bach {
     final Version version;
     final List<String> modules;
 
+    final MainRealm main;
+    final TestRealm test;
+
     Project() {
       this.name = configuration.get(Property.NAME);
       this.version = Version.parse(configuration.get(Property.VERSION));
       this.modules = modules();
+      this.main = new MainRealm();
+      this.test = new TestRealm(main);
     }
 
     private List<String> modules() {
@@ -345,6 +352,59 @@ public class Bach {
     @Override
     public String toString() {
       return name + ' ' + version;
+    }
+
+    abstract class Realm {
+      final String name;
+      final String moduleSourcePath;
+      final Map<String, ModuleDescriptor> declaredModules;
+      final Set<String> externalModules;
+
+      Realm(String name) {
+        this.name = name;
+
+        var sources = configuration.path(Property.PATH_SOURCES);
+        var moduleSourcePaths = new TreeSet<String>();
+        var descriptors = new TreeMap<String, ModuleDescriptor>();
+        var declarations = Util.find(sources, Util::isModuleInfo);
+        for (var declaration : declarations) {
+          //  <module>/<realm>/.../module-info.java
+          var relative = sources.relativize(declaration);
+          var module = relative.getName(0).toString();
+          var realm = relative.getName(1).toString();
+          if (!modules.contains(module)) {
+            continue; // module not selected in this project's configuration
+          }
+          if (!name.equals(realm)) {
+            continue; // not our realm
+          }
+          var descriptor = Modules.parseDeclaration(declaration);
+          assert module.equals(descriptor.name()) : module + " expected, but got: " + descriptor;
+          descriptors.put(module, descriptor);
+          var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
+          moduleSourcePaths.add(String.join(File.separator, sources.toString(), "*", offset));
+        }
+        this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
+        this.declaredModules = Collections.unmodifiableMap(descriptors);
+        this.externalModules = Modules.findExternalModuleNames(descriptors.values());
+      }
+    }
+
+    class MainRealm extends Realm {
+
+      MainRealm() {
+        super("main");
+      }
+    }
+
+    class TestRealm extends Realm {
+
+      final MainRealm main;
+
+      TestRealm(MainRealm main) {
+        super("test");
+        this.main = main;
+      }
     }
   }
 
