@@ -82,7 +82,7 @@ For more details consult the output of `jshell --help`.
 -e|--emit-java-home       Print value of "JAVA_HOME" to stdout (ignores silent mode)
 -v|--verbose              Displays verbose output
 
--f|--feature 8|11|...|ea  JDK feature release number, defaults to "ea"
+-f|--feature 9|11|...|ea  JDK feature release number, defaults to "ea"
 -o|--os linux-x64|osx-x64 Operating system identifier
 -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
 -w|--workspace PATH       Working directory defaults to user's ${HOME}
@@ -104,6 +104,12 @@ For more details consult the output of `jshell --help`.
 
   - `JAVA_HOME=$(./install-jdk.sh --silent --emit-java-home)`
   - `JAVA_HOME=$(./install-jdk.sh --emit-java-home | tail --lines 1)`
+
+#### JDK Build Matrix at Travis CI
+
+See `sormuras.github.io`'s [Travic CI configuration](https://github.com/sormuras/sormuras.github.io/blob/master/.travis.yml) for details.
+
+[![matrix](https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/blog/2019-07-09-jdk-matrix-screenshot.png)](https://travis-ci.org/sormuras/sormuras.github.io)
 
 # be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
