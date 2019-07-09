@@ -73,7 +73,6 @@ For more details consult the output of `jshell --help`.
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
-It supports GA releases and archived builds provided by [AdoptOpenJDK](https://adoptopenjdk.net) as well. 
 
 #### Options of `install-jdk.sh`
 ```
