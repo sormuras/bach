@@ -137,8 +137,10 @@ public class Bach {
     log(DEBUG, "  provided=%s", Tool.PROVIDED);
     log(DEBUG, "Project");
     log(DEBUG, "  name=%s", project.name);
-    log(DEBUG, "  version=%s", project.name);
+    log(DEBUG, "  version=%s", project.version);
     log(DEBUG, "  modules=%s", project.modules);
+    project.main.debug();
+    project.test.debug();
 
     var deque = new ArrayDeque<>(arguments);
     while (!deque.isEmpty()) {
@@ -387,6 +389,13 @@ public class Bach {
         this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
         this.declaredModules = Collections.unmodifiableMap(descriptors);
         this.externalModules = Modules.findExternalModuleNames(descriptors.values());
+      }
+
+      void debug() {
+        log(DEBUG, "Realm: %s", name);
+        log(DEBUG, "  moduleSourcePath=%s", moduleSourcePath);
+        log(DEBUG, "  declaredModules=%s", declaredModules.keySet());
+        log(DEBUG, "  externalModules=%s", externalModules);
       }
     }
 
