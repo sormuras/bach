@@ -172,8 +172,13 @@ public class Bach {
 
   /** Build the modular project. */
   public int build() {
+    log(TRACE, "Bach::build");
     if (sync() != 0) {
       log(ERROR, "Sync failed.");
+      return 1;
+    }
+    if (summary() != 0) {
+      log(ERROR, "Summary failed.");
       return 1;
     }
     log(DEBUG, "Build successful.");
@@ -182,17 +187,20 @@ public class Bach {
 
   /** Print Bach's version to the standard output stream. */
   public int version() {
+    log(TRACE, "Bach::version");
     out.println(VERSION);
     return 0;
   }
 
   /** Format all Java source files of the project in-place. */
   public int format() {
+    log(TRACE, "Bach::format");
     return new Formatter().format(List.of(project.sources), true);
   }
 
   /** Resolve required external assets, like 3rd-party modules. */
   public int sync() {
+    log(TRACE, "Bach::sync");
     if (configuration.basic.isOffline()) {
       log(DEBUG, "Offline mode is active, no synchronization.");
       return 0;
@@ -204,6 +212,7 @@ public class Bach {
 
   /** Print usage help. */
   public int help() {
+    log(TRACE, "Bach::help");
     out.println("Usage: Bach.java <options>");
     out.println("");
     out.println("Properties, passed via '-D' or a .properties file");
@@ -213,6 +222,14 @@ public class Bach {
       out.println("  Configured to: " + configuration.get(property).replace('\n', ' '));
       out.println("  Default value: " + property.defaultValue.replace('\n', ' '));
     }
+    return 0;
+  }
+
+  /** Print build summary. */
+  public int summary() {
+    log(TRACE, "Bach::summary");
+    out.println(project);
+    out.println(project.modules);
     return 0;
   }
 
@@ -672,6 +689,7 @@ public class Bach {
             "build", Bach::build,
             "format", Bach::format,
             "help", Bach::help,
+            "summary", Bach::summary,
             "sync", Bach::sync,
             "version", Bach::version);
 

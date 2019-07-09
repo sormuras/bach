@@ -41,6 +41,7 @@ class BachTests {
             ">> INIT >>",
             ">> version(<empty>)",
             "Running API tool named \\QBach$Tool$$Lambda\\E.+",
+            "Bach::version",
             Bach.VERSION,
             ">> noop(<empty>)",
             "Running configured tool named 'Probe$NoopTool'..."),
