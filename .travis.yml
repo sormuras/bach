@@ -1,5 +1,6 @@
 dist: xenial
 language: java
+jdk: openjdk13
 
 install:
 - java --version

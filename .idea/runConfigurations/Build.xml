@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Build" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="Build" />
-    <module name="bach" />
+    <module name="bach-main" />
     <option name="VM_PARAMETERS" value="-ea -Dbach.format.replace=true -Dbach.offline=false" />
     <method v="2">
       <option name="Make" enabled="true" />

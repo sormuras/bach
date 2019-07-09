@@ -1,7 +1,7 @@
 #before_install:
 #- source install-jdk.sh --feature ea
 
-jdk: openjdk11
+jdk: openjdk13
 
 install:
 - unset JAVA_TOOL_OPTIONS
