@@ -548,18 +548,17 @@ public class Bach {
     int run(Bach bach);
   }
 
-
   /** Static helpers handling modules. */
   static class Modules {
 
-    private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+(.+)\\s*\\{.*");
+    private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+(.+)\\s*\\{");
     private static final Pattern MODULE_REQUIRES_PATTERN =
         Pattern.compile(
             "(?:requires)" // key word
                 + "(?:\\s+[\\w.]+)?" // optional modifiers
                 + "\\s+([\\w.]+)" // module name
-                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional version
-                + ";.*"); // end marker
+                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                + ";"); // end marker
 
     /** Enumerate all system module names. */
     static List<String> findSystemModuleNames() {
@@ -608,14 +607,12 @@ public class Bach {
         var requiredName = requiresMatcher.group(1);
         Optional.ofNullable(requiresMatcher.group(2))
             .ifPresentOrElse(
-                version ->
-                    builder.requires(Set.of(), requiredName, ModuleDescriptor.Version.parse(version)),
+                version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
                 () -> builder.requires(requiredName));
       }
       return builder.build();
     }
   }
-
 
   /** Static helper. */
   static class Util {
