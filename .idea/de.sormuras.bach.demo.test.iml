@@ -3,9 +3,12 @@
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_13_PREVIEW" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/demo/src/de.sormuras.bach.demo/test">
-      <sourceFolder url="file://$MODULE_DIR$/demo/src/de.sormuras.bach.demo/test/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/src/de.sormuras.bach.demo/test/java" isTestSource="true" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="de.sormuras.bach.demo.main" />
+    <orderEntry type="library" scope="TEST" name="demo.test" level="project" />
+    <orderEntry type="library" scope="TEST" name="demo.test-runtime" level="project" />
   </component>
 </module>
