@@ -33,11 +33,6 @@ class BachTests {
   }
 
   @Test
-  void mainWithEmptyListOfTools() {
-    assertEquals(0, new Probe().bach.main(List.of()));
-  }
-
-  @Test
   void mainWithListOfCustomTools() {
     var probe = new Probe();
     assertEquals(0, probe.bach.main(List.of("version", "noop")));

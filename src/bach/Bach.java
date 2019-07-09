@@ -142,6 +142,10 @@ public class Bach {
     project.main.debug();
     project.test.debug();
 
+    if (arguments.isEmpty()) {
+      return build();
+    }
+
     var deque = new ArrayDeque<>(arguments);
     while (!deque.isEmpty()) {
       var argument = deque.removeFirst();
@@ -164,6 +168,16 @@ public class Bach {
       var message = "Tool %s(%s) returned %d, but expected %d";
       throw new AssertionError(String.format(message, name, Util.join(arguments), code, expected));
     }
+  }
+
+  /** Build the modular project. */
+  public int build() {
+    if (sync() != 0) {
+      log(ERROR, "Sync failed.");
+      return 1;
+    }
+    log(DEBUG, "Build successful.");
+    return 0;
   }
 
   /** Print Bach's version to the standard output stream. */
@@ -655,6 +669,7 @@ public class Bach {
     /** Default tools. */
     Map<String, Tool> API =
         Map.of(
+            "build", Bach::build,
             "format", Bach::format,
             "help", Bach::help,
             "sync", Bach::sync,
