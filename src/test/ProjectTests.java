@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.List;
 import java.util.Set;
@@ -12,20 +13,21 @@ class ProjectTests {
     var project = probe.bach.project;
     assertEquals("demo", project.name, "expected 'demo' as name, but got: " + project.name);
     assertEquals("1", project.version.toString());
-    assertEquals(List.of("de.sormuras.bach.demo"), project.modules);
+    assertEquals(List.of("de.sormuras.bach.demo", "integration"), project.modules);
   }
 
   @Test
   void checkRealmProperties() {
     var probe = new Probe();
     var main = probe.bach.project.main;
-    var test = probe.bach.project.test;
-    // main
     assertEquals("main", main.name);
     assertEquals("demo/src/*/main/java", main.moduleSourcePath.replace('\\', '/'));
     assertEquals(Set.of("de.sormuras.bach.demo"), main.declaredModules.keySet());
-    // test
+
+    var test = probe.bach.project.test;
+    assertSame(main, test.main);
     assertEquals("test", test.name);
-    assertEquals(Set.of(), test.declaredModules.keySet());
+    assertEquals(Set.of("de.sormuras.bach.demo", "integration"), test.declaredModules.keySet());
+    assertEquals(Set.of("org.junit.jupiter.api"), test.externalModules);
   }
 }
