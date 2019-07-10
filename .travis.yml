@@ -12,4 +12,4 @@ after_success:
 - BACH=${TRAVIS_BUILD_DIR}/src/bach/Bach.java
 
 - cd "${TRAVIS_BUILD_DIR}/demo"
-- java ${BACH}
+- java -Debug ${BACH}
