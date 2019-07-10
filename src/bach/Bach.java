@@ -533,8 +533,6 @@ public class Bach {
       final String moduleSourcePath;
       final Map<String, ModuleDescriptor> declaredModules;
       final Set<String> externalModules;
-      final Path bin;
-      final Path binRealm;
       final Path javacDestination;
       final Path binModules;
       final Path binSources;
@@ -542,8 +540,8 @@ public class Bach {
       Realm(String name) {
         this.name = name;
 
-        this.bin = configuration.work.resolve("bin");
-        this.binRealm = bin.resolve(name);
+        var bin = configuration.work.resolve("bin");
+        var binRealm = bin.resolve(name);
         this.javacDestination = binRealm.resolve("compile/javac");
         this.binModules = binRealm.resolve("modules");
         this.binSources = binRealm.resolve("sources");
@@ -579,12 +577,22 @@ public class Bach {
         log(DEBUG, "  declaredModules=%s", declaredModules.keySet());
         log(DEBUG, "  externalModules=%s", externalModules);
       }
+
+      abstract List<Path> modulePath(String phase);
+
+      void addModulePatches(Command javac, List<String> modules) {}
     }
 
     class MainRealm extends Realm {
 
       MainRealm() {
         super("main");
+      }
+
+      @Override
+      List<Path> modulePath(String phase) {
+        var lib = configuration.home.resolve("lib");
+        return List.of(lib.resolve(name));
       }
     }
 
@@ -595,6 +603,24 @@ public class Bach {
       TestRealm(MainRealm main) {
         super("test");
         this.main = main;
+      }
+
+      @Override
+      List<Path> modulePath(String phase) {
+        var lib = configuration.home.resolve("lib");
+        return List.of(main.binModules, lib.resolve(name), lib.resolve(main.name));
+      }
+
+      @Override
+      void addModulePatches(Command javac, List<String> modules) {
+        for (var module : modules) {
+          if (!main.declaredModules.containsKey(module)) {
+            continue;
+          }
+          var patch = main.javacDestination.resolve(module);
+          // patch = main.moduleSourcePath.replace("*", module);
+          javac.add("--patch-module", module + "=" + patch);
+        }
       }
     }
   }
@@ -834,20 +860,11 @@ public class Bach {
                 .addEach(configuration.lines(Property.OPTIONS_JAVAC))
                 // .addIff(realm.preview, "--enable-preview")
                 // .addIff(realm.release != null, "--release", realm.release)
-                // .add("--module-path", realm.modulePath)
+                .add("--module-path", realm.modulePath("compile"))
                 .add("--module-source-path", realm.moduleSourcePath)
-                .add("--module-version", project.version)
-                .add("--module", String.join(",", modules));
-        //        if (realm == project.test) {
-        //          for (var module : modules) {
-        //            if (!project.main.modules.contains(module)) {
-        //              continue;
-        //            }
-        //            var patch = project.main.binClasses.resolve(module);
-        //            // patch = project.main.moduleSourcePath.replace("*", module);
-        //            javac.add("--patch-module", module + "=" + patch);
-        //          }
-        //        }
+                .add("--module", String.join(",", modules))
+                .add("--module-version", project.version);
+        realm.addModulePatches(javac, modules);
         if (runner.run(javac) != 0) {
           throw new RuntimeException("javac failed");
         }
@@ -890,7 +907,7 @@ public class Bach {
 
     int compile() {
       if (compile(project.main) != 0) return 1;
-      // if (compile(project.test) != 0) return 1;
+      if (compile(project.test) != 0) return 1;
       return 0;
     }
 
