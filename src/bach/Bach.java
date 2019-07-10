@@ -183,6 +183,10 @@ public class Bach {
       log(ERROR, "Compilation failed.");
       return 1;
     }
+    if (test() != 0) {
+      log(ERROR, "Test run failed.");
+      return 1;
+    }
     if (summary() != 0) {
       log(ERROR, "Summary generation failed.");
       return 1;
@@ -235,6 +239,12 @@ public class Bach {
   public int compile() {
     log(TRACE, "Bach::compile");
     return new Compiler().compile();
+  }
+
+  /** Test all modules. */
+  public int test() {
+    log(TRACE, "Bach::test");
+    return new Tester().test(project.modules);
   }
 
   /** Print build summary. */
@@ -548,7 +558,7 @@ public class Bach {
 
         var moduleSourcePaths = new TreeSet<String>();
         var descriptors = new TreeMap<String, ModuleDescriptor>();
-        var declarations = Util.find(sources, Util::isModuleInfo);
+        var declarations = Util.find(List.of(sources), Util::isModuleInfo);
         for (var declaration : declarations) {
           //  <module>/<realm>/.../module-info.java
           var relative = sources.relativize(declaration);
@@ -795,7 +805,7 @@ public class Bach {
     }
 
     /** Run format. */
-    int format(Iterable<Path> roots, boolean replace) {
+    int format(Collection<Path> roots, boolean replace) {
       var files = Util.find(roots, Util::isJavaFile);
       if (files.isEmpty()) {
         return 0;
@@ -934,6 +944,52 @@ public class Bach {
     }
   }
 
+  /** Test all modules of the project. */
+  class Tester {
+
+    void check(int code) {
+      if (code == 2) {
+        throw new Error("No tests found!");
+      }
+      if (code != 0) {
+        throw new Error("Test run failed!");
+      }
+    }
+
+    int test(Iterable<String> modules) {
+      modules.forEach(this::testClassPath);
+      return 0;
+    }
+
+    void testClassPath(String module) {
+      var classPath = new ArrayList<Path>();
+      if (Files.isDirectory(project.test.javacDestination)) {
+        classPath.add(project.test.javacDestination.resolve(module));
+      }
+      if (Files.isDirectory(project.main.binModules)) {
+        classPath.addAll(Util.find(Set.of(project.main.binModules), Util::isJarFile));
+      }
+      classPath.addAll(Util.find(Set.of(configuration.home.resolve("lib")), Util::isJarFile));
+
+      var java =
+          new Command("java")
+              .add("-ea")
+              .add("--class-path", classPath)
+              .add("org.junit.platform.console.ConsoleLauncher")
+              .add("--fail-if-no-tests");
+      // Select each package, as "--scan-class-path" also finds main programs
+      Util.find(List.of(project.test.javacDestination.resolve(module)), Files::isDirectory).stream()
+          .filter(path -> !Util.findDirectoryEntries(path, Util::isClassFile).isEmpty())
+          .map(path -> project.test.javacDestination.resolve(module).relativize(path))
+          .map(Path::toString)
+          .filter(Predicate.not(String::isEmpty))
+          .map(name -> name.replace('/', '.'))
+          .map(name -> name.replace('\\', '.'))
+          .forEach(path -> java.add("--select-package", path));
+      runner.run(java);
+    }
+  }
+
   /** Custom tool interface. */
   @FunctionalInterface
   public interface Tool {
@@ -947,6 +1003,7 @@ public class Bach {
             "help", Bach::help,
             "summary", Bach::summary,
             "sync", Bach::sync,
+            "test", Bach::test,
             "version", Bach::version);
 
     /** Tools provided by the Java runtime. */
@@ -1042,7 +1099,7 @@ public class Bach {
       return Objects.requireNonNull(object, name + " must not be null");
     }
     /** List all paths matching the given filter starting at given root paths. */
-    static List<Path> find(Iterable<Path> roots, Predicate<Path> filter) {
+    static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
       var files = new ArrayList<Path>();
       for (var root : roots) {
         try (var stream = Files.walk(root)) {
@@ -1052,6 +1109,11 @@ public class Bach {
         }
       }
       return files;
+    }
+
+    /** Test supplied path for pointing to a Java binary unit. */
+    static boolean isClassFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".class");
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */
