@@ -1,4 +1,3 @@
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -6,15 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 class BachTests {
-
-  @Test
-  @SwallowSystem
-  void main() {
-    assertDoesNotThrow((Executable) Bach::main);
-  }
 
   @Test
   @SwallowSystem

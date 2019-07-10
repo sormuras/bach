@@ -240,8 +240,33 @@ public class Bach {
   /** Print build summary. */
   public int summary() {
     log(TRACE, "Bach::summary");
-    out.println(project);
-    out.println(project.modules);
+    var path = project.main.binModules;
+    if (Files.notExists(path)) {
+      out.println("No module destination directory created: " + path.toUri());
+      return 0;
+    }
+    var jars = Util.find(List.of(path), Util::isJarFile);
+    if (jars.isEmpty()) {
+      out.printf("No module created for %s%n", project.name);
+      return 0;
+    }
+    if (configuration.verbose()) {
+      for (var jar : jars) {
+        runner.run(new Command("jar", "--describe-module", "--file", jar));
+      }
+      runner.run(
+          new Command(
+              "jdeps",
+              "--module-path",
+              project.main.binModules,
+              "--check",
+              String.join(",", project.main.declaredModules.keySet())));
+    }
+    out.printf("%d main module(s) created in %s%n", jars.size(), path.toUri());
+    for (var jar : jars) {
+      var module = ModuleFinder.of(jar).findAll().iterator().next().descriptor();
+      out.printf(" -> %9d %s <- %s%n", Util.size(jar), jar.getFileName(), module);
+    }
     return 0;
   }
 
@@ -385,6 +410,10 @@ public class Bach {
     URI uri(Property property) {
       return URI.create(get(property));
     }
+
+    boolean verbose() {
+      return basic.threshold().getSeverity() <= DEBUG.getSeverity();
+    }
   }
 
   /** Command-line program argument list builder. */
@@ -504,9 +533,20 @@ public class Bach {
       final String moduleSourcePath;
       final Map<String, ModuleDescriptor> declaredModules;
       final Set<String> externalModules;
+      final Path bin;
+      final Path binRealm;
+      final Path javacDestination;
+      final Path binModules;
+      final Path binSources;
 
       Realm(String name) {
         this.name = name;
+
+        this.bin = configuration.work.resolve("bin");
+        this.binRealm = bin.resolve(name);
+        this.javacDestination = binRealm.resolve("compile/javac");
+        this.binModules = binRealm.resolve("modules");
+        this.binSources = binRealm.resolve("sources");
 
         var moduleSourcePaths = new TreeSet<String>();
         var descriptors = new TreeMap<String, ModuleDescriptor>();
@@ -561,6 +601,11 @@ public class Bach {
 
   /** Tool-invoking dispatcher. */
   class Runner {
+
+    /** Run given command. */
+    int run(Command command) {
+      return run(command.name, command.list.toArray(Object[]::new));
+    }
 
     /** Run named tool with specified arguments returning an error code. */
     int run(String name, Object... arguments) {
@@ -782,14 +827,70 @@ public class Bach {
 
     /** Default multi-module compiler. */
     class Jigsaw {
-      List<String> compile(Project.Realm realm, List<String> modules) {
+      List<String> compile(Project.Realm realm, List<String> modules) throws Exception {
+        var javac =
+            new Command("javac")
+                .add("-d", realm.javacDestination)
+                .addEach(configuration.lines(Property.OPTIONS_JAVAC))
+                // .addIff(realm.preview, "--enable-preview")
+                // .addIff(realm.release != null, "--release", realm.release)
+                // .add("--module-path", realm.modulePath)
+                .add("--module-source-path", realm.moduleSourcePath)
+                .add("--module-version", project.version)
+                .add("--module", String.join(",", modules));
+        //        if (realm == project.test) {
+        //          for (var module : modules) {
+        //            if (!project.main.modules.contains(module)) {
+        //              continue;
+        //            }
+        //            var patch = project.main.binClasses.resolve(module);
+        //            // patch = project.main.moduleSourcePath.replace("*", module);
+        //            javac.add("--patch-module", module + "=" + patch);
+        //          }
+        //        }
+        if (runner.run(javac) != 0) {
+          throw new RuntimeException("javac failed");
+        }
+        var realmModules = Files.createDirectories(realm.binModules);
+        var realmSources = Files.createDirectories(realm.binSources);
+        for (var module : modules) {
+          var moduleNameDashVersion = module + '-' + project.version;
+          var modularJar = realmModules.resolve(moduleNameDashVersion + ".jar");
+          var sourcesJar = realmSources.resolve(moduleNameDashVersion + "-sources.jar");
+          var resources = Path.of("realm/resources"); // realm.srcResources;
+          var jarModule =
+              new Command("jar")
+                  .add("--create")
+                  .add("--file", modularJar)
+                  .addIff(configuration.verbose(), "--verbose")
+                  .add("-C", realm.javacDestination.resolve(module))
+                  .add(".")
+                  .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+          var jarSources =
+              new Command("jar")
+                  .add("--create")
+                  .add("--file", sourcesJar)
+                  .addIff(configuration.verbose(), "--verbose")
+                  .add("--no-manifest")
+                  .add("-C", project.sources.resolve(module).resolve(realm.name).resolve("java"))
+                  .add(".")
+                  .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+          if (runner.run(jarModule) != 0) {
+            throw new RuntimeException(
+                "Creating " + realm.name + " modular jar failed: " + modularJar);
+          }
+          if (runner.run(jarSources) != 0) {
+            throw new RuntimeException(
+                "Creating " + realm.name + " sources jar failed: " + sourcesJar);
+          }
+        }
         return modules;
       }
     }
 
     int compile() {
       if (compile(project.main) != 0) return 1;
-      if (compile(project.test) != 0) return 1;
+      // if (compile(project.test) != 0) return 1;
       return 0;
     }
 
@@ -800,13 +901,19 @@ public class Bach {
         return 0;
       }
       log(DEBUG, "Compiling %d %s module(s): %s", modules.size(), realm.name, modules);
-      modules.removeAll(new Hydra().compile(realm, modules));
-      modules.removeAll(new Jigsaw().compile(realm, modules));
-      if (modules.isEmpty()) {
-        return 0;
+      try {
+        modules.removeAll(new Hydra().compile(realm, modules));
+        modules.removeAll(new Jigsaw().compile(realm, modules));
+        if (modules.isEmpty()) {
+          return 0;
+        }
+        log(ERROR, "Not compiled module(s): " + modules);
+        return 1;
+      } catch (Exception e) {
+        log(ERROR, "Compilation failed:" + e);
+        e.printStackTrace(err);
+        return 2;
       }
-      log(ERROR, "Not compiled module(s): " + modules);
-      return 1;
     }
   }
 
@@ -1004,6 +1111,15 @@ public class Bach {
         throw new UncheckedIOException("Reading properties failed: " + path, e);
       }
       return properties;
+    }
+
+    /** Returns the size of a file in bytes. */
+    static long size(Path path) {
+      try {
+        return Files.size(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
 
     /** Convert keys of the given map to a sorted list of each keys' string representation. */
