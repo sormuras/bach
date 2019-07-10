@@ -174,11 +174,15 @@ public class Bach {
   public int build() {
     log(TRACE, "Bach::build");
     if (sync() != 0) {
-      log(ERROR, "Sync failed.");
+      log(ERROR, "Synchronization failed.");
+      return 1;
+    }
+    if (compile() != 0) {
+      log(ERROR, "Compilation failed.");
       return 1;
     }
     if (summary() != 0) {
-      log(ERROR, "Summary failed.");
+      log(ERROR, "Summary generation failed.");
       return 1;
     }
     log(DEBUG, "Build successful.");
@@ -223,6 +227,12 @@ public class Bach {
       out.println("  Default value: " + property.defaultValue.replace('\n', ' '));
     }
     return 0;
+  }
+
+  /** Compile all modules. */
+  public int compile() {
+    log(TRACE, "Bach::compile");
+    return new Compiler().compile();
   }
 
   /** Print build summary. */
@@ -679,6 +689,46 @@ public class Bach {
     }
   }
 
+  /** Compiles all modules of the project. */
+  class Compiler {
+
+    /** Multi-release module compiler. */
+    class Hydra {
+      List<String> compile(Project.Realm realm, List<String> modules) {
+        return List.of();
+      }
+    }
+
+    /** Default multi-module compiler. */
+    class Jigsaw {
+      List<String> compile(Project.Realm realm, List<String> modules) {
+        return modules;
+      }
+    }
+
+    int compile() {
+      if (compile(project.main) != 0) return 1;
+      if (compile(project.test) != 0) return 1;
+      return 0;
+    }
+
+    private int compile(Project.Realm realm) {
+      var modules = new ArrayList<>(realm.declaredModules.keySet());
+      if (modules.isEmpty()) {
+        log(INFO, "No %s modules declared -- skip compilation.", realm.name);
+        return 0;
+      }
+      log(DEBUG, "Compiling %d %s module(s): %s", modules.size(), realm.name, modules);
+      modules.removeAll(new Hydra().compile(realm, modules));
+      modules.removeAll(new Jigsaw().compile(realm, modules));
+      if (modules.isEmpty()) {
+        return 0;
+      }
+      log(ERROR, "Not compiled module(s): " + modules);
+      return 1;
+    }
+  }
+
   /** Custom tool interface. */
   @FunctionalInterface
   public interface Tool {
@@ -687,6 +737,7 @@ public class Bach {
     Map<String, Tool> API =
         Map.of(
             "build", Bach::build,
+            "compile", Bach::compile,
             "format", Bach::format,
             "help", Bach::help,
             "summary", Bach::summary,
