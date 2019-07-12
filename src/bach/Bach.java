@@ -588,7 +588,19 @@ public class Bach {
         log(DEBUG, "  externalModules=%s", externalModules);
       }
 
-      abstract List<Path> modulePath(String phase);
+      List<Path> modulePath(String phase) {
+        var lib = configuration.home.resolve("lib");
+        var paths = new ArrayList<Path>();
+        if ("runtime".equals(phase)) {
+          paths.add(binModules); // bin/${realm}/modules
+        }
+        paths.add(lib.resolve(name)); // lib/${realm} at "compile" and "test" phases
+        Util.findDirectoryNames(lib).stream() // lib/${realm}-${phase}.*
+            .filter(dir -> dir.startsWith(name + "-" + phase))
+            .map(lib::resolve)
+            .forEach(paths::add);
+        return List.copyOf(paths);
+      }
 
       void addModulePatches(Command javac, List<String> modules) {}
     }
@@ -597,12 +609,6 @@ public class Bach {
 
       MainRealm() {
         super("main");
-      }
-
-      @Override
-      List<Path> modulePath(String phase) {
-        var lib = configuration.home.resolve("lib");
-        return List.of(lib.resolve(name));
       }
     }
 
