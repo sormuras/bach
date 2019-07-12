@@ -966,21 +966,18 @@ public class Bach {
   /** Test all modules of the project. */
   class Tester {
 
-    void check(int code) {
-      if (code == 2) {
-        throw new Error("No tests found!");
-      }
-      if (code != 0) {
-        throw new Error("Test run failed!");
-      }
-    }
-
     int test(Iterable<String> modules) {
-      modules.forEach(this::testClassPath);
-      return 0;
+      int sum = 0;
+      for (var module : modules) {
+        // TODO testClassPathDirect(module);
+        sum += testClassPathForked(module);
+        // TODO testModulePathDirect(module);
+        sum += testModulePathForked(module);
+      }
+      return sum;
     }
 
-    void testClassPath(String module) {
+    int testClassPathForked(String module) {
       var classPath = new ArrayList<Path>();
       if (Files.isDirectory(project.test.javacDestination)) {
         classPath.add(project.test.javacDestination.resolve(module));
@@ -1005,7 +1002,27 @@ public class Bach {
           .map(name -> name.replace('/', '.'))
           .map(name -> name.replace('\\', '.'))
           .forEach(path -> java.add("--select-package", path));
-      runner.run(java);
+      return runner.run(java);
+    }
+
+    int testModulePathForked(String module) {
+      var needsPatch = project.main.declaredModules.containsKey(module);
+      var java =
+          new Command("java")
+              .add("-ea")
+              .add("--module-path", project.test.modulePathRuntime(needsPatch))
+              .add("--add-modules", module);
+      if (needsPatch) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        var modularJar = project.main.binModules.resolve(moduleNameDashVersion + ".jar");
+        var patch = modularJar.toString();
+        java.add("--patch-module", module + "=" + patch);
+      }
+      java.add("--module")
+          .add("org.junit.platform.console") // main entry-point
+          .add("--fail-if-no-tests")
+          .add("--select-module", module);
+      return runner.run(java);
     }
   }
 
