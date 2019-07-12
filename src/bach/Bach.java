@@ -623,8 +623,21 @@ public class Bach {
 
       @Override
       List<Path> modulePath(String phase) {
-        var lib = configuration.home.resolve("lib");
-        return List.of(main.binModules, lib.resolve(name), lib.resolve(main.name));
+        var paths = new ArrayList<Path>();
+        paths.addAll(super.modulePath(phase)); // "test" realm
+        paths.addAll(main.modulePath(phase)); // "main" realm
+        return List.copyOf(paths);
+      }
+
+      List<Path> modulePathRuntime(boolean needsPatch) {
+        var patchedRuntime = modulePath("runtime");
+        if (needsPatch) {
+          return patchedRuntime;
+        }
+        var paths = new ArrayList<>(patchedRuntime);
+        paths.remove(test.binModules);
+        paths.add(test.binModules);
+        return List.copyOf(paths);
       }
 
       @Override
