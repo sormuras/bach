@@ -34,6 +34,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -626,6 +627,30 @@ public class Bach {
         this.main = main;
       }
 
+      List<String> packages(String module) {
+        return Util.find(List.of(javacDestination.resolve(module)), Files::isDirectory).stream()
+            .filter(path -> !Util.findDirectoryEntries(path, Util::isClassFile).isEmpty())
+            .map(path -> javacDestination.resolve(module).relativize(path))
+            .map(Path::toString)
+            .filter(Predicate.not(String::isEmpty))
+            .map(name -> name.replace('/', '.'))
+            .map(name -> name.replace('\\', '.'))
+            .collect(Collectors.toList());
+      }
+
+      List<Path> classPathRuntime(String module) {
+        var lib = configuration.home.resolve("lib");
+        var paths = new ArrayList<Path>();
+        if (Files.isDirectory(javacDestination)) {
+          paths.add(javacDestination.resolve(module));
+        }
+        if (Files.isDirectory(main.binModules)) {
+          paths.addAll(Util.find(Set.of(main.binModules), Util::isJarFile));
+        }
+        paths.addAll(Util.find(Set.of(lib), Util::isJarFile));
+        return List.copyOf(paths);
+      }
+
       @Override
       List<Path> modulePath(String phase) {
         var paths = new ArrayList<Path>();
@@ -970,42 +995,40 @@ public class Bach {
   /** Test all modules of the project. */
   class Tester {
 
-    int test(Iterable<String> modules) {
-      int sum = 0;
+    int test(Collection<String> modules) {
+      var errors = "";
       for (var module : modules) {
-        // TODO testClassPathDirect(module);
-        sum += testClassPathForked(module);
-        sum += testModulePathDirect(module);
-        sum += testModulePathForked(module);
+        out.printf("%n%n%n%s%n%n%n", module);
+        errors += testClassPathDirect(module);
+        errors += testClassPathForked(module);
+        errors += testModulePathDirect(module);
+        errors += testModulePathForked(module);
       }
-      return sum;
+      if (errors.replace('0', ' ').isBlank()) {
+        return 0;
+      }
+      log(ERROR, "errors=%s", errors);
+      return 1;
+    }
+
+    int testClassPathDirect(String module) {
+      var classPath = project.test.classPathRuntime(module);
+      var urls = classPath.stream().map(Util::url).toArray(URL[]::new);
+      var parentLoader = ClassLoader.getPlatformClassLoader();
+      var junitLoader = new URLClassLoader("junit", urls, parentLoader);
+      var junit = new Command("junit").add("--fail-if-no-tests");
+      project.test.packages(module).forEach(path -> junit.add("--select-package", path));
+      return launchJUnitPlatformConsole(junitLoader, junit);
     }
 
     int testClassPathForked(String module) {
-      var classPath = new ArrayList<Path>();
-      if (Files.isDirectory(project.test.javacDestination)) {
-        classPath.add(project.test.javacDestination.resolve(module));
-      }
-      if (Files.isDirectory(project.main.binModules)) {
-        classPath.addAll(Util.find(Set.of(project.main.binModules), Util::isJarFile));
-      }
-      classPath.addAll(Util.find(Set.of(configuration.home.resolve("lib")), Util::isJarFile));
-
       var java =
           new Command("java")
               .add("-ea")
-              .add("--class-path", classPath)
+              .add("--class-path", project.test.classPathRuntime(module))
               .add("org.junit.platform.console.ConsoleLauncher")
               .add("--fail-if-no-tests");
-      // Select each package, as "--scan-class-path" also finds main programs
-      Util.find(List.of(project.test.javacDestination.resolve(module)), Files::isDirectory).stream()
-          .filter(path -> !Util.findDirectoryEntries(path, Util::isClassFile).isEmpty())
-          .map(path -> project.test.javacDestination.resolve(module).relativize(path))
-          .map(Path::toString)
-          .filter(Predicate.not(String::isEmpty))
-          .map(name -> name.replace('/', '.'))
-          .map(name -> name.replace('\\', '.'))
-          .forEach(path -> java.add("--select-package", path));
+      project.test.packages(module).forEach(path -> java.add("--select-package", path));
       return runner.run(java);
     }
 
@@ -1360,6 +1383,15 @@ public class Bach {
         for (var path : selected.collect(Collectors.toList())) {
           Files.deleteIfExists(path);
         }
+      }
+    }
+
+    /** Convert given path to its URL. */
+    static URL url(Path path) {
+      try {
+        return path.toUri().toURL();
+      } catch (MalformedURLException e) {
+        throw new UncheckedIOException(e);
       }
     }
   }
