@@ -312,6 +312,9 @@ public class Bach {
     /** Options passed to all 'javac' calls. */
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
 
+    /** Options passed to all 'junit' console calls. */
+    OPTIONS_JUNIT("--fail-if-no-tests\n--disable-banner\n--details=none", "'junit' run options."),
+
     /** Google Java Format Uniform Resource Identifier. */
     URI_TOOL_FORMAT(
         "https://github.com/"
@@ -1016,7 +1019,7 @@ public class Bach {
       var urls = classPath.stream().map(Util::url).toArray(URL[]::new);
       var parentLoader = ClassLoader.getPlatformClassLoader();
       var junitLoader = new URLClassLoader("junit", urls, parentLoader);
-      var junit = new Command("junit").add("--fail-if-no-tests");
+      var junit = new Command("junit").addEach(configuration.lines(Property.OPTIONS_JUNIT));
       project.test.packages(module).forEach(path -> junit.add("--select-package", path));
       return launchJUnitPlatformConsole(junitLoader, junit);
     }
@@ -1027,13 +1030,16 @@ public class Bach {
               .add("-ea")
               .add("--class-path", project.test.classPathRuntime(module))
               .add("org.junit.platform.console.ConsoleLauncher")
-              .add("--fail-if-no-tests");
+              .addEach(configuration.lines(Property.OPTIONS_JUNIT));
       project.test.packages(module).forEach(path -> java.add("--select-package", path));
       return runner.run(java);
     }
 
     int testModulePathDirect(String module) {
-      var junit = new Command("junit").add("--fail-if-no-tests").add("--select-module", module);
+      var junit =
+          new Command("junit")
+              .addEach(configuration.lines(Property.OPTIONS_JUNIT))
+              .add("--select-module", module);
       try {
         return testModulePathDirect(module, junit);
       } finally {
@@ -1120,8 +1126,8 @@ public class Bach {
         java.add("--patch-module", module + "=" + patch);
       }
       java.add("--module")
-          .add("org.junit.platform.console") // main entry-point
-          .add("--fail-if-no-tests")
+          .add("org.junit.platform.console")
+          .addEach(configuration.lines(Property.OPTIONS_JUNIT))
           .add("--select-module", module);
       return runner.run(java);
     }
