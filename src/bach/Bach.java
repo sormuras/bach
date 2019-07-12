@@ -17,14 +17,17 @@
 
 // default package
 
+import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.WARNING;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -33,6 +36,8 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
@@ -646,8 +651,7 @@ public class Bach {
           if (!main.declaredModules.containsKey(module)) {
             continue;
           }
-          var patch = main.javacDestination.resolve(module);
-          // patch = main.moduleSourcePath.replace("*", module);
+          var patch = main.moduleSourcePath.replace("*", module);
           javac.add("--patch-module", module + "=" + patch);
         }
       }
@@ -971,7 +975,7 @@ public class Bach {
       for (var module : modules) {
         // TODO testClassPathDirect(module);
         sum += testClassPathForked(module);
-        // TODO testModulePathDirect(module);
+        sum += testModulePathDirect(module);
         sum += testModulePathForked(module);
       }
       return sum;
@@ -1003,6 +1007,80 @@ public class Bach {
           .map(name -> name.replace('\\', '.'))
           .forEach(path -> java.add("--select-package", path));
       return runner.run(java);
+    }
+
+    int testModulePathDirect(String module) {
+      var junit = new Command("junit").add("--fail-if-no-tests").add("--select-module", module);
+      try {
+        return testModulePathDirect(module, junit);
+      } finally {
+        var windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
+        if (windows) {
+          System.gc();
+          Util.sleep(1234);
+        }
+      }
+    }
+
+    /** Launch JUnit Platform for given modular realm. */
+    private int testModulePathDirect(String module, Command junit) {
+      var needsPatch = project.main.declaredModules.containsKey(module);
+      var modulePath = project.test.modulePathRuntime(needsPatch);
+      log(DEBUG, "Module path:");
+      for (var element : modulePath) {
+        log(DEBUG, "  -> %s", element);
+      }
+      var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+      log(DEBUG, "Finder finds module(s):");
+      for (var reference : finder.findAll()) {
+        log(DEBUG, "  -> %s", reference);
+      }
+      var roots = List.of(module, "org.junit.platform.console");
+      log(DEBUG, "Root module(s):");
+      for (var root : roots) {
+        log(DEBUG, "  -> %s", root);
+      }
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var parentLoader = ClassLoader.getPlatformClassLoader();
+      var controller = defineModulesWithOneLoader(configuration, List.of(boot), parentLoader);
+      var junitConsoleLayer = controller.layer();
+      controller.addExports( // "Bach.java" resides in an unnamed module...
+          junitConsoleLayer.findModule("org.junit.platform.console").orElseThrow(),
+          "org.junit.platform.console",
+          Bach.class.getModule());
+      var junitConsoleLoader = junitConsoleLayer.findLoader("org.junit.platform.console");
+      var junitLoader = new URLClassLoader("junit", new URL[0], junitConsoleLoader);
+      return launchJUnitPlatformConsole(junitLoader, junit);
+    }
+
+    private int launchJUnitPlatformConsole(ClassLoader loader, Command junit) {
+      log(DEBUG, "Launching JUnit Platform Console: %s", junit.list);
+      log(DEBUG, "Using class loader: %s - %s", loader.getName(), loader);
+      var currentThread = Thread.currentThread();
+      var currentContextLoader = currentThread.getContextClassLoader();
+      currentThread.setContextClassLoader(loader);
+      var parent = loader;
+      while (parent != null) {
+        parent.setDefaultAssertionStatus(true);
+        parent = parent.getParent();
+      }
+      try {
+        var launcher = loader.loadClass("org.junit.platform.console.ConsoleLauncher");
+        var params = new Class<?>[] {PrintStream.class, PrintStream.class, String[].class};
+        var execute = launcher.getMethod("execute", params);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        var args = junit.toStringArray();
+        var result = execute.invoke(null, new PrintStream(out), new PrintStream(err), args);
+        Bach.this.out.write(out.toString());
+        Bach.this.err.write(err.toString());
+        return (int) result.getClass().getMethod("getExitCode").invoke(result);
+      } catch (Exception e) {
+        throw new Error("ConsoleLauncher.execute(...) failed: " + e, e);
+      } finally {
+        currentThread.setContextClassLoader(currentContextLoader);
+      }
     }
 
     int testModulePathForked(String module) {
@@ -1234,6 +1312,15 @@ public class Bach {
         return Files.size(path);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
+      }
+    }
+
+    /** Sleep and silently clear current thread's interrupted status. */
+    static void sleep(long millis) {
+      try {
+        Thread.sleep(millis);
+      } catch (InterruptedException e) {
+        Thread.interrupted();
       }
     }
 
