@@ -1051,7 +1051,27 @@ public class Bach {
       }
     }
 
-    /** Launch JUnit Platform for given modular realm. */
+    int testModulePathForked(String module) {
+      var needsPatch = project.main.declaredModules.containsKey(module);
+      var java =
+          new Command("java")
+              .add("-ea")
+              .add("--module-path", project.test.modulePathRuntime(needsPatch))
+              .add("--add-modules", module);
+      if (needsPatch) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        var modularJar = project.main.binModules.resolve(moduleNameDashVersion + ".jar");
+        var patch = modularJar.toString();
+        java.add("--patch-module", module + "=" + patch);
+      }
+      java.add("--module")
+          .add("org.junit.platform.console")
+          .addEach(configuration.lines(Property.OPTIONS_JUNIT))
+          .add("--select-module", module);
+      return runner.run(java);
+    }
+
+    /** Launch JUnit Platform Console for the given module. */
     private int testModulePathDirect(String module, Command junit) {
       var needsPatch = project.main.declaredModules.containsKey(module);
       var modulePath = project.test.modulePathRuntime(needsPatch);
@@ -1083,6 +1103,7 @@ public class Bach {
       return launchJUnitPlatformConsole(junitLoader, junit);
     }
 
+    /** Launch JUnit Platform Console passing all arguments of the given command. */
     private int launchJUnitPlatformConsole(ClassLoader loader, Command junit) {
       log(DEBUG, "Launching JUnit Platform Console: %s", junit.list);
       log(DEBUG, "Using class loader: %s - %s", loader.getName(), loader);
@@ -1110,26 +1131,6 @@ public class Bach {
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
       }
-    }
-
-    int testModulePathForked(String module) {
-      var needsPatch = project.main.declaredModules.containsKey(module);
-      var java =
-          new Command("java")
-              .add("-ea")
-              .add("--module-path", project.test.modulePathRuntime(needsPatch))
-              .add("--add-modules", module);
-      if (needsPatch) {
-        var moduleNameDashVersion = module + '-' + project.version;
-        var modularJar = project.main.binModules.resolve(moduleNameDashVersion + ".jar");
-        var patch = modularJar.toString();
-        java.add("--patch-module", module + "=" + patch);
-      }
-      java.add("--module")
-          .add("org.junit.platform.console")
-          .addEach(configuration.lines(Property.OPTIONS_JUNIT))
-          .add("--select-module", module);
-      return runner.run(java);
     }
   }
 
