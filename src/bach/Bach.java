@@ -315,7 +315,7 @@ public class Bach {
     OPTIONS_JAVAC("-encoding\nUTF-8\n-parameters\n-Xlint", "Options passed to 'javac' calls."),
 
     /** Options passed to all 'junit' console calls. */
-    OPTIONS_JUNIT("--fail-if-no-tests\n--disable-banner\n--details=none", "'junit' run options."),
+    OPTIONS_JUNIT("--fail-if-no-tests\n--disable-banner\n--details=tree", "'junit' run options."),
 
     /** Google Java Format Uniform Resource Identifier. */
     URI_TOOL_FORMAT(
