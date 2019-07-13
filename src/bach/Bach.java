@@ -554,6 +554,7 @@ public class Bach {
       final String moduleSourcePath;
       final Map<String, ModuleDescriptor> declaredModules;
       final Set<String> externalModules;
+      final Path binaries;
       final Path javacDestination;
       final Path binModules;
       final Path binSources;
@@ -562,10 +563,10 @@ public class Bach {
         this.name = name;
 
         var bin = configuration.work.resolve("bin");
-        var binRealm = bin.resolve(name);
-        this.javacDestination = binRealm.resolve("compile/javac");
-        this.binModules = binRealm.resolve("modules");
-        this.binSources = binRealm.resolve("sources");
+        this.binaries = bin.resolve(name);
+        this.javacDestination = binaries.resolve("compile/javac");
+        this.binModules = binaries.resolve("modules");
+        this.binSources = binaries.resolve("sources");
 
         var moduleSourcePaths = new TreeSet<String>();
         var descriptors = new TreeMap<String, ModuleDescriptor>();
@@ -614,6 +615,16 @@ public class Bach {
       }
 
       void addModulePatches(Command javac, List<String> modules) {}
+
+      Path modularJar(String module) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        return binModules.resolve(moduleNameDashVersion + ".jar");
+      }
+
+      Path sourcesJar(String module) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        return binSources.resolve(moduleNameDashVersion + "-sources.jar");
+      }
     }
 
     class MainRealm extends Realm {
@@ -632,10 +643,10 @@ public class Bach {
         this.main = main;
       }
 
-      List<String> packages(String module) {
-        return Util.find(List.of(javacDestination.resolve(module)), Files::isDirectory).stream()
+      List<String> packages(Path root) {
+        return Util.find(Set.of(root), Files::isDirectory).stream()
             .filter(path -> !Util.findDirectoryEntries(path, Util::isClassFile).isEmpty())
-            .map(path -> javacDestination.resolve(module).relativize(path))
+            .map(root::relativize)
             .map(Path::toString)
             .filter(Predicate.not(String::isEmpty))
             .map(name -> name.replace('/', '.'))
@@ -644,15 +655,19 @@ public class Bach {
       }
 
       List<Path> classPathRuntime(String module) {
-        var lib = configuration.home.resolve("lib");
         var paths = new ArrayList<Path>();
-        if (Files.isDirectory(javacDestination)) {
-          paths.add(javacDestination.resolve(module));
-        }
+        paths.add(modularJar(module));
+        // Add all other test modules?
+        // if (Files.isDirectory(binModules)) {
+        //   paths.addAll(Util.find(Set.of(binModules), Util::isJarFile));
+        // }
         if (Files.isDirectory(main.binModules)) {
           paths.addAll(Util.find(Set.of(main.binModules), Util::isJarFile));
         }
-        paths.addAll(Util.find(Set.of(lib), Util::isJarFile));
+        var lib = configuration.home.resolve("lib");
+        if (Files.isDirectory(lib)) {
+          paths.addAll(Util.find(Set.of(lib), Util::isJarFile));
+        }
         return List.copyOf(paths);
       }
 
@@ -909,8 +924,177 @@ public class Bach {
 
     /** Multi-release module compiler. */
     class Hydra {
-      List<String> compile(Project.Realm realm, List<String> modules) {
-        return List.of();
+
+      final Pattern javaReleasePattern = Pattern.compile("java-\\d+");
+      final Project.Realm realm;
+      final Path destination;
+
+      Hydra(Project.Realm realm) {
+        this.realm = realm;
+        this.destination = realm.binaries.resolve("compile/hydra");
+      }
+
+      private int findBaseJavaFeatureNumber(List<String> strings) {
+        int base = Integer.MAX_VALUE;
+        for (var string : strings) {
+          var candidate = Integer.valueOf(string.substring("java-".length()));
+          if (candidate < base) {
+            base = candidate;
+          }
+        }
+        if (base == Integer.MAX_VALUE) {
+          throw new IllegalArgumentException("No base Java feature number found: " + strings);
+        }
+        return base;
+      }
+
+      List<String> compile(List<String> modules) {
+        var result = new ArrayList<String>();
+        for (var module : modules) {
+          if (compile(module)) {
+            result.add(module);
+          }
+        }
+        return result;
+      }
+
+      private boolean compile(String module) {
+        var names = Util.findDirectoryNames(project.sources.resolve(module).resolve(realm.name));
+        if (names.isEmpty()) {
+          return false; // empty source path or just a sole "module-info.java" file...
+        }
+        if (!names.stream().allMatch(javaReleasePattern.asMatchPredicate())) {
+          return false;
+        }
+        log(DEBUG, "Building multi-release module: %s", module);
+        int base = findBaseJavaFeatureNumber(names);
+        log(DEBUG, "Base feature number is: %d", base);
+        for (var release = base; release <= Runtime.version().feature(); release++) {
+          compile(module, base, release);
+        }
+        try {
+          jarModule(module, base);
+          jarSources(module, base);
+          // Create "-javadoc.jar" for this multi-release module
+          // https://github.com/sormuras/make-java/issues/8
+        } catch (Exception e) {
+          throw new Error("Building module " + module + " failed!", e);
+        }
+        return true;
+      }
+
+      private void compile(String module, int base, int release) {
+        var source = project.sources.resolve(module).resolve(realm.name);
+        var javaR = "java-" + release;
+        var sourceR = source.resolve(javaR);
+        if (Files.notExists(sourceR)) {
+          log(DEBUG, "Skipping %s, no source path exists: %s", javaR, sourceR);
+          return;
+        }
+        var destinationR = destination.resolve(javaR);
+        var javac =
+            new Command("javac")
+                .addIff(false, "-verbose")
+                .addEach(configuration.lines(Property.OPTIONS_JAVAC))
+                .add("--release", release);
+        var compiledBase = destination.resolve("java-" + base).resolve(module);
+        if (Files.notExists(sourceR.resolve("module-info.java"))) {
+          var javaFiles = Util.find(List.of(sourceR), Util::isJavaFile);
+          if (javaFiles.isEmpty()) {
+            if (base == release) {
+              throw new RuntimeException("Empty base?!");
+            }
+            log(DEBUG, "Skipping %s, no Java source files found in: %s", javaR, sourceR);
+            return;
+          }
+          javac.add("-d", destinationR.resolve(module));
+          var classPath = new ArrayList<Path>();
+          if (release > base) {
+            classPath.add(compiledBase);
+          }
+          if (Files.isDirectory(realm.binModules)) {
+            classPath.addAll(Util.find(List.of(realm.binModules), Util::isJarFile));
+          }
+          // TODO classPath.addAll(Util.find(configuration.libraries.resolve(realm.name), "*.jar"));
+          javac.add("--class-path", classPath);
+          javac.addEach(javaFiles);
+        } else {
+          javac.add("-d", destinationR);
+          javac.add("--module-version", project.version);
+          javac.add("--module-path", realm.modulePath("compile"));
+          var pathR = String.join(File.separator, "" + project.sources, "*", realm.name, javaR);
+          javac.add("--module-source-path", pathR);
+          javac.add("--patch-module", module + '=' + compiledBase);
+          javac.add("--module", module);
+        }
+        if (runner.run(javac) != 0) {
+          throw new RuntimeException("javac failed");
+        }
+      }
+
+      private void jarModule(String module, int base) throws Exception {
+        Files.createDirectories(realm.binModules);
+        var javaBase = destination.resolve("java-" + base).resolve(module);
+        var jar =
+            new Command("jar")
+                .add("--create")
+                .add("--file", realm.modularJar(module))
+                .addIff(configuration.verbose(), "--verbose")
+                .add("-C", javaBase)
+                .add(".");
+        // resources
+        var resources =
+            configuration.home.resolve("src").resolve(realm.name + "-resources").resolve(module);
+        if (Files.isDirectory(resources)) {
+          jar.add("-C", resources).add(".");
+        }
+        // "base" + 1 .. N files
+        for (var release = base + 1; release <= Runtime.version().feature(); release++) {
+          var javaRelease = destination.resolve("java-" + release).resolve(module);
+          if (Files.notExists(javaRelease)) {
+            continue;
+          }
+          // store a solitary module descriptor directly in JARs root
+          var fileNames = new ArrayList<String>();
+          try (var stream = Files.newDirectoryStream(javaRelease, "*")) {
+            stream.forEach(path -> fileNames.add(path.getFileName().toString()));
+          }
+          if (!(fileNames.size() == 1 && fileNames.get(0).equals("module-info.class"))) {
+            jar.add("--release", release);
+          }
+          jar.add("-C", javaRelease);
+          jar.add(".");
+        }
+        if (runner.run(jar) != 0) {
+          throw new RuntimeException("jar failed");
+        }
+      }
+
+      private void jarSources(String module, int base) throws Exception {
+        var source = project.sources.resolve(module).resolve(realm.name);
+        var javaBase = source.resolve("java-" + base);
+        var jar =
+            new Command("jar")
+                .add("--create")
+                .add("--file", realm.sourcesJar(module))
+                .addIff(configuration.verbose(), "--verbose")
+                .add("--no-manifest")
+                .add("-C", javaBase)
+                .add(".");
+        // "base" + 1 .. N files
+        for (var release = base + 1; release <= Runtime.version().feature(); release++) {
+          var javaRelease = source.resolve("java-" + release);
+          if (Files.notExists(javaRelease)) {
+            continue;
+          }
+          jar.add("--release", release);
+          jar.add("-C", javaRelease);
+          jar.add(".");
+        }
+        Files.createDirectories(realm.binSources);
+        if (runner.run(jar) != 0) {
+          throw new RuntimeException("jar failed");
+        }
       }
     }
 
@@ -931,12 +1115,11 @@ public class Bach {
         if (runner.run(javac) != 0) {
           throw new RuntimeException("javac failed");
         }
-        var realmModules = Files.createDirectories(realm.binModules);
-        var realmSources = Files.createDirectories(realm.binSources);
+        Files.createDirectories(realm.binModules);
+        Files.createDirectories(realm.binSources);
         for (var module : modules) {
-          var moduleNameDashVersion = module + '-' + project.version;
-          var modularJar = realmModules.resolve(moduleNameDashVersion + ".jar");
-          var sourcesJar = realmSources.resolve(moduleNameDashVersion + "-sources.jar");
+          var modularJar = realm.modularJar(module);
+          var sourcesJar = realm.sourcesJar(module);
           var resources = Path.of("realm/resources"); // realm.srcResources;
           var jarModule =
               new Command("jar")
@@ -982,7 +1165,7 @@ public class Bach {
       }
       log(DEBUG, "Compiling %d %s module(s): %s", modules.size(), realm.name, modules);
       try {
-        modules.removeAll(new Hydra().compile(realm, modules));
+        modules.removeAll(new Hydra(realm).compile(modules));
         modules.removeAll(new Jigsaw().compile(realm, modules));
         if (modules.isEmpty()) {
           return 0;
@@ -1003,8 +1186,7 @@ public class Bach {
     int test(Collection<String> modules) {
       var errors = "";
       for (var module : modules) {
-        var moduleNameDashVersion = module + '-' + project.version;
-        var testModuleJar = project.test.binModules.resolve(moduleNameDashVersion + ".jar");
+        var testModuleJar = project.test.modularJar(module);
         if (Files.notExists(testModuleJar)) {
           log(DEBUG, "No test module available for: %s", module);
           continue;
@@ -1028,7 +1210,8 @@ public class Bach {
       var parentLoader = ClassLoader.getPlatformClassLoader();
       var junitLoader = new URLClassLoader("junit", urls, parentLoader);
       var junit = new Command("junit").addEach(configuration.lines(Property.OPTIONS_JUNIT));
-      project.test.packages(module).forEach(path -> junit.add("--select-package", path));
+      var root = project.test.javacDestination.resolve(module);
+      project.test.packages(root).forEach(path -> junit.add("--select-package", path));
       return launchJUnitPlatformConsole(junitLoader, junit);
     }
 
@@ -1039,7 +1222,8 @@ public class Bach {
               .add("--class-path", project.test.classPathRuntime(module))
               .add("org.junit.platform.console.ConsoleLauncher")
               .addEach(configuration.lines(Property.OPTIONS_JUNIT));
-      project.test.packages(module).forEach(path -> java.add("--select-package", path));
+      var root = project.test.javacDestination.resolve(module);
+      project.test.packages(root).forEach(path -> java.add("--select-package", path));
       return runner.run(java);
     }
 
@@ -1067,10 +1251,7 @@ public class Bach {
               .add("--module-path", project.test.modulePathRuntime(needsPatch))
               .add("--add-modules", module);
       if (needsPatch) {
-        var moduleNameDashVersion = module + '-' + project.version;
-        var modularJar = project.main.binModules.resolve(moduleNameDashVersion + ".jar");
-        var patch = modularJar.toString();
-        java.add("--patch-module", module + "=" + patch);
+        java.add("--patch-module", module + "=" + project.main.modularJar(module));
       }
       java.add("--module")
           .add("org.junit.platform.console")
