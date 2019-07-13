@@ -387,7 +387,8 @@ public class Bach {
         return Util.loadProperties(path);
       }
       assert Files.isDirectory(path) : "Expected a directory, but got: " + path;
-      var directory = Objects.toString(path.getFileName(), Property.NAME.defaultValue);
+      var normalized = path.toAbsolutePath().normalize();
+      var directory = Objects.toString(normalized.getFileName(), Property.NAME.defaultValue);
       for (var name : List.of(directory, "bach", "")) {
         var file = path.resolve(name + ".properties");
         if (Files.isRegularFile(file)) {
