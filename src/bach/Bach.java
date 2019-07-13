@@ -1171,6 +1171,9 @@ public class Bach {
       log(DEBUG, "Compiling %d %s module(s): %s", modules.size(), realm.name, modules);
       try {
         modules.removeAll(new Hydra(realm).compile(modules));
+        if (modules.isEmpty()) {
+          return 0;
+        }
         modules.removeAll(new Jigsaw().compile(realm, modules));
         if (modules.isEmpty()) {
           return 0;
