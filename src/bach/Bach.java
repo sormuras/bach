@@ -141,15 +141,20 @@ public class Bach {
     log(DEBUG, "Configuration");
     log(DEBUG, "  home='%s'", configuration.home);
     log(DEBUG, "  work='%s'", configuration.work);
-    log(DEBUG, "  javac=%s", String.join(", ", configuration.lines(Property.OPTIONS_JAVAC)));
     log(DEBUG, "Tools");
     log(DEBUG, "  api=%s", Util.sorted(Tool.API));
     log(DEBUG, "  basic=%s", Util.sorted(configuration.basic.tools()));
     log(DEBUG, "  provided=%s", Tool.PROVIDED);
+    log(DEBUG, "Options");
+    log(DEBUG, "  javac=%s", String.join(", ", configuration.lines(Property.OPTIONS_JAVAC)));
+    log(DEBUG, "  junit=%s", String.join(", ", configuration.lines(Property.OPTIONS_JUNIT)));
     log(DEBUG, "Project");
     log(DEBUG, "  name=%s", project.name);
     log(DEBUG, "  version=%s", project.version);
+    log(DEBUG, "  sources='%s'", project.sources);
     log(DEBUG, "  modules=%s", project.modules);
+    log(DEBUG, "  library='%s'", project.library);
+    log(DEBUG, "  requires=%s", project.requires);
     project.main.debug();
     project.test.debug();
 
