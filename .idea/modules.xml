@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.main.iml" filepath="$PROJECT_DIR$/.idea/bach.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.test.iml" filepath="$PROJECT_DIR$/.idea/bach.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.main.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.multi.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.multi.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test-integration.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test-integration.iml" />
     </modules>
