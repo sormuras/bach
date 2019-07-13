@@ -1001,6 +1001,12 @@ public class Bach {
     int test(Collection<String> modules) {
       var errors = "";
       for (var module : modules) {
+        var moduleNameDashVersion = module + '-' + project.version;
+        var testModuleJar = project.test.binModules.resolve(moduleNameDashVersion + ".jar");
+        if (Files.notExists(testModuleJar)) {
+          log(DEBUG, "No test module available for: %s", module);
+          continue;
+        }
         out.printf("%n%n%n%s%n%n%n", module);
         errors += testClassPathDirect(module);
         errors += testClassPathForked(module);
