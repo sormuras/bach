@@ -555,7 +555,6 @@ public class Bach {
       final Map<String, ModuleDescriptor> declaredModules;
       final Set<String> externalModules;
       final Path binaries;
-      final Path javacDestination;
       final Path binModules;
       final Path binSources;
 
@@ -564,7 +563,6 @@ public class Bach {
 
         var bin = configuration.work.resolve("bin");
         this.binaries = bin.resolve(name);
-        this.javacDestination = binaries.resolve("compile/javac");
         this.binModules = binaries.resolve("modules");
         this.binSources = binaries.resolve("sources");
 
@@ -625,6 +623,11 @@ public class Bach {
         var moduleNameDashVersion = module + '-' + project.version;
         return binSources.resolve(moduleNameDashVersion + "-sources.jar");
       }
+
+      Set<String> packages(String module) {
+        var jar = modularJar(module);
+        return ModuleFinder.of(jar).find(module).orElseThrow().descriptor().packages();
+      }
     }
 
     class MainRealm extends Realm {
@@ -641,17 +644,6 @@ public class Bach {
       TestRealm(MainRealm main) {
         super("test");
         this.main = main;
-      }
-
-      List<String> packages(Path root) {
-        return Util.find(Set.of(root), Files::isDirectory).stream()
-            .filter(path -> !Util.findDirectoryEntries(path, Util::isClassFile).isEmpty())
-            .map(root::relativize)
-            .map(Path::toString)
-            .filter(Predicate.not(String::isEmpty))
-            .map(name -> name.replace('/', '.'))
-            .map(name -> name.replace('\\', '.'))
-            .collect(Collectors.toList());
       }
 
       List<Path> classPathRuntime(String module) {
@@ -1100,10 +1092,12 @@ public class Bach {
 
     /** Default multi-module compiler. */
     class Jigsaw {
+
       List<String> compile(Project.Realm realm, List<String> modules) throws Exception {
+        var destination = realm.binaries.resolve("compile/jigsaw");
         var javac =
             new Command("javac")
-                .add("-d", realm.javacDestination)
+                .add("-d", destination)
                 .addEach(configuration.lines(Property.OPTIONS_JAVAC))
                 // .addIff(realm.preview, "--enable-preview")
                 // .addIff(realm.release != null, "--release", realm.release)
@@ -1120,13 +1114,13 @@ public class Bach {
         for (var module : modules) {
           var modularJar = realm.modularJar(module);
           var sourcesJar = realm.sourcesJar(module);
-          var resources = Path.of("realm/resources"); // realm.srcResources;
+          var resources = Path.of("realm/resources"); // TODO realm.srcResources;
           var jarModule =
               new Command("jar")
                   .add("--create")
                   .add("--file", modularJar)
                   .addIff(configuration.verbose(), "--verbose")
-                  .add("-C", realm.javacDestination.resolve(module))
+                  .add("-C", destination.resolve(module))
                   .add(".")
                   .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
           var jarSources =
@@ -1210,8 +1204,7 @@ public class Bach {
       var parentLoader = ClassLoader.getPlatformClassLoader();
       var junitLoader = new URLClassLoader("junit", urls, parentLoader);
       var junit = new Command("junit").addEach(configuration.lines(Property.OPTIONS_JUNIT));
-      var root = project.test.javacDestination.resolve(module);
-      project.test.packages(root).forEach(path -> junit.add("--select-package", path));
+      project.test.packages(module).forEach(path -> junit.add("--select-package", path));
       return launchJUnitPlatformConsole(junitLoader, junit);
     }
 
@@ -1222,8 +1215,7 @@ public class Bach {
               .add("--class-path", project.test.classPathRuntime(module))
               .add("org.junit.platform.console.ConsoleLauncher")
               .addEach(configuration.lines(Property.OPTIONS_JUNIT));
-      var root = project.test.javacDestination.resolve(module);
-      project.test.packages(root).forEach(path -> java.add("--select-package", path));
+      project.test.packages(module).forEach(path -> java.add("--select-package", path));
       return runner.run(java);
     }
 
