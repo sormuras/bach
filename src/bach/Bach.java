@@ -601,9 +601,7 @@ public class Bach {
       List<Path> modulePath(String phase) {
         var lib = configuration.home.resolve("lib");
         var paths = new ArrayList<Path>();
-        if ("runtime".equals(phase)) {
-          paths.add(binModules); // bin/${realm}/modules
-        }
+        paths.add(binModules); // bin/${realm}/modules
         paths.add(lib.resolve(name)); // lib/${realm} at "compile" and "test" phases
         Util.findDirectoryNames(lib).stream() // lib/${realm}-${phase}.*
             .filter(dir -> dir.startsWith(name + "-" + phase))
