@@ -1015,10 +1015,14 @@ public class Bach {
           if (release > base) {
             classPath.add(compiledBase);
           }
-          if (Files.isDirectory(realm.binModules)) {
-            classPath.addAll(Util.find(List.of(realm.binModules), Util::isJarFile));
-          }
-          // TODO classPath.addAll(Util.find(configuration.libraries.resolve(realm.name), "*.jar"));
+          realm
+              .modulePath("compile")
+              .stream()
+              .filter(Files::isDirectory)
+              .forEach(
+                  path ->
+                      Util.findDirectoryEntries(path, Util::isJarFile)
+                          .forEach(jar -> classPath.add(path.resolve(jar))));
           javac.add("--class-path", classPath);
           javac.addEach(javaFiles);
         } else {
