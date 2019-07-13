@@ -273,6 +273,8 @@ public class Bach {
       runner.run(
           new Command(
               "jdeps",
+              "--multi-release",
+              "base",
               "--module-path",
               project.main.binModules,
               "--check",
