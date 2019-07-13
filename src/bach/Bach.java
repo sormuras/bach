@@ -639,6 +639,10 @@ public class Bach {
         var jar = modularJar(module);
         return ModuleFinder.of(jar).find(module).orElseThrow().descriptor().packages();
       }
+
+      Path resources(String module) {
+        return project.sources.resolve(module).resolve(name).resolve("resources");
+      }
     }
 
     class MainRealm extends Realm {
@@ -963,6 +967,7 @@ public class Bach {
 
       private boolean compile(String module) {
         var names = Util.findDirectoryNames(project.sources.resolve(module).resolve(realm.name));
+        names.remove("resources"); // allow resources directory
         if (names.isEmpty()) {
           return false; // empty source path or just a sole "module-info.java" file...
         }
@@ -1050,8 +1055,7 @@ public class Bach {
                 .add("-C", javaBase)
                 .add(".");
         // resources
-        var resources =
-            configuration.home.resolve("src").resolve(realm.name + "-resources").resolve(module);
+        var resources = realm.resources(module);;
         if (Files.isDirectory(resources)) {
           jar.add("-C", resources).add(".");
         }
@@ -1129,7 +1133,7 @@ public class Bach {
         for (var module : modules) {
           var modularJar = realm.modularJar(module);
           var sourcesJar = realm.sourcesJar(module);
-          var resources = Path.of("realm/resources"); // TODO realm.srcResources;
+          var resources = realm.resources(module);
           var jarModule =
               new Command("jar")
                   .add("--create")
