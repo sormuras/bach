@@ -17,6 +17,7 @@ class ProjectTests {
     assertEquals(
         List.of("de.sormuras.bach.demo", "de.sormuras.bach.demo.multi", "integration"),
         project.modules);
+    assertEquals(Set.of("org.junit.jupiter.api"), project.requires);
   }
 
   @Test
@@ -35,6 +36,5 @@ class ProjectTests {
     assertSame(main, test.main);
     assertEquals("test", test.name);
     assertEquals(Set.of("de.sormuras.bach.demo", "integration"), test.declaredModules.keySet());
-    assertEquals(Set.of("org.junit.jupiter.api"), test.externalModules);
   }
 }

@@ -34,6 +34,8 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -48,6 +50,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -522,6 +525,7 @@ public class Bach {
     final Version version;
     final Path sources, library;
     final List<String> modules;
+    final Set<String> requires;
 
     final MainRealm main;
     final TestRealm test;
@@ -532,8 +536,10 @@ public class Bach {
       this.sources = configuration.home.resolve(configuration.path(Property.PATH_SOURCES));
       this.library = configuration.home.resolve(configuration.path(Property.PATH_LIBRARY));
       this.modules = modules();
-      this.main = new MainRealm();
-      this.test = new TestRealm(main);
+      var references = Modules.findModuleInfoReferences(sources);
+      this.requires = requires(references);
+      this.main = new MainRealm(references);
+      this.test = new TestRealm(references, main);
     }
 
     private List<String> modules() {
@@ -541,7 +547,12 @@ public class Bach {
       if ("*".equals(modules)) {
         return Util.findDirectoryNames(sources);
       }
-      return List.of(modules.split("\\s*,\\s*"));
+      return Arrays.stream(modules.split(",")).map(String::strip).collect(Collectors.toList());
+    }
+
+    private Set<String> requires(List<Modules.ModuleInfoReference> references) {
+      var descriptors = references.stream().map(ModuleReference::descriptor);
+      return Modules.findExternalModuleNames(descriptors.collect(Collectors.toSet()));
     }
 
     @Override
@@ -553,12 +564,11 @@ public class Bach {
       final String name;
       final String moduleSourcePath;
       final Map<String, ModuleDescriptor> declaredModules;
-      final Set<String> externalModules;
       final Path binaries;
       final Path binModules;
       final Path binSources;
 
-      Realm(String name) {
+      Realm(List<Modules.ModuleInfoReference> references, String name) {
         this.name = name;
 
         var bin = configuration.work.resolve("bin");
@@ -568,10 +578,9 @@ public class Bach {
 
         var moduleSourcePaths = new TreeSet<String>();
         var descriptors = new TreeMap<String, ModuleDescriptor>();
-        var declarations = Util.find(List.of(sources), Util::isModuleInfo);
-        for (var declaration : declarations) {
+        for (var moduleInfo : references) {
           //  <module>/<realm>/.../module-info.java
-          var relative = sources.relativize(declaration);
+          var relative = sources.relativize(moduleInfo.path());
           var module = relative.getName(0).toString();
           var realm = relative.getName(1).toString();
           if (!modules.contains(module)) {
@@ -580,7 +589,7 @@ public class Bach {
           if (!name.equals(realm)) {
             continue; // not our realm
           }
-          var descriptor = Modules.parseDeclaration(declaration);
+          var descriptor = moduleInfo.descriptor();
           assert module.equals(descriptor.name()) : module + " expected, but got: " + descriptor;
           descriptors.put(module, descriptor);
           var offset = relative.subpath(1, relative.getNameCount() - 1).toString();
@@ -588,14 +597,12 @@ public class Bach {
         }
         this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
         this.declaredModules = Collections.unmodifiableMap(descriptors);
-        this.externalModules = Modules.findExternalModuleNames(descriptors.values());
       }
 
       void debug() {
         log(DEBUG, "Realm: %s", name);
         log(DEBUG, "  moduleSourcePath=%s", moduleSourcePath);
         log(DEBUG, "  declaredModules=%s", declaredModules.keySet());
-        log(DEBUG, "  externalModules=%s", externalModules);
       }
 
       List<Path> modulePath(String phase) {
@@ -630,8 +637,8 @@ public class Bach {
 
     class MainRealm extends Realm {
 
-      MainRealm() {
-        super("main");
+      MainRealm(List<Modules.ModuleInfoReference> references) {
+        super(references, "main");
       }
     }
 
@@ -639,8 +646,8 @@ public class Bach {
 
       final MainRealm main;
 
-      TestRealm(MainRealm main) {
-        super("test");
+      TestRealm(List<Modules.ModuleInfoReference> references, MainRealm main) {
+        super(references, "test");
         this.main = main;
       }
 
@@ -1347,6 +1354,26 @@ public class Bach {
   /** Static helpers handling modules. */
   static class Modules {
 
+    /** Source-based module reference. */
+    static class ModuleInfoReference extends ModuleReference {
+
+      private final Path path;
+
+      ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
+        super(descriptor, path.toUri());
+        this.path = path;
+      }
+
+      Path path() {
+        return path;
+      }
+
+      @Override
+      public ModuleReader open() {
+        throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
+      }
+    }
+
     private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+(.+)\\s*\\{");
     private static final Pattern MODULE_REQUIRES_PATTERN =
         Pattern.compile(
@@ -1361,6 +1388,13 @@ public class Bach {
       return ModuleFinder.ofSystem().findAll().stream()
           .map(reference -> reference.descriptor().name())
           .sorted()
+          .collect(Collectors.toList());
+    }
+
+    /** Find all {@code module-info.java} files below the given root directory. */
+    static List<ModuleInfoReference> findModuleInfoReferences(Path root) {
+      return Util.find(Set.of(root), Util::isModuleInfo).stream()
+          .map(Modules::parseModuleInfo)
           .collect(Collectors.toList());
     }
 
@@ -1379,12 +1413,12 @@ public class Bach {
     }
 
     /** Simplistic module declaration parser. */
-    static ModuleDescriptor parseDeclaration(Path path) {
+    static ModuleInfoReference parseModuleInfo(Path path) {
       if (!Util.isModuleInfo(path)) {
         throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
       }
       try {
-        return parseDeclaration(Files.readString(path));
+        return new ModuleInfoReference(parseDeclaration(Files.readString(path)), path);
       } catch (IOException e) {
         throw new UncheckedIOException("Reading module declaration failed: " + path, e);
       }
