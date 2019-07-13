@@ -10,7 +10,7 @@ class DemoTests {
   @Test
   void build(@TempDir Path work) {
     var probe = new Probe(Path.of("demo"), work);
-    assertEquals(0, probe.bach.main(List.of("build")));
+    assertEquals(0, probe.bach.main(List.of("build")), probe.toString());
     assertLinesMatch(
         List.of(
             ">> INIT >>",
