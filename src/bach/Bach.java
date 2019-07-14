@@ -1020,9 +1020,7 @@ public class Bach {
           if (release > base) {
             classPath.add(compiledBase);
           }
-          realm
-              .modulePath("compile")
-              .stream()
+          realm.modulePath("compile").stream()
               .filter(Files::isDirectory)
               .forEach(
                   path ->
@@ -1055,7 +1053,7 @@ public class Bach {
                 .add("-C", javaBase)
                 .add(".");
         // resources
-        var resources = realm.resources(module);;
+        var resources = realm.resources(module);
         if (Files.isDirectory(resources)) {
           jar.add("-C", resources).add(".");
         }
@@ -1200,23 +1198,22 @@ public class Bach {
   class Tester {
 
     int test(Collection<String> modules) {
-      var errors = "";
+      StringBuilder errors = new StringBuilder();
       for (var module : modules) {
-        var testModuleJar = project.test.modularJar(module);
-        if (Files.notExists(testModuleJar)) {
+        if (Files.notExists(project.test.modularJar(module))) {
           log(DEBUG, "No test module available for: %s", module);
           continue;
         }
         out.printf("%n%n%n%s%n%n%n", module);
-        errors += testClassPathDirect(module);
-        errors += testClassPathForked(module);
-        errors += testModulePathDirect(module);
-        errors += testModulePathForked(module);
+        errors.append(testClassPathDirect(module));
+        errors.append(testClassPathForked(module));
+        errors.append(testModulePathDirect(module));
+        errors.append(testModulePathForked(module));
       }
-      if (errors.replace('0', ' ').isBlank()) {
+      if (errors.toString().replace('0', ' ').isBlank()) {
         return 0;
       }
-      log(ERROR, "errors=%s", errors);
+      log(ERROR, "errors=%s", errors.toString());
       return 1;
     }
 
@@ -1483,11 +1480,6 @@ public class Bach {
         }
       }
       return files;
-    }
-
-    /** Test supplied path for pointing to a Java binary unit. */
-    static boolean isClassFile(Path path) {
-      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".class");
     }
 
     /** Test supplied path for pointing to a Java source compilation unit. */
