@@ -530,6 +530,7 @@ public class Bach {
     final String name;
     final Version version;
     final Path sources, library;
+    final List<Modules.ModuleInfoReference> references;
     final List<String> modules;
     final Set<String> requires;
 
@@ -539,24 +540,36 @@ public class Bach {
     Project() {
       this.name = configuration.get(Property.NAME);
       this.version = Version.parse(configuration.get(Property.VERSION));
-      this.sources = configuration.home.resolve(configuration.path(Property.PATH_SOURCES));
       this.library = configuration.home.resolve(configuration.path(Property.PATH_LIBRARY));
+      this.sources = configuration.home.resolve(configuration.path(Property.PATH_SOURCES));
+      if (!Files.isDirectory(sources)) {
+        throw new AssertionError("No module source directory found: " + sources.toUri());
+      }
       this.modules = modules();
-      var references = Modules.findModuleInfoReferences(sources);
-      this.requires = requires(references);
-      this.main = new MainRealm(references);
-      this.test = new TestRealm(references, main);
+      if (modules.isEmpty()) {
+        throw new IllegalArgumentException("No module found or declared: " + sources.toUri());
+      }
+      this.references = Modules.findModuleInfoReferences(sources);
+      this.requires = requires();
+      this.main = new MainRealm();
+      this.test = new TestRealm(main);
     }
 
     private List<String> modules() {
       var modules = configuration.get(Property.MODULES);
+      var all = Util.findDirectoryNames(sources);
       if ("*".equals(modules)) {
-        return Util.findDirectoryNames(sources);
+        return all;
       }
-      return Arrays.stream(modules.split(",")).map(String::strip).collect(Collectors.toList());
+      var csv = Arrays.stream(modules.split(",")).map(String::strip).collect(Collectors.toList());
+      if (!all.containsAll(csv)) {
+        throw new IllegalArgumentException(
+            "Module list " + csv + " contains illegal name(s). All valid names are: " + all);
+      }
+      return csv;
     }
 
-    private Set<String> requires(List<Modules.ModuleInfoReference> references) {
+    private Set<String> requires() {
       var descriptors = references.stream().map(ModuleReference::descriptor);
       return Modules.findExternalModuleNames(descriptors.collect(Collectors.toSet()));
     }
@@ -574,7 +587,7 @@ public class Bach {
       final Path binModules;
       final Path binSources;
 
-      Realm(List<Modules.ModuleInfoReference> references, String name) {
+      Realm(String name) {
         this.name = name;
 
         var bin = configuration.work.resolve("bin");
@@ -612,13 +625,15 @@ public class Bach {
       }
 
       List<Path> modulePath(String phase) {
-        var lib = configuration.home.resolve("lib");
+        if (Files.notExists(project.library)) {
+          return List.of(binModules); // bin/${realm}/modules
+        }
         var paths = new ArrayList<Path>();
         paths.add(binModules); // bin/${realm}/modules
-        paths.add(lib.resolve(name)); // lib/${realm} at "compile" and "test" phases
-        Util.findDirectoryNames(lib).stream() // lib/${realm}-${phase}.*
+        paths.add(project.library.resolve(name)); // lib/${realm} at "compile" and "test" phases
+        Util.findDirectoryNames(project.library).stream() // lib/${realm}-${phase}.*
             .filter(dir -> dir.startsWith(name + "-" + phase))
-            .map(lib::resolve)
+            .map(project.library::resolve)
             .forEach(paths::add);
         return List.copyOf(paths);
       }
@@ -647,8 +662,8 @@ public class Bach {
 
     class MainRealm extends Realm {
 
-      MainRealm(List<Modules.ModuleInfoReference> references) {
-        super(references, "main");
+      MainRealm() {
+        super("main");
       }
     }
 
@@ -656,8 +671,8 @@ public class Bach {
 
       final MainRealm main;
 
-      TestRealm(List<Modules.ModuleInfoReference> references, MainRealm main) {
-        super(references, "test");
+      TestRealm(MainRealm main) {
+        super("test");
         this.main = main;
       }
 
@@ -1163,6 +1178,17 @@ public class Bach {
     }
 
     int compile() {
+      var paths = new Path[] {project.library, project.library.resolve("test")};
+      var found = Modules.findModuleNames(ModuleFinder.of(paths));
+      if (!found.containsAll(project.requires)) {
+        log(ERROR, "project.modules=%s", project.modules);
+        log(ERROR, "project.requires=%s", project.requires);
+        log(ERROR, "found in library=%s", found);
+        var missing = new TreeSet<>(project.requires);
+        missing.removeAll(found);
+        log(ERROR, "Missing module(s) are: %s", String.join(", ", missing));
+        return 1;
+      }
       if (compile(project.main) != 0) return 1;
       if (compile(project.test) != 0) return 1;
       return 0;
@@ -1399,8 +1425,14 @@ public class Bach {
 
     /** Enumerate all system module names. */
     static List<String> findSystemModuleNames() {
-      return ModuleFinder.ofSystem().findAll().stream()
-          .map(reference -> reference.descriptor().name())
+      return findModuleNames(ModuleFinder.ofSystem());
+    }
+
+    /** Enumerate all module names. */
+    static List<String> findModuleNames(ModuleFinder finder) {
+      return finder.findAll().stream()
+          .map(ModuleReference::descriptor)
+          .map(ModuleDescriptor::name)
           .sorted()
           .collect(Collectors.toList());
     }
@@ -1411,7 +1443,6 @@ public class Bach {
           .map(Modules::parseModuleInfo)
           .collect(Collectors.toList());
     }
-
     /** Calculate external module names. */
     static Set<String> findExternalModuleNames(Iterable<ModuleDescriptor> descriptors) {
       var declaredModules = new TreeSet<String>();
@@ -1469,6 +1500,7 @@ public class Bach {
     static <T> T assigned(T object, String name) {
       return Objects.requireNonNull(object, name + " must not be null");
     }
+
     /** List all paths matching the given filter starting at given root paths. */
     static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
       var files = new ArrayList<Path>();
