@@ -630,7 +630,7 @@ public class Bach {
         }
         var paths = new ArrayList<Path>();
         paths.add(binModules); // bin/${realm}/modules
-        paths.add(project.library.resolve(name)); // lib/${realm} at "compile" and "test" phases
+        paths.add(project.library); // lib
         Util.findDirectoryNames(project.library).stream() // lib/${realm}-${phase}.*
             .filter(dir -> dir.startsWith(name + "-" + phase))
             .map(project.library::resolve)
@@ -1178,8 +1178,7 @@ public class Bach {
     }
 
     int compile() {
-      var paths = new Path[] {project.library, project.library.resolve("test")};
-      var found = Modules.findModuleNames(ModuleFinder.of(paths));
+      var found = Modules.findModuleNames(ModuleFinder.of(project.library));
       if (!found.containsAll(project.requires)) {
         log(ERROR, "project.modules=%s", project.modules);
         log(ERROR, "project.requires=%s", project.requires);
