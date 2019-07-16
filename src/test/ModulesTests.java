@@ -26,6 +26,13 @@ class ModulesTests {
   }
 
   @Test
+  void moduleDeclarationWithMainClass() {
+    var descriptor = Bach.Modules.parseDeclaration("/* --main-class a.A */ module a{}");
+    assertEquals("a", descriptor.name());
+    assertEquals("a.A", descriptor.mainClass().orElseThrow());
+  }
+
+  @Test
   void findSystemModuleNames() {
     var names = Bach.Modules.findSystemModuleNames();
     assertTrue(names.contains("java.base"));

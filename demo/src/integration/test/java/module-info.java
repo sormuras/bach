@@ -1,3 +1,4 @@
+// --main-class integration.Main
 open /*test*/ module integration {
   requires de.sormuras.bach.demo;
   requires de.sormuras.bach.demo.multi;

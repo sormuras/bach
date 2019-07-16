@@ -505,6 +505,12 @@ public class Bach {
       return condition ? add(key, value) : this;
     }
 
+    /** Add two arguments iff the given optional value is present. */
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    Command addIff(Object key, Optional<?> optionalValue) {
+      return optionalValue.isPresent() ? add(key, optionalValue.get()) : this;
+    }
+
     /** Let the consumer visit, usually modify, this instance iff the conditions is {@code true}. */
     Command addIff(boolean condition, Consumer<Command> visitor) {
       if (condition) {
@@ -1147,11 +1153,13 @@ public class Bach {
           var modularJar = realm.modularJar(module);
           var sourcesJar = realm.sourcesJar(module);
           var resources = realm.resources(module);
+          var mainClass = realm.declaredModules.get(module).mainClass();
           var jarModule =
               new Command("jar")
                   .add("--create")
                   .add("--file", modularJar)
                   .addIff(configuration.verbose(), "--verbose")
+                  .addIff("--main-class", mainClass)
                   .add("-C", destination.resolve(module))
                   .add(".")
                   .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
@@ -1230,6 +1238,7 @@ public class Bach {
           continue;
         }
         out.printf("%n%n%n%s%n%n%n", module);
+        errors.append(testModuleMainClass(module));
         errors.append(testClassPathDirect(module));
         errors.append(testClassPathForked(module));
         errors.append(testModulePathDirect(module));
@@ -1240,6 +1249,24 @@ public class Bach {
       }
       log(ERROR, "errors=%s", errors.toString());
       return 1;
+    }
+
+    int testModuleMainClass(String module) {
+      var mainClass =
+          ModuleFinder.of(project.test.modularJar(module))
+              .find(module)
+              .orElseThrow()
+              .descriptor()
+              .mainClass();
+      if (mainClass.isEmpty()) { // No main class present...
+        return 0;
+      }
+      var needsPatch = project.main.declaredModules.containsKey(module);
+      var java =
+          new Command("java")
+              .add("--module-path", project.test.modulePathRuntime(needsPatch))
+              .add("--module", module);
+      return runner.run(java);
     }
 
     int testClassPathDirect(String module) {
@@ -1413,7 +1440,7 @@ public class Bach {
       }
     }
 
-    private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+(.+)\\s*\\{");
+    private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+([\\w.]+)");
     private static final Pattern MODULE_REQUIRES_PATTERN =
         Pattern.compile(
             "(?:requires)" // key word
@@ -1421,6 +1448,7 @@ public class Bach {
                 + "\\s+([\\w.]+)" // module name
                 + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
                 + ";"); // end marker
+    private static final Pattern MAIN_CLASS = Pattern.compile("(?:--main-class)\\s+([\\w.]+)");
 
     /** Enumerate all system module names. */
     static List<String> findSystemModuleNames() {
@@ -1483,6 +1511,11 @@ public class Bach {
             .ifPresentOrElse(
                 version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
                 () -> builder.requires(requiredName));
+      }
+      var mainClassMatcher = MAIN_CLASS.matcher(source);
+      if (mainClassMatcher.find()) {
+        var mainClass = mainClassMatcher.group(1);
+        builder.mainClass(mainClass);
       }
       return builder.build();
     }
