@@ -1239,10 +1239,14 @@ public class Bach {
         }
         out.printf("%n%n%n%s%n%n%n", module);
         errors.append(testModuleMainClass(module));
-        errors.append(testClassPathDirect(module));
-        errors.append(testClassPathForked(module));
-        errors.append(testModulePathDirect(module));
-        errors.append(testModulePathForked(module));
+        if (ModuleFinder.of(project.test.modulePathRuntime(false).toArray(Path[]::new))
+            .find("org.junit.platform.console")
+            .isPresent()) {
+          errors.append(testClassPathDirect(module));
+          errors.append(testClassPathForked(module));
+          errors.append(testModulePathDirect(module));
+          errors.append(testModulePathForked(module));
+        }
       }
       if (errors.toString().replace('0', ' ').isBlank()) {
         return 0;
