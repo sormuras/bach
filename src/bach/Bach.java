@@ -229,9 +229,7 @@ public class Bach {
       log(DEBUG, "Offline mode is active, no synchronization.");
       return 0;
     }
-    new Synchronizer().sync(project.library, "module-uri.properties");
-    // TODO syncMissingLibrariesByParsingModuleDescriptors();
-    return 0;
+    return new Synchronizer(project.library).synchronize();
   }
 
   /** Print usage help. */
@@ -916,34 +914,113 @@ public class Bach {
   /** Resolve external modules. */
   class Synchronizer {
 
-    void sync(Path root, String fileName) {
-      log(DEBUG, "Synchronizing 3rd-party module uris below: %s", root.toUri());
-      if (Files.notExists(root)) {
-        log(DEBUG, "Not synchronizing because directory doesn't exist: %s", root);
+    final Path library;
+    final Downloader downloader;
+
+    final Collection<String> system = Modules.findSystemModuleNames();
+
+    Synchronizer(Path library) {
+      this.library = library;
+      this.downloader = new Downloader(library);
+    }
+
+    int synchronize() {
+      log(DEBUG, "Synchronizing 3rd-party modules in '%s'", library.toUri());
+      syncModuleUris(library.resolve("module-uri.properties"));
+      syncMissingModules();
+      return 0;
+    }
+
+    void syncModuleUris(Path path) {
+      if (Files.notExists(path)) {
         return;
       }
-      var paths = Util.find(Set.of(root), path -> path.getFileName().toString().equals(fileName));
       var synced = new ArrayList<Path>();
-      for (var path : paths) {
-        var directory = path.getParent();
-        var downloader = new Downloader(directory);
-        var properties = Util.loadProperties(path);
-        if (properties.isEmpty()) {
-          log(DEBUG, "No module uri declared in %s", path.toUri());
-          continue;
-        }
-        log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
-        for (var value : properties.values()) {
-          var string = value.toString();
-          var uri = URI.create(string);
-          uri = uri.isAbsolute() ? uri : configuration.home.resolve(string).toUri();
-          log(DEBUG, "Syncing %s", uri);
-          var target = downloader.download(uri);
-          synced.add(target);
-          log(DEBUG, " o %s", target.toUri());
-        }
+      var directory = path.getParent();
+      var downloader = new Downloader(directory);
+      var properties = Util.loadProperties(path);
+      if (properties.isEmpty()) {
+        log(DEBUG, "No module uri declared in %s", path.toUri());
+        return;
+      }
+      log(DEBUG, "Syncing %d module uri(s) to %s", properties.size(), directory.toUri());
+      for (var value : properties.values()) {
+        var string = value.toString();
+        var uri = URI.create(string);
+        uri = uri.isAbsolute() ? uri : configuration.home.resolve(string).toUri();
+        log(DEBUG, "Syncing %s", uri);
+        var target = downloader.download(uri);
+        synced.add(target);
+        log(DEBUG, " o %s", target.toUri());
       }
       log(DEBUG, "Synchronized %d module uri(s).", synced.size());
+    }
+
+    void syncMissingModules() {
+      var found = Modules.findModuleNames(ModuleFinder.of(library));
+      if (found.containsAll(project.requires)) {
+        log(DEBUG, "No module's missing.");
+        return;
+      }
+
+      var downloader = new Downloader(USER_HOME.resolve(".bach/modules"));
+      var moduleMaven =
+          Util.loadProperties(
+              downloader.download(
+                  URI.create(
+                      "https://raw.githubusercontent.com/"
+                          + "sormuras/modules/master/"
+                          + "module-maven.properties")));
+      var moduleVersion =
+          Util.loadProperties(
+              downloader.download(
+                  URI.create(
+                      "https://raw.githubusercontent.com/"
+                          + "sormuras/modules/master/"
+                          + "module-version.properties")));
+      var missing = new TreeSet<>(project.requires);
+      missing.removeAll(found);
+      log(DEBUG, "Trying to resolve missing module(s): %s", missing);
+      sync(missing, moduleMaven, moduleVersion);
+      sync(moduleMaven, moduleVersion);
+    }
+
+    private void sync(Properties moduleMaven, Properties moduleVersion) {
+      var finder = ModuleFinder.of(library);
+      var found = Modules.findModuleNames(finder);
+      var missing =
+          finder.findAll().stream()
+              .map(ModuleReference::descriptor)
+              .map(ModuleDescriptor::requires)
+              .flatMap(Collection::stream)
+              // .filter(!Requires.Modifier.STATIC)
+              .map(Requires::name)
+              .filter(Predicate.not(found::contains))
+              .filter(Predicate.not(system::contains))
+              .collect(Collectors.toCollection(TreeSet::new));
+      if (missing.isEmpty()) {
+        return;
+      }
+      sync(missing, moduleMaven, moduleVersion);
+      sync(moduleMaven, moduleVersion);
+    }
+
+    private void sync(Iterable<String> modules, Properties moduleMaven, Properties moduleVersion) {
+      for (var module : modules) {
+        var mavenGA = moduleMaven.getProperty(module);
+        if (mavenGA == null) {
+          log(WARNING, "Module name not mapped: %s", module);
+          continue;
+        }
+        var group = mavenGA.substring(0, mavenGA.indexOf(':'));
+        var artifact = mavenGA.substring(group.length() + 1);
+        var version = moduleVersion.getProperty(module);
+        if (version == null) {
+          log(WARNING, "Module version not mapped: %s", module);
+          continue;
+        }
+        downloader.download(group, artifact, version);
+      }
     }
   }
 

@@ -33,6 +33,7 @@ class TestProjectTests {
           probe.lines());
       assertLinesMatch(
           List.of(
+              "Module name not mapped: b",
               "project.modules=[a]",
               "project.requires=[b]",
               "found in library=[]",
