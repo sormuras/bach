@@ -42,4 +42,18 @@ class TestProjectTests {
           probe.errors());
     }
   }
+
+  @Nested
+  class RequiresAsm {
+
+    @Test
+    void build(@TempDir Path work) {
+      var probe = new Probe(projects.resolve("requires-asm"), work);
+      assertEquals(0, probe.bach.main(List.of("build")), probe.toString());
+      assertLinesMatch(
+          List.of(">> INIT >>", ">> build(<empty>)", ">> BUILD >>", "Build successful."),
+          probe.lines());
+      assertLinesMatch(List.of(), probe.errors());
+    }
+  }
 }
