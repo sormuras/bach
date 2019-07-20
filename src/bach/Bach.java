@@ -282,7 +282,7 @@ public class Bach {
               "--multi-release",
               "base",
               "--module-path",
-              project.main.binModules,
+              project.main.binModules + File.pathSeparator + project.library,
               "--check",
               String.join(",", project.main.declaredModules.keySet())));
     }
