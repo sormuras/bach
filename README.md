@@ -20,8 +20,6 @@ Use Java source (in [jshell]) to build your modular Java project.
 
 :scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-:fast_forward: Side-step to [make-java](https://github.com/sormuras/make-java) project.
-
 ## Execute Bach.java on-the-fly
 
 This section will help you get started with `Bach.jsh` used as a remote `load-file` of [jshell].
