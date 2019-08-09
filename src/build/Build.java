@@ -73,7 +73,7 @@ class Build {
     System.out.println("\n[test // download]");
     var junit =
         bach.new Downloader(Bach.USER_HOME.resolve(".bach/tool/junit"))
-            .download("org.junit.platform", "junit-platform-console-standalone", "1.5.0");
+            .download("org.junit.platform", "junit-platform-console-standalone", "1.5.1");
 
     System.out.println("\n[test // compile]");
     var javac = new ArrayList<>();
