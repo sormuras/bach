@@ -23,7 +23,7 @@ var code = 0
 try {
   Bach.main();
 } catch (Throwable throwable) {
-  throwable.printStackTrace();
+  System.err.println(throwable.getMessage());
   code = 1;
 }
 
