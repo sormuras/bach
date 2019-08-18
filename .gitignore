@@ -1,8 +1,5 @@
 .bach/
-.idea/out
 bin/
 target/
 
-uiDesigner.xml
-workspace.xml
 *.jar
