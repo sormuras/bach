@@ -60,26 +60,26 @@ public class Resolver {
     var missingDirect = resolver.findMissingModules(moduleCompilationUnits);
     var missingIndirect = resolver.findMissingRequiredModules();
 
-    System.out.println("module-info.java files = " + moduleCompilationUnits);
-    System.out.println("modules in library = " + findNamesAndVersions(ModuleFinder.of(library)));
-    System.out.println("missing modules, directly required = " + missingDirect);
-    System.out.println("missing modules, indirectly required = " + missingIndirect);
+    // System.out.println("module-info.java files = " + moduleCompilationUnits);
+    // System.out.println("modules in library = " + findNamesAndVersions(ModuleFinder.of(library)));
+    // System.out.println("missing modules, directly required = " + missingDirect);
+    // System.out.println("missing modules, indirectly required = " + missingIndirect);
 
     var allMissingModules = new TreeSet<String>();
     allMissingModules.addAll(missingDirect);
     allMissingModules.addAll(missingIndirect);
     resolver.resolve(allMissingModules);
 
-    System.out.printf("Modules in library '%s'%n", library);
-    findNamesAndVersions(ModuleFinder.of(library)).forEach(System.out::println);
+    var modules = findNamesAndVersions(ModuleFinder.of(library));
+    System.out.printf("%d module(s) in directory '%s'%n", modules.size(), library.toUri());
+    modules.forEach(System.out::println);
   }
 
   private static Set<String> findNamesAndVersions(ModuleFinder finder) {
-    return findDescriptions(finder, ModuleDescriptor::toNameAndVersion);
+    return findAll(finder, ModuleDescriptor::toNameAndVersion);
   }
 
-  private static Set<String> findDescriptions(
-      ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
+  private static Set<String> findAll(ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
     return finder.findAll().stream()
         .map(ModuleReference::descriptor)
         .map(mapper)
@@ -144,21 +144,24 @@ public class Resolver {
   }
 
   private Set<String> findMissingRequiredModules() {
-    var finder = ModuleFinder.of(library);
-    var found = findDescriptions(finder, ModuleDescriptor::name);
-    return finder.findAll().stream()
+    var systemModuleFinder = ModuleFinder.ofSystem();
+    var libraryModuleFinder = ModuleFinder.of(library);
+    var libraryModuleNames = findAll(libraryModuleFinder, ModuleDescriptor::name);
+    return libraryModuleFinder.findAll().stream()
         .map(ModuleReference::descriptor)
         .map(ModuleDescriptor::requires)
         .flatMap(Collection::stream)
         // .filter(!ModuleDescriptor.Requires.Modifier.STATIC)
         .map(ModuleDescriptor.Requires::name)
-        .filter(Predicate.not(found::contains))
-        .filter(name -> ModuleFinder.ofSystem().find(name).isEmpty())
+        .sorted()
+        .distinct()
+        .filter(Predicate.not(libraryModuleNames::contains))
+        .filter(name -> systemModuleFinder.find(name).isEmpty())
         .collect(Collectors.toCollection(TreeSet::new));
   }
 
   private void resolve(Iterable<String> modules) {
-    System.out.println("resolving modules = " + modules);
+    // System.out.println("resolving modules = " + modules);
     download(modules);
     var stillMissingModules = findMissingRequiredModules();
     if (stillMissingModules.isEmpty()) {
