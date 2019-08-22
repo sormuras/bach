@@ -145,7 +145,7 @@ public class Resolver {
 
   private Set<String> findMissingRequiredModules() {
     var finder = ModuleFinder.of(library);
-    var found = Bach.Modules.findModuleNames(finder);
+    var found = findDescriptions(finder, ModuleDescriptor::name);
     return finder.findAll().stream()
         .map(ModuleReference::descriptor)
         .map(ModuleDescriptor::requires)
