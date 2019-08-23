@@ -70,20 +70,9 @@ public class Resolver {
     allMissingModules.addAll(missingIndirect);
     resolver.resolve(allMissingModules);
 
-    var modules = findNamesAndVersions(ModuleFinder.of(library));
+    var modules = resolver.mapAll(ModuleFinder.of(library), ModuleDescriptor::toNameAndVersion);
     System.out.printf("%d module(s) in directory '%s'%n", modules.size(), library.toUri());
     modules.forEach(System.out::println);
-  }
-
-  private static Set<String> findNamesAndVersions(ModuleFinder finder) {
-    return findAll(finder, ModuleDescriptor::toNameAndVersion);
-  }
-
-  private static Set<String> findAll(ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
-    return finder.findAll().stream()
-        .map(ModuleReference::descriptor)
-        .map(mapper)
-        .collect(Collectors.toCollection(TreeSet::new));
   }
 
   private final Path library;
@@ -94,6 +83,13 @@ public class Resolver {
     this.library = library;
     this.moduleSourcePath = moduleSourcePath;
     this.uris = uris;
+  }
+
+  private Set<String> mapAll(ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
+    return finder.findAll().stream()
+        .map(ModuleReference::descriptor)
+        .map(mapper)
+        .collect(Collectors.toCollection(TreeSet::new));
   }
 
   private Set<Path> findModuleCompilationUnits() {
@@ -146,7 +142,7 @@ public class Resolver {
   private Set<String> findMissingRequiredModules() {
     var systemModuleFinder = ModuleFinder.ofSystem();
     var libraryModuleFinder = ModuleFinder.of(library);
-    var libraryModuleNames = findAll(libraryModuleFinder, ModuleDescriptor::name);
+    var libraryModuleNames = mapAll(libraryModuleFinder, ModuleDescriptor::name);
     return libraryModuleFinder.findAll().stream()
         .map(ModuleReference::descriptor)
         .map(ModuleDescriptor::requires)
