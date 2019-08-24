@@ -6,7 +6,6 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
-    container: openjdk:11
     steps:
     - uses: actions/checkout@v1
     - name: Print Java version
