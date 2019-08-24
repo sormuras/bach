@@ -1,0 +1,12 @@
+name: Test `install-jdk.sh`
+
+on: [push]
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Run
+      run: ./install-jdk-tests.sh
