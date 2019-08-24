@@ -12,11 +12,6 @@ jobs:
     - name: Print Java version
       run: java --version
     - name: Get JUnit 3.7 JAR from Maven Central
-      run: |
-        set -e
-        java -Debug=true src/bach/Get.java https://repo1.maven.org/maven2/junit/junit/3.7/junit-3.7.jar
-        java -Debug=true src/bach/Get.java https://repo1.maven.org/maven2/junit/junit/3.7/junit-3.7.jar
-    - name: Get JUnit 3.7 JAR from Maven Central, again
-      run: |
-        set -e
-        java -Debug=true src/bach/Get.java https://repo1.maven.org/maven2/junit/junit/3.7/junit-3.7.jar
+      run: java -Debug=true src/bach/Get.java https://repo1.maven.org/maven2/junit/junit/3.7/junit-3.7.jar
+    - name: Get same JAR, again
+      run: java -Debug=true src/bach/Get.java https://repo1.maven.org/maven2/junit/junit/3.7/junit-3.7.jar
