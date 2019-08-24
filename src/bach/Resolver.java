@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,17 +46,91 @@ import java.util.stream.Collectors;
 /** External Module Resolver. */
 public class Resolver {
 
-  public static void main(String[] args) {
-    var library = Path.of("lib");
-    var moduleSourcePath = "src/*/main/java;src/*/test/java;src/*/test/module;src/*/main/java-9";
-    var moduleUriProperties = new Properties();
-    try (var reader = Files.newBufferedReader(library.resolve("module-uri.properties"))) {
-      moduleUriProperties.load(reader);
-    } catch (IOException e) {
-      throw new UncheckedIOException("reading properties failed", e);
+  static class Library {
+
+    private final Path path;
+    private final Properties uris;
+    private final Properties versions;
+    private final Iterable<String> versionStars;
+
+    Library(Path path) {
+      this.path = path;
+      var home = Path.of(System.getProperty("user.home"));
+      try {
+        this.uris = new Properties();
+        this.versions =
+            new Properties(
+                newDefaultProperties(
+                    home.resolve(".bach/modules/module-version.properties"),
+                    URI.create(
+                        "https://github.com/sormuras/modules/raw/master/module-version.properties")));
+        try (var reader = Files.newBufferedReader(path.resolve("module-uri.properties"))) {
+          uris.load(reader);
+        }
+        try (var reader = Files.newBufferedReader(path.resolve("module-version.properties"))) {
+          versions.load(reader);
+          this.versionStars =
+              versions.keySet().stream()
+                  .map(Object::toString)
+                  .filter(key -> key.endsWith("*"))
+                  .collect(Collectors.toSet());
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException("reading properties failed", e);
+      }
     }
 
-    var resolver = new Resolver(library, moduleSourcePath, moduleUriProperties::getProperty);
+    private Properties newDefaultProperties(Path path, URI uri) throws IOException {
+      var properties = new Properties();
+      if (Files.notExists(path)) {
+
+      }
+      try (var reader = Files.newBufferedReader(path)) {
+        properties.load(reader);
+      }
+      return properties;
+    }
+
+    String getUri(String module) {
+      var uri = uris.getProperty(module);
+      if (uri != null) {
+        return uri;
+      }
+      var group = getGroup(module);
+      var artifact = getArtifact(module);
+      var version = getVersion(module);
+
+      throw new NoSuchElementException("uri for module '" + module + "' not mapped");
+    }
+
+    String getGroup(String module) {
+      throw new NoSuchElementException("artifact for module '" + module + "' not mapped");
+    }
+
+    String getArtifact(String module) {
+      throw new NoSuchElementException("group for module '" + module + "' not mapped");
+    }
+
+    String getVersion(String module) {
+      var version = versions.getProperty(module);
+      if (version != null) {
+        return version;
+      }
+      for (var star : versionStars) {
+        if (module.startsWith(star.substring(0, star.length() - 1))) {
+          return versions.getProperty(star);
+        }
+      }
+      throw new NoSuchElementException("version for module '" + module + "' not mapped");
+    }
+  }
+
+  public static void main(String[] args) {
+    var library = new Library(Path.of("lib"));
+    System.out.println(library.getVersion("org.junit.jupiter.bla"));
+
+    var moduleSourcePath = "src/*/main/java;src/*/test/java;src/*/test/module;src/*/main/java-9";
+    var resolver = new Resolver(library, moduleSourcePath);
     var moduleCompilationUnits = resolver.findModuleCompilationUnits();
     var missingDirect = resolver.findMissingModules(moduleCompilationUnits);
     var missingIndirect = resolver.findMissingRequiredModules();
@@ -70,19 +145,20 @@ public class Resolver {
     allMissingModules.addAll(missingIndirect);
     resolver.resolve(allMissingModules);
 
-    var modules = resolver.mapAll(ModuleFinder.of(library), ModuleDescriptor::toNameAndVersion);
-    System.out.printf("%d module(s) in directory '%s'%n", modules.size(), library.toUri());
+    var modules =
+        resolver.mapAll(ModuleFinder.of(library.path), ModuleDescriptor::toNameAndVersion);
+    System.out.printf("%d module(s) in directory '%s'%n", modules.size(), library.path.toUri());
     modules.forEach(System.out::println);
   }
 
-  private final Path library;
+  private final Library library;
   private final String moduleSourcePath;
   private final UnaryOperator<String> uris;
 
-  private Resolver(Path library, String moduleSourcePath, UnaryOperator<String> uris) {
+  private Resolver(Library library, String moduleSourcePath) {
     this.library = library;
     this.moduleSourcePath = moduleSourcePath;
-    this.uris = uris;
+    this.uris = library::getUri;
   }
 
   private Set<String> mapAll(ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
@@ -122,7 +198,7 @@ public class Resolver {
       args.add("bin/temp");
       args.add("--module-source-path");
       args.add(moduleSourcePath);
-      if (Files.isDirectory(library)) {
+      if (Files.isDirectory(library.path)) {
         args.add("--module-path");
         args.add(library.toString());
       }
@@ -141,7 +217,7 @@ public class Resolver {
 
   private Set<String> findMissingRequiredModules() {
     var systemModuleFinder = ModuleFinder.ofSystem();
-    var libraryModuleFinder = ModuleFinder.of(library);
+    var libraryModuleFinder = ModuleFinder.of(library.path);
     var libraryModuleNames = mapAll(libraryModuleFinder, ModuleDescriptor::name);
     return libraryModuleFinder.findAll().stream()
         .map(ModuleReference::descriptor)
@@ -170,17 +246,25 @@ public class Resolver {
     var httpClient = HttpClient.newHttpClient();
     for (var module : modules) {
       var source = URI.create(uris.apply(module));
-      var target = library.resolve(module + ".jar");
-      var request = HttpRequest.newBuilder(source).GET().build();
-      var handler = HttpResponse.BodyHandlers.ofFile(target);
+      var target = library.path.resolve(module + ".jar");
+      download(httpClient, source, target);
+    }
+  }
+
+  private void download(HttpClient httpClient, URI uri, Path file) {
+      var request = HttpRequest.newBuilder(uri).setHeader("If-Modified-Since", "").GET().build();
+      var handler = HttpResponse.BodyHandlers.ofFile(file);
       try {
         var response = httpClient.send(request, handler);
         if (response.statusCode() == 200) {
-          System.out.println("Resolved " + response.body());
+          System.out.println("Loaded " + response.body());
+        }
+        if (response.statusCode() == 304) {
+          System.out.println("Already " + response.body());
         }
       } catch (Exception e) {
         e.printStackTrace();
       }
-    }
+
   }
 }
