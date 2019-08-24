@@ -4,6 +4,8 @@
 [![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
 [![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
+[![github actions](https://github.com/sormuras/bach/workflows/Java%20Get.java%20CI/badge.svg)](https://github.com/sormuras/bach/actions)
+
 Use Java source (in [jshell]) to build your modular Java project.
 
 ```text
