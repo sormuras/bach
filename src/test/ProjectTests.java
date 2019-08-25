@@ -17,9 +17,7 @@ class ProjectTests {
     assertEquals(
         List.of("de.sormuras.bach.demo", "de.sormuras.bach.demo.multi", "integration"),
         project.modules);
-    assertEquals(
-        Set.of("org.junit.jupiter.engine", "org.junit.jupiter.api", "org.junit.platform.launcher"),
-        project.requires);
+    assertEquals(Set.of("org.junit.jupiter", "org.junit.platform.launcher"), project.requires);
   }
 
   @Test
