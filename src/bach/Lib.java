@@ -200,8 +200,13 @@ public class Lib {
     ModuleProperties(Path lib, String name) {
       this.name = name;
       var uri = "https://github.com/sormuras/modules/raw/master/" + name;
-      var home = Path.of(System.getProperty("user.home"));
-      var user = loadFile(home.resolve(".bach/modules/" + name), URI.create(uri));
+      var home = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
+      try {
+        Files.createDirectories(home);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Creating directories failed: " + home, e);
+      }
+      var user = loadFile(home.resolve(name), URI.create(uri));
       var defaults = loadProperties(new Properties(), user);
       this.properties = loadProperties(new Properties(defaults), lib.resolve(name));
       this.patterns =
