@@ -82,9 +82,8 @@ public class Resolver {
 
     private Properties newDefaultProperties(Path path, URI uri) throws IOException {
       var properties = new Properties();
-      if (Files.notExists(path)) {
+      if (Files.notExists(path)) {}
 
-      }
       try (var reader = Files.newBufferedReader(path)) {
         properties.load(reader);
       }
@@ -252,19 +251,18 @@ public class Resolver {
   }
 
   private void download(HttpClient httpClient, URI uri, Path file) {
-      var request = HttpRequest.newBuilder(uri).setHeader("If-Modified-Since", "").GET().build();
-      var handler = HttpResponse.BodyHandlers.ofFile(file);
-      try {
-        var response = httpClient.send(request, handler);
-        if (response.statusCode() == 200) {
-          System.out.println("Loaded " + response.body());
-        }
-        if (response.statusCode() == 304) {
-          System.out.println("Already " + response.body());
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
+    var request = HttpRequest.newBuilder(uri).setHeader("If-Modified-Since", "").GET().build();
+    var handler = HttpResponse.BodyHandlers.ofFile(file);
+    try {
+      var response = httpClient.send(request, handler);
+      if (response.statusCode() == 200) {
+        System.out.println("Loaded " + response.body());
       }
-
+      if (response.statusCode() == 304) {
+        System.out.println("Already " + response.body());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }

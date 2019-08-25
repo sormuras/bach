@@ -18,7 +18,6 @@
 
 // default package
 
-import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -43,6 +42,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.lang.model.SourceVersion;
 
 /**
  * Library Support Tool.
