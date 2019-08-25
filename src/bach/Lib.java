@@ -103,6 +103,9 @@ public class Lib {
   }
 
   private static Set<String> findAllDirectoryNamesIn(Path root) {
+    if (!Files.isDirectory(root)) {
+      return Set.of();
+    }
     try (var entries = Files.newDirectoryStream(root, Files::isDirectory)) {
       return StreamSupport.stream(entries.spliterator(), false)
           .map(Path::getFileName)
@@ -179,10 +182,14 @@ public class Lib {
     var artifact = maven[1];
     var version = moduleVersionProperties.get(name);
     var host = "https://repo1.maven.org/maven2";
-    var path = group.replace('.', '/');
     var file = artifact + '-' + version + ".jar";
-    var uri = URI.create(String.join("/", host, path, artifact, version, file));
-    loadFile(this.path.resolve(name + "@" + version + ".jar"), uri);
+    var uri = URI.create(String.join("/", host, group.replace('.', '/'), artifact, version, file));
+    try {
+      Files.createDirectories(path);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Creating library directory failed: " + path, e);
+    }
+    loadFile(path.resolve(name + "@" + version + ".jar"), uri);
   }
 
   static class ModuleProperties {
@@ -280,7 +287,7 @@ public class Lib {
         System.out.println(file + " <- " + uri);
       }
     } catch (IOException | InterruptedException e) {
-      System.err.println("Failed to load: " + uri);
+      System.err.println("Failed to load: " + uri + " -> " + e);
     }
     return file;
   }
