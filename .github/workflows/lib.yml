@@ -1,0 +1,15 @@
+name: Java Lib.java CI
+
+on: [push]
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    container: openjdk:11
+    steps:
+    - uses: actions/checkout@v1
+    - name: Print Java version
+      run: java --version
+    - name: Get JUnit 3.7 JAR from Maven Central
+      run: java src/bach/Lib.java org.junit.jupiter@5.5.1
