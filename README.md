@@ -5,6 +5,7 @@
 [![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 
 [![github actions](https://github.com/sormuras/bach/workflows/Java%20Get.java%20CI/badge.svg)](https://github.com/sormuras/bach/actions)
+[![github actions](https://github.com/sormuras/bach/workflows/Lib.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
 Use Java source (in [jshell]) to build your modular Java project.
 
