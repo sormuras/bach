@@ -62,7 +62,32 @@ For more details consult the output of `jshell --help`.
 
 ## Directory Layout
 
-:construction:
+The following layout of directories is supported by Bach.java out-of-the-box:
+- `foo/` is the root directory of the project and all relative paths use it as their base path
+- `bin/` contains all compiled assets and should be ignored by version control system
+- `lib/` contains all required 3rd-party modules
+- `src/` contains all module sources
+
+```
+foo/                    .___
+  lib/              .---| bin/
+  src/             /    | *.jar
+  .gitignore  <---°
+```
+
+Expanding the first level directories reveals:
+
+```
+foo/
+  lib/                            .___
+    module-version.properties <---| org.junit.jupiter.* = 5.5.1
+    org.junit.jupiter@5.5.1.jar   | org.junit.platform.* = 1.5.1
+    org.slf4j@2.0.0-alpha.jar     | org.slf4j.* = 2.0.0-alpha.jar
+  src/
+    org.foo/
+    org.foo.bar/
+  .gitignore
+```
 
 ## bit.ly links
 
