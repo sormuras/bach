@@ -55,10 +55,28 @@ public class Lib {
     var path = Path.of(System.getProperty("lib", "lib"));
     var src = Path.of(System.getProperty("src", "src"));
     var projectModuleNames = findAllDirectoryNamesIn(src);
-
+    var synthetic = synthesize(src, projectModuleNames, args);
     var lib = new Lib(path, projectModuleNames);
+    lib.load(synthetic);
+    lib.sync();
     lib.list();
+  }
 
+  private static Set<String> findAllDirectoryNamesIn(Path root) {
+    if (!Files.isDirectory(root)) {
+      return Set.of();
+    }
+    try (var entries = Files.newDirectoryStream(root, Files::isDirectory)) {
+      return StreamSupport.stream(entries.spliterator(), false)
+          .map(Path::getFileName)
+          .map(Path::toString)
+          .collect(Collectors.toCollection(TreeSet::new));
+    } catch (IOException e) {
+      throw new UncheckedIOException("reading directory failed: " + root, e);
+    }
+  }
+
+  private static ModuleDescriptor synthesize(Path src, Set<String> modules, String... args) {
     var synthetic = ModuleDescriptor.newModule("$", Set.of(ModuleDescriptor.Modifier.SYNTHETIC));
     if (args.length == 0) {
       var requiresPattern =
@@ -68,8 +86,8 @@ public class Lib {
                   + "\\s+([\\w.]+)" // module name
                   + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
                   + ";"); // end marker
-      for (var name : projectModuleNames) {
-        var root = src.resolve(name);
+      for (var module : modules) {
+        var root = src.resolve(module);
         try (var stream = Files.find(root, 9, (p, __) -> isModuleInfo(p))) {
           for (var moduleInfo : stream.collect(Collectors.toSet())) {
             var source = Files.readString(moduleInfo);
@@ -97,23 +115,7 @@ public class Lib {
       }
       synthetic.requires(Set.of(), arg);
     }
-
-    lib.load(synthetic.build());
-    lib.sync();
-  }
-
-  private static Set<String> findAllDirectoryNamesIn(Path root) {
-    if (!Files.isDirectory(root)) {
-      return Set.of();
-    }
-    try (var entries = Files.newDirectoryStream(root, Files::isDirectory)) {
-      return StreamSupport.stream(entries.spliterator(), false)
-          .map(Path::getFileName)
-          .map(Path::toString)
-          .collect(Collectors.toCollection(TreeSet::new));
-    } catch (IOException e) {
-      throw new UncheckedIOException("reading directory failed: " + root, e);
-    }
+    return synthetic.build();
   }
 
   private static boolean isModuleInfo(Path path) {
