@@ -182,7 +182,7 @@ public class Lib {
     var maven = moduleMavenProperties.get(name).split(":");
     var group = maven[0];
     var artifact = maven[1];
-    var version = moduleVersionProperties.get(name);
+    var version = requires.rawCompiledVersion().orElse(moduleVersionProperties.get(name));
     var host = "https://repo1.maven.org/maven2";
     var file = artifact + '-' + version + ".jar";
     var uri = URI.create(String.join("/", host, group.replace('.', '/'), artifact, version, file));
