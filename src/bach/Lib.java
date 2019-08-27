@@ -278,11 +278,13 @@ public class Lib {
 
     final Project project;
     final HttpClient browser;
+    final Properties moduleUri;
     final Lookup moduleMaven, moduleVersion;
 
     Worker(Project project) {
       this.project = project;
       this.browser = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+      this.moduleUri = load(new Properties(), project.lib.resolve("module-uri.properties"));
       this.moduleMaven = new Lookup("module-maven.properties");
       this.moduleVersion = new Lookup("module-version.properties");
     }
@@ -310,6 +312,11 @@ public class Lib {
     }
 
     private void loadFile(String module, Set<Version> versions) {
+      var uri = moduleUri.getProperty(module);
+      if (uri != null) {
+        loadFile(project.lib.resolve(module + ".jar"), URI.create(uri));
+        return;
+      }
       var maven = moduleMaven.get(module).split(":");
       var group = maven[0];
       var artifact = maven[1];
