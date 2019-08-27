@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -74,86 +73,33 @@ import javax.lang.model.SourceVersion;
 public class Lib {
 
   public static void main(String... args) {
-    System.out.println("Lib.java");
-    var commandRequires = requires(List.of(args));
-    System.out.println("command.requires = " + commandRequires);
     var project = new Project();
-    System.out.println("project          = " + Path.of("").toUri());
-    System.out.println("project.src      = " + project.src);
-    System.out.println("project.lib      = " + project.lib);
-    System.out.println("project.modules  = " + project.modules);
-    System.out.println("project.requires = " + project.requires);
-
-    var missing = new TreeMap<>(commandRequires);
-    missing.putAll(project.requires);
-    missing.putAll(project.libraryRequires());
-    project.modules.forEach(missing::remove);
-    project.libraryModules().forEach(missing::remove);
-    project.systems.forEach(missing::remove);
-    if (missing.isEmpty()) {
-      project.libraryList();
-      return;
-    }
-
-    var worker = new Worker(project);
-    worker.load(missing);
-    missing.clear();
-    while (true) {
-      missing.putAll(project.libraryRequires());
-      project.modules.forEach(missing::remove);
-      project.libraryModules().forEach(missing::remove);
-      project.systems.forEach(missing::remove);
-      if (missing.isEmpty()) {
-        project.libraryList();
-        return;
-      }
+    var commandRequires = project.requires(Set.of(args));
+    var missing = project.missing(commandRequires, project.requires, project.libraryRequires());
+    if (!missing.isEmpty()) {
+      var worker = new Worker(project);
       worker.load(missing);
-    }
-  }
-
-  /**
-   * Compute requires map from strings.
-   *
-   * <p>String: {@code "a", "b@1", "c", "b@2", "a"} Result: {@code { a=[], b=[1, 2], c=[] }}
-   */
-  private static Map<String, Set<Version>> requires(Iterable<String> strings) {
-    var map = new TreeMap<String, Set<Version>>();
-    for (var string : strings) {
-      var versionMarkerIndex = string.indexOf('@');
-      if (versionMarkerIndex == -1) {
-        map.putIfAbsent(string, Set.of());
-        continue;
+      while (true) {
+        var libraries = project.missing(project.libraryRequires());
+        if (libraries.isEmpty()) {
+          break;
+        }
+        worker.load(libraries);
       }
-      var module = string.substring(0, versionMarkerIndex);
-      var versions = Set.of(Version.parse(string.substring(versionMarkerIndex + 1)));
-      map.merge(
-          module,
-          versions,
-          (a, b) -> Set.of(Stream.concat(a.stream(), b.stream()).toArray(Version[]::new)));
     }
-    return Collections.unmodifiableMap(map);
-  }
-
-  private static Optional<String> version(Set<Version> versions) {
-    if (versions.isEmpty()) {
-      return Optional.empty();
-    }
-    if (versions.size() != 1) {
-      throw new IllegalStateException("Too many versions: " + versions);
-    }
-    return Optional.of(versions.iterator().next().toString());
+    project.libraryList();
   }
 
   static class Project {
 
     final Path lib = Path.of(System.getProperty("lib", "lib"));
     final Path src = Path.of(System.getProperty("src", "src"));
-    final Set<String> modules = getModules(System.getProperty("module", "*"));
-    final Map<String, Set<Version>> requires = getRequires();
+    final Set<String> modules = modules(System.getProperty("module", "*"));
+    final Map<String, Set<Version>> requires = requires();
     final Set<String> systems = mapAll(ModuleFinder.ofSystem(), ModuleDescriptor::name);
 
     /** Declared modules of this project. */
-    private Set<String> getModules(String module) {
+    private Set<String> modules(String module) {
       if (!"*".equals(module)) {
         return Set.of(module.split(","));
       }
@@ -175,7 +121,7 @@ public class Lib {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
 
-    private Map<String, Set<Version>> getRequires() {
+    private Map<String, Set<Version>> requires() {
       var map = new TreeMap<String, Set<Version>>();
       var requiresPattern =
           Pattern.compile(
@@ -212,6 +158,29 @@ public class Lib {
       return map;
     }
 
+    /**
+     * Compute requires map from strings.
+     *
+     * <p>String: {@code "a", "b@1", "c", "b@2", "a"} Result: {@code { a=[], b=[1, 2], c=[] }}
+     */
+    private Map<String, Set<Version>> requires(Iterable<String> strings) {
+      var map = new TreeMap<String, Set<Version>>();
+      for (var string : strings) {
+        var versionMarkerIndex = string.indexOf('@');
+        if (versionMarkerIndex == -1) {
+          map.putIfAbsent(string, Set.of());
+          continue;
+        }
+        var module = string.substring(0, versionMarkerIndex);
+        var versions = Set.of(Version.parse(string.substring(versionMarkerIndex + 1)));
+        map.merge(
+            module,
+            versions,
+            (a, b) -> Set.of(Stream.concat(a.stream(), b.stream()).toArray(Version[]::new)));
+      }
+      return Collections.unmodifiableMap(map);
+    }
+
     private Set<String> mapAll(ModuleFinder finder, Function<ModuleDescriptor, String> mapper) {
       return finder.findAll().stream()
           .map(ModuleReference::descriptor)
@@ -241,6 +210,21 @@ public class Lib {
         System.out.println(nameAndVersion);
       }
     }
+
+    @SafeVarargs
+    final Map<String, Set<Version>> missing(
+        Map<String, Set<Version>> initial, Map<String, Set<Version>>... more) {
+      var missing = new TreeMap<>(initial);
+      for (var map : more) {
+        missing.putAll(map);
+      }
+      missing.putAll(requires);
+      missing.putAll(libraryRequires());
+      modules.forEach(missing::remove);
+      libraryModules().forEach(missing::remove);
+      systems.forEach(missing::remove);
+      return missing;
+    }
   }
 
   static class Worker {
@@ -260,25 +244,14 @@ public class Lib {
           throw new UncheckedIOException("Creating directories failed: " + home, e);
         }
         var user = loadFile(home.resolve(name), URI.create(uri));
-        var defaults = loadProperties(new Properties(), user);
-        this.properties = loadProperties(new Properties(defaults), project.lib.resolve(name));
+        var defaults = load(new Properties(), user);
+        this.properties = load(new Properties(defaults), project.lib.resolve(name));
         this.patterns =
             properties.keySet().stream()
                 .map(Object::toString)
                 .filter(key -> !SourceVersion.isName(key))
                 .map(Pattern::compile)
                 .collect(Collectors.toSet());
-      }
-
-      private Properties loadProperties(Properties properties, Path path) {
-        if (Files.isRegularFile(path)) {
-          try (var reader = Files.newBufferedReader(path)) {
-            properties.load(reader);
-          } catch (IOException e) {
-            throw new UncheckedIOException("Reading properties failed: " + path, e);
-          }
-        }
-        return properties;
       }
 
       String get(String key) {
@@ -314,7 +287,18 @@ public class Lib {
       this.moduleVersion = new Lookup("module-version.properties");
     }
 
-    void load(TreeMap<String, Set<Version>> modules) {
+    Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (IOException e) {
+          throw new UncheckedIOException("Reading properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+
+    void load(Map<String, Set<Version>> modules) {
       try {
         Files.createDirectories(project.lib);
       } catch (IOException e) {
@@ -382,6 +366,16 @@ public class Lib {
         System.err.println("Failed to load: " + uri + " -> " + e);
       }
       return path;
+    }
+
+    private Optional<String> version(Set<Version> versions) {
+      if (versions.isEmpty()) {
+        return Optional.empty();
+      }
+      if (versions.size() != 1) {
+        throw new IllegalStateException("Too many versions: " + versions);
+      }
+      return Optional.of(versions.iterator().next().toString());
     }
   }
 }
