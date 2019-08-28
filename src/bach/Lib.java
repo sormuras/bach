@@ -198,6 +198,7 @@ public class Lib {
               .map(ModuleReference::descriptor)
               .map(ModuleDescriptor::requires)
               .flatMap(Set::stream)
+              .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
               .map(r -> r.name() + r.compiledVersion().map(v -> "@" + v).orElse(""))
               .collect(Collectors.toSet());
       return requires(dependence);
