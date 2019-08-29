@@ -53,7 +53,7 @@ public class Bach {
   /** Text-output writer. */
   private final PrintWriter out, err;
 
-  Bach(PrintWriter out, PrintWriter err) {
+  public Bach(PrintWriter out, PrintWriter err) {
     this.out = out;
     this.err = err;
   }
