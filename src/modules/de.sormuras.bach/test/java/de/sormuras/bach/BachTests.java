@@ -19,9 +19,15 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,12 +35,53 @@ import org.junit.jupiter.api.Test;
 class BachTests {
   @Test
   void instantiate() {
-    assertNotNull(new Bach().toString());
+    assertNotNull(Bach.of().toString());
   }
 
   @Test
   void banner() {
-    assertFalse(new Bach().getBanner().isBlank());
+    assertFalse(Bach.of().getBanner().isBlank());
+  }
+
+  @Test
+  void help() {
+    var out = new StringWriter();
+    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err));
+    bach.help();
+    assertLinesMatch(
+        List.of(
+            "F1! F1! F1!",
+            "Method API",
+            "  help (Bach)",
+            "  version (Bach)",
+            "Provided tools",
+            "  jar",
+            ">> MORE FOUNDATION TOOLS >>",
+            "  jmod"),
+        out.toString().lines().collect(Collectors.toList()));
+  }
+
+  @Test
+  void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
+    class CustomBach extends Bach {
+      CustomBach(StringWriter out) {
+        super(new PrintWriter(out), new PrintWriter(System.err));
+      }
+      public void custom() {}
+      @Override
+      public void version() {}
+    }
+    var actual = new StringWriter();
+    var custom = new CustomBach(actual);
+    custom.help();
+    assertLinesMatch(
+        List.of(
+            ">> PREFIX >>",
+            "  custom (CustomBach)",
+            "  help (Bach)",
+            "  version (CustomBach)",
+            ">> SUFFIX >>"),
+        actual.toString().lines().collect(Collectors.toList()));
   }
 
   @Test

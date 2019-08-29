@@ -20,7 +20,13 @@ package de.sormuras.bach;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /*BODY*/
@@ -37,7 +43,7 @@ public class Bach {
     var module = getClass().getModule();
     try (var stream = module.getResourceAsStream("de/sormuras/bach/banner.txt")) {
       if (stream == null) {
-        return String.format("Bach.java %s (member of %s)%n", VERSION, module);
+        return String.format("Bach.java %s (member of %s)", VERSION, module);
       }
       var lines = new BufferedReader(new InputStreamReader(stream)).lines();
       var banner = lines.collect(Collectors.joining(System.lineSeparator()));
@@ -45,5 +51,24 @@ public class Bach {
     } catch (IOException e) {
       throw new UncheckedIOException("loading banner resource failed", e);
     }
+  }
+
+  public void help() {
+    out.println("F1! F1! F1!");
+    out.println("Method API");
+    Arrays.stream(getClass().getMethods())
+        .filter(Util::isApiMethod)
+        .map(m -> "  " + m.getName() + " (" + m.getDeclaringClass().getSimpleName() + ")")
+        .sorted()
+        .forEach(out::println);
+    out.println("Provided tools");
+    ServiceLoader.load(ToolProvider.class).stream()
+        .map(provider -> "  " + provider.get().name())
+        .sorted()
+        .forEach(out::println);
+  }
+
+  public void version() {
+    out.println(getBanner());
   }
 }
