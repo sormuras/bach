@@ -148,10 +148,10 @@ public class Bach {
     if (!Files.isDirectory(home)) throw new Error("home", "a directory", home.toUri());
     if (Files.exists(work)) {
       if (!Files.isDirectory(work)) throw new Error("work", "a directory: %s", work.toUri());
-      if (!Files.isWritable(work)) throw new Error("work", "writable: %s", work.toUri());
+      if (!work.toFile().canWrite()) throw new Error("work", "writable: %s", work.toUri());
     } else {
       var parentOfWork = work.toAbsolutePath().getParent();
-      if (parentOfWork != null && !Files.isWritable(parentOfWork))
+      if (parentOfWork != null && parentOfWork.toFile().canWrite())
         throw new Error("parent of work", "writable", parentOfWork.toUri());
     }
   }

@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,10 +70,11 @@ class BachTests {
   @Test
   void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
     class CustomBach extends Bach {
-      CustomBach(StringWriter out) {
+      private CustomBach(StringWriter out) {
         super(new PrintWriter(out), new PrintWriter(System.err), Path.of(""), Path.of(""));
       }
 
+      @SuppressWarnings("unused")
       public void custom() {}
 
       @Override
@@ -92,6 +95,17 @@ class BachTests {
             "  version (CustomBach)",
             ">> SUFFIX >>"),
         actual.toString().lines().collect(Collectors.toList()));
+  }
+
+  @Test
+  void validateWorksInDefaultFileSystemRootDirectories() {
+    var out = new StringWriter();
+    for (var path : FileSystems.getDefault().getRootDirectories()) {
+      if (Files.isDirectory(path)) {
+        var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), path, path);
+        bach.validate();
+      }
+    }
   }
 
   @Test
