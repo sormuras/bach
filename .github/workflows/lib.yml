@@ -12,6 +12,6 @@ jobs:
     - name: Print Java version
       run: java --version
     - name: Load module org.junit.jupiter version 5.5.1
-      run: mkdir bin && cd bin && java src/bach/Lib.java org.junit.jupiter@5.5.1
+      run: mkdir bin && cd bin && java ${HOME}/src/bach/Lib.java org.junit.jupiter@5.5.1
     - name: Load required modules of demo project
-      run: cd ${HOME}/demo && java ../src/bach/Lib.java
+      run: cd ${HOME}/demo && java ${HOME}/src/bach/Lib.java
