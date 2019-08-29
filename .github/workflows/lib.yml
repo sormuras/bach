@@ -10,8 +10,6 @@ jobs:
     steps:
     - name: Print working directory
       run: pwd
-    - name: Print variables
-      run: ( set -o posix ; set ) | less
     - name: Print Java version
       run: java --version
     - uses: actions/checkout@v1
