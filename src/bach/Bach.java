@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T19:15:22.117175900Z
+// THIS FILE WAS GENERATED ON 2019-08-29T20:02:02.627329500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -86,6 +86,10 @@ public class Bach {
     while (!arguments.isEmpty()) {
       var argument = arguments.pop();
       try {
+        switch (argument) {
+          case "build": build(); continue;
+          case "validate": validate(); continue;
+        }
         // Try Bach API method w/o parameter -- single argument is consumed
         var method = Util.findApiMethod(getClass(), argument);
         if (method.isPresent()) {
