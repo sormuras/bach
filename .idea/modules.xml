@@ -8,6 +8,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.multi.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.multi.iml" group="demo" />
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test.iml" group="demo" />
       <module fileurl="file://$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test-integration.iml" filepath="$PROJECT_DIR$/.idea/de.sormuras.bach.demo.test-integration.iml" group="demo" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/it.iml" filepath="$PROJECT_DIR$/.idea/it.iml" group="bach" />
     </modules>
   </component>
 </project>
