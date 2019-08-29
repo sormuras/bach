@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T09:04:14.553060200Z
+// THIS FILE WAS GENERATED ON 2019-08-29T17:43:57.493425600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -56,7 +56,9 @@ public class Bach {
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    return new Bach(out, err);
+    var home = Path.of("");
+    var work = Path.of("bin");
+    return new Bach(out, err, home, work);
   }
 
   public static void main(String... args) {
@@ -66,10 +68,16 @@ public class Bach {
 
   /** Text-output writer. */
   private final PrintWriter out, err;
+  /** Home directory. */
+  private final Path home;
+  /** Workspace directory. */
+  private final Path work;
 
-  Bach(PrintWriter out, PrintWriter err) {
+  public Bach(PrintWriter out, PrintWriter err, Path home, Path work) {
     this.out = out;
     this.err = err;
+    this.home = home;
+    this.work = work;
   }
 
   void main(List<String> args) {
@@ -126,6 +134,12 @@ public class Bach {
         .map(provider -> "  " + provider.get().name())
         .sorted()
         .forEach(out::println);
+  }
+
+  public void info() {
+    out.printf("Bach (%s)%n", VERSION);
+    out.printf("  home=%s%n", home);
+    out.printf("  work=%s%n", work);
   }
 
   public void version() {
