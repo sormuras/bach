@@ -2,6 +2,7 @@ package it;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
 
@@ -42,6 +43,15 @@ class ProjectTests {
     assertLinesMatch(
         List.of("Bach (.+)", "  home='" + home + "' -> " + home.toUri(), "  work='" + home + "'"),
         out.toString().lines().collect(Collectors.toList()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("projects")
+  void validate(Path home) {
+    var out = new StringWriter();
+    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), home, home);
+    assertDoesNotThrow(bach::validate, "Running bach.validate() failed in: " + home);
+    assertTrue(out.toString().isBlank());
   }
 
   private static Stream<Path> projects() throws Exception {
