@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T17:49:34.831695200Z
+// THIS FILE WAS GENERATED ON 2019-08-29T19:15:22.117175900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -31,6 +31,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public class Bach {
 
   public static void main(String... args) {
     var bach = Bach.of();
-    bach.main(args.length == 0 ? List.of("info") : List.of(args));
+    bach.main(args.length == 0 ? List.of("build") : List.of(args));
   }
 
   /** Text-output writer. */
@@ -136,10 +137,32 @@ public class Bach {
         .forEach(out::println);
   }
 
+  public void build() {
+    info();
+    validate();
+  }
+
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
     out.printf("  home='%s' -> %s%n", home, home.toUri());
     out.printf("  work='%s'%n", work);
+  }
+
+  public void validate() {
+    class Error extends AssertionError {
+      private Error(String expected, String actual, Object hint) {
+        super(String.format("expected %s to be %s: %s", expected, actual, hint));
+      }
+    }
+    if (!Files.isDirectory(home)) throw new Error("home", "a directory", home.toUri());
+    if (Files.exists(work)) {
+      if (!Files.isDirectory(work)) throw new Error("work", "a directory: %s", work.toUri());
+      if (!Files.isWritable(work)) throw new Error("work", "writable: %s", work.toUri());
+    } else {
+      var parentOfWork = work.toAbsolutePath().getParent();
+      if (parentOfWork != null && !Files.isWritable(parentOfWork))
+        throw new Error("parent of work", "writable", parentOfWork.toUri());
+    }
   }
 
   public void version() {

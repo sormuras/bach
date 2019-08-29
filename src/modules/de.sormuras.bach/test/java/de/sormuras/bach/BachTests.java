@@ -54,8 +54,10 @@ class BachTests {
         List.of(
             "F1! F1! F1!",
             "Method API",
+            "  build (Bach)",
             "  help (Bach)",
             "  info (Bach)",
+            "  validate (Bach)",
             "  version (Bach)",
             "Provided tools",
             "  bach",
@@ -82,9 +84,11 @@ class BachTests {
     assertLinesMatch(
         List.of(
             ">> PREFIX >>",
+            "  build (Bach)",
             "  custom (CustomBach)",
             "  help (Bach)",
             "  info (Bach)",
+            "  validate (Bach)",
             "  version (CustomBach)",
             ">> SUFFIX >>"),
         actual.toString().lines().collect(Collectors.toList()));
