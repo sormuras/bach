@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,18 +47,19 @@ class BachTests {
   @Test
   void help() {
     var out = new StringWriter();
-    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err));
+    var path = Path.of("");
+    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), path, path);
     bach.help();
     assertLinesMatch(
         List.of(
             "F1! F1! F1!",
             "Method API",
             "  help (Bach)",
+            "  info (Bach)",
             "  version (Bach)",
             "Provided tools",
-            "  jar",
-            ">> MORE FOUNDATION TOOLS >>",
-            "  jmod"),
+            "  bach",
+            ">> MORE FOUNDATION TOOLS >>"),
         out.toString().lines().collect(Collectors.toList()));
   }
 
@@ -65,12 +67,15 @@ class BachTests {
   void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
     class CustomBach extends Bach {
       CustomBach(StringWriter out) {
-        super(new PrintWriter(out), new PrintWriter(System.err));
+        super(new PrintWriter(out), new PrintWriter(System.err), Path.of(""), Path.of(""));
       }
+
       public void custom() {}
+
       @Override
       public void version() {}
     }
+
     var actual = new StringWriter();
     var custom = new CustomBach(actual);
     custom.help();
@@ -79,6 +84,7 @@ class BachTests {
             ">> PREFIX >>",
             "  custom (CustomBach)",
             "  help (Bach)",
+            "  info (Bach)",
             "  version (CustomBach)",
             ">> SUFFIX >>"),
         actual.toString().lines().collect(Collectors.toList()));
