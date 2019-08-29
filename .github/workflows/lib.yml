@@ -13,9 +13,9 @@ jobs:
     - name: Print variables
       run: ( set -o posix ; set ) | less
     - name: Print Java version
-      run: java --version
-#    - uses: actions/checkout@v1
-#    - name: Load module org.junit.jupiter version 5.5.1
-#      run: mkdir bin && cd bin && java /root/src/bach/Lib.java org.junit.jupiter@5.5.1
-#    - name: Load required modules of demo project
-#      run: cd /root/demo && java /root/src/bach/Lib.java
+      run: ${JAVA_HOME_12_X64}/bin/java --version
+    - uses: actions/checkout@v1
+    - name: Load module org.junit.jupiter version 5.5.1
+      run: mkdir bin && cd bin && ${JAVA_HOME_12_X64}/bin/java ${GITHUB_WORKSPACE}/src/bach/Lib.java org.junit.jupiter@5.5.1
+    - name: Load required modules of demo project
+      run: cd ${GITHUB_WORKSPACE}/demo && ${JAVA_HOME_12_X64}/bin/java ${GITHUB_WORKSPACE}/src/bach/Lib.java
