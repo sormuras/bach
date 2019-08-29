@@ -12,10 +12,10 @@ Use Java source (in [jshell]) to build your modular Java project.
 ```text
     ___      ___      ___      ___
    /\  \    /\  \    /\  \    /\__\
-  /::\  \  /::\  \  /::\  \  /:/__/_
- /::\:\__\/::\:\__\/:/\:\__\/::\/\__\
- \:\::/  /\/\::/  /\:\ \/__/\/\::/  /
-  \::/  /   /:/  /  \:\__\    /:/  /
+  /  \  \  /  \  \  /  \  \  / /__/_
+ /  \ \__\/  \ \__\/ /\ \__\/  \/\__\
+ \ \  /  /\/\  /  /\ \ \/__/\/\  /  /
+  \  /  /   / /  /  \ \__\    / /  /
    \/__/    \/__/    \/__/    \/__/.java
 ```
 
@@ -82,8 +82,8 @@ Expanding the first level directories reveals:
 foo/
   lib/                            .___
     module-version.properties <---| org.junit.jupiter.* = 5.5.1
-    org.junit.jupiter@5.5.1.jar   | org.junit.platform.* = 1.5.1
-    org.slf4j@2.0.0-alpha.jar     | org.slf4j.* = 2.0.0-alpha.jar
+    org.junit.jupiter-5.5.1.jar   | org.junit.platform.* = 1.5.1
+    org.slf4j-2.0.0-alpha.jar     | org.slf4j.* = 2.0.0-alpha.jar
   src/
     org.foo/
     org.foo.bar/
