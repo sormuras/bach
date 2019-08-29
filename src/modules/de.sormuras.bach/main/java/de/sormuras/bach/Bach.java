@@ -50,7 +50,7 @@ public class Bach {
 
   public static void main(String... args) {
     var bach = Bach.of();
-    bach.main(List.of(args));
+    bach.main(args.length == 0 ? List.of("info") : List.of(args));
   }
 
   /** Text-output writer. */

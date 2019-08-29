@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T17:43:57.493425600Z
+// THIS FILE WAS GENERATED ON 2019-08-29T17:45:36.956039100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -63,7 +63,7 @@ public class Bach {
 
   public static void main(String... args) {
     var bach = Bach.of();
-    bach.main(List.of(args));
+    bach.main(args.length == 0 ? List.of("info") : List.of(args));
   }
 
   /** Text-output writer. */
