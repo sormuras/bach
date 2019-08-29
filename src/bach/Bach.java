@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T17:45:36.956039100Z
+// THIS FILE WAS GENERATED ON 2019-08-29T17:49:34.831695200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -138,8 +138,8 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    out.printf("  home=%s%n", home);
-    out.printf("  work=%s%n", work);
+    out.printf("  home='%s' -> %s%n", home, home.toUri());
+    out.printf("  work='%s'%n", work);
   }
 
   public void version() {

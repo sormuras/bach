@@ -125,8 +125,8 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    out.printf("  home=%s%n", home);
-    out.printf("  work=%s%n", work);
+    out.printf("  home='%s' -> %s%n", home, home.toUri());
+    out.printf("  work='%s'%n", work);
   }
 
   public void version() {

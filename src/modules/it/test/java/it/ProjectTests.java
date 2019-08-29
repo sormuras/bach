@@ -40,7 +40,7 @@ class ProjectTests {
     var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), home, home);
     assertDoesNotThrow(bach::info, "Running bach.info() failed in: " + home);
     assertLinesMatch(
-        List.of("Bach (.+)", "  home=" + home, "  work=" + home),
+        List.of("Bach (.+)", "  home='" + home + "' -> " + home.toUri(), "  work='" + home + "'"),
         out.toString().lines().collect(Collectors.toList()));
   }
 
