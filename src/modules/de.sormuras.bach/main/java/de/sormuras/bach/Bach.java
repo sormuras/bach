@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.util.stream.Collectors;
 
+/*BODY*/
 public class Bach {
 
   public static String VERSION = "2-ea";

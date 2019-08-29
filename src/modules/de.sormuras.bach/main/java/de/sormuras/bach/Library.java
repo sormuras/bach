@@ -31,8 +31,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/*BODY*/
 /** Load required modules. */
-public class Library {
+public /*STATIC*/ class Library {
 
   public static void main(String... args) {
     System.out.println("Library.main(" + List.of(args) + ")");
