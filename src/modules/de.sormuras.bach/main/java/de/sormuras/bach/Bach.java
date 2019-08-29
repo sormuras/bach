@@ -34,9 +34,55 @@ public class Bach {
 
   public static String VERSION = "2-ea";
 
+  /**
+   * Create new Bach instance with default properties.
+   *
+   * @return new default Bach instance
+   */
+  public static Bach of() {
+    var out = new PrintWriter(System.out, true);
+    var err = new PrintWriter(System.err, true);
+    return new Bach(out, err);
+  }
+
   public static void main(String... args) {
-    var bach = new Bach();
-    System.out.println(bach.getBanner());
+    var bach = Bach.of();
+    bach.main(List.of(args));
+  }
+
+  /** Text-output writer. */
+  private final PrintWriter out, err;
+
+  Bach(PrintWriter out, PrintWriter err) {
+    this.out = out;
+    this.err = err;
+  }
+
+  void main(List<String> args) {
+    var arguments = new ArrayDeque<>(args);
+    while (!arguments.isEmpty()) {
+      var argument = arguments.pop();
+      try {
+        // Try Bach API method w/o parameter -- single argument is consumed
+        var method = Util.findApiMethod(getClass(), argument);
+        if (method.isPresent()) {
+          method.get().invoke(this);
+          continue;
+        }
+        // Try provided tool -- all remaining arguments are consumed
+        var tool = ToolProvider.findFirst(argument);
+        if (tool.isPresent()) {
+          var code = tool.get().run(out, err, arguments.toArray(String[]::new));
+          if (code != 0) {
+            throw new RuntimeException("Tool " + argument + " returned: " + code);
+          }
+          return;
+        }
+      } catch (ReflectiveOperationException e) {
+        throw new Error("Reflective operation failed for: " + argument, e);
+      }
+      throw new IllegalArgumentException("Unsupported argument: " + argument);
+    }
   }
 
   String getBanner() {
