@@ -151,7 +151,7 @@ public class Bach {
       if (!work.toFile().canWrite()) throw new Error("work", "writable: %s", work.toUri());
     } else {
       var parentOfWork = work.toAbsolutePath().getParent();
-      if (parentOfWork != null && parentOfWork.toFile().canWrite())
+      if (parentOfWork != null && !parentOfWork.toFile().canWrite())
         throw new Error("parent of work", "writable", parentOfWork.toUri());
     }
   }
