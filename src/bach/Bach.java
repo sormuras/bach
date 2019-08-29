@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T20:21:40.470390600Z
+// THIS FILE WAS GENERATED ON 2019-08-29T20:25:22.236920700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -164,7 +164,7 @@ public class Bach {
       if (!work.toFile().canWrite()) throw new Error("work", "writable: %s", work.toUri());
     } else {
       var parentOfWork = work.toAbsolutePath().getParent();
-      if (parentOfWork != null && parentOfWork.toFile().canWrite())
+      if (parentOfWork != null && !parentOfWork.toFile().canWrite())
         throw new Error("parent of work", "writable", parentOfWork.toUri());
     }
   }
