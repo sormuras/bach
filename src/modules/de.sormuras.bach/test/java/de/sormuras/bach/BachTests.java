@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,13 +38,17 @@ import org.junit.jupiter.api.Test;
 @DisplayName("BachTests (de.sormuras.bach)")
 class BachTests {
   @Test
-  void instantiate() {
-    assertNotNull(Bach.of().toString());
+  void banner() {
+    assertFalse(Bach.of().getBanner().isBlank());
   }
 
   @Test
-  void banner() {
-    assertFalse(Bach.of().getBanner().isBlank());
+  void checkDefaultValues() {
+    var bach = Bach.of();
+    assertNotNull(bach.out);
+    assertNotNull(bach.err);
+    assertEquals(Path.of(""), bach.home);
+    assertEquals(Path.of("bin"), bach.work);
   }
 
   @Test

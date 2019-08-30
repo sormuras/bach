@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-29T20:25:22.236920700Z
+// THIS FILE WAS GENERATED ON 2019-08-30T03:16:39.909225300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -68,11 +68,11 @@ public class Bach {
   }
 
   /** Text-output writer. */
-  private final PrintWriter out, err;
+  final PrintWriter out, err;
   /** Home directory. */
-  private final Path home;
+  final Path home;
   /** Workspace directory. */
-  private final Path work;
+  final Path work;
 
   public Bach(PrintWriter out, PrintWriter err, Path home, Path work) {
     this.out = out;

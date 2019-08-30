@@ -55,11 +55,11 @@ public class Bach {
   }
 
   /** Text-output writer. */
-  private final PrintWriter out, err;
+  final PrintWriter out, err;
   /** Home directory. */
-  private final Path home;
+  final Path home;
   /** Workspace directory. */
-  private final Path work;
+  final Path work;
 
   public Bach(PrintWriter out, PrintWriter err, Path home, Path work) {
     this.out = out;
