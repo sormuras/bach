@@ -23,15 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -53,9 +49,7 @@ class BachTests {
 
   @Test
   void help() {
-    var out = new StringWriter();
-    var path = Path.of("");
-    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), path, path);
+    var bach = new Probe(Path.of(""));
     bach.help();
     assertLinesMatch(
         List.of(
@@ -69,14 +63,14 @@ class BachTests {
             "Provided tools",
             "  bach",
             ">> MORE FOUNDATION TOOLS >>"),
-        out.toString().lines().collect(Collectors.toList()));
+        bach.lines());
   }
 
   @Test
   void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
-    class CustomBach extends Bach {
-      private CustomBach(StringWriter out) {
-        super(new PrintWriter(out), new PrintWriter(System.err), Path.of(""), Path.of(""));
+    class Custom extends Probe {
+      private Custom() {
+        super(Path.of(""));
       }
 
       @SuppressWarnings("unused")
@@ -86,35 +80,33 @@ class BachTests {
       public void version() {}
     }
 
-    var actual = new StringWriter();
-    var custom = new CustomBach(actual);
+    var custom = new Custom();
     custom.help();
     assertLinesMatch(
         List.of(
             ">> PREFIX >>",
             "  build (Bach)",
-            "  custom (CustomBach)",
+            "  custom (Custom)",
             "  help (Bach)",
             "  info (Bach)",
             "  validate (Bach)",
-            "  version (CustomBach)",
+            "  version (Custom)",
             ">> SUFFIX >>"),
-        actual.toString().lines().collect(Collectors.toList()));
+        custom.lines());
   }
 
   @Test
   void validateWorksInDefaultFileSystemRootDirectories() {
-    var out = new StringWriter();
     for (var path : FileSystems.getDefault().getRootDirectories()) {
       if (Files.isDirectory(path)) {
-        var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), path, path);
-        bach.validate();
+        var bach = new Probe(path);
+        assertDoesNotThrow(bach::validate);
       }
     }
   }
 
   @Test
-  void version() {
+  void versionIsLegalByModuleDescriptorVersionsParseFactoryContract() {
     assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(Bach.VERSION));
   }
 }
