@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T10:26:28.488075600Z
+// THIS FILE WAS GENERATED ON 2019-08-30T19:18:03.804032400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -18,7 +18,6 @@
 
 // default package
 
-import static java.util.stream.Collectors.toList;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -53,9 +53,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.lang.model.SourceVersion;
 
 public class Bach {
 
@@ -161,6 +163,7 @@ public class Bach {
   public void build() {
     info();
     validate();
+    resolve();
   }
 
   public void info() {
@@ -170,6 +173,10 @@ public class Bach {
 
   public void validate() {
     configuration.validate();
+  }
+
+  public void resolve() {
+    Resolver.resolve(this);
   }
 
   public void version() {
@@ -282,98 +289,125 @@ public class Bach {
     }
   }
 
-  /** Load required modules. */
-  static class Library {
+  /** Resolves required modules. */
+  static class Resolver {
 
-    public static void main(String... args) {
-      System.out.println("Library.main(" + List.of(args) + ")");
-      System.out.println("  requires -> " + RequiresMap.of(args));
-      var modulePath = new ModulePath(Path.of("demo/lib"));
-      System.out.println("--module-path=" + List.of(modulePath.paths));
-      System.out.println("  modules  -> " + modulePath.modules());
-      System.out.println("  requires -> " + modulePath.requires());
-      var sourcePath = new SourcePath(Path.of("demo/src"));
-      System.out.println("--module-source-path=" + List.of(sourcePath.paths));
-      System.out.println("  modules  -> " + sourcePath.modules());
-      System.out.println("  requires -> " + sourcePath.requires());
+    static void resolve(Bach bach, String... args) {
+      var library = Group.parseModulePath(bach.configuration.getLibraryPaths());
+      bach.out.println("Library of -> " + bach.configuration.getSourceDirectories());
+      bach.out.println("  modules  -> " + library.modules);
+      bach.out.println("  requires -> " + library.requires);
+
+      var sources = Group.parseSourcePath(bach.configuration.getSourceDirectories());
+      bach.out.println("Sources of -> " + bach.configuration.getSourceDirectories());
+      bach.out.println("  modules  -> " + sources.modules);
+      bach.out.println("  requires -> " + sources.requires);
     }
 
-    static class RequiresMap extends TreeMap<String, Set<Version>> {
+    static class Group {
 
-      static RequiresMap of(String... strings) {
-        var map = new RequiresMap();
-        for (var string : strings) {
+      static Group parseStrings(List<String> declaredModules, List<String> requires) {
+        var map = new TreeMap<String, Set<Version>>();
+        for (var string : requires) {
           var versionMarkerIndex = string.indexOf('@');
           var any = versionMarkerIndex == -1;
           var module = any ? string : string.substring(0, versionMarkerIndex);
           var version = any ? null : Version.parse(string.substring(versionMarkerIndex + 1));
-          map.merge(module, any ? Set.of() : Set.of(version));
+          map.merge(module, any ? Set.of() : Set.of(version), Util::concat);
         }
-        return map;
+        return new Group(new TreeSet<>(declaredModules), map);
       }
 
-      static <E> Stream<E> merge(Set<E> set1, Set<E> set2) {
-        return Stream.concat(set1.stream(), set2.stream()).distinct();
+      static final Pattern REQUIRES_PATTERN =
+          Pattern.compile(
+              "(?:requires)" // key word
+                  + "(?:\\s+[\\w.]+)?" // optional modifiers
+                  + "\\s+([\\w.]+)" // module name
+                  + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                  + ";"); // end marker
+
+      static Group parseModulePath(Collection<Path> modulePath) {
+        var declaredModules = new TreeSet<String>();
+        var map = new TreeMap<String, Set<Version>>();
+        findAll(modulePath.toArray(Path[]::new))
+            .peek(descriptor -> declaredModules.add(descriptor.name()))
+            .map(ModuleDescriptor::requires)
+            .flatMap(Set::stream)
+            .distinct()
+            .forEach(requires -> merge(map, requires));
+        return new Group(declaredModules, map);
       }
 
-      void merge(ModuleDescriptor.Requires requires) {
-        merge(requires.name(), requires.compiledVersion().map(Set::of).orElse(Set.of()));
+      static void merge(Map<String, Set<Version>> map, ModuleDescriptor.Requires requires) {
+        var key = requires.name();
+        var value = requires.compiledVersion().map(Set::of).orElse(Set.of());
+        map.merge(key, value, Util::concat);
       }
 
-      void merge(String key, String version) {
-        merge(key, version.isEmpty() ? Set.of() : Set.of(Version.parse(version)));
-      }
-
-      void merge(String key, Set<Version> value) {
-        merge(key, value, (oldSet, newSet) -> Set.of(merge(oldSet, newSet).toArray(Version[]::new)));
-      }
-
-      RequiresMap validate() {
-        var invalids = entrySet().stream().filter(e -> e.getValue().size() > 1).collect(toList());
-        if (invalids.isEmpty()) {
-          return this;
-        }
-        throw new IllegalStateException("Multiple versions mapped: " + invalids);
-      }
-    }
-
-    static class ModulePath {
-
-      final Path[] paths;
-
-      ModulePath(Path... paths) {
-        this.paths = paths;
-      }
-
-      Stream<ModuleDescriptor> findAll() {
+      static Stream<ModuleDescriptor> findAll(Path... paths) {
         return ModuleFinder.of(paths).findAll().stream().map(ModuleReference::descriptor);
       }
 
-      public Set<String> modules() {
-        return findAll().map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+      static Group parseSourcePath(Iterable<Path> sourcePaths) {
+        var declaredModules = new TreeSet<String>();
+        var map = new TreeMap<String, Set<Version>>();
+        for (var sourcePath : sourcePaths) {
+          try (var directoryStream = Files.list(sourcePath)) {
+            var directories =
+                directoryStream
+                    .filter(Files::isDirectory)
+                    .filter(path -> SourceVersion.isName(path.getFileName().toString()))
+                    .collect(Collectors.toList());
+            directories.stream()
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .forEach(declaredModules::add);
+            for (var root : directories)
+              try (var stream = Files.find(root, 9, (p, __) -> Util.isModuleInfo(p))) {
+                for (var moduleInfo : stream.collect(Collectors.toSet())) {
+                  var source = Files.readString(moduleInfo);
+                  var requiresMatcher = REQUIRES_PATTERN.matcher(source);
+                  while (requiresMatcher.find()) {
+                    var requiredName = requiresMatcher.group(1);
+                    var requiredVersion = requiresMatcher.group(2);
+                    if (requiredVersion == null) {
+                      map.putIfAbsent(requiredName, Set.of());
+                      continue;
+                    }
+                    map.merge(requiredName, Set.of(Version.parse(requiredVersion)), Util::concat);
+                  }
+                }
+              }
+          } catch (IOException e) {
+            throw new UncheckedIOException("list: " + sourcePath, e);
+          }
+        }
+        return new Group(declaredModules, map);
       }
 
-      public RequiresMap requires() {
-        var map = new RequiresMap();
-        findAll().map(ModuleDescriptor::requires).flatMap(Set::stream).forEach(map::merge);
-        return map.validate();
-      }
-    }
 
-    static class SourcePath {
+      final Set<String> modules;
+      final Map<String, Set<Version>> requires;
 
-      final Path[] paths;
-
-      SourcePath(Path... paths) {
-        this.paths = paths;
+      private Group(Set<String> modules, Map<String, Set<Version>> requires) {
+        this.modules = modules;
+        this.requires = requires;
       }
 
-      public Set<String> modules() {
-        return Set.of();
+      public Set<String> getDeclaredModules() {
+        return modules;
       }
 
-      public RequiresMap requires() {
-        return new RequiresMap();
+      public Set<String> getRequiredModules() {
+        return requires.keySet();
+      }
+
+      public Optional<Version> getRequiredVersion(String requiredModule) {
+        var versions = requires.get(requiredModule);
+        if (versions.size() > 1) {
+          throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
+        }
+        return versions.stream().findFirst();
       }
     }
   }
@@ -441,6 +475,10 @@ public class Bach {
   /** Static helpers. */
   static class Util {
 
+    static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
+      return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
+    }
+
     static Optional<Method> findApiMethod(Class<?> container, String name) {
       try {
         var method = container.getMethod(name);
@@ -454,6 +492,10 @@ public class Bach {
       if (method.getDeclaringClass().equals(Object.class)) return false;
       if (Modifier.isStatic(method.getModifiers())) return false;
       return method.getParameterCount() == 0;
+    }
+
+    static boolean isModuleInfo(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
 
     static List<Path> list(Path directory) {

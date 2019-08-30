@@ -25,12 +25,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*BODY*/
 /** Static helpers. */
 /*STATIC*/ class Util {
+
+  static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
+    return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
+  }
 
   static Optional<Method> findApiMethod(Class<?> container, String name) {
     try {
@@ -45,6 +52,10 @@ import java.util.stream.Collectors;
     if (method.getDeclaringClass().equals(Object.class)) return false;
     if (Modifier.isStatic(method.getModifiers())) return false;
     return method.getParameterCount() == 0;
+  }
+
+  static boolean isModuleInfo(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
   }
 
   static List<Path> list(Path directory) {

@@ -135,6 +135,7 @@ public class Bach {
   public void build() {
     info();
     validate();
+    resolve();
   }
 
   public void info() {
@@ -144,6 +145,10 @@ public class Bach {
 
   public void validate() {
     configuration.validate();
+  }
+
+  public void resolve() {
+    Resolver.resolve(this);
   }
 
   public void version() {

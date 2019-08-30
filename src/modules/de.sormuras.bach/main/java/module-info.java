@@ -18,6 +18,7 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
 
+  requires java.compiler;
   requires java.net.http;
 
   uses java.util.spi.ToolProvider;

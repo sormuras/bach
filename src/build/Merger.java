@@ -31,7 +31,7 @@ class Merger {
   static Path SOURCE = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
   static Path TARGET = Path.of("target", "merge");
   static List<String> TYPES =
-      List.of("Configuration.java", "Library.java", "Transfer.java", "Util.java");
+      List.of("Configuration.java", "Resolver.java", "Transfer.java", "Util.java");
 
   public static void main(String[] args) throws Exception {
     System.out.printf("Merging %d types into Bach.java {%n", TYPES.size());
