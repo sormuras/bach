@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,9 +18,8 @@ class ProjectTests {
   @ParameterizedTest
   @MethodSource("projects")
   void help(Path home) {
-    var out = new StringWriter();
-    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), home, home);
-    assertDoesNotThrow(bach::help, "Running bach.help() failed in: " + home);
+    var bach = new Probe(home);
+    assertDoesNotThrow(bach::help, "bach::help failed: " + home);
     assertLinesMatch(
         List.of(
             "F1! F1! F1!",
@@ -31,27 +27,28 @@ class ProjectTests {
             ">> METHODS AND DECLARING CLASSES >>",
             "Provided tools",
             ">> NAMES OF TOOLS >>"),
-        out.toString().lines().collect(Collectors.toList()));
+        bach.lines());
   }
 
   @ParameterizedTest
   @MethodSource("projects")
   void info(Path home) {
-    var out = new StringWriter();
-    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), home, home);
-    assertDoesNotThrow(bach::info, "Running bach.info() failed in: " + home);
+    var bach = new Probe(home);
+    assertDoesNotThrow(bach::info, "bach::info failed: " + home);
     assertLinesMatch(
-        List.of("Bach (.+)", "  home='" + home + "' -> " + home.toUri(), "  work='" + home + "'"),
-        out.toString().lines().collect(Collectors.toList()));
+        List.of(
+            "Bach \\(" + Bach.VERSION + ".*\\)",
+            "  home='" + home + "' -> " + home.toUri(),
+            "  work='" + home + "'"),
+        bach.lines());
   }
 
   @ParameterizedTest
   @MethodSource("projects")
   void validate(Path home) {
-    var out = new StringWriter();
-    var bach = new Bach(new PrintWriter(out), new PrintWriter(System.err), home, home);
-    assertDoesNotThrow(bach::validate, "Running bach.validate() failed in: " + home);
-    assertTrue(out.toString().isBlank());
+    var bach = new Probe(home);
+    assertDoesNotThrow(bach::validate, "bach::validate failed: " + home);
+    assertTrue(bach.out.toString().isBlank());
   }
 
   private static Stream<Path> projects() throws Exception {
