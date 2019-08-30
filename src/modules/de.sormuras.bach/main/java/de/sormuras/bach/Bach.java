@@ -74,8 +74,12 @@ public class Bach {
       var argument = arguments.pop();
       try {
         switch (argument) {
-          case "build": build(); continue;
-          case "validate": validate(); continue;
+          case "build":
+            build();
+            continue;
+          case "validate":
+            validate();
+            continue;
         }
         // Try Bach API method w/o parameter -- single argument is consumed
         var method = Util.findApiMethod(getClass(), argument);
@@ -141,18 +145,20 @@ public class Bach {
 
   public void validate() {
     class Error extends AssertionError {
-      private Error(String expected, String actual, Object hint) {
-        super(String.format("expected %s to be %s: %s", expected, actual, hint));
+      private Error(String expected, Object hint) {
+        super(String.format("expected %s: %s", expected, hint));
       }
     }
-    if (!Files.isDirectory(home)) throw new Error("home", "a directory", home.toUri());
+    if (!Files.isDirectory(home)) throw new Error("home is a directory", home.toUri());
+    if (Util.list(home, Files::isDirectory).size() == 0)
+      throw new Error("home contains a directory", home.toUri());
     if (Files.exists(work)) {
-      if (!Files.isDirectory(work)) throw new Error("work", "a directory: %s", work.toUri());
-      if (!work.toFile().canWrite()) throw new Error("work", "writable: %s", work.toUri());
+      if (!Files.isDirectory(work)) throw new Error("work is a directory: %s", work.toUri());
+      if (!work.toFile().canWrite()) throw new Error("work is writable: %s", work.toUri());
     } else {
       var parentOfWork = work.toAbsolutePath().getParent();
       if (parentOfWork != null && !parentOfWork.toFile().canWrite())
-        throw new Error("parent of work", "writable", parentOfWork.toUri());
+        throw new Error("parent of work to be writable", parentOfWork.toUri());
     }
   }
 

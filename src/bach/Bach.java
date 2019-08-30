@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T03:16:39.909225300Z
+// THIS FILE WAS GENERATED ON 2019-08-30T04:21:49.769167400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -41,6 +41,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -87,8 +88,12 @@ public class Bach {
       var argument = arguments.pop();
       try {
         switch (argument) {
-          case "build": build(); continue;
-          case "validate": validate(); continue;
+          case "build":
+            build();
+            continue;
+          case "validate":
+            validate();
+            continue;
         }
         // Try Bach API method w/o parameter -- single argument is consumed
         var method = Util.findApiMethod(getClass(), argument);
@@ -154,18 +159,20 @@ public class Bach {
 
   public void validate() {
     class Error extends AssertionError {
-      private Error(String expected, String actual, Object hint) {
-        super(String.format("expected %s to be %s: %s", expected, actual, hint));
+      private Error(String expected, Object hint) {
+        super(String.format("expected %s: %s", expected, hint));
       }
     }
-    if (!Files.isDirectory(home)) throw new Error("home", "a directory", home.toUri());
+    if (!Files.isDirectory(home)) throw new Error("home is a directory", home.toUri());
+    if (Util.list(home, Files::isDirectory).size() == 0)
+      throw new Error("home contains a directory", home.toUri());
     if (Files.exists(work)) {
-      if (!Files.isDirectory(work)) throw new Error("work", "a directory: %s", work.toUri());
-      if (!work.toFile().canWrite()) throw new Error("work", "writable: %s", work.toUri());
+      if (!Files.isDirectory(work)) throw new Error("work is a directory: %s", work.toUri());
+      if (!work.toFile().canWrite()) throw new Error("work is writable: %s", work.toUri());
     } else {
       var parentOfWork = work.toAbsolutePath().getParent();
       if (parentOfWork != null && !parentOfWork.toFile().canWrite())
-        throw new Error("parent of work", "writable", parentOfWork.toUri());
+        throw new Error("parent of work to be writable", parentOfWork.toUri());
     }
   }
 
@@ -174,7 +181,7 @@ public class Bach {
   }
 
   /** Load required modules. */
-  public static class Library {
+  static class Library {
 
     public static void main(String... args) {
       System.out.println("Library.main(" + List.of(args) + ")");
@@ -270,7 +277,7 @@ public class Bach {
   }
 
   /** Static helpers. */
-  public static class Util {
+  static class Util {
 
     static Optional<Method> findApiMethod(Class<?> container, String name) {
       try {
@@ -285,6 +292,18 @@ public class Bach {
       if (method.getDeclaringClass().equals(Object.class)) return false;
       if (Modifier.isStatic(method.getModifiers())) return false;
       return method.getParameterCount() == 0;
+    }
+
+    static List<Path> list(Path directory) {
+      return list(directory, __ -> true);
+    }
+
+    static List<Path> list(Path directory, Predicate<Path> filter) {
+      try {
+        return Files.list(directory).filter(filter).sorted().collect(Collectors.toList());
+      } catch (IOException e) {
+        throw new UncheckedIOException("list directory failed: " + directory, e);
+      }
     }
   }
 }
