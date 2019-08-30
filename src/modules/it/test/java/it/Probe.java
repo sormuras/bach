@@ -18,6 +18,7 @@
 package it;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Configuration;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ class Probe extends Bach {
   final StringWriter out;
 
   Probe(Path home) {
-    this(home, home);
+    this(home, Path.of("bin"));
   }
 
   Probe(Path home, Path work) {
@@ -37,7 +38,7 @@ class Probe extends Bach {
   }
 
   private Probe(StringWriter out, Path home, Path work) {
-    super(new PrintWriter(out), new PrintWriter(System.err), home, work);
+    super(new PrintWriter(out), new PrintWriter(System.err), Configuration.of(home, work));
     this.out = out;
   }
 

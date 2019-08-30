@@ -41,8 +41,8 @@ class BachTests {
     var bach = Bach.of();
     assertNotNull(bach.out);
     assertNotNull(bach.err);
-    assertEquals(Path.of(""), bach.home);
-    assertEquals(Path.of("bin"), bach.work);
+    assertEquals(Path.of(""), bach.configuration.getHomeDirectory());
+    assertEquals(Path.of("bin"), bach.configuration.getWorkspaceDirectory());
   }
 
   @Test

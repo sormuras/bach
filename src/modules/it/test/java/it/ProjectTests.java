@@ -67,8 +67,11 @@ class ProjectTests {
     assertLinesMatch(
         List.of(
             "Bach \\(" + Bach.VERSION + ".*\\)",
-            "  home='" + home + "' -> " + home.toUri(),
-            "  work='" + home + "'"),
+            "  home = '" + home + "' -> " + home.toUri(),
+            "  bin = '" + home.resolve("bin") + "'",
+            "  lib = [" + home.resolve("lib") + "]",
+            "  src = [" + home.resolve("src") + "]"
+        ),
         bach.lines());
   }
 
@@ -79,7 +82,7 @@ class ProjectTests {
     void build(@TempDir Path work) {
       var home = PROJECTS.resolve("empty");
       var e = assertThrows(Error.class, () -> new Probe(home, work).build());
-      assertEquals("expected home contains a directory: " + home.toUri(), e.getMessage());
+      assertEquals("expected that home contains a directory: " + home.toUri(), e.getMessage());
     }
   }
 

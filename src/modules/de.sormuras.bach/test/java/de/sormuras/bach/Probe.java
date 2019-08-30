@@ -36,7 +36,7 @@ class Probe extends Bach {
   }
 
   private Probe(StringWriter out, Path home, Path work) {
-    super(new PrintWriter(out), new PrintWriter(System.err), home, work);
+    super(new PrintWriter(out), new PrintWriter(System.err), Configuration.of());
     this.out = out;
   }
 
