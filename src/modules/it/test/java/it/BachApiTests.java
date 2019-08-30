@@ -17,12 +17,6 @@ class BachApiTests {
   }
 
   @Test
-  void build(@TempDir Path temp) {
-    var bach = new Probe(temp);
-    assertDoesNotThrow(bach::build);
-  }
-
-  @Test
   void version(@TempDir Path temp) {
     var bach = new Probe(temp);
     assertDoesNotThrow(bach::version);
