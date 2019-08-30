@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T04:21:49.769167400Z
+// THIS FILE WAS GENERATED ON 2019-08-30T09:14:09.951044Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -35,7 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -51,18 +53,21 @@ public class Bach {
   public static String VERSION = "2-ea";
 
   /**
-   * Create new Bach instance with default properties.
+   * Create new Bach instance with default configuration.
    *
    * @return new default Bach instance
    */
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    var home = Path.of("");
-    var work = Path.of("bin");
-    return new Bach(out, err, home, work);
+    return new Bach(out, err, Configuration.of());
   }
 
+  /**
+   * Main entry-point.
+   *
+   * @param args List of API method or tool names.
+   */
   public static void main(String... args) {
     var bach = Bach.of();
     bach.main(args.length == 0 ? List.of("build") : List.of(args));
@@ -70,16 +75,14 @@ public class Bach {
 
   /** Text-output writer. */
   final PrintWriter out, err;
-  /** Home directory. */
-  final Path home;
-  /** Workspace directory. */
-  final Path work;
 
-  public Bach(PrintWriter out, PrintWriter err, Path home, Path work) {
-    this.out = out;
-    this.err = err;
-    this.home = home;
-    this.work = work;
+  /** Configuration. */
+  final Configuration configuration;
+
+  public Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
+    this.out = Objects.requireNonNull(out, "out must not be null");
+    this.err = Objects.requireNonNull(err, "err must not be null");
+    this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
   }
 
   void main(List<String> args) {
@@ -153,31 +156,116 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    out.printf("  home='%s' -> %s%n", home, home.toUri());
-    out.printf("  work='%s'%n", work);
+    configuration.toStrings().forEach(line -> out.println("  " + line));
   }
 
   public void validate() {
-    class Error extends AssertionError {
-      private Error(String expected, Object hint) {
-        super(String.format("expected %s: %s", expected, hint));
-      }
-    }
-    if (!Files.isDirectory(home)) throw new Error("home is a directory", home.toUri());
-    if (Util.list(home, Files::isDirectory).size() == 0)
-      throw new Error("home contains a directory", home.toUri());
-    if (Files.exists(work)) {
-      if (!Files.isDirectory(work)) throw new Error("work is a directory: %s", work.toUri());
-      if (!work.toFile().canWrite()) throw new Error("work is writable: %s", work.toUri());
-    } else {
-      var parentOfWork = work.toAbsolutePath().getParent();
-      if (parentOfWork != null && !parentOfWork.toFile().canWrite())
-        throw new Error("parent of work to be writable", parentOfWork.toUri());
-    }
+    configuration.validate();
   }
 
   public void version() {
     out.println(getBanner());
+  }
+
+  public static class Configuration {
+
+    public static Configuration of() {
+      var home = Path.of("");
+      var bin = Path.of("bin");
+      return of(home, bin);
+    }
+
+    public static Configuration of(Path home, Path bin) {
+      var lib = List.of(Path.of("lib"));
+      var src = List.of(Path.of("src"));
+      return new Configuration(home, bin, lib, src);
+    }
+
+    private final Path home;
+    private final Path bin;
+    private final List<Path> lib;
+    private final List<Path> src;
+
+    private Configuration(Path home, Path bin, List<Path> lib, List<Path> src) {
+      this.home = Objects.requireNonNull(home, "home must not be null");
+      this.bin = home(Objects.requireNonNull(bin, "bin must not be null"));
+      this.lib = List.of(requireNonEmpty(lib).stream().map(this::home).toArray(Path[]::new));
+      this.src = List.of(requireNonEmpty(src).stream().map(this::home).toArray(Path[]::new));
+    }
+
+    private static <C extends Collection<?>> C requireNonEmpty(C collection) {
+      if (collection.isEmpty()) {
+        throw new IllegalArgumentException("collection must not be empty");
+      }
+      return collection;
+    }
+
+    private Path home(Path path) {
+      return path.isAbsolute() ? path : home.resolve(path);
+    }
+
+    public static class Error extends AssertionError {
+      private Error(String expected, Object hint) {
+        super(String.format("expected that %s: %s", expected, hint));
+      }
+    }
+
+    final void validate() {
+      requireDirectory(home);
+      if (Util.list(home, Files::isDirectory).size() == 0)
+        throw new Error("home contains a directory", home.toUri());
+      if (Files.exists(bin)) {
+        requireDirectory(bin);
+        if (!bin.toFile().canWrite()) throw new Error("bin is writable: %s", bin.toUri());
+      } else {
+        var parentOfBin = bin.toAbsolutePath().getParent();
+        if (parentOfBin != null && !parentOfBin.toFile().canWrite())
+          throw new Error("parent of work is writable", parentOfBin.toUri());
+      }
+      requireDirectoryIfExists(getLibraryDirectory());
+      getSourceDirectories().forEach(this::requireDirectory);
+    }
+
+    private void requireDirectoryIfExists(Path path) {
+      if (Files.exists(path)) requireDirectory(path);
+    }
+
+    private void requireDirectory(Path path) {
+      if (!Files.isDirectory(path)) throw new Error("path is a directory: %s", path.toUri());
+    }
+
+    public Path getHomeDirectory() {
+      return home;
+    }
+
+    public Path getWorkspaceDirectory() {
+      return bin;
+    }
+
+    public Path getLibraryDirectory() {
+      return lib.get(0);
+    }
+
+    public List<Path> getLibraryDirectories() {
+      return lib;
+    }
+
+    public List<Path> getSourceDirectories() {
+      return src;
+    }
+
+    @Override
+    public String toString() {
+      return "Configuration [" + String.join(", ", toStrings()) + "]";
+    }
+
+    public List<String> toStrings() {
+      return List.of(
+          String.format("home = '%s' -> %s", home, home.toUri()),
+          String.format("bin = '%s'", bin),
+          String.format("lib = %s", lib),
+          String.format("src = %s", src));
+    }
   }
 
   /** Load required modules. */
