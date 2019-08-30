@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T09:14:09.951044Z
+// THIS FILE WAS GENERATED ON 2019-08-30T09:56:52.380679700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -167,60 +167,64 @@ public class Bach {
     out.println(getBanner());
   }
 
-  public static class Configuration {
+  public static final class Configuration {
+
+    private static class ValidationError extends AssertionError {
+      private ValidationError(String expected, Object hint) {
+        super(String.format("expected that %s: %s", expected, hint));
+      }
+    }
 
     public static Configuration of() {
       var home = Path.of("");
-      var bin = Path.of("bin");
-      return of(home, bin);
+      var work = Path.of("bin");
+      return of(home, work);
     }
 
-    public static Configuration of(Path home, Path bin) {
+    public static Configuration of(Path home, Path work) {
       var lib = List.of(Path.of("lib"));
       var src = List.of(Path.of("src"));
-      return new Configuration(home, bin, lib, src);
+      return new Configuration(home, work, lib, src);
     }
 
     private final Path home;
-    private final Path bin;
-    private final List<Path> lib;
-    private final List<Path> src;
+    private final Path work;
+    private final List<Path> libraries;
+    private final List<Path> sources;
 
-    private Configuration(Path home, Path bin, List<Path> lib, List<Path> src) {
+    private Configuration(Path home, Path work, List<Path> libraries, List<Path> sources) {
       this.home = Objects.requireNonNull(home, "home must not be null");
-      this.bin = home(Objects.requireNonNull(bin, "bin must not be null"));
-      this.lib = List.of(requireNonEmpty(lib).stream().map(this::home).toArray(Path[]::new));
-      this.src = List.of(requireNonEmpty(src).stream().map(this::home).toArray(Path[]::new));
-    }
-
-    private static <C extends Collection<?>> C requireNonEmpty(C collection) {
-      if (collection.isEmpty()) {
-        throw new IllegalArgumentException("collection must not be empty");
-      }
-      return collection;
+      this.work = home(Objects.requireNonNull(work, "work must not be null"));
+      this.libraries = home(requireNonEmpty(libraries, "libraries"));
+      this.sources = home(requireNonEmpty(sources, "sources"));
     }
 
     private Path home(Path path) {
       return path.isAbsolute() ? path : home.resolve(path);
     }
 
-    public static class Error extends AssertionError {
-      private Error(String expected, Object hint) {
-        super(String.format("expected that %s: %s", expected, hint));
+    private List<Path> home(List<Path> paths) {
+      return List.of(paths.stream().map(this::home).toArray(Path[]::new));
+    }
+
+    private static <C extends Collection<?>> C requireNonEmpty(C collection, String name) {
+      if (Objects.requireNonNull(collection, name + " must not be null").isEmpty()) {
+        throw new IllegalArgumentException(name + " must not be empty");
       }
+      return collection;
     }
 
     final void validate() {
       requireDirectory(home);
       if (Util.list(home, Files::isDirectory).size() == 0)
-        throw new Error("home contains a directory", home.toUri());
-      if (Files.exists(bin)) {
-        requireDirectory(bin);
-        if (!bin.toFile().canWrite()) throw new Error("bin is writable: %s", bin.toUri());
+        throw new ValidationError("home contains a directory", home.toUri());
+      if (Files.exists(work)) {
+        requireDirectory(work);
+        if (!work.toFile().canWrite()) throw new ValidationError("bin is writable: %s", work.toUri());
       } else {
-        var parentOfBin = bin.toAbsolutePath().getParent();
+        var parentOfBin = work.toAbsolutePath().getParent();
         if (parentOfBin != null && !parentOfBin.toFile().canWrite())
-          throw new Error("parent of work is writable", parentOfBin.toUri());
+          throw new ValidationError("parent of work is writable", parentOfBin.toUri());
       }
       requireDirectoryIfExists(getLibraryDirectory());
       getSourceDirectories().forEach(this::requireDirectory);
@@ -231,7 +235,8 @@ public class Bach {
     }
 
     private void requireDirectory(Path path) {
-      if (!Files.isDirectory(path)) throw new Error("path is a directory: %s", path.toUri());
+      if (!Files.isDirectory(path))
+        throw new ValidationError("path is a directory: %s", path.toUri());
     }
 
     public Path getHomeDirectory() {
@@ -239,19 +244,19 @@ public class Bach {
     }
 
     public Path getWorkspaceDirectory() {
-      return bin;
+      return work;
     }
 
     public Path getLibraryDirectory() {
-      return lib.get(0);
+      return libraries.get(0);
     }
 
-    public List<Path> getLibraryDirectories() {
-      return lib;
+    public List<Path> getLibraryPaths() {
+      return libraries;
     }
 
     public List<Path> getSourceDirectories() {
-      return src;
+      return sources;
     }
 
     @Override
@@ -262,9 +267,9 @@ public class Bach {
     public List<String> toStrings() {
       return List.of(
           String.format("home = '%s' -> %s", home, home.toUri()),
-          String.format("bin = '%s'", bin),
-          String.format("lib = %s", lib),
-          String.format("src = %s", src));
+          String.format("workspace = '%s'", getWorkspaceDirectory()),
+          String.format("library paths = %s", getLibraryPaths()),
+          String.format("source directories = %s", getSourceDirectories()));
     }
   }
 

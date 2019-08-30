@@ -37,7 +37,7 @@ class SanityTests {
   private static final String BACH = "src/bach/Bach.java";
 
   private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
-      List.of(">> INITIALIZATION >>", "  home='' -> " + Path.of("").toUri(), "  work='bin'");
+      List.of(">> INIT >>", "  home = '' -> " + Path.of("").toUri(), ">> DONE >>");
 
   @Test
   @DisplayName("jshell Bach.jsh")
