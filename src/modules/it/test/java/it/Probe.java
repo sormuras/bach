@@ -15,7 +15,7 @@ class Probe extends Bach {
     this(home, home);
   }
 
-  private Probe(Path home, Path work) {
+  Probe(Path home, Path work) {
     this(new StringWriter(), home, work);
   }
 

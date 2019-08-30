@@ -28,10 +28,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("BachTests (de.sormuras.bach)")
 class BachTests {
   @Test
   void banner() {
