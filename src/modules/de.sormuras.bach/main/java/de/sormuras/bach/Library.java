@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 
 /*BODY*/
 /** Load required modules. */
-public /*STATIC*/ class Library {
+/*STATIC*/ class Library {
 
   public static void main(String... args) {
     System.out.println("Library.main(" + List.of(args) + ")");

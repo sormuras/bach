@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /*BODY*/
 /** Static helpers. */
-public /*STATIC*/ class Util {
+/*STATIC*/ class Util {
 
   static Optional<Method> findApiMethod(Class<?> container, String name) {
     try {
