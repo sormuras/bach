@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T09:56:52.380679700Z
+// THIS FILE WAS GENERATED ON 2019-08-30T10:26:28.488075600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -31,12 +31,21 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -366,6 +375,66 @@ public class Bach {
       public RequiresMap requires() {
         return new RequiresMap();
       }
+    }
+  }
+
+  /** File transfer. */
+  static class Transfer {
+
+    final PrintWriter out, err;
+    final HttpClient client;
+
+    Transfer(PrintWriter out, PrintWriter err) {
+      this(out, err, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
+    }
+
+    Transfer(PrintWriter out, PrintWriter err, HttpClient client) {
+      this.out = out;
+      this.err = err;
+      this.client = client;
+    }
+
+    Path getFile(Path path, URI uri) {
+      var request = HttpRequest.newBuilder(uri).GET();
+      if (Files.exists(path)) {
+        try {
+          var etagBytes = (byte[]) Files.getAttribute(path, "user:etag");
+          var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
+          request.setHeader("If-None-Match", etag);
+        } catch (Exception e) {
+          err.println("Couldn't get 'user:etag' file attribute: " + e);
+        }
+      }
+      try {
+        var handler = HttpResponse.BodyHandlers.ofFile(path);
+        var response = client.send(request.build(), handler);
+        if (response.statusCode() == 200) {
+          var etagHeader = response.headers().firstValue("etag");
+          if (etagHeader.isPresent()) {
+            try {
+              var etag = etagHeader.get();
+              Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
+            } catch (Exception e) {
+              err.println("Couldn't set 'user:etag' file attribute: " + e);
+            }
+          }
+          var lastModifiedHeader = response.headers().firstValue("last-modified");
+          if (lastModifiedHeader.isPresent()) {
+            try {
+              var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+              var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
+              var fileTime = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+              Files.setLastModifiedTime(path, fileTime);
+            } catch (Exception e) {
+              err.println("Couldn't set last modified file attribute: " + e);
+            }
+          }
+          out.println(path + " <- " + uri);
+        }
+      } catch (IOException | InterruptedException e) {
+        err.println("Failed to load: " + uri + " -> " + e);
+      }
+      return path;
     }
   }
 
