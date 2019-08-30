@@ -22,11 +22,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -37,18 +36,21 @@ public class Bach {
   public static String VERSION = "2-ea";
 
   /**
-   * Create new Bach instance with default properties.
+   * Create new Bach instance with default configuration.
    *
    * @return new default Bach instance
    */
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    var home = Path.of("");
-    var work = Path.of("bin");
-    return new Bach(out, err, home, work);
+    return new Bach(out, err, Configuration.of());
   }
 
+  /**
+   * Main entry-point.
+   *
+   * @param args List of API method or tool names.
+   */
   public static void main(String... args) {
     var bach = Bach.of();
     bach.main(args.length == 0 ? List.of("build") : List.of(args));
@@ -56,16 +58,14 @@ public class Bach {
 
   /** Text-output writer. */
   final PrintWriter out, err;
-  /** Home directory. */
-  final Path home;
-  /** Workspace directory. */
-  final Path work;
 
-  public Bach(PrintWriter out, PrintWriter err, Path home, Path work) {
-    this.out = out;
-    this.err = err;
-    this.home = home;
-    this.work = work;
+  /** Configuration. */
+  final Configuration configuration;
+
+  public Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
+    this.out = Objects.requireNonNull(out, "out must not be null");
+    this.err = Objects.requireNonNull(err, "err must not be null");
+    this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
   }
 
   void main(List<String> args) {
@@ -139,27 +139,11 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    out.printf("  home='%s' -> %s%n", home, home.toUri());
-    out.printf("  work='%s'%n", work);
+    configuration.toStrings().forEach(line -> out.println("  " + line));
   }
 
   public void validate() {
-    class Error extends AssertionError {
-      private Error(String expected, Object hint) {
-        super(String.format("expected %s: %s", expected, hint));
-      }
-    }
-    if (!Files.isDirectory(home)) throw new Error("home is a directory", home.toUri());
-    if (Util.list(home, Files::isDirectory).size() == 0)
-      throw new Error("home contains a directory", home.toUri());
-    if (Files.exists(work)) {
-      if (!Files.isDirectory(work)) throw new Error("work is a directory: %s", work.toUri());
-      if (!work.toFile().canWrite()) throw new Error("work is writable: %s", work.toUri());
-    } else {
-      var parentOfWork = work.toAbsolutePath().getParent();
-      if (parentOfWork != null && !parentOfWork.toFile().canWrite())
-        throw new Error("parent of work to be writable", parentOfWork.toUri());
-    }
+    configuration.validate();
   }
 
   public void version() {

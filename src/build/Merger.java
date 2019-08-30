@@ -30,7 +30,7 @@ import java.util.spi.ToolProvider;
 class Merger {
   static Path SOURCE = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
   static Path TARGET = Path.of("target", "merge");
-  static List<String> TYPES = List.of("Library.java", "Util.java");
+  static List<String> TYPES = List.of("Configuration.java", "Library.java", "Util.java");
 
   public static void main(String[] args) throws Exception {
     System.out.printf("Merging %d types into Bach.java {%n", TYPES.size());
