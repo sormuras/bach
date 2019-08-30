@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.spi.ToolProvider;
 
 /** Merge types of module/package {@code de.sormuras.bach} into {@code Bach.java}. */
 @SuppressWarnings("WeakerAccess")
@@ -54,6 +55,7 @@ class Merger {
     var generatedFile = TARGET.resolve("Bach.java");
     var publishedFile = Path.of("src", "bach", "Bach.java");
     write(generatedFile);
+    javac(generatedFile);
     copy(generatedFile, publishedFile);
   }
 
@@ -127,6 +129,16 @@ class Merger {
     Files.write(path, generated);
     System.out.println();
     System.out.println("Wrote " + path + " with " + generated.size() + " lines.");
+  }
+
+  void javac(Path path) {
+    var code =
+        ToolProvider.findFirst("javac")
+            .orElseThrow()
+            .run(System.out, System.err, "-Xlint:-serial", "-Werror", path.toString());
+    if (code != 0) {
+      throw new Error("javac failed to compile: " + path);
+    }
   }
 
   /** Copy if content changed. Ignoring initial line, which contains the generation date. */
