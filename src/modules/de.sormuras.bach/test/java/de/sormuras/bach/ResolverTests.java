@@ -18,7 +18,9 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
@@ -29,7 +31,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.spi.ToolProvider;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -47,12 +48,12 @@ class ResolverTests {
   }
 
   @Test
-  void ofModuleInfoSource() {
+  void ofModuleInfoSourceStrings() {
     assertABC(Resolver.of("module a {}", "module b { requires a; requires c/*2*/; }"));
   }
 
   @Test
-  void ofParsingSourceFiles(@TempDir Path temp) throws Exception {
+  void ofModuleInfoSourceFiles(@TempDir Path temp) throws Exception {
     declare(temp, "a", "module a {}");
     declare(temp, "b", "module b { requires a; requires c /*2*/;}");
     assertABC(Resolver.of(Set.of(temp)));
@@ -69,6 +70,14 @@ class ResolverTests {
     javac.run(System.out, System.err, "--module-path", temp.toString(), b.toString());
     Files.delete(temp.resolve("c/module-info.class")); // Make module "c" magically disappear...
     assertABC(Resolver.of(ModuleFinder.of(temp)));
+  }
+
+  @Test
+  void ofSystem() {
+    var system = Resolver.of(ModuleFinder.ofSystem());
+    assertTrue(system.getDeclaredModules().contains("java.base"));
+    assertFalse(system.getRequiredModules().contains("java.base")); // mandated requires are ignored
+    assertTrue(system.getDeclaredModules().size() > system.getRequiredModules().size());
   }
 
   private static Path declare(Path path, String name, String source) throws Exception {
