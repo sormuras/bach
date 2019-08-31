@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-30T19:18:03.804032400Z
+// THIS FILE WAS GENERATED ON 2019-08-31T07:01:32.125676400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -41,11 +41,13 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -57,7 +59,6 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.lang.model.SourceVersion;
 
 public class Bach {
 
@@ -292,123 +293,118 @@ public class Bach {
   /** Resolves required modules. */
   static class Resolver {
 
-    static void resolve(Bach bach, String... args) {
-      var library = Group.parseModulePath(bach.configuration.getLibraryPaths());
-      bach.out.println("Library of -> " + bach.configuration.getSourceDirectories());
+    private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+([\\w.]+)");
+    private static final Pattern MODULE_REQUIRES_PATTERN =
+        Pattern.compile(
+            "(?:requires)" // key word
+                + "(?:\\s+[\\w.]+)?" // optional modifiers
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                + ";"); // end marker
+
+    static void resolve(Bach bach) {
+      var library = of(ModuleFinder.of(bach.configuration.getLibraryPaths().toArray(Path[]::new)));
+      bach.out.println("Library of -> " + bach.configuration.getLibraryPaths());
       bach.out.println("  modules  -> " + library.modules);
       bach.out.println("  requires -> " + library.requires);
 
-      var sources = Group.parseSourcePath(bach.configuration.getSourceDirectories());
+      var sources = of(bach.configuration.getSourceDirectories());
       bach.out.println("Sources of -> " + bach.configuration.getSourceDirectories());
       bach.out.println("  modules  -> " + sources.modules);
       bach.out.println("  requires -> " + sources.requires);
     }
 
-    static class Group {
+    /** Command-line argument factory. */
+    static Resolver of(Collection<String> declaredModules, Iterable<String> requires) {
+      var map = new TreeMap<String, Set<Version>>();
+      for (var string : requires) {
+        var versionMarkerIndex = string.indexOf('@');
+        var any = versionMarkerIndex == -1;
+        var module = any ? string : string.substring(0, versionMarkerIndex);
+        var version = any ? null : Version.parse(string.substring(versionMarkerIndex + 1));
+        map.merge(module, any ? Set.of() : Set.of(version), Util::concat);
+      }
+      return new Resolver(new TreeSet<>(declaredModules), map);
+    }
 
-      static Group parseStrings(List<String> declaredModules, List<String> requires) {
-        var map = new TreeMap<String, Set<Version>>();
-        for (var string : requires) {
-          var versionMarkerIndex = string.indexOf('@');
-          var any = versionMarkerIndex == -1;
-          var module = any ? string : string.substring(0, versionMarkerIndex);
-          var version = any ? null : Version.parse(string.substring(versionMarkerIndex + 1));
-          map.merge(module, any ? Set.of() : Set.of(version), Util::concat);
+    static Resolver of(ModuleFinder finder) {
+      var declaredModules = new TreeSet<String>();
+      var requiredModules = new TreeMap<String, Set<Version>>();
+      finder.findAll().stream()
+          .map(ModuleReference::descriptor)
+          .peek(descriptor -> declaredModules.add(descriptor.name()))
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.MANDATED))
+          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
+          .distinct()
+          .forEach(
+              requires ->
+                  requiredModules.merge(
+                      requires.name(),
+                      requires.compiledVersion().map(Set::of).orElse(Set.of()),
+                      Util::concat));
+      return new Resolver(declaredModules, requiredModules);
+    }
+
+    static Resolver of(String... sources) {
+      var declaredModules = new TreeSet<String>();
+      var map = new TreeMap<String, Set<Version>>();
+      for (var source : sources) {
+        var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException("Expected module-info.java source, but got: " + source);
         }
-        return new Group(new TreeSet<>(declaredModules), map);
+        declaredModules.add(nameMatcher.group(1).trim());
+        var requiresMatcher = MODULE_REQUIRES_PATTERN.matcher(source);
+        while (requiresMatcher.find()) {
+          var name = requiresMatcher.group(1);
+          var version = requiresMatcher.group(2);
+          map.merge(name, version == null ? Set.of() : Set.of(Version.parse(version)), Util::concat);
+        }
       }
+      return new Resolver(declaredModules, map);
+    }
 
-      static final Pattern REQUIRES_PATTERN =
-          Pattern.compile(
-              "(?:requires)" // key word
-                  + "(?:\\s+[\\w.]+)?" // optional modifiers
-                  + "\\s+([\\w.]+)" // module name
-                  + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
-                  + ";"); // end marker
-
-      static Group parseModulePath(Collection<Path> modulePath) {
-        var declaredModules = new TreeSet<String>();
-        var map = new TreeMap<String, Set<Version>>();
-        findAll(modulePath.toArray(Path[]::new))
-            .peek(descriptor -> declaredModules.add(descriptor.name()))
-            .map(ModuleDescriptor::requires)
-            .flatMap(Set::stream)
-            .distinct()
-            .forEach(requires -> merge(map, requires));
-        return new Group(declaredModules, map);
-      }
-
-      static void merge(Map<String, Set<Version>> map, ModuleDescriptor.Requires requires) {
-        var key = requires.name();
-        var value = requires.compiledVersion().map(Set::of).orElse(Set.of());
-        map.merge(key, value, Util::concat);
-      }
-
-      static Stream<ModuleDescriptor> findAll(Path... paths) {
-        return ModuleFinder.of(paths).findAll().stream().map(ModuleReference::descriptor);
-      }
-
-      static Group parseSourcePath(Iterable<Path> sourcePaths) {
-        var declaredModules = new TreeSet<String>();
-        var map = new TreeMap<String, Set<Version>>();
-        for (var sourcePath : sourcePaths) {
-          try (var directoryStream = Files.list(sourcePath)) {
-            var directories =
-                directoryStream
-                    .filter(Files::isDirectory)
-                    .filter(path -> SourceVersion.isName(path.getFileName().toString()))
-                    .collect(Collectors.toList());
-            directories.stream()
-                .map(Path::getFileName)
-                .map(Path::toString)
-                .forEach(declaredModules::add);
-            for (var root : directories)
-              try (var stream = Files.find(root, 9, (p, __) -> Util.isModuleInfo(p))) {
-                for (var moduleInfo : stream.collect(Collectors.toSet())) {
-                  var source = Files.readString(moduleInfo);
-                  var requiresMatcher = REQUIRES_PATTERN.matcher(source);
-                  while (requiresMatcher.find()) {
-                    var requiredName = requiresMatcher.group(1);
-                    var requiredVersion = requiresMatcher.group(2);
-                    if (requiredVersion == null) {
-                      map.putIfAbsent(requiredName, Set.of());
-                      continue;
-                    }
-                    map.merge(requiredName, Set.of(Version.parse(requiredVersion)), Util::concat);
-                  }
-                }
-              }
-          } catch (IOException e) {
-            throw new UncheckedIOException("list: " + sourcePath, e);
+    static Resolver of(Collection<Path> sourcePaths) {
+      var sources = new ArrayList<String>();
+      for (var sourcePath : sourcePaths) {
+        try (var stream = Files.find(sourcePath, 9, (p, __) -> Util.isModuleInfo(p))) {
+          for (var moduleInfo : stream.collect(Collectors.toSet())) {
+            sources.add(Files.readString(moduleInfo));
           }
+        } catch (IOException e) {
+          throw new UncheckedIOException("find or read failed: " + sourcePath, e);
         }
-        return new Group(declaredModules, map);
       }
+      return of(sources.toArray(new String[0]));
+    }
 
+    private final Set<String> modules;
+    private final Map<String, Set<Version>> requires;
 
-      final Set<String> modules;
-      final Map<String, Set<Version>> requires;
+    Resolver(Set<String> modules, Map<String, Set<Version>> requires) {
+      this.modules = modules;
+      this.requires = requires;
+    }
 
-      private Group(Set<String> modules, Map<String, Set<Version>> requires) {
-        this.modules = modules;
-        this.requires = requires;
+    Set<String> getDeclaredModules() {
+      return modules;
+    }
+
+    Set<String> getRequiredModules() {
+      return requires.keySet();
+    }
+
+    Optional<Version> getRequiredVersion(String requiredModule) {
+      var versions = requires.get(requiredModule);
+      if (versions == null) {
+        throw new NoSuchElementException("Module " + requiredModule + " is not mapped");
       }
-
-      public Set<String> getDeclaredModules() {
-        return modules;
+      if (versions.size() > 1) {
+        throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
       }
-
-      public Set<String> getRequiredModules() {
-        return requires.keySet();
-      }
-
-      public Optional<Version> getRequiredVersion(String requiredModule) {
-        var versions = requires.get(requiredModule);
-        if (versions.size() > 1) {
-          throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
-        }
-        return versions.stream().findFirst();
-      }
+      return versions.stream().findFirst();
     }
   }
 
