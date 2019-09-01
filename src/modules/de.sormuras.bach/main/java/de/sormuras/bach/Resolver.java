@@ -17,12 +17,14 @@
 
 package de.sormuras.bach;
 
+import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -50,7 +53,8 @@ import java.util.stream.Collectors;
               + ";"); // end marker
 
   static void resolve(Bach bach) {
-    var library = of(ModuleFinder.of(bach.configuration.getLibraryPaths().toArray(Path[]::new)));
+    var entries = bach.configuration.getLibraryPaths().toArray(Path[]::new);
+    var library = of(ModuleFinder.of(entries));
     bach.out.println("Library of -> " + bach.configuration.getLibraryPaths());
     bach.out.println("  modules  -> " + library.modules);
     bach.out.println("  requires -> " + library.requires);
@@ -59,6 +63,36 @@ import java.util.stream.Collectors;
     bach.out.println("Sources of -> " + bach.configuration.getSourceDirectories());
     bach.out.println("  modules  -> " + sources.modules);
     bach.out.println("  requires -> " + sources.requires);
+
+    var systems = of(ModuleFinder.ofSystem());
+
+    var missing = new TreeMap<String, Set<Version>>();
+    missing.putAll(sources.requires);
+    missing.putAll(library.requires);
+    sources.getDeclaredModules().forEach(missing::remove);
+    library.getDeclaredModules().forEach(missing::remove);
+    systems.getDeclaredModules().forEach(missing::remove);
+    if (missing.isEmpty()) {
+      return;
+    }
+
+    var transfer = new Transfer(bach.out, bach.err);
+    var worker = new Worker(transfer, bach.configuration.getLibraryDirectory());
+    do {
+      bach.out.println("Loading missing modules: " + missing);
+      var items = new ArrayList<Transfer.Item>();
+      for (var entry : missing.entrySet()) {
+        var module = entry.getKey();
+        var versions = entry.getValue();
+        items.add(worker.toTransferItem(module, versions));
+      }
+      var lib = bach.configuration.getLibraryDirectory();
+      transfer.getFiles(lib, items);
+      library = of(ModuleFinder.of(entries));
+      missing = new TreeMap<>(library.requires);
+      library.getDeclaredModules().forEach(missing::remove);
+      systems.getDeclaredModules().forEach(missing::remove);
+    } while (!missing.isEmpty());
   }
 
   /** Command-line argument factory. */
@@ -152,5 +186,87 @@ import java.util.stream.Collectors;
       throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
     }
     return versions.stream().findFirst();
+  }
+
+  static class Worker {
+
+    class Lookup {
+
+      final String name;
+      final Properties properties;
+      final Set<Pattern> patterns;
+
+      Lookup(Transfer transfer, Path lib, String name) {
+        this.name = name;
+        var uri = "https://github.com/sormuras/modules/raw/master/" + name;
+        var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
+        try {
+          Files.createDirectories(modules);
+        } catch (IOException e) {
+          throw new UncheckedIOException("Creating directories failed: " + modules, e);
+        }
+        var defaultModules = transfer.getFile(URI.create(uri), modules.resolve(name));
+        var defaults = Util.load(new Properties(), defaultModules);
+        this.properties = Util.load(new Properties(defaults), lib.resolve(name));
+        this.patterns =
+            properties.keySet().stream()
+                .map(Object::toString)
+                .filter(key -> !SourceVersion.isName(key))
+                .map(Pattern::compile)
+                .collect(Collectors.toSet());
+      }
+
+      String get(String key) {
+        var value = properties.getProperty(key);
+        if (value != null) {
+          return value;
+        }
+        for (var pattern : patterns) {
+          if (pattern.matcher(key).matches()) {
+            return properties.getProperty(pattern.pattern());
+          }
+        }
+        throw new IllegalStateException("No lookup value mapped for: " + key);
+      }
+
+      @Override
+      public String toString() {
+        var size = properties.size();
+        var names = properties.stringPropertyNames().size();
+        return String.format(
+            "module properties {name: %s, size: %d, names: %d}", name, size, names);
+      }
+    }
+
+    final Properties moduleUri;
+    final Lookup moduleMaven, moduleVersion;
+
+    Worker(Transfer transfer, Path lib) {
+      this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
+      this.moduleMaven = new Lookup(transfer, lib, "module-maven.properties");
+      this.moduleVersion = new Lookup(transfer, lib, "module-version.properties");
+    }
+
+    private Transfer.Item toTransferItem(String module, Set<Version> set) {
+      var userProvidedUri = moduleUri.getProperty(module);
+      if (userProvidedUri != null) {
+        var uri = URI.create(userProvidedUri);
+        var file = Util.findFileName(uri);
+        var version = Util.findVersion(file.orElse(""));
+        return Transfer.Item.of(uri, module + version.map(v -> '-' + v).orElse("") + ".jar");
+      }
+      var maven = moduleMaven.get(module).split(":");
+      var group = maven[0];
+      var artifact = maven[1];
+      var version = Util.singleton(set).map(Object::toString).orElse(moduleVersion.get(module));
+      return Transfer.Item.of(toUri(group, artifact, version), module + '-' + version + ".jar");
+    }
+
+    private URI toUri(String group, String artifact, String version) {
+      var host = "https://repo1.maven.org/maven2";
+      var file = artifact + '-' + version + ".jar";
+      var uri = String.join("/", host, group.replace('.', '/'), artifact, version, file);
+      return URI.create(uri);
+    }
   }
 }

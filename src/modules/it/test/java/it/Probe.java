@@ -34,11 +34,15 @@ class Probe extends Bach {
   }
 
   Probe(Path home, Path work) {
-    this(new StringWriter(), home, work);
+    this(Configuration.of(home, work));
   }
 
-  private Probe(StringWriter out, Path home, Path work) {
-    super(new PrintWriter(out), new PrintWriter(System.err), Configuration.of(home, work));
+  Probe(Configuration configuration) {
+    this(new StringWriter(), configuration);
+  }
+
+  private Probe(StringWriter out, Configuration configuration) {
+    super(new PrintWriter(out), new PrintWriter(System.err), configuration);
     this.out = out;
   }
 
