@@ -19,107 +19,72 @@ package de.sormuras.bach;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 /*BODY*/
-public /*STATIC*/ final class Configuration {
-
-  private static class ValidationError extends AssertionError {
-    private ValidationError(String expected, Object hint) {
-      super(String.format("expected that %s: %s", expected, hint));
-    }
-  }
+public /*STATIC*/ class Configuration {
 
   public static Configuration of() {
-    var home = Path.of("");
-    var work = Path.of("bin"); // resolves to "${home}/bin"
-    return of(home, work);
+    return of(Path.of(""));
   }
 
-  public static Configuration of(Path home, Path work) {
-    var lib = Path.of("lib"); // resolves to "${home}/lib"
-    var src = Path.of("src"); // resolves to "${home}/src"
-    return of(home, work, lib, src);
+  public static Configuration of(Path home) {
+    return of(home, Path.of("bin"), Path.of("lib"), Path.of("src"));
   }
 
   public static Configuration of(Path home, Path work, Path lib, Path src) {
-    var libraries = List.of(lib);
-    var sources = List.of(src);
-    return new Configuration(home, work, libraries, sources);
+    return new Configuration(
+        Util.requireNonNull(home, "home directory"),
+        resolve(home, work, "workspace directory"),
+        resolve(home, List.of(lib), "library paths"),
+        resolve(home, List.of(src), "source directories"));
   }
 
-  private final Path home;
-  private final Path work;
-  private final List<Path> libraries;
-  private final List<Path> sources;
-
-  private Configuration(Path home, Path work, List<Path> libraries, List<Path> sources) {
-    this.home = Objects.requireNonNull(home, "home must not be null");
-    this.work = home(Objects.requireNonNull(work, "work must not be null"));
-    this.libraries = home(requireNonEmpty(libraries, "libraries"));
-    this.sources = home(requireNonEmpty(sources, "sources"));
+  private static Path resolve(Path home, Path path, String name) {
+    return Util.requireNonNull(path, name).isAbsolute() ? path : home.resolve(path);
   }
 
-  private Path home(Path path) {
-    return path.isAbsolute() ? path : home.resolve(path);
+  private static List<Path> resolve(Path home, List<Path> paths, String name) {
+    return List.of(
+        Util.requireNonNull(paths, name).stream()
+            .map(path -> resolve(home, path, "element of " + name))
+            .toArray(Path[]::new));
   }
 
-  private List<Path> home(List<Path> paths) {
-    return List.of(paths.stream().map(this::home).toArray(Path[]::new));
-  }
+  private final Path homeDirectory;
+  private final Path workspaceDirectory;
+  private final List<Path> libraryPaths;
+  private final List<Path> sourceDirectories;
 
-  private static <C extends Collection<?>> C requireNonEmpty(C collection, String name) {
-    if (Objects.requireNonNull(collection, name + " must not be null").isEmpty()) {
-      throw new IllegalArgumentException(name + " must not be empty");
-    }
-    return collection;
-  }
-
-  final void validate() {
-    requireDirectory(home);
-    if (Util.list(home, Files::isDirectory).size() == 0)
-      throw new ValidationError("home contains a directory", home.toUri());
-    if (Files.exists(work)) {
-      requireDirectory(work);
-      if (!work.toFile().canWrite()) throw new ValidationError("bin is writable: %s", work.toUri());
-    } else {
-      var parentOfBin = work.toAbsolutePath().getParent();
-      if (parentOfBin != null && !parentOfBin.toFile().canWrite())
-        throw new ValidationError("parent of work is writable", parentOfBin.toUri());
-    }
-    requireDirectoryIfExists(getLibraryDirectory());
-    getSourceDirectories().forEach(this::requireDirectory);
-  }
-
-  private void requireDirectoryIfExists(Path path) {
-    if (Files.exists(path)) requireDirectory(path);
-  }
-
-  private void requireDirectory(Path path) {
-    if (!Files.isDirectory(path))
-      throw new ValidationError("path is a directory: %s", path.toUri());
+  private Configuration(
+      Path homeDirectory,
+      Path workspaceDirectory,
+      List<Path> libraryPaths,
+      List<Path> sourceDirectories) {
+    this.homeDirectory = homeDirectory;
+    this.workspaceDirectory = workspaceDirectory;
+    this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
+    this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
   }
 
   public Path getHomeDirectory() {
-    return home;
+    return homeDirectory;
   }
 
   public Path getWorkspaceDirectory() {
-    return work;
+    return workspaceDirectory;
   }
 
   public Path getLibraryDirectory() {
-    return libraries.get(0);
+    return getLibraryPaths().get(0);
   }
 
   public List<Path> getLibraryPaths() {
-    return libraries;
+    return libraryPaths;
   }
 
   public List<Path> getSourceDirectories() {
-    return sources;
+    return sourceDirectories;
   }
 
   @Override
@@ -128,10 +93,44 @@ public /*STATIC*/ final class Configuration {
   }
 
   public List<String> toStrings() {
+    var home = getHomeDirectory();
     return List.of(
         String.format("home = '%s' -> %s", home, home.toUri()),
         String.format("workspace = '%s'", getWorkspaceDirectory()),
         String.format("library paths = %s", getLibraryPaths()),
         String.format("source directories = %s", getSourceDirectories()));
+  }
+
+  static class ValidationError extends AssertionError {
+    private ValidationError(String expected, Object hint) {
+      super(String.format("expected that %s: %s", expected, hint));
+    }
+  }
+
+  static void validate(Configuration configuration) {
+    var home = configuration.getHomeDirectory();
+    validateDirectory(home);
+    if (Util.list(home, Files::isDirectory).size() == 0)
+      throw new ValidationError("home contains a directory", home.toUri());
+    var work = configuration.getWorkspaceDirectory();
+    if (Files.exists(work)) {
+      validateDirectory(work);
+      if (!work.toFile().canWrite()) throw new ValidationError("bin is writable: %s", work.toUri());
+    } else {
+      var parentOfBin = work.toAbsolutePath().getParent();
+      if (parentOfBin != null && !parentOfBin.toFile().canWrite())
+        throw new ValidationError("parent of work is writable", parentOfBin.toUri());
+    }
+    validateDirectoryIfExists(configuration.getLibraryDirectory());
+    configuration.getSourceDirectories().forEach(Configuration::validateDirectory);
+  }
+
+  static void validateDirectoryIfExists(Path path) {
+    if (Files.exists(path)) validateDirectory(path);
+  }
+
+  static void validateDirectory(Path path) {
+    if (!Files.isDirectory(path))
+      throw new ValidationError("path is a directory", path.toUri());
   }
 }

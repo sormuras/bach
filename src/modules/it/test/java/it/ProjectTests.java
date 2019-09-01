@@ -110,17 +110,14 @@ class ProjectTests {
 
     @Test
     void build(@TempDir Path work) {
-      var home = PROJECTS.resolve("requires-asm");
-      var lib = work.resolve("lib"); // place libraries beneath temporary directory
-      var src = Path.of("src"); // resolves to ${home}/src
-      var configuration = Configuration.of(home, work, lib, src);
+      var configuration = Configuration.of(PROJECTS.resolve("requires-asm"), work, work.resolve("lib"), Path.of("src"));
       var probe = new Probe(configuration);
       assertDoesNotThrow(probe::build);
       assertLinesMatch(
           List.of(
               ">> BUILD >>",
               "Loading missing modules: {org.objectweb.asm=[7.1]}",
-              lib.resolve("org.objectweb.asm-7.1.jar")
+              configuration.getLibraryDirectory().resolve("org.objectweb.asm-7.1.jar")
                   + " <- https://repo1.maven.org/maven2/org/ow2/asm/asm/7.1/asm-7.1.jar"),
           probe.lines());
     }

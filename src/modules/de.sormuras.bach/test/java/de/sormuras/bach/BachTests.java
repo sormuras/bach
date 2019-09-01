@@ -20,14 +20,10 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -43,68 +39,6 @@ class BachTests {
     assertNotNull(bach.err);
     assertEquals(Path.of(""), bach.configuration.getHomeDirectory());
     assertEquals(Path.of("bin"), bach.configuration.getWorkspaceDirectory());
-  }
-
-  @Test
-  void help() {
-    var bach = new Probe(Path.of(""));
-    bach.help();
-    assertLinesMatch(
-        List.of(
-            "F1! F1! F1!",
-            "Method API",
-            "  build (Bach)",
-            "  clean (Bach)",
-            "  help (Bach)",
-            "  info (Bach)",
-            "  resolve (Bach)",
-            "  validate (Bach)",
-            "  version (Bach)",
-            "Provided tools",
-            "  bach",
-            ">> MORE FOUNDATION TOOLS >>"),
-        bach.lines());
-  }
-
-  @Test
-  void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
-    class Custom extends Probe {
-      private Custom() {
-        super(Path.of(""));
-      }
-
-      @SuppressWarnings("unused")
-      public void custom() {}
-
-      @Override
-      public void version() {}
-    }
-
-    var custom = new Custom();
-    custom.help();
-    assertLinesMatch(
-        List.of(
-            ">> PREFIX >>",
-            "  build (Bach)",
-            "  clean (Bach)",
-            "  custom (Custom)",
-            "  help (Bach)",
-            "  info (Bach)",
-            "  resolve (Bach)",
-            "  validate (Bach)",
-            "  version (Custom)",
-            ">> SUFFIX >>"),
-        custom.lines());
-  }
-
-  @Test
-  void validateWorksInDefaultFileSystemRootDirectories() {
-    for (var path : FileSystems.getDefault().getRootDirectories()) {
-      if (Files.isDirectory(path)) {
-        var bach = new Probe(path);
-        assertDoesNotThrow(bach::validate);
-      }
-    }
   }
 
   @Test

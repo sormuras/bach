@@ -25,7 +25,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -63,9 +62,9 @@ public class Bach {
   final Configuration configuration;
 
   public Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
-    this.out = Objects.requireNonNull(out, "out must not be null");
-    this.err = Objects.requireNonNull(err, "err must not be null");
-    this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+    this.out = Util.requireNonNull(out, "out");
+    this.err = Util.requireNonNull(err, "err");
+    this.configuration = Util.requireNonNull(configuration, "configuration");
   }
 
   void main(List<String> args) {
@@ -148,7 +147,7 @@ public class Bach {
   }
 
   public void validate() {
-    configuration.validate();
+    Configuration.validate(configuration);
   }
 
   public void resolve() {

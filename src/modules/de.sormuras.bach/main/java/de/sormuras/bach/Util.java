@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -97,6 +98,17 @@ public /*STATIC*/ class Util {
     var name = jarFileName.substring(0, jarFileName.length() - 4);
     var matcher = Pattern.compile("-(\\d+(\\.|$))").matcher(name);
     return (matcher.find()) ? Optional.of(name.substring(matcher.start() + 1)) : Optional.empty();
+  }
+
+  static <C extends Collection<?>> C requireNonEmpty(C collection, String name) {
+    if (requireNonNull(collection, name + " must not be null").isEmpty()) {
+      throw new IllegalArgumentException(name + " must not be empty");
+    }
+    return collection;
+  }
+
+  static <T> T requireNonNull(T object, String name) {
+    return Objects.requireNonNull(object, name + " must not be null");
   }
 
   static <T> Optional<T> singleton(Collection<T> collection) {

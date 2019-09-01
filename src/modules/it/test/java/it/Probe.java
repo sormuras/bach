@@ -34,7 +34,7 @@ class Probe extends Bach {
   }
 
   Probe(Path home, Path work) {
-    this(Configuration.of(home, work));
+    this(Configuration.of(home, work, Path.of("lib"), Path.of("src")));
   }
 
   Probe(Configuration configuration) {

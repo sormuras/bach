@@ -18,10 +18,12 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,5 +40,58 @@ class BachApiTests {
     var bach = new Probe(temp);
     assertDoesNotThrow(bach::version);
     assertTrue(String.join("\n", bach.lines()).contains(Bach.VERSION));
+  }
+
+  @Test
+  void help() {
+    var bach = new Probe(Path.of(""));
+    bach.help();
+    assertLinesMatch(
+        List.of(
+            "F1! F1! F1!",
+            "Method API",
+            "  build (Bach)",
+            "  clean (Bach)",
+            "  help (Bach)",
+            "  info (Bach)",
+            "  resolve (Bach)",
+            "  validate (Bach)",
+            "  version (Bach)",
+            "Provided tools",
+            "  bach",
+            ">> MORE FOUNDATION TOOLS >>"),
+        bach.lines());
+  }
+
+  @Test
+  void helpOnCustomBachDisplaysNewAndOverriddenMethods() {
+    class Custom extends Probe {
+
+      Custom() {
+        super(Path.of(""));
+      }
+
+      @SuppressWarnings("unused")
+      public void custom() {}
+
+      @Override
+      public void version() {}
+    }
+
+    var custom = new Custom();
+    custom.help();
+    assertLinesMatch(
+        List.of(
+            ">> PREFIX >>",
+            "  build (Bach)",
+            "  clean (Bach)",
+            "  custom (Custom)",
+            "  help (Bach)",
+            "  info (Bach)",
+            "  resolve (Bach)",
+            "  validate (Bach)",
+            "  version (Custom)",
+            ">> SUFFIX >>"),
+        custom.lines());
   }
 }
