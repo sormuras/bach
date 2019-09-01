@@ -34,14 +34,20 @@ public /*STATIC*/ final class Configuration {
 
   public static Configuration of() {
     var home = Path.of("");
-    var work = Path.of("bin");
+    var work = Path.of("bin"); // resolves to "${home}/bin"
     return of(home, work);
   }
 
   public static Configuration of(Path home, Path work) {
-    var lib = List.of(Path.of("lib"));
-    var src = List.of(Path.of("src"));
-    return new Configuration(home, work, lib, src);
+    var lib = Path.of("lib"); // resolves to "${home}/lib"
+    var src = Path.of("src"); // resolves to "${home}/src"
+    return of(home, work, lib, src);
+  }
+
+  public static Configuration of(Path home, Path work, Path lib, Path src) {
+    var libraries = List.of(lib);
+    var sources = List.of(src);
+    return new Configuration(home, work, libraries, sources);
   }
 
   private final Path home;
