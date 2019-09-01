@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-01T18:02:10.983271300Z
+// THIS FILE WAS GENERATED ON 2019-09-01T20:46:17.099007Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -28,6 +28,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -179,7 +180,7 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    configuration.toStrings().forEach(line -> out.println("  " + line));
+    Configuration.toStrings(configuration).forEach(line -> out.println("  " + line));
   }
 
   public void validate() {
@@ -216,26 +217,18 @@ public class Bach {
       return List.of(Path.of("src"));
     }
 
-    default List<String> toStrings() {
-      var home = getHomeDirectory();
-      return List.of(
-          String.format("home = '%s' -> %s", home, home.toUri()),
-          String.format("workspace = '%s'", getWorkspaceDirectory()),
-          String.format("library paths = %s", getLibraryPaths()),
-          String.format("source directories = %s", getSourceDirectories()));
-    }
-
     static Configuration of() {
       return of(Path.of(""));
     }
 
     static Configuration of(Path home) {
       validateDirectory(Util.requireNonNull(home, "home directory"));
-      var conf = compileConfiguration(home);
-      var work = resolve(home, Path.of("bin"), "workspace directory");
-      var libs = resolve(home, List.of(Path.of("lib")), "library paths");
-      var dirs = resolve(home, conf.getSourceDirectories(), "source directories");
-      return new DefaultConfiguration(home, work, libs, dirs);
+      var ccc = compileCustomConfiguration(home);
+      return new DefaultConfiguration(
+          home,
+          resolve(home, ccc.getWorkspaceDirectory(), "workspace directory"),
+          resolve(home, ccc.getLibraryPaths(), "library paths"),
+          resolve(home, ccc.getSourceDirectories(), "source directories"));
     }
 
     static Path resolve(Path home, Path path, String name) {
@@ -249,7 +242,25 @@ public class Bach {
               .toArray(Path[]::new));
     }
 
-    static Configuration compileConfiguration(Path home) {
+    private static Configuration compileCustomConfiguration(Path home) {
+      class ConfigurationInvocationHandler implements Configuration, InvocationHandler {
+
+        private final Object that;
+
+        private ConfigurationInvocationHandler(Object that) {
+          this.that = that;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+          try {
+            return that.getClass().getMethod(method.getName()).invoke(that);
+          } catch (NoSuchMethodException e) {
+            return this.getClass().getMethod(method.getName()).invoke(this);
+          }
+        }
+      }
+
       var dot = home.resolve(".bach");
       if (Files.isDirectory(dot)) {
         var out = new PrintWriter(System.out, true);
@@ -264,16 +275,14 @@ public class Bach {
         try {
           var parent = Configuration.class.getClassLoader();
           var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
-          var project = loader.loadClass(name).getConstructor().newInstance();
-          return (Configuration)
-              Proxy.newProxyInstance(
-                  loader,
-                  new Class[] {Configuration.class},
-                  (p, m, a) -> project.getClass().getMethod(m.getName()).invoke(project));
+          var configuration = loader.loadClass(name).getConstructor().newInstance();
+          var interfaces = new Class[] {Configuration.class};
+          var handler = new ConfigurationInvocationHandler(configuration);
+          return (Configuration) Proxy.newProxyInstance(loader, interfaces, handler);
         } catch (ClassNotFoundException e) {
           // ignore "missing" custom configuration class
         } catch (Exception e) {
-          throw new Error("Loading custom configuration failed!", e);
+          throw new Error("Loading custom configuration failed: " + configurationJava.toUri(), e);
         }
       }
       return new Configuration() {};
@@ -297,25 +306,29 @@ public class Bach {
         this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
       }
 
+      @Override
       public Path getHomeDirectory() {
         return homeDirectory;
       }
 
+      @Override
       public Path getWorkspaceDirectory() {
         return workspaceDirectory;
       }
 
+      @Override
       public List<Path> getLibraryPaths() {
         return libraryPaths;
       }
 
+      @Override
       public List<Path> getSourceDirectories() {
         return sourceDirectories;
       }
 
       @Override
       public String toString() {
-        return "Configuration [" + String.join(", ", toStrings()) + "]";
+        return "Configuration [" + String.join(", ", toStrings(this)) + "]";
       }
     }
 
@@ -323,6 +336,15 @@ public class Bach {
       private ValidationError(String expected, Object hint) {
         super(String.format("expected that %s: %s", expected, hint));
       }
+    }
+
+    static List<String> toStrings(Configuration configuration) {
+      var home = configuration.getHomeDirectory();
+      return List.of(
+          String.format("home = '%s' -> %s", home, home.toUri()),
+          String.format("workspace = '%s'", configuration.getWorkspaceDirectory()),
+          String.format("library paths = %s", configuration.getLibraryPaths()),
+          String.format("source directories = %s", configuration.getSourceDirectories()));
     }
 
     static void validate(Configuration configuration) {

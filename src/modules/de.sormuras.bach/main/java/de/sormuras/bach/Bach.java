@@ -143,7 +143,7 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    configuration.toStrings().forEach(line -> out.println("  " + line));
+    Configuration.toStrings(configuration).forEach(line -> out.println("  " + line));
   }
 
   public void validate() {
