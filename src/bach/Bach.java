@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-08-31T07:01:32.125676400Z
+// THIS FILE WAS GENERATED ON 2019-09-01T05:42:58.394542600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
@@ -50,6 +51,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
@@ -59,6 +61,7 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.lang.model.SourceVersion;
 
 public class Bach {
 
@@ -167,6 +170,10 @@ public class Bach {
     resolve();
   }
 
+  public void clean() {
+    Util.treeDelete(configuration.getWorkspaceDirectory());
+  }
+
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
     configuration.toStrings().forEach(line -> out.println("  " + line));
@@ -194,14 +201,20 @@ public class Bach {
 
     public static Configuration of() {
       var home = Path.of("");
-      var work = Path.of("bin");
+      var work = Path.of("bin"); // resolves to "${home}/bin"
       return of(home, work);
     }
 
     public static Configuration of(Path home, Path work) {
-      var lib = List.of(Path.of("lib"));
-      var src = List.of(Path.of("src"));
-      return new Configuration(home, work, lib, src);
+      var lib = Path.of("lib"); // resolves to "${home}/lib"
+      var src = Path.of("src"); // resolves to "${home}/src"
+      return of(home, work, lib, src);
+    }
+
+    public static Configuration of(Path home, Path work, Path lib, Path src) {
+      var libraries = List.of(lib);
+      var sources = List.of(src);
+      return new Configuration(home, work, libraries, sources);
     }
 
     private final Path home;
@@ -303,7 +316,8 @@ public class Bach {
                 + ";"); // end marker
 
     static void resolve(Bach bach) {
-      var library = of(ModuleFinder.of(bach.configuration.getLibraryPaths().toArray(Path[]::new)));
+      var entries = bach.configuration.getLibraryPaths().toArray(Path[]::new);
+      var library = of(ModuleFinder.of(entries));
       bach.out.println("Library of -> " + bach.configuration.getLibraryPaths());
       bach.out.println("  modules  -> " + library.modules);
       bach.out.println("  requires -> " + library.requires);
@@ -312,6 +326,36 @@ public class Bach {
       bach.out.println("Sources of -> " + bach.configuration.getSourceDirectories());
       bach.out.println("  modules  -> " + sources.modules);
       bach.out.println("  requires -> " + sources.requires);
+
+      var systems = of(ModuleFinder.ofSystem());
+
+      var missing = new TreeMap<String, Set<Version>>();
+      missing.putAll(sources.requires);
+      missing.putAll(library.requires);
+      sources.getDeclaredModules().forEach(missing::remove);
+      library.getDeclaredModules().forEach(missing::remove);
+      systems.getDeclaredModules().forEach(missing::remove);
+      if (missing.isEmpty()) {
+        return;
+      }
+
+      var transfer = new Transfer(bach.out, bach.err);
+      var worker = new Worker(transfer, bach.configuration.getLibraryDirectory());
+      do {
+        bach.out.println("Loading missing modules: " + missing);
+        var items = new ArrayList<Transfer.Item>();
+        for (var entry : missing.entrySet()) {
+          var module = entry.getKey();
+          var versions = entry.getValue();
+          items.add(worker.toTransferItem(module, versions));
+        }
+        var lib = bach.configuration.getLibraryDirectory();
+        transfer.getFiles(lib, items);
+        library = of(ModuleFinder.of(entries));
+        missing = new TreeMap<>(library.requires);
+        library.getDeclaredModules().forEach(missing::remove);
+        systems.getDeclaredModules().forEach(missing::remove);
+      } while (!missing.isEmpty());
     }
 
     /** Command-line argument factory. */
@@ -406,25 +450,130 @@ public class Bach {
       }
       return versions.stream().findFirst();
     }
+
+    static class Worker {
+
+      class Lookup {
+
+        final String name;
+        final Properties properties;
+        final Set<Pattern> patterns;
+
+        Lookup(Transfer transfer, Path lib, String name) {
+          this.name = name;
+          var uri = "https://github.com/sormuras/modules/raw/master/" + name;
+          var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
+          try {
+            Files.createDirectories(modules);
+          } catch (IOException e) {
+            throw new UncheckedIOException("Creating directories failed: " + modules, e);
+          }
+          var defaultModules = transfer.getFile(URI.create(uri), modules.resolve(name));
+          var defaults = Util.load(new Properties(), defaultModules);
+          this.properties = Util.load(new Properties(defaults), lib.resolve(name));
+          this.patterns =
+              properties.keySet().stream()
+                  .map(Object::toString)
+                  .filter(key -> !SourceVersion.isName(key))
+                  .map(Pattern::compile)
+                  .collect(Collectors.toSet());
+        }
+
+        String get(String key) {
+          var value = properties.getProperty(key);
+          if (value != null) {
+            return value;
+          }
+          for (var pattern : patterns) {
+            if (pattern.matcher(key).matches()) {
+              return properties.getProperty(pattern.pattern());
+            }
+          }
+          throw new IllegalStateException("No lookup value mapped for: " + key);
+        }
+
+        @Override
+        public String toString() {
+          var size = properties.size();
+          var names = properties.stringPropertyNames().size();
+          return String.format(
+              "module properties {name: %s, size: %d, names: %d}", name, size, names);
+        }
+      }
+
+      final Properties moduleUri;
+      final Lookup moduleMaven, moduleVersion;
+
+      Worker(Transfer transfer, Path lib) {
+        this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
+        this.moduleMaven = new Lookup(transfer, lib, "module-maven.properties");
+        this.moduleVersion = new Lookup(transfer, lib, "module-version.properties");
+      }
+
+      private Transfer.Item toTransferItem(String module, Set<Version> set) {
+        var userProvidedUri = moduleUri.getProperty(module);
+        if (userProvidedUri != null) {
+          var uri = URI.create(userProvidedUri);
+          var file = Util.findFileName(uri);
+          var version = Util.findVersion(file.orElse(""));
+          return Transfer.Item.of(uri, module + version.map(v -> '-' + v).orElse("") + ".jar");
+        }
+        var maven = moduleMaven.get(module).split(":");
+        var group = maven[0];
+        var artifact = maven[1];
+        var version = Util.singleton(set).map(Object::toString).orElse(moduleVersion.get(module));
+        return Transfer.Item.of(toUri(group, artifact, version), module + '-' + version + ".jar");
+      }
+
+      private URI toUri(String group, String artifact, String version) {
+        var host = "https://repo1.maven.org/maven2";
+        var file = artifact + '-' + version + ".jar";
+        var uri = String.join("/", host, group.replace('.', '/'), artifact, version, file);
+        return URI.create(uri);
+      }
+    }
   }
 
   /** File transfer. */
   static class Transfer {
 
-    final PrintWriter out, err;
-    final HttpClient client;
+    static class Item {
+
+      static Item of(URI uri, String file) {
+        return new Item(uri, file);
+      }
+
+      private final URI uri;
+      private final String file;
+
+      private Item(URI uri, String file) {
+        this.uri = uri;
+        this.file = file;
+      }
+    }
+
+    private final PrintWriter out, err;
+    private final HttpClient client;
 
     Transfer(PrintWriter out, PrintWriter err) {
       this(out, err, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
     }
 
-    Transfer(PrintWriter out, PrintWriter err, HttpClient client) {
+    private Transfer(PrintWriter out, PrintWriter err, HttpClient client) {
       this.out = out;
       this.err = err;
       this.client = client;
     }
 
-    Path getFile(Path path, URI uri) {
+    void getFiles(Path path, Collection<Item> items) {
+      Util.treeCreate(path);
+      items.stream()
+          .parallel()
+          .map(item -> getFile(item.uri, path.resolve(item.file)))
+          .collect(Collectors.toSet());
+    }
+
+    Path getFile(URI uri, Path path) {
       var request = HttpRequest.newBuilder(uri).GET();
       if (Files.exists(path)) {
         try {
@@ -459,17 +608,20 @@ public class Bach {
               err.println("Couldn't set last modified file attribute: " + e);
             }
           }
-          out.println(path + " <- " + uri);
+          synchronized (out) {
+            out.println(path + " <- " + uri);
+          }
         }
       } catch (IOException | InterruptedException e) {
         err.println("Failed to load: " + uri + " -> " + e);
+        e.printStackTrace(err);
       }
       return path;
     }
   }
 
   /** Static helpers. */
-  static class Util {
+  public static class Util {
 
     static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
       return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
@@ -503,6 +655,73 @@ public class Bach {
         return Files.list(directory).filter(filter).sorted().collect(Collectors.toList());
       } catch (IOException e) {
         throw new UncheckedIOException("list directory failed: " + directory, e);
+      }
+    }
+
+    static Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (IOException e) {
+          throw new UncheckedIOException("Reading properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+
+    /** Extract last path element from the supplied uri. */
+    static Optional<String> findFileName(URI uri) {
+      var path = uri.getPath();
+      return path == null ? Optional.empty() : Optional.of(path.substring(path.lastIndexOf('/') + 1));
+    }
+
+    static Optional<String> findVersion(String jarFileName) {
+      if (!jarFileName.endsWith(".jar")) return Optional.empty();
+      var name = jarFileName.substring(0, jarFileName.length() - 4);
+      var matcher = Pattern.compile("-(\\d+(\\.|$))").matcher(name);
+      return (matcher.find()) ? Optional.of(name.substring(matcher.start() + 1)) : Optional.empty();
+    }
+
+    static <T> Optional<T> singleton(Collection<T> collection) {
+      if (collection.isEmpty()) {
+        return Optional.empty();
+      }
+      if (collection.size() != 1) {
+        throw new IllegalStateException("Too many elements: " + collection);
+      }
+      return Optional.of(collection.iterator().next());
+    }
+    /** @see Files#createDirectories(Path, FileAttribute[])  */
+    static Path treeCreate(Path path) {
+      try {
+        return Files.createDirectories(path);
+      } catch (IOException e) {
+        throw new UncheckedIOException("create directories failed: " + path, e);
+      }
+    }
+
+    /** Delete all files and directories from and including the root directory. */
+    static void treeDelete(Path root) {
+      treeDelete(root, __ -> true);
+    }
+
+    /** Delete selected files and directories from and including the root directory. */
+    static void treeDelete(Path root, Predicate<Path> filter) {
+      if (filter.test(root)) { // trivial case: delete existing empty directory or single file
+        try {
+          Files.deleteIfExists(root);
+          return;
+        } catch (IOException ignored) {
+          // fall-through
+        }
+      }
+      try (var stream = Files.walk(root)) { // default case: walk the tree...
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException("tree delete failed: " + root, e);
       }
     }
   }
