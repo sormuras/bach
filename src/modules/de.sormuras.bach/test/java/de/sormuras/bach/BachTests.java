@@ -54,6 +54,7 @@ class BachTests {
             "F1! F1! F1!",
             "Method API",
             "  build (Bach)",
+            "  clean (Bach)",
             "  help (Bach)",
             "  info (Bach)",
             "  resolve (Bach)",
@@ -85,6 +86,7 @@ class BachTests {
         List.of(
             ">> PREFIX >>",
             "  build (Bach)",
+            "  clean (Bach)",
             "  custom (Custom)",
             "  help (Bach)",
             "  info (Bach)",

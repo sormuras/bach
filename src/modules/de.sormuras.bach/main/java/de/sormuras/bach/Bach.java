@@ -138,6 +138,10 @@ public class Bach {
     resolve();
   }
 
+  public void clean() {
+    Util.treeDelete(configuration.getWorkspaceDirectory());
+  }
+
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
     configuration.toStrings().forEach(line -> out.println("  " + line));

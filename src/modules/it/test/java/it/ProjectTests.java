@@ -46,6 +46,14 @@ class ProjectTests {
 
   @ParameterizedTest
   @MethodSource("projects")
+  void clean(Path home) {
+    var bach = new Probe(home);
+    assertDoesNotThrow(bach::clean, "bach::clean failed: " + home);
+    assertLinesMatch(List.of(), bach.lines());
+  }
+
+  @ParameterizedTest
+  @MethodSource("projects")
   void help(Path home) {
     var bach = new Probe(home);
     assertDoesNotThrow(bach::help, "bach::help failed: " + home);
@@ -70,8 +78,7 @@ class ProjectTests {
             "  home = '" + home + "' -> " + home.toUri(),
             "  workspace = '" + home.resolve("bin") + "'",
             "  library paths = [" + home.resolve("lib") + "]",
-            "  source directories = [" + home.resolve("src") + "]"
-        ),
+            "  source directories = [" + home.resolve("src") + "]"),
         bach.lines());
   }
 
