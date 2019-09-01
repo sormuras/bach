@@ -87,9 +87,9 @@ class ProjectTests {
   class Empty {
 
     @Test
-    void build(@TempDir Path work) {
+    void build() {
       var home = PROJECTS.resolve("empty");
-      var e = assertThrows(Error.class, () -> new Probe(home, work).build());
+      var e = assertThrows(Error.class, () -> new Probe(home).build());
       assertEquals("expected that home contains a directory: " + home.toUri(), e.getMessage());
     }
   }
@@ -98,8 +98,8 @@ class ProjectTests {
   class MissingModule {
 
     @Test
-    void build(@TempDir Path work) {
-      var probe = new Probe(PROJECTS.resolve("missing-module"), work);
+    void build() {
+      var probe = new Probe(PROJECTS.resolve("missing-module"));
       assertThrows(IllegalStateException.class, probe::build);
       assertLinesMatch(List.of(">> BUILD >>", "Loading missing modules: {b=[]}"), probe.lines());
     }
@@ -110,7 +110,29 @@ class ProjectTests {
 
     @Test
     void build(@TempDir Path work) {
-      var configuration = Configuration.of(PROJECTS.resolve("requires-asm"), work, work.resolve("lib"), Path.of("src"));
+      var configuration =
+          new Configuration() {
+
+            @Override
+            public Path getHomeDirectory() {
+              return PROJECTS.resolve("requires-asm");
+            }
+
+            @Override
+            public Path getWorkspaceDirectory() {
+              return work;
+            }
+
+            @Override
+            public List<Path> getLibraryPaths() {
+              return List.of(work.resolve("lib"));
+            }
+
+            @Override
+            public List<Path> getSourceDirectories() {
+              return List.of(getHomeDirectory().resolve("src"));
+            }
+          };
       var probe = new Probe(configuration);
       assertDoesNotThrow(probe::build);
       assertLinesMatch(
