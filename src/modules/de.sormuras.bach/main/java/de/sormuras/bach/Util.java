@@ -21,19 +21,24 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /*BODY*/
 /** Static helpers. */
-/*STATIC*/ class Util {
+public /*STATIC*/ class Util {
 
   static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
     return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
@@ -67,6 +72,73 @@ import java.util.stream.Stream;
       return Files.list(directory).filter(filter).sorted().collect(Collectors.toList());
     } catch (IOException e) {
       throw new UncheckedIOException("list directory failed: " + directory, e);
+    }
+  }
+
+  static Properties load(Properties properties, Path path) {
+    if (Files.isRegularFile(path)) {
+      try (var reader = Files.newBufferedReader(path)) {
+        properties.load(reader);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Reading properties failed: " + path, e);
+      }
+    }
+    return properties;
+  }
+
+  /** Extract last path element from the supplied uri. */
+  static Optional<String> findFileName(URI uri) {
+    var path = uri.getPath();
+    return path == null ? Optional.empty() : Optional.of(path.substring(path.lastIndexOf('/') + 1));
+  }
+
+  static Optional<String> findVersion(String jarFileName) {
+    if (!jarFileName.endsWith(".jar")) return Optional.empty();
+    var name = jarFileName.substring(0, jarFileName.length() - 4);
+    var matcher = Pattern.compile("-(\\d+(\\.|$))").matcher(name);
+    return (matcher.find()) ? Optional.of(name.substring(matcher.start() + 1)) : Optional.empty();
+  }
+
+  static <T> Optional<T> singleton(Collection<T> collection) {
+    if (collection.isEmpty()) {
+      return Optional.empty();
+    }
+    if (collection.size() != 1) {
+      throw new IllegalStateException("Too many elements: " + collection);
+    }
+    return Optional.of(collection.iterator().next());
+  }
+  /** @see Files#createDirectories(Path, FileAttribute[])  */
+  static Path treeCreate(Path path) {
+    try {
+      return Files.createDirectories(path);
+    } catch (IOException e) {
+      throw new UncheckedIOException("create directories failed: " + path, e);
+    }
+  }
+
+  /** Delete all files and directories from and including the root directory. */
+  static void treeDelete(Path root) {
+    treeDelete(root, __ -> true);
+  }
+
+  /** Delete selected files and directories from and including the root directory. */
+  static void treeDelete(Path root, Predicate<Path> filter) {
+    if (filter.test(root)) { // trivial case: delete existing empty directory or single file
+      try {
+        Files.deleteIfExists(root);
+        return;
+      } catch (IOException ignored) {
+        // fall-through
+      }
+    }
+    try (var stream = Files.walk(root)) { // default case: walk the tree...
+      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (var path : selected.collect(Collectors.toList())) {
+        Files.deleteIfExists(path);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("tree delete failed: " + root, e);
     }
   }
 }
