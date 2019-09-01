@@ -29,26 +29,51 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /*BODY*/
 /** File transfer. */
 /*STATIC*/ class Transfer {
 
-  final PrintWriter out, err;
-  final HttpClient client;
+  static class Item {
+
+    static Item of(URI uri, String file) {
+      return new Item(uri, file);
+    }
+
+    private final URI uri;
+    private final String file;
+
+    private Item(URI uri, String file) {
+      this.uri = uri;
+      this.file = file;
+    }
+  }
+
+  private final PrintWriter out, err;
+  private final HttpClient client;
 
   Transfer(PrintWriter out, PrintWriter err) {
     this(out, err, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
   }
 
-  Transfer(PrintWriter out, PrintWriter err, HttpClient client) {
+  private Transfer(PrintWriter out, PrintWriter err, HttpClient client) {
     this.out = out;
     this.err = err;
     this.client = client;
   }
 
-  Path getFile(Path path, URI uri) {
+  void getFiles(Path path, Collection<Item> items) {
+    Util.treeCreate(path);
+    items.stream()
+        .parallel()
+        .map(item -> getFile(item.uri, path.resolve(item.file)))
+        .collect(Collectors.toSet());
+  }
+
+  Path getFile(URI uri, Path path) {
     var request = HttpRequest.newBuilder(uri).GET();
     if (Files.exists(path)) {
       try {
@@ -83,10 +108,13 @@ import java.util.Locale;
             err.println("Couldn't set last modified file attribute: " + e);
           }
         }
-        out.println(path + " <- " + uri);
+        synchronized (out) {
+          out.println(path + " <- " + uri);
+        }
       }
     } catch (IOException | InterruptedException e) {
       err.println("Failed to load: " + uri + " -> " + e);
+      e.printStackTrace(err);
     }
     return path;
   }
