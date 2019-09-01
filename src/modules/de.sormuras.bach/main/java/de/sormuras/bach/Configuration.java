@@ -64,7 +64,7 @@ public interface Configuration {
 
   static Configuration of(Path home) {
     validateDirectory(Util.requireNonNull(home, "home directory"));
-    var conf = compileConfiguration(home);
+    var conf = compileCustomConfiguration(home);
     var work = resolve(home, Path.of("bin"), "workspace directory");
     var libs = resolve(home, List.of(Path.of("lib")), "library paths");
     var dirs = resolve(home, conf.getSourceDirectories(), "source directories");
@@ -82,7 +82,7 @@ public interface Configuration {
             .toArray(Path[]::new));
   }
 
-  static Configuration compileConfiguration(Path home) {
+  static Configuration compileCustomConfiguration(Path home) {
     var dot = home.resolve(".bach");
     if (Files.isDirectory(dot)) {
       var out = new PrintWriter(System.out, true);
@@ -106,7 +106,7 @@ public interface Configuration {
       } catch (ClassNotFoundException e) {
         // ignore "missing" custom configuration class
       } catch (Exception e) {
-        throw new Error("Loading custom configuration failed!", e);
+        throw new Error("Loading custom configuration failed: " + configurationJava.toUri(), e);
       }
     }
     return new Configuration() {};
@@ -130,18 +130,22 @@ public interface Configuration {
       this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
     }
 
+    @Override
     public Path getHomeDirectory() {
       return homeDirectory;
     }
 
+    @Override
     public Path getWorkspaceDirectory() {
       return workspaceDirectory;
     }
 
+    @Override
     public List<Path> getLibraryPaths() {
       return libraryPaths;
     }
 
+    @Override
     public List<Path> getSourceDirectories() {
       return sourceDirectories;
     }
