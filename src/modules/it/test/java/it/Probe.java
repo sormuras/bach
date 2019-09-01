@@ -30,11 +30,7 @@ class Probe extends Bach {
   final StringWriter out;
 
   Probe(Path home) {
-    this(home, Path.of("bin"));
-  }
-
-  Probe(Path home, Path work) {
-    this(Configuration.of(home, work, Path.of("lib"), Path.of("src")));
+    this(Configuration.of(home));
   }
 
   Probe(Configuration configuration) {

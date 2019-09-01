@@ -17,82 +17,39 @@
 
 package de.sormuras.bach;
 
+import java.io.PrintWriter;
+import java.lang.reflect.Proxy;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.spi.ToolProvider;
 
 /*BODY*/
-public /*STATIC*/ class Configuration {
+public interface Configuration {
 
-  public static Configuration of() {
-    return of(Path.of(""));
+  default Path getHomeDirectory() {
+    return Path.of("");
   }
 
-  public static Configuration of(Path home) {
-    return of(home, Path.of("bin"), Path.of("lib"), Path.of("src"));
+  default Path getWorkspaceDirectory() {
+    return Path.of("bin");
   }
 
-  public static Configuration of(Path home, Path work, Path lib, Path src) {
-    return new Configuration(
-        Util.requireNonNull(home, "home directory"),
-        resolve(home, work, "workspace directory"),
-        resolve(home, List.of(lib), "library paths"),
-        resolve(home, List.of(src), "source directories"));
-  }
-
-  private static Path resolve(Path home, Path path, String name) {
-    return Util.requireNonNull(path, name).isAbsolute() ? path : home.resolve(path);
-  }
-
-  private static List<Path> resolve(Path home, List<Path> paths, String name) {
-    return List.of(
-        Util.requireNonNull(paths, name).stream()
-            .map(path -> resolve(home, path, "element of " + name))
-            .toArray(Path[]::new));
-  }
-
-  private final Path homeDirectory;
-  private final Path workspaceDirectory;
-  private final List<Path> libraryPaths;
-  private final List<Path> sourceDirectories;
-
-  private Configuration(
-      Path homeDirectory,
-      Path workspaceDirectory,
-      List<Path> libraryPaths,
-      List<Path> sourceDirectories) {
-    this.homeDirectory = homeDirectory;
-    this.workspaceDirectory = workspaceDirectory;
-    this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
-    this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
-  }
-
-  public Path getHomeDirectory() {
-    return homeDirectory;
-  }
-
-  public Path getWorkspaceDirectory() {
-    return workspaceDirectory;
-  }
-
-  public Path getLibraryDirectory() {
+  default Path getLibraryDirectory() {
     return getLibraryPaths().get(0);
   }
 
-  public List<Path> getLibraryPaths() {
-    return libraryPaths;
+  default List<Path> getLibraryPaths() {
+    return List.of(Path.of("lib"));
   }
 
-  public List<Path> getSourceDirectories() {
-    return sourceDirectories;
+  default List<Path> getSourceDirectories() {
+    return List.of(Path.of("src"));
   }
 
-  @Override
-  public String toString() {
-    return "Configuration [" + String.join(", ", toStrings()) + "]";
-  }
-
-  public List<String> toStrings() {
+  default List<String> toStrings() {
     var home = getHomeDirectory();
     return List.of(
         String.format("home = '%s' -> %s", home, home.toUri()),
@@ -101,7 +58,101 @@ public /*STATIC*/ class Configuration {
         String.format("source directories = %s", getSourceDirectories()));
   }
 
-  static class ValidationError extends AssertionError {
+  static Configuration of() {
+    return of(Path.of(""));
+  }
+
+  static Configuration of(Path home) {
+    validateDirectory(Util.requireNonNull(home, "home directory"));
+    var conf = compileConfiguration(home);
+    var work = resolve(home, Path.of("bin"), "workspace directory");
+    var libs = resolve(home, List.of(Path.of("lib")), "library paths");
+    var dirs = resolve(home, conf.getSourceDirectories(), "source directories");
+    return new DefaultConfiguration(home, work, libs, dirs);
+  }
+
+  static Path resolve(Path home, Path path, String name) {
+    return Util.requireNonNull(path, name).isAbsolute() ? path : home.resolve(path);
+  }
+
+  static List<Path> resolve(Path home, List<Path> paths, String name) {
+    return List.of(
+        Util.requireNonNull(paths, name).stream()
+            .map(path -> resolve(home, path, "element of " + name))
+            .toArray(Path[]::new));
+  }
+
+  static Configuration compileConfiguration(Path home) {
+    var dot = home.resolve(".bach");
+    if (Files.isDirectory(dot)) {
+      var out = new PrintWriter(System.out, true);
+      var err = new PrintWriter(System.err, true);
+      var javac = ToolProvider.findFirst("javac").orElseThrow();
+      var bin = dot.resolve("bin");
+      var name = "Configuration";
+      var configurationJava = dot.resolve(name + ".java");
+      if (Files.exists(configurationJava)) {
+        javac.run(out, err, "-d", bin.toString(), configurationJava.toString());
+      }
+      try {
+        var parent = Configuration.class.getClassLoader();
+        var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
+        var project = loader.loadClass(name).getConstructor().newInstance();
+        return (Configuration)
+            Proxy.newProxyInstance(
+                loader,
+                new Class[] {Configuration.class},
+                (p, m, a) -> project.getClass().getMethod(m.getName()).invoke(project));
+      } catch (ClassNotFoundException e) {
+        // ignore "missing" custom configuration class
+      } catch (Exception e) {
+        throw new Error("Loading custom configuration failed!", e);
+      }
+    }
+    return new Configuration() {};
+  }
+
+  class DefaultConfiguration implements Configuration {
+
+    private final Path homeDirectory;
+    private final Path workspaceDirectory;
+    private final List<Path> libraryPaths;
+    private final List<Path> sourceDirectories;
+
+    private DefaultConfiguration(
+        Path homeDirectory,
+        Path workspaceDirectory,
+        List<Path> libraryPaths,
+        List<Path> sourceDirectories) {
+      this.homeDirectory = homeDirectory;
+      this.workspaceDirectory = workspaceDirectory;
+      this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
+      this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
+    }
+
+    public Path getHomeDirectory() {
+      return homeDirectory;
+    }
+
+    public Path getWorkspaceDirectory() {
+      return workspaceDirectory;
+    }
+
+    public List<Path> getLibraryPaths() {
+      return libraryPaths;
+    }
+
+    public List<Path> getSourceDirectories() {
+      return sourceDirectories;
+    }
+
+    @Override
+    public String toString() {
+      return "Configuration [" + String.join(", ", toStrings()) + "]";
+    }
+  }
+
+  class ValidationError extends AssertionError {
     private ValidationError(String expected, Object hint) {
       super(String.format("expected that %s: %s", expected, hint));
     }
@@ -130,7 +181,6 @@ public /*STATIC*/ class Configuration {
   }
 
   static void validateDirectory(Path path) {
-    if (!Files.isDirectory(path))
-      throw new ValidationError("path is a directory", path.toUri());
+    if (!Files.isDirectory(path)) throw new ValidationError("path is a directory", path.toUri());
   }
 }
