@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 /*BODY*/
 /** Static helpers. */
-public /*STATIC*/ class Util {
+/*STATIC*/ class Util {
 
   static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
     return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
@@ -52,6 +52,10 @@ public /*STATIC*/ class Util {
     } catch (NoSuchMethodException e) {
       return Optional.empty();
     }
+  }
+
+  static List<Path> findExistingDirectories(List<Path> directories) {
+    return directories.stream().filter(Files::isDirectory).collect(Collectors.toList());
   }
 
   static boolean isApiMethod(Method method) {
