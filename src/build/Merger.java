@@ -30,12 +30,11 @@ import java.util.spi.ToolProvider;
 class Merger {
   static Path SOURCE = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
   static Path TARGET = Path.of("bin/merged");
-  static List<String> TYPES =
-      List.of("Configuration.java", "Resolver.java", "Transfer.java", "Util.java");
+  static List<String> TYPES = List.of("Configuration", "Command", "Resolver", "Transfer", "Util");
 
   public static void main(String[] args) throws Exception {
     System.out.printf("Merging %d types into Bach.java {%n", TYPES.size());
-    TYPES.forEach(type -> System.out.printf("  %s%n", type));
+    TYPES.forEach(type -> System.out.printf("  %s.java%n", type));
     System.out.printf("}%n");
 
     new Merger().merge();
@@ -97,7 +96,7 @@ class Merger {
     var list = new ArrayList<String>();
     for (var type : TYPES) {
       list.add("");
-      read(SOURCE.resolve(type), list, "  ");
+      read(SOURCE.resolve(type + ".java"), list, "  ");
     }
     generated.addAll(index, list);
   }
