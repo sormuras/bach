@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class CommandTests {
@@ -31,7 +32,9 @@ class CommandTests {
           // "k",
           // "l",
           // "n=m",
-          "o"
+          "o",
+          "p",
+          "q"
         },
         new Command("noop")
             .addEach("a", "b")
@@ -45,6 +48,7 @@ class CommandTests {
             .add("l", List.of(Path.of("m")), s -> "n=" + s)
             .addIff(true, args -> args.add("o"))
             .addIff(false, args -> args.add("Z"))
+            .addIff("p", Optional.of("q"))
             .toStringArray());
   }
 }
