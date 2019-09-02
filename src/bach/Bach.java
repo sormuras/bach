@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-01T20:46:17.099007Z
+// THIS FILE WAS GENERATED ON 2019-09-02T02:43:51.460567800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -215,6 +215,14 @@ public class Bach {
 
     default List<Path> getSourceDirectories() {
       return List.of(Path.of("src"));
+    }
+
+    default Path resolve(Path path, String name) {
+      return Configuration.resolve(getHomeDirectory(), path, name);
+    }
+
+    default List<Path> resolve(List<Path> paths, String name) {
+      return Configuration.resolve(getHomeDirectory(), paths, name);
     }
 
     static Configuration of() {

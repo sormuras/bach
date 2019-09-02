@@ -51,6 +51,14 @@ public interface Configuration {
     return List.of(Path.of("src"));
   }
 
+  default Path resolve(Path path, String name) {
+    return Configuration.resolve(getHomeDirectory(), path, name);
+  }
+
+  default List<Path> resolve(List<Path> paths, String name) {
+    return Configuration.resolve(getHomeDirectory(), paths, name);
+  }
+
   static Configuration of() {
     return of(Path.of(""));
   }
