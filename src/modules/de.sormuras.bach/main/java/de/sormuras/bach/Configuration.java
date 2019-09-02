@@ -105,19 +105,22 @@ public interface Configuration {
 
     var dot = home.resolve(".bach");
     if (Files.isDirectory(dot)) {
-      var out = new PrintWriter(System.out, true);
-      var err = new PrintWriter(System.err, true);
-      var javac = ToolProvider.findFirst("javac").orElseThrow();
       var bin = dot.resolve("bin");
       var name = "Configuration";
       var configurationJava = dot.resolve(name + ".java");
       if (Files.exists(configurationJava)) {
+        var javac = ToolProvider.findFirst("javac").orElseThrow();
+        var out = new PrintWriter(System.out, true);
+        var err = new PrintWriter(System.err, true);
         javac.run(out, err, "-d", bin.toString(), configurationJava.toString());
       }
       try {
         var parent = Configuration.class.getClassLoader();
         var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
         var configuration = loader.loadClass(name).getConstructor().newInstance();
+        if (configuration instanceof Configuration) {
+          return (Configuration) configuration;
+        }
         var interfaces = new Class[] {Configuration.class};
         var handler = new ConfigurationInvocationHandler(configuration);
         return (Configuration) Proxy.newProxyInstance(loader, interfaces, handler);
