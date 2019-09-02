@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 /** Command-line program argument list builder. */
 public /*STATIC*/ class Command {
 
-  final String name;
-  final List<String> list = new ArrayList<>();
+  private final String name;
+  private final List<String> list = new ArrayList<>();
 
   /** Initialize Command instance with zero or more arguments. */
   Command(String name, Object... args) {
