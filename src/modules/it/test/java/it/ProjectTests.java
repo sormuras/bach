@@ -89,7 +89,7 @@ class ProjectTests {
     @Test
     void build() {
       var home = PROJECTS.resolve("empty");
-      var e = assertThrows(Error.class, () -> new Probe(home).build());
+      var e = assertThrows(Configuration.ValidationError.class, () -> new Probe(home).build());
       assertEquals("expected that home contains a directory: " + home.toUri(), e.getMessage());
     }
   }
