@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-02T03:42:29.499222500Z
+// THIS FILE WAS GENERATED ON 2019-09-02T16:00:50.048348900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -129,10 +129,8 @@ public class Bach {
         // Try provided tool -- all remaining arguments are consumed
         var tool = ToolProvider.findFirst(argument);
         if (tool.isPresent()) {
-          var code = tool.get().run(out, err, arguments.toArray(String[]::new));
-          if (code != 0) {
-            throw new RuntimeException("Tool " + argument + " returned: " + code);
-          }
+          var command = new Command(argument).addEach(arguments);
+          run(command);
           return;
         }
       } catch (ReflectiveOperationException e) {
@@ -175,6 +173,7 @@ public class Bach {
     info();
     validate();
     resolve();
+    compile();
   }
 
   public void clean() {
@@ -194,8 +193,44 @@ public class Bach {
     Resolver.resolve(this);
   }
 
+  public void compile() {
+    var main = new Realm("main", configuration);
+    compile(main);
+    // var test = new Realm("test", configuration, main);
+    // compile(test);
+  }
+
+  private void compile(Realm realm) {
+    var modules = new TreeSet<>(realm.getDeclaredModules());
+    if (modules.isEmpty()) {
+      out.println("No modules declared, nothing to compile.");
+      return;
+    }
+    var jigsaw = new Jigsaw(this);
+    modules.removeAll(jigsaw.compile(realm, modules));
+    if (modules.isEmpty()) {
+      return;
+    }
+    throw new IllegalStateException("not compiled modules: " + modules);
+  }
+
   public void version() {
     out.println(getBanner());
+  }
+
+  void run(Command command) {
+    var name = command.getName();
+    var code = run(name, (Object[]) command.toStringArray());
+    if (code != 0) {
+      throw new AssertionError(name + " exited with non-zero result: " + code);
+    }
+  }
+
+  int run(String name, Object... arguments) {
+    var strings = Arrays.stream(arguments).map(Object::toString).toArray(String[]::new);
+    out.println(name + " " + String.join(" ", strings));
+    var tool = ToolProvider.findFirst(name).orElseThrow();
+    return tool.run(out, err, strings);
   }
 
   public interface Configuration {
@@ -389,8 +424,8 @@ public class Bach {
   /** Command-line program argument list builder. */
   public static class Command {
 
-    final String name;
-    final List<String> list = new ArrayList<>();
+    private final String name;
+    private final List<String> list = new ArrayList<>();
 
     /** Initialize Command instance with zero or more arguments. */
     Command(String name, Object... args) {
@@ -459,6 +494,11 @@ public class Bach {
       return this;
     }
 
+    /** Return the command's name. */
+    public String getName() {
+      return name;
+    }
+
     @Override
     public String toString() {
       var args = list.isEmpty() ? "<empty>" : "'" + String.join("', '", list) + "'";
@@ -468,6 +508,162 @@ public class Bach {
     /** Returns an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
+    }
+  }
+
+  static class Realm {
+
+    /** Collect information about a declared module. */
+    class Info {
+      final Path base;
+      final Path path;
+      final String module;
+      final Path resources;
+      final Path sources;
+
+      Info(Path base, Path path) {
+        this.base = base; // "src/modules"
+        this.path = path; // "${module}/${realm}/java/module-info.java"
+        this.module = path.getName(0).toString();
+        this.resources = base.resolve(module).resolve(Realm.this.name).resolve("resources");
+        this.sources = base.resolve(module).resolve(Realm.this.name).resolve("java");
+      }
+
+      Path getResources() {
+        return resources;
+      }
+
+      String getVersion() {
+        return Realm.this.getVersion();
+      }
+
+      Path getModularJar() {
+        var moduleNameDashVersion = module + '-' + getVersion();
+        return getDestination().resolve("modules").resolve(moduleNameDashVersion + ".jar");
+      }
+
+      Path getSourcesJar() {
+        var moduleNameDashVersion = module + '-' + getVersion();
+        return getDestination().resolve("sources").resolve(moduleNameDashVersion + "-sources.jar");
+      }
+    }
+
+    private final String name;
+    private final Path destination;
+    private final List<Path> modulePaths;
+    private final String moduleSourcePath;
+    private final Map<String, Info> declaredModules;
+
+    Realm(String name, Configuration configuration) {
+      this.name = Util.requireNonNull(name, "realm name");
+      this.destination = configuration.getWorkspaceDirectory().resolve(name);
+      this.modulePaths = Util.findExistingDirectories(configuration.getLibraryPaths());
+      this.moduleSourcePath =
+          configuration.getSourceDirectories().stream()
+              .map(src -> String.join(File.separator, src.toString(), "*", name, "java"))
+              .collect(Collectors.joining(File.pathSeparator));
+      var declaredModules = new TreeMap<String, Info>();
+      for (var src : configuration.getSourceDirectories()) {
+        try (var stream = Files.list(src)) {
+          stream
+              .map(path -> path.resolve(name + "/java/module-info.java"))
+              .filter(Util::isModuleInfo)
+              .map(path -> new Info(src, src.relativize(path)))
+              .forEach(info -> declaredModules.put(info.module, info));
+        } catch (IOException e) {
+          throw new UncheckedIOException("list directory failed: " + src, e);
+        }
+      }
+      this.declaredModules = declaredModules;
+    }
+
+    void addModulePatches(Command javac, Collection<String> modules) {}
+
+    Set<String> getDeclaredModules() {
+      return declaredModules.keySet();
+    }
+
+    Map<String, Info> getDeclaredModuleInfoMap() {
+      return declaredModules;
+    }
+
+    Path getDestination() {
+      return destination;
+    }
+
+    List<Path> getModulePaths() {
+      return modulePaths;
+    }
+
+    String getModuleSourcePath() {
+      return moduleSourcePath;
+    }
+
+    String getVersion() {
+      return "0";
+    }
+  }
+
+  /** Default multi-module compiler. */
+  static class Jigsaw {
+
+    final Bach bach;
+
+    Jigsaw(Bach bach) {
+      this.bach = bach;
+    }
+
+    Collection<String> compile(Realm realm, Collection<String> modules) {
+      var destination = realm.getDestination().resolve("compile/jigsaw");
+      var javac =
+          new Command("javac")
+              .add("-d", destination)
+              // .addEach(configuration.lines(Property.OPTIONS_JAVAC))
+              // .addIff(realm.preview, "--enable-preview")
+              // .addIff(realm.release != null, "--release", realm.release)
+              .add("--module-path", realm.getModulePaths())
+              .add("--module-source-path", realm.getModuleSourcePath())
+              .add("--module", String.join(",", modules))
+              .add("--module-version", realm.getVersion());
+      realm.addModulePatches(javac, modules);
+      bach.run(javac);
+
+      // Util.treeCreate(realm.binSources);
+      for (var module : modules) {
+        var info = realm.getDeclaredModuleInfoMap().get(module);
+        var modularJar = info.getModularJar();
+        var resources = info.getResources();
+        // var mainClass = realm.declaredModules.get(module).mainClass();
+        Util.treeCreate(modularJar.getParent()); // jar doesn't create directories...
+        var jarModule =
+            new Command("jar")
+                .add("--create")
+                .add("--file", modularJar)
+                // .addIff(configuration.verbose(), "--verbose")
+                // .addIff("--main-class", mainClass)
+                .add("-C", destination.resolve(module))
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+        bach.run(jarModule);
+        /*
+         var sourcesJar = realm.sourcesJar(module);
+         var jarSources =
+             new Command("jar")
+                 .add("--create")
+                 .add("--file", sourcesJar)
+                 // .addIff(configuration.verbose(), "--verbose")
+                 .add("--no-manifest")
+                 // .add("-C", project.sources.resolve(module).resolve(realm.name).resolve("java"))
+                 .add(".")
+                 .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+         // if (runner.run(jarSources) != 0) {
+         //  throw new RuntimeException(
+         //      "Creating " + realm.name + " sources jar failed: " + sourcesJar);
+         //}
+        */
+      }
+
+      return modules;
     }
   }
 
@@ -789,7 +985,7 @@ public class Bach {
   }
 
   /** Static helpers. */
-  public static class Util {
+  static class Util {
 
     static <E extends Comparable<E>> Set<E> concat(Set<E> one, Set<E> two) {
       return Stream.concat(one.stream(), two.stream()).collect(Collectors.toCollection(TreeSet::new));
@@ -802,6 +998,10 @@ public class Bach {
       } catch (NoSuchMethodException e) {
         return Optional.empty();
       }
+    }
+
+    static List<Path> findExistingDirectories(List<Path> directories) {
+      return directories.stream().filter(Files::isDirectory).collect(Collectors.toList());
     }
 
     static boolean isApiMethod(Method method) {

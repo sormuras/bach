@@ -122,7 +122,8 @@ class ProjectTests {
               ">> BUILD >>",
               "Loading missing modules: {org.objectweb.asm=[7.1]}",
               lib.resolve("org.objectweb.asm-7.1.jar")
-                  + " <- https://repo1.maven.org/maven2/org/ow2/asm/asm/7.1/asm-7.1.jar"),
+                  + " <- https://repo1.maven.org/maven2/org/ow2/asm/asm/7.1/asm-7.1.jar",
+              ">> COMPILE >>"),
           probe.lines());
     }
   }

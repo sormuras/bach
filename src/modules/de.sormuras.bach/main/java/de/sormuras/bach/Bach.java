@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.TreeSet;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -89,10 +90,7 @@ public class Bach {
         // Try provided tool -- all remaining arguments are consumed
         var tool = ToolProvider.findFirst(argument);
         if (tool.isPresent()) {
-          var code = tool.get().run(out, err, arguments.toArray(String[]::new));
-          if (code != 0) {
-            throw new RuntimeException("Tool " + argument + " returned: " + code);
-          }
+          run(new Command(argument).addEach(arguments));
           return;
         }
       } catch (ReflectiveOperationException e) {
@@ -156,16 +154,42 @@ public class Bach {
   }
 
   public void compile() {
-    var sources = Resolver.of(configuration.getSourceDirectories());
-    if (sources.getDeclaredModules().isEmpty()) {
+    var main = new Realm("main", configuration);
+    compile(main);
+    // var test = new Realm("test", configuration, main);
+    // compile(test);
+  }
+
+  private void compile(Realm realm) {
+    var modules = new TreeSet<>(realm.getDeclaredModules());
+    if (modules.isEmpty()) {
       out.println("No modules declared, nothing to compile.");
       return;
     }
-    var main = new Realm("main", configuration);
-    new Jigsaw(this).compile(main, sources.getDeclaredModules());
+    var jigsaw = new Jigsaw(this);
+    modules.removeAll(jigsaw.compile(realm, modules));
+    if (modules.isEmpty()) {
+      return;
+    }
+    throw new IllegalStateException("not compiled modules: " + modules);
   }
 
   public void version() {
     out.println(getBanner());
+  }
+
+  void run(Command command) {
+    var name = command.getName();
+    var code = run(name, (Object[]) command.toStringArray());
+    if (code != 0) {
+      throw new AssertionError(name + " exited with non-zero result: " + code);
+    }
+  }
+
+  int run(String name, Object... arguments) {
+    var strings = Arrays.stream(arguments).map(Object::toString).toArray(String[]::new);
+    out.println(name + " " + String.join(" ", strings));
+    var tool = ToolProvider.findFirst(name).orElseThrow();
+    return tool.run(out, err, strings);
   }
 }
