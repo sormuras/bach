@@ -135,6 +135,7 @@ public class Bach {
     info();
     validate();
     resolve();
+    compile();
   }
 
   public void clean() {
@@ -152,6 +153,16 @@ public class Bach {
 
   public void resolve() {
     Resolver.resolve(this);
+  }
+
+  public void compile() {
+    var sources = Resolver.of(configuration.getSourceDirectories());
+    if (sources.getDeclaredModules().isEmpty()) {
+      out.println("No modules declared, nothing to compile.");
+      return;
+    }
+    var main = new Realm("main", configuration);
+    new Jigsaw(this).compile(main, sources.getDeclaredModules());
   }
 
   public void version() {
