@@ -17,7 +17,6 @@
 
 package de.sormuras.bach;
 
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -105,14 +104,12 @@ public interface Configuration {
 
     var dot = home.resolve(".bach");
     if (Files.isDirectory(dot)) {
-      var bin = dot.resolve("bin");
+      var bin = Path.of("bin/.bach");
       var name = "Configuration";
       var configurationJava = dot.resolve(name + ".java");
       if (Files.exists(configurationJava)) {
         var javac = ToolProvider.findFirst("javac").orElseThrow();
-        var out = new PrintWriter(System.out, true);
-        var err = new PrintWriter(System.err, true);
-        javac.run(out, err, "-d", bin.toString(), configurationJava.toString());
+        javac.run(System.out, System.err, "-d", bin.toString(), configurationJava.toString());
       }
       try {
         var parent = Configuration.class.getClassLoader();

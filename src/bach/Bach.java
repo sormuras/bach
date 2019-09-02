@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-02T02:43:51.460567800Z
+// THIS FILE WAS GENERATED ON 2019-09-02T03:23:19.437439100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -271,19 +271,20 @@ public class Bach {
 
       var dot = home.resolve(".bach");
       if (Files.isDirectory(dot)) {
-        var out = new PrintWriter(System.out, true);
-        var err = new PrintWriter(System.err, true);
-        var javac = ToolProvider.findFirst("javac").orElseThrow();
-        var bin = dot.resolve("bin");
+        var bin = Path.of("bin/.bach");
         var name = "Configuration";
         var configurationJava = dot.resolve(name + ".java");
         if (Files.exists(configurationJava)) {
-          javac.run(out, err, "-d", bin.toString(), configurationJava.toString());
+          var javac = ToolProvider.findFirst("javac").orElseThrow();
+          javac.run(System.out, System.err, "-d", bin.toString(), configurationJava.toString());
         }
         try {
           var parent = Configuration.class.getClassLoader();
           var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
           var configuration = loader.loadClass(name).getConstructor().newInstance();
+          if (configuration instanceof Configuration) {
+            return (Configuration) configuration;
+          }
           var interfaces = new Class[] {Configuration.class};
           var handler = new ConfigurationInvocationHandler(configuration);
           return (Configuration) Proxy.newProxyInstance(loader, interfaces, handler);

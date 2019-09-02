@@ -29,7 +29,7 @@ import java.util.spi.ToolProvider;
 @SuppressWarnings("WeakerAccess")
 class Merger {
   static Path SOURCE = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
-  static Path TARGET = Path.of("target", "merge");
+  static Path TARGET = Path.of("bin/merged");
   static List<String> TYPES =
       List.of("Configuration.java", "Resolver.java", "Transfer.java", "Util.java");
 
@@ -157,6 +157,7 @@ class Merger {
       publishedPath.toFile().setWritable(false);
       System.out.println("New version of Bach.java generated - don't forget to publish it!");
       System.out.println("Generated hash code is 0x" + Integer.toHexString(temporaryHash));
+      Thread.sleep(123);
     }
   }
 }
