@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Configuration;
+import de.sormuras.bach.Validation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -89,7 +89,7 @@ class ProjectTests {
     @Test
     void build() {
       var home = PROJECTS.resolve("empty");
-      var e = assertThrows(Configuration.ValidationError.class, () -> new Probe(home).build());
+      var e = assertThrows(Validation.Error.class, () -> new Probe(home).build());
       assertEquals("expected that home contains a directory: " + home.toUri(), e.getMessage());
     }
   }

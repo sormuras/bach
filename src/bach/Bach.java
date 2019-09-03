@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-03T03:26:35.742587200Z
+// THIS FILE WAS GENERATED ON 2019-09-03T09:37:20.474814400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -185,7 +185,22 @@ public class Bach {
   }
 
   public void validate() {
-    Configuration.validate(configuration);
+    var home = configuration.getHomeDirectory();
+    Validation.validateDirectory(home);
+    if (Util.list(home, Files::isDirectory).size() == 0)
+      throw new Validation.Error("home contains a directory", home.toUri());
+    var work = configuration.getWorkspaceDirectory();
+    if (Files.exists(work)) {
+      Validation.validateDirectory(work);
+      if (!work.toFile().canWrite())
+        throw new Validation.Error("bin is writable: %s", work.toUri());
+    } else {
+      var parentOfBin = work.toAbsolutePath().getParent();
+      if (parentOfBin != null && !parentOfBin.toFile().canWrite())
+        throw new Validation.Error("parent of work is writable", parentOfBin.toUri());
+    }
+    Validation.validateDirectoryIfExists(configuration.getLibraryDirectory());
+    configuration.getSourceDirectories().forEach(Validation::validateDirectory);
   }
 
   public void resolve() {
@@ -271,7 +286,7 @@ public class Bach {
     }
 
     static Configuration of(Path home) {
-      validateDirectory(Util.requireNonNull(home, "home directory"));
+      Validation.validateDirectory(Util.requireNonNull(home, "home directory"));
       var ccc = compileCustomConfiguration(home);
       return new DefaultConfiguration(
           home,
@@ -392,12 +407,6 @@ public class Bach {
       }
     }
 
-    class ValidationError extends AssertionError {
-      private ValidationError(String expected, Object hint) {
-        super(String.format("expected that %s: %s", expected, hint));
-      }
-    }
-
     static List<String> toStrings(Configuration configuration) {
       var home = configuration.getHomeDirectory();
       return List.of(
@@ -405,32 +414,6 @@ public class Bach {
           String.format("workspace = '%s'", configuration.getWorkspaceDirectory()),
           String.format("library paths = %s", configuration.getLibraryPaths()),
           String.format("source directories = %s", configuration.getSourceDirectories()));
-    }
-
-    static void validate(Configuration configuration) {
-      var home = configuration.getHomeDirectory();
-      validateDirectory(home);
-      if (Util.list(home, Files::isDirectory).size() == 0)
-        throw new ValidationError("home contains a directory", home.toUri());
-      var work = configuration.getWorkspaceDirectory();
-      if (Files.exists(work)) {
-        validateDirectory(work);
-        if (!work.toFile().canWrite()) throw new ValidationError("bin is writable: %s", work.toUri());
-      } else {
-        var parentOfBin = work.toAbsolutePath().getParent();
-        if (parentOfBin != null && !parentOfBin.toFile().canWrite())
-          throw new ValidationError("parent of work is writable", parentOfBin.toUri());
-      }
-      validateDirectoryIfExists(configuration.getLibraryDirectory());
-      configuration.getSourceDirectories().forEach(Configuration::validateDirectory);
-    }
-
-    static void validateDirectoryIfExists(Path path) {
-      if (Files.exists(path)) validateDirectory(path);
-    }
-
-    static void validateDirectory(Path path) {
-      if (!Files.isDirectory(path)) throw new ValidationError("path is a directory", path.toUri());
     }
   }
 
@@ -1115,6 +1098,23 @@ public class Bach {
       } catch (IOException e) {
         throw new UncheckedIOException("tree delete failed: " + root, e);
       }
+    }
+  }
+
+  public static class Validation {
+
+    public static class Error extends AssertionError {
+      Error(String expected, Object hint) {
+        super(String.format("expected that %s: %s", expected, hint));
+      }
+    }
+
+    static void validateDirectoryIfExists(Path path) {
+      if (Files.exists(path)) validateDirectory(path);
+    }
+
+    static void validateDirectory(Path path) {
+      if (!Files.isDirectory(path)) throw new Error("path is a directory", path.toUri());
     }
   }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -146,7 +147,22 @@ public class Bach {
   }
 
   public void validate() {
-    Configuration.validate(configuration);
+    var home = configuration.getHomeDirectory();
+    Validation.validateDirectory(home);
+    if (Util.list(home, Files::isDirectory).size() == 0)
+      throw new Validation.Error("home contains a directory", home.toUri());
+    var work = configuration.getWorkspaceDirectory();
+    if (Files.exists(work)) {
+      Validation.validateDirectory(work);
+      if (!work.toFile().canWrite())
+        throw new Validation.Error("bin is writable: %s", work.toUri());
+    } else {
+      var parentOfBin = work.toAbsolutePath().getParent();
+      if (parentOfBin != null && !parentOfBin.toFile().canWrite())
+        throw new Validation.Error("parent of work is writable", parentOfBin.toUri());
+    }
+    Validation.validateDirectoryIfExists(configuration.getLibraryDirectory());
+    configuration.getSourceDirectories().forEach(Validation::validateDirectory);
   }
 
   public void resolve() {

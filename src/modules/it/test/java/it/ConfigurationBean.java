@@ -36,7 +36,6 @@ class ConfigurationBean implements Configuration {
     setLibraryPaths(Configuration.super.getLibraryPaths());
     setSourceDirectories(Configuration.super.getSourceDirectories());
     setVersion(Configuration.super.getVersion());
-    Configuration.validate(this);
   }
 
   @Override
