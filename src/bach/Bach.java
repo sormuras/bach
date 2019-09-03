@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-03T12:08:10.882488400Z
+// THIS FILE WAS GENERATED ON 2019-09-03T15:15:48.382452100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -29,9 +29,13 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -250,6 +254,9 @@ public class Bach {
 
   public interface Configuration {
 
+    Path DEFAULT_HOME_DIRECTORY = Path.of("");
+    Path DEFAULT_WORKSPACE_DIRECTORY = Path.of("bin");
+
     default String getProjectName() {
       return getHomeDirectory().toAbsolutePath().getFileName().toString();
     }
@@ -259,11 +266,11 @@ public class Bach {
     }
 
     default Path getHomeDirectory() {
-      return Path.of("");
+      return DEFAULT_HOME_DIRECTORY;
     }
 
     default Path getWorkspaceDirectory() {
-      return Path.of("bin");
+      return DEFAULT_WORKSPACE_DIRECTORY;
     }
 
     default Path getLibraryDirectory() {
@@ -298,15 +305,15 @@ public class Bach {
     }
 
     static Configuration of() {
-      return of(new Default());
+      return of(Default.of(DEFAULT_HOME_DIRECTORY, DEFAULT_WORKSPACE_DIRECTORY));
     }
 
     static Configuration of(Path home) {
-      return of(home, new Default().getWorkspaceDirectory());
+      return of(home, DEFAULT_WORKSPACE_DIRECTORY);
     }
 
     static Configuration of(Path home, Path work) {
-      return new Fixture(home, work, new Default());
+      return new Fixture(home, work, Default.of(home, work));
     }
 
     static Configuration of(Configuration configuration) {
@@ -320,10 +327,76 @@ public class Bach {
           String.format("home = '%s' -> %s", home, home.toUri()),
           String.format("workspace = '%s'", configuration.getWorkspaceDirectory()),
           String.format("library paths = %s", configuration.getLibraryPaths()),
-          String.format("source directories = %s", configuration.getSourceDirectories()));
+          String.format("source directories = %s", configuration.getSourceDirectories()),
+          String.format("project name = %s", configuration.getProjectName()),
+          String.format("project version = %s", configuration.getProjectVersion()));
     }
 
-    class Default implements Configuration {}
+    class Default implements Configuration, InvocationHandler {
+
+      static Configuration of(Path home, Path work) {
+        var dot = home.resolve(".bach");
+        if (Files.isDirectory(dot)) {
+          var bin = work.resolve(".bach");
+          var name = "Configuration";
+          var configurationJava = dot.resolve(name + ".java");
+          if (Files.exists(configurationJava)) {
+            var javac = ToolProvider.findFirst("javac").orElseThrow();
+            javac.run(System.out, System.err, "-d", bin.toString(), configurationJava.toString());
+          }
+          try {
+            var parent = Configuration.class.getClassLoader();
+            var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
+            var configuration = loader.loadClass(name).getConstructor().newInstance();
+            // System.out.println("Using custom configuration: " + configuration);
+            if (configuration instanceof Configuration) {
+              return (Configuration) configuration;
+            }
+            var interfaces = new Class[] {Configuration.class};
+            var handler = new Default(home, work, configuration);
+            return (Configuration) Proxy.newProxyInstance(loader, interfaces, handler);
+          } catch (ClassNotFoundException e) {
+            // ignore "missing" custom configuration class
+          } catch (Exception e) {
+            throw new Error("Loading custom configuration failed: " + configurationJava.toUri(), e);
+          }
+        }
+        return new Default(home, work);
+      }
+
+      private final Path home;
+      private final Path work;
+      private final Object that;
+
+      private Default(Path home, Path work) {
+        this(home, work, new Object());
+      }
+
+      private Default(Path home, Path work, Object that) {
+        this.that = that;
+        this.home = home;
+        this.work = work;
+      }
+
+      @Override
+      public Path getHomeDirectory() {
+        return home;
+      }
+
+      @Override
+      public Path getWorkspaceDirectory() {
+        return work;
+      }
+
+      @Override
+      public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        try {
+          return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
+        } catch (NoSuchMethodException e) {
+          return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
+        }
+      }
+    }
 
     class Fixture implements Configuration {
       private final Configuration that;

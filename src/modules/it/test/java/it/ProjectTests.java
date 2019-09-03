@@ -80,7 +80,9 @@ class ProjectTests {
             "  home = '" + home + "' -> " + home.toUri(),
             "  workspace = '" + home.resolve("bin") + "'",
             "  library paths = [" + home.resolve("lib") + "]",
-            "  source directories = [" + home.resolve("src") + "]"),
+            "  source directories = [" + home.resolve("src") + "]",
+            "  project name = " + home.getFileName().toString(),
+            "  project version = 0"),
         bach.lines());
   }
 

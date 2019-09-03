@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -39,10 +39,12 @@ class BachTests {
     assertNotNull(bach.err);
     assertEquals(Path.of(""), bach.configuration.getHomeDirectory());
     assertEquals(Path.of("bin"), bach.configuration.getWorkspaceDirectory());
+    assertEquals("Bach.java", bach.configuration.getProjectName());
+    assertEquals(Version.parse(Bach.VERSION), bach.configuration.getProjectVersion());
   }
 
   @Test
   void versionIsLegalByModuleDescriptorVersionsParseFactoryContract() {
-    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(Bach.VERSION));
+    assertDoesNotThrow(() -> Version.parse(Bach.VERSION));
   }
 }
