@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-03T15:15:48.382452100Z
+// THIS FILE WAS GENERATED ON 2019-09-03T22:12:24.218377500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -30,6 +30,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -390,10 +391,20 @@ public class Bach {
 
       @Override
       public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        var name = method.getName();
+        var types = method.getParameterTypes();
         try {
-          return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
-        } catch (NoSuchMethodException e) {
-          return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
+          try {
+            return that.getClass().getMethod(name, types).invoke(that, args);
+          } catch (NoSuchMethodException ignore) {
+            return this.getClass().getMethod(name, types).invoke(this, args);
+          }
+        } catch (InvocationTargetException exception) {
+          var cause = exception.getCause();
+          if (cause != null) {
+            throw cause;
+          }
+          throw exception;
         }
       }
     }
@@ -490,7 +501,7 @@ public class Bach {
 
     class UnmappedModuleException extends RuntimeException {
       UnmappedModuleException(String module) {
-        super("Module " + module + "is not mapped");
+        super("Module " + module + " is not mapped");
       }
     }
   }
@@ -778,7 +789,7 @@ public class Bach {
       }
 
       var transfer = new Transfer(bach.out, bach.err);
-      var worker = new Worker(transfer, bach.configuration.getLibraryDirectory());
+      var worker = new Worker(bach, transfer);
       do {
         bach.out.println("Loading missing modules: " + missing);
         var items = new ArrayList<Transfer.Item>();
@@ -891,13 +902,14 @@ public class Bach {
 
     static class Worker {
 
-      class Lookup {
+      static class Lookup {
 
         final String name;
         final Properties properties;
         final Set<Pattern> patterns;
+        final UnaryOperator<String> custom;
 
-        Lookup(Transfer transfer, Path lib, String name) {
+        Lookup(Transfer transfer, Path lib, String name, UnaryOperator<String> custom) {
           this.name = name;
           var uri = "https://github.com/sormuras/modules/raw/master/" + name;
           var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
@@ -915,9 +927,15 @@ public class Bach {
                   .filter(key -> !SourceVersion.isName(key))
                   .map(Pattern::compile)
                   .collect(Collectors.toSet());
+          this.custom = custom;
         }
 
         String get(String key) {
+          try {
+            return custom.apply(key);
+          } catch (Configuration.UnmappedModuleException e) {
+            // fall-through
+          }
           var value = properties.getProperty(key);
           if (value != null) {
             return value;
@@ -939,19 +957,36 @@ public class Bach {
         }
       }
 
+      final Bach bach;
       final Properties moduleUri;
       final Lookup moduleMaven, moduleVersion;
 
-      Worker(Transfer transfer, Path lib) {
+      Worker(Bach bach, Transfer transfer) {
+        this.bach = bach;
+        var cfg = bach.configuration;
+        var lib = cfg.getLibraryDirectory();
         this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
-        this.moduleMaven = new Lookup(transfer, lib, "module-maven.properties");
-        this.moduleVersion = new Lookup(transfer, lib, "module-version.properties");
+        this.moduleMaven =
+            new Lookup(transfer, lib, "module-maven.properties", cfg::getModuleMavenGroupAndArtifact);
+        this.moduleVersion =
+            new Lookup(transfer, lib, "module-version.properties", cfg::getModuleVersion);
+      }
+
+      private URI getModuleUri(String module) {
+        try {
+          return bach.configuration.getModuleUri(module);
+        } catch (Configuration.UnmappedModuleException e) {
+          var uri = moduleUri.getProperty(module);
+          if (uri == null) {
+            return null;
+          }
+          return URI.create(uri);
+        }
       }
 
       private Transfer.Item toTransferItem(String module, Set<Version> set) {
-        var userProvidedUri = moduleUri.getProperty(module);
-        if (userProvidedUri != null) {
-          var uri = URI.create(userProvidedUri);
+        var uri = getModuleUri(module);
+        if (uri != null) {
           var file = Util.findFileName(uri);
           var version = Util.findVersion(file.orElse(""));
           return Transfer.Item.of(uri, module + version.map(v -> '-' + v).orElse("") + ".jar");

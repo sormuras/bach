@@ -17,7 +17,6 @@
 
 package de.sormuras.bach;
 
-import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -36,8 +35,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.lang.model.SourceVersion;
 
 /*BODY*/
 /** Resolves required modules. */
@@ -77,7 +78,7 @@ import java.util.stream.Collectors;
     }
 
     var transfer = new Transfer(bach.out, bach.err);
-    var worker = new Worker(transfer, bach.configuration.getLibraryDirectory());
+    var worker = new Worker(bach, transfer);
     do {
       bach.out.println("Loading missing modules: " + missing);
       var items = new ArrayList<Transfer.Item>();
@@ -190,13 +191,14 @@ import java.util.stream.Collectors;
 
   static class Worker {
 
-    class Lookup {
+    static class Lookup {
 
       final String name;
       final Properties properties;
       final Set<Pattern> patterns;
+      final UnaryOperator<String> custom;
 
-      Lookup(Transfer transfer, Path lib, String name) {
+      Lookup(Transfer transfer, Path lib, String name, UnaryOperator<String> custom) {
         this.name = name;
         var uri = "https://github.com/sormuras/modules/raw/master/" + name;
         var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
@@ -214,9 +216,15 @@ import java.util.stream.Collectors;
                 .filter(key -> !SourceVersion.isName(key))
                 .map(Pattern::compile)
                 .collect(Collectors.toSet());
+        this.custom = custom;
       }
 
       String get(String key) {
+        try {
+          return custom.apply(key);
+        } catch (Configuration.UnmappedModuleException e) {
+          // fall-through
+        }
         var value = properties.getProperty(key);
         if (value != null) {
           return value;
@@ -238,19 +246,36 @@ import java.util.stream.Collectors;
       }
     }
 
+    final Bach bach;
     final Properties moduleUri;
     final Lookup moduleMaven, moduleVersion;
 
-    Worker(Transfer transfer, Path lib) {
+    Worker(Bach bach, Transfer transfer) {
+      this.bach = bach;
+      var cfg = bach.configuration;
+      var lib = cfg.getLibraryDirectory();
       this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
-      this.moduleMaven = new Lookup(transfer, lib, "module-maven.properties");
-      this.moduleVersion = new Lookup(transfer, lib, "module-version.properties");
+      this.moduleMaven =
+          new Lookup(transfer, lib, "module-maven.properties", cfg::getModuleMavenGroupAndArtifact);
+      this.moduleVersion =
+          new Lookup(transfer, lib, "module-version.properties", cfg::getModuleVersion);
+    }
+
+    private URI getModuleUri(String module) {
+      try {
+        return bach.configuration.getModuleUri(module);
+      } catch (Configuration.UnmappedModuleException e) {
+        var uri = moduleUri.getProperty(module);
+        if (uri == null) {
+          return null;
+        }
+        return URI.create(uri);
+      }
     }
 
     private Transfer.Item toTransferItem(String module, Set<Version> set) {
-      var userProvidedUri = moduleUri.getProperty(module);
-      if (userProvidedUri != null) {
-        var uri = URI.create(userProvidedUri);
+      var uri = getModuleUri(module);
+      if (uri != null) {
         var file = Util.findFileName(uri);
         var version = Util.findVersion(file.orElse(""));
         return Transfer.Item.of(uri, module + version.map(v -> '-' + v).orElse("") + ".jar");

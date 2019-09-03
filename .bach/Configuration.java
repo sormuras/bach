@@ -18,7 +18,6 @@
 // default package
 
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 

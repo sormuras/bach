@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
@@ -168,10 +169,20 @@ public interface Configuration {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      var name = method.getName();
+      var types = method.getParameterTypes();
       try {
-        return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
-      } catch (NoSuchMethodException e) {
-        return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
+        try {
+          return that.getClass().getMethod(name, types).invoke(that, args);
+        } catch (NoSuchMethodException ignore) {
+          return this.getClass().getMethod(name, types).invoke(this, args);
+        }
+      } catch (InvocationTargetException exception) {
+        var cause = exception.getCause();
+        if (cause != null) {
+          throw cause;
+        }
+        throw exception;
       }
     }
   }
@@ -268,7 +279,7 @@ public interface Configuration {
 
   class UnmappedModuleException extends RuntimeException {
     UnmappedModuleException(String module) {
-      super("Module " + module + "is not mapped");
+      super("Module " + module + " is not mapped");
     }
   }
 }
