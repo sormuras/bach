@@ -23,39 +23,43 @@ import java.nio.file.Path;
 import java.util.List;
 
 /** Custom configuration. */
-public class Configuration /* implements [de.sormuras.bach|Bach].Configuration */ {
+public class Configuration /* extends [de.sormuras.bach|Bach].Configuration */ {
+
+  public String getProjectName() {
+    return "Bach.java";
+  }
+
+  public Version getProjectVersion() {
+    return Version.parse("2-ea");
+  }
 
   public List<Path> getSourceDirectories() {
     return List.of(Path.of("src/modules"));
   }
 
-  public Version getVersion() {
-    return Version.parse("2-ea");
-  }
-
-  public String getLibraryVersion(String module) {
-    if (module.equals("de.sormuras.mainrunner.engine")) return "2.0.5";
-    if (module.equals("org.apiguardian.api")) return "1.1.0";
-    if (module.equals("org.opentest4j")) return "1.2.0";
-    if (module.startsWith("org.junit.jupiter")) return "5.5.1";
-    if (module.startsWith("org.junit.platform")) return "1.5.1";
-    // throw new IllegalArgumentException("version not mapped for module: " + module);
-    return null; // null results in a lookup of a version from sormuras/modules
-  }
-
-  public URI getLibraryUri(String module) {
+  public URI getModuleUri(String module) {
     if (module.equals("foo.bar.baz")) return URI.create("https://<path>/baz-1.3.jar");
     return null;
   }
 
-  public URI getLibraryMavenRepositoryUri(String module) {
+  public URI getModuleMavenRepository(String module) {
     if (module.startsWith("foo.bar")) return URI.create("https://dl.bintray.com/foo-bar/maven");
     return URI.create("https://repo1.maven.org/maven2");
   }
 
-  public String getLibraryMavenCoordinates(String module) {
+  public String getModuleMavenGroupAndArtifact(String module) {
     if (module.startsWith("foo.bar.baz")) return "foo.bar:baz";
     return null;
+  }
+
+  public String getModuleVersion(String module) {
+    if ("de.sormuras.mainrunner.engine".equals(module)) return "2.0.5";
+    if ("org.apiguardian.api".equals(module)) return "1.1.0";
+    if ("org.opentest4j".equals(module)) return "1.2.0";
+    if (module.startsWith("org.junit.jupiter")) return "5.5.1";
+    if (module.startsWith("org.junit.platform")) return "1.5.1";
+    // throw new IllegalArgumentException("version not mapped for module: " + module);
+    return null; // null results in a lookup of a version from sormuras/modules
   }
 
   @Override
