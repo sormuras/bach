@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-03T09:37:20.474814400Z
+// THIS FILE WAS GENERATED ON 2019-09-03T12:08:10.882488400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -29,13 +29,9 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -199,7 +195,12 @@ public class Bach {
       if (parentOfBin != null && !parentOfBin.toFile().canWrite())
         throw new Validation.Error("parent of work is writable", parentOfBin.toUri());
     }
-    Validation.validateDirectoryIfExists(configuration.getLibraryDirectory());
+    var lib = configuration.getLibraryDirectory();
+    var libs = configuration.getLibraryPaths();
+    Validation.validateDirectoryIfExists(lib);
+    if (!libs.contains(lib)) {
+      throw new Validation.Error(lib + " is member of paths", libs);
+    }
     configuration.getSourceDirectories().forEach(Validation::validateDirectory);
   }
 
@@ -249,6 +250,14 @@ public class Bach {
 
   public interface Configuration {
 
+    default String getProjectName() {
+      return getHomeDirectory().toAbsolutePath().getFileName().toString();
+    }
+
+    default Version getProjectVersion() {
+      return Version.parse("0");
+    }
+
     default Path getHomeDirectory() {
       return Path.of("");
     }
@@ -269,111 +278,85 @@ public class Bach {
       return List.of(Path.of("src"));
     }
 
-    default Version getVersion() {
-      return Version.parse("0");
+    /** {@code if (module.equals("foo.bar.baz")) return URI.create("https://<path>/baz-1.3.jar")} */
+    default URI getModuleUri(String module) {
+      throw new UnmappedModuleException(module);
     }
 
-    default Path resolve(Path path, String name) {
-      return Configuration.resolve(getHomeDirectory(), path, name);
+    /** {@code module.startsWith("foo.bar") -> URI.create("https://dl.bintray.com/foo-bar/maven")} */
+    default URI getModuleMavenRepository(String module) {
+      return URI.create("https://repo1.maven.org/maven2");
     }
 
-    default List<Path> resolve(List<Path> paths, String name) {
-      return Configuration.resolve(getHomeDirectory(), paths, name);
+    /** {@code if (module.equals("foo.bar.baz")) return "org.foo.bar:foo-baz"} */
+    default String getModuleMavenGroupAndArtifact(String module) {
+      throw new UnmappedModuleException(module);
+    }
+
+    default String getModuleVersion(String module) {
+      throw new UnmappedModuleException(module);
     }
 
     static Configuration of() {
-      return of(Path.of(""));
+      return of(new Default());
     }
 
     static Configuration of(Path home) {
-      Validation.validateDirectory(Util.requireNonNull(home, "home directory"));
-      var ccc = compileCustomConfiguration(home);
-      return new DefaultConfiguration(
-          home,
-          resolve(home, ccc.getWorkspaceDirectory(), "workspace directory"),
-          resolve(home, ccc.getLibraryPaths(), "library paths"),
-          resolve(home, ccc.getSourceDirectories(), "source directories"),
-          ccc.getVersion());
+      return of(home, new Default().getWorkspaceDirectory());
     }
 
-    static Path resolve(Path home, Path path, String name) {
-      return Util.requireNonNull(path, name).isAbsolute() ? path : home.resolve(path);
+    static Configuration of(Path home, Path work) {
+      return new Fixture(home, work, new Default());
     }
 
-    static List<Path> resolve(Path home, List<Path> paths, String name) {
+    static Configuration of(Configuration configuration) {
+      return new Fixture(
+          configuration.getHomeDirectory(), configuration.getWorkspaceDirectory(), configuration);
+    }
+
+    static List<String> toStrings(Configuration configuration) {
+      var home = configuration.getHomeDirectory();
       return List.of(
-          Util.requireNonNull(paths, name).stream()
-              .map(path -> resolve(home, path, "element of " + name))
-              .toArray(Path[]::new));
+          String.format("home = '%s' -> %s", home, home.toUri()),
+          String.format("workspace = '%s'", configuration.getWorkspaceDirectory()),
+          String.format("library paths = %s", configuration.getLibraryPaths()),
+          String.format("source directories = %s", configuration.getSourceDirectories()));
     }
 
-    private static Configuration compileCustomConfiguration(Path home) {
-      class ConfigurationInvocationHandler implements Configuration, InvocationHandler {
+    class Default implements Configuration {}
 
-        private final Object that;
-
-        private ConfigurationInvocationHandler(Object that) {
-          this.that = that;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-          try {
-            return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
-          } catch (NoSuchMethodException e) {
-            return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
-          }
-        }
-      }
-
-      var dot = home.resolve(".bach");
-      if (Files.isDirectory(dot)) {
-        var bin = Path.of("bin/.bach");
-        var name = "Configuration";
-        var configurationJava = dot.resolve(name + ".java");
-        if (Files.exists(configurationJava)) {
-          var javac = ToolProvider.findFirst("javac").orElseThrow();
-          javac.run(System.out, System.err, "-d", bin.toString(), configurationJava.toString());
-        }
-        try {
-          var parent = Configuration.class.getClassLoader();
-          var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
-          var configuration = loader.loadClass(name).getConstructor().newInstance();
-          // System.out.println("Using custom configuration: " + configuration);
-          if (configuration instanceof Configuration) {
-            return (Configuration) configuration;
-          }
-          var interfaces = new Class[] {Configuration.class};
-          var handler = new ConfigurationInvocationHandler(configuration);
-          return (Configuration) Proxy.newProxyInstance(loader, interfaces, handler);
-        } catch (ClassNotFoundException e) {
-          // ignore "missing" custom configuration class
-        } catch (Exception e) {
-          throw new Error("Loading custom configuration failed: " + configurationJava.toUri(), e);
-        }
-      }
-      return new Configuration() {};
-    }
-
-    class DefaultConfiguration implements Configuration {
-
+    class Fixture implements Configuration {
+      private final Configuration that;
       private final Path homeDirectory;
       private final Path workspaceDirectory;
+      private final Path libraryDirectory;
       private final List<Path> libraryPaths;
       private final List<Path> sourceDirectories;
-      private final Version version;
+      private final String projectName;
+      private final Version projectVersion;
 
-      private DefaultConfiguration(
-          Path homeDirectory,
-          Path workspaceDirectory,
-          List<Path> libraryPaths,
-          List<Path> sourceDirectories,
-          Version version) {
-        this.homeDirectory = homeDirectory;
-        this.workspaceDirectory = workspaceDirectory;
-        this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
-        this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
-        this.version = version;
+      Fixture(Path homeDirectory, Path workspaceDirectory, Configuration that) {
+        this.that = Util.requireNonNull(that, "that underlying configuration");
+        // basic
+        this.homeDirectory = Util.requireNonNull(homeDirectory, "home directory");
+        this.workspaceDirectory = resolve(workspaceDirectory, "workspace directory");
+        this.libraryDirectory = resolve(that.getLibraryDirectory(), "library directory");
+        this.libraryPaths = resolve(that.getLibraryPaths(), "library paths");
+        this.sourceDirectories = resolve(that.getSourceDirectories(), "source directories");
+        // project
+        this.projectName = Util.requireNonNull(that.getProjectName(), "project name");
+        this.projectVersion = Util.requireNonNull(that.getProjectVersion(), "project version");
+      }
+
+      private Path resolve(Path path, String name) {
+        return Util.requireNonNull(path, name).isAbsolute() ? path : homeDirectory.resolve(path);
+      }
+
+      private List<Path> resolve(List<Path> paths, String name) {
+        return List.of(
+            Util.requireNonNull(paths, name).stream()
+                .map(path -> resolve(path, "element of " + name))
+                .toArray(Path[]::new));
       }
 
       @Override
@@ -387,6 +370,11 @@ public class Bach {
       }
 
       @Override
+      public Path getLibraryDirectory() {
+        return libraryDirectory;
+      }
+
+      @Override
       public List<Path> getLibraryPaths() {
         return libraryPaths;
       }
@@ -397,23 +385,40 @@ public class Bach {
       }
 
       @Override
-      public Version getVersion() {
-        return version;
+      public String getProjectName() {
+        return projectName;
       }
 
       @Override
-      public String toString() {
-        return "Configuration [" + String.join(", ", toStrings(this)) + "]";
+      public Version getProjectVersion() {
+        return projectVersion;
+      }
+
+      @Override
+      public URI getModuleUri(String module) {
+        return that.getModuleUri(module);
+      }
+
+      @Override
+      public URI getModuleMavenRepository(String module) {
+        return that.getModuleMavenRepository(module);
+      }
+
+      @Override
+      public String getModuleMavenGroupAndArtifact(String module) {
+        return that.getModuleMavenGroupAndArtifact(module);
+      }
+
+      @Override
+      public String getModuleVersion(String module) {
+        return that.getModuleVersion(module);
       }
     }
 
-    static List<String> toStrings(Configuration configuration) {
-      var home = configuration.getHomeDirectory();
-      return List.of(
-          String.format("home = '%s' -> %s", home, home.toUri()),
-          String.format("workspace = '%s'", configuration.getWorkspaceDirectory()),
-          String.format("library paths = %s", configuration.getLibraryPaths()),
-          String.format("source directories = %s", configuration.getSourceDirectories()));
+    class UnmappedModuleException extends RuntimeException {
+      UnmappedModuleException(String module) {
+        super("Module " + module + "is not mapped");
+      }
     }
   }
 
@@ -522,7 +527,7 @@ public class Bach {
         this.base = base; // "src/modules"
         this.path = path; // "${module}/${realm}/java/module-info.java"
         this.module = path.getName(0).toString();
-        this.moduleDashVersion = module + '-' + Realm.this.configuration.getVersion();
+        this.moduleDashVersion = module + '-' + Realm.this.configuration.getProjectVersion();
         this.resources = base.resolve(module).resolve(Realm.this.name).resolve("resources");
         this.sources = base.resolve(module).resolve(Realm.this.name).resolve("java");
       }
@@ -620,7 +625,7 @@ public class Bach {
               .add("--module-path", realm.getModulePaths())
               .add("--module-source-path", realm.getModuleSourcePath())
               .add("--module", String.join(",", modules))
-              .add("--module-version", configuration.getVersion());
+              .add("--module-version", configuration.getProjectVersion());
       realm.addModulePatches(javac, modules);
       bach.run(javac);
 

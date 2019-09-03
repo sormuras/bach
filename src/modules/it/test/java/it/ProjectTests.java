@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Validation;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -113,9 +114,22 @@ class ProjectTests {
       var lib = work.resolve("lib");
       var probe =
           new Probe(
-              new ConfigurationBean(PROJECTS.resolve("requires-asm"))
-                  .setWorkspaceDirectory(work)
-                  .setLibraryPaths(List.of(lib)));
+              new Configuration() {
+                @Override
+                public Path getHomeDirectory() {
+                  return PROJECTS.resolve("requires-asm");
+                }
+
+                @Override
+                public Path getWorkspaceDirectory() {
+                  return work;
+                }
+
+                @Override
+                public List<Path> getLibraryPaths() {
+                  return List.of(lib);
+                }
+              });
       assertDoesNotThrow(probe::build);
       assertLinesMatch(
           List.of(

@@ -37,29 +37,13 @@ public class Configuration /* extends [de.sormuras.bach|Bach].Configuration */ {
     return List.of(Path.of("src/modules"));
   }
 
-  public URI getModuleUri(String module) {
-    if (module.equals("foo.bar.baz")) return URI.create("https://<path>/baz-1.3.jar");
-    return null;
-  }
-
-  public URI getModuleMavenRepository(String module) {
-    if (module.startsWith("foo.bar")) return URI.create("https://dl.bintray.com/foo-bar/maven");
-    return URI.create("https://repo1.maven.org/maven2");
-  }
-
-  public String getModuleMavenGroupAndArtifact(String module) {
-    if (module.startsWith("foo.bar.baz")) return "foo.bar:baz";
-    return null;
-  }
-
   public String getModuleVersion(String module) {
     if ("de.sormuras.mainrunner.engine".equals(module)) return "2.0.5";
     if ("org.apiguardian.api".equals(module)) return "1.1.0";
     if ("org.opentest4j".equals(module)) return "1.2.0";
     if (module.startsWith("org.junit.jupiter")) return "5.5.1";
     if (module.startsWith("org.junit.platform")) return "1.5.1";
-    // throw new IllegalArgumentException("version not mapped for module: " + module);
-    return null; // null results in a lookup of a version from sormuras/modules
+    return null;
   }
 
   @Override

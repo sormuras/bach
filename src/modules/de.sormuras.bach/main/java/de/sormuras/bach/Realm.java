@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
       this.base = base; // "src/modules"
       this.path = path; // "${module}/${realm}/java/module-info.java"
       this.module = path.getName(0).toString();
-      this.moduleDashVersion = module + '-' + Realm.this.configuration.getVersion();
+      this.moduleDashVersion = module + '-' + Realm.this.configuration.getProjectVersion();
       this.resources = base.resolve(module).resolve(Realm.this.name).resolve("resources");
       this.sources = base.resolve(module).resolve(Realm.this.name).resolve("java");
     }

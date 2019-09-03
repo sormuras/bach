@@ -43,7 +43,7 @@ import java.util.Collection;
             .add("--module-path", realm.getModulePaths())
             .add("--module-source-path", realm.getModuleSourcePath())
             .add("--module", String.join(",", modules))
-            .add("--module-version", configuration.getVersion());
+            .add("--module-version", configuration.getProjectVersion());
     realm.addModulePatches(javac, modules);
     bach.run(javac);
 

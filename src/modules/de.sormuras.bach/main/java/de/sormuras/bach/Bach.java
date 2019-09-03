@@ -161,7 +161,12 @@ public class Bach {
       if (parentOfBin != null && !parentOfBin.toFile().canWrite())
         throw new Validation.Error("parent of work is writable", parentOfBin.toUri());
     }
-    Validation.validateDirectoryIfExists(configuration.getLibraryDirectory());
+    var lib = configuration.getLibraryDirectory();
+    var libs = configuration.getLibraryPaths();
+    Validation.validateDirectoryIfExists(lib);
+    if (!libs.contains(lib)) {
+      throw new Validation.Error(lib + " is member of paths", libs);
+    }
     configuration.getSourceDirectories().forEach(Validation::validateDirectory);
   }
 
