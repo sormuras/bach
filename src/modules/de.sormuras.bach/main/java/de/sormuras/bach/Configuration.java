@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -50,6 +51,10 @@ public interface Configuration {
     return List.of(Path.of("src"));
   }
 
+  default Version getVersion() {
+    return Version.parse("0");
+  }
+
   default Path resolve(Path path, String name) {
     return Configuration.resolve(getHomeDirectory(), path, name);
   }
@@ -69,7 +74,8 @@ public interface Configuration {
         home,
         resolve(home, ccc.getWorkspaceDirectory(), "workspace directory"),
         resolve(home, ccc.getLibraryPaths(), "library paths"),
-        resolve(home, ccc.getSourceDirectories(), "source directories"));
+        resolve(home, ccc.getSourceDirectories(), "source directories"),
+        ccc.getVersion());
   }
 
   static Path resolve(Path home, Path path, String name) {
@@ -95,9 +101,9 @@ public interface Configuration {
       @Override
       public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         try {
-          return that.getClass().getMethod(method.getName()).invoke(that);
+          return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
         } catch (NoSuchMethodException e) {
-          return this.getClass().getMethod(method.getName()).invoke(this);
+          return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
         }
       }
     }
@@ -115,6 +121,7 @@ public interface Configuration {
         var parent = Configuration.class.getClassLoader();
         var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
         var configuration = loader.loadClass(name).getConstructor().newInstance();
+        // System.out.println("Using custom configuration: " + configuration);
         if (configuration instanceof Configuration) {
           return (Configuration) configuration;
         }
@@ -136,16 +143,19 @@ public interface Configuration {
     private final Path workspaceDirectory;
     private final List<Path> libraryPaths;
     private final List<Path> sourceDirectories;
+    private final Version version;
 
     private DefaultConfiguration(
         Path homeDirectory,
         Path workspaceDirectory,
         List<Path> libraryPaths,
-        List<Path> sourceDirectories) {
+        List<Path> sourceDirectories,
+        Version version) {
       this.homeDirectory = homeDirectory;
       this.workspaceDirectory = workspaceDirectory;
       this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
       this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
+      this.version = version;
     }
 
     @Override
@@ -166,6 +176,11 @@ public interface Configuration {
     @Override
     public List<Path> getSourceDirectories() {
       return sourceDirectories;
+    }
+
+    @Override
+    public Version getVersion() {
+      return version;
     }
 
     @Override

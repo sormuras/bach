@@ -18,6 +18,7 @@
 package it;
 
 import de.sormuras.bach.Configuration;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -27,12 +28,14 @@ class ConfigurationBean implements Configuration {
   private Path workspaceDirectory;
   private List<Path> libraryPaths;
   private List<Path> sourceDirectories;
+  private Version version;
 
   ConfigurationBean(Path homeDirectory) {
     this.homeDirectory = homeDirectory;
     setWorkspaceDirectory(Configuration.super.getWorkspaceDirectory());
     setLibraryPaths(Configuration.super.getLibraryPaths());
     setSourceDirectories(Configuration.super.getSourceDirectories());
+    setVersion(Configuration.super.getVersion());
     Configuration.validate(this);
   }
 
@@ -68,6 +71,16 @@ class ConfigurationBean implements Configuration {
 
   ConfigurationBean setSourceDirectories(List<Path> sourceDirectories) {
     this.sourceDirectories = resolve(sourceDirectories, "source directories");
+    return this;
+  }
+
+  @Override
+  public Version getVersion() {
+    return version;
+  }
+
+  public ConfigurationBean setVersion(Version version) {
+    this.version = version;
     return this;
   }
 }

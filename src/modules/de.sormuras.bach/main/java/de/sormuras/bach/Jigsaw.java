@@ -24,10 +24,12 @@ import java.util.Collection;
 /** Default multi-module compiler. */
 /*STATIC*/ class Jigsaw {
 
-  final Bach bach;
+  private final Bach bach;
+  private final Configuration configuration;
 
   Jigsaw(Bach bach) {
     this.bach = bach;
+    this.configuration = bach.configuration;
   }
 
   Collection<String> compile(Realm realm, Collection<String> modules) {
@@ -41,11 +43,10 @@ import java.util.Collection;
             .add("--module-path", realm.getModulePaths())
             .add("--module-source-path", realm.getModuleSourcePath())
             .add("--module", String.join(",", modules))
-            .add("--module-version", realm.getVersion());
+            .add("--module-version", configuration.getVersion());
     realm.addModulePatches(javac, modules);
     bach.run(javac);
 
-    // Util.treeCreate(realm.binSources);
     for (var module : modules) {
       var info = realm.getDeclaredModuleInfoMap().get(module);
       var modularJar = info.getModularJar();
@@ -57,13 +58,14 @@ import java.util.Collection;
               .add("--create")
               .add("--file", modularJar)
               // .addIff(configuration.verbose(), "--verbose")
-              // .addIff("--main-class", mainClass)
+              .addIff("--main-class", info.getMainClass())
               .add("-C", destination.resolve(module))
               .add(".")
               .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
       bach.run(jarModule);
       /*
        var sourcesJar = realm.sourcesJar(module);
+       Util.treeCreate(realm.binSources);
        var jarSources =
            new Command("jar")
                .add("--create")

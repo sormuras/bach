@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-02T16:00:50.048348900Z
+// THIS FILE WAS GENERATED ON 2019-09-03T03:26:35.742587200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -129,8 +129,7 @@ public class Bach {
         // Try provided tool -- all remaining arguments are consumed
         var tool = ToolProvider.findFirst(argument);
         if (tool.isPresent()) {
-          var command = new Command(argument).addEach(arguments);
-          run(command);
+          run(new Command(argument).addEach(arguments));
           return;
         }
       } catch (ReflectiveOperationException e) {
@@ -255,6 +254,10 @@ public class Bach {
       return List.of(Path.of("src"));
     }
 
+    default Version getVersion() {
+      return Version.parse("0");
+    }
+
     default Path resolve(Path path, String name) {
       return Configuration.resolve(getHomeDirectory(), path, name);
     }
@@ -274,7 +277,8 @@ public class Bach {
           home,
           resolve(home, ccc.getWorkspaceDirectory(), "workspace directory"),
           resolve(home, ccc.getLibraryPaths(), "library paths"),
-          resolve(home, ccc.getSourceDirectories(), "source directories"));
+          resolve(home, ccc.getSourceDirectories(), "source directories"),
+          ccc.getVersion());
     }
 
     static Path resolve(Path home, Path path, String name) {
@@ -300,9 +304,9 @@ public class Bach {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
           try {
-            return that.getClass().getMethod(method.getName()).invoke(that);
+            return that.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(that, args);
           } catch (NoSuchMethodException e) {
-            return this.getClass().getMethod(method.getName()).invoke(this);
+            return this.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(this, args);
           }
         }
       }
@@ -320,6 +324,7 @@ public class Bach {
           var parent = Configuration.class.getClassLoader();
           var loader = URLClassLoader.newInstance(new URL[] {bin.toUri().toURL()}, parent);
           var configuration = loader.loadClass(name).getConstructor().newInstance();
+          // System.out.println("Using custom configuration: " + configuration);
           if (configuration instanceof Configuration) {
             return (Configuration) configuration;
           }
@@ -341,16 +346,19 @@ public class Bach {
       private final Path workspaceDirectory;
       private final List<Path> libraryPaths;
       private final List<Path> sourceDirectories;
+      private final Version version;
 
       private DefaultConfiguration(
           Path homeDirectory,
           Path workspaceDirectory,
           List<Path> libraryPaths,
-          List<Path> sourceDirectories) {
+          List<Path> sourceDirectories,
+          Version version) {
         this.homeDirectory = homeDirectory;
         this.workspaceDirectory = workspaceDirectory;
         this.libraryPaths = Util.requireNonEmpty(libraryPaths, "library paths");
         this.sourceDirectories = Util.requireNonEmpty(sourceDirectories, "source directories");
+        this.version = version;
       }
 
       @Override
@@ -371,6 +379,11 @@ public class Bach {
       @Override
       public List<Path> getSourceDirectories() {
         return sourceDirectories;
+      }
+
+      @Override
+      public Version getVersion() {
+        return version;
       }
 
       @Override
@@ -518,6 +531,7 @@ public class Bach {
       final Path base;
       final Path path;
       final String module;
+      final String moduleDashVersion;
       final Path resources;
       final Path sources;
 
@@ -525,6 +539,7 @@ public class Bach {
         this.base = base; // "src/modules"
         this.path = path; // "${module}/${realm}/java/module-info.java"
         this.module = path.getName(0).toString();
+        this.moduleDashVersion = module + '-' + Realm.this.configuration.getVersion();
         this.resources = base.resolve(module).resolve(Realm.this.name).resolve("resources");
         this.sources = base.resolve(module).resolve(Realm.this.name).resolve("java");
       }
@@ -533,22 +548,21 @@ public class Bach {
         return resources;
       }
 
-      String getVersion() {
-        return Realm.this.getVersion();
+      Optional<String> getMainClass() {
+        return Optional.empty();
       }
 
       Path getModularJar() {
-        var moduleNameDashVersion = module + '-' + getVersion();
-        return getDestination().resolve("modules").resolve(moduleNameDashVersion + ".jar");
+        return getDestination().resolve("modules").resolve(moduleDashVersion + ".jar");
       }
 
       Path getSourcesJar() {
-        var moduleNameDashVersion = module + '-' + getVersion();
-        return getDestination().resolve("sources").resolve(moduleNameDashVersion + "-sources.jar");
+        return getDestination().resolve("sources").resolve(moduleDashVersion + "-sources.jar");
       }
     }
 
     private final String name;
+    private final Configuration configuration;
     private final Path destination;
     private final List<Path> modulePaths;
     private final String moduleSourcePath;
@@ -556,6 +570,7 @@ public class Bach {
 
     Realm(String name, Configuration configuration) {
       this.name = Util.requireNonNull(name, "realm name");
+      this.configuration = Util.requireNonNull(configuration, "configuration");
       this.destination = configuration.getWorkspaceDirectory().resolve(name);
       this.modulePaths = Util.findExistingDirectories(configuration.getLibraryPaths());
       this.moduleSourcePath =
@@ -598,19 +613,17 @@ public class Bach {
     String getModuleSourcePath() {
       return moduleSourcePath;
     }
-
-    String getVersion() {
-      return "0";
-    }
   }
 
   /** Default multi-module compiler. */
   static class Jigsaw {
 
-    final Bach bach;
+    private final Bach bach;
+    private final Configuration configuration;
 
     Jigsaw(Bach bach) {
       this.bach = bach;
+      this.configuration = bach.configuration;
     }
 
     Collection<String> compile(Realm realm, Collection<String> modules) {
@@ -624,11 +637,10 @@ public class Bach {
               .add("--module-path", realm.getModulePaths())
               .add("--module-source-path", realm.getModuleSourcePath())
               .add("--module", String.join(",", modules))
-              .add("--module-version", realm.getVersion());
+              .add("--module-version", configuration.getVersion());
       realm.addModulePatches(javac, modules);
       bach.run(javac);
 
-      // Util.treeCreate(realm.binSources);
       for (var module : modules) {
         var info = realm.getDeclaredModuleInfoMap().get(module);
         var modularJar = info.getModularJar();
@@ -640,13 +652,14 @@ public class Bach {
                 .add("--create")
                 .add("--file", modularJar)
                 // .addIff(configuration.verbose(), "--verbose")
-                // .addIff("--main-class", mainClass)
+                .addIff("--main-class", info.getMainClass())
                 .add("-C", destination.resolve(module))
                 .add(".")
                 .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
         bach.run(jarModule);
         /*
          var sourcesJar = realm.sourcesJar(module);
+         Util.treeCreate(realm.binSources);
          var jarSources =
              new Command("jar")
                  .add("--create")

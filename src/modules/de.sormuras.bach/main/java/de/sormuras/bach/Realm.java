@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
     final Path base;
     final Path path;
     final String module;
+    final String moduleDashVersion;
     final Path resources;
     final Path sources;
 
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
       this.base = base; // "src/modules"
       this.path = path; // "${module}/${realm}/java/module-info.java"
       this.module = path.getName(0).toString();
+      this.moduleDashVersion = module + '-' + Realm.this.configuration.getVersion();
       this.resources = base.resolve(module).resolve(Realm.this.name).resolve("resources");
       this.sources = base.resolve(module).resolve(Realm.this.name).resolve("java");
     }
@@ -52,22 +55,21 @@ import java.util.stream.Collectors;
       return resources;
     }
 
-    String getVersion() {
-      return Realm.this.getVersion();
+    Optional<String> getMainClass() {
+      return Optional.empty();
     }
 
     Path getModularJar() {
-      var moduleNameDashVersion = module + '-' + getVersion();
-      return getDestination().resolve("modules").resolve(moduleNameDashVersion + ".jar");
+      return getDestination().resolve("modules").resolve(moduleDashVersion + ".jar");
     }
 
     Path getSourcesJar() {
-      var moduleNameDashVersion = module + '-' + getVersion();
-      return getDestination().resolve("sources").resolve(moduleNameDashVersion + "-sources.jar");
+      return getDestination().resolve("sources").resolve(moduleDashVersion + "-sources.jar");
     }
   }
 
   private final String name;
+  private final Configuration configuration;
   private final Path destination;
   private final List<Path> modulePaths;
   private final String moduleSourcePath;
@@ -75,6 +77,7 @@ import java.util.stream.Collectors;
 
   Realm(String name, Configuration configuration) {
     this.name = Util.requireNonNull(name, "realm name");
+    this.configuration = Util.requireNonNull(configuration, "configuration");
     this.destination = configuration.getWorkspaceDirectory().resolve(name);
     this.modulePaths = Util.findExistingDirectories(configuration.getLibraryPaths());
     this.moduleSourcePath =
@@ -116,9 +119,5 @@ import java.util.stream.Collectors;
 
   String getModuleSourcePath() {
     return moduleSourcePath;
-  }
-
-  String getVersion() {
-    return "0";
   }
 }
