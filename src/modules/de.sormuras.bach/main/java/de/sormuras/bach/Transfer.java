@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -36,6 +37,11 @@ import java.util.stream.Collectors;
 /*BODY*/
 /** File transfer. */
 /*STATIC*/ class Transfer {
+
+  static Path transfer(URI source, Path target) {
+    Util.treeCreate(target.getParent());
+    return new Transfer(new PrintWriter(System.out), new PrintWriter(System.err)).getFile(source, target);
+  }
 
   static class Item {
 
@@ -74,6 +80,13 @@ import java.util.stream.Collectors;
   }
 
   Path getFile(URI uri, Path path) {
+    if ("file".equals(uri.getScheme())) {
+      try {
+        return Files.copy(Path.of(uri), path, StandardCopyOption.REPLACE_EXISTING);
+      } catch (Exception e) {
+        throw new IllegalArgumentException("copy file failed:" + uri, e);
+      }
+    }
     var request = HttpRequest.newBuilder(uri).GET();
     if (Files.exists(path)) {
       try {
