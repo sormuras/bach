@@ -107,6 +107,11 @@ public /*STATIC*/ class Command {
     return name;
   }
 
+  /** Return the command's arguments. */
+  public List<String> getList() {
+    return list;
+  }
+
   @Override
   public String toString() {
     var args = list.isEmpty() ? "<empty>" : "'" + String.join("', '", list) + "'";
