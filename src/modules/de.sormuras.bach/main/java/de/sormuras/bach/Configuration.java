@@ -35,13 +35,17 @@ public interface Configuration {
 
   Path DEFAULT_HOME_DIRECTORY = Path.of("");
   Path DEFAULT_WORKSPACE_DIRECTORY = Path.of("bin");
+  Path DEFAULT_LIBRARY_DIRECTORY = Path.of("lib");
+  Path DEFAULT_SOURCE_DIRECTORY = Path.of("src");
+  Version DEFAULT_VERSION = Version.parse("0");
+  URI DEFAULT_MAVEN_REPOSITORY = URI.create("https://repo1.maven.org/maven2");
 
   default String getProjectName() {
     return getHomeDirectory().toAbsolutePath().getFileName().toString();
   }
 
   default Version getProjectVersion() {
-    return Version.parse("0");
+    return DEFAULT_VERSION;
   }
 
   default Path getHomeDirectory() {
@@ -57,11 +61,11 @@ public interface Configuration {
   }
 
   default List<Path> getLibraryPaths() {
-    return List.of(Path.of("lib"));
+    return List.of(DEFAULT_LIBRARY_DIRECTORY);
   }
 
   default List<Path> getSourceDirectories() {
-    return List.of(Path.of("src"));
+    return List.of(DEFAULT_SOURCE_DIRECTORY);
   }
 
   /** {@code if (module.equals("foo.bar.baz")) return URI.create("https://<path>/baz-1.3.jar")} */
@@ -71,7 +75,7 @@ public interface Configuration {
 
   /** {@code module.startsWith("foo.bar") -> URI.create("https://dl.bintray.com/foo-bar/maven")} */
   default URI getModuleMavenRepository(String module) {
-    return URI.create("https://repo1.maven.org/maven2");
+    return DEFAULT_MAVEN_REPOSITORY;
   }
 
   /** {@code if (module.equals("foo.bar.baz")) return "org.foo.bar:foo-baz"} */
