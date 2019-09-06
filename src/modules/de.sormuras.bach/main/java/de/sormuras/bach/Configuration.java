@@ -49,6 +49,10 @@ public /*STATIC*/ class Configuration {
     return properties.getProperty(property.getKey(), defaultValue);
   }
 
+  public boolean debug() {
+    return get(Property.DEBUG).equalsIgnoreCase("true");
+  }
+
   public String getProjectName() {
     var name = Property.PROJECT_NAME;
     var dir = getHomeDirectory().toAbsolutePath().getFileName();
