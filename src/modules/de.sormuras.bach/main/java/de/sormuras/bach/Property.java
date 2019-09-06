@@ -1,14 +1,9 @@
 package de.sormuras.bach;
 
-import java.net.URI;
-import java.nio.file.Path;
-
 /*BODY*/
 enum Property {
   /** Be verbose. */
   DEBUG("ebug", "false"),
-  /** */
-  CONFIGURATION_CLASS_NAME("configurationClassName", "Configuration"),
 
   /** Base directory of the project. */
   PROJECT_BASE("base", ""),
