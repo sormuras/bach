@@ -1,6 +1,6 @@
 # Bach.java - Java Shell Builder
  
-[![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](http://jdk.java.net/11/)
+[![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
@@ -44,7 +44,7 @@ Open a command shell and change into the directory containing your modular Java 
 
 > Note: the shortened `https://bit.ly/bach-jsh` expands to https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh
 
-For more information what Bach.java is doing at runtime, use:
+For more information what `Bach.java` is doing at runtime, use:
 
 ```text
 jshell -R-Debug https://bit.ly/bach-jsh
@@ -71,10 +71,11 @@ Expanding the first level directories reveals:
 
 ```
 foo/
-  lib/                            .___
+  lib/                            ,___
     module-version.properties <---| org.junit.jupiter.* = 5.5.1
     org.junit.jupiter-5.5.1.jar   | org.junit.platform.* = 1.5.1
-    org.slf4j-2.0.0-alpha.jar     | org.slf4j.* = 2.0.0-alpha.jar
+    [...]                         | org.slf4j.* = 2.0.0-alpha.jar
+    org.slf4j-2.0.0-alpha.jar
   src/
     org.foo/
     org.foo.bar/
