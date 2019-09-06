@@ -115,6 +115,8 @@ public /*STATIC*/ class Configuration {
   }
 
   static class UnmappedModuleException extends RuntimeException {
+    private static final long serialVersionUID = 0;
+
     UnmappedModuleException(String module) {
       super("Module " + module + " is not mapped");
     }

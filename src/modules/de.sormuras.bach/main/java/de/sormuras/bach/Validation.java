@@ -24,6 +24,8 @@ import java.nio.file.Path;
 public /*STATIC*/ class Validation {
 
   public static class Error extends AssertionError {
+    private static final long serialVersionUID = 0;
+
     Error(String expected, Object hint) {
       super(String.format("expected that %s: %s", expected, hint));
     }
