@@ -37,7 +37,7 @@ import java.util.Collection;
     var javac =
         new Command("javac")
             .add("-d", destination)
-            // .addEach(configuration.lines(Property.OPTIONS_JAVAC))
+            .addEach(configuration.lines(Property.TOOL_JAVAC_OPTIONS))
             // .addIff(realm.preview, "--enable-preview")
             // .addIff(realm.release != null, "--release", realm.release)
             .add("--module-path", realm.getModulePaths())

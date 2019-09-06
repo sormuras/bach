@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /*BODY*/
 public /*STATIC*/ class Configuration {
@@ -47,6 +48,10 @@ public /*STATIC*/ class Configuration {
 
   private String get(Property property, String defaultValue) {
     return properties.getProperty(property.getKey(), defaultValue);
+  }
+
+  List<String> lines(Property property) {
+    return get(property).lines().collect(Collectors.toList());
   }
 
   public boolean debug() {

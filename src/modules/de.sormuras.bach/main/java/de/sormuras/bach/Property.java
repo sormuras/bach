@@ -16,7 +16,11 @@ enum Property {
   SOURCE_DIRECTORY("source", "src"),
   TARGET_DIRECTORY("target", "bin"),
 
-  MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2");
+  MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2"),
+
+  /** Options passed to all 'javac' calls. */
+  TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint"),
+  ;
 
   private final String key;
   private final String defaultValue;
