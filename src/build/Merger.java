@@ -36,6 +36,7 @@ class Merger {
           "Configuration",
           "Command",
           "Realm",
+          "TestRealm",
           "Jigsaw",
           "Resolver",
           "Transfer",

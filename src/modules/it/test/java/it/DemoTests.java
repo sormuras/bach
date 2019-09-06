@@ -29,7 +29,7 @@ class DemoTests {
   @Test
   void build() {
     var bach = new Probe(Path.of("demo"));
-    assertDoesNotThrow(bach::build, "bach::build failed: " + bach);
+    assertDoesNotThrow(bach::build, "bach::build failed: " + bach.lines());
     assertLinesMatch(List.of(">> BUILD >>"), bach.lines());
   }
 
