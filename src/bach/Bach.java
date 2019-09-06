@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-06T16:28:12.164420600Z
+// THIS FILE WAS GENERATED ON 2019-09-06T17:33:56.105621400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -204,8 +204,8 @@ public class Bach {
   public void compile() {
     var main = new Realm("main", configuration);
     compile(main);
-    // var test = new Realm("test", configuration, main);
-    // compile(test);
+    var test = new TestRealm("test", configuration, main);
+    compile(test);
   }
 
   private void compile(Realm realm) {
@@ -256,7 +256,11 @@ public class Bach {
     SOURCE_DIRECTORY("source", "src"),
     TARGET_DIRECTORY("target", "bin"),
 
-    MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2");
+    MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2"),
+
+    /** Options passed to all 'javac' calls. */
+    TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint"),
+    ;
 
     private final String key;
     private final String defaultValue;
@@ -305,6 +309,10 @@ public class Bach {
 
     private String get(Property property, String defaultValue) {
       return properties.getProperty(property.getKey(), defaultValue);
+    }
+
+    List<String> lines(Property property) {
+      return get(property).lines().collect(Collectors.toList());
     }
 
     public boolean debug() {
@@ -373,6 +381,8 @@ public class Bach {
     }
 
     static class UnmappedModuleException extends RuntimeException {
+      private static final long serialVersionUID = 0;
+
       UnmappedModuleException(String module) {
         super("Module " + module + " is not mapped");
       }
@@ -514,7 +524,6 @@ public class Bach {
     private final String name;
     private final Configuration configuration;
     private final Path destination;
-    private final List<Path> modulePaths;
     private final String moduleSourcePath;
     private final Map<String, Info> declaredModules;
 
@@ -522,7 +531,6 @@ public class Bach {
       this.name = Util.requireNonNull(name, "realm name");
       this.configuration = Util.requireNonNull(configuration, "configuration");
       this.destination = configuration.getWorkspaceDirectory().resolve(name);
-      this.modulePaths = Util.findExistingDirectories(configuration.getLibraryPaths());
       this.moduleSourcePath =
           configuration.getSourceDirectories().stream()
               .map(src -> String.join(File.separator, src.toString(), "*", name, "java"))
@@ -557,11 +565,42 @@ public class Bach {
     }
 
     List<Path> getModulePaths() {
-      return modulePaths;
+      var paths = new ArrayList<Path>();
+      paths.add(getDestination().resolve("modules"));
+      paths.addAll(configuration.getLibraryPaths());
+      return Util.findExistingDirectories(paths);
     }
 
     String getModuleSourcePath() {
       return moduleSourcePath;
+    }
+  }
+
+  static class TestRealm extends Realm {
+
+    private final Realm main;
+
+    TestRealm(String name, Configuration configuration, Realm main) {
+      super(name, configuration);
+      this.main = main;
+    }
+
+    void addModulePatches(Command javac, Collection<String> modules) {
+      var mainModules = main.getDeclaredModules();
+      var mainSourcePath = main.getModuleSourcePath();
+      for (var module : modules) {
+        if (mainModules.contains(module)) {
+          var patch = mainSourcePath.replace("*", module);
+          javac.add("--patch-module", module + "=" + patch);
+        }
+      }
+    }
+
+    List<Path> getModulePaths() {
+      var paths = new TreeSet<Path>();
+      paths.addAll(super.getModulePaths()); // "test" realm
+      paths.addAll(main.getModulePaths()); // "main" realm
+      return List.copyOf(paths);
     }
   }
 
@@ -581,7 +620,7 @@ public class Bach {
       var javac =
           new Command("javac")
               .add("-d", destination)
-              // .addEach(configuration.lines(Property.OPTIONS_JAVAC))
+              .addEach(configuration.lines(Property.TOOL_JAVAC_OPTIONS))
               // .addIff(realm.preview, "--enable-preview")
               // .addIff(realm.release != null, "--release", realm.release)
               .add("--module-path", realm.getModulePaths())
@@ -1104,6 +1143,8 @@ public class Bach {
   public static class Validation {
 
     public static class Error extends AssertionError {
+      private static final long serialVersionUID = 0;
+
       Error(String expected, Object hint) {
         super(String.format("expected that %s: %s", expected, hint));
       }

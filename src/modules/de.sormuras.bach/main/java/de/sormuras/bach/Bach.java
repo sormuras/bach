@@ -169,8 +169,8 @@ public class Bach {
   public void compile() {
     var main = new Realm("main", configuration);
     compile(main);
-    // var test = new Realm("test", configuration, main);
-    // compile(test);
+    var test = new TestRealm("test", configuration, main);
+    compile(test);
   }
 
   private void compile(Realm realm) {
