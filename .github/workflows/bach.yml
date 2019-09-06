@@ -1,0 +1,11 @@
+name: Bach.java
+on: push
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    container: openjdk:14
+    steps:
+    - uses: actions/checkout@v1
+    - name: 'Build Bach.java'
+      run: ./build.jsh
