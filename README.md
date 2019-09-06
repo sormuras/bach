@@ -1,10 +1,8 @@
 # Bach.java - Java Shell Builder
  
-[![jdk11](https://img.shields.io/badge/jdk-11-blue.svg)](http://jdk.java.net/11/)
-[![travis](https://travis-ci.org/sormuras/bach.svg?branch=master)](https://travis-ci.org/sormuras/bach)
-[![experimental](https://img.shields.io/badge/api-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
-
-[![github actions](https://github.com/sormuras/bach/workflows/Lib.java/badge.svg)](https://github.com/sormuras/bach/actions)
+[![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](http://jdk.java.net/11/)
+[![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
+[![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
 Use Java source (in [jshell]) to build your modular Java project.
 
@@ -46,16 +44,10 @@ Open a command shell and change into the directory containing your modular Java 
 
 > Note: the shortened `https://bit.ly/bach-jsh` expands to https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh
 
-For immediate results, such as fail-fast on errors, use:
-
-```text
-jshell --execution=local https://bit.ly/bach-jsh
-```
-
 For more information what Bach.java is doing at runtime, use:
 
 ```text
-jshell --execution=local -J-Debug https://bit.ly/bach-jsh
+jshell -R-Debug https://bit.ly/bach-jsh
 ```
 
 For more details consult the output of `jshell --help`.
