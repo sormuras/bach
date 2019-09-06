@@ -196,7 +196,7 @@ public class Bach {
   }
 
   public void version() {
-    out.println(getBanner());
+    out.println(VERSION);
   }
 
   void run(Command command) {
