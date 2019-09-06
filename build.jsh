@@ -1,4 +1,4 @@
-//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
+//usr/bin/env jshell --show-version "$0" "$@"; exit $?
 
 /*
  * Bach - Java Shell Builder

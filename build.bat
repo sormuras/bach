@@ -1,2 +1,2 @@
 @ECHO OFF
-jshell --execution local --show-version build.jsh
+jshell --show-version build.jsh
