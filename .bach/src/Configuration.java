@@ -22,20 +22,24 @@ import java.nio.file.Path;
 import java.util.List;
 
 /** Custom configuration. */
-public class Configuration /* extends [de.sormuras.bach|Bach].Configuration */ {
+public class Configuration extends Bach.Configuration {
 
+  @Override
   public String getProjectName() {
     return "Bach.java";
   }
 
+  @Override
   public Version getProjectVersion() {
     return Version.parse("2-ea");
   }
 
+  @Override
   public List<Path> getSourceDirectories() {
-    return List.of(Path.of("src/modules"));
+    return List.of(getHomeDirectory().resolve("src/modules"));
   }
 
+  @Override
   public String getModuleVersion(String module) {
     if ("de.sormuras.mainrunner.engine".equals(module)) return "2.0.5";
     if ("org.apiguardian.api".equals(module)) return "1.1.0";

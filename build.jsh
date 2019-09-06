@@ -18,10 +18,12 @@
  */
 
 /open src/bach/Bach.java
+/open .bach/src/Configuration.java
 
+var bach = new Bach(new PrintWriter(System.out, true), new PrintWriter(System.err, true), new Configuration())
 var code = 0
 try {
-  Bach.main("version");
+  bach.build();
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;
