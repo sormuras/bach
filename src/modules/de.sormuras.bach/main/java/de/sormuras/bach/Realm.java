@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +72,6 @@ import java.util.stream.Collectors;
   private final String name;
   private final Configuration configuration;
   private final Path destination;
-  private final List<Path> modulePaths;
   private final String moduleSourcePath;
   private final Map<String, Info> declaredModules;
 
@@ -79,7 +79,6 @@ import java.util.stream.Collectors;
     this.name = Util.requireNonNull(name, "realm name");
     this.configuration = Util.requireNonNull(configuration, "configuration");
     this.destination = configuration.getWorkspaceDirectory().resolve(name);
-    this.modulePaths = Util.findExistingDirectories(configuration.getLibraryPaths());
     this.moduleSourcePath =
         configuration.getSourceDirectories().stream()
             .map(src -> String.join(File.separator, src.toString(), "*", name, "java"))
@@ -114,7 +113,10 @@ import java.util.stream.Collectors;
   }
 
   List<Path> getModulePaths() {
-    return modulePaths;
+    var paths = new ArrayList<Path>();
+    paths.add(getDestination().resolve("modules"));
+    paths.addAll(configuration.getLibraryPaths());
+    return Util.findExistingDirectories(paths);
   }
 
   String getModuleSourcePath() {
