@@ -51,35 +51,31 @@ import java.util.Collection;
       var info = realm.getDeclaredModuleInfoMap().get(module);
       var modularJar = info.getModularJar();
       var resources = info.getResources();
-      // var mainClass = realm.declaredModules.get(module).mainClass();
+
       Util.treeCreate(modularJar.getParent()); // jar doesn't create directories...
       var jarModule =
           new Command("jar")
               .add("--create")
               .add("--file", modularJar)
-              // .addIff(configuration.verbose(), "--verbose")
+              .addIff(configuration.debug(), "--verbose")
               .addIff("--main-class", info.getMainClass())
               .add("-C", destination.resolve(module))
               .add(".")
               .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
       bach.run(jarModule);
-      /*
-       var sourcesJar = realm.sourcesJar(module);
-       Util.treeCreate(realm.binSources);
-       var jarSources =
-           new Command("jar")
-               .add("--create")
-               .add("--file", sourcesJar)
-               // .addIff(configuration.verbose(), "--verbose")
-               .add("--no-manifest")
-               // .add("-C", project.sources.resolve(module).resolve(realm.name).resolve("java"))
-               .add(".")
-               .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
-       // if (runner.run(jarSources) != 0) {
-       //  throw new RuntimeException(
-       //      "Creating " + realm.name + " sources jar failed: " + sourcesJar);
-       //}
-      */
+
+      var sourcesJar = info.getSourcesJar();
+      Util.treeCreate(sourcesJar.getParent()); // jar still doesn't create directories...
+      var jarSources =
+          new Command("jar")
+              .add("--create")
+              .add("--file", sourcesJar)
+              .addIff(configuration.debug(), "--verbose")
+              .add("--no-manifest")
+              .add("-C", info.sources)
+              .add(".")
+              .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+      bach.run(jarSources);
     }
 
     return modules;

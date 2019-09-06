@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-06T14:55:32.984283900Z
+// THIS FILE WAS GENERATED ON 2019-09-06T16:28:12.164420600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -109,14 +109,6 @@ public class Bach {
     while (!arguments.isEmpty()) {
       var argument = arguments.pop();
       try {
-        switch (argument) {
-          case "build":
-            build();
-            continue;
-          case "validate":
-            validate();
-            continue;
-        }
         // Try Bach API method w/o parameter -- single argument is consumed
         var method = Util.findApiMethod(getClass(), argument);
         if (method.isPresent()) {
@@ -231,7 +223,7 @@ public class Bach {
   }
 
   public void version() {
-    out.println(getBanner());
+    out.println(VERSION);
   }
 
   void run(Command command) {
@@ -252,8 +244,6 @@ public class Bach {
   enum Property {
     /** Be verbose. */
     DEBUG("ebug", "false"),
-    /** */
-    CONFIGURATION_CLASS_NAME("configurationClassName", "Configuration"),
 
     /** Base directory of the project. */
     PROJECT_BASE("base", ""),
@@ -315,6 +305,10 @@ public class Bach {
 
     private String get(Property property, String defaultValue) {
       return properties.getProperty(property.getKey(), defaultValue);
+    }
+
+    public boolean debug() {
+      return get(Property.DEBUG).equalsIgnoreCase("true");
     }
 
     public String getProjectName() {
@@ -601,35 +595,31 @@ public class Bach {
         var info = realm.getDeclaredModuleInfoMap().get(module);
         var modularJar = info.getModularJar();
         var resources = info.getResources();
-        // var mainClass = realm.declaredModules.get(module).mainClass();
+
         Util.treeCreate(modularJar.getParent()); // jar doesn't create directories...
         var jarModule =
             new Command("jar")
                 .add("--create")
                 .add("--file", modularJar)
-                // .addIff(configuration.verbose(), "--verbose")
+                .addIff(configuration.debug(), "--verbose")
                 .addIff("--main-class", info.getMainClass())
                 .add("-C", destination.resolve(module))
                 .add(".")
                 .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
         bach.run(jarModule);
-        /*
-         var sourcesJar = realm.sourcesJar(module);
-         Util.treeCreate(realm.binSources);
-         var jarSources =
-             new Command("jar")
-                 .add("--create")
-                 .add("--file", sourcesJar)
-                 // .addIff(configuration.verbose(), "--verbose")
-                 .add("--no-manifest")
-                 // .add("-C", project.sources.resolve(module).resolve(realm.name).resolve("java"))
-                 .add(".")
-                 .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
-         // if (runner.run(jarSources) != 0) {
-         //  throw new RuntimeException(
-         //      "Creating " + realm.name + " sources jar failed: " + sourcesJar);
-         //}
-        */
+
+        var sourcesJar = info.getSourcesJar();
+        Util.treeCreate(sourcesJar.getParent()); // jar still doesn't create directories...
+        var jarSources =
+            new Command("jar")
+                .add("--create")
+                .add("--file", sourcesJar)
+                .addIff(configuration.debug(), "--verbose")
+                .add("--no-manifest")
+                .add("-C", info.sources)
+                .add(".")
+                .addIff(Files.isDirectory(resources), cmd -> cmd.add("-C", resources).add("."));
+        bach.run(jarSources);
       }
 
       return modules;
