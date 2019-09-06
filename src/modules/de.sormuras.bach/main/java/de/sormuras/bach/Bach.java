@@ -74,14 +74,6 @@ public class Bach {
     while (!arguments.isEmpty()) {
       var argument = arguments.pop();
       try {
-        switch (argument) {
-          case "build":
-            build();
-            continue;
-          case "validate":
-            validate();
-            continue;
-        }
         // Try Bach API method w/o parameter -- single argument is consumed
         var method = Util.findApiMethod(getClass(), argument);
         if (method.isPresent()) {
