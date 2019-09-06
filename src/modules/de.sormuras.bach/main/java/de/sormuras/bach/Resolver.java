@@ -280,17 +280,18 @@ import javax.lang.model.SourceVersion;
         var version = Util.findVersion(file.orElse(""));
         return Transfer.Item.of(uri, module + version.map(v -> '-' + v).orElse("") + ".jar");
       }
+      var repository = bach.configuration.getModuleMavenRepository(module);
       var maven = moduleMaven.get(module).split(":");
       var group = maven[0];
       var artifact = maven[1];
       var version = Util.singleton(set).map(Object::toString).orElse(moduleVersion.get(module));
-      return Transfer.Item.of(toUri(group, artifact, version), module + '-' + version + ".jar");
+      var mappedUri = toUri(repository.toString(), group, artifact, version);
+      return Transfer.Item.of(mappedUri, module + '-' + version + ".jar");
     }
 
-    private URI toUri(String group, String artifact, String version) {
-      var host = "https://repo1.maven.org/maven2";
+    private URI toUri(String repository, String group, String artifact, String version) {
       var file = artifact + '-' + version + ".jar";
-      var uri = String.join("/", host, group.replace('.', '/'), artifact, version, file);
+      var uri = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
       return URI.create(uri);
     }
   }

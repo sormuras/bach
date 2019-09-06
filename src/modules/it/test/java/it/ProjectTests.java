@@ -116,12 +116,7 @@ class ProjectTests {
       var lib = work.resolve("lib");
       var probe =
           new Probe(
-              new Configuration() {
-                @Override
-                public Path getHomeDirectory() {
-                  return PROJECTS.resolve("requires-asm");
-                }
-
+              new Configuration(PROJECTS.resolve("requires-asm")) {
                 @Override
                 public Path getWorkspaceDirectory() {
                   return work;
@@ -132,7 +127,7 @@ class ProjectTests {
                   return List.of(lib);
                 }
               });
-      assertDoesNotThrow(probe::build);
+      assertDoesNotThrow(probe::build, probe.out.toString());
       assertLinesMatch(
           List.of(
               ">> BUILD >>",

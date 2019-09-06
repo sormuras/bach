@@ -44,7 +44,7 @@ public class Bach {
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    return new Bach(out, err, Configuration.of());
+    return new Bach(out, err, new Configuration());
   }
 
   /**
@@ -143,7 +143,7 @@ public class Bach {
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    Configuration.toStrings(configuration).forEach(line -> out.println("  " + line));
+    configuration.print(out);
   }
 
   public void validate() {
