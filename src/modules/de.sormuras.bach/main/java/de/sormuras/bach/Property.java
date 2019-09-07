@@ -20,6 +20,9 @@ enum Property {
 
   /** Options passed to all 'javac' calls. */
   TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint"),
+
+  /** Options passed to all 'junit' calls. */
+  TOOL_JUNIT_OPTIONS("tool.junit.options", "--fail-if-no-tests\n--disable-banner\n--details=tree"),
   ;
 
   private final String key;

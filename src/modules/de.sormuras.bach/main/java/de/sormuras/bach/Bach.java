@@ -127,6 +127,7 @@ public class Bach {
     validate();
     resolve();
     compile();
+    test();
   }
 
   public void clean() {
@@ -169,8 +170,6 @@ public class Bach {
   public void compile() {
     var main = new Realm("main", configuration);
     compile(main);
-    var test = new TestRealm("test", configuration, main);
-    compile(test);
   }
 
   private void compile(Realm realm) {
@@ -185,6 +184,14 @@ public class Bach {
       return;
     }
     throw new IllegalStateException("not compiled modules: " + modules);
+  }
+
+  public void test() {
+    var main = new Realm("main", configuration);
+    var test = new TestRealm("test", configuration, main);
+    compile(test);
+    var tester = new Tester(this, test);
+    tester.test(test.getDeclaredModules());
   }
 
   public void version() {

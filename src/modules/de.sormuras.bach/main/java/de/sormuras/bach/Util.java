@@ -124,7 +124,17 @@ import java.util.stream.Stream;
     }
     return Optional.of(collection.iterator().next());
   }
-  /** @see Files#createDirectories(Path, FileAttribute[])  */
+
+  /** Sleep and silently clear current thread's interrupted status. */
+  static void sleep(long millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+    }
+  }
+
+  /** @see Files#createDirectories(Path, FileAttribute[]) */
   static Path treeCreate(Path path) {
     try {
       return Files.createDirectories(path);
