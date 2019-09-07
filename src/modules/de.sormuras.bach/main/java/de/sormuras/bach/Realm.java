@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /*BODY*/
@@ -79,23 +80,29 @@ import java.util.stream.Collectors;
     this.name = Util.requireNonNull(name, "realm name");
     this.configuration = Util.requireNonNull(configuration, "configuration");
     this.destination = configuration.getWorkspaceDirectory().resolve(name);
-    this.moduleSourcePath =
-        configuration.getSourceDirectories().stream()
-            .map(src -> String.join(File.separator, src.toString(), "*", name, "java"))
-            .collect(Collectors.joining(File.pathSeparator));
     var declaredModules = new TreeMap<String, Info>();
+    var moduleSourcePaths = new TreeSet<String>();
     for (var src : configuration.getSourceDirectories()) {
       try (var stream = Files.list(src)) {
-        stream
-            .map(path -> path.resolve(name + "/java/module-info.java"))
-            .filter(Util::isModuleInfo)
-            .map(path -> new Info(src, src.relativize(path)))
-            .forEach(info -> declaredModules.put(info.module, info));
+        for (var path : stream.collect(Collectors.toList())) {
+          var file = path.resolve(name + "/java/module-info.java");
+          if (!Util.isModuleInfo(file)) {
+            file = path.resolve(name + "/module/module-info.java");
+          }
+          if (!Util.isModuleInfo(file)) {
+            continue;
+          }
+          var info = new Info(src, src.relativize(path));
+          declaredModules.put(info.module, info);
+          var offset = path.relativize(file.subpath(0, file.getNameCount() - 1)).toString();
+          moduleSourcePaths.add(String.join(File.separator, src.toString(), "*", offset));
+        }
       } catch (IOException e) {
         throw new UncheckedIOException("list directory failed: " + src, e);
       }
     }
     this.declaredModules = declaredModules;
+    this.moduleSourcePath = String.join(File.pathSeparator, moduleSourcePaths);
   }
 
   void addModulePatches(Command javac, Collection<String> modules) {}
