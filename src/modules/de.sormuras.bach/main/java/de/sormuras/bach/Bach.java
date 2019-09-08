@@ -175,7 +175,7 @@ public class Bach {
   private void compile(Realm realm) {
     var modules = new TreeSet<>(realm.getDeclaredModules());
     if (modules.isEmpty()) {
-      out.println("No modules declared, nothing to compile.");
+      out.printf("No '%s' modules declared, nothing to compile.%n", realm.getName());
       return;
     }
     var jigsaw = new Jigsaw(this);

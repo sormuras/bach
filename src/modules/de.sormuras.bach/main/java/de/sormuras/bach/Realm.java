@@ -130,6 +130,10 @@ import java.util.stream.Collectors;
     return moduleSourcePath;
   }
 
+  String getName() {
+    return name;
+  }
+
   List<Path> getRuntimeModulePaths(Path... initialPaths) {
     return getModulePaths();
   }

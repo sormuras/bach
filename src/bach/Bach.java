@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-08T02:40:41.806845400Z
+// THIS FILE WAS GENERATED ON 2019-09-08T03:20:18.137719500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -219,7 +219,7 @@ public class Bach {
   private void compile(Realm realm) {
     var modules = new TreeSet<>(realm.getDeclaredModules());
     if (modules.isEmpty()) {
-      out.println("No modules declared, nothing to compile.");
+      out.printf("No '%s' modules declared, nothing to compile.%n", realm.getName());
       return;
     }
     var jigsaw = new Jigsaw(this);
@@ -598,6 +598,10 @@ public class Bach {
 
     String getModuleSourcePath() {
       return moduleSourcePath;
+    }
+
+    String getName() {
+      return name;
     }
 
     List<Path> getRuntimeModulePaths(Path... initialPaths) {
