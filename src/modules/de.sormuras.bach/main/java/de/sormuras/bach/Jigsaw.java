@@ -48,7 +48,7 @@ import java.util.Collection;
     bach.run(javac);
 
     for (var module : modules) {
-      var info = realm.getDeclaredModuleInfoMap().get(module);
+      var info = realm.getDeclaredModuleInfo(module);
       var modularJar = info.getModularJar();
       var resources = info.getResources();
 

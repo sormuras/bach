@@ -19,8 +19,8 @@ package de.sormuras.bach;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.TreeSet;
 
 /*BODY*/
 /*STATIC*/ class TestRealm extends Realm {
@@ -34,19 +34,26 @@ import java.util.TreeSet;
 
   void addModulePatches(Command javac, Collection<String> modules) {
     var mainModules = main.getDeclaredModules();
-    var mainSourcePath = main.getModuleSourcePath();
     for (var module : modules) {
       if (mainModules.contains(module)) {
-        var patch = mainSourcePath.replace("*", module);
+        var patch = main.getDeclaredModuleInfo(module).sources;
         javac.add("--patch-module", module + "=" + patch);
       }
     }
   }
 
   List<Path> getModulePaths() {
-    var paths = new TreeSet<Path>();
+    var paths = new LinkedHashSet<Path>();
     paths.addAll(super.getModulePaths()); // "test" realm
     paths.addAll(main.getModulePaths()); // "main" realm
-    return List.copyOf(paths);
+    return Util.findExistingDirectories(paths);
+  }
+
+  @Override
+  List<Path> getRuntimeModulePaths(Path... initialPaths) {
+    var paths = new LinkedHashSet<>(List.of(initialPaths));
+    paths.add(main.getDestination().resolve("modules")); // main modules
+    paths.addAll(getModulePaths()); // test modules + library paths
+    return Util.findExisting(paths);
   }
 }

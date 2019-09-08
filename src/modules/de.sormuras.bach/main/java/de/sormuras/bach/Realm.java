@@ -111,8 +111,8 @@ import java.util.stream.Collectors;
     return declaredModules.keySet();
   }
 
-  Map<String, Info> getDeclaredModuleInfoMap() {
-    return declaredModules;
+  Info getDeclaredModuleInfo(String module) {
+    return declaredModules.get(module);
   }
 
   Path getDestination() {
@@ -128,5 +128,9 @@ import java.util.stream.Collectors;
 
   String getModuleSourcePath() {
     return moduleSourcePath;
+  }
+
+  List<Path> getRuntimeModulePaths(Path... initialPaths) {
+    return getModulePaths();
   }
 }

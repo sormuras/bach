@@ -17,16 +17,21 @@
 
 package it;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.spi.ToolProvider;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ServiceLoader;
+import java.util.spi.ToolProvider;
+import org.junit.jupiter.api.Test;
 
 class ToolProviderTests {
 
   @Test
   void findBachUsingToolProviderAPI() {
-    assertTrue(ToolProvider.findFirst("bach").isPresent(), "Tool 'bach' not found!");
+    var bach =
+        ServiceLoader.load(ToolProvider.class, getClass().getClassLoader()).stream()
+            .map(ServiceLoader.Provider::get)
+            .filter(provider -> provider.name().equals("bach"))
+            .findFirst();
+    assertTrue(bach.isPresent(), "Tool 'bach' not found!");
   }
 }

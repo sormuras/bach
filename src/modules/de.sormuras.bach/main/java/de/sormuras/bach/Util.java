@@ -54,7 +54,11 @@ import java.util.stream.Stream;
     }
   }
 
-  static List<Path> findExistingDirectories(List<Path> directories) {
+  static List<Path> findExisting(Collection<Path> paths) {
+    return paths.stream().filter(Files::exists).collect(Collectors.toList());
+  }
+
+  static List<Path> findExistingDirectories(Collection<Path> directories) {
     return directories.stream().filter(Files::isDirectory).collect(Collectors.toList());
   }
 

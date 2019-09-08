@@ -20,6 +20,7 @@ open /*test*/ module de.sormuras.bach /*extends main module descriptor*/ {
 
   requires java.compiler;
   requires java.net.http;
+  requires static org.junit.platform.console;
 
   uses java.util.spi.ToolProvider;
 
