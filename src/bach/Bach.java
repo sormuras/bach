@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-08T03:20:18.137719500Z
+// THIS FILE WAS GENERATED ON 2019-09-09T06:33:43.756695700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -184,10 +184,10 @@ public class Bach {
   }
 
   public void validate() {
-    var home = configuration.getHomeDirectory();
-    Validation.validateDirectory(home);
-    if (Util.list(home, Files::isDirectory).size() == 0)
-      throw new Validation.Error("home contains a directory", home.toUri());
+    var base = configuration.getBaseDirectory();
+    Validation.validateDirectory(base);
+    if (Util.list(base, Files::isDirectory).size() == 0)
+      throw new Validation.Error("base contains a directory", base.toUri());
     var work = configuration.getWorkspaceDirectory();
     if (Files.exists(work)) {
       Validation.validateDirectory(work);
@@ -257,28 +257,32 @@ public class Bach {
     return tool.run(out, err, strings);
   }
 
+  /** Bach's property collection. */
   enum Property {
     /** Be verbose. */
     DEBUG("ebug", "false"),
 
-    /** Base directory of the project. */
-    PROJECT_BASE("base", ""),
     /** Name of the project. */
     PROJECT_NAME("name", "Project"),
     /** Version of the project (used for every module). */
     PROJECT_VERSION("version", "0"),
 
+    /** Base directory of the project. */
+    BASE_DIRECTORY("base", ""),
+    /** Directory with 3rd-party modules, relative to {@link #BASE_DIRECTORY}. */
     LIBRARY_DIRECTORY("library", "lib"),
+    /** Directory with modules sources, relative to {@link #BASE_DIRECTORY}. */
     SOURCE_DIRECTORY("source", "src"),
+    /** Directory that contains generated binary assets, relative to {@link #BASE_DIRECTORY}. */
     TARGET_DIRECTORY("target", "bin"),
 
+    /** Default Maven 2 repository used for resolving missing modules. */
     MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2"),
 
     /** Options passed to all 'javac' calls. */
     TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint"),
-
     /** Options passed to all 'junit' calls. */
-    TOOL_JUNIT_OPTIONS("tool.junit.options", "--fail-if-no-tests\n--disable-banner\n--details=tree"),
+    TOOL_JUNIT_OPTIONS("tool.junit.options", "--fail-if-no-tests\n--details=tree"),
     ;
 
     private final String key;
@@ -308,18 +312,18 @@ public class Bach {
 
   public static class Configuration {
 
-    private final Path home;
+    private final Path base;
     private final Properties properties;
 
     public Configuration() {
-      this(Path.of(Property.PROJECT_BASE.get()));
+      this(Path.of(Property.BASE_DIRECTORY.get()));
     }
 
-    public Configuration(Path home) {
-      this.home = home;
+    public Configuration(Path base) {
+      this.base = base;
       var file = ".bach/.properties";
       var USER = Util.load(new Properties(), Path.of(System.getProperty("user.home")).resolve(file));
-      this.properties = Util.load(USER, home.resolve(System.getProperty("properties", file)));
+      this.properties = Util.load(USER, base.resolve(System.getProperty("properties", file)));
     }
 
     private String get(Property property) {
@@ -340,7 +344,7 @@ public class Bach {
 
     public String getProjectName() {
       var name = Property.PROJECT_NAME;
-      var dir = getHomeDirectory().toAbsolutePath().getFileName();
+      var dir = getBaseDirectory().toAbsolutePath().getFileName();
       return get(name, dir != null ? dir.toString() : name.getDefaultValue());
     }
 
@@ -348,12 +352,12 @@ public class Bach {
       return Version.parse(get(Property.PROJECT_VERSION));
     }
 
-    public Path getHomeDirectory() {
-      return home;
+    public Path getBaseDirectory() {
+      return base;
     }
 
     public Path getWorkspaceDirectory() {
-      return getHomeDirectory().resolve(get(Property.TARGET_DIRECTORY));
+      return getBaseDirectory().resolve(get(Property.TARGET_DIRECTORY));
     }
 
     public Path getLibraryDirectory() {
@@ -361,12 +365,12 @@ public class Bach {
     }
 
     public List<Path> getLibraryPaths() {
-      var lib = getHomeDirectory().resolve(get(Property.LIBRARY_DIRECTORY));
+      var lib = getBaseDirectory().resolve(get(Property.LIBRARY_DIRECTORY));
       return List.of(lib);
     }
 
     public List<Path> getSourceDirectories() {
-      var src = getHomeDirectory().resolve(get(Property.SOURCE_DIRECTORY));
+      var src = getBaseDirectory().resolve(get(Property.SOURCE_DIRECTORY));
       return List.of(src);
     }
 
@@ -390,13 +394,12 @@ public class Bach {
     }
 
     void print(PrintWriter writer) {
-      var home = getHomeDirectory();
-      writer.printf("  home = '%s' -> %s%n", home, home.toUri());
-      writer.printf("  workspace = '%s'%n", getWorkspaceDirectory());
-      writer.printf("  library paths = %s%n", getLibraryPaths());
-      writer.printf("  source directories = %s%n", getSourceDirectories());
-      writer.printf("  project name = %s%n", getProjectName());
-      writer.printf("  project version = %s%n", getProjectVersion());
+      writer.printf("project name = %s%n", getProjectName());
+      writer.printf("project version = %s%n", getProjectVersion());
+      writer.printf("base directory = '%s' -> %s%n", getBaseDirectory(), getBaseDirectory().toUri());
+      writer.printf("source directories = %s%n", getSourceDirectories());
+      writer.printf("target directory = '%s'%n", getWorkspaceDirectory());
+      writer.printf("library paths = %s%n", getLibraryPaths());
     }
 
     static class UnmappedModuleException extends RuntimeException {

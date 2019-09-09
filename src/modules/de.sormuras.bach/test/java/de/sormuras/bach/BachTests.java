@@ -37,7 +37,7 @@ class BachTests {
     var bach = Bach.of();
     assertNotNull(bach.out);
     assertNotNull(bach.err);
-    assertEquals(Path.of(""), bach.configuration.getHomeDirectory());
+    assertEquals(Path.of(""), bach.configuration.getBaseDirectory());
     assertEquals(Path.of("bin"), bach.configuration.getWorkspaceDirectory());
     assertEquals("Bach.java", bach.configuration.getProjectName());
     assertEquals(Version.parse(Bach.VERSION), bach.configuration.getProjectVersion());

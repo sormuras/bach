@@ -32,11 +32,4 @@ class DemoTests {
     assertDoesNotThrow(bach::build, "bach::build failed: " + bach.lines());
     assertLinesMatch(List.of(">> BUILD >>"), bach.lines());
   }
-
-  @Test
-  void validate() {
-    var bach = new Probe(Path.of("demo"));
-    assertDoesNotThrow(bach::validate, "bach::validate failed: " + bach);
-    assertTrue(bach.out.toString().isBlank());
-  }
 }

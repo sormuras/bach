@@ -36,7 +36,7 @@ public class Configuration extends Bach.Configuration {
 
   @Override
   public List<Path> getSourceDirectories() {
-    return List.of(getHomeDirectory().resolve("src/modules"));
+    return List.of(getBaseDirectory().resolve("src/modules"));
   }
 
   @Override

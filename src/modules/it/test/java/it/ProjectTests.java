@@ -48,17 +48,17 @@ class ProjectTests {
 
   @ParameterizedTest
   @MethodSource("projects")
-  void clean(Path home) {
-    var bach = new Probe(home);
-    assertDoesNotThrow(bach::clean, "bach::clean failed: " + home);
+  void clean(Path base) {
+    var bach = new Probe(base);
+    assertDoesNotThrow(bach::clean, "bach::clean failed: " + base);
     assertLinesMatch(List.of(), bach.lines());
   }
 
   @ParameterizedTest
   @MethodSource("projects")
-  void help(Path home) {
-    var bach = new Probe(home);
-    assertDoesNotThrow(bach::help, "bach::help failed: " + home);
+  void help(Path base) {
+    var bach = new Probe(base);
+    assertDoesNotThrow(bach::help, "bach::help failed: " + base);
     assertLinesMatch(
         List.of(
             "F1! F1! F1!",
@@ -71,18 +71,19 @@ class ProjectTests {
 
   @ParameterizedTest
   @MethodSource("projects")
-  void info(Path home) {
-    var bach = new Probe(home);
-    assertDoesNotThrow(bach::info, "bach::info failed: " + home);
+  void info(Path base) {
+    var bach = new Probe(base);
+    assertDoesNotThrow(bach::info, "bach::info failed: " + base);
     assertLinesMatch(
         List.of(
             "Bach \\(" + Bach.VERSION + ".*\\)",
-            "  home = '" + home + "' -> " + home.toUri(),
-            "  workspace = '" + home.resolve("bin") + "'",
-            "  library paths = [" + home.resolve("lib") + "]",
-            "  source directories = [" + home.resolve("src") + "]",
-            "  project name = " + home.getFileName().toString(),
-            "  project version = 0"),
+            "project name = " + base.getFileName().toString(),
+            "project version = 0",
+            "base directory = '" + base + "' -> " + base.toUri(),
+            "source directories = [" + base.resolve("src") + "]",
+            "target directory = '" + base.resolve("bin") + "'",
+            "library paths = [" + base.resolve("lib") + "]"
+            ),
         bach.lines());
   }
 
@@ -91,9 +92,9 @@ class ProjectTests {
 
     @Test
     void build() {
-      var home = PROJECTS.resolve("empty");
-      var e = assertThrows(Validation.Error.class, () -> new Probe(home).build());
-      assertEquals("expected that home contains a directory: " + home.toUri(), e.getMessage());
+      var base = PROJECTS.resolve("empty");
+      var e = assertThrows(Validation.Error.class, () -> new Probe(base).build());
+      assertEquals("expected that base contains a directory: " + base.toUri(), e.getMessage());
     }
   }
 

@@ -140,10 +140,10 @@ public class Bach {
   }
 
   public void validate() {
-    var home = configuration.getHomeDirectory();
-    Validation.validateDirectory(home);
-    if (Util.list(home, Files::isDirectory).size() == 0)
-      throw new Validation.Error("home contains a directory", home.toUri());
+    var base = configuration.getBaseDirectory();
+    Validation.validateDirectory(base);
+    if (Util.list(base, Files::isDirectory).size() == 0)
+      throw new Validation.Error("base contains a directory", base.toUri());
     var work = configuration.getWorkspaceDirectory();
     if (Files.exists(work)) {
       Validation.validateDirectory(work);

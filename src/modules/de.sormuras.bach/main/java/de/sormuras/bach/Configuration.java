@@ -28,18 +28,18 @@ import java.util.stream.Collectors;
 /*BODY*/
 public /*STATIC*/ class Configuration {
 
-  private final Path home;
+  private final Path base;
   private final Properties properties;
 
   public Configuration() {
-    this(Path.of(Property.PROJECT_BASE.get()));
+    this(Path.of(Property.BASE_DIRECTORY.get()));
   }
 
-  public Configuration(Path home) {
-    this.home = home;
+  public Configuration(Path base) {
+    this.base = base;
     var file = ".bach/.properties";
     var USER = Util.load(new Properties(), Path.of(System.getProperty("user.home")).resolve(file));
-    this.properties = Util.load(USER, home.resolve(System.getProperty("properties", file)));
+    this.properties = Util.load(USER, base.resolve(System.getProperty("properties", file)));
   }
 
   private String get(Property property) {
@@ -60,7 +60,7 @@ public /*STATIC*/ class Configuration {
 
   public String getProjectName() {
     var name = Property.PROJECT_NAME;
-    var dir = getHomeDirectory().toAbsolutePath().getFileName();
+    var dir = getBaseDirectory().toAbsolutePath().getFileName();
     return get(name, dir != null ? dir.toString() : name.getDefaultValue());
   }
 
@@ -68,12 +68,12 @@ public /*STATIC*/ class Configuration {
     return Version.parse(get(Property.PROJECT_VERSION));
   }
 
-  public Path getHomeDirectory() {
-    return home;
+  public Path getBaseDirectory() {
+    return base;
   }
 
   public Path getWorkspaceDirectory() {
-    return getHomeDirectory().resolve(get(Property.TARGET_DIRECTORY));
+    return getBaseDirectory().resolve(get(Property.TARGET_DIRECTORY));
   }
 
   public Path getLibraryDirectory() {
@@ -81,12 +81,12 @@ public /*STATIC*/ class Configuration {
   }
 
   public List<Path> getLibraryPaths() {
-    var lib = getHomeDirectory().resolve(get(Property.LIBRARY_DIRECTORY));
+    var lib = getBaseDirectory().resolve(get(Property.LIBRARY_DIRECTORY));
     return List.of(lib);
   }
 
   public List<Path> getSourceDirectories() {
-    var src = getHomeDirectory().resolve(get(Property.SOURCE_DIRECTORY));
+    var src = getBaseDirectory().resolve(get(Property.SOURCE_DIRECTORY));
     return List.of(src);
   }
 
@@ -110,13 +110,12 @@ public /*STATIC*/ class Configuration {
   }
 
   void print(PrintWriter writer) {
-    var home = getHomeDirectory();
-    writer.printf("  home = '%s' -> %s%n", home, home.toUri());
-    writer.printf("  workspace = '%s'%n", getWorkspaceDirectory());
-    writer.printf("  library paths = %s%n", getLibraryPaths());
-    writer.printf("  source directories = %s%n", getSourceDirectories());
-    writer.printf("  project name = %s%n", getProjectName());
-    writer.printf("  project version = %s%n", getProjectVersion());
+    writer.printf("project name = %s%n", getProjectName());
+    writer.printf("project version = %s%n", getProjectVersion());
+    writer.printf("base directory = '%s' -> %s%n", getBaseDirectory(), getBaseDirectory().toUri());
+    writer.printf("source directories = %s%n", getSourceDirectories());
+    writer.printf("target directory = '%s'%n", getWorkspaceDirectory());
+    writer.printf("library paths = %s%n", getLibraryPaths());
   }
 
   static class UnmappedModuleException extends RuntimeException {

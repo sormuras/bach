@@ -29,8 +29,8 @@ class Probe extends Bach {
 
   final StringWriter out;
 
-  Probe(Path home) {
-    this(new Configuration(home));
+  Probe(Path base) {
+    this(new Configuration(base));
   }
 
   Probe(Configuration configuration) {
