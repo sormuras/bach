@@ -44,8 +44,8 @@ public class Configuration extends Bach.Configuration {
     if ("de.sormuras.mainrunner.engine".equals(module)) return "2.0.5";
     if ("org.apiguardian.api".equals(module)) return "1.1.0";
     if ("org.opentest4j".equals(module)) return "1.2.0";
-    if (module.startsWith("org.junit.jupiter")) return "5.5.1";
-    if (module.startsWith("org.junit.platform")) return "1.5.1";
+    if (module.startsWith("org.junit.jupiter")) return "5.5.2";
+    if (module.startsWith("org.junit.platform")) return "1.5.2";
     return null;
   }
 
