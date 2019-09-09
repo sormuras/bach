@@ -122,4 +122,11 @@ public /*STATIC*/ class Command {
   String[] toStringArray() {
     return list.toArray(String[]::new);
   }
+
+  String toCommandLine() {
+    if (list.isEmpty()) {
+      return name;
+    }
+    return name + ' ' + String.join(" ", list);
+  }
 }

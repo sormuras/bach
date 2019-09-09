@@ -51,7 +51,7 @@ import java.util.List;
         // errors.append(testClassPathDirect(module));
         // errors.append(testClassPathForked(module));
         errors.append(testModulePathDirect(info));
-        // errors.append(testModulePathForked(module));
+        errors.append(testModulePathForked(info));
       } else {
         log(WARNING, "Module 'org.junit.platform.console' not present");
       }
@@ -117,22 +117,20 @@ import java.util.List;
     }
   }
 
-  //    int testModulePathForked(String module) {
-  //      var needsPatch = project.main.declaredModules.containsKey(module);
-  //      var java =
-  //          new Command("java")
-  //              .add("-ea")
-  //              .add("--module-path", project.test.modulePathRuntime(needsPatch))
-  //              .add("--add-modules", module);
-  //      if (needsPatch) {
-  //        java.add("--patch-module", module + "=" + project.main.modularJar(module));
-  //      }
-  //      java.add("--module")
-  //          .add("org.junit.platform.console")
-  //          .addEach(configuration.lines(Property.OPTIONS_JUNIT))
-  //          .add("--select-module", module);
-  //      return runner.run(java);
-  //    }
+  private int testModulePathForked(Realm.Info info) {
+    var module = info.module;
+    var java =
+        new Command("java")
+            .add("-ea")
+            .add("--module-path", test.getRuntimeModulePaths(info.getModularJar()))
+            .add("--add-modules", module)
+            .add("--module")
+            .add("org.junit.platform.console")
+            .addEach(bach.configuration.lines(Property.TOOL_JUNIT_OPTIONS))
+            .add("--select-module", module);
+    bach.out.println(java.toCommandLine());
+    return 0;
+  }
 
   /** Launch JUnit Platform Console for the given "module under test". */
   private int testModulePathDirect(Realm.Info info, Command junit) {
