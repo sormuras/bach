@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-09T11:55:56.396605100Z
+// THIS FILE WAS GENERATED ON 2019-09-12T18:31:19.642048Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -209,6 +209,15 @@ public class Bach {
 
   public void resolve() {
     Resolver.resolve(this);
+    var libraries = ModuleFinder.of(configuration.getLibraryPaths().toArray(Path[]::new)).findAll();
+    if (!libraries.isEmpty()) {
+      out.printf("found %d module(s) in all library paths:%n", libraries.size());
+      libraries.stream()
+          .map(ModuleReference::descriptor)
+          .map(ModuleDescriptor::toNameAndVersion)
+          .sorted()
+          .forEach(library -> out.printf("  %s%n", library));
+    }
   }
 
   public void compile() {

@@ -22,7 +22,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -165,6 +169,15 @@ public class Bach {
 
   public void resolve() {
     Resolver.resolve(this);
+    var libraries = ModuleFinder.of(configuration.getLibraryPaths().toArray(Path[]::new)).findAll();
+    if (!libraries.isEmpty()) {
+      out.printf("found %d module(s) in all library paths:%n", libraries.size());
+      libraries.stream()
+          .map(ModuleReference::descriptor)
+          .map(ModuleDescriptor::toNameAndVersion)
+          .sorted()
+          .forEach(library -> out.printf("  %s%n", library));
+    }
   }
 
   public void compile() {
