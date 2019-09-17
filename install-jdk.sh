@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2019-07-17'
+    readonly script_version='2019-09-17'
 
     dry=false
     silent=false
@@ -198,6 +198,7 @@ function determine_url() {
        10) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
        11) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
        12) url="${DOWNLOAD}/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_${os}_bin.tar.gz"; return;;
+       13) url="${DOWNLOAD}/GA/jdk13/5b8a42f3905b406298b72d750b6919f6/33/GPL/openjdk-13_${os}_bin.tar.gz"; return;;
     esac
 
     # EA or RC build? Grab URL from HTML source of jdk.java.net/${feature}
