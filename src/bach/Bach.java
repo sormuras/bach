@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-17T10:23:05.381507200Z
+// THIS FILE WAS GENERATED ON 2019-09-17T15:30:47.975414200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -510,12 +510,13 @@ public class Bach {
       return "Command{name='" + name + "', list=[" + args + "]}";
     }
 
-    /** Returns an array of {@link String} containing all of the collected arguments. */
+    /** Return an array of {@link String} containing all of the collected arguments. */
     String[] toStringArray() {
       return list.toArray(String[]::new);
     }
 
-    String toCommandLine() {
+    /** Return program and arguments as single string. */
+    public String toCommandLine() {
       if (list.isEmpty()) {
         return name;
       }
@@ -524,33 +525,36 @@ public class Bach {
   }
 
   /** Modular project model domain. */
-  interface Domain {
+  public interface Domain {
 
     /** Modular project model. */
     class Project {
       /** Name of the project. */
-      final String name;
+      public final String name;
       /** Version of the project. */
-      final Version version;
+      public final Version version;
       /** Library. */
-      final Library library;
+      public final Library library;
       /** List of realms. */
-      final List<Realm> realms;
+      public final List<Realm> realms;
+      /** Target directory. */
+      public final Path target;
 
-      public Project(String name, Version version, Library library, List<Realm> realms) {
+      public Project(String name, Version version, Library library, List<Realm> realms, Path target) {
         this.name = name;
         this.version = version;
         this.library = library;
         this.realms = List.copyOf(realms);
+        this.target = target;
       }
     }
 
     /** Manage external 3rd-party modules. */
     class Library {
       /** List of library paths to external 3rd-party modules. */
-      final List<Path> modulePaths;
+      public final List<Path> modulePaths;
       /** Map external 3rd-party module names to their {@code URI}s. */
-      final Function<String, URI> moduleMapper;
+      public final Function<String, URI> moduleMapper;
 
       public Library(List<Path> modulePaths, Function<String, URI> moduleMapper) {
         this.modulePaths = List.copyOf(modulePaths);
@@ -561,17 +565,17 @@ public class Bach {
     /** Common base class for main- and test realms. */
     abstract class Realm {
       /** Name of the realm. */
-      final String name;
+      public final String name;
       /** Map of declared module source unit. */
-      final Map<String, ModuleSource> modules;
+      public final Map<String, ModuleSource> modules;
 
       /** Module source path specifies where to find input source files for multiple modules. */
       final String moduleSourcePath;
 
       Realm(String name, String moduleSourcePath, Map<String, ModuleSource> modules) {
         this.name = name;
-        this.modules = modules;
         this.moduleSourcePath = moduleSourcePath;
+        this.modules = Map.copyOf(modules);
       }
     }
 
@@ -585,7 +589,7 @@ public class Bach {
     /** Test realm. */
     class TestRealm extends Realm {
       /** Main realm reference. */
-      final MainRealm main;
+      public final MainRealm main;
 
       public TestRealm(
           MainRealm main, String moduleSourcePath, Map<String, ModuleSource> declaredModules) {
@@ -597,12 +601,18 @@ public class Bach {
     /** Describes a Java module source unit. */
     class ModuleSource {
       /** Relative to the backing {@code module-info.java} file. */
-      final Path info;
+      public final Path info;
+      /** Relative path to the resources directory. */
+      public final Path sources;
+      /** Relative path to the resources directory. */
+      public final Path resources;
       /** Associated module descriptor, normally parsed from module {@link #info} file. */
-      final ModuleDescriptor descriptor;
+      public final ModuleDescriptor descriptor;
 
-      public ModuleSource(Path info, ModuleDescriptor descriptor) {
+      public ModuleSource(Path info, Path sources, Path resources, ModuleDescriptor descriptor) {
         this.info = info;
+        this.sources = sources;
+        this.resources = resources;
         this.descriptor = descriptor;
       }
     }
