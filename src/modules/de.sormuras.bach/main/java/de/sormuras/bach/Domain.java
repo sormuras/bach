@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 /*BODY*/
 /** Modular project model domain. */
-interface Domain {
+public interface Domain {
 
   /** Modular project model. */
   class Project {
@@ -22,12 +22,15 @@ interface Domain {
     final Library library;
     /** List of realms. */
     final List<Realm> realms;
+    /** Target directory. */
+    final Path target;
 
-    public Project(String name, Version version, Library library, List<Realm> realms) {
+    public Project(String name, Version version, Library library, List<Realm> realms, Path target) {
       this.name = name;
       this.version = version;
       this.library = library;
       this.realms = List.copyOf(realms);
+      this.target = target;
     }
   }
 
