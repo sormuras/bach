@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-12T18:31:19.642048Z
+// THIS FILE WAS GENERATED ON 2019-09-17T10:23:05.381507200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -68,6 +68,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -519,6 +520,91 @@ public class Bach {
         return name;
       }
       return name + ' ' + String.join(" ", list);
+    }
+  }
+
+  /** Modular project model domain. */
+  interface Domain {
+
+    /** Modular project model. */
+    class Project {
+      /** Name of the project. */
+      final String name;
+      /** Version of the project. */
+      final Version version;
+      /** Library. */
+      final Library library;
+      /** List of realms. */
+      final List<Realm> realms;
+
+      public Project(String name, Version version, Library library, List<Realm> realms) {
+        this.name = name;
+        this.version = version;
+        this.library = library;
+        this.realms = List.copyOf(realms);
+      }
+    }
+
+    /** Manage external 3rd-party modules. */
+    class Library {
+      /** List of library paths to external 3rd-party modules. */
+      final List<Path> modulePaths;
+      /** Map external 3rd-party module names to their {@code URI}s. */
+      final Function<String, URI> moduleMapper;
+
+      public Library(List<Path> modulePaths, Function<String, URI> moduleMapper) {
+        this.modulePaths = List.copyOf(modulePaths);
+        this.moduleMapper = moduleMapper;
+      }
+    }
+
+    /** Common base class for main- and test realms. */
+    abstract class Realm {
+      /** Name of the realm. */
+      final String name;
+      /** Map of declared module source unit. */
+      final Map<String, ModuleSource> modules;
+
+      /** Module source path specifies where to find input source files for multiple modules. */
+      final String moduleSourcePath;
+
+      Realm(String name, String moduleSourcePath, Map<String, ModuleSource> modules) {
+        this.name = name;
+        this.modules = modules;
+        this.moduleSourcePath = moduleSourcePath;
+      }
+    }
+
+    /** Main realm. */
+    class MainRealm extends Realm {
+      public MainRealm(String moduleSourcePath, Map<String, ModuleSource> declaredModules) {
+        super("main", moduleSourcePath, declaredModules);
+      }
+    }
+
+    /** Test realm. */
+    class TestRealm extends Realm {
+      /** Main realm reference. */
+      final MainRealm main;
+
+      public TestRealm(
+          MainRealm main, String moduleSourcePath, Map<String, ModuleSource> declaredModules) {
+        super("test", moduleSourcePath, declaredModules);
+        this.main = main;
+      }
+    }
+
+    /** Describes a Java module source unit. */
+    class ModuleSource {
+      /** Relative to the backing {@code module-info.java} file. */
+      final Path info;
+      /** Associated module descriptor, normally parsed from module {@link #info} file. */
+      final ModuleDescriptor descriptor;
+
+      public ModuleSource(Path info, ModuleDescriptor descriptor) {
+        this.info = info;
+        this.descriptor = descriptor;
+      }
     }
   }
 

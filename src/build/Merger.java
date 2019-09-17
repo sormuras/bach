@@ -35,6 +35,7 @@ class Merger {
           "Property",
           "Configuration",
           "Command",
+          "Domain",
           "Realm",
           "Tester",
           "TestRealm",
