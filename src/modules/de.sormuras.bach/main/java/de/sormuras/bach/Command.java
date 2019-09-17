@@ -118,12 +118,13 @@ public /*STATIC*/ class Command {
     return "Command{name='" + name + "', list=[" + args + "]}";
   }
 
-  /** Returns an array of {@link String} containing all of the collected arguments. */
+  /** Return an array of {@link String} containing all of the collected arguments. */
   String[] toStringArray() {
     return list.toArray(String[]::new);
   }
 
-  String toCommandLine() {
+  /** Return program and arguments as single string. */
+  public String toCommandLine() {
     if (list.isEmpty()) {
       return name;
     }
