@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class BachTests {
   @Test
   void banner() {
-    assertFalse(Bach.of().getBanner().isBlank());
+    assertFalse(Bach.of().banner().isBlank());
   }
 
   @Test

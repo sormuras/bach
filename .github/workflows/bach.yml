@@ -4,7 +4,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
-    container: openjdk:14
+    container: openjdk:13
     steps:
     - uses: actions/checkout@v1
     - name: 'Build Bach.java'

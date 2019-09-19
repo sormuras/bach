@@ -22,10 +22,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -75,82 +71,29 @@ public class Bach {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
     this.verbose = verbose;
-    log("New instance initialized: %s", this);
+    log("New Bach.java (%s) instance initialized: %s", VERSION, this);
   }
 
-  private void log(String format, Object... args) {
+  /** Print "debug" message to the standard output stream. */
+  void log(String format, Object... args) {
     if (verbose) out.println(String.format(format, args));
   }
 
-  void main(List<String> args) {
-    log("Parsing argument(s): %s", args);
-
-    abstract class Action implements Runnable {
-      private final String description;
-
-      private Action(String description) {
-        this.description = description;
-      }
-
-      @Override
-      public String toString() {
-        return description;
-      }
-    }
-
-    var arguments = new ArrayDeque<>(args);
-    var actions = new ArrayList<Action>();
-    var lookup = MethodHandles.publicLookup();
-    var type = MethodType.methodType(void.class);
-    while (!arguments.isEmpty()) {
-      var name = arguments.pop();
-      // Try Bach API method w/o parameter -- single argument is consumed
-      try {
-        try {
-          lookup.findVirtual(Object.class, name, type);
-        } catch (NoSuchMethodException e) {
-          var handle = lookup.findVirtual(getClass(), name, type);
-          actions.add(
-              new Action(name + "()") {
-                @Override
-                public void run() {
-                  try {
-                    handle.invokeExact(Bach.this);
-                  } catch (Throwable t) {
-                    throw new AssertionError("Running method failed: " + handle, t);
-                  }
-                }
-              });
-          continue;
-        }
-      } catch (ReflectiveOperationException e) {
-        // fall through
-      }
-      // Try provided tool -- all remaining arguments are consumed
-      var tool = ToolProvider.findFirst(name);
-      if (tool.isPresent()) {
-        var options = List.copyOf(arguments);
-        actions.add(
-            new Action(name + " " + options) {
-              @Override
-              public void run() {
-                var strings = arguments.stream().map(Object::toString).toArray(String[]::new);
-                log("%s %s", name, String.join(" ", strings));
-                var code = tool.get().run(out, err, strings);
-                if (code != 0) {
-                  throw new AssertionError(name + " returned non-zero exit code: " + code);
-                }
-              }
-            });
-        break;
-      }
-      throw new IllegalArgumentException("Unsupported argument: " + name);
-    }
-    log("Running %d action(s): %s", actions.size(), actions);
-    actions.forEach(Runnable::run);
+  /** Non-static entry-point used by {@link #main(String...)} and {@link BachToolProvider}. */
+  void main(List<String> arguments) {
+    var tasks = Util.requireNonEmpty(Task.of(this, arguments), "tasks");
+    log("Running %d argument task(s): %s", tasks.size(), tasks);
+    tasks.forEach(consumer -> consumer.accept(this));
   }
 
-  String getBanner() {
+  /** Run the tool using the passed provider and arguments. */
+  int run(ToolProvider tool, String... arguments) {
+    log("Running %s %s", tool.name(), String.join(" ", arguments));
+    return tool.run(out, err, arguments);
+  }
+
+  /** Get the {@code Bach.java} banner. */
+  String banner() {
     var module = getClass().getModule();
     try (var stream = module.getResourceAsStream("de/sormuras/bach/banner.txt")) {
       if (stream == null) {
@@ -164,8 +107,9 @@ public class Bach {
     }
   }
 
+  /** Print help text to the standard output stream. */
   public void help() {
-    out.println(getBanner());
+    out.println(banner());
     out.println("Method API");
     Arrays.stream(getClass().getMethods())
         .filter(Util::isApiMethod)
@@ -179,14 +123,17 @@ public class Bach {
         .forEach(out::println);
   }
 
+  /** Build. */
   public void build() {
     info();
   }
 
+  /** Print all "interesting" information. */
   public void info() {
-    out.printf("Bach (%s)%n", VERSION);
+    out.printf("Bach.java (%s)%n", VERSION);
   }
 
+  /** Print Bach.java's version to the standard output stream. */
   public void version() {
     out.println(VERSION);
   }
