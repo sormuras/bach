@@ -1,14 +1,29 @@
-package de.sormuras.bach;
+package it;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import de.sormuras.bach.Command;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class CommandTests {
+
+  @Test
+  void checkDefaultValues() {
+    assertEquals("empty", new Command("empty").getName());
+    assertEquals(List.of(), new Command("empty").getArguments());
+    assertEquals("empty", new Command("empty").toCommandLine());
+    assertEquals("empty", new Command("empty").toCommandLine("?"));
+  }
+
+  @Test
+  void toCommandLineWithTabAsSeparator() {
+    assertEquals("a\tb\tc", new Command("a", "b", "c").toCommandLine("\t"));
+  }
+
   @Test
   void toStringReturnsNameAndListOfArguments() {
     assertEquals("Command{name='empty', list=[<empty>]}", new Command("empty").toString());

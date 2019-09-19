@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-19T04:11:53.505351500Z
+// THIS FILE WAS GENERATED ON 2019-09-19T07:06:43.807477500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -220,32 +220,32 @@ public class Bach {
   public static class Command {
 
     private final String name;
-    private final List<String> list = new ArrayList<>();
+    private final List<String> arguments = new ArrayList<>();
 
     /** Initialize Command instance with zero or more arguments. */
-    Command(String name, Object... args) {
+    public Command(String name, Object... args) {
       this.name = name;
       addEach(args);
     }
 
     /** Add single argument by invoking {@link Object#toString()} on the given argument. */
-    Command add(Object argument) {
-      list.add(argument.toString());
+    public Command add(Object argument) {
+      arguments.add(argument.toString());
       return this;
     }
 
     /** Add two arguments by invoking {@link #add(Object)} for the key and value elements. */
-    Command add(Object key, Object value) {
+    public Command add(Object key, Object value) {
       return add(key).add(value);
     }
 
     /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
-    Command add(Object key, Collection<Path> paths) {
+    public Command add(Object key, Collection<Path> paths) {
       return add(key, paths, UnaryOperator.identity());
     }
 
     /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
-    Command add(Object key, Collection<Path> paths, UnaryOperator<String> operator) {
+    public Command add(Object key, Collection<Path> paths, UnaryOperator<String> operator) {
       var stream = paths.stream().filter(Files::exists).map(Object::toString);
       var value = stream.collect(Collectors.joining(File.pathSeparator));
       if (value.isEmpty()) {
@@ -255,34 +255,34 @@ public class Bach {
     }
 
     /** Add all arguments by invoking {@link #add(Object)} for each element. */
-    Command addEach(Object... arguments) {
+    public Command addEach(Object... arguments) {
       return addEach(List.of(arguments));
     }
 
     /** Add all arguments by invoking {@link #add(Object)} for each element. */
-    Command addEach(Iterable<?> arguments) {
+    public Command addEach(Iterable<?> arguments) {
       arguments.forEach(this::add);
       return this;
     }
 
     /** Add a single argument iff the conditions is {@code true}. */
-    Command addIff(boolean condition, Object argument) {
+    public Command addIff(boolean condition, Object argument) {
       return condition ? add(argument) : this;
     }
 
     /** Add two arguments iff the conditions is {@code true}. */
-    Command addIff(boolean condition, Object key, Object value) {
+    public Command addIff(boolean condition, Object key, Object value) {
       return condition ? add(key, value) : this;
     }
 
     /** Add two arguments iff the given optional value is present. */
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    Command addIff(Object key, Optional<?> optionalValue) {
+    public Command addIff(Object key, Optional<?> optionalValue) {
       return optionalValue.isPresent() ? add(key, optionalValue.get()) : this;
     }
 
     /** Let the consumer visit, usually modify, this instance iff the conditions is {@code true}. */
-    Command addIff(boolean condition, Consumer<Command> visitor) {
+    public Command addIff(boolean condition, Consumer<Command> visitor) {
       if (condition) {
         visitor.accept(this);
       }
@@ -295,27 +295,32 @@ public class Bach {
     }
 
     /** Return the command's arguments. */
-    public List<String> getList() {
-      return list;
+    public List<String> getArguments() {
+      return arguments;
     }
 
     @Override
     public String toString() {
-      var args = list.isEmpty() ? "<empty>" : "'" + String.join("', '", list) + "'";
+      var args = arguments.isEmpty() ? "<empty>" : "'" + String.join("', '", arguments) + "'";
       return "Command{name='" + name + "', list=[" + args + "]}";
     }
 
     /** Return an array of {@link String} containing all of the collected arguments. */
-    String[] toStringArray() {
-      return list.toArray(String[]::new);
+    public String[] toStringArray() {
+      return arguments.toArray(String[]::new);
     }
 
-    /** Return program and arguments as single string. */
+    /** Return program's name and all arguments as single string using space as the delimiter. */
     public String toCommandLine() {
-      if (list.isEmpty()) {
+      return toCommandLine(" ");
+    }
+
+    /** Return program's name and all arguments as single string using passed delimiter. */
+    public String toCommandLine(String delimiter) {
+      if (arguments.isEmpty()) {
         return name;
       }
-      return name + ' ' + String.join(" ", list);
+      return name + delimiter + String.join(delimiter, arguments);
     }
   }
 
