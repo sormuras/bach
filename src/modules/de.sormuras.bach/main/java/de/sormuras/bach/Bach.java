@@ -107,6 +107,11 @@ public class Bach {
     }
   }
 
+  /** Verbosity flag. */
+  boolean verbose() {
+    return verbose;
+  }
+
   /** Print help text to the standard output stream. */
   public void help() {
     out.println(banner());
