@@ -22,16 +22,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.TreeSet;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -48,7 +42,7 @@ public class Bach {
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    return new Bach(out, err, new Configuration());
+    return new Bach(out, err);
   }
 
   /**
@@ -64,13 +58,9 @@ public class Bach {
   /** Text-output writer. */
   final PrintWriter out, err;
 
-  /** Configuration. */
-  final Configuration configuration;
-
-  public Bach(PrintWriter out, PrintWriter err, Configuration configuration) {
+  public Bach(PrintWriter out, PrintWriter err) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
-    this.configuration = Util.requireNonNull(configuration, "configuration");
   }
 
   void main(List<String> args) {
@@ -128,83 +118,10 @@ public class Bach {
 
   public void build() {
     info();
-    validate();
-    resolve();
-    compile();
-    test();
-  }
-
-  public void clean() {
-    Util.treeDelete(configuration.getWorkspaceDirectory());
   }
 
   public void info() {
     out.printf("Bach (%s)%n", VERSION);
-    configuration.print(out);
-  }
-
-  public void validate() {
-    var base = configuration.getBaseDirectory();
-    Validation.validateDirectory(base);
-    if (Util.list(base, Files::isDirectory).size() == 0)
-      throw new Validation.Error("base contains a directory", base.toUri());
-    var work = configuration.getWorkspaceDirectory();
-    if (Files.exists(work)) {
-      Validation.validateDirectory(work);
-      if (!work.toFile().canWrite())
-        throw new Validation.Error("bin is writable: %s", work.toUri());
-    } else {
-      var parentOfBin = work.toAbsolutePath().getParent();
-      if (parentOfBin != null && !parentOfBin.toFile().canWrite())
-        throw new Validation.Error("parent of work is writable", parentOfBin.toUri());
-    }
-    var lib = configuration.getLibraryDirectory();
-    var libs = configuration.getLibraryPaths();
-    Validation.validateDirectoryIfExists(lib);
-    if (!libs.contains(lib)) {
-      throw new Validation.Error(lib + " is member of paths", libs);
-    }
-    configuration.getSourceDirectories().forEach(Validation::validateDirectory);
-  }
-
-  public void resolve() {
-    Resolver.resolve(this);
-    var libraries = ModuleFinder.of(configuration.getLibraryPaths().toArray(Path[]::new)).findAll();
-    if (!libraries.isEmpty()) {
-      out.printf("found %d module(s) in all library paths:%n", libraries.size());
-      libraries.stream()
-          .map(ModuleReference::descriptor)
-          .map(ModuleDescriptor::toNameAndVersion)
-          .sorted()
-          .forEach(library -> out.printf("  %s%n", library));
-    }
-  }
-
-  public void compile() {
-    var main = new Realm("main", configuration);
-    compile(main);
-  }
-
-  private void compile(Realm realm) {
-    var modules = new TreeSet<>(realm.getDeclaredModules());
-    if (modules.isEmpty()) {
-      out.printf("No '%s' modules declared, nothing to compile.%n", realm.getName());
-      return;
-    }
-    var jigsaw = new Jigsaw(this);
-    modules.removeAll(jigsaw.compile(realm, modules));
-    if (modules.isEmpty()) {
-      return;
-    }
-    throw new IllegalStateException("not compiled modules: " + modules);
-  }
-
-  public void test() {
-    var main = new Realm("main", configuration);
-    var test = new TestRealm("test", configuration, main);
-    compile(test);
-    var tester = new Tester(this, test);
-    tester.test(test.getDeclaredModules());
   }
 
   public void version() {

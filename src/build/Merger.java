@@ -33,17 +33,8 @@ class Merger {
   static List<String> TYPES =
       List.of(
           "Property",
-          "Configuration",
           "Command",
-          "Domain",
-          "Realm",
-          "Tester",
-          "TestRealm",
-          "Jigsaw",
-          "Resolver",
-          "Transfer",
-          "Util",
-          "Validation");
+          "Util");
 
   public static void main(String[] args) throws Exception {
     System.out.printf("Merging %d types into Bach.java {%n", TYPES.size());

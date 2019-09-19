@@ -25,19 +25,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import de.sormuras.bach.Bach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SanityTests {
 
   private static final String BACH = "src/bach/Bach.java";
-
-  private static final List<String> EXPECTED_NORMAL_OUTPUT_LINES =
-      List.of(">> INIT >>", "base directory = '' -> " + Path.of("").toUri(), ">> DONE >>");
 
   @Test
   @DisplayName("jshell Bach.jsh")
@@ -52,7 +49,7 @@ class SanityTests {
             "/open " + BACH,
             "var code = 0",
             "try {",
-            "  Bach.of().main(List.of(\"info\"));",
+            "  Bach.of().main(List.of(\"version\"));",
             "} catch (Throwable throwable) {",
             "  throwable.printStackTrace();",
             "  code = 1;",
@@ -72,7 +69,7 @@ class SanityTests {
     var builder = new ProcessBuilder("java");
     builder.command().add("-ea");
     builder.command().add(BACH);
-    builder.command().add("info");
+    builder.command().add("version");
     var process = builder.start();
     process.waitFor(19, TimeUnit.SECONDS);
     assertStreams(List.of(), process);
@@ -83,7 +80,7 @@ class SanityTests {
     var out = lines(process.getInputStream());
     var err = lines(process.getErrorStream());
     try {
-      assertLinesMatch(EXPECTED_NORMAL_OUTPUT_LINES, out);
+      assertLinesMatch(List.of(Bach.VERSION), out);
       assertLinesMatch(expectedErrorStreamLines, err);
     } catch (AssertionError e) {
       var msg = String.join("\n", err) + String.join("\n", out);

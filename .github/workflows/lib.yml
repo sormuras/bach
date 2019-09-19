@@ -16,5 +16,4 @@ jobs:
     - name: Load module org.junit.jupiter version 5.5.1
       run: mkdir bin && cd bin && java ${GITHUB_WORKSPACE}/src/bach/Lib.java org.junit.jupiter@5.5.1
     - name: Load required modules of demo project
-#      run: cd ${GITHUB_WORKSPACE}/demo && java ${GITHUB_WORKSPACE}/src/bach/Lib.java
-      run: cd ${GITHUB_WORKSPACE}/demo && java ${GITHUB_WORKSPACE}/src/bach/Bach.java
+      run: cd ${GITHUB_WORKSPACE}/demo && java ${GITHUB_WORKSPACE}/src/bach/Lib.java

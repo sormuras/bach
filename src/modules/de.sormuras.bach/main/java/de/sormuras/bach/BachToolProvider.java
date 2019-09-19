@@ -31,7 +31,7 @@ public class BachToolProvider implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var bach = new Bach(out, err, new Configuration());
+    var bach = new Bach(out, err);
     try {
       bach.main(List.of(args));
       return 0;
