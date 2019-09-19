@@ -26,8 +26,8 @@ class CommandTests {
 
   @Test
   void toStringReturnsNameAndListOfArguments() {
-    assertEquals("Command{name='empty', list=[<empty>]}", new Command("empty").toString());
-    assertEquals("Command{name='a', list=['b', 'c']}", new Command("a", "b", "c").toString());
+    assertEquals("Command{name='empty', args=[<empty>]}", new Command("empty").toString());
+    assertEquals("Command{name='a', args=['b', 'c']}", new Command("a", "b", "c").toString());
   }
 
   @Test
@@ -49,7 +49,9 @@ class CommandTests {
           // "n=m",
           "o",
           "p",
-          "q"
+          "q",
+          "r",
+          "s"
         },
         new Command("noop")
             .addEach("a", "b")
@@ -64,6 +66,7 @@ class CommandTests {
             .addIff(true, args -> args.add("o"))
             .addIff(false, args -> args.add("Z"))
             .addIff("p", Optional.of("q"))
+            .addEach(List.of("r", "s"), Command::add)
             .toStringArray());
   }
 }

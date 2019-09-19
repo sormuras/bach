@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -78,6 +79,12 @@ public /*STATIC*/ class Command {
     return this;
   }
 
+  /** Add all arguments by delegating to the passed visitor for each element. */
+  public <T> Command addEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
+    arguments.forEach(argument -> visitor.accept(this, argument));
+    return this;
+  }
+
   /** Add a single argument iff the conditions is {@code true}. */
   public Command addIff(boolean condition, Object argument) {
     return condition ? add(argument) : this;
@@ -115,7 +122,7 @@ public /*STATIC*/ class Command {
   @Override
   public String toString() {
     var args = arguments.isEmpty() ? "<empty>" : "'" + String.join("', '", arguments) + "'";
-    return "Command{name='" + name + "', list=[" + args + "]}";
+    return "Command{name='" + name + "', args=[" + args + "]}";
   }
 
   /** Return an array of {@link String} containing all of the collected arguments. */
