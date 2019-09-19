@@ -59,8 +59,8 @@ public class Bach {
     try {
       bach.main(args.length == 0 ? List.of("build") : List.of(args));
     } catch (Throwable throwable) {
-      bach.err.printf("Bach.java failed: %s%n", throwable.getMessage());
-      if (Boolean.getBoolean("ebug")) {
+      bach.err.printf("Bach.java (%s) failed: %s%n", VERSION, throwable.getMessage());
+      if (bach.verbose) {
         throwable.printStackTrace(bach.err);
       }
     }
