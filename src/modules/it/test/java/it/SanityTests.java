@@ -44,19 +44,18 @@ class SanityTests {
     builder.command().add("-J-ea");
     builder.command().add("-"); // Standard input, without interactive I/O.
     var process = builder.start();
-    var source =
-        List.of(
-            "/open " + BACH,
-            "var code = 0",
-            "try {",
-            "  Bach.of().main(List.of(\"version\"));",
-            "} catch (Throwable throwable) {",
-            "  throwable.printStackTrace();",
-            "  code = 1;",
-            "}",
-            "");
-    process.getOutputStream().write(String.join("\n", source).getBytes());
-    process.getOutputStream().write("/exit code\n".getBytes());
+    var source = String.format("""
+      /open %s
+      var code = 0
+      try {
+        Bach.of().main(List.of("version"));
+      } catch (Throwable throwable) {
+        throwable.printStackTrace();
+        code = 1;
+      }
+      /exit code
+      """, BACH);
+    process.getOutputStream().write(source.getBytes());
     process.getOutputStream().flush();
     process.waitFor(19, TimeUnit.SECONDS);
     assertStreams(List.of(), process);
