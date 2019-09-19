@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -42,7 +45,8 @@ public class Bach {
   public static Bach of() {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    return new Bach(out, err);
+    var verbose = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+    return new Bach(out, err, verbose);
   }
 
   /**
@@ -52,39 +56,98 @@ public class Bach {
    */
   public static void main(String... args) {
     var bach = Bach.of();
-    bach.main(args.length == 0 ? List.of("build") : List.of(args));
+    try {
+      bach.main(args.length == 0 ? List.of("build") : List.of(args));
+    } catch (Throwable throwable) {
+      bach.err.printf("Bach.java failed: %s%n", throwable.getMessage());
+      if (Boolean.getBoolean("ebug")) {
+        throwable.printStackTrace(bach.err);
+      }
+    }
   }
 
   /** Text-output writer. */
-  final PrintWriter out, err;
+  private final PrintWriter out, err;
+  /** Be verbose. */
+  private final boolean verbose;
 
-  public Bach(PrintWriter out, PrintWriter err) {
+  public Bach(PrintWriter out, PrintWriter err, boolean verbose) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
+    this.verbose = verbose;
+    log("New instance initialized: %s", this);
+  }
+
+  private void log(String format, Object... args) {
+    if (verbose) out.println(String.format(format, args));
   }
 
   void main(List<String> args) {
+    log("Parsing argument(s): %s", args);
+
+    abstract class Action implements Runnable {
+      private final String description;
+
+      private Action(String description) {
+        this.description = description;
+      }
+
+      @Override
+      public String toString() {
+        return description;
+      }
+    }
+
     var arguments = new ArrayDeque<>(args);
+    var actions = new ArrayList<Action>();
+    var lookup = MethodHandles.publicLookup();
+    var type = MethodType.methodType(void.class);
     while (!arguments.isEmpty()) {
-      var argument = arguments.pop();
+      var name = arguments.pop();
+      // Try Bach API method w/o parameter -- single argument is consumed
       try {
-        // Try Bach API method w/o parameter -- single argument is consumed
-        var method = Util.findApiMethod(getClass(), argument);
-        if (method.isPresent()) {
-          method.get().invoke(this);
+        try {
+          lookup.findVirtual(Object.class, name, type);
+        } catch (NoSuchMethodException e) {
+          var handle = lookup.findVirtual(getClass(), name, type);
+          actions.add(
+              new Action(name + "()") {
+                @Override
+                public void run() {
+                  try {
+                    handle.invokeExact(Bach.this);
+                  } catch (Throwable t) {
+                    throw new AssertionError("Running method failed: " + handle, t);
+                  }
+                }
+              });
           continue;
         }
-        // Try provided tool -- all remaining arguments are consumed
-        var tool = ToolProvider.findFirst(argument);
-        if (tool.isPresent()) {
-          run(new Command(argument).addEach(arguments));
-          return;
-        }
       } catch (ReflectiveOperationException e) {
-        throw new Error("Reflective operation failed for: " + argument, e);
+        // fall through
       }
-      throw new IllegalArgumentException("Unsupported argument: " + argument);
+      // Try provided tool -- all remaining arguments are consumed
+      var tool = ToolProvider.findFirst(name);
+      if (tool.isPresent()) {
+        var options = List.copyOf(arguments);
+        actions.add(
+            new Action(name + " " + options) {
+              @Override
+              public void run() {
+                var strings = arguments.stream().map(Object::toString).toArray(String[]::new);
+                log("%s %s", name, String.join(" ", strings));
+                var code = tool.get().run(out, err, strings);
+                if (code != 0) {
+                  throw new AssertionError(name + " returned non-zero exit code: " + code);
+                }
+              }
+            });
+        break;
+      }
+      throw new IllegalArgumentException("Unsupported argument: " + name);
     }
+    log("Running %d action(s): %s", actions.size(), actions);
+    actions.forEach(Runnable::run);
   }
 
   String getBanner() {
@@ -97,12 +160,12 @@ public class Bach {
       var banner = lines.collect(Collectors.joining(System.lineSeparator()));
       return banner + " " + VERSION;
     } catch (IOException e) {
-      throw new UncheckedIOException("loading banner resource failed", e);
+      throw new UncheckedIOException("Loading banner resource failed", e);
     }
   }
 
   public void help() {
-    out.println("F1! F1! F1!");
+    out.println(getBanner());
     out.println("Method API");
     Arrays.stream(getClass().getMethods())
         .filter(Util::isApiMethod)
@@ -126,20 +189,5 @@ public class Bach {
 
   public void version() {
     out.println(VERSION);
-  }
-
-  void run(Command command) {
-    var name = command.getName();
-    var code = run(name, (Object[]) command.toStringArray());
-    if (code != 0) {
-      throw new AssertionError(name + " exited with non-zero result: " + code);
-    }
-  }
-
-  int run(String name, Object... arguments) {
-    var strings = Arrays.stream(arguments).map(Object::toString).toArray(String[]::new);
-    out.println(name + " " + String.join(" ", strings));
-    var tool = ToolProvider.findFirst(name).orElseThrow();
-    return tool.run(out, err, strings);
   }
 }

@@ -17,8 +17,11 @@
 
 package it;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
@@ -33,5 +36,10 @@ class ToolProviderTests {
             .filter(provider -> provider.name().equals("bach"))
             .findFirst();
     assertTrue(bach.isPresent(), "Tool 'bach' not found!");
+
+    var out = new PrintWriter(new StringWriter());
+    var err = new PrintWriter(new StringWriter());
+    assertEquals(0, bach.get().run(out, err, "version"));
+    assertEquals(1, bach.get().run(out, err, "?"));
   }
 }

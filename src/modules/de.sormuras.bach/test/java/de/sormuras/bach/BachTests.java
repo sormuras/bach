@@ -33,8 +33,7 @@ class BachTests {
   @Test
   void checkDefaultValues() {
     var bach = Bach.of();
-    assertNotNull(bach.out);
-    assertNotNull(bach.err);
+    assertNotNull(bach.toString());
   }
 
   @Test

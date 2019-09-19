@@ -31,11 +31,12 @@ public class BachToolProvider implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var bach = new Bach(out, err);
+    var bach = new Bach(out, err, false);
     try {
       bach.main(List.of(args));
       return 0;
     } catch (Throwable t) {
+      t.printStackTrace(err);
       return 1;
     }
   }
