@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-20T04:05:54.359858900Z
+// THIS FILE WAS GENERATED ON 2019-09-20T18:43:16.856200100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -354,6 +354,10 @@ public class Bach {
     public static class Realm {
       /** Name of the realm. */
       public final String name;
+      /** Enable preview features. */
+      public final boolean preview;
+      /** Java feature release target number. */
+      public final int release;
       /** Module source path specifies where to find input source files for multiple modules. */
       public final String moduleSourcePath;
       /** Map of declared module source unit. */
@@ -362,8 +366,15 @@ public class Bach {
       public final List<Realm> realms;
 
       public Realm(
-          String name, String moduleSourcePath, Map<String, ModuleUnit> modules, Realm... realms) {
+          String name,
+          boolean preview,
+          int release,
+          String moduleSourcePath,
+          Map<String, ModuleUnit> modules,
+          Realm... realms) {
         this.name = name;
+        this.preview = preview;
+        this.release = release;
         this.moduleSourcePath = moduleSourcePath;
         this.modules = Map.copyOf(modules);
         this.realms = List.of(realms);

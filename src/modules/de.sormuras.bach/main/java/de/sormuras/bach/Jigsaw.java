@@ -40,6 +40,8 @@ public class Jigsaw {
     var javac =
         new Command("javac")
             .add("-d", destination)
+            .addIff(realm.preview, "--enable-preview")
+            .addIff(realm.release != 0, "--release", realm.release)
             .add("--module-path", project.library.modulePaths)
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)

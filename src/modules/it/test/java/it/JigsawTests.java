@@ -41,6 +41,8 @@ class JigsawTests {
     var main =
         new Project.Realm(
             "main",
+            false,
+            0,
             String.join(File.separator, "src", "modules", "*", "main", "java"),
             Map.of(
                 "de.sormuras.bach",
@@ -57,6 +59,8 @@ class JigsawTests {
     var test =
         new Project.Realm(
             "test",
+            true,
+            Runtime.version().feature(),
             String.join(File.separator, "src", "modules", "*", "test", "java"),
             Map.of(
                 "it",

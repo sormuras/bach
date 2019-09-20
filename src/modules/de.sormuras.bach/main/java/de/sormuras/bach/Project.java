@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /*BODY*/
@@ -94,6 +95,10 @@ public /*STATIC*/ class Project {
   public static class Realm {
     /** Name of the realm. */
     public final String name;
+    /** Enable preview features. */
+    public final boolean preview;
+    /** Java feature release target number. */
+    public final int release;
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
     /** Map of declared module source unit. */
@@ -102,8 +107,15 @@ public /*STATIC*/ class Project {
     public final List<Realm> realms;
 
     public Realm(
-        String name, String moduleSourcePath, Map<String, ModuleUnit> modules, Realm... realms) {
+        String name,
+        boolean preview,
+        int release,
+        String moduleSourcePath,
+        Map<String, ModuleUnit> modules,
+        Realm... realms) {
       this.name = name;
+      this.preview = preview;
+      this.release = release;
       this.moduleSourcePath = moduleSourcePath;
       this.modules = Map.copyOf(modules);
       this.realms = List.of(realms);
