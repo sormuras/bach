@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-19T17:42:12.172505Z
+// THIS FILE WAS GENERATED ON 2019-09-20T03:41:51.370596100Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -45,6 +45,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -131,6 +132,11 @@ public class Bach {
     }
   }
 
+  /** Verbosity flag. */
+  boolean verbose() {
+    return verbose;
+  }
+
   /** Print help text to the standard output stream. */
   public void help() {
     out.println(banner());
@@ -211,6 +217,12 @@ public class Bach {
       return this;
     }
 
+    /** Add all arguments by delegating to the passed visitor for each element. */
+    public <T> Command addEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
+      arguments.forEach(argument -> visitor.accept(this, argument));
+      return this;
+    }
+
     /** Add a single argument iff the conditions is {@code true}. */
     public Command addIff(boolean condition, Object argument) {
       return condition ? add(argument) : this;
@@ -248,7 +260,7 @@ public class Bach {
     @Override
     public String toString() {
       var args = arguments.isEmpty() ? "<empty>" : "'" + String.join("', '", arguments) + "'";
-      return "Command{name='" + name + "', list=[" + args + "]}";
+      return "Command{name='" + name + "', args=[" + args + "]}";
     }
 
     /** Return an array of {@link String} containing all of the collected arguments. */
@@ -462,10 +474,11 @@ public class Bach {
     /** @see Files#createDirectories(Path, FileAttribute[]) */
     static Path treeCreate(Path path) {
       try {
-        return Files.createDirectories(path);
+        Files.createDirectories(path);
       } catch (IOException e) {
         throw new UncheckedIOException("create directories failed: " + path, e);
       }
+      return path;
     }
 
     /** Delete all files and directories from and including the root directory. */
