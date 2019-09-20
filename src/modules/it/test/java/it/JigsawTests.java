@@ -86,7 +86,7 @@ class JigsawTests {
     var actual = commands.stream().map(Command::toCommandLine).collect(Collectors.toList());
     assertLinesMatch(
         List.of(
-            "javac -d bin.+multi-module --module-path lib --module-source-path src.+java --module-version 2-ea --module de.sormuras.bach",
+            "javac -d bin.+jigsaw --module-path lib --module-source-path src.+java --module-version 2-ea --module de.sormuras.bach",
             "jar --create --file bin.+de.sormuras.bach-2-ea.jar --verbose -C bin.+de.sormuras.bach . -C src.+resources .",
             "jar --describe-module --file bin.+de.sormuras.bach-2-ea.jar",
             "jdeps --module-path bin.+modules;lib --multi-release BASE --check de.sormuras.bach",
