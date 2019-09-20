@@ -141,10 +141,11 @@ import java.util.stream.Stream;
   /** @see Files#createDirectories(Path, FileAttribute[]) */
   static Path treeCreate(Path path) {
     try {
-      return Files.createDirectories(path);
+      Files.createDirectories(path);
     } catch (IOException e) {
       throw new UncheckedIOException("create directories failed: " + path, e);
     }
+    return path;
   }
 
   /** Delete all files and directories from and including the root directory. */
