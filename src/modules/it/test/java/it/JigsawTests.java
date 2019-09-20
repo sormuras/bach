@@ -44,7 +44,7 @@ class JigsawTests {
             String.join(File.separator, "src", "modules", "*", "main", "java"),
             Map.of(
                 "de.sormuras.bach",
-                new Project.Module(
+                new Project.ModuleUnit(
                     Path.of("src/modules/de.sormuras.bach.demo/main/java/module-info.java"),
                     List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
                     List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
@@ -60,7 +60,7 @@ class JigsawTests {
             String.join(File.separator, "src", "modules", "*", "test", "java"),
             Map.of(
                 "it",
-                new Project.Module(
+                new Project.ModuleUnit(
                     Path.of("src/modules/it/test/java/module-info.java"),
                     List.of(Path.of("src/modules/it/test/java")),
                     List.of(Path.of("src/modules/it/test/resources")),

@@ -71,7 +71,7 @@ public /*STATIC*/ class Project {
   }
 
   /** Java module source unit. */
-  public static class Module {
+  public static class ModuleUnit {
     /** Path to the backing {@code module-info.java} file. */
     public final Path info;
     /** Paths to the resources directories. */
@@ -81,7 +81,7 @@ public /*STATIC*/ class Project {
     /** Associated module descriptor, normally parsed from module {@link #info} file. */
     public final ModuleDescriptor descriptor;
 
-    public Module(
+    public ModuleUnit(
         Path info, List<Path> sources, List<Path> resources, ModuleDescriptor descriptor) {
       this.info = info;
       this.sources = List.copyOf(sources);
@@ -97,12 +97,12 @@ public /*STATIC*/ class Project {
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
     /** Map of declared module source unit. */
-    public final Map<String, Module> modules;
+    public final Map<String, ModuleUnit> modules;
     /** List of required realms. */
     public final List<Realm> realms;
 
     public Realm(
-        String name, String moduleSourcePath, Map<String, Module> modules, Realm... realms) {
+        String name, String moduleSourcePath, Map<String, ModuleUnit> modules, Realm... realms) {
       this.name = name;
       this.moduleSourcePath = moduleSourcePath;
       this.modules = Map.copyOf(modules);
