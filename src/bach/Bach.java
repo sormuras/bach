@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-20T03:41:51.370596100Z
+// THIS FILE WAS GENERATED ON 2019-09-20T04:05:54.359858900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -28,6 +28,8 @@ import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleDescriptor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -47,6 +50,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -104,7 +108,7 @@ public class Bach {
     if (verbose) out.println(String.format(format, args));
   }
 
-  /** Non-static entry-point used by {@link #main(String...)} and {@link BachToolProvider}. */
+  /** Non-static entry-point used by {@link #main(String...)} and {@code BachToolProvider}. */
   void main(List<String> arguments) {
     var tasks = Util.requireNonEmpty(Task.of(this, arguments), "tasks");
     log("Running %d argument task(s): %s", tasks.size(), tasks);
@@ -279,6 +283,91 @@ public class Bach {
         return name;
       }
       return name + delimiter + String.join(delimiter, arguments);
+    }
+  }
+
+  /** Modular project model. */
+  public static class Project {
+
+    /** Base directory. */
+    public final Path baseDirectory;
+    /** Target directory. */
+    public final Path targetDirectory;
+    /** Name of the project. */
+    public final String name;
+    /** Version of the project. */
+    public final Version version;
+    /** Library. */
+    public final Library library;
+    /** Realms. */
+    public final List<Realm> realms;
+
+    public Project(
+        Path baseDirectory,
+        Path targetDirectory,
+        String name,
+        Version version,
+        Library library,
+        List<Realm> realms) {
+      this.baseDirectory = Util.requireNonNull(baseDirectory, "base");
+      this.targetDirectory = Util.requireNonNull(targetDirectory, "targetDirectory");
+      this.version = Util.requireNonNull(version, "version");
+      this.name = Util.requireNonNull(name, "name");
+      this.library = library;
+      this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
+    }
+
+    /** Manage external 3rd-party modules. */
+    public static class Library {
+      /** List of library paths to external 3rd-party modules. */
+      public final List<Path> modulePaths;
+      /** Map external 3rd-party module names to their {@code URI}s. */
+      public final Function<String, URI> moduleMapper;
+
+      public Library(List<Path> modulePaths, Function<String, URI> moduleMapper) {
+        this.modulePaths = List.copyOf(Util.requireNonEmpty(modulePaths, "modulePaths"));
+        this.moduleMapper = moduleMapper;
+      }
+    }
+
+    /** Java module source unit. */
+    public static class ModuleUnit {
+      /** Path to the backing {@code module-info.java} file. */
+      public final Path info;
+      /** Paths to the resources directories. */
+      public final List<Path> sources;
+      /** Paths to the resources directories. */
+      public final List<Path> resources;
+      /** Associated module descriptor, normally parsed from module {@link #info} file. */
+      public final ModuleDescriptor descriptor;
+
+      public ModuleUnit(
+          Path info, List<Path> sources, List<Path> resources, ModuleDescriptor descriptor) {
+        this.info = info;
+        this.sources = List.copyOf(sources);
+        this.resources = List.copyOf(resources);
+        this.descriptor = descriptor;
+      }
+    }
+
+    /** Main- and test realms. */
+    public static class Realm {
+      /** Name of the realm. */
+      public final String name;
+      /** Module source path specifies where to find input source files for multiple modules. */
+      public final String moduleSourcePath;
+      /** Map of declared module source unit. */
+      public final Map<String, ModuleUnit> modules;
+      /** List of required realms. */
+      public final List<Realm> realms;
+
+      public Realm(
+          String name, String moduleSourcePath, Map<String, ModuleUnit> modules, Realm... realms) {
+        this.name = name;
+        this.moduleSourcePath = moduleSourcePath;
+        this.modules = Map.copyOf(modules);
+        this.realms = List.of(realms);
+      }
     }
   }
 
