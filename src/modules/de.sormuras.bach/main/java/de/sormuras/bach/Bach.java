@@ -79,7 +79,7 @@ public class Bach {
     if (verbose) out.println(String.format(format, args));
   }
 
-  /** Non-static entry-point used by {@link #main(String...)} and {@link BachToolProvider}. */
+  /** Non-static entry-point used by {@link #main(String...)} and {@code BachToolProvider}. */
   void main(List<String> arguments) {
     var tasks = Util.requireNonEmpty(Task.of(this, arguments), "tasks");
     log("Running %d argument task(s): %s", tasks.size(), tasks);
