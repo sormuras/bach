@@ -29,17 +29,34 @@ import org.junit.jupiter.api.Test;
 class ToolProviderTests {
 
   @Test
-  void findBachUsingToolProviderAPI() {
+  void findBachUsingServiceLoader() {
     var bach =
         ServiceLoader.load(ToolProvider.class, getClass().getClassLoader()).stream()
             .map(ServiceLoader.Provider::get)
             .filter(provider -> provider.name().equals("bach"))
             .findFirst();
-    assertTrue(bach.isPresent(), "Tool 'bach' not found!");
+    assertTrue(bach.isPresent(), "Service 'bach' not found!");
+  }
 
+  @Test
+  void providerIsMemberOfNamedModule() {
+    var bach = ToolProvider.findFirst("bach").orElseThrow();
+    assertEquals("de.sormuras.bach", bach.getClass().getModule().getName());
+  }
+
+  @Test
+  void runVersionYieldsZero() {
+    var bach = ToolProvider.findFirst("bach").orElseThrow();
     var out = new PrintWriter(new StringWriter());
     var err = new PrintWriter(new StringWriter());
-    assertEquals(0, bach.get().run(out, err, "version"));
-    assertEquals(1, bach.get().run(out, err, "?"));
+    assertEquals(0, bach.run(out, err, "version"));
+  }
+
+  @Test
+  void runUnsupportedArgumentYieldsOne() {
+    var bach = ToolProvider.findFirst("bach").orElseThrow();
+    var out = new PrintWriter(new StringWriter());
+    var err = new PrintWriter(new StringWriter());
+    assertEquals(1, bach.run(out, err, "?"));
   }
 }
