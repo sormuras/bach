@@ -18,31 +18,58 @@
 package it;
 
 import de.sormuras.bach.Bach;
-
+import de.sormuras.bach.Command;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 class Probe extends Bach {
 
+  static class Run {
+    final int code;
+    final List<String> out;
+    final List<String> err;
+
+    Run(int code, List<String> out, List<String> err) {
+      this.code = code;
+      this.out = out;
+      this.err = err;
+    }
+  }
+
+  private static List<String> lines(StringWriter writer) {
+    return List.copyOf(writer.toString().lines().collect(Collectors.toList()));
+  }
+
   private final StringWriter out, err;
 
   Probe() {
-    this(new StringWriter(), new StringWriter(), true);
+    this(new StringWriter(), new StringWriter());
   }
 
-  private Probe(StringWriter out, StringWriter err, boolean verbose) {
-    super(new PrintWriter(out), new PrintWriter(err), verbose);
+  private Probe(StringWriter out, StringWriter err) {
+    super(new PrintWriter(out, true), new PrintWriter(err, true), true);
     this.out = out;
     this.err = err;
   }
 
   List<String> lines() {
-    return out.toString().lines().collect(Collectors.toList());
+    return lines(out);
   }
 
   List<String> errors() {
-    return err.toString().lines().collect(Collectors.toList());
+    return lines(err);
+  }
+
+  Run run(Command command) {
+    System.out.println(command.toCommandLine());
+    var tool = ToolProvider.findFirst(command.getName()).orElseThrow();
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = command.toStringArray();
+    var code = tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
+    return new Run(code, lines(out), lines(err));
   }
 }

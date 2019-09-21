@@ -81,23 +81,31 @@ class JigsawTests {
         new Project(
             Path.of(""),
             Path.of("bin"),
-            "Bach.java",
+            "de.sormuras.bach",
             Version.parse("2-ea"),
             library,
             List.of(main, test));
 
-    var commands = new Jigsaw(new Probe(), project).toCommands(main, main.modules.keySet());
+    var bach = new Probe();
+    var commands = new Jigsaw(bach, project).toCommands(main, main.modules.keySet());
     var actual = commands.stream().map(Command::toCommandLine).collect(Collectors.toList());
     assertLinesMatch(
         List.of(
-            "javac -d bin.+jigsaw --module-path lib --module-source-path src.+java --module-version 2-ea --module de.sormuras.bach",
-            "jar --create --file bin.+de.sormuras.bach-2-ea.jar --verbose -C bin.+de.sormuras.bach . -C src.+resources .",
-            "jar --describe-module --file bin.+de.sormuras.bach-2-ea.jar",
+            "javac -d bin.+classes --module-path lib --module-source-path src.+java --module-version 2.* --module de.sormuras.bach",
+            "jar --create --file bin.+de.sormuras.bach-.*.jar --verbose -C bin.+de.sormuras.bach . -C src.+resources .",
+            "jar --describe-module --file bin.+de.sormuras.bach-.*.jar",
             "jdeps --module-path bin.+modules;lib --multi-release BASE --check de.sormuras.bach",
-            "jar --create --file bin.+de.sormuras.bach-2-ea-sources.jar --verbose --no-manifest -C src.+java . -C src.+resources .",
-            "javadoc -d bin.+javadoc -encoding UTF-8 -Xdoclint:-missing -windowtitle Bach.java --module-path lib --module-source-path src.+java --module de.sormuras.bach",
-            "jar --create --file bin.+all-javadoc.jar --verbose --no-manifest -C bin.+javadoc ."),
+            "jar --create --file bin.+de.sormuras.bach-2.*-sources.jar --verbose --no-manifest -C src.+java . -C src.+resources .",
+            "javadoc -d bin.+javadoc -encoding UTF-8 -Xdoclint:-missing -windowtitle 'API of de.sormuras.bach-2.*' --module-path lib --module-source-path src.+java --module de.sormuras.bach",
+            "jar --create --file bin.+bach-2.*-javadoc.jar --verbose --no-manifest -C bin.+javadoc ."),
         actual);
     Files.write(Path.of("bin", "build-bach.bat"), actual);
+
+    for (var command : commands) {
+      var code = bach.run(command).code;
+      if (code != 0) {
+        throw new AssertionError("Expected 0, but got: " + code);
+      }
+    }
   }
 }
