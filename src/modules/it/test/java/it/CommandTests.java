@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.sormuras.bach.Command;
+
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -41,12 +43,12 @@ class CommandTests {
           "e",
           "f",
           "g",
-          // "h",
-          // "i0" + File.pathSeparator + "i1",
-          // "j",
-          // "k",
-          // "l",
-          // "n=m",
+          "h",
+          "i0" + File.pathSeparator + "i1",
+          "j",
+          "k",
+          "l",
+          "n=m",
           "o",
           "p",
           "q",
@@ -62,7 +64,7 @@ class CommandTests {
             .addIff(false, "X", "Y")
             .add("h", List.of(Path.of("i0"), Path.of("i1")))
             .add("j", List.of(Path.of("k")))
-            .add("l", List.of(Path.of("m")), s -> "n=" + s)
+            .add("l", List.of(Path.of("m")).stream(), s -> "n=" + s)
             .addIff(true, args -> args.add("o"))
             .addIff(false, args -> args.add("Z"))
             .addIff("p", Optional.of("q"))

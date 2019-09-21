@@ -18,7 +18,6 @@
 package de.sormuras.bach;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,6 +27,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*BODY*/
 /** Command-line program argument list builder. */
@@ -55,13 +55,12 @@ public /*STATIC*/ class Command {
 
   /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
   public Command add(Object key, Collection<Path> paths) {
-    return add(key, paths, UnaryOperator.identity());
+    return add(key, paths.stream(), UnaryOperator.identity());
   }
 
   /** Add two (or zero) arguments, the key and the paths joined by system's path separator. */
-  public Command add(Object key, Collection<Path> paths, UnaryOperator<String> operator) {
-    var stream = paths.stream().filter(Files::exists).map(Object::toString);
-    var value = stream.collect(Collectors.joining(File.pathSeparator));
+  public Command add(Object key, Stream<Path> stream, UnaryOperator<String> operator) {
+    var value = stream.map(Object::toString).collect(Collectors.joining(File.pathSeparator));
     if (value.isEmpty()) {
       return this;
     }
