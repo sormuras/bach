@@ -34,26 +34,29 @@ public class Jigsaw {
 
   public List<Command> toCommands(Project.Realm realm, Collection<String> modules) {
     bach.log("Generating commands for compiling %s realm: %s", realm.name, modules);
-    var target = project.targetDirectory.resolve("realm").resolve(realm.name);
-    var exploded = target.resolve("exploded");
-    var destination = exploded.resolve("jigsaw");
-    var javac =
+    var commands = new ArrayList<Command>();
+
+    var targetDirectory = project.targetDirectory.resolve("realm").resolve(realm.name);
+    var modulesDirectory = targetDirectory.resolve("modules");
+    var jigsawDirectory = modulesDirectory.resolve("jigsaw");
+    var classesDirectory = jigsawDirectory.resolve("classes");
+    var javadocDirectory = jigsawDirectory.resolve("javadoc");
+
+    commands.add(
         new Command("javac")
-            .add("-d", destination)
+            .add("-d", classesDirectory)
             .addIff(realm.preview, "--enable-preview")
             .addIff(realm.release != 0, "--release", realm.release)
             .add("--module-path", project.library.modulePaths)
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
-            .add("--module", String.join(",", modules));
+            .add("--module", String.join(",", modules)));
 
-    var commands = new ArrayList<>(List.of(javac));
     for (var module : modules) {
       var unit = realm.modules.get(module);
       var version = unit.descriptor.version();
-      var jarFile = module + "-" + version.orElse(project.version);
-      var modulesDirectory = Util.treeCreate(target.resolve("modules"));
-      var jar = modulesDirectory.resolve(jarFile + ".jar");
+      var file = module + "-" + version.orElse(project.version);
+      var jar = modulesDirectory.resolve(file + ".jar");
 
       commands.add(
           new Command("jar")
@@ -62,7 +65,7 @@ public class Jigsaw {
               .addIff(bach.verbose(), "--verbose")
               .addIff("--module-version", version)
               .addIff("--main-class", unit.descriptor.mainClass())
-              .add("-C", destination.resolve(module))
+              .add("-C", classesDirectory.resolve(module))
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
 
@@ -77,35 +80,35 @@ public class Jigsaw {
                 .add("--check", module));
       }
 
-      var sourcesJar = Util.treeCreate(target.resolve("sources")).resolve(jarFile + "-sources.jar");
       commands.add(
           new Command("jar")
               .add("--create")
-              .add("--file", sourcesJar)
+              .add("--file", targetDirectory.resolve(file + "-sources.jar"))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
               .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
     }
 
+    var nameDashVersion = project.name + '-' + project.version;
     commands.add(
         new Command("javadoc")
-            .add("-d", exploded.resolve("javadoc"))
+            .add("-d", javadocDirectory)
             .add("-encoding", "UTF-8")
             .addIff(!bach.verbose(), "-quiet")
             .add("-Xdoclint:-missing")
-            .add("-windowtitle", project.name)
+            .add("-windowtitle", "'API of " + nameDashVersion + "'")
             .add("--module-path", project.library.modulePaths)
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module", String.join(",", modules)));
-    var javadocJar = Util.treeCreate(target.resolve("javadoc")).resolve("all-javadoc.jar");
+
     commands.add(
         new Command("jar")
             .add("--create")
-            .add("--file", javadocJar)
+            .add("--file", targetDirectory.resolve(nameDashVersion + "-javadoc.jar"))
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
-            .add("-C", exploded.resolve("javadoc"))
+            .add("-C", javadocDirectory)
             .add("."));
 
     return List.copyOf(commands);
