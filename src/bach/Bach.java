@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-21T04:29:11.775371900Z
+// THIS FILE WAS GENERATED ON 2019-09-21T05:10:35.032710900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -58,6 +58,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings("WeakerAccess")
 public class Bach {
 
   public static String VERSION = "2-ea";
@@ -381,7 +382,7 @@ public class Bach {
     }
   }
 
-  public class Jigsaw {
+  public static class Jigsaw {
 
     private final Bach bach;
     private final Project project;

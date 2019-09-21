@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.List;
 
 /*BODY*/
-public class Jigsaw {
+public /*STATIC*/ class Jigsaw {
 
   private final Bach bach;
   private final Project project;
