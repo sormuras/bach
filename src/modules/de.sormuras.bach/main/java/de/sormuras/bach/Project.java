@@ -23,7 +23,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 /*BODY*/
@@ -54,7 +53,7 @@ public /*STATIC*/ class Project {
     this.targetDirectory = Util.requireNonNull(targetDirectory, "targetDirectory");
     this.version = Util.requireNonNull(version, "version");
     this.name = Util.requireNonNull(name, "name");
-    this.library = library;
+    this.library = Util.requireNonNull(library, "library");
     this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
   }
 
