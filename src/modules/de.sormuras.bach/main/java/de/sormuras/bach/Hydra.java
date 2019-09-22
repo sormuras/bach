@@ -95,7 +95,7 @@ public /*STATIC*/ class Hydra {
           classPath.add(path);
           continue;
         }
-        Util.list(path, Util::isJarFile).forEach(jar -> classPath.add(path.resolve(jar)));
+        classPath.addAll(Util.list(path, Util::isJarFile));
       }
       javac.add("--class-path", classPath);
       javac.addEach(Util.find(List.of(source), Util::isJavaFile));
