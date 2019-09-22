@@ -86,6 +86,15 @@ public class Bach {
     tasks.forEach(consumer -> consumer.accept(this));
   }
 
+  /** Run the passed command. */
+  void run(Command command) {
+    var tool = ToolProvider.findFirst(command.getName());
+    int code = run(tool.orElseThrow(), command.toStringArray());
+    if (code != 0) {
+      throw new AssertionError("Running command failed: " + command);
+    }
+  }
+
   /** Run the tool using the passed provider and arguments. */
   int run(ToolProvider tool, String... arguments) {
     log("Running %s %s", tool.name(), String.join(" ", arguments));
