@@ -74,9 +74,9 @@ public /*STATIC*/ class Project {
   public static class ModuleUnit {
     /** Path to the backing {@code module-info.java} file. */
     public final Path info;
-    /** Paths to the resources directories. */
+    /** Paths to the source directories. */
     public final List<Path> sources;
-    /** Paths to the resources directories. */
+    /** Paths to the resource directories. */
     public final List<Path> resources;
     /** Associated module descriptor, normally parsed from module {@link #info} file. */
     public final ModuleDescriptor descriptor;
@@ -87,6 +87,21 @@ public /*STATIC*/ class Project {
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
       this.descriptor = descriptor;
+    }
+  }
+
+  /** Multi-release module source unit */
+  public static class MultiReleaseUnit extends ModuleUnit {
+    /** Feature release number to source path map. */
+    public final Map<Integer, Path> releases;
+    /** Copy this module descriptor to the root of the generated modular jar. */
+    public final int copyModuleDescriptorToRootRelease;
+
+    public MultiReleaseUnit(
+        Path info, int copyModuleDescriptorToRootRelease, Map<Integer, Path> releases, List<Path> resources, ModuleDescriptor descriptor) {
+      super(info, List.copyOf(releases.values()), resources, descriptor);
+      this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
+      this.releases = releases;
     }
   }
 
