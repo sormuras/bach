@@ -1,0 +1,95 @@
+/*
+ * Bach - Java Shell Builder
+ * Copyright (C) 2019 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package it;
+
+import de.sormuras.bach.Hydra;
+import de.sormuras.bach.Project;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+
+class TestProjectTests {
+  @Test
+  void multiReleaseMultiModule(@TempDir Path temp) {
+    var base = Path.of("src", "test-project", "multi-release-multi-module");
+    var a =
+        new Project.MultiReleaseUnit(
+            base.resolve("src/a/main/java-9/module-info.java"),
+            9,
+            Map.of(
+                8, base.resolve("src/a/main/java-8"),
+                9, base.resolve("src/a/main/java-9"),
+                11, base.resolve("src/a/main/java-11")),
+            List.of(), // resources
+            ModuleDescriptor.newModule("a").build());
+    var c =
+        new Project.MultiReleaseUnit(
+            base.resolve("src/c/main/java-9/module-info.java"),
+            9,
+            Map.of(
+                8, base.resolve("src/c/main/java-8"),
+                9, base.resolve("src/c/main/java-9"),
+                10, base.resolve("src/c/main/java-10"),
+                11, base.resolve("src/c/main/java-11")),
+            List.of(), // resources
+            ModuleDescriptor.newModule("c").build());
+    var main =
+        new Project.Realm(
+            "main",
+            false,
+            0,
+            String.join(
+                File.separator,
+                "src",
+                "test-project",
+                "multi-release-multi-module",
+                "src",
+                "*",
+                "main",
+                "java-9"),
+            Map.of("a", a, "c", c));
+    var library = new Project.Library(List.of(temp), __ -> null);
+    var project =
+        new Project(
+            base,
+            temp,
+            "multi-release-multi-module",
+            ModuleDescriptor.Version.parse("0"),
+            library,
+            List.of(main));
+
+    var bach = new Probe();
+    var hydra = new Hydra(bach, project, main);
+    try {
+      hydra.compile(List.of("a", "c"));
+      // var jigsaw = new Jigsaw(bach, project);
+      // jigsaw.toCommands(main, List.of("b", "d"));
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      bach.errors().forEach(System.err::println);
+      Assertions.fail(t);
+    }
+    // bach.lines().forEach(System.out::println);
+  }
+}
