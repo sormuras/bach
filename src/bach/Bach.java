@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-21T05:13:09.478413500Z
+// THIS FILE WAS GENERATED ON 2019-09-22T13:55:08.262022Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -333,9 +334,9 @@ public class Bach {
     public static class ModuleUnit {
       /** Path to the backing {@code module-info.java} file. */
       public final Path info;
-      /** Paths to the resources directories. */
+      /** Paths to the source directories. */
       public final List<Path> sources;
-      /** Paths to the resources directories. */
+      /** Paths to the resource directories. */
       public final List<Path> resources;
       /** Associated module descriptor, normally parsed from module {@link #info} file. */
       public final ModuleDescriptor descriptor;
@@ -346,6 +347,21 @@ public class Bach {
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
         this.descriptor = descriptor;
+      }
+    }
+
+    /** Multi-release module source unit */
+    public static class MultiReleaseUnit extends ModuleUnit {
+      /** Feature release number to source path map. */
+      public final Map<Integer, Path> releases;
+      /** Copy this module descriptor to the root of the generated modular jar. */
+      public final int copyModuleDescriptorToRootRelease;
+
+      public MultiReleaseUnit(
+          Path info, int copyModuleDescriptorToRootRelease, Map<Integer, Path> releases, List<Path> resources, ModuleDescriptor descriptor) {
+        super(info, List.copyOf(releases.values()), resources, descriptor);
+        this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
+        this.releases = releases;
       }
     }
 
@@ -475,6 +491,134 @@ public class Bach {
     }
   }
 
+  /** Multi-release module compiler. */
+  public static class Hydra {
+
+    private final Bach bach;
+    private final Project project;
+    private final Project.Realm realm;
+
+    private final Path modulesDirectory;
+    private final Path classesDirectory;
+
+    public Hydra(Bach bach, Project project, Project.Realm realm) {
+      this.bach = bach;
+      this.project = project;
+      this.realm = realm;
+
+      var targetDirectory = project.targetDirectory.resolve("realm").resolve(realm.name);
+      this.modulesDirectory = targetDirectory.resolve("modules");
+      var hydraDirectory = modulesDirectory.resolve("hydra");
+      this.classesDirectory = hydraDirectory.resolve("classes");
+    }
+
+    public List<Command> compile(Collection<String> modules) {
+      bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
+      var commands = new ArrayList<Command>();
+      for (var module : modules) {
+        var unit = (Project.MultiReleaseUnit) realm.modules.get(module);
+        compile(commands, unit);
+      }
+      return List.copyOf(commands);
+    }
+
+    private void compile(List<Command> commands, Project.MultiReleaseUnit unit) {
+      var sorted = new TreeSet<>(unit.releases.keySet());
+      int base = sorted.first();
+      bach.log("Base feature release number is: %d", base);
+      for (int release : sorted) {
+        commands.add(compileRelease(unit, base, release));
+      }
+      commands.add(jarModule(unit));
+      commands.add(jarSources(unit));
+    }
+
+    private Command compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
+      var source = unit.releases.get(release);
+      var module = unit.descriptor.name();
+      var baseClasses =
+          classesDirectory.resolve(unit.releases.get(base).getFileName()).resolve(module);
+      var destination = classesDirectory.resolve(source.getFileName());
+      var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
+      if (Util.isModuleInfo(source.resolve("module-info.java"))) {
+        javac.add("-d", destination);
+        javac.add("--module-version", project.version);
+        javac.add("--module-path", project.library.modulePaths);
+        javac.add("--module-source-path", realm.moduleSourcePath);
+        if (base != release) {
+          javac.add("--patch-module", module + '=' + baseClasses);
+        }
+        javac.add("--module", module);
+      } else {
+        javac.add("-d", destination.resolve(module));
+        var classPath = new ArrayList<Path>();
+        if (base != release) {
+          classPath.add(baseClasses);
+        }
+        for (var path : Util.findExisting(project.library.modulePaths)) {
+          if (Util.isJarFile(path)) {
+            classPath.add(path);
+            continue;
+          }
+          Util.list(path, Util::isJarFile).forEach(jar -> classPath.add(path.resolve(jar)));
+        }
+        javac.add("--class-path", classPath);
+        javac.addEach(Util.find(List.of(source), Util::isJavaFile));
+      }
+      return javac;
+    }
+
+    private Command jarModule(Project.MultiReleaseUnit unit) {
+      var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
+      var module = unit.descriptor.name();
+      var version = unit.descriptor.version();
+      var file = module + "-" + version.orElse(project.version);
+      var base = unit.releases.get(releases.pop()).getFileName();
+      var jar =
+          new Command("jar")
+              .add("--create")
+              .add("--file", modulesDirectory.resolve(file + ".jar"))
+              .addIff(bach.verbose(), "--verbose")
+              .add("-C", classesDirectory.resolve(base).resolve(module))
+              .add(".")
+              .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
+      for (var release : releases) {
+        var path = unit.releases.get(release).getFileName();
+        var classes = classesDirectory.resolve(path).resolve(module);
+        if (unit.copyModuleDescriptorToRootRelease == release) {
+          jar.add("-C", classes);
+          jar.add("module-info.class");
+        }
+        jar.add("--release", release);
+        jar.add("-C", classes);
+        jar.add(".");
+      }
+      return jar;
+    }
+
+    private Command jarSources(Project.MultiReleaseUnit unit) {
+      var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
+      var module = unit.descriptor.name();
+      var version = unit.descriptor.version();
+      var file = module + "-" + version.orElse(project.version);
+      var jar =
+          new Command("jar")
+              .add("--create")
+              .add("--file", modulesDirectory.resolve(file + "-sources.jar"))
+              .addIff(bach.verbose(), "--verbose")
+              .add("--no-manifest")
+              .add("-C", releases.removeFirst().getValue())
+              .add(".")
+              .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
+      for (var release : releases) {
+        jar.add("--release", release.getKey());
+        jar.add("-C", release.getValue());
+        jar.add(".");
+      }
+      return jar;
+    }
+  }
+
   /** Bach consuming task. */
   public interface Task extends Consumer<Bach> {
 
@@ -592,6 +736,35 @@ public class Bach {
       if (method.getDeclaringClass().equals(Object.class)) return false;
       if (Modifier.isStatic(method.getModifiers())) return false;
       return method.getParameterCount() == 0;
+    }
+
+    /** List all paths matching the given filter starting at given root paths. */
+    static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+      var files = new ArrayList<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(filter).forEach(files::add);
+        } catch (Exception e) {
+          throw new Error("Walking directory '" + root + "' failed: " + e, e);
+        }
+      }
+      return List.copyOf(files);
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJavaFile(Path path) {
+      if (Files.isRegularFile(path)) {
+        var name = path.getFileName().toString();
+        if (name.endsWith(".java")) {
+          return name.indexOf('.') == name.length() - 5; // single dot in filename
+        }
+      }
+      return false;
+    }
+
+    /** Test supplied path for pointing to a Java source compilation unit. */
+    static boolean isJarFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
     }
 
     static boolean isModuleInfo(Path path) {
