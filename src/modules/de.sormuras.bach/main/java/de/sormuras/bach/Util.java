@@ -25,6 +25,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -66,6 +67,35 @@ import java.util.stream.Stream;
     if (method.getDeclaringClass().equals(Object.class)) return false;
     if (Modifier.isStatic(method.getModifiers())) return false;
     return method.getParameterCount() == 0;
+  }
+
+  /** List all paths matching the given filter starting at given root paths. */
+  static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+    var files = new ArrayList<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(filter).forEach(files::add);
+      } catch (Exception e) {
+        throw new Error("Walking directory '" + root + "' failed: " + e, e);
+      }
+    }
+    return List.copyOf(files);
+  }
+
+  /** Test supplied path for pointing to a Java source compilation unit. */
+  static boolean isJavaFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      var name = path.getFileName().toString();
+      if (name.endsWith(".java")) {
+        return name.indexOf('.') == name.length() - 5; // single dot in filename
+      }
+    }
+    return false;
+  }
+
+  /** Test supplied path for pointing to a Java source compilation unit. */
+  static boolean isJarFile(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
   }
 
   static boolean isModuleInfo(Path path) {
