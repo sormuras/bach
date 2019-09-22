@@ -63,13 +63,21 @@ class Probe extends Bach {
     return lines(err);
   }
 
-  Run run(Command command) {
-    System.out.println(command.toCommandLine());
+  private Run run(Command command) {
     var tool = ToolProvider.findFirst(command.getName()).orElseThrow();
     var out = new StringWriter();
     var err = new StringWriter();
     var args = command.toStringArray();
     var code = tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
     return new Run(code, lines(out), lines(err));
+  }
+
+  void run(Iterable<Command> commands) {
+    for (var command : commands) {
+      var code = run(command).code;
+      if (code != 0) {
+        throw new AssertionError("Expected 0, but got: " + code);
+      }
+    }
   }
 }

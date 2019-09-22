@@ -101,11 +101,6 @@ class JigsawTests {
         actual);
     Files.write(Path.of("bin", "build-bach.bat"), actual);
 
-    for (var command : commands) {
-      var code = bach.run(command).code;
-      if (code != 0) {
-        throw new AssertionError("Expected 0, but got: " + code);
-      }
-    }
+    bach.run(commands);
   }
 }
