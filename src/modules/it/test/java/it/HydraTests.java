@@ -63,7 +63,6 @@ class HydraTests {
             List.of(main));
 
     var bach = new Probe();
-    var commands = new Hydra(bach, project, main).compile(main.modules.keySet());
-    bach.run(commands);
+    new Hydra(bach, project, main).compile(main.modules.keySet());
   }
 }

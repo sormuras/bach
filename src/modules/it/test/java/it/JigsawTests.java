@@ -100,7 +100,5 @@ class JigsawTests {
             "jar --create --file bin.+bach-2.*-javadoc.jar --verbose --no-manifest -C bin.+javadoc ."),
         actual);
     Files.write(Path.of("bin", "build-bach.bat"), actual);
-
-    bach.run(commands);
   }
 }
