@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -47,28 +48,26 @@ public /*STATIC*/ class Hydra {
     this.classesDirectory = hydraDirectory.resolve("classes");
   }
 
-  public List<Command> compile(Collection<String> modules) {
+  public void compile(Collection<String> modules) {
     bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
-    var commands = new ArrayList<Command>();
     for (var module : modules) {
       var unit = (Project.MultiReleaseUnit) realm.modules.get(module);
-      compile(commands, unit);
+      compile(unit);
     }
-    return List.copyOf(commands);
   }
 
-  private void compile(List<Command> commands, Project.MultiReleaseUnit unit) {
+  private void compile(Project.MultiReleaseUnit unit) {
     var sorted = new TreeSet<>(unit.releases.keySet());
     int base = sorted.first();
     bach.log("Base feature release number is: %d", base);
     for (int release : sorted) {
-      commands.add(compileRelease(unit, base, release));
+      compileRelease(unit, base, release);
     }
-    commands.add(jarModule(unit));
-    commands.add(jarSources(unit));
+    jarModule(unit);
+    jarSources(unit);
   }
 
-  private Command compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
+  private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
     var source = unit.releases.get(release);
     var module = unit.descriptor.name();
     var baseClasses =
@@ -90,6 +89,9 @@ public /*STATIC*/ class Hydra {
       if (base != release) {
         classPath.add(baseClasses);
       }
+      if (Files.isDirectory(modulesDirectory)) {
+        classPath.addAll(Util.list(modulesDirectory, Util::isJarFile));
+      }
       for (var path : Util.findExisting(project.library.modulePaths)) {
         if (Util.isJarFile(path)) {
           classPath.add(path);
@@ -100,19 +102,20 @@ public /*STATIC*/ class Hydra {
       javac.add("--class-path", classPath);
       javac.addEach(Util.find(List.of(source), Util::isJavaFile));
     }
-    return javac;
+    bach.run(javac);
   }
 
-  private Command jarModule(Project.MultiReleaseUnit unit) {
+  private void jarModule(Project.MultiReleaseUnit unit) {
     var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
     var module = unit.descriptor.name();
     var version = unit.descriptor.version();
     var file = module + "-" + version.orElse(project.version);
+    var modularJar = modulesDirectory.resolve(file + ".jar");
     var base = unit.releases.get(releases.pop()).getFileName();
     var jar =
         new Command("jar")
             .add("--create")
-            .add("--file", modulesDirectory.resolve(file + ".jar"))
+            .add("--file", modularJar)
             .addIff(bach.verbose(), "--verbose")
             .add("-C", classesDirectory.resolve(base).resolve(module))
             .add(".")
@@ -128,10 +131,13 @@ public /*STATIC*/ class Hydra {
       jar.add("-C", classes);
       jar.add(".");
     }
-    return jar;
+    bach.run(jar);
+    if (bach.verbose()) {
+      bach.run(new Command("jar", "--describe-module", "--file", jar));
+    }
   }
 
-  private Command jarSources(Project.MultiReleaseUnit unit) {
+  private void jarSources(Project.MultiReleaseUnit unit) {
     var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
     var module = unit.descriptor.name();
     var version = unit.descriptor.version();
@@ -150,6 +156,6 @@ public /*STATIC*/ class Hydra {
       jar.add("-C", release.getValue());
       jar.add(".");
     }
-    return jar;
+    bach.run(jar);
   }
 }
