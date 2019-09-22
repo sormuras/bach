@@ -107,8 +107,8 @@ import java.util.stream.Stream;
   }
 
   static List<Path> list(Path directory, Predicate<Path> filter) {
-    try {
-      return Files.list(directory).filter(filter).sorted().collect(Collectors.toList());
+    try (var stream = Files.list(directory)) {
+      return stream.filter(filter).sorted().collect(Collectors.toList());
     } catch (IOException e) {
       throw new UncheckedIOException("list directory failed: " + directory, e);
     }
