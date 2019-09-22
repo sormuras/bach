@@ -133,7 +133,7 @@ public /*STATIC*/ class Hydra {
     }
     bach.run(jar);
     if (bach.verbose()) {
-      bach.run(new Command("jar", "--describe-module", "--file", jar));
+      bach.run(new Command("jar", "--describe-module", "--file", modularJar));
     }
   }
 

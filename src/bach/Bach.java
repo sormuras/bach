@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-22T13:55:08.262022Z
+// THIS FILE WAS GENERATED ON 2019-09-22T21:14:47.582251900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -114,6 +114,15 @@ public class Bach {
     var tasks = Util.requireNonEmpty(Task.of(this, arguments), "tasks");
     log("Running %d argument task(s): %s", tasks.size(), tasks);
     tasks.forEach(consumer -> consumer.accept(this));
+  }
+
+  /** Run the passed command. */
+  void run(Command command) {
+    var tool = ToolProvider.findFirst(command.getName());
+    int code = run(tool.orElseThrow(), command.toStringArray());
+    if (code != 0) {
+      throw new AssertionError("Running command failed: " + command);
+    }
   }
 
   /** Run the tool using the passed provider and arguments. */
@@ -512,28 +521,26 @@ public class Bach {
       this.classesDirectory = hydraDirectory.resolve("classes");
     }
 
-    public List<Command> compile(Collection<String> modules) {
+    public void compile(Collection<String> modules) {
       bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
-      var commands = new ArrayList<Command>();
       for (var module : modules) {
         var unit = (Project.MultiReleaseUnit) realm.modules.get(module);
-        compile(commands, unit);
+        compile(unit);
       }
-      return List.copyOf(commands);
     }
 
-    private void compile(List<Command> commands, Project.MultiReleaseUnit unit) {
+    private void compile(Project.MultiReleaseUnit unit) {
       var sorted = new TreeSet<>(unit.releases.keySet());
       int base = sorted.first();
       bach.log("Base feature release number is: %d", base);
       for (int release : sorted) {
-        commands.add(compileRelease(unit, base, release));
+        compileRelease(unit, base, release);
       }
-      commands.add(jarModule(unit));
-      commands.add(jarSources(unit));
+      jarModule(unit);
+      jarSources(unit);
     }
 
-    private Command compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
+    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
       var source = unit.releases.get(release);
       var module = unit.descriptor.name();
       var baseClasses =
@@ -555,29 +562,33 @@ public class Bach {
         if (base != release) {
           classPath.add(baseClasses);
         }
+        if (Files.isDirectory(modulesDirectory)) {
+          classPath.addAll(Util.list(modulesDirectory, Util::isJarFile));
+        }
         for (var path : Util.findExisting(project.library.modulePaths)) {
           if (Util.isJarFile(path)) {
             classPath.add(path);
             continue;
           }
-          Util.list(path, Util::isJarFile).forEach(jar -> classPath.add(path.resolve(jar)));
+          classPath.addAll(Util.list(path, Util::isJarFile));
         }
         javac.add("--class-path", classPath);
         javac.addEach(Util.find(List.of(source), Util::isJavaFile));
       }
-      return javac;
+      bach.run(javac);
     }
 
-    private Command jarModule(Project.MultiReleaseUnit unit) {
+    private void jarModule(Project.MultiReleaseUnit unit) {
       var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
       var module = unit.descriptor.name();
       var version = unit.descriptor.version();
       var file = module + "-" + version.orElse(project.version);
+      var modularJar = modulesDirectory.resolve(file + ".jar");
       var base = unit.releases.get(releases.pop()).getFileName();
       var jar =
           new Command("jar")
               .add("--create")
-              .add("--file", modulesDirectory.resolve(file + ".jar"))
+              .add("--file", modularJar)
               .addIff(bach.verbose(), "--verbose")
               .add("-C", classesDirectory.resolve(base).resolve(module))
               .add(".")
@@ -593,10 +604,13 @@ public class Bach {
         jar.add("-C", classes);
         jar.add(".");
       }
-      return jar;
+      bach.run(jar);
+      if (bach.verbose()) {
+        bach.run(new Command("jar", "--describe-module", "--file", modularJar));
+      }
     }
 
-    private Command jarSources(Project.MultiReleaseUnit unit) {
+    private void jarSources(Project.MultiReleaseUnit unit) {
       var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
       var module = unit.descriptor.name();
       var version = unit.descriptor.version();
@@ -615,7 +629,7 @@ public class Bach {
         jar.add("-C", release.getValue());
         jar.add(".");
       }
-      return jar;
+      bach.run(jar);
     }
   }
 
@@ -776,8 +790,8 @@ public class Bach {
     }
 
     static List<Path> list(Path directory, Predicate<Path> filter) {
-      try {
-        return Files.list(directory).filter(filter).sorted().collect(Collectors.toList());
+      try (var stream = Files.list(directory)) {
+        return stream.filter(filter).sorted().collect(Collectors.toList());
       } catch (IOException e) {
         throw new UncheckedIOException("list directory failed: " + directory, e);
       }
