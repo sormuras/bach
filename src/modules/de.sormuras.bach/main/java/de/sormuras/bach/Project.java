@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 /*BODY*/
@@ -121,7 +122,7 @@ public /*STATIC*/ class Project {
         Map<Integer, Path> releases,
         List<Path> resources,
         ModuleDescriptor descriptor) {
-      super(info, List.copyOf(releases.values()), resources, descriptor);
+      super(info, List.copyOf(new TreeMap<>(releases).values()), resources, descriptor);
       this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
       this.releases = releases;
     }

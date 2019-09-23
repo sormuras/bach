@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-23T08:28:17.649273800Z
+// THIS FILE WAS GENERATED ON 2019-09-23T09:45:58.061074700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -410,7 +410,7 @@ public class Bach {
           Map<Integer, Path> releases,
           List<Path> resources,
           ModuleDescriptor descriptor) {
-        super(info, List.copyOf(releases.values()), resources, descriptor);
+        super(info, List.copyOf(new TreeMap<>(releases).values()), resources, descriptor);
         this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
         this.releases = releases;
       }
