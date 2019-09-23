@@ -18,26 +18,22 @@
 package it;
 
 import static java.lang.module.ModuleDescriptor.Requires.Modifier.STATIC;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import de.sormuras.bach.Command;
 import de.sormuras.bach.Jigsaw;
 import de.sormuras.bach.Project;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class JigsawTests {
 
   @Test
-  void build() throws Exception {
+  void build() {
     var main =
         new Project.Realm(
             "main",
@@ -87,18 +83,6 @@ class JigsawTests {
             List.of(main, test));
 
     var bach = new Probe();
-    var commands = new Jigsaw(bach, project).toCommands(main, main.modules.keySet());
-    var actual = commands.stream().map(Command::toCommandLine).collect(Collectors.toList());
-    assertLinesMatch(
-        List.of(
-            "javac -d bin.+classes --module-path lib --module-source-path src.+java --module-version 2.* --module de.sormuras.bach",
-            "jar --create --file bin.+de.sormuras.bach-.*.jar --verbose -C bin.+de.sormuras.bach . -C src.+resources .",
-            "jar --describe-module --file bin.+de.sormuras.bach-.*.jar",
-            "jdeps --module-path bin.+modules;lib --multi-release BASE --check de.sormuras.bach",
-            "jar --create --file bin.+de.sormuras.bach-2.*-sources.jar --verbose --no-manifest -C src.+java . -C src.+resources .",
-            "javadoc -d bin.+javadoc -encoding UTF-8 -Xdoclint:-missing -windowtitle 'API of de.sormuras.bach-2.*' --module-path lib --module-source-path src.+java --module de.sormuras.bach",
-            "jar --create --file bin.+bach-2.*-javadoc.jar --verbose --no-manifest -C bin.+javadoc ."),
-        actual);
-    Files.write(Path.of("bin", "build-bach.bat"), actual);
+    new Jigsaw(bach, project, main).compile(main.modules.keySet());
   }
 }
