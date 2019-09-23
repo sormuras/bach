@@ -19,10 +19,9 @@
 
 /open src/bach/Bach.java
 
-var bach = new Bach(new PrintWriter(System.out, true), new PrintWriter(System.err, true), true)
 var code = 0
 try {
-  bach.build();
+  Bach.main();
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;

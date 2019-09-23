@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-23T05:31:35.045085500Z
+// THIS FILE WAS GENERATED ON 2019-09-23T06:30:57.711559900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -64,24 +64,12 @@ public class Bach {
   public static String VERSION = "2-ea";
 
   /**
-   * Create new Bach instance with default configuration.
-   *
-   * @return new default Bach instance
-   */
-  public static Bach of() {
-    var out = new PrintWriter(System.out, true);
-    var err = new PrintWriter(System.err, true);
-    var verbose = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
-    return new Bach(out, err, verbose);
-  }
-
-  /**
    * Main entry-point.
    *
    * @param args List of API method or tool names.
    */
   public static void main(String... args) {
-    var bach = Bach.of();
+    var bach = new Bach();
     try {
       bach.main(args.length == 0 ? List.of("build") : List.of(args));
     } catch (Throwable throwable) {
@@ -97,6 +85,15 @@ public class Bach {
   /** Be verbose. */
   private final boolean verbose;
 
+  /** Initialize default instance. */
+  public Bach() {
+    this(
+        new PrintWriter(System.out, true),
+        new PrintWriter(System.err, true),
+        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")));
+  }
+
+  /** Initialize. */
   public Bach(PrintWriter out, PrintWriter err, boolean verbose) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
@@ -132,7 +129,7 @@ public class Bach {
   }
 
   /** Get the {@code Bach.java} banner. */
-  String banner() {
+  private String banner() {
     var module = getClass().getModule();
     try (var stream = module.getResourceAsStream("de/sormuras/bach/banner.txt")) {
       if (stream == null) {
@@ -528,19 +525,13 @@ public class Bach {
     private final Bach bach;
     private final Project project;
     private final Project.Realm realm;
-
-    private final Path modulesDirectory;
-    private final Path classesDirectory;
+    private final Project.Target target;
 
     public Hydra(Bach bach, Project project, Project.Realm realm) {
       this.bach = bach;
       this.project = project;
       this.realm = realm;
-
-      var targetDirectory = project.targetDirectory.resolve("realm").resolve(realm.name);
-      this.modulesDirectory = targetDirectory.resolve("modules");
-      var hydraDirectory = modulesDirectory.resolve("hydra");
-      this.classesDirectory = hydraDirectory.resolve("classes");
+      this.target = project.target(realm);
     }
 
     public void compile(Collection<String> modules) {
@@ -555,19 +546,19 @@ public class Bach {
       var sorted = new TreeSet<>(unit.releases.keySet());
       int base = sorted.first();
       bach.log("Base feature release number is: %d", base);
+      var classes = target.directory.resolve("hydra").resolve("classes");
       for (int release : sorted) {
-        compileRelease(unit, base, release);
+        compileRelease(unit, base, release, classes);
       }
-      jarModule(unit);
+      jarModule(unit, classes);
       jarSources(unit);
     }
 
-    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
-      var source = unit.releases.get(release);
+    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release, Path classes) {
       var module = unit.descriptor.name();
-      var baseClasses =
-          classesDirectory.resolve(unit.releases.get(base).getFileName()).resolve(module);
-      var destination = classesDirectory.resolve(source.getFileName());
+      var source = unit.releases.get(release);
+      var destination = classes.resolve(source.getFileName());
+      var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
       var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
       if (Util.isModuleInfo(source.resolve("module-info.java"))) {
         javac.add("-d", destination);
@@ -584,8 +575,8 @@ public class Bach {
         if (base != release) {
           classPath.add(baseClasses);
         }
-        if (Files.isDirectory(modulesDirectory)) {
-          classPath.addAll(Util.list(modulesDirectory, Util::isJarFile));
+        if (Files.isDirectory(target.modules)) {
+          classPath.addAll(Util.list(target.modules, Util::isJarFile));
         }
         for (var path : Util.findExisting(project.library.modulePaths)) {
           if (Util.isJarFile(path)) {
@@ -600,30 +591,30 @@ public class Bach {
       bach.run(javac);
     }
 
-    private void jarModule(Project.MultiReleaseUnit unit) {
+    private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
       var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
       var module = unit.descriptor.name();
       var version = unit.descriptor.version();
       var file = module + "-" + version.orElse(project.version);
-      var modularJar = modulesDirectory.resolve(file + ".jar");
+      var modularJar = Util.treeCreate(target.modules).resolve(file + ".jar");
       var base = unit.releases.get(releases.pop()).getFileName();
       var jar =
           new Command("jar")
               .add("--create")
               .add("--file", modularJar)
               .addIff(bach.verbose(), "--verbose")
-              .add("-C", classesDirectory.resolve(base).resolve(module))
+              .add("-C", classes.resolve(base).resolve(module))
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
       for (var release : releases) {
         var path = unit.releases.get(release).getFileName();
-        var classes = classesDirectory.resolve(path).resolve(module);
+        var released = classes.resolve(path).resolve(module);
         if (unit.copyModuleDescriptorToRootRelease == release) {
-          jar.add("-C", classes);
+          jar.add("-C", released);
           jar.add("module-info.class");
         }
         jar.add("--release", release);
-        jar.add("-C", classes);
+        jar.add("-C", released);
         jar.add(".");
       }
       bach.run(jar);
@@ -640,7 +631,7 @@ public class Bach {
       var jar =
           new Command("jar")
               .add("--create")
-              .add("--file", modulesDirectory.resolve(file + "-sources.jar"))
+              .add("--file", target.directory.resolve(file + "-sources.jar"))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
               .add("-C", releases.removeFirst().getValue())

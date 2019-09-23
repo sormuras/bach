@@ -48,7 +48,7 @@ class SanityTests {
       /open %s
       var code = 0
       try {
-        Bach.of().main(List.of("version"));
+        new Bach().main(List.of("version"));
       } catch (Throwable throwable) {
         throwable.printStackTrace();
         code = 1;

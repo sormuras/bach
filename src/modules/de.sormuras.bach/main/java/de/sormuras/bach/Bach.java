@@ -34,24 +34,12 @@ public class Bach {
   public static String VERSION = "2-ea";
 
   /**
-   * Create new Bach instance with default configuration.
-   *
-   * @return new default Bach instance
-   */
-  public static Bach of() {
-    var out = new PrintWriter(System.out, true);
-    var err = new PrintWriter(System.err, true);
-    var verbose = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
-    return new Bach(out, err, verbose);
-  }
-
-  /**
    * Main entry-point.
    *
    * @param args List of API method or tool names.
    */
   public static void main(String... args) {
-    var bach = Bach.of();
+    var bach = new Bach();
     try {
       bach.main(args.length == 0 ? List.of("build") : List.of(args));
     } catch (Throwable throwable) {
@@ -67,6 +55,15 @@ public class Bach {
   /** Be verbose. */
   private final boolean verbose;
 
+  /** Initialize default instance. */
+  public Bach() {
+    this(
+        new PrintWriter(System.out, true),
+        new PrintWriter(System.err, true),
+        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")));
+  }
+
+  /** Initialize. */
   public Bach(PrintWriter out, PrintWriter err, boolean verbose) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
@@ -102,7 +99,7 @@ public class Bach {
   }
 
   /** Get the {@code Bach.java} banner. */
-  String banner() {
+  private String banner() {
     var module = getClass().getModule();
     try (var stream = module.getResourceAsStream("de/sormuras/bach/banner.txt")) {
       if (stream == null) {

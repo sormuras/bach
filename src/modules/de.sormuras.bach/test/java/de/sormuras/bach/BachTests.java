@@ -18,24 +18,11 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.module.ModuleDescriptor.Version;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
-  @Test
-  void banner() {
-    assertFalse(Bach.of().banner().isBlank());
-  }
-
-  @Test
-  void checkDefaultValues() {
-    var bach = Bach.of();
-    assertNotNull(bach.toString());
-  }
-
   @Test
   void versionIsLegalByModuleDescriptorVersionsParseFactoryContract() {
     assertDoesNotThrow(() -> Version.parse(Bach.VERSION));
