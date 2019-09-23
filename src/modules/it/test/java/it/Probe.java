@@ -18,8 +18,10 @@
 package it;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Project;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,11 +34,15 @@ class Probe extends Bach {
   private final StringWriter out, err;
 
   Probe() {
-    this(new StringWriter(), new StringWriter());
+    this(Project.of(Path.of("")));
   }
 
-  private Probe(StringWriter out, StringWriter err) {
-    super(new PrintWriter(out, true), new PrintWriter(err, true), true);
+  Probe(Project project) {
+    this(new StringWriter(), new StringWriter(), project);
+  }
+
+  private Probe(StringWriter out, StringWriter err, Project project) {
+    super(new PrintWriter(out, true), new PrintWriter(err, true), true, project);
     this.out = out;
     this.err = err;
   }

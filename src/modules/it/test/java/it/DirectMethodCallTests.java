@@ -26,14 +26,6 @@ import org.junit.jupiter.api.Test;
 class DirectMethodCallTests {
 
   @Test
-  void build() {
-    var probe = new Probe();
-    probe.build();
-    assertLinesMatch(List.of(">> INIT >>", "Bach.java (" + Bach.VERSION + ")"), probe.lines());
-    assertLinesMatch(List.of(), probe.errors());
-  }
-
-  @Test
   void help() {
     var probe = new Probe();
     probe.help();
@@ -52,7 +44,7 @@ class DirectMethodCallTests {
   void info() {
     var probe = new Probe();
     probe.info();
-    assertLinesMatch(List.of(">> INIT >>", "Bach.java (" + Bach.VERSION + ")"), probe.lines());
+    assertLinesMatch(List.of(">> INIT >>", "Bach.java (" + Bach.VERSION + ")", ">> INFO >>"), probe.lines());
     assertLinesMatch(List.of(), probe.errors());
   }
 

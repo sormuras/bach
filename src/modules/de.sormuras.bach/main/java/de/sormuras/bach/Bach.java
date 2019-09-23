@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -54,20 +55,24 @@ public class Bach {
   private final PrintWriter out, err;
   /** Be verbose. */
   private final boolean verbose;
+  /** Project to be built. */
+  private final Project project;
 
   /** Initialize default instance. */
   public Bach() {
     this(
         new PrintWriter(System.out, true),
         new PrintWriter(System.err, true),
-        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")));
+        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
+        Project.of(Path.of("")));
   }
 
   /** Initialize. */
-  public Bach(PrintWriter out, PrintWriter err, boolean verbose) {
+  public Bach(PrintWriter out, PrintWriter err, boolean verbose, Project project) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
     this.verbose = verbose;
+    this.project = project;
     log("New Bach.java (%s) instance initialized: %s", VERSION, this);
   }
 
@@ -142,6 +147,7 @@ public class Bach {
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
+    out.printf("Project '%s'%n", project.name);
   }
 
   /** Print Bach.java's version to the standard output stream. */

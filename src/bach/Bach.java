@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-23T06:30:57.711559900Z
+// THIS FILE WAS GENERATED ON 2019-09-23T06:57:10.349139700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -84,20 +84,24 @@ public class Bach {
   private final PrintWriter out, err;
   /** Be verbose. */
   private final boolean verbose;
+  /** Project to be built. */
+  private final Project project;
 
   /** Initialize default instance. */
   public Bach() {
     this(
         new PrintWriter(System.out, true),
         new PrintWriter(System.err, true),
-        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")));
+        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
+        Project.of(Path.of("")));
   }
 
   /** Initialize. */
-  public Bach(PrintWriter out, PrintWriter err, boolean verbose) {
+  public Bach(PrintWriter out, PrintWriter err, boolean verbose, Project project) {
     this.out = Util.requireNonNull(out, "out");
     this.err = Util.requireNonNull(err, "err");
     this.verbose = verbose;
+    this.project = project;
     log("New Bach.java (%s) instance initialized: %s", VERSION, this);
   }
 
@@ -172,6 +176,7 @@ public class Bach {
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
+    out.printf("Project '%s'%n", project.name);
   }
 
   /** Print Bach.java's version to the standard output stream. */
@@ -295,6 +300,19 @@ public class Bach {
   /** Modular project model. */
   public static class Project {
 
+    /** Create default project parsing the passed base directory. */
+    public static Project of(Path baseDirectory) {
+      var main = new Realm("main", false, 0, "src/*/main/java", Map.of());
+      var name = Optional.ofNullable(baseDirectory.toAbsolutePath().getFileName());
+      return new Project(
+          baseDirectory,
+          baseDirectory.resolve("bin"),
+          name.orElse(Path.of("project")).toString().toLowerCase(),
+          Version.parse("0"),
+          new Library(List.of(baseDirectory.resolve("lib")), __ -> null),
+          List.of(main));
+    }
+
     /** Base directory. */
     public final Path baseDirectory;
     /** Target directory. */
@@ -368,7 +386,11 @@ public class Bach {
       public final int copyModuleDescriptorToRootRelease;
 
       public MultiReleaseUnit(
-          Path info, int copyModuleDescriptorToRootRelease, Map<Integer, Path> releases, List<Path> resources, ModuleDescriptor descriptor) {
+          Path info,
+          int copyModuleDescriptorToRootRelease,
+          Map<Integer, Path> releases,
+          List<Path> resources,
+          ModuleDescriptor descriptor) {
         super(info, List.copyOf(releases.values()), resources, descriptor);
         this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
         this.releases = releases;
@@ -412,7 +434,7 @@ public class Bach {
       public final Path modules;
 
       private Target(Path projectTargetDirectory, Realm realm) {
-        this.directory =  projectTargetDirectory.resolve("realm").resolve(realm.name);
+        this.directory = projectTargetDirectory.resolve("realm").resolve(realm.name);
         this.modules = directory.resolve("modules");
       }
     }

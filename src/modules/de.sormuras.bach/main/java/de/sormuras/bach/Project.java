@@ -23,11 +23,25 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /*BODY*/
 /** Modular project model. */
 public /*STATIC*/ class Project {
+
+  /** Create default project parsing the passed base directory. */
+  public static Project of(Path baseDirectory) {
+    var main = new Realm("main", false, 0, "src/*/main/java", Map.of());
+    var name = Optional.ofNullable(baseDirectory.toAbsolutePath().getFileName());
+    return new Project(
+        baseDirectory,
+        baseDirectory.resolve("bin"),
+        name.orElse(Path.of("project")).toString().toLowerCase(),
+        Version.parse("0"),
+        new Library(List.of(baseDirectory.resolve("lib")), __ -> null),
+        List.of(main));
+  }
 
   /** Base directory. */
   public final Path baseDirectory;
@@ -102,7 +116,11 @@ public /*STATIC*/ class Project {
     public final int copyModuleDescriptorToRootRelease;
 
     public MultiReleaseUnit(
-        Path info, int copyModuleDescriptorToRootRelease, Map<Integer, Path> releases, List<Path> resources, ModuleDescriptor descriptor) {
+        Path info,
+        int copyModuleDescriptorToRootRelease,
+        Map<Integer, Path> releases,
+        List<Path> resources,
+        ModuleDescriptor descriptor) {
       super(info, List.copyOf(releases.values()), resources, descriptor);
       this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
       this.releases = releases;
@@ -146,7 +164,7 @@ public /*STATIC*/ class Project {
     public final Path modules;
 
     private Target(Path projectTargetDirectory, Realm realm) {
-      this.directory =  projectTargetDirectory.resolve("realm").resolve(realm.name);
+      this.directory = projectTargetDirectory.resolve("realm").resolve(realm.name);
       this.modules = directory.resolve("modules");
     }
   }

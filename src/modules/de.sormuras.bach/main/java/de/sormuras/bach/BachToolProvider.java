@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
@@ -31,7 +32,7 @@ public class BachToolProvider implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var bach = new Bach(out, err, false);
+    var bach = new Bach(out, err, false, Project.of(Path.of("")));
     try {
       bach.main(List.of(args));
       return 0;
