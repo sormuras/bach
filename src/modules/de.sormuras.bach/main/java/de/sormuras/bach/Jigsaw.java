@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,20 +41,31 @@ public /*STATIC*/ class Jigsaw {
   public void compile(Collection<String> modules) {
     bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
     var classes = target.directory.resolve("jigsaw").resolve("classes");
+    var modulePath = new ArrayList<Path>();
+    if (Files.isDirectory(target.modules)) {
+      modulePath.add(target.modules);
+    }
+    for (var other : realm.realms) {
+      var otherTarget = project.target(other);
+      if (Files.isDirectory(otherTarget.modules)) {
+        modulePath.add(otherTarget.modules);
+      }
+    }
+    modulePath.addAll(project.library.modulePaths);
     bach.run(
         new Command("javac")
             .add("-d", classes)
             .addIff(realm.preview, "--enable-preview")
             .addIff(realm.release != 0, "--release", realm.release)
-            .add("--module-path", project.library.modulePaths)
+            .add("--module-path", modulePath)
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules)));
     for (var module : modules) {
-      jarModule(realm.modules.get(module), classes);
-      jarSources(realm.modules.get(module));
+      var unit = realm.units.get(module);
+      jarModule(unit, classes);
+      jarSources(unit);
     }
-    javadoc(modules);
   }
 
   private void jarModule(Project.ModuleUnit unit, Path classes) {
@@ -76,6 +88,12 @@ public /*STATIC*/ class Jigsaw {
     if (bach.verbose()) {
       bach.run(new Command("jar", "--describe-module", "--file", jar));
       var runtimeModulePath = new ArrayList<>(List.of(target.modules));
+      for (var other : realm.realms) {
+        var otherTarget = project.target(other);
+        if (Files.isDirectory(otherTarget.modules)) {
+          runtimeModulePath.add(otherTarget.modules);
+        }
+      }
       runtimeModulePath.addAll(project.library.modulePaths);
       bach.run(
           new Command("jdeps")

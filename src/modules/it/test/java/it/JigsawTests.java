@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class JigsawTests {
@@ -40,6 +41,7 @@ class JigsawTests {
             false,
             0,
             String.join(File.separator, "src", "modules", "*", "main", "java"),
+            Map.of("jigsaw", List.of("de.sormuras.bach")),
             Map.of(
                 "de.sormuras.bach",
                 new Project.ModuleUnit(
@@ -58,6 +60,7 @@ class JigsawTests {
             true,
             Runtime.version().feature(),
             String.join(File.separator, "src", "modules", "*", "test", "java"),
+            Map.of("jigsaw", List.of("it")),
             Map.of(
                 "it",
                 new Project.ModuleUnit(
@@ -83,6 +86,14 @@ class JigsawTests {
             List.of(main, test));
 
     var bach = new Probe();
-    new Jigsaw(bach, project, main).compile(main.modules.keySet());
+    try {
+      new Jigsaw(bach, project, main).compile(main.modules.get("jigsaw"));
+      new Jigsaw(bach, project, test).compile(test.modules.get("jigsaw"));
+      // new Scribe(bach, project, main).document();
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      bach.errors().forEach(System.err::println);
+      Assertions.fail(t);
+    }
   }
 }

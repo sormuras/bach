@@ -17,7 +17,9 @@
 
 package it;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.Hydra;
+import de.sormuras.bach.Jigsaw;
 import de.sormuras.bach.Project;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,12 @@ class TestProjectTests {
                 11, base.resolve("src/a/main/java-11")),
             List.of(), // resources
             ModuleDescriptor.newModule("a").build());
+    var b =
+        new Project.ModuleUnit(
+            base.resolve("src/b/main/java/module-info.java"),
+            List.of(base.resolve("src/b/main/java")),
+            List.of(), // resources
+            ModuleDescriptor.newModule("b").build());
     var c =
         new Project.MultiReleaseUnit(
             base.resolve("src/c/main/java-9/module-info.java"),
@@ -54,21 +62,23 @@ class TestProjectTests {
                 11, base.resolve("src/c/main/java-11")),
             List.of(), // resources
             ModuleDescriptor.newModule("c").build());
+    var d =
+        new Project.ModuleUnit(
+            base.resolve("src/d/main/java/module-info.java"),
+            List.of(base.resolve("src/d/main/java")),
+            List.of(), // resources
+            ModuleDescriptor.newModule("d").build());
     var main =
         new Project.Realm(
             "main",
             false,
             0,
             String.join(
-                File.separator,
-                "src",
-                "test-project",
-                "multi-release-multi-module",
-                "src",
-                "*",
-                "main",
-                "java-9"),
-            Map.of("a", a, "c", c));
+                File.pathSeparator,
+                String.join(File.separator, base.toString(), "src", "*", "main", "java"),
+                String.join(File.separator, base.toString(), "src", "*", "main", "java-9")),
+            Map.of("hydra", List.of("a", "c"), "jigsaw", List.of("b", "d")),
+            Map.of("a", a, "b", b, "c", c, "d", d));
     var library = new Project.Library(List.of(temp), __ -> null);
     var project =
         new Project(
@@ -79,17 +89,19 @@ class TestProjectTests {
             library,
             List.of(main));
 
-    var bach = new Probe();
+    var bach = new Probe(project);
     var hydra = new Hydra(bach, project, main);
+    var jigsaw = new Jigsaw(bach, project, main);
     try {
       hydra.compile(List.of("a", "c"));
-      // var jigsaw = new Jigsaw(bach, project);
-      // jigsaw.toCommands(main, List.of("b", "d"));
+      jigsaw.compile(List.of("b", "d"));
+      new Scribe(bach, project, main).document();
     } catch (Throwable t) {
       bach.lines().forEach(System.out::println);
       bach.errors().forEach(System.err::println);
       Assertions.fail(t);
     }
     // bach.lines().forEach(System.out::println);
+    bach.errors().forEach(System.err::println);
   }
 }

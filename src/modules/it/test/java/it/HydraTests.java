@@ -37,6 +37,7 @@ class HydraTests {
             false,
             0,
             String.join(File.separator, "demo", "src", "*", "main", "java-9"),
+            Map.of("hydra", List.of("de.sormuras.bach.demo.multi")),
             Map.of(
                 "de.sormuras.bach.demo.multi",
                 new Project.MultiReleaseUnit(
@@ -63,6 +64,6 @@ class HydraTests {
             List.of(main));
 
     var bach = new Probe();
-    new Hydra(bach, project, main).compile(main.modules.keySet());
+    new Hydra(bach, project, main).compile(main.modules.get("hydra"));
   }
 }

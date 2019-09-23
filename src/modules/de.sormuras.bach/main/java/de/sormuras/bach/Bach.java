@@ -142,6 +142,25 @@ public class Bach {
   /** Build. */
   public void build() {
     info();
+
+    var main = project.realms.get(0);
+    if (main.units.isEmpty()) {
+      throw new AssertionError("No module declared in realm " + main.name);
+    }
+
+    var hydras = main.modules.getOrDefault("hydra", List.of());
+    if (!hydras.isEmpty()) {
+      new Hydra(this, project, main).compile(hydras);
+    }
+
+    var jigsaws = main.modules.getOrDefault("jigsaw", List.of());
+    if (!jigsaws.isEmpty()) {
+      new Jigsaw(this, project, main).compile(jigsaws);
+    }
+
+    new Scribe(this, project, main).document();
+
+    // summary(main);
   }
 
   /** Print all "interesting" information. */

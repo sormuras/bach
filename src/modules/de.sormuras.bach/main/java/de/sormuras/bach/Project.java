@@ -32,7 +32,7 @@ public /*STATIC*/ class Project {
 
   /** Create default project parsing the passed base directory. */
   public static Project of(Path baseDirectory) {
-    var main = new Realm("main", false, 0, "src/*/main/java", Map.of());
+    var main = new Realm("main", false, 0, "src/*/main/java", Map.of(), Map.of());
     var name = Optional.ofNullable(baseDirectory.toAbsolutePath().getFileName());
     return new Project(
         baseDirectory,
@@ -137,8 +137,10 @@ public /*STATIC*/ class Project {
     public final int release;
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
-    /** Map of declared module source unit. */
-    public final Map<String, ModuleUnit> modules;
+    /** Map of all declared module source unit. */
+    public final Map<String, ModuleUnit> units;
+    /** Map of compiler-specific module names. */
+    public final Map<String, List<String>> modules;
     /** List of required realms. */
     public final List<Realm> realms;
 
@@ -147,13 +149,15 @@ public /*STATIC*/ class Project {
         boolean preview,
         int release,
         String moduleSourcePath,
-        Map<String, ModuleUnit> modules,
+        Map<String, List<String>> modules,
+        Map<String, ModuleUnit> units,
         Realm... realms) {
       this.name = name;
       this.preview = preview;
       this.release = release;
       this.moduleSourcePath = moduleSourcePath;
       this.modules = Map.copyOf(modules);
+      this.units = Map.copyOf(units);
       this.realms = List.of(realms);
     }
   }

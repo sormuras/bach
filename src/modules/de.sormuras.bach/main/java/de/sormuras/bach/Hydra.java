@@ -45,7 +45,7 @@ public /*STATIC*/ class Hydra {
   public void compile(Collection<String> modules) {
     bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
     for (var module : modules) {
-      var unit = (Project.MultiReleaseUnit) realm.modules.get(module);
+      var unit = (Project.MultiReleaseUnit) realm.units.get(module);
       compile(unit);
     }
   }

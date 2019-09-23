@@ -37,7 +37,7 @@ public /*STATIC*/ class Scribe {
   }
 
   public void document() {
-    document(new TreeSet<>(realm.modules.keySet()));
+    document(new TreeSet<>(realm.units.keySet()));
   }
 
   public void document(Collection<String> modules) {
