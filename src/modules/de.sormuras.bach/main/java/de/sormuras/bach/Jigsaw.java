@@ -98,28 +98,4 @@ public /*STATIC*/ class Jigsaw {
             .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
   }
-
-  private void javadoc(Collection<String> modules) {
-    var javadocDirectory = target.directory.resolve("jigsaw").resolve("javadoc");
-    var nameDashVersion = project.name + '-' + project.version;
-    bach.run(
-        new Command("javadoc")
-            .add("-d", javadocDirectory)
-            .add("-encoding", "UTF-8")
-            .addIff(!bach.verbose(), "-quiet")
-            .add("-Xdoclint:-missing")
-            .add("-windowtitle", "'API of " + nameDashVersion + "'")
-            .add("--module-path", project.library.modulePaths)
-            .add("--module-source-path", realm.moduleSourcePath)
-            .add("--module", String.join(",", modules)));
-
-    bach.run(
-        new Command("jar")
-            .add("--create")
-            .add("--file", target.directory.resolve(nameDashVersion + "-javadoc.jar"))
-            .addIff(bach.verbose(), "--verbose")
-            .add("--no-manifest")
-            .add("-C", javadocDirectory)
-            .add("."));
-  }
 }
