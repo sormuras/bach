@@ -57,6 +57,10 @@ public /*STATIC*/ class Project {
     this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
   }
 
+  public Target target(Realm realm) {
+    return new Target(targetDirectory, realm);
+  }
+
   /** Manage external 3rd-party modules. */
   public static class Library {
     /** List of library paths to external 3rd-party modules. */
@@ -133,6 +137,17 @@ public /*STATIC*/ class Project {
       this.moduleSourcePath = moduleSourcePath;
       this.modules = Map.copyOf(modules);
       this.realms = List.of(realms);
+    }
+  }
+
+  /** Collection of directories and other realm-specific assets. */
+  public static class Target {
+    public final Path directory;
+    public final Path modules;
+
+    private Target(Path projectTargetDirectory, Realm realm) {
+      this.directory =  projectTargetDirectory.resolve("realm").resolve(realm.name);
+      this.modules = directory.resolve("modules");
     }
   }
 }
