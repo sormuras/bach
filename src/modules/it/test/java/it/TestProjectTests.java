@@ -17,10 +17,7 @@
 
 package it;
 
-import de.sormuras.bach.Hydra;
-import de.sormuras.bach.Jigsaw;
 import de.sormuras.bach.Project;
-import de.sormuras.bach.Scribe;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
@@ -89,12 +86,8 @@ class TestProjectTests {
             List.of(main));
 
     var bach = new Probe(project);
-    var hydra = new Hydra(bach, project, main);
-    var jigsaw = new Jigsaw(bach, project, main);
     try {
-      hydra.compile(List.of("a", "c"));
-      jigsaw.compile(List.of("b", "d"));
-      new Scribe(bach, project, main).document();
+      bach.build();
     } catch (Throwable t) {
       bach.lines().forEach(System.out::println);
       bach.errors().forEach(System.err::println);

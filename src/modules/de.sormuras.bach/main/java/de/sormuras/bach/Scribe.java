@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.TreeSet;
 
 /*BODY*/
@@ -43,15 +44,25 @@ public /*STATIC*/ class Scribe {
   public void document(Collection<String> modules) {
     bach.log("Compiling %s realm's documentation: %s", realm.name, modules);
     var destination = target.directory.resolve("javadoc");
-    bach.run(
+    var javadoc =
         new Command("javadoc")
             .add("-d", destination)
             .add("-encoding", "UTF-8")
             .addIff(!bach.verbose(), "-quiet")
             .add("-Xdoclint:-missing")
             .add("--module-path", project.library.modulePaths)
-            .add("--module-source-path", realm.moduleSourcePath)
-            .add("--module", String.join(",", modules)));
+            .add("--module-source-path", realm.moduleSourcePath);
+
+    for (var module : realm.modules.getOrDefault("hydra", List.of())) {
+      var unit = (Project.MultiReleaseUnit) realm.units.get(module);
+      var base = unit.sources.get(0);
+      if (!unit.info.startsWith(base)) {
+        javadoc.add("--patch-module", module + "=" + base);
+      }
+    }
+
+    javadoc.add("--module", String.join(",", modules));
+    bach.run(javadoc);
 
     var nameDashVersion = project.name + '-' + project.version;
     bach.run(
