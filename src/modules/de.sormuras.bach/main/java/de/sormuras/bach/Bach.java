@@ -52,11 +52,11 @@ public class Bach {
   }
 
   /** Text-output writer. */
-  private final PrintWriter out, err;
+  /*PRIVATE*/ final PrintWriter out, err;
   /** Be verbose. */
   private final boolean verbose;
   /** Project to be built. */
-  private final Project project;
+  /*PRIVATE*/ final Project project;
 
   /** Initialize default instance. */
   public Bach() {
@@ -143,6 +143,8 @@ public class Bach {
   public void build() {
     info();
 
+    resolve();
+
     var main = project.realms.get(0);
     if (main.units.isEmpty()) {
       throw new AssertionError("No module declared in realm " + main.name);
@@ -167,6 +169,11 @@ public class Bach {
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
     out.printf("Project '%s'%n", project.name);
+  }
+
+  /** Resolve missing modules. */
+  public void resolve() {
+    new Resolver(this).resolve();
   }
 
   /** Print Bach.java's version to the standard output stream. */

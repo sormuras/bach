@@ -36,6 +36,7 @@ class Merger {
           "Project",
           "Jigsaw",
           "Hydra",
+          "Resolver",
           "Scribe",
           "Task",
           "Util",
@@ -127,7 +128,7 @@ class Merger {
         list.add("");
         continue;
       }
-      var newLine = line.replace("/*STATIC*/", "static");
+      var newLine = line.replace("/*STATIC*/", "static").replace("/*PRIVATE*/", "private");
       list.add(indentation + newLine);
     }
   }
