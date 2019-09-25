@@ -17,19 +17,18 @@
 
 package it;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.Hydra;
 import de.sormuras.bach.Jigsaw;
 import de.sormuras.bach.Project;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
+import de.sormuras.bach.Scribe;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class TestProjectTests {
   @Test
@@ -96,6 +95,45 @@ class TestProjectTests {
       hydra.compile(List.of("a", "c"));
       jigsaw.compile(List.of("b", "d"));
       new Scribe(bach, project, main).document();
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      bach.errors().forEach(System.err::println);
+      Assertions.fail(t);
+    }
+    // bach.lines().forEach(System.out::println);
+    bach.errors().forEach(System.err::println);
+  }
+
+  @Test
+  void requiresAsm(@TempDir Path temp) {
+    var base = Path.of("src", "test-project", "requires-asm");
+    var a =
+        new Project.ModuleUnit(
+            base.resolve("src/a/main/java/module-info.java"),
+            List.of(base.resolve("src/a/main/java")),
+            List.of(), // resources
+            ModuleDescriptor.newModule("a").requires("org.objectweb.asm").version("7.1").build());
+    var main =
+        new Project.Realm(
+            "main",
+            false,
+            0,
+            String.join(File.separator, base.toString(), "src", "*", "main", "java"),
+            Map.of("jigsaw", List.of("a")),
+            Map.of("a", a));
+    var library = new Project.Library(temp.resolve("lib"));
+    var project =
+        new Project(
+            base,
+            temp,
+            "requires-asm",
+            ModuleDescriptor.Version.parse("0"),
+            library,
+            List.of(main));
+
+    var bach = new Probe(project);
+    try {
+      bach.build();
     } catch (Throwable t) {
       bach.lines().forEach(System.out::println);
       bach.errors().forEach(System.err::println);
