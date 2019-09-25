@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /*BODY*/
 /** Modular project model. */
@@ -40,7 +41,7 @@ public /*STATIC*/ class Project {
         baseDirectory.resolve("bin"),
         name.orElse(Path.of("project")).toString().toLowerCase(),
         Version.parse("0"),
-        new Library(List.of(baseDirectory.resolve("lib")), __ -> null),
+        new Library(baseDirectory.resolve("lib")),
         List.of(main));
   }
 
@@ -82,10 +83,33 @@ public /*STATIC*/ class Project {
     public final List<Path> modulePaths;
     /** Map external 3rd-party module names to their {@code URI}s. */
     public final Function<String, URI> moduleMapper;
+    /** Map external 3rd-party module names to their Maven repository. */
+    public final Function<String, URI> mavenRepositoryMapper;
+    /** Map external 3rd-party module names to their colon-separated Maven Group and Artifact ID. */
+    public final UnaryOperator<String> mavenGroupColonArtifactMapper;
+    /** Map external 3rd-party module names to their Maven version. */
+    public final UnaryOperator<String> mavenVersionMapper;
 
-    public Library(List<Path> modulePaths, Function<String, URI> moduleMapper) {
+    public Library(Path lib) {
+      this(
+          List.of(lib),
+          UnmappedModuleException::throwForURI,
+          __ -> URI.create("https://repo1.maven.org/maven2"),
+          UnmappedModuleException::throwForString,
+          UnmappedModuleException::throwForString);
+    }
+
+    public Library(
+        List<Path> modulePaths,
+        Function<String, URI> moduleMapper,
+        Function<String, URI> mavenRepositoryMapper,
+        UnaryOperator<String> mavenGroupColonArtifactMapper,
+        UnaryOperator<String> mavenVersionMapper) {
       this.modulePaths = List.copyOf(Util.requireNonEmpty(modulePaths, "modulePaths"));
       this.moduleMapper = moduleMapper;
+      this.mavenRepositoryMapper = mavenRepositoryMapper;
+      this.mavenGroupColonArtifactMapper = mavenGroupColonArtifactMapper;
+      this.mavenVersionMapper = mavenVersionMapper;
     }
   }
 

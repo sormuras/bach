@@ -75,7 +75,7 @@ class JigsawTests {
                         .build())),
             main);
 
-    var library = new Project.Library(List.of(Path.of("lib")), __ -> null);
+    var library = new Project.Library(Path.of("lib"));
     var project =
         new Project(
             Path.of(""),

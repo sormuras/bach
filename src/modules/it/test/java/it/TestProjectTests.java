@@ -79,7 +79,7 @@ class TestProjectTests {
                 String.join(File.separator, base.toString(), "src", "*", "main", "java-9")),
             Map.of("hydra", List.of("a", "c"), "jigsaw", List.of("b", "d")),
             Map.of("a", a, "b", b, "c", c, "d", d));
-    var library = new Project.Library(List.of(temp), __ -> null);
+    var library = new Project.Library(temp);
     var project =
         new Project(
             base,

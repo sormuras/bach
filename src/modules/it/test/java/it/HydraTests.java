@@ -53,7 +53,7 @@ class HydraTests {
                     List.of(), // resources
                     ModuleDescriptor.newModule("de.sormuras.bach.demo.multi").build())));
 
-    var library = new Project.Library(List.of(Path.of("demo/lib")), __ -> null);
+    var library = new Project.Library(Path.of("demo/lib"));
     var project =
         new Project(
             Path.of("demo"),
