@@ -31,7 +31,15 @@ class Merger {
   static Path SOURCE = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach");
   static Path TARGET = Path.of("bin/merged");
   static List<String> TYPES =
-      List.of("Command", "Project", "Jigsaw", "Hydra", "Scribe", "Task", "Util");
+      List.of(
+          "Command",
+          "Project",
+          "Jigsaw",
+          "Hydra",
+          "Scribe",
+          "Task",
+          "Util",
+          "UnmappedModuleException");
 
   public static void main(String[] args) throws Exception {
     System.out.printf("Merging %d types into Bach.java {%n", TYPES.size());
