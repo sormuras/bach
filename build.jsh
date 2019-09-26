@@ -18,10 +18,11 @@
  */
 
 /open src/bach/Bach.java
+/open src/build/Build.java
 
 var code = 0
 try {
-  Bach.main();
+  Build.main();
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;
