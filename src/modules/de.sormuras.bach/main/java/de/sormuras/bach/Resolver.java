@@ -109,14 +109,14 @@ public /*STATIC*/ class Resolver {
     bach.log("  modules  -> " + library.modules);
     bach.log("  requires -> " + library.requires);
 
-    var infos = new ArrayList<Path>();
+    var units = new ArrayList<Path>();
     for (var realm : project.realms) {
       for (var unit : realm.units.values()) {
-        infos.add(unit.info);
+        units.add(unit.info);
       }
     }
-    var sources = scan(infos);
-    bach.log("Library of -> %s", infos);
+    var sources = scan(units);
+    bach.log("Sources of -> %s", units);
     bach.log("  modules  -> " + sources.modules);
     bach.log("  requires -> " + sources.requires);
 
