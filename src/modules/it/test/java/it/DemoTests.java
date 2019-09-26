@@ -81,7 +81,7 @@ class DemoTests {
                 "integration",
                 new Project.ModuleUnit(
                     Path.of("demo/src/integration/test/java/module-info.java"),
-                    List.of(),
+                    List.of(Path.of("demo/src/integration/test/java")),
                     List.of(), // resources
                     ModuleDescriptor.newOpenModule("integration").build())),
             main);
