@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-25T19:47:16.024424100Z
+// THIS FILE WAS GENERATED ON 2019-09-26T03:32:42.524083500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -732,13 +732,12 @@ public class Bach {
 
     /** Command-line argument factory. */
     public static Scanner scan(Collection<String> declaredModules, Iterable<String> requires) {
-      var map = new TreeMap<String, Set<ModuleDescriptor.Version>>();
+      var map = new TreeMap<String, Set<Version>>();
       for (var string : requires) {
         var versionMarkerIndex = string.indexOf('@');
         var any = versionMarkerIndex == -1;
         var module = any ? string : string.substring(0, versionMarkerIndex);
-        var version =
-                any ? null : ModuleDescriptor.Version.parse(string.substring(versionMarkerIndex + 1));
+        var version = any ? null : Version.parse(string.substring(versionMarkerIndex + 1));
         map.merge(module, any ? Set.of() : Set.of(version), Util::concat);
       }
       return new Scanner(new TreeSet<>(declaredModules), map);
@@ -746,42 +745,38 @@ public class Bach {
 
     public static Scanner scan(ModuleFinder finder) {
       var declaredModules = new TreeSet<String>();
-      var requiredModules = new TreeMap<String, Set<ModuleDescriptor.Version>>();
+      var requiredModules = new TreeMap<String, Set<Version>>();
       finder.findAll().stream()
-              .map(ModuleReference::descriptor)
-              .peek(descriptor -> declaredModules.add(descriptor.name()))
-              .map(ModuleDescriptor::requires)
-              .flatMap(Set::stream)
-              .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.MANDATED))
-              .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
-              .distinct()
-              .forEach(
-                      requires ->
-                              requiredModules.merge(
-                                      requires.name(),
-                                      requires.compiledVersion().map(Set::of).orElse(Set.of()),
-                                      Util::concat));
+          .map(ModuleReference::descriptor)
+          .peek(descriptor -> declaredModules.add(descriptor.name()))
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.MANDATED))
+          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
+          .distinct()
+          .forEach(
+              requires ->
+                  requiredModules.merge(
+                      requires.name(),
+                      requires.compiledVersion().map(Set::of).orElse(Set.of()),
+                      Util::concat));
       return new Scanner(declaredModules, requiredModules);
     }
 
     public static Scanner scan(String... sources) {
       var declaredModules = new TreeSet<String>();
-      var map = new TreeMap<String, Set<ModuleDescriptor.Version>>();
+      var map = new TreeMap<String, Set<Version>>();
       for (var source : sources) {
         var nameMatcher = Scanner.MODULE_NAME_PATTERN.matcher(source);
         if (!nameMatcher.find()) {
-          throw new IllegalArgumentException(
-                  "Expected module-info.java source, but got: " + source);
+          throw new IllegalArgumentException("Expected module-info.java source, but got: " + source);
         }
         declaredModules.add(nameMatcher.group(1).trim());
         var requiresMatcher = Scanner.MODULE_REQUIRES_PATTERN.matcher(source);
         while (requiresMatcher.find()) {
           var name = requiresMatcher.group(1);
           var version = requiresMatcher.group(2);
-          map.merge(
-                  name,
-                  version == null ? Set.of() : Set.of(ModuleDescriptor.Version.parse(version)),
-                  Util::concat);
+          map.merge(name, version == null ? Set.of() : Set.of(Version.parse(version)), Util::concat);
         }
       }
       return new Scanner(declaredModules, map);
@@ -817,21 +812,21 @@ public class Bach {
       bach.log("  modules  -> " + library.modules);
       bach.log("  requires -> " + library.requires);
 
-      var infos = new ArrayList<Path>();
+      var units = new ArrayList<Path>();
       for (var realm : project.realms) {
         for (var unit : realm.units.values()) {
-          infos.add(unit.info);
+          units.add(unit.info);
         }
       }
-      var sources = scan(infos);
-      bach.log("Library of -> %s", infos);
+      var sources = scan(units);
+      bach.log("Sources of -> %s", units);
       bach.log("  modules  -> " + sources.modules);
       bach.log("  requires -> " + sources.requires);
 
       var systems = scan(ModuleFinder.ofSystem());
       bach.log("System contains %d modules.", systems.modules.size());
 
-      var missing = new TreeMap<String, Set<ModuleDescriptor.Version>>();
+      var missing = new TreeMap<String, Set<Version>>();
       missing.putAll(sources.requires);
       missing.putAll(library.requires);
       sources.getDeclaredModules().forEach(missing::remove);
@@ -863,7 +858,11 @@ public class Bach {
     /** Module Scanner. */
     public static class Scanner {
 
-      private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("(?:module)\\s+([\\w.]+)");
+      private static final Pattern MODULE_NAME_PATTERN =
+          Pattern.compile(
+              "(?:module)" // key word
+                  + "\\s+([\\w.]+)" // module name
+                  + "\\s+\\{"); // end marker
       private static final Pattern MODULE_REQUIRES_PATTERN =
           Pattern.compile(
               "(?:requires)" // key word
@@ -873,9 +872,9 @@ public class Bach {
                   + ";"); // end marker
 
       private final Set<String> modules;
-      final Map<String, Set<ModuleDescriptor.Version>> requires;
+      final Map<String, Set<Version>> requires;
 
-      public Scanner(Set<String> modules, Map<String, Set<ModuleDescriptor.Version>> requires) {
+      public Scanner(Set<String> modules, Map<String, Set<Version>> requires) {
         this.modules = modules;
         this.requires = requires;
       }
@@ -888,7 +887,7 @@ public class Bach {
         return requires.keySet();
       }
 
-      public Optional<ModuleDescriptor.Version> getRequiredVersion(String requiredModule) {
+      public Optional<Version> getRequiredVersion(String requiredModule) {
         var versions = requires.get(requiredModule);
         if (versions == null) {
           throw new NoSuchElementException("Module " + requiredModule + " is not mapped");
@@ -987,7 +986,7 @@ public class Bach {
           }
         }
 
-        Util.Downloader.Item toTransferItem(String module, Set<ModuleDescriptor.Version> set) {
+        Util.Downloader.Item toTransferItem(String module, Set<Version> set) {
           var uri = getModuleUri(module);
           if (uri != null) {
             var file = Util.findFileName(uri);
