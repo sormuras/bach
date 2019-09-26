@@ -31,13 +31,15 @@ public class Build {
   }
 
   private static Bach.Project project(String version) {
+    var main = main();
+    var test = test(main);
     return new Bach.Project(
         Path.of(""),
         Path.of("bin"),
         "bach",
         ModuleDescriptor.Version.parse(version),
         new Bach.Project.Library(Path.of("lib")),
-        List.of(main(), test()));
+        List.of(main, test));
   }
 
   private static Bach.Project.Realm main() {
@@ -56,7 +58,7 @@ public class Build {
                 ModuleDescriptor.newModule("de.sormuras.bach").build())));
   }
 
-  private static Bach.Project.Realm test() {
+  private static Bach.Project.Realm test(Bach.Project.Realm main) {
     return new Bach.Project.Realm(
         "test",
         true,
@@ -69,6 +71,7 @@ public class Build {
                 Path.of("src/modules/it/test/java/module-info.java"),
                 List.of(Path.of("src/modules/it/test/java")),
                 List.of(Path.of("src/modules/it/test/resources")),
-                ModuleDescriptor.newModule("it").build())));
+                ModuleDescriptor.newModule("it").build())),
+                main);
   }
 }
