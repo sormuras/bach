@@ -17,7 +17,8 @@
 
 package it;
 
-import de.sormuras.bach.Hydra;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import de.sormuras.bach.Project;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class HydraTests {
+class DemoTests {
 
   @Test
   void build() {
@@ -36,9 +37,22 @@ class HydraTests {
             "main",
             false,
             0,
-            String.join(File.separator, "demo", "src", "*", "main", "java-9"),
-            Map.of("hydra", List.of("de.sormuras.bach.demo.multi")),
+            String.join(
+                File.pathSeparator,
+                String.join(File.separator, "demo", "src", "*", "main", "java"),
+                String.join(File.separator, "demo", "src", "*", "main", "java-9")),
             Map.of(
+                "hydra",
+                List.of("de.sormuras.bach.demo.multi"),
+                "jigsaw",
+                List.of("de.sormuras.bach.demo")),
+            Map.of(
+                "de.sormuras.bach.demo",
+                new Project.ModuleUnit(
+                    Path.of("demo/src/de.sormuras.bach.demo/main/java/module-info.java"),
+                    List.of(Path.of("demo/src/de.sormuras.bach.demo/main/java")),
+                    List.of(), // resources
+                    ModuleDescriptor.newOpenModule("de.sormuras.bach.demo").build()),
                 "de.sormuras.bach.demo.multi",
                 new Project.MultiReleaseUnit(
                     Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-9/module-info.java"),
@@ -53,6 +67,25 @@ class HydraTests {
                     List.of(), // resources
                     ModuleDescriptor.newModule("de.sormuras.bach.demo.multi").build())));
 
+    var test =
+        new Project.Realm(
+            "test",
+            true,
+            Runtime.version().feature(),
+            String.join(
+                File.pathSeparator,
+                String.join(File.separator, "demo", "src", "*", "test", "java"),
+                String.join(File.separator, "demo", "src", "*", "test", "module")),
+            Map.of("jigsaw", List.of("integration")),
+            Map.of(
+                "integration",
+                new Project.ModuleUnit(
+                    Path.of("demo/src/integration/test/java/module-info.java"),
+                    List.of(),
+                    List.of(), // resources
+                    ModuleDescriptor.newOpenModule("integration").build())),
+            main);
+
     var library = new Project.Library(Path.of("demo/lib"));
     var project =
         new Project(
@@ -61,9 +94,16 @@ class HydraTests {
             "de.sormuras.bach.demo",
             Version.parse("1"),
             library,
-            List.of(main));
+            List.of(main, test));
 
-    var bach = new Probe();
-    new Hydra(bach, project, main).compile(main.modules.get("hydra"));
+    var bach = new Probe(project);
+    try {
+      bach.build();
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      fail(t);
+    } finally {
+      bach.errors().forEach(System.err::println);
+    }
   }
 }
