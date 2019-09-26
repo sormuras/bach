@@ -37,7 +37,7 @@ public class Build {
         "bach",
         ModuleDescriptor.Version.parse(version),
         new Bach.Project.Library(Path.of("lib")),
-        List.of(main()));
+        List.of(main(), test()));
   }
 
   private static Bach.Project.Realm main() {
@@ -54,5 +54,21 @@ public class Build {
                 List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
                 ModuleDescriptor.newModule("de.sormuras.bach").build())));
+  }
+
+  private static Bach.Project.Realm test() {
+    return new Bach.Project.Realm(
+        "test",
+        true,
+        Runtime.version().feature(),
+        String.join(File.separator, "src", "modules", "*", "test", "java"),
+        Map.of("jigsaw", List.of("it")),
+        Map.of(
+            "it",
+            new Bach.Project.ModuleUnit(
+                Path.of("src/modules/it/test/java/module-info.java"),
+                List.of(Path.of("src/modules/it/test/java")),
+                List.of(Path.of("src/modules/it/test/resources")),
+                ModuleDescriptor.newModule("it").build())));
   }
 }
