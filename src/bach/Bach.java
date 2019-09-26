@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-26T03:32:42.524083500Z
+// THIS FILE WAS GENERATED ON 2019-09-26T08:45:41.299018700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -187,24 +187,36 @@ public class Bach {
 
     resolve();
 
-    var main = project.realms.get(0);
-    if (main.units.isEmpty()) {
-      throw new AssertionError("No module declared in realm " + main.name);
+    if (project.realms.stream().map(u -> u.units.entrySet()).count() == 0) {
+      throw new AssertionError("No units declared in %d realm(s): " + project.realms);
     }
 
-    var hydras = main.modules.getOrDefault("hydra", List.of());
-    if (!hydras.isEmpty()) {
-      new Hydra(this, project, main).compile(hydras);
+    var realms = new ArrayDeque<>(project.realms);
+    var main = realms.removeFirst();
+    compile(main);
+    if (!main.units.isEmpty()) {
+      new Scribe(this, project, main).document();
     }
 
-    var jigsaws = main.modules.getOrDefault("jigsaw", List.of());
-    if (!jigsaws.isEmpty()) {
-      new Jigsaw(this, project, main).compile(jigsaws);
+    for(var realm : realms) {
+      compile(realm);
     }
-
-    new Scribe(this, project, main).document();
 
     // summary(main);
+  }
+
+  private void compile(Project.Realm realm) {
+    if (realm.units.isEmpty()) {
+      return;
+    }
+    var hydras = realm.modules.getOrDefault("hydra", List.of());
+    if (!hydras.isEmpty()) {
+      new Hydra(this, project, realm).compile(hydras);
+    }
+    var jigsaws = realm.modules.getOrDefault("jigsaw", List.of());
+    if (!jigsaws.isEmpty()) {
+      new Jigsaw(this, project, realm).compile(jigsaws);
+    }
   }
 
   /** Print all "interesting" information. */
