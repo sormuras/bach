@@ -36,7 +36,7 @@ class DemoTests {
         new Project.Realm(
             "main",
             false,
-            0,
+            11,
             String.join(
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "main", "java"),
@@ -70,8 +70,8 @@ class DemoTests {
     var test =
         new Project.Realm(
             "test",
-            true,
-            Runtime.version().feature(),
+            false,
+            0,
             String.join(
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "test", "java"),
@@ -83,7 +83,9 @@ class DemoTests {
                     Path.of("demo/src/integration/test/java/module-info.java"),
                     List.of(Path.of("demo/src/integration/test/java")),
                     List.of(), // resources
-                    ModuleDescriptor.newOpenModule("integration").build())),
+                    ModuleDescriptor.newOpenModule("integration")
+                        .mainClass("integration.Main")
+                        .build())),
             main);
 
     var library = new Project.Library(Path.of("demo/lib"));
