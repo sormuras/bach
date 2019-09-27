@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
@@ -38,6 +39,7 @@ import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.lang.model.SourceVersion;
 
 /*BODY*/
@@ -60,40 +62,37 @@ public /*STATIC*/ class Resolver {
   public static Scanner scan(ModuleFinder finder) {
     var declaredModules = new TreeSet<String>();
     var requiredModules = new TreeMap<String, Set<Version>>();
-    finder.findAll().stream()
-        .map(ModuleReference::descriptor)
-        .peek(descriptor -> declaredModules.add(descriptor.name()))
-        .map(ModuleDescriptor::requires)
-        .flatMap(Set::stream)
-        .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.MANDATED))
-        .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
-        .distinct()
+    var stream =
+        finder.findAll().stream()
+            .map(ModuleReference::descriptor)
+            .peek(descriptor -> declaredModules.add(descriptor.name()))
+            .map(ModuleDescriptor::requires)
+            .flatMap(Set::stream)
+            .filter(r -> !r.modifiers().contains(Requires.Modifier.STATIC));
+    merge(requiredModules, stream);
+    return new Scanner(declaredModules, requiredModules);
+  }
+
+  public static Scanner scan(String... sources) {
+    var declaredModules = new TreeSet<String>();
+    var requiredModules = new TreeMap<String, Set<Version>>();
+    for (var source : sources) {
+      var descriptor = Modules.describe(source);
+      declaredModules.add(descriptor.name());
+      merge(requiredModules, descriptor.requires().stream());
+    }
+    return new Scanner(declaredModules, requiredModules);
+  }
+
+  private static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
+    stream
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
         .forEach(
             requires ->
                 requiredModules.merge(
                     requires.name(),
                     requires.compiledVersion().map(Set::of).orElse(Set.of()),
                     Util::concat));
-    return new Scanner(declaredModules, requiredModules);
-  }
-
-  public static Scanner scan(String... sources) {
-    var declaredModules = new TreeSet<String>();
-    var map = new TreeMap<String, Set<Version>>();
-    for (var source : sources) {
-      var nameMatcher = Scanner.MODULE_NAME_PATTERN.matcher(source);
-      if (!nameMatcher.find()) {
-        throw new IllegalArgumentException("Expected module-info.java source, but got: " + source);
-      }
-      declaredModules.add(nameMatcher.group(1).trim());
-      var requiresMatcher = Scanner.MODULE_REQUIRES_PATTERN.matcher(source);
-      while (requiresMatcher.find()) {
-        var name = requiresMatcher.group(1);
-        var version = requiresMatcher.group(2);
-        map.merge(name, version == null ? Set.of() : Set.of(Version.parse(version)), Util::concat);
-      }
-    }
-    return new Scanner(declaredModules, map);
   }
 
   public static Scanner scan(Collection<Path> paths) {
@@ -171,19 +170,6 @@ public /*STATIC*/ class Resolver {
 
   /** Module Scanner. */
   public static class Scanner {
-
-    private static final Pattern MODULE_NAME_PATTERN =
-        Pattern.compile(
-            "(?:module)" // key word
-                + "\\s+([\\w.]+)" // module name
-                + "\\s+\\{"); // end marker
-    private static final Pattern MODULE_REQUIRES_PATTERN =
-        Pattern.compile(
-            "(?:requires)" // key word
-                + "(?:\\s+[\\w.]+)?" // optional modifiers
-                + "\\s+([\\w.]+)" // module name
-                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
-                + ";"); // end marker
 
     private final Set<String> modules;
     final Map<String, Set<Version>> requires;
