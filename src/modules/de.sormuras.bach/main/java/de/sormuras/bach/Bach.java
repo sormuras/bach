@@ -82,6 +82,11 @@ public class Bach {
     if (verbose) out.println(String.format(format, args));
   }
 
+  /** Print "warning" message to the error output stream. */
+  void warn(String format, Object... args) {
+    err.println(String.format(format, args));
+  }
+
   /** Non-static entry-point used by {@link #main(String...)} and {@code BachToolProvider}. */
   void main(List<String> arguments) {
     var tasks = Util.requireNonEmpty(Task.of(this, arguments), "tasks");
