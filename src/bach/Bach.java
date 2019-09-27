@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-26T08:45:41.299018700Z
+// THIS FILE WAS GENERATED ON 2019-09-27T21:07:14.926457400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -28,9 +28,11 @@ import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -121,6 +123,11 @@ public class Bach {
   /** Print "debug" message to the standard output stream. */
   void log(String format, Object... args) {
     if (verbose) out.println(String.format(format, args));
+  }
+
+  /** Print "warning" message to the error output stream. */
+  void warn(String format, Object... args) {
+    err.println(String.format(format, args));
   }
 
   /** Non-static entry-point used by {@link #main(String...)} and {@code BachToolProvider}. */
@@ -518,6 +525,95 @@ public class Bach {
     }
   }
 
+  /** Static helper for modules and their friends. */
+  public static class Modules {
+
+    private static final Pattern MAIN_CLASS = Pattern.compile("//\\s*(?:--main-class)\\s+([\\w.]+)");
+
+    private static final Pattern MODULE_NAME_PATTERN =
+        Pattern.compile(
+            "(?:module)" // key word
+                + "\\s+([\\w.]+)" // module name
+                + "\\s*\\{"); // end marker
+
+    private static final Pattern MODULE_REQUIRES_PATTERN =
+        Pattern.compile(
+            "(?:requires)" // key word
+                + "(?:\\s+[\\w.]+)?" // optional modifiers
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                + "\\s*;"); // end marker
+
+    private static final Pattern MODULE_PROVIDES_PATTERN =
+        Pattern.compile(
+            "(?:provides)" // key word
+                + "\\s+([\\w.]+)" // service name
+                + "\\s+with" // separator
+                + "\\s+([\\w.,\\s]+)" // comma separated list of type names
+                + "\\s*;"); // end marker
+
+    /** Source-based module reference. */
+    public static class ModuleInfoReference extends ModuleReference {
+
+      private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
+        super(descriptor, path.toUri());
+      }
+
+      @Override
+      public ModuleReader open() {
+        throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
+      }
+    }
+
+    private Modules() {}
+
+    /** Module compilation unit parser. */
+    public static ModuleInfoReference parse(Path path) {
+      if (!Util.isModuleInfo(path)) {
+        throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
+      }
+      try {
+        return new ModuleInfoReference(describe(Files.readString(path)), path);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Reading module declaration failed: " + path, e);
+      }
+    }
+
+    /** Module descriptor parser. */
+    public static ModuleDescriptor describe(String source) {
+      // "module name {"
+      var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
+      if (!nameMatcher.find()) {
+        throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
+      }
+      var name = nameMatcher.group(1).trim();
+      var builder = ModuleDescriptor.newModule(name);
+      // "// --main-class name"
+      var mainClassMatcher = MAIN_CLASS.matcher(source);
+      if (mainClassMatcher.find()) {
+        var mainClass = mainClassMatcher.group(1);
+        builder.mainClass(mainClass);
+      }
+      // "requires module /*version*/;"
+      var requiresMatcher = MODULE_REQUIRES_PATTERN.matcher(source);
+      while (requiresMatcher.find()) {
+        var requiredName = requiresMatcher.group(1);
+        Optional.ofNullable(requiresMatcher.group(2))
+            .ifPresentOrElse(
+                version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+                () -> builder.requires(requiredName));
+      }
+      // "provides service with type, type, ...;"
+      var providesMatcher = MODULE_PROVIDES_PATTERN.matcher(source);
+      while (providesMatcher.find()) {
+        var providesService = providesMatcher.group(1);
+        var providesTypes = providesMatcher.group(2);
+        builder.provides(providesService, List.of(providesTypes.trim().split("\\s*,\\s*")));
+      }
+      return builder.build();
+    }
+  }
+
   public static class Jigsaw {
 
     private final Bach bach;
@@ -758,40 +854,37 @@ public class Bach {
     public static Scanner scan(ModuleFinder finder) {
       var declaredModules = new TreeSet<String>();
       var requiredModules = new TreeMap<String, Set<Version>>();
-      finder.findAll().stream()
-          .map(ModuleReference::descriptor)
-          .peek(descriptor -> declaredModules.add(descriptor.name()))
-          .map(ModuleDescriptor::requires)
-          .flatMap(Set::stream)
-          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.MANDATED))
-          .filter(r -> !r.modifiers().contains(ModuleDescriptor.Requires.Modifier.STATIC))
-          .distinct()
+      var stream =
+          finder.findAll().stream()
+              .map(ModuleReference::descriptor)
+              .peek(descriptor -> declaredModules.add(descriptor.name()))
+              .map(ModuleDescriptor::requires)
+              .flatMap(Set::stream)
+              .filter(r -> !r.modifiers().contains(Requires.Modifier.STATIC));
+      merge(requiredModules, stream);
+      return new Scanner(declaredModules, requiredModules);
+    }
+
+    public static Scanner scan(String... sources) {
+      var declaredModules = new TreeSet<String>();
+      var requiredModules = new TreeMap<String, Set<Version>>();
+      for (var source : sources) {
+        var descriptor = Modules.describe(source);
+        declaredModules.add(descriptor.name());
+        merge(requiredModules, descriptor.requires().stream());
+      }
+      return new Scanner(declaredModules, requiredModules);
+    }
+
+    private static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
+      stream
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
           .forEach(
               requires ->
                   requiredModules.merge(
                       requires.name(),
                       requires.compiledVersion().map(Set::of).orElse(Set.of()),
                       Util::concat));
-      return new Scanner(declaredModules, requiredModules);
-    }
-
-    public static Scanner scan(String... sources) {
-      var declaredModules = new TreeSet<String>();
-      var map = new TreeMap<String, Set<Version>>();
-      for (var source : sources) {
-        var nameMatcher = Scanner.MODULE_NAME_PATTERN.matcher(source);
-        if (!nameMatcher.find()) {
-          throw new IllegalArgumentException("Expected module-info.java source, but got: " + source);
-        }
-        declaredModules.add(nameMatcher.group(1).trim());
-        var requiresMatcher = Scanner.MODULE_REQUIRES_PATTERN.matcher(source);
-        while (requiresMatcher.find()) {
-          var name = requiresMatcher.group(1);
-          var version = requiresMatcher.group(2);
-          map.merge(name, version == null ? Set.of() : Set.of(Version.parse(version)), Util::concat);
-        }
-      }
-      return new Scanner(declaredModules, map);
     }
 
     public static Scanner scan(Collection<Path> paths) {
@@ -869,19 +962,6 @@ public class Bach {
 
     /** Module Scanner. */
     public static class Scanner {
-
-      private static final Pattern MODULE_NAME_PATTERN =
-          Pattern.compile(
-              "(?:module)" // key word
-                  + "\\s+([\\w.]+)" // module name
-                  + "\\s+\\{"); // end marker
-      private static final Pattern MODULE_REQUIRES_PATTERN =
-          Pattern.compile(
-              "(?:requires)" // key word
-                  + "(?:\\s+[\\w.]+)?" // optional modifiers
-                  + "\\s+([\\w.]+)" // module name
-                  + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
-                  + ";"); // end marker
 
       private final Set<String> modules;
       final Map<String, Set<Version>> requires;
