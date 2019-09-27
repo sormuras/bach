@@ -34,6 +34,7 @@ class Merger {
       List.of(
           "Command",
           "Project",
+          "Modules",
           "Jigsaw",
           "Hydra",
           "Resolver",
