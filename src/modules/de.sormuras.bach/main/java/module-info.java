@@ -18,11 +18,10 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
 
-  requires java.compiler;
-  requires java.net.http;
-  requires static org.junit.platform.console;
+  requires java.compiler; // for javax.lang.model.SourceVersion and friends
+  requires java.net.http; // for downloading 3rd-party modules
 
-  uses java.util.spi.ToolProvider;
+  uses java.util.spi.ToolProvider; // running 'javac', 'jar', and other foundation tools
 
   provides java.util.spi.ToolProvider with
       de.sormuras.bach.BachToolProvider;
