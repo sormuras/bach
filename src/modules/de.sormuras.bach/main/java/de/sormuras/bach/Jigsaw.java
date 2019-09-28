@@ -71,11 +71,6 @@ public /*STATIC*/ class Jigsaw {
 
     if (bach.verbose()) {
       bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
-      bach.run(
-          new Command("jdeps")
-              .add("--module-path", project.modulePaths(target))
-              .add("--multi-release", "BASE")
-              .add("--check", descriptor.name()));
     }
   }
 
