@@ -71,10 +71,12 @@ public /*STATIC*/ class Hydra {
     var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
     var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
     if (Util.isModuleInfo(source.resolve("module-info.java"))) {
-      javac.add("-d", destination);
-      javac.add("--module-version", project.version);
-      javac.add("--module-path", project.modulePaths(target));
-      javac.add("--module-source-path", realm.moduleSourcePath);
+      javac
+          .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
+          .add("-d", destination)
+          .add("--module-version", project.version)
+          .add("--module-path", project.modulePaths(target))
+          .add("--module-source-path", realm.moduleSourcePath);
       if (base != release) {
         javac.add("--patch-module", module + '=' + baseClasses);
       }

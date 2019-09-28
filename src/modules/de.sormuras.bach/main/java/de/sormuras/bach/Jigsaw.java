@@ -41,6 +41,7 @@ public /*STATIC*/ class Jigsaw {
     bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
     bach.run(
         new Command("javac")
+            .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
             .add("-d", classes)
             .addIff(realm.preview, "--enable-preview")
             .addIff(realm.release != 0, "--release", realm.release)

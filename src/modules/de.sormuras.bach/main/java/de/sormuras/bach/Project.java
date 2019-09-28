@@ -153,7 +153,7 @@ public /*STATIC*/ class Project {
       this(
           List.of(lib),
           UnmappedModuleException::throwForURI,
-          __ -> URI.create("https://repo1.maven.org/maven2"),
+          __ -> URI.create(Property.MAVEN_REPOSITORY.get()),
           UnmappedModuleException::throwForString,
           UnmappedModuleException::throwForString);
     }
