@@ -101,15 +101,12 @@ public /*STATIC*/ class Hydra {
 
   private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
     var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-    var module = unit.info.descriptor().name();
-    var version = unit.info.descriptor().version();
-    var file = module + "-" + version.orElse(project.version);
-    var modularJar = Util.treeCreate(target.modules).resolve(file + ".jar");
     var base = unit.releases.get(releases.pop()).getFileName();
+    var module = unit.info.descriptor().name();
     var jar =
         new Command("jar")
             .add("--create")
-            .add("--file", modularJar)
+            .add("--file", Util.treeCreate(target.modules).resolve(target.file(unit, ".jar")))
             .addIff(bach.verbose(), "--verbose")
             .add("-C", classes.resolve(base).resolve(module))
             .add(".")
@@ -127,19 +124,16 @@ public /*STATIC*/ class Hydra {
     }
     bach.run(jar);
     if (bach.verbose()) {
-      bach.run(new Command("jar", "--describe-module", "--file", modularJar));
+      bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
     }
   }
 
   private void jarSources(Project.MultiReleaseUnit unit) {
     var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
-    var module = unit.info.descriptor().name();
-    var version = unit.info.descriptor().version();
-    var file = module + "-" + version.orElse(project.version);
     var jar =
         new Command("jar")
             .add("--create")
-            .add("--file", target.directory.resolve(file + "-sources.jar"))
+            .add("--file", target.sourcesJar(unit))
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
             .add("-C", releases.removeFirst().getValue())

@@ -18,10 +18,12 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Project;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +97,12 @@ class TestProjectTests {
     }
     // bach.lines().forEach(System.out::println);
     bach.errors().forEach(System.err::println);
+
+    var target = project.target(main);
+    for (var unit : main.units.values()) {
+      assertTrue(Files.exists(target.modularJar(unit)), unit.info.toString());
+      assertTrue(Files.exists(target.sourcesJar(unit)), unit.info.toString());
+    }
   }
 
   @Test

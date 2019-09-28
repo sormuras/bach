@@ -69,24 +69,20 @@ public /*STATIC*/ class Jigsaw {
   }
 
   private void jarModule(Project.ModuleUnit unit, Path classes) {
-    var module = unit.info.descriptor().name();
-    var version = unit.info.descriptor().version();
-    var file = module + "-" + version.orElse(project.version);
-    var jar = Util.treeCreate(target.modules).resolve(file + ".jar");
-
+    var descriptor = unit.info.descriptor();
     bach.run(
         new Command("jar")
             .add("--create")
-            .add("--file", jar)
+            .add("--file", Util.treeCreate(target.modules).resolve(target.file(unit, ".jar")))
             .addIff(bach.verbose(), "--verbose")
-            .addIff("--module-version", version)
-            .addIff("--main-class", unit.info.descriptor().mainClass())
-            .add("-C", classes.resolve(module))
+            .addIff("--module-version", descriptor.version())
+            .addIff("--main-class", descriptor.mainClass())
+            .add("-C", classes.resolve(descriptor.name()))
             .add(".")
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
 
     if (bach.verbose()) {
-      bach.run(new Command("jar", "--describe-module", "--file", jar));
+      bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
       var runtimeModulePath = new ArrayList<>(List.of(target.modules));
       for (var other : realm.realms) {
         var otherTarget = project.target(other);
@@ -99,19 +95,15 @@ public /*STATIC*/ class Jigsaw {
           new Command("jdeps")
               .add("--module-path", runtimeModulePath)
               .add("--multi-release", "BASE")
-              .add("--check", module));
+              .add("--check", descriptor.name()));
     }
   }
 
   private void jarSources(Project.ModuleUnit unit) {
-    var module = unit.info.descriptor().name();
-    var version = unit.info.descriptor().version();
-    var file = module + "-" + version.orElse(project.version);
-
     bach.run(
         new Command("jar")
             .add("--create")
-            .add("--file", target.directory.resolve(file + "-sources.jar"))
+            .add("--file", target.sourcesJar(unit))
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
             .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
