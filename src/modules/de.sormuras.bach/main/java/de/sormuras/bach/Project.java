@@ -78,8 +78,45 @@ public /*STATIC*/ class Project {
     this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
   }
 
+  /** Collection of directories and other realm-specific assets. */
+  public class Target {
+    /** Associated realm. */
+    public final Realm realm;
+    /** Base target directory of the realm. */
+    public final Path directory;
+    /** Directory of modular JAR files. */
+    public final Path modules;
+
+    private Target(Realm realm) {
+      this.realm = realm;
+      this.directory = targetDirectory.resolve("realm").resolve(realm.name);
+      this.modules = directory.resolve("modules");
+    }
+
+    /** Return base file name for the passed module unit. */
+    public String file(ModuleUnit unit) {
+      var descriptor = unit.info.descriptor();
+      return descriptor.name() + "-" + descriptor.version().orElse(version);
+    }
+
+    /** Return file name for the passed module unit. */
+    public String file(ModuleUnit unit, String extension) {
+      return file(unit) + extension;
+    }
+
+    /** Return modular JAR file path for the passed module unit. */
+    public Path modularJar(ModuleUnit unit) {
+      return modules.resolve(file(unit, ".jar"));
+    }
+
+    /** Return sources JAR file path for the passed module unit. */
+    public Path sourcesJar(ModuleUnit unit) {
+      return directory.resolve(file(unit, "-sources.jar"));
+    }
+  }
+
   public Target target(Realm realm) {
-    return new Target(targetDirectory, realm);
+    return new Target(realm);
   }
 
   /** Manage external 3rd-party modules. */
@@ -213,17 +250,6 @@ public /*STATIC*/ class Project {
       this.modules = Map.copyOf(modules);
       this.units = Map.copyOf(units);
       this.realms = List.of(realms);
-    }
-  }
-
-  /** Collection of directories and other realm-specific assets. */
-  public static class Target {
-    public final Path directory;
-    public final Path modules;
-
-    private Target(Path projectTargetDirectory, Realm realm) {
-      this.directory = projectTargetDirectory.resolve("realm").resolve(realm.name);
-      this.modules = directory.resolve("modules");
     }
   }
 }
