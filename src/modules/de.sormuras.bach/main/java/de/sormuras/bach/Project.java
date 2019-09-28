@@ -91,7 +91,7 @@ public /*STATIC*/ class Project {
         paths.add(otherTarget.modules);
       }
     }
-    paths.addAll(library.modulePaths);
+    paths.addAll(Util.findExistingDirectories(library.modulePaths));
     return List.copyOf(paths);
   }
 
