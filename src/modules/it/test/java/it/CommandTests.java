@@ -9,6 +9,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 
 class CommandTests {
@@ -53,7 +55,9 @@ class CommandTests {
           "p",
           "q",
           "r",
-          "s"
+          "s",
+          "t",
+          "u"
         },
         new Command("noop")
             .addEach("a", "b")
@@ -69,6 +73,7 @@ class CommandTests {
             .addIff(false, args -> args.add("Z"))
             .addIff("p", Optional.of("q"))
             .addEach(List.of("r", "s"), Command::add)
+            .addEach(Stream.of("t", "u"))
             .toStringArray());
   }
 }

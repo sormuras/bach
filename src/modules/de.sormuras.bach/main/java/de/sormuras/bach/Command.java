@@ -78,6 +78,12 @@ public /*STATIC*/ class Command {
     return this;
   }
 
+  /** Add all arguments by invoking {@link #add(Object)} for each element. */
+  public Command addEach(Stream<?> arguments) {
+    arguments.forEach(this::add);
+    return this;
+  }
+
   /** Add all arguments by delegating to the passed visitor for each element. */
   public <T> Command addEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
     arguments.forEach(argument -> visitor.accept(this, argument));
