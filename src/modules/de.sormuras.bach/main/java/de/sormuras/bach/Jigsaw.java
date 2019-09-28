@@ -69,8 +69,8 @@ public /*STATIC*/ class Jigsaw {
   }
 
   private void jarModule(Project.ModuleUnit unit, Path classes) {
-    var module = unit.descriptor.name();
-    var version = unit.descriptor.version();
+    var module = unit.info.descriptor().name();
+    var version = unit.info.descriptor().version();
     var file = module + "-" + version.orElse(project.version);
     var jar = Util.treeCreate(target.modules).resolve(file + ".jar");
 
@@ -80,7 +80,7 @@ public /*STATIC*/ class Jigsaw {
             .add("--file", jar)
             .addIff(bach.verbose(), "--verbose")
             .addIff("--module-version", version)
-            .addIff("--main-class", unit.descriptor.mainClass())
+            .addIff("--main-class", unit.info.descriptor().mainClass())
             .add("-C", classes.resolve(module))
             .add(".")
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
@@ -104,8 +104,9 @@ public /*STATIC*/ class Jigsaw {
   }
 
   private void jarSources(Project.ModuleUnit unit) {
-    var version = unit.descriptor.version();
-    var file = unit.descriptor.name() + "-" + version.orElse(project.version);
+    var module = unit.info.descriptor().name();
+    var version = unit.info.descriptor().version();
+    var file = module + "-" + version.orElse(project.version);
 
     bach.run(
         new Command("jar")

@@ -63,7 +63,7 @@ public /*STATIC*/ class Hydra {
   }
 
   private void compileRelease(Project.MultiReleaseUnit unit, int base, int release, Path classes) {
-    var module = unit.descriptor.name();
+    var module = unit.info.descriptor().name();
     var source = unit.releases.get(release);
     var destination = classes.resolve(source.getFileName());
     var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
@@ -101,8 +101,8 @@ public /*STATIC*/ class Hydra {
 
   private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
     var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-    var module = unit.descriptor.name();
-    var version = unit.descriptor.version();
+    var module = unit.info.descriptor().name();
+    var version = unit.info.descriptor().version();
     var file = module + "-" + version.orElse(project.version);
     var modularJar = Util.treeCreate(target.modules).resolve(file + ".jar");
     var base = unit.releases.get(releases.pop()).getFileName();
@@ -133,8 +133,8 @@ public /*STATIC*/ class Hydra {
 
   private void jarSources(Project.MultiReleaseUnit unit) {
     var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
-    var module = unit.descriptor.name();
-    var version = unit.descriptor.version();
+    var module = unit.info.descriptor().name();
+    var version = unit.info.descriptor().version();
     var file = module + "-" + version.orElse(project.version);
     var jar =
         new Command("jar")

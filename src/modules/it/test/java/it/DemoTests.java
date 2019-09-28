@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import de.sormuras.bach.Project;
 import java.io.File;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,13 +48,15 @@ class DemoTests {
             Map.of(
                 "de.sormuras.bach.demo",
                 new Project.ModuleUnit(
-                    Path.of("demo/src/de.sormuras.bach.demo/main/java/module-info.java"),
+                    Project.ModuleInfoReference.of(
+                        Path.of("demo/src/de.sormuras.bach.demo/main/java/module-info.java")),
                     List.of(Path.of("demo/src/de.sormuras.bach.demo/main/java")),
-                    List.of(), // resources
-                    ModuleDescriptor.newOpenModule("de.sormuras.bach.demo").build()),
+                    List.of()),
                 "de.sormuras.bach.demo.multi",
                 new Project.MultiReleaseUnit(
-                    Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-9/module-info.java"),
+                    Project.ModuleInfoReference.of(
+                        Path.of(
+                            "demo/src/de.sormuras.bach.demo.multi/main/java-9/module-info.java")),
                     9,
                     Map.of(
                         8,
@@ -64,8 +65,7 @@ class DemoTests {
                         Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-9"),
                         11,
                         Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-11")),
-                    List.of(), // resources
-                    ModuleDescriptor.newModule("de.sormuras.bach.demo.multi").build())));
+                    List.of())));
 
     var test =
         new Project.Realm(
@@ -80,12 +80,11 @@ class DemoTests {
             Map.of(
                 "integration",
                 new Project.ModuleUnit(
-                    Path.of("demo/src/integration/test/java/module-info.java"),
+                    Project.ModuleInfoReference.of(
+                        Path.of("demo/src/integration/test/java/module-info.java")),
                     List.of(Path.of("demo/src/integration/test/java")),
-                    List.of(), // resources
-                    ModuleDescriptor.newOpenModule("integration")
-                        .mainClass("integration.Main")
-                        .build())),
+                    List.of() // resources
+                    )),
             main);
 
     var library = new Project.Library(Path.of("demo/lib"));

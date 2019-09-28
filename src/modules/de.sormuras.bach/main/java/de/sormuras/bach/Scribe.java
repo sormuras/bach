@@ -56,7 +56,7 @@ public /*STATIC*/ class Scribe {
     for (var module : realm.modules.getOrDefault("hydra", List.of())) {
       var unit = (Project.MultiReleaseUnit) realm.units.get(module);
       var base = unit.sources.get(0);
-      if (!unit.info.startsWith(base)) {
+      if (!unit.info.path.startsWith(base)) {
         javadoc.add("--patch-module", module + "=" + base);
       }
     }

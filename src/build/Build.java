@@ -52,10 +52,10 @@ public class Build {
         Map.of(
             "de.sormuras.bach",
             new Bach.Project.ModuleUnit(
-                Path.of("src/modules/de.sormuras.bach/main/java/module-info.java"),
+                Bach.Project.ModuleInfoReference.of(
+                    Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
-                List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
-                ModuleDescriptor.newModule("de.sormuras.bach").build())));
+                List.of(Path.of("src/modules/de.sormuras.bach/main/resources")))));
   }
 
   private static Bach.Project.Realm test(Bach.Project.Realm main) {
@@ -68,10 +68,10 @@ public class Build {
         Map.of(
             "it",
             new Bach.Project.ModuleUnit(
-                Path.of("src/modules/it/test/java/module-info.java"),
+                Bach.Project.ModuleInfoReference.of(
+                    Path.of("src/modules/it/test/java/module-info.java")),
                 List.of(Path.of("src/modules/it/test/java")),
-                List.of(Path.of("src/modules/it/test/resources")),
-                ModuleDescriptor.newModule("it").build())),
-                main);
+                List.of(Path.of("src/modules/it/test/resources")))),
+        main);
   }
 }

@@ -17,9 +17,14 @@
 
 package de.sormuras.bach;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -113,23 +118,48 @@ public /*STATIC*/ class Project {
     }
   }
 
+  /** Source-based module reference. */
+  public static class ModuleInfoReference extends ModuleReference {
+
+    /** Module compilation unit parser. */
+    public static ModuleInfoReference of(Path path) {
+      if (!Util.isModuleInfo(path)) {
+        throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
+      }
+      try {
+        return new ModuleInfoReference(Modules.describe(Files.readString(path)), path);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Reading module declaration failed: " + path, e);
+      }
+    }
+
+    /** Path to the backing {@code module-info.java} file. */
+    public final Path path;
+
+    private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
+      super(descriptor, path.toUri());
+      this.path = path;
+    }
+
+    @Override
+    public ModuleReader open() {
+      throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
+    }
+  }
+
   /** Java module source unit. */
   public static class ModuleUnit {
-    /** Path to the backing {@code module-info.java} file. */
-    public final Path info;
+    /** Source-based module reference. */
+    public final ModuleInfoReference info;
     /** Paths to the source directories. */
     public final List<Path> sources;
     /** Paths to the resource directories. */
     public final List<Path> resources;
-    /** Associated module descriptor, normally parsed from module {@link #info} file. */
-    public final ModuleDescriptor descriptor;
 
-    public ModuleUnit(
-        Path info, List<Path> sources, List<Path> resources, ModuleDescriptor descriptor) {
+    public ModuleUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
       this.info = info;
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
-      this.descriptor = descriptor;
     }
   }
 
@@ -141,12 +171,11 @@ public /*STATIC*/ class Project {
     public final int copyModuleDescriptorToRootRelease;
 
     public MultiReleaseUnit(
-        Path info,
+        ModuleInfoReference info,
         int copyModuleDescriptorToRootRelease,
         Map<Integer, Path> releases,
-        List<Path> resources,
-        ModuleDescriptor descriptor) {
-      super(info, List.copyOf(new TreeMap<>(releases).values()), resources, descriptor);
+        List<Path> resources) {
+      super(info, List.copyOf(new TreeMap<>(releases).values()), resources);
       this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
       this.releases = releases;
     }

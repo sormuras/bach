@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-27T21:07:14.926457400Z
+// THIS FILE WAS GENERATED ON 2019-09-28T02:58:19.407296Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -439,23 +439,48 @@ public class Bach {
       }
     }
 
+    /** Source-based module reference. */
+    public static class ModuleInfoReference extends ModuleReference {
+
+      /** Module compilation unit parser. */
+      public static ModuleInfoReference of(Path path) {
+        if (!Util.isModuleInfo(path)) {
+          throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
+        }
+        try {
+          return new ModuleInfoReference(Modules.describe(Files.readString(path)), path);
+        } catch (IOException e) {
+          throw new UncheckedIOException("Reading module declaration failed: " + path, e);
+        }
+      }
+
+      /** Path to the backing {@code module-info.java} file. */
+      public final Path path;
+
+      private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
+        super(descriptor, path.toUri());
+        this.path = path;
+      }
+
+      @Override
+      public ModuleReader open() {
+        throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
+      }
+    }
+
     /** Java module source unit. */
     public static class ModuleUnit {
-      /** Path to the backing {@code module-info.java} file. */
-      public final Path info;
+      /** Source-based module reference. */
+      public final ModuleInfoReference info;
       /** Paths to the source directories. */
       public final List<Path> sources;
       /** Paths to the resource directories. */
       public final List<Path> resources;
-      /** Associated module descriptor, normally parsed from module {@link #info} file. */
-      public final ModuleDescriptor descriptor;
 
-      public ModuleUnit(
-          Path info, List<Path> sources, List<Path> resources, ModuleDescriptor descriptor) {
+      public ModuleUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
-        this.descriptor = descriptor;
       }
     }
 
@@ -467,12 +492,11 @@ public class Bach {
       public final int copyModuleDescriptorToRootRelease;
 
       public MultiReleaseUnit(
-          Path info,
+          ModuleInfoReference info,
           int copyModuleDescriptorToRootRelease,
           Map<Integer, Path> releases,
-          List<Path> resources,
-          ModuleDescriptor descriptor) {
-        super(info, List.copyOf(new TreeMap<>(releases).values()), resources, descriptor);
+          List<Path> resources) {
+        super(info, List.copyOf(new TreeMap<>(releases).values()), resources);
         this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
         this.releases = releases;
       }
@@ -552,32 +576,9 @@ public class Bach {
                 + "\\s+([\\w.,\\s]+)" // comma separated list of type names
                 + "\\s*;"); // end marker
 
-    /** Source-based module reference. */
-    public static class ModuleInfoReference extends ModuleReference {
 
-      private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
-        super(descriptor, path.toUri());
-      }
-
-      @Override
-      public ModuleReader open() {
-        throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
-      }
-    }
 
     private Modules() {}
-
-    /** Module compilation unit parser. */
-    public static ModuleInfoReference parse(Path path) {
-      if (!Util.isModuleInfo(path)) {
-        throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
-      }
-      try {
-        return new ModuleInfoReference(describe(Files.readString(path)), path);
-      } catch (IOException e) {
-        throw new UncheckedIOException("Reading module declaration failed: " + path, e);
-      }
-    }
 
     /** Module descriptor parser. */
     public static ModuleDescriptor describe(String source) {
@@ -659,8 +660,8 @@ public class Bach {
     }
 
     private void jarModule(Project.ModuleUnit unit, Path classes) {
-      var module = unit.descriptor.name();
-      var version = unit.descriptor.version();
+      var module = unit.info.descriptor().name();
+      var version = unit.info.descriptor().version();
       var file = module + "-" + version.orElse(project.version);
       var jar = Util.treeCreate(target.modules).resolve(file + ".jar");
 
@@ -670,7 +671,7 @@ public class Bach {
               .add("--file", jar)
               .addIff(bach.verbose(), "--verbose")
               .addIff("--module-version", version)
-              .addIff("--main-class", unit.descriptor.mainClass())
+              .addIff("--main-class", unit.info.descriptor().mainClass())
               .add("-C", classes.resolve(module))
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
@@ -694,8 +695,9 @@ public class Bach {
     }
 
     private void jarSources(Project.ModuleUnit unit) {
-      var version = unit.descriptor.version();
-      var file = unit.descriptor.name() + "-" + version.orElse(project.version);
+      var module = unit.info.descriptor().name();
+      var version = unit.info.descriptor().version();
+      var file = module + "-" + version.orElse(project.version);
 
       bach.run(
           new Command("jar")
@@ -744,7 +746,7 @@ public class Bach {
     }
 
     private void compileRelease(Project.MultiReleaseUnit unit, int base, int release, Path classes) {
-      var module = unit.descriptor.name();
+      var module = unit.info.descriptor().name();
       var source = unit.releases.get(release);
       var destination = classes.resolve(source.getFileName());
       var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
@@ -782,8 +784,8 @@ public class Bach {
 
     private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
       var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-      var module = unit.descriptor.name();
-      var version = unit.descriptor.version();
+      var module = unit.info.descriptor().name();
+      var version = unit.info.descriptor().version();
       var file = module + "-" + version.orElse(project.version);
       var modularJar = Util.treeCreate(target.modules).resolve(file + ".jar");
       var base = unit.releases.get(releases.pop()).getFileName();
@@ -814,8 +816,8 @@ public class Bach {
 
     private void jarSources(Project.MultiReleaseUnit unit) {
       var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
-      var module = unit.descriptor.name();
-      var version = unit.descriptor.version();
+      var module = unit.info.descriptor().name();
+      var version = unit.info.descriptor().version();
       var file = module + "-" + version.orElse(project.version);
       var jar =
           new Command("jar")
@@ -920,7 +922,7 @@ public class Bach {
       var units = new ArrayList<Path>();
       for (var realm : project.realms) {
         for (var unit : realm.units.values()) {
-          units.add(unit.info);
+          units.add(unit.info.path);
         }
       }
       var sources = scan(units);
@@ -1138,7 +1140,7 @@ public class Bach {
       for (var module : realm.modules.getOrDefault("hydra", List.of())) {
         var unit = (Project.MultiReleaseUnit) realm.units.get(module);
         var base = unit.sources.get(0);
-        if (!unit.info.startsWith(base)) {
+        if (!unit.info.path.startsWith(base)) {
           javadoc.add("--patch-module", module + "=" + base);
         }
       }

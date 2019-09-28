@@ -17,14 +17,8 @@
 
 package de.sormuras.bach;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
-import java.lang.module.ModuleReader;
-import java.lang.module.ModuleReference;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -58,32 +52,9 @@ public /*STATIC*/ class Modules {
               + "\\s+([\\w.,\\s]+)" // comma separated list of type names
               + "\\s*;"); // end marker
 
-  /** Source-based module reference. */
-  public static class ModuleInfoReference extends ModuleReference {
 
-    private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
-      super(descriptor, path.toUri());
-    }
-
-    @Override
-    public ModuleReader open() {
-      throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
-    }
-  }
 
   private Modules() {}
-
-  /** Module compilation unit parser. */
-  public static ModuleInfoReference parse(Path path) {
-    if (!Util.isModuleInfo(path)) {
-      throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
-    }
-    try {
-      return new ModuleInfoReference(describe(Files.readString(path)), path);
-    } catch (IOException e) {
-      throw new UncheckedIOException("Reading module declaration failed: " + path, e);
-    }
-  }
 
   /** Module descriptor parser. */
   public static ModuleDescriptor describe(String source) {
