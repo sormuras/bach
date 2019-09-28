@@ -34,12 +34,14 @@ public /*STATIC*/ class Hydra {
   private final Project project;
   private final Project.Realm realm;
   private final Project.Target target;
+  private final Path classes;
 
   public Hydra(Bach bach, Project project, Project.Realm realm) {
     this.bach = bach;
     this.project = project;
     this.realm = realm;
     this.target = project.target(realm);
+    this.classes = target.directory.resolve("hydra").resolve("classes");
   }
 
   public void compile(Collection<String> modules) {
@@ -54,15 +56,15 @@ public /*STATIC*/ class Hydra {
     var sorted = new TreeSet<>(unit.releases.keySet());
     int base = sorted.first();
     bach.log("Base feature release number is: %d", base);
-    var classes = target.directory.resolve("hydra").resolve("classes");
+
     for (int release : sorted) {
-      compileRelease(unit, base, release, classes);
+      compileRelease(unit, base, release);
     }
-    jarModule(unit, classes);
+    jarModule(unit);
     jarSources(unit);
   }
 
-  private void compileRelease(Project.MultiReleaseUnit unit, int base, int release, Path classes) {
+  private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
     var module = unit.info.descriptor().name();
     var source = unit.releases.get(release);
     var destination = classes.resolve(source.getFileName());
@@ -71,7 +73,7 @@ public /*STATIC*/ class Hydra {
     if (Util.isModuleInfo(source.resolve("module-info.java"))) {
       javac.add("-d", destination);
       javac.add("--module-version", project.version);
-      javac.add("--module-path", project.library.modulePaths);
+      javac.add("--module-path", project.modulePaths(target));
       javac.add("--module-source-path", realm.moduleSourcePath);
       if (base != release) {
         javac.add("--patch-module", module + '=' + baseClasses);
@@ -99,7 +101,7 @@ public /*STATIC*/ class Hydra {
     bach.run(javac);
   }
 
-  private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
+  private void jarModule(Project.MultiReleaseUnit unit) {
     var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
     var base = unit.releases.get(releases.pop()).getFileName();
     var module = unit.info.descriptor().name();

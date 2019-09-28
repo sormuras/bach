@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T04:30:05.852544300Z
+// THIS FILE WAS GENERATED ON 2019-09-28T05:30:45.765337900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -399,6 +399,22 @@ public class Bach {
       this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
     }
 
+    /** Compute module path for the passed realm. */
+    public List<Path> modulePaths(Target target, Path... initialPaths) {
+      var paths = new ArrayList<>(List.of(initialPaths));
+      if (Files.isDirectory(target.modules)) {
+        paths.add(target.modules);
+      }
+      for (var other : target.realm.realms) {
+        var otherTarget = target(other);
+        if (Files.isDirectory(otherTarget.modules)) {
+          paths.add(otherTarget.modules);
+        }
+      }
+      paths.addAll(library.modulePaths);
+      return List.copyOf(paths);
+    }
+
     /** Collection of directories and other realm-specific assets. */
     public class Target {
       /** Associated realm. */
@@ -502,11 +518,6 @@ public class Bach {
       @Override
       public ModuleReader open() {
         throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
-      }
-
-      @Override
-      public String toString() {
-        return "ModuleInfoReference{" + "path=" + path + ' ' + "descriptor=" + descriptor() + '}';
       }
     }
 
@@ -652,45 +663,35 @@ public class Bach {
     private final Project project;
     private final Project.Realm realm;
     private final Project.Target target;
+    private final Path classes;
 
     public Jigsaw(Bach bach, Project project, Project.Realm realm) {
       this.bach = bach;
       this.project = project;
       this.realm = realm;
       this.target = project.target(realm);
+      this.classes = target.directory.resolve("jigsaw").resolve("classes");
     }
 
     public void compile(Collection<String> modules) {
       bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
-      var classes = target.directory.resolve("jigsaw").resolve("classes");
-      var modulePath = new ArrayList<Path>();
-      if (Files.isDirectory(target.modules)) {
-        modulePath.add(target.modules);
-      }
-      for (var other : realm.realms) {
-        var otherTarget = project.target(other);
-        if (Files.isDirectory(otherTarget.modules)) {
-          modulePath.add(otherTarget.modules);
-        }
-      }
-      modulePath.addAll(project.library.modulePaths);
       bach.run(
           new Command("javac")
               .add("-d", classes)
               .addIff(realm.preview, "--enable-preview")
               .addIff(realm.release != 0, "--release", realm.release)
-              .add("--module-path", modulePath)
+              .add("--module-path", project.modulePaths(target))
               .add("--module-source-path", realm.moduleSourcePath)
               .add("--module-version", project.version)
               .add("--module", String.join(",", modules)));
       for (var module : modules) {
         var unit = realm.units.get(module);
-        jarModule(unit, classes);
+        jarModule(unit);
         jarSources(unit);
       }
     }
 
-    private void jarModule(Project.ModuleUnit unit, Path classes) {
+    private void jarModule(Project.ModuleUnit unit) {
       var descriptor = unit.info.descriptor();
       bach.run(
           new Command("jar")
@@ -705,17 +706,9 @@ public class Bach {
 
       if (bach.verbose()) {
         bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
-        var runtimeModulePath = new ArrayList<>(List.of(target.modules));
-        for (var other : realm.realms) {
-          var otherTarget = project.target(other);
-          if (Files.isDirectory(otherTarget.modules)) {
-            runtimeModulePath.add(otherTarget.modules);
-          }
-        }
-        runtimeModulePath.addAll(project.library.modulePaths);
         bach.run(
             new Command("jdeps")
-                .add("--module-path", runtimeModulePath)
+                .add("--module-path", project.modulePaths(target))
                 .add("--multi-release", "BASE")
                 .add("--check", descriptor.name()));
       }
@@ -740,12 +733,14 @@ public class Bach {
     private final Project project;
     private final Project.Realm realm;
     private final Project.Target target;
+    private final Path classes;
 
     public Hydra(Bach bach, Project project, Project.Realm realm) {
       this.bach = bach;
       this.project = project;
       this.realm = realm;
       this.target = project.target(realm);
+      this.classes = target.directory.resolve("hydra").resolve("classes");
     }
 
     public void compile(Collection<String> modules) {
@@ -760,15 +755,15 @@ public class Bach {
       var sorted = new TreeSet<>(unit.releases.keySet());
       int base = sorted.first();
       bach.log("Base feature release number is: %d", base);
-      var classes = target.directory.resolve("hydra").resolve("classes");
+
       for (int release : sorted) {
-        compileRelease(unit, base, release, classes);
+        compileRelease(unit, base, release);
       }
-      jarModule(unit, classes);
+      jarModule(unit);
       jarSources(unit);
     }
 
-    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release, Path classes) {
+    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
       var module = unit.info.descriptor().name();
       var source = unit.releases.get(release);
       var destination = classes.resolve(source.getFileName());
@@ -777,7 +772,7 @@ public class Bach {
       if (Util.isModuleInfo(source.resolve("module-info.java"))) {
         javac.add("-d", destination);
         javac.add("--module-version", project.version);
-        javac.add("--module-path", project.library.modulePaths);
+        javac.add("--module-path", project.modulePaths(target));
         javac.add("--module-source-path", realm.moduleSourcePath);
         if (base != release) {
           javac.add("--patch-module", module + '=' + baseClasses);
@@ -805,7 +800,7 @@ public class Bach {
       bach.run(javac);
     }
 
-    private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
+    private void jarModule(Project.MultiReleaseUnit unit) {
       var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
       var base = unit.releases.get(releases.pop()).getFileName();
       var module = unit.info.descriptor().name();

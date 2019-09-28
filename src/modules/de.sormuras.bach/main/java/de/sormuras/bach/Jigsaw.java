@@ -17,11 +17,8 @@
 
 package de.sormuras.bach;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /*BODY*/
 public /*STATIC*/ class Jigsaw {
@@ -30,45 +27,35 @@ public /*STATIC*/ class Jigsaw {
   private final Project project;
   private final Project.Realm realm;
   private final Project.Target target;
+  private final Path classes;
 
   public Jigsaw(Bach bach, Project project, Project.Realm realm) {
     this.bach = bach;
     this.project = project;
     this.realm = realm;
     this.target = project.target(realm);
+    this.classes = target.directory.resolve("jigsaw").resolve("classes");
   }
 
   public void compile(Collection<String> modules) {
     bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
-    var classes = target.directory.resolve("jigsaw").resolve("classes");
-    var modulePath = new ArrayList<Path>();
-    if (Files.isDirectory(target.modules)) {
-      modulePath.add(target.modules);
-    }
-    for (var other : realm.realms) {
-      var otherTarget = project.target(other);
-      if (Files.isDirectory(otherTarget.modules)) {
-        modulePath.add(otherTarget.modules);
-      }
-    }
-    modulePath.addAll(project.library.modulePaths);
     bach.run(
         new Command("javac")
             .add("-d", classes)
             .addIff(realm.preview, "--enable-preview")
             .addIff(realm.release != 0, "--release", realm.release)
-            .add("--module-path", modulePath)
+            .add("--module-path", project.modulePaths(target))
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules)));
     for (var module : modules) {
       var unit = realm.units.get(module);
-      jarModule(unit, classes);
+      jarModule(unit);
       jarSources(unit);
     }
   }
 
-  private void jarModule(Project.ModuleUnit unit, Path classes) {
+  private void jarModule(Project.ModuleUnit unit) {
     var descriptor = unit.info.descriptor();
     bach.run(
         new Command("jar")
@@ -83,17 +70,9 @@ public /*STATIC*/ class Jigsaw {
 
     if (bach.verbose()) {
       bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
-      var runtimeModulePath = new ArrayList<>(List.of(target.modules));
-      for (var other : realm.realms) {
-        var otherTarget = project.target(other);
-        if (Files.isDirectory(otherTarget.modules)) {
-          runtimeModulePath.add(otherTarget.modules);
-        }
-      }
-      runtimeModulePath.addAll(project.library.modulePaths);
       bach.run(
           new Command("jdeps")
-              .add("--module-path", runtimeModulePath)
+              .add("--module-path", project.modulePaths(target))
               .add("--multi-release", "BASE")
               .add("--check", descriptor.name()));
     }

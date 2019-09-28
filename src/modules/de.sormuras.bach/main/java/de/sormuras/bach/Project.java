@@ -26,6 +26,7 @@ import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,6 +77,22 @@ public /*STATIC*/ class Project {
     this.name = Util.requireNonNull(name, "name");
     this.library = Util.requireNonNull(library, "library");
     this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
+  }
+
+  /** Compute module path for the passed realm. */
+  public List<Path> modulePaths(Target target, Path... initialPaths) {
+    var paths = new ArrayList<>(List.of(initialPaths));
+    if (Files.isDirectory(target.modules)) {
+      paths.add(target.modules);
+    }
+    for (var other : target.realm.realms) {
+      var otherTarget = target(other);
+      if (Files.isDirectory(otherTarget.modules)) {
+        paths.add(otherTarget.modules);
+      }
+    }
+    paths.addAll(library.modulePaths);
+    return List.copyOf(paths);
   }
 
   /** Collection of directories and other realm-specific assets. */
