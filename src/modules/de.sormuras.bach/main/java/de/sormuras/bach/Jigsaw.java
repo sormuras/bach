@@ -50,13 +50,13 @@ public /*STATIC*/ class Jigsaw {
             .add("--module-version", project.version)
             .add("--module", String.join(",", modules)));
     for (var module : modules) {
-      var unit = realm.units.get(module);
+      var unit = realm.unit(module).orElseThrow();
       jarModule(unit);
       jarSources(unit);
     }
   }
 
-  private void jarModule(Project.ModuleUnit unit) {
+  private void jarModule(Project.ModuleSourceUnit unit) {
     var descriptor = unit.info.descriptor();
     bach.run(
         new Command("jar")
@@ -74,7 +74,7 @@ public /*STATIC*/ class Jigsaw {
     }
   }
 
-  private void jarSources(Project.ModuleUnit unit) {
+  private void jarSources(Project.ModuleSourceUnit unit) {
     bach.run(
         new Command("jar")
             .add("--create")

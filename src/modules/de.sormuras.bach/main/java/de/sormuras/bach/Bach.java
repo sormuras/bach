@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
@@ -151,8 +152,9 @@ public class Bach {
 
     resolve();
 
-    if (project.realms.stream().map(u -> u.units.entrySet()).count() == 0) {
-      throw new AssertionError("No units declared in realm(s): " + project.realms);
+    var units = project.realms.stream().map(realm -> realm.units).mapToLong(Collection::size).sum();
+    if (units == 0) {
+      throw new AssertionError("No units declared: " + project.realms);
     }
 
     var realms = new ArrayDeque<>(project.realms);
@@ -172,11 +174,11 @@ public class Bach {
     if (realm.units.isEmpty()) {
       return;
     }
-    var hydras = realm.modules.getOrDefault("hydra", List.of());
+    var hydras = realm.names(Project.MultiReleaseUnit.class);
     if (!hydras.isEmpty()) {
       new Hydra(this, project, realm).compile(hydras);
     }
-    var jigsaws = realm.modules.getOrDefault("jigsaw", List.of());
+    var jigsaws = realm.names(Project.ModuleSourceUnit.class);
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
     }
@@ -190,7 +192,7 @@ public class Bach {
           new Command("jdeps")
               .add("--module-path", project.modulePaths(target))
               .add("--multi-release", "BASE")
-              .add("--check", String.join(",", realm.units.keySet())));
+              .add("--check", String.join(",", realm.names())));
     }
   }
 

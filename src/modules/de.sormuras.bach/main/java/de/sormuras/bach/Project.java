@@ -33,21 +33,25 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /*BODY*/
 /** Modular project model. */
 public /*STATIC*/ class Project {
 
   /** Create default project parsing the passed base directory. */
-  public static Project of(Path baseDirectory) {
-    var main = new Realm("main", false, 0, "src/*/main/java", Map.of(), Map.of());
-    var name = Optional.ofNullable(baseDirectory.toAbsolutePath().getFileName());
+  public static Project of(Path base) {
+    if (!Files.isDirectory(base)) {
+      throw new IllegalArgumentException("Expected a directory but got: " + base);
+    }
+    var main = new Realm("main", false, 0, "src/*/main/java", List.of());
+    var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
     return new Project(
-        baseDirectory,
-        baseDirectory.resolve("bin"),
+        base,
+        base.resolve("bin"),
         name.orElse(Path.of("project")).toString().toLowerCase(),
         Version.parse("0"),
-        new Library(baseDirectory.resolve("lib")),
+        new Library(base.resolve("lib")),
         List.of(main));
   }
 
@@ -111,23 +115,23 @@ public /*STATIC*/ class Project {
     }
 
     /** Return base file name for the passed module unit. */
-    public String file(ModuleUnit unit) {
+    public String file(ModuleSourceUnit unit) {
       var descriptor = unit.info.descriptor();
       return descriptor.name() + "-" + descriptor.version().orElse(version);
     }
 
     /** Return file name for the passed module unit. */
-    public String file(ModuleUnit unit, String extension) {
+    public String file(ModuleSourceUnit unit, String extension) {
       return file(unit) + extension;
     }
 
     /** Return modular JAR file path for the passed module unit. */
-    public Path modularJar(ModuleUnit unit) {
+    public Path modularJar(ModuleSourceUnit unit) {
       return modules.resolve(file(unit, ".jar"));
     }
 
     /** Return sources JAR file path for the passed module unit. */
-    public Path sourcesJar(ModuleUnit unit) {
+    public Path sourcesJar(ModuleSourceUnit unit) {
       return directory.resolve(file(unit, "-sources.jar"));
     }
   }
@@ -202,7 +206,7 @@ public /*STATIC*/ class Project {
   }
 
   /** Java module source unit. */
-  public static class ModuleUnit {
+  public static class ModuleSourceUnit {
     /** Source-based module reference. */
     public final ModuleInfoReference info;
     /** Paths to the source directories. */
@@ -210,15 +214,19 @@ public /*STATIC*/ class Project {
     /** Paths to the resource directories. */
     public final List<Path> resources;
 
-    public ModuleUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
+    public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
       this.info = info;
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
     }
+
+    public String name() {
+      return info.descriptor().name();
+    }
   }
 
-  /** Multi-release module source unit */
-  public static class MultiReleaseUnit extends ModuleUnit {
+  /** Multi-release module source unit. */
+  public static class MultiReleaseUnit extends ModuleSourceUnit {
     /** Feature release number to source path map. */
     public final Map<Integer, Path> releases;
     /** Copy this module descriptor to the root of the generated modular jar. */
@@ -246,9 +254,7 @@ public /*STATIC*/ class Project {
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
     /** Map of all declared module source unit. */
-    public final Map<String, ModuleUnit> units;
-    /** Map of compiler-specific module names. */
-    public final Map<String, List<String>> modules;
+    public final List<ModuleSourceUnit> units;
     /** List of required realms. */
     public final List<Realm> realms;
 
@@ -257,16 +263,38 @@ public /*STATIC*/ class Project {
         boolean preview,
         int release,
         String moduleSourcePath,
-        Map<String, List<String>> modules,
-        Map<String, ModuleUnit> units,
+        List<ModuleSourceUnit> units,
         Realm... realms) {
       this.name = name;
       this.preview = preview;
       this.release = release;
       this.moduleSourcePath = moduleSourcePath;
-      this.modules = Map.copyOf(modules);
-      this.units = Map.copyOf(units);
+      this.units = units;
       this.realms = List.of(realms);
+    }
+
+    Optional<ModuleSourceUnit> unit(String name) {
+      return units.stream().filter(unit -> unit.name().equals(name)).findAny();
+    }
+
+    /** Names of all modules declared in this realm. */
+    List<String> names() {
+      return units.stream().map(Project.ModuleSourceUnit::name).collect(Collectors.toList());
+    }
+
+    /** Names of modules declared in this realm of the passed type. */
+    List<String> names(Class<? extends ModuleSourceUnit> type) {
+      return units.stream()
+          .filter(unit -> type.equals(unit.getClass()))
+          .map(Project.ModuleSourceUnit::name)
+          .collect(Collectors.toList());
+    }
+
+    public <T extends ModuleSourceUnit> List<T> units(Class<T> type) {
+      return units.stream()
+          .filter(unit -> type.equals(unit.getClass()))
+          .map(type::cast)
+          .collect(Collectors.toList());
     }
   }
 }

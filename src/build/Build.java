@@ -20,7 +20,6 @@ import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 /** Use {@code Bach.java} to build {@code de.sormuras.bach} module. */
 public class Build {
@@ -48,10 +47,8 @@ public class Build {
         false,
         11,
         String.join(File.separator, "src", "modules", "*", "main", "java"),
-        Map.of("jigsaw", List.of("de.sormuras.bach")),
-        Map.of(
-            "de.sormuras.bach",
-            new Bach.Project.ModuleUnit(
+        List.of(
+            new Bach.Project.ModuleSourceUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
@@ -64,10 +61,8 @@ public class Build {
         true,
         Runtime.version().feature(),
         String.join(File.separator, "src", "modules", "*", "test", "java"),
-        Map.of("jigsaw", List.of("it")),
-        Map.of(
-            "it",
-            new Bach.Project.ModuleUnit(
+        List.of(
+            new Bach.Project.ModuleSourceUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/it/test/java/module-info.java")),
                 List.of(Path.of("src/modules/it/test/java")),

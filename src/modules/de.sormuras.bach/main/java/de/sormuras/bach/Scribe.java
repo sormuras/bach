@@ -17,10 +17,6 @@
 
 package de.sormuras.bach;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.TreeSet;
-
 /*BODY*/
 /** Create API documentation. */
 public /*STATIC*/ class Scribe {
@@ -38,10 +34,10 @@ public /*STATIC*/ class Scribe {
   }
 
   public void document() {
-    document(new TreeSet<>(realm.units.keySet()));
+    document(realm.names());
   }
 
-  public void document(Collection<String> modules) {
+  public void document(Iterable<String> modules) {
     bach.log("Compiling %s realm's documentation: %s", realm.name, modules);
     var destination = target.directory.resolve("javadoc");
     var javadoc =
@@ -53,11 +49,10 @@ public /*STATIC*/ class Scribe {
             .add("--module-path", project.library.modulePaths)
             .add("--module-source-path", realm.moduleSourcePath);
 
-    for (var module : realm.modules.getOrDefault("hydra", List.of())) {
-      var unit = (Project.MultiReleaseUnit) realm.units.get(module);
+    for (var unit : realm.units(Project.MultiReleaseUnit.class)) {
       var base = unit.sources.get(0);
       if (!unit.info.path.startsWith(base)) {
-        javadoc.add("--patch-module", module + "=" + base);
+        javadoc.add("--patch-module", unit.name() + "=" + base);
       }
     }
 

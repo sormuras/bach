@@ -127,7 +127,7 @@ public /*STATIC*/ class Resolver {
 
     var units = new ArrayList<Path>();
     for (var realm : project.realms) {
-      for (var unit : realm.units.values()) {
+      for (var unit : realm.units) {
         units.add(unit.info.path);
       }
     }

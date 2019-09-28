@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T12:36:56.293155800Z
+// THIS FILE WAS GENERATED ON 2019-09-28T18:20:34.401972800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -194,8 +194,9 @@ public class Bach {
 
     resolve();
 
-    if (project.realms.stream().map(u -> u.units.entrySet()).count() == 0) {
-      throw new AssertionError("No units declared in realm(s): " + project.realms);
+    var units = project.realms.stream().map(realm -> realm.units).mapToLong(Collection::size).sum();
+    if (units == 0) {
+      throw new AssertionError("No units declared: " + project.realms);
     }
 
     var realms = new ArrayDeque<>(project.realms);
@@ -215,16 +216,17 @@ public class Bach {
     if (realm.units.isEmpty()) {
       return;
     }
-    var hydras = realm.modules.getOrDefault("hydra", List.of());
+    var hydras = realm.names(Project.MultiReleaseUnit.class);
     if (!hydras.isEmpty()) {
       new Hydra(this, project, realm).compile(hydras);
     }
-    var jigsaws = realm.modules.getOrDefault("jigsaw", List.of());
+    var jigsaws = realm.names(Project.ModuleSourceUnit.class);
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
     }
   }
 
+  /** Print summary. */
   public void summary(Project.Realm realm) {
     var target = project.target(realm);
     if (verbose) {
@@ -232,7 +234,7 @@ public class Bach {
           new Command("jdeps")
               .add("--module-path", project.modulePaths(target))
               .add("--multi-release", "BASE")
-              .add("--check", String.join(",", realm.units.keySet())));
+              .add("--check", String.join(",", realm.names())));
     }
   }
 
@@ -421,15 +423,18 @@ public class Bach {
   public static class Project {
 
     /** Create default project parsing the passed base directory. */
-    public static Project of(Path baseDirectory) {
-      var main = new Realm("main", false, 0, "src/*/main/java", Map.of(), Map.of());
-      var name = Optional.ofNullable(baseDirectory.toAbsolutePath().getFileName());
+    public static Project of(Path base) {
+      if (!Files.isDirectory(base)) {
+        throw new IllegalArgumentException("Expected a directory but got: " + base);
+      }
+      var main = new Realm("main", false, 0, "src/*/main/java", List.of());
+      var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
       return new Project(
-          baseDirectory,
-          baseDirectory.resolve("bin"),
+          base,
+          base.resolve("bin"),
           name.orElse(Path.of("project")).toString().toLowerCase(),
           Version.parse("0"),
-          new Library(baseDirectory.resolve("lib")),
+          new Library(base.resolve("lib")),
           List.of(main));
     }
 
@@ -493,23 +498,23 @@ public class Bach {
       }
 
       /** Return base file name for the passed module unit. */
-      public String file(ModuleUnit unit) {
+      public String file(ModuleSourceUnit unit) {
         var descriptor = unit.info.descriptor();
         return descriptor.name() + "-" + descriptor.version().orElse(version);
       }
 
       /** Return file name for the passed module unit. */
-      public String file(ModuleUnit unit, String extension) {
+      public String file(ModuleSourceUnit unit, String extension) {
         return file(unit) + extension;
       }
 
       /** Return modular JAR file path for the passed module unit. */
-      public Path modularJar(ModuleUnit unit) {
+      public Path modularJar(ModuleSourceUnit unit) {
         return modules.resolve(file(unit, ".jar"));
       }
 
       /** Return sources JAR file path for the passed module unit. */
-      public Path sourcesJar(ModuleUnit unit) {
+      public Path sourcesJar(ModuleSourceUnit unit) {
         return directory.resolve(file(unit, "-sources.jar"));
       }
     }
@@ -584,7 +589,7 @@ public class Bach {
     }
 
     /** Java module source unit. */
-    public static class ModuleUnit {
+    public static class ModuleSourceUnit {
       /** Source-based module reference. */
       public final ModuleInfoReference info;
       /** Paths to the source directories. */
@@ -592,15 +597,19 @@ public class Bach {
       /** Paths to the resource directories. */
       public final List<Path> resources;
 
-      public ModuleUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
+      public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
       }
+
+      public String name() {
+        return info.descriptor().name();
+      }
     }
 
-    /** Multi-release module source unit */
-    public static class MultiReleaseUnit extends ModuleUnit {
+    /** Multi-release module source unit. */
+    public static class MultiReleaseUnit extends ModuleSourceUnit {
       /** Feature release number to source path map. */
       public final Map<Integer, Path> releases;
       /** Copy this module descriptor to the root of the generated modular jar. */
@@ -628,9 +637,7 @@ public class Bach {
       /** Module source path specifies where to find input source files for multiple modules. */
       public final String moduleSourcePath;
       /** Map of all declared module source unit. */
-      public final Map<String, ModuleUnit> units;
-      /** Map of compiler-specific module names. */
-      public final Map<String, List<String>> modules;
+      public final List<ModuleSourceUnit> units;
       /** List of required realms. */
       public final List<Realm> realms;
 
@@ -639,16 +646,38 @@ public class Bach {
           boolean preview,
           int release,
           String moduleSourcePath,
-          Map<String, List<String>> modules,
-          Map<String, ModuleUnit> units,
+          List<ModuleSourceUnit> units,
           Realm... realms) {
         this.name = name;
         this.preview = preview;
         this.release = release;
         this.moduleSourcePath = moduleSourcePath;
-        this.modules = Map.copyOf(modules);
-        this.units = Map.copyOf(units);
+        this.units = units;
         this.realms = List.of(realms);
+      }
+
+      Optional<ModuleSourceUnit> unit(String name) {
+        return units.stream().filter(unit -> unit.name().equals(name)).findAny();
+      }
+
+      /** Names of all modules declared in this realm. */
+      List<String> names() {
+        return units.stream().map(Project.ModuleSourceUnit::name).collect(Collectors.toList());
+      }
+
+      /** Names of modules declared in this realm of the passed type. */
+      List<String> names(Class<? extends ModuleSourceUnit> type) {
+        return units.stream()
+            .filter(unit -> type.equals(unit.getClass()))
+            .map(Project.ModuleSourceUnit::name)
+            .collect(Collectors.toList());
+      }
+
+      public <T extends ModuleSourceUnit> List<T> units(Class<T> type) {
+        return units.stream()
+            .filter(unit -> type.equals(unit.getClass()))
+            .map(type::cast)
+            .collect(Collectors.toList());
       }
     }
   }
@@ -748,13 +777,13 @@ public class Bach {
               .add("--module-version", project.version)
               .add("--module", String.join(",", modules)));
       for (var module : modules) {
-        var unit = realm.units.get(module);
+        var unit = realm.unit(module).orElseThrow();
         jarModule(unit);
         jarSources(unit);
       }
     }
 
-    private void jarModule(Project.ModuleUnit unit) {
+    private void jarModule(Project.ModuleSourceUnit unit) {
       var descriptor = unit.info.descriptor();
       bach.run(
           new Command("jar")
@@ -772,7 +801,7 @@ public class Bach {
       }
     }
 
-    private void jarSources(Project.ModuleUnit unit) {
+    private void jarSources(Project.ModuleSourceUnit unit) {
       bach.run(
           new Command("jar")
               .add("--create")
@@ -804,7 +833,7 @@ public class Bach {
     public void compile(Collection<String> modules) {
       bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
       for (var module : modules) {
-        var unit = (Project.MultiReleaseUnit) realm.units.get(module);
+        var unit = (Project.MultiReleaseUnit) realm.unit(module).orElseThrow();
         compile(unit);
       }
     }
@@ -993,7 +1022,7 @@ public class Bach {
 
       var units = new ArrayList<Path>();
       for (var realm : project.realms) {
-        for (var unit : realm.units.values()) {
+        for (var unit : realm.units) {
           units.add(unit.info.path);
         }
       }
@@ -1194,10 +1223,10 @@ public class Bach {
     }
 
     public void document() {
-      document(new TreeSet<>(realm.units.keySet()));
+      document(realm.names());
     }
 
-    public void document(Collection<String> modules) {
+    public void document(Iterable<String> modules) {
       bach.log("Compiling %s realm's documentation: %s", realm.name, modules);
       var destination = target.directory.resolve("javadoc");
       var javadoc =
@@ -1209,11 +1238,10 @@ public class Bach {
               .add("--module-path", project.library.modulePaths)
               .add("--module-source-path", realm.moduleSourcePath);
 
-      for (var module : realm.modules.getOrDefault("hydra", List.of())) {
-        var unit = (Project.MultiReleaseUnit) realm.units.get(module);
+      for (var unit : realm.units(Project.MultiReleaseUnit.class)) {
         var base = unit.sources.get(0);
         if (!unit.info.path.startsWith(base)) {
-          javadoc.add("--patch-module", module + "=" + base);
+          javadoc.add("--patch-module", unit.name() + "=" + base);
         }
       }
 

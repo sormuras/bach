@@ -31,6 +31,8 @@ class DemoTests {
 
   @Test
   void build() {
+    var demo = Path.of("demo/src/de.sormuras.bach.demo/main/java");
+    var multi = Path.of("demo/src/de.sormuras.bach.demo.multi/main");
     var main =
         new Project.Realm(
             "main",
@@ -40,33 +42,21 @@ class DemoTests {
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "main", "java"),
                 String.join(File.separator, "demo", "src", "*", "main", "java-9")),
-            Map.of(
-                "hydra",
-                List.of("de.sormuras.bach.demo.multi"),
-                "jigsaw",
-                List.of("de.sormuras.bach.demo")),
-            Map.of(
-                "de.sormuras.bach.demo",
-                new Project.ModuleUnit(
-                    Project.ModuleInfoReference.of(
-                        Path.of("demo/src/de.sormuras.bach.demo/main/java/module-info.java")),
-                    List.of(Path.of("demo/src/de.sormuras.bach.demo/main/java")),
+            List.of(
+                new Project.ModuleSourceUnit(
+                    Project.ModuleInfoReference.of(demo.resolve("module-info.java")),
+                    List.of(demo),
                     List.of()),
-                "de.sormuras.bach.demo.multi",
                 new Project.MultiReleaseUnit(
-                    Project.ModuleInfoReference.of(
-                        Path.of(
-                            "demo/src/de.sormuras.bach.demo.multi/main/java-9/module-info.java")),
+                    Project.ModuleInfoReference.of(multi.resolve("java-9/module-info.java")),
                     9,
                     Map.of(
-                        8,
-                        Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-8"),
-                        9,
-                        Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-9"),
-                        11,
-                        Path.of("demo/src/de.sormuras.bach.demo.multi/main/java-11")),
+                        8, multi.resolve("java-8"),
+                        9, multi.resolve("java-9"),
+                        11, multi.resolve("java-11")),
                     List.of())));
 
+    var integration = Path.of("demo/src/integration/test/java");
     var test =
         new Project.Realm(
             "test",
@@ -76,15 +66,11 @@ class DemoTests {
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "test", "java"),
                 String.join(File.separator, "demo", "src", "*", "test", "module")),
-            Map.of("jigsaw", List.of("integration")),
-            Map.of(
-                "integration",
-                new Project.ModuleUnit(
-                    Project.ModuleInfoReference.of(
-                        Path.of("demo/src/integration/test/java/module-info.java")),
-                    List.of(Path.of("demo/src/integration/test/java")),
-                    List.of() // resources
-                    )),
+            List.of(
+                new Project.ModuleSourceUnit(
+                    Project.ModuleInfoReference.of(integration.resolve("module-info.java")),
+                    List.of(integration),
+                    List.of())),
             main);
 
     var library = new Project.Library(Path.of("demo/lib"));

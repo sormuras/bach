@@ -39,27 +39,26 @@ class TestProjectTests {
   void jigsawGreetings(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "jigsaw-greetings");
     var greetings =
-            new Project.ModuleUnit(
-                    Project.ModuleInfoReference.of(base.resolve("src/com.greetings/module-info.java")),
-                    List.of(base.resolve("src/com.greetings")),
-                    List.of());
+        new Project.ModuleSourceUnit(
+            Project.ModuleInfoReference.of(base.resolve("src/com.greetings/module-info.java")),
+            List.of(base.resolve("src/com.greetings")),
+            List.of());
     var main =
-            new Project.Realm(
-                    "main",
-                    false,
-                    0,
-                    String.join(File.separator, base.toString(), "src"),
-                    Map.of("jigsaw", List.of("com.greetings")),
-                    Map.of("com.greetings", greetings));
+        new Project.Realm(
+            "main",
+            false,
+            0,
+            String.join(File.separator, base.toString(), "src"),
+            List.of(greetings));
     var library = new Project.Library(temp.resolve("lib"));
     var project =
-            new Project(
-                    base,
-                    temp,
-                    "jigsaw-greetings",
-                    ModuleDescriptor.Version.parse("0"),
-                    library,
-                    List.of(main));
+        new Project(
+            base,
+            temp,
+            "jigsaw-greetings",
+            ModuleDescriptor.Version.parse("0"),
+            library,
+            List.of(main));
 
     var bach = new Probe(project);
     try {
@@ -77,32 +76,31 @@ class TestProjectTests {
   void jigsawWorld(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "jigsaw-world");
     var greetings =
-            new Project.ModuleUnit(
-                    Project.ModuleInfoReference.of(base.resolve("src/main/com.greetings/module-info.java")),
-                    List.of(base.resolve("src/main/com.greetings")),
-                    List.of());
+        new Project.ModuleSourceUnit(
+            Project.ModuleInfoReference.of(base.resolve("src/main/com.greetings/module-info.java")),
+            List.of(base.resolve("src/main/com.greetings")),
+            List.of());
     var astro =
-            new Project.ModuleUnit(
-                    Project.ModuleInfoReference.of(base.resolve("src/main/org.astro/module-info.java")),
-                    List.of(base.resolve("src/main/org.astro")),
-                    List.of());
+        new Project.ModuleSourceUnit(
+            Project.ModuleInfoReference.of(base.resolve("src/main/org.astro/module-info.java")),
+            List.of(base.resolve("src/main/org.astro")),
+            List.of());
     var main =
-            new Project.Realm(
-                    "main",
-                    false,
-                    0,
-                    String.join(File.separator, base.toString(), "src", "main"),
-                    Map.of("jigsaw", List.of("com.greetings", "org.astro")),
-                    Map.of("com.greetings", greetings, "org.astro", astro));
+        new Project.Realm(
+            "main",
+            false,
+            0,
+            String.join(File.separator, base.toString(), "src", "main"),
+            List.of(greetings, astro));
     var library = new Project.Library(temp.resolve("lib"));
     var project =
-            new Project(
-                    base,
-                    temp,
-                    "jigsaw-greetings",
-                    ModuleDescriptor.Version.parse("0"),
-                    library,
-                    List.of(main));
+        new Project(
+            base,
+            temp,
+            "jigsaw-greetings",
+            ModuleDescriptor.Version.parse("0"),
+            library,
+            List.of(main));
 
     var bach = new Probe(project);
     try {
@@ -129,7 +127,7 @@ class TestProjectTests {
                 11, base.resolve("src/a/main/java-11")),
             List.of());
     var b =
-        new Project.ModuleUnit(
+        new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/b/main/java/module-info.java")),
             List.of(base.resolve("src/b/main/java")),
             List.of());
@@ -144,7 +142,7 @@ class TestProjectTests {
                 11, base.resolve("src/c/main/java-11")),
             List.of());
     var d =
-        new Project.ModuleUnit(
+        new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/d/main/java/module-info.java")),
             List.of(base.resolve("src/d/main/java")),
             List.of());
@@ -157,8 +155,7 @@ class TestProjectTests {
                 File.pathSeparator,
                 String.join(File.separator, base.toString(), "src", "*", "main", "java"),
                 String.join(File.separator, base.toString(), "src", "*", "main", "java-9")),
-            Map.of("hydra", List.of("a", "c"), "jigsaw", List.of("b", "d")),
-            Map.of("a", a, "b", b, "c", c, "d", d));
+            List.of(a, b, c, d));
     var library = new Project.Library(temp);
     var project =
         new Project(
@@ -181,7 +178,7 @@ class TestProjectTests {
     bach.errors().forEach(System.err::println);
 
     var target = project.target(main);
-    for (var unit : main.units.values()) {
+    for (var unit : main.units) {
       assertTrue(Files.exists(target.modularJar(unit)), unit.info.toString());
       assertTrue(Files.exists(target.sourcesJar(unit)), unit.info.toString());
     }
@@ -191,7 +188,7 @@ class TestProjectTests {
   void requiresAsm(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "requires-asm");
     var a =
-        new Project.ModuleUnit(
+        new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/a/main/java/module-info.java")),
             List.of(base.resolve("src/a/main/java")),
             List.of());
@@ -206,8 +203,7 @@ class TestProjectTests {
             false,
             0,
             String.join(File.separator, base.toString(), "src", "*", "main", "java"),
-            Map.of("jigsaw", List.of("a")),
-            Map.of("a", a));
+            List.of(a));
     var library = new Project.Library(temp.resolve("lib"));
     var project =
         new Project(
