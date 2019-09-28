@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T05:30:45.765337900Z
+// THIS FILE WAS GENERATED ON 2019-09-28T08:32:40.469605400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -242,6 +242,52 @@ public class Bach {
     out.println(VERSION);
   }
 
+  /** Bach's property collection. */
+  enum Property {
+    //  /** Be verbose. */
+    //  DEBUG("ebug", "false"),
+
+    //  /** Name of the project. */
+    //  PROJECT_NAME("name", "Project"),
+    //  /** Version of the project (used for every module). */
+    //  PROJECT_VERSION("version", "0"),
+
+    //  /** Base directory of the project. */
+    //  BASE_DIRECTORY("base", ""),
+    //  /** Directory with 3rd-party modules, relative to {@link #BASE_DIRECTORY}. */
+    //  LIBRARY_DIRECTORY("library", "lib"),
+    //  /** Directory with modules sources, relative to {@link #BASE_DIRECTORY}. */
+    //  SOURCE_DIRECTORY("source", "src"),
+    //  /** Directory that contains generated binary assets, relative to {@link #BASE_DIRECTORY}. */
+    //  TARGET_DIRECTORY("target", "bin"),
+
+    /** Default Maven repository used for resolving missing modules. */
+    MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2"),
+
+    /** Options passed to all 'javac' calls. */
+    TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint");
+
+    private final String key;
+    private final String defaultValue;
+
+    Property(String key, String defaultValue) {
+      this.key = key;
+      this.defaultValue = defaultValue;
+    }
+
+    String getDefaultValue() {
+      return defaultValue;
+    }
+
+    String get() {
+      return get(defaultValue);
+    }
+
+    String get(String defaultValue) {
+      return System.getProperty(key, defaultValue);
+    }
+  }
+
   /** Command-line program argument list builder. */
   public static class Command {
 
@@ -286,6 +332,12 @@ public class Bach {
 
     /** Add all arguments by invoking {@link #add(Object)} for each element. */
     public Command addEach(Iterable<?> arguments) {
+      arguments.forEach(this::add);
+      return this;
+    }
+
+    /** Add all arguments by invoking {@link #add(Object)} for each element. */
+    public Command addEach(Stream<?> arguments) {
       arguments.forEach(this::add);
       return this;
     }
@@ -473,7 +525,7 @@ public class Bach {
         this(
             List.of(lib),
             UnmappedModuleException::throwForURI,
-            __ -> URI.create("https://repo1.maven.org/maven2"),
+            __ -> URI.create(Property.MAVEN_REPOSITORY.get()),
             UnmappedModuleException::throwForString,
             UnmappedModuleException::throwForString);
       }
@@ -677,6 +729,7 @@ public class Bach {
       bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
       bach.run(
           new Command("javac")
+              .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
               .add("-d", classes)
               .addIff(realm.preview, "--enable-preview")
               .addIff(realm.release != 0, "--release", realm.release)
@@ -770,10 +823,12 @@ public class Bach {
       var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
       var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
       if (Util.isModuleInfo(source.resolve("module-info.java"))) {
-        javac.add("-d", destination);
-        javac.add("--module-version", project.version);
-        javac.add("--module-path", project.modulePaths(target));
-        javac.add("--module-source-path", realm.moduleSourcePath);
+        javac
+            .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
+            .add("-d", destination)
+            .add("--module-version", project.version)
+            .add("--module-path", project.modulePaths(target))
+            .add("--module-source-path", realm.moduleSourcePath);
         if (base != release) {
           javac.add("--patch-module", module + '=' + baseClasses);
         }
