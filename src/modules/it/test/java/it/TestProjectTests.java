@@ -34,6 +34,88 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class TestProjectTests {
+
+  @Test
+  void jigsawGreetings(@TempDir Path temp) {
+    var base = Path.of("src", "test-project", "jigsaw-greetings");
+    var greetings =
+            new Project.ModuleUnit(
+                    Project.ModuleInfoReference.of(base.resolve("src/com.greetings/module-info.java")),
+                    List.of(base.resolve("src/com.greetings")),
+                    List.of());
+    var main =
+            new Project.Realm(
+                    "main",
+                    false,
+                    0,
+                    String.join(File.separator, base.toString(), "src"),
+                    Map.of("jigsaw", List.of("com.greetings")),
+                    Map.of("com.greetings", greetings));
+    var library = new Project.Library(temp.resolve("lib"));
+    var project =
+            new Project(
+                    base,
+                    temp,
+                    "jigsaw-greetings",
+                    ModuleDescriptor.Version.parse("0"),
+                    library,
+                    List.of(main));
+
+    var bach = new Probe(project);
+    try {
+      bach.build();
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      bach.errors().forEach(System.err::println);
+      Assertions.fail(t);
+    }
+    // bach.lines().forEach(System.out::println);
+    bach.errors().forEach(System.err::println);
+  }
+
+  @Test
+  void jigsawWorld(@TempDir Path temp) {
+    var base = Path.of("src", "test-project", "jigsaw-world");
+    var greetings =
+            new Project.ModuleUnit(
+                    Project.ModuleInfoReference.of(base.resolve("src/main/com.greetings/module-info.java")),
+                    List.of(base.resolve("src/main/com.greetings")),
+                    List.of());
+    var astro =
+            new Project.ModuleUnit(
+                    Project.ModuleInfoReference.of(base.resolve("src/main/org.astro/module-info.java")),
+                    List.of(base.resolve("src/main/org.astro")),
+                    List.of());
+    var main =
+            new Project.Realm(
+                    "main",
+                    false,
+                    0,
+                    String.join(File.separator, base.toString(), "src", "main"),
+                    Map.of("jigsaw", List.of("com.greetings", "org.astro")),
+                    Map.of("com.greetings", greetings, "org.astro", astro));
+    var library = new Project.Library(temp.resolve("lib"));
+    var project =
+            new Project(
+                    base,
+                    temp,
+                    "jigsaw-greetings",
+                    ModuleDescriptor.Version.parse("0"),
+                    library,
+                    List.of(main));
+
+    var bach = new Probe(project);
+    try {
+      bach.build();
+    } catch (Throwable t) {
+      bach.lines().forEach(System.out::println);
+      bach.errors().forEach(System.err::println);
+      Assertions.fail(t);
+    }
+    // bach.lines().forEach(System.out::println);
+    bach.errors().forEach(System.err::println);
+  }
+
   @Test
   void multiReleaseMultiModule(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "multi-release-multi-module");
