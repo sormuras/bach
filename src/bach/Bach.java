@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T02:58:19.407296Z
+// THIS FILE WAS GENERATED ON 2019-09-28T04:30:05.852544300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -399,8 +399,45 @@ public class Bach {
       this.realms = List.copyOf(Util.requireNonEmpty(realms, "realms"));
     }
 
+    /** Collection of directories and other realm-specific assets. */
+    public class Target {
+      /** Associated realm. */
+      public final Realm realm;
+      /** Base target directory of the realm. */
+      public final Path directory;
+      /** Directory of modular JAR files. */
+      public final Path modules;
+
+      private Target(Realm realm) {
+        this.realm = realm;
+        this.directory = targetDirectory.resolve("realm").resolve(realm.name);
+        this.modules = directory.resolve("modules");
+      }
+
+      /** Return base file name for the passed module unit. */
+      public String file(ModuleUnit unit) {
+        var descriptor = unit.info.descriptor();
+        return descriptor.name() + "-" + descriptor.version().orElse(version);
+      }
+
+      /** Return file name for the passed module unit. */
+      public String file(ModuleUnit unit, String extension) {
+        return file(unit) + extension;
+      }
+
+      /** Return modular JAR file path for the passed module unit. */
+      public Path modularJar(ModuleUnit unit) {
+        return modules.resolve(file(unit, ".jar"));
+      }
+
+      /** Return sources JAR file path for the passed module unit. */
+      public Path sourcesJar(ModuleUnit unit) {
+        return directory.resolve(file(unit, "-sources.jar"));
+      }
+    }
+
     public Target target(Realm realm) {
-      return new Target(targetDirectory, realm);
+      return new Target(realm);
     }
 
     /** Manage external 3rd-party modules. */
@@ -465,6 +502,11 @@ public class Bach {
       @Override
       public ModuleReader open() {
         throw new UnsupportedOperationException("Can't open a module-info.java file for reading");
+      }
+
+      @Override
+      public String toString() {
+        return "ModuleInfoReference{" + "path=" + path + ' ' + "descriptor=" + descriptor() + '}';
       }
     }
 
@@ -534,17 +576,6 @@ public class Bach {
         this.modules = Map.copyOf(modules);
         this.units = Map.copyOf(units);
         this.realms = List.of(realms);
-      }
-    }
-
-    /** Collection of directories and other realm-specific assets. */
-    public static class Target {
-      public final Path directory;
-      public final Path modules;
-
-      private Target(Path projectTargetDirectory, Realm realm) {
-        this.directory = projectTargetDirectory.resolve("realm").resolve(realm.name);
-        this.modules = directory.resolve("modules");
       }
     }
   }
@@ -660,24 +691,20 @@ public class Bach {
     }
 
     private void jarModule(Project.ModuleUnit unit, Path classes) {
-      var module = unit.info.descriptor().name();
-      var version = unit.info.descriptor().version();
-      var file = module + "-" + version.orElse(project.version);
-      var jar = Util.treeCreate(target.modules).resolve(file + ".jar");
-
+      var descriptor = unit.info.descriptor();
       bach.run(
           new Command("jar")
               .add("--create")
-              .add("--file", jar)
+              .add("--file", Util.treeCreate(target.modules).resolve(target.file(unit, ".jar")))
               .addIff(bach.verbose(), "--verbose")
-              .addIff("--module-version", version)
-              .addIff("--main-class", unit.info.descriptor().mainClass())
-              .add("-C", classes.resolve(module))
+              .addIff("--module-version", descriptor.version())
+              .addIff("--main-class", descriptor.mainClass())
+              .add("-C", classes.resolve(descriptor.name()))
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
 
       if (bach.verbose()) {
-        bach.run(new Command("jar", "--describe-module", "--file", jar));
+        bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
         var runtimeModulePath = new ArrayList<>(List.of(target.modules));
         for (var other : realm.realms) {
           var otherTarget = project.target(other);
@@ -690,19 +717,15 @@ public class Bach {
             new Command("jdeps")
                 .add("--module-path", runtimeModulePath)
                 .add("--multi-release", "BASE")
-                .add("--check", module));
+                .add("--check", descriptor.name()));
       }
     }
 
     private void jarSources(Project.ModuleUnit unit) {
-      var module = unit.info.descriptor().name();
-      var version = unit.info.descriptor().version();
-      var file = module + "-" + version.orElse(project.version);
-
       bach.run(
           new Command("jar")
               .add("--create")
-              .add("--file", target.directory.resolve(file + "-sources.jar"))
+              .add("--file", target.sourcesJar(unit))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
               .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
@@ -784,15 +807,12 @@ public class Bach {
 
     private void jarModule(Project.MultiReleaseUnit unit, Path classes) {
       var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-      var module = unit.info.descriptor().name();
-      var version = unit.info.descriptor().version();
-      var file = module + "-" + version.orElse(project.version);
-      var modularJar = Util.treeCreate(target.modules).resolve(file + ".jar");
       var base = unit.releases.get(releases.pop()).getFileName();
+      var module = unit.info.descriptor().name();
       var jar =
           new Command("jar")
               .add("--create")
-              .add("--file", modularJar)
+              .add("--file", Util.treeCreate(target.modules).resolve(target.file(unit, ".jar")))
               .addIff(bach.verbose(), "--verbose")
               .add("-C", classes.resolve(base).resolve(module))
               .add(".")
@@ -810,19 +830,16 @@ public class Bach {
       }
       bach.run(jar);
       if (bach.verbose()) {
-        bach.run(new Command("jar", "--describe-module", "--file", modularJar));
+        bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
       }
     }
 
     private void jarSources(Project.MultiReleaseUnit unit) {
       var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
-      var module = unit.info.descriptor().name();
-      var version = unit.info.descriptor().version();
-      var file = module + "-" + version.orElse(project.version);
       var jar =
           new Command("jar")
               .add("--create")
-              .add("--file", target.directory.resolve(file + "-sources.jar"))
+              .add("--file", target.sourcesJar(unit))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
               .add("-C", releases.removeFirst().getValue())
