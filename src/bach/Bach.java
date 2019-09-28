@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T08:32:40.469605400Z
+// THIS FILE WAS GENERATED ON 2019-09-28T12:36:56.293155800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -195,7 +195,7 @@ public class Bach {
     resolve();
 
     if (project.realms.stream().map(u -> u.units.entrySet()).count() == 0) {
-      throw new AssertionError("No units declared in %d realm(s): " + project.realms);
+      throw new AssertionError("No units declared in realm(s): " + project.realms);
     }
 
     var realms = new ArrayDeque<>(project.realms);
@@ -204,12 +204,11 @@ public class Bach {
     if (!main.units.isEmpty()) {
       new Scribe(this, project, main).document();
     }
-
-    for(var realm : realms) {
+    for (var realm : realms) {
       compile(realm);
     }
 
-    // summary(main);
+    summary(main);
   }
 
   private void compile(Project.Realm realm) {
@@ -223,6 +222,17 @@ public class Bach {
     var jigsaws = realm.modules.getOrDefault("jigsaw", List.of());
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
+    }
+  }
+
+  public void summary(Project.Realm realm) {
+    var target = project.target(realm);
+    if (verbose) {
+      run(
+          new Command("jdeps")
+              .add("--module-path", project.modulePaths(target))
+              .add("--multi-release", "BASE")
+              .add("--check", String.join(",", realm.units.keySet())));
     }
   }
 
@@ -463,7 +473,7 @@ public class Bach {
           paths.add(otherTarget.modules);
         }
       }
-      paths.addAll(library.modulePaths);
+      paths.addAll(Util.findExistingDirectories(library.modulePaths));
       return List.copyOf(paths);
     }
 
@@ -759,11 +769,6 @@ public class Bach {
 
       if (bach.verbose()) {
         bach.run(new Command("jar", "--describe-module", "--file", target.modularJar(unit)));
-        bach.run(
-            new Command("jdeps")
-                .add("--module-path", project.modulePaths(target))
-                .add("--multi-release", "BASE")
-                .add("--check", descriptor.name()));
       }
     }
 
