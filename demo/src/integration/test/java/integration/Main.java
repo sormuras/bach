@@ -5,11 +5,15 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectModul
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.spi.ToolProvider;
+
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 
-public class Main implements ToolProvider {
+public class Main implements ToolProvider, TestExecutionListener {
 
   public static void main(String... args) {
     var out = new PrintWriter(System.out, true);
@@ -24,15 +28,18 @@ public class Main implements ToolProvider {
     }
   }
 
+  private PrintWriter out, err;
   private final String moduleName = getClass().getModule().getName();
 
   @Override
   public String name() {
-    return moduleName;
+    return "test(" + moduleName + ")";
   }
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
+    this.out = out;
+    this.err = err;
     var arguments = List.of(args);
     out.printf("Running tests in: %s%n", arguments);
     var launcher = LauncherFactory.create();
@@ -40,7 +47,7 @@ public class Main implements ToolProvider {
     arguments.forEach(arg -> request.selectors(selectModule(arg)));
     var summaryGeneratingListener = new SummaryGeneratingListener();
 
-    launcher.execute(request.build(), summaryGeneratingListener);
+    launcher.execute(request.build(), this, summaryGeneratingListener);
 
     var summary = summaryGeneratingListener.getSummary();
     if (summary.getTotalFailureCount() != 0) {
@@ -54,5 +61,26 @@ public class Main implements ToolProvider {
     }
     summary.printTo(out);
     return 0;
+  }
+
+  @Override
+  public void executionStarted(TestIdentifier test) {
+    if (out == null || err == null) {
+      throw new IllegalStateException("printer writer not assigned");
+    }
+    if (test.getType().isContainer()) {
+      return;
+    }
+    out.println(" -> " + test.getDisplayName());
+  }
+
+  @Override
+  public void executionFinished(TestIdentifier test, TestExecutionResult result) {
+    if (out == null || err == null) {
+      throw new IllegalStateException("printer writer not assigned");
+    }
+    if (result.getStatus() != TestExecutionResult.Status.SUCCESSFUL) {
+      err.println(result);
+    }
   }
 }
