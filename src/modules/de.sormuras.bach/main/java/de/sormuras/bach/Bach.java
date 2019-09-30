@@ -165,6 +165,7 @@ public class Bach {
     }
     for (var realm : realms) {
       compile(realm);
+      new Tester(this, realm).test();
     }
 
     summary(main);

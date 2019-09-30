@@ -41,6 +41,7 @@ class Merger {
           "Resolver",
           "Scribe",
           "Task",
+          "Tester",
           "Util",
           "UnmappedModuleException");
 
