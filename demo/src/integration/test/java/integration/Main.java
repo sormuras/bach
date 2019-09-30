@@ -3,9 +3,7 @@ package integration;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectModule;
 
 import java.io.PrintWriter;
-import java.util.List;
 import java.util.spi.ToolProvider;
-
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
@@ -13,7 +11,7 @@ import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 
-public class Main implements ToolProvider, TestExecutionListener {
+public class Main implements ToolProvider {
 
   public static void main(String... args) {
     var out = new PrintWriter(System.out, true);
@@ -28,7 +26,6 @@ public class Main implements ToolProvider, TestExecutionListener {
     }
   }
 
-  private PrintWriter out, err;
   private final String moduleName = getClass().getModule().getName();
 
   @Override
@@ -38,49 +35,56 @@ public class Main implements ToolProvider, TestExecutionListener {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    this.out = out;
-    this.err = err;
-    var arguments = List.of(args);
-    out.printf("Running tests in: %s%n", arguments);
+    out.printf("%nRunning tests in module %s%n", moduleName);
     var launcher = LauncherFactory.create();
-    var request = LauncherDiscoveryRequestBuilder.request();
-    arguments.forEach(arg -> request.selectors(selectModule(arg)));
-    var summaryGeneratingListener = new SummaryGeneratingListener();
+    var request = LauncherDiscoveryRequestBuilder.request().selectors(selectModule(moduleName));
+    var printer = new PrintingListener(out, err);
+    var summaryGenerator = new SummaryGeneratingListener();
 
-    launcher.execute(request.build(), this, summaryGeneratingListener);
+    launcher.execute(request.build(), printer, summaryGenerator);
 
-    var summary = summaryGeneratingListener.getSummary();
+    var summary = summaryGenerator.getSummary();
     if (summary.getTotalFailureCount() != 0) {
       summary.printFailuresTo(err);
       summary.printTo(err);
       return 1;
     }
     if (summary.getTestsFoundCount() == 0) {
-      err.printf("No tests found in: %s%n", arguments);
+      err.printf("No tests found in: %s%n", moduleName);
       return 2;
     }
     summary.printTo(out);
     return 0;
   }
 
-  @Override
-  public void executionStarted(TestIdentifier test) {
-    if (out == null || err == null) {
-      throw new IllegalStateException("printer writer not assigned");
-    }
-    if (test.getType().isContainer()) {
-      return;
-    }
-    out.println(" -> " + test.getDisplayName());
-  }
+  private static class PrintingListener implements TestExecutionListener {
 
-  @Override
-  public void executionFinished(TestIdentifier test, TestExecutionResult result) {
-    if (out == null || err == null) {
-      throw new IllegalStateException("printer writer not assigned");
+    private final PrintWriter out, err;
+
+    private PrintingListener(PrintWriter out, PrintWriter err) {
+      this.out = out;
+      this.err = err;
     }
-    if (result.getStatus() != TestExecutionResult.Status.SUCCESSFUL) {
-      err.println(result);
+
+    @Override
+    public void executionSkipped(TestIdentifier test, String reason) {
+      out.printf(" X %s - %s%n", test.getDisplayName(), reason);
+    }
+
+    @Override
+    public void executionStarted(TestIdentifier test) {
+      if (test.getType().isContainer()) {
+        return;
+      }
+      out.printf(" > %s%n", test.getDisplayName());
+    }
+
+    @Override
+    public void executionFinished(TestIdentifier test, TestExecutionResult result) {
+      if (result.getStatus() != TestExecutionResult.Status.SUCCESSFUL) {
+        var message = result.getThrowable().map(Throwable::getMessage).orElse(result.toString());
+        err.printf(" < %s%n", message);
+      }
     }
   }
 }
