@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-30T03:00:14.260397200Z
+// THIS FILE WAS GENERATED ON 2019-09-30T03:26:51.597113800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -17,8 +17,6 @@
  */
 
 // default package
-
-import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -1441,8 +1439,8 @@ public class Bach {
       }
       var boot = ModuleLayer.boot();
       var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
-      var parentLoader = ClassLoader.getPlatformClassLoader();
-      var controller = defineModulesWithOneLoader(configuration, List.of(boot), parentLoader);
+      var loader = ClassLoader.getPlatformClassLoader();
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
       return controller.layer();
     }
 

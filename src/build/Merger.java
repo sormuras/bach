@@ -101,8 +101,10 @@ class Merger {
     var statics = new TreeSet<>(this.imports);
     statics.removeAll(imports);
     generated.addAll(index, imports);
-    generated.add(index, "");
-    generated.addAll(index, statics);
+    if (!statics.isEmpty()) {
+      generated.add(index, "");
+      generated.addAll(index, statics);
+    }
   }
 
   void generateTypes(int index) throws Exception {

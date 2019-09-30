@@ -17,8 +17,6 @@
 
 package de.sormuras.bach;
 
-import static java.lang.ModuleLayer.defineModulesWithOneLoader;
-
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
@@ -118,8 +116,8 @@ import java.util.stream.StreamSupport;
     }
     var boot = ModuleLayer.boot();
     var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
-    var parentLoader = ClassLoader.getPlatformClassLoader();
-    var controller = defineModulesWithOneLoader(configuration, List.of(boot), parentLoader);
+    var loader = ClassLoader.getPlatformClassLoader();
+    var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
     return controller.layer();
   }
 
