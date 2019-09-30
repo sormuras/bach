@@ -152,6 +152,13 @@ import java.util.stream.Stream;
     return (matcher.find()) ? Optional.of(name.substring(matcher.start() + 1)) : Optional.empty();
   }
 
+  static Path require(Path path, Predicate<Path> predicate) {
+    if (predicate.test(path)) {
+      return path;
+    }
+    throw new IllegalArgumentException("Path failed test: " + path);
+  }
+
   static <C extends Collection<?>> C requireNonEmpty(C collection, String name) {
     if (requireNonNull(collection, name + " must not be null").isEmpty()) {
       throw new IllegalArgumentException(name + " must not be empty");
