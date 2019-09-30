@@ -4,8 +4,4 @@ before_install:
 install:
 - unset JAVA_TOOL_OPTIONS
 - ./build.jsh
-- JARS="bin/main/modules"
-- BACH_VERSION="de.sormuras.bach-$(java src/bach/Bach.java version)"
-- FILES="-Dfile=$JARS/$BACH_VERSION.jar -Dsources=$JARS/$BACH_VERSION-sources.jar -Djavadoc=$JARS/$BACH_VERSION-javadoc.jar"
-- find $JARS
-- mvn install:install-file $FILES -DgroupId=$GROUP -DartifactId=bach -Dversion=$VERSION -Dpackaging=jar -DgeneratePom=true
+- source bin/maven-install.sh

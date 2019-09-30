@@ -9,3 +9,5 @@ jobs:
     - uses: actions/checkout@v1
     - name: 'Build Bach.java'
       run: ./build.jsh
+    - name: 'Install modules into local Maven repository'
+      run: source bin/maven-install.sh
