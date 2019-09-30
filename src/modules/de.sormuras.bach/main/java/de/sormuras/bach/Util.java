@@ -112,6 +112,10 @@ import java.util.stream.Stream;
     return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
   }
 
+  static boolean isWindows() {
+    return System.getProperty("os.name", "?").toLowerCase().contains("win");
+  }
+
   static List<Path> list(Path directory) {
     return list(directory, __ -> true);
   }

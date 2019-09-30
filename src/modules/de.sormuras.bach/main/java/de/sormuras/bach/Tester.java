@@ -72,8 +72,7 @@ import java.util.stream.StreamSupport;
     try {
       return testToolProvider(unit, modulePath);
     } finally {
-      var windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
-      if (windows) {
+      if (Util.isWindows()) {
         System.gc();
         Util.sleep(1234);
       }
