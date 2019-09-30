@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-28T18:20:34.401972800Z
+// THIS FILE WAS GENERATED ON 2019-09-30T03:00:14.260397200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -18,6 +18,7 @@
 
 // default package
 
+import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,6 +53,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,6 +74,7 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.lang.model.SourceVersion;
 
 public class Bach {
@@ -207,6 +210,7 @@ public class Bach {
     }
     for (var realm : realms) {
       compile(realm);
+      new Tester(this, realm).test();
     }
 
     summary(main);
@@ -1345,6 +1349,118 @@ public class Bach {
       @Override
       public String toString() {
         return "ToolRunner[name=" + name + ", arguments=" + List.of(arguments) + "]";
+      }
+    }
+  }
+
+  /** Launch JUnit Platform. */
+  static class Tester {
+
+    private final Bach bach;
+    private final Project.Realm test;
+
+    Tester(Bach bach, Project.Realm test) {
+      this.bach = bach;
+      this.test = test;
+    }
+
+    void test() {
+      bach.log("Launching all test modules in realm: %s", test.name);
+      test(test.names());
+    }
+
+    void test(Iterable<String> modules) {
+      bach.log("Launching all tests in realm " + test);
+      for (var module : modules) {
+        bach.log("%n%n%n%s%n%n%n", module);
+        var unit = test.unit(module);
+        if (unit.isEmpty()) {
+          bach.warn("No test module unit available for: %s", module);
+          continue;
+        }
+        test(unit.get());
+      }
+    }
+
+    private void test(Project.ModuleSourceUnit unit) {
+      var errors = new StringBuilder();
+      errors.append(testToolProvider(unit));
+      if (errors.toString().replace('0', ' ').isBlank()) {
+        return;
+      }
+      throw new AssertionError("Test run failed!");
+    }
+
+    private int testToolProvider(Project.ModuleSourceUnit unit) {
+      var target = bach.project.target(test);
+      var modulePath = bach.project.modulePaths(target, target.modularJar(unit));
+      try {
+        return testToolProvider(unit, modulePath);
+      } finally {
+        var windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
+        if (windows) {
+          System.gc();
+          Util.sleep(1234);
+        }
+      }
+    }
+
+    private int testToolProvider(Project.ModuleSourceUnit unit, List<Path> modulePath) {
+      var key = "test(" + unit.name() + ")";
+      var layer = layer(modulePath, unit.name());
+      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+      var tools =
+          StreamSupport.stream(serviceLoader.spliterator(), false)
+              .filter(provider -> provider.name().equals(key))
+              .collect(Collectors.toList());
+      if (tools.isEmpty()) {
+        // bach.warn("No tool provider named '%s' found in: %s", key, layer);
+        return 0;
+      }
+      int sum = 0;
+      for (var tool : tools) {
+        sum += run(tool);
+      }
+      return sum;
+    }
+
+    private ModuleLayer layer(List<Path> modulePath, String module) {
+      bach.log("Module path:");
+      for (var element : modulePath) {
+        bach.log("  -> %s", element);
+      }
+      var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+      bach.log("Finder finds module(s):");
+      finder.findAll().stream()
+              .sorted(Comparator.comparing(ModuleReference::descriptor))
+              .forEach(reference -> bach.log("  -> %s", reference));
+      var roots = List.of(module);
+      bach.log("Root module(s):");
+      for (var root : roots) {
+        bach.log("  -> %s", root);
+      }
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var parentLoader = ClassLoader.getPlatformClassLoader();
+      var controller = defineModulesWithOneLoader(configuration, List.of(boot), parentLoader);
+      return controller.layer();
+    }
+
+    private int run(ToolProvider tool, String... args) {
+      var toolLoader = tool.getClass().getClassLoader();
+      var currentThread = Thread.currentThread();
+      var currentContextLoader = currentThread.getContextClassLoader();
+      currentThread.setContextClassLoader(toolLoader);
+      var parent = toolLoader;
+      while (parent != null) {
+        parent.setDefaultAssertionStatus(true);
+        parent = parent.getParent();
+      }
+
+      try {
+        return tool.run(bach.out, bach.err, args);
+      } finally {
+        currentThread.setContextClassLoader(currentContextLoader);
       }
     }
   }
