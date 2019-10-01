@@ -3,6 +3,7 @@ name: Lib.java
 on:
   push:
     paths:
+    - '.github/workflows/lib.yml'
     - 'src/bach/Lib.java'
 
 jobs:
