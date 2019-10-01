@@ -22,6 +22,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /*BODY*/
 /** Create API documentation. */
@@ -80,8 +81,7 @@ public /*STATIC*/ class Scribe {
   }
 
   public void generateMavenInstallScript() {
-    var call = Util.isWindows() ? "call" : "";
-    var maven = String.join(" ", call, "mvn", "install:install-file").trim();
+    var maven = String.join(" ", "mvn", "install:install-file").trim();
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       if (unit.mavenPom().isPresent()) {
@@ -94,7 +94,9 @@ public /*STATIC*/ class Scribe {
     }
     try {
       Files.write(bach.project.targetDirectory.resolve("maven-install.sh"), lines);
-      Files.write(bach.project.targetDirectory.resolve("maven-install.bat"), lines);
+      Files.write(
+          bach.project.targetDirectory.resolve("maven-install.bat"),
+          lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
     } catch (IOException e) {
       throw new UncheckedIOException("Generating install script failed: " + e.getMessage(), e);
     }
@@ -105,15 +107,16 @@ public /*STATIC*/ class Scribe {
     var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
     var repository = "repositoryId=" + deployment.mavenRepositoryId;
     var url = "url=" + deployment.mavenUri;
-    var call = Util.isWindows() ? "call" : "";
-    var maven = String.join(" ", call, "mvn", plugin, "-D" + repository, "-D" + url).trim();
+    var maven = String.join(" ", "mvn", plugin, "-D" + repository, "-D" + url);
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
     }
     try {
       Files.write(bach.project.targetDirectory.resolve("maven-deploy.sh"), lines);
-      Files.write(bach.project.targetDirectory.resolve("maven-deploy.bat"), lines);
+      Files.write(
+          bach.project.targetDirectory.resolve("maven-deploy.bat"),
+          lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
     } catch (IOException e) {
       throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);
     }
