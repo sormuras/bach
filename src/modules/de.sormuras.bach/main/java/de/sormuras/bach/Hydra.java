@@ -72,7 +72,7 @@ public /*STATIC*/ class Hydra {
     var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
     if (Util.isModuleInfo(source.resolve("module-info.java"))) {
       javac
-          .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
+          .addEach(realm.toolArguments.javac)
           .add("-d", destination)
           .add("--module-version", project.version)
           .add("--module-path", project.modulePaths(target))

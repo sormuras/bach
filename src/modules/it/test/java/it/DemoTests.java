@@ -42,11 +42,13 @@ class DemoTests {
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "main", "java"),
                 String.join(File.separator, "demo", "src", "*", "main", "java-9")),
+            Project.ToolArguments.of(),
             List.of(
                 new Project.ModuleSourceUnit(
                     Project.ModuleInfoReference.of(demo.resolve("module-info.java")),
                     List.of(demo),
-                    List.of()),
+                    List.of(),
+                    null),
                 new Project.MultiReleaseUnit(
                     Project.ModuleInfoReference.of(multi.resolve("java-9/module-info.java")),
                     9,
@@ -54,7 +56,8 @@ class DemoTests {
                         8, multi.resolve("java-8"),
                         9, multi.resolve("java-9"),
                         11, multi.resolve("java-11")),
-                    List.of())));
+                    List.of(),
+                    null)));
 
     var integration = Path.of("demo/src/integration/test/java");
     var test =
@@ -66,11 +69,13 @@ class DemoTests {
                 File.pathSeparator,
                 String.join(File.separator, "demo", "src", "*", "test", "java"),
                 String.join(File.separator, "demo", "src", "*", "test", "module")),
+            Project.ToolArguments.of(),
             List.of(
                 new Project.ModuleSourceUnit(
                     Project.ModuleInfoReference.of(integration.resolve("module-info.java")),
                     List.of(integration),
-                    List.of())),
+                    List.of(),
+                    null)),
             main);
 
     var library = new Project.Library(Path.of("demo/lib"));

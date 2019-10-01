@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-09-30T03:26:51.597113800Z
+// THIS FILE WAS GENERATED ON 2019-10-01T04:24:24.274995300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -200,15 +200,27 @@ public class Bach {
       throw new AssertionError("No units declared: " + project.realms);
     }
 
+    // compile := javac + jar
     var realms = new ArrayDeque<>(project.realms);
     var main = realms.removeFirst();
     compile(main);
-    if (!main.units.isEmpty()) {
-      new Scribe(this, project, main).document();
+    for (var remaining : realms) {
+      compile(remaining);
     }
-    for (var realm : realms) {
-      compile(realm);
-      new Tester(this, realm).test();
+
+    // test
+    for (var remaining : realms) {
+      new Tester(this, remaining).test();
+    }
+
+    // document := javadoc + deploy
+    if (!main.units.isEmpty()) {
+      var scribe = new Scribe(this, project, main);
+      scribe.document();
+      scribe.generateMavenInstallScript();
+      if (main.toolArguments.deployment().isPresent()) {
+        scribe.generateMavenDeployScript();
+      }
     }
 
     summary(main);
@@ -254,52 +266,6 @@ public class Bach {
   /** Print Bach.java's version to the standard output stream. */
   public void version() {
     out.println(VERSION);
-  }
-
-  /** Bach's property collection. */
-  enum Property {
-    //  /** Be verbose. */
-    //  DEBUG("ebug", "false"),
-
-    //  /** Name of the project. */
-    //  PROJECT_NAME("name", "Project"),
-    //  /** Version of the project (used for every module). */
-    //  PROJECT_VERSION("version", "0"),
-
-    //  /** Base directory of the project. */
-    //  BASE_DIRECTORY("base", ""),
-    //  /** Directory with 3rd-party modules, relative to {@link #BASE_DIRECTORY}. */
-    //  LIBRARY_DIRECTORY("library", "lib"),
-    //  /** Directory with modules sources, relative to {@link #BASE_DIRECTORY}. */
-    //  SOURCE_DIRECTORY("source", "src"),
-    //  /** Directory that contains generated binary assets, relative to {@link #BASE_DIRECTORY}. */
-    //  TARGET_DIRECTORY("target", "bin"),
-
-    /** Default Maven repository used for resolving missing modules. */
-    MAVEN_REPOSITORY("maven.repository", "https://repo1.maven.org/maven2"),
-
-    /** Options passed to all 'javac' calls. */
-    TOOL_JAVAC_OPTIONS("tool.javac.options", "-encoding\nUTF-8\n-parameters\n-Xlint");
-
-    private final String key;
-    private final String defaultValue;
-
-    Property(String key, String defaultValue) {
-      this.key = key;
-      this.defaultValue = defaultValue;
-    }
-
-    String getDefaultValue() {
-      return defaultValue;
-    }
-
-    String get() {
-      return get(defaultValue);
-    }
-
-    String get(String defaultValue) {
-      return System.getProperty(key, defaultValue);
-    }
   }
 
   /** Command-line program argument list builder. */
@@ -429,7 +395,7 @@ public class Bach {
       if (!Files.isDirectory(base)) {
         throw new IllegalArgumentException("Expected a directory but got: " + base);
       }
-      var main = new Realm("main", false, 0, "src/*/main/java", List.of());
+      var main = new Realm("main", false, 0, "src/*/main/java", ToolArguments.of(), List.of());
       var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
       return new Project(
           base,
@@ -542,7 +508,7 @@ public class Bach {
         this(
             List.of(lib),
             UnmappedModuleException::throwForURI,
-            __ -> URI.create(Property.MAVEN_REPOSITORY.get()),
+            __ -> URI.create("https://repo1.maven.org/maven2"),
             UnmappedModuleException::throwForString,
             UnmappedModuleException::throwForString);
       }
@@ -598,15 +564,22 @@ public class Bach {
       public final List<Path> sources;
       /** Paths to the resource directories. */
       public final List<Path> resources;
+      /** Path to the associated Maven POM file, may be {@code null}. */
+      public final Path mavenPom;
 
-      public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
+      public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
+        this.mavenPom = mavenPom;
       }
 
       public String name() {
         return info.descriptor().name();
+      }
+
+      public Optional<Path> mavenPom() {
+        return Optional.ofNullable(mavenPom);
       }
     }
 
@@ -621,10 +594,48 @@ public class Bach {
           ModuleInfoReference info,
           int copyModuleDescriptorToRootRelease,
           Map<Integer, Path> releases,
-          List<Path> resources) {
-        super(info, List.copyOf(new TreeMap<>(releases).values()), resources);
+          List<Path> resources,
+          Path mavenPom) {
+        super(info, List.copyOf(new TreeMap<>(releases).values()), resources, mavenPom);
         this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
         this.releases = releases;
+      }
+    }
+
+    /** Realm-specific tool argument collector. */
+    public static class ToolArguments {
+
+      public static final List<String> JAVAC = List.of("-encoding", "UTF-8", "-parameters", "-Xlint");
+
+      public static ToolArguments of() {
+        return new ToolArguments(JAVAC, null);
+      }
+
+      /** Option values passed to all {@code javac} calls. */
+      public final List<String> javac;
+      /** Arguments used for uploading modules, may be {@code null}. */
+      public final Deployment deployment;
+
+      public ToolArguments(List<String> javac, Deployment deployment) {
+        this.javac = List.copyOf(javac);
+        this.deployment = deployment;
+      }
+
+      public Optional<Deployment> deployment() {
+        return Optional.ofNullable(deployment);
+      }
+    }
+
+    /** Properties used to upload compiled modules. */
+    public static class Deployment {
+      /** Maven repository id. */
+      public final String mavenRepositoryId;
+      /** Maven URL as an URI. */
+      public final URI mavenUri;
+
+      public Deployment(String mavenRepositoryId, URI mavenUri) {
+        this.mavenRepositoryId = mavenRepositoryId;
+        this.mavenUri = mavenUri;
       }
     }
 
@@ -638,6 +649,8 @@ public class Bach {
       public final int release;
       /** Module source path specifies where to find input source files for multiple modules. */
       public final String moduleSourcePath;
+      /** Option values passed to various tools. */
+      public final ToolArguments toolArguments;
       /** Map of all declared module source unit. */
       public final List<ModuleSourceUnit> units;
       /** List of required realms. */
@@ -648,12 +661,14 @@ public class Bach {
           boolean preview,
           int release,
           String moduleSourcePath,
+          ToolArguments toolArguments,
           List<ModuleSourceUnit> units,
           Realm... realms) {
         this.name = name;
         this.preview = preview;
         this.release = release;
         this.moduleSourcePath = moduleSourcePath;
+        this.toolArguments = toolArguments;
         this.units = units;
         this.realms = List.of(realms);
       }
@@ -770,7 +785,7 @@ public class Bach {
       bach.log("Compiling %s realm jigsaw modules: %s", realm.name, modules);
       bach.run(
           new Command("javac")
-              .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
+              .addEach(realm.toolArguments.javac)
               .add("-d", classes)
               .addIff(realm.preview, "--enable-preview")
               .addIff(realm.release != 0, "--release", realm.release)
@@ -860,7 +875,7 @@ public class Bach {
       var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
       if (Util.isModuleInfo(source.resolve("module-info.java"))) {
         javac
-            .addEach(Property.TOOL_JAVAC_OPTIONS.get().lines())
+            .addEach(realm.toolArguments.javac)
             .add("-d", destination)
             .add("--module-version", project.version)
             .add("--module-path", project.modulePaths(target))
@@ -1216,12 +1231,16 @@ public class Bach {
     private final Project project;
     private final Project.Realm realm;
     private final Project.Target target;
+    private final Path javadocJar;
 
     public Scribe(Bach bach, Project project, Project.Realm realm) {
       this.bach = bach;
       this.project = project;
       this.realm = realm;
       this.target = project.target(realm);
+
+      var nameDashVersion = project.name + '-' + project.version;
+      this.javadocJar = target.directory.resolve(nameDashVersion + "-javadoc.jar");
     }
 
     public void document() {
@@ -1250,15 +1269,62 @@ public class Bach {
       javadoc.add("--module", String.join(",", modules));
       bach.run(javadoc);
 
-      var nameDashVersion = project.name + '-' + project.version;
       bach.run(
           new Command("jar")
               .add("--create")
-              .add("--file", target.directory.resolve(nameDashVersion + "-javadoc.jar"))
+              .add("--file", javadocJar)
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
               .add("-C", destination)
               .add("."));
+    }
+
+    public void generateMavenInstallScript() {
+      var call = Util.isWindows() ? "call" : "";
+      var maven = String.join(" ", call, "mvn", "install:install-file").trim();
+      var lines = new ArrayList<String>();
+      for (var unit : realm.units) {
+        if (unit.mavenPom().isPresent()) {
+          lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+        }
+      }
+      if (lines.isEmpty()) {
+        bach.log("No maven-install script lines generated.");
+        return;
+      }
+      try {
+        Files.write(bach.project.targetDirectory.resolve("maven-install.sh"), lines);
+        Files.write(bach.project.targetDirectory.resolve("maven-install.bat"), lines);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Generating install script failed: " + e.getMessage(), e);
+      }
+    }
+
+    public void generateMavenDeployScript() {
+      var deployment = realm.toolArguments.deployment().orElseThrow();
+      var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
+      var repository = "repositoryId=" + deployment.mavenRepositoryId;
+      var url = "url=" + deployment.mavenUri;
+      var call = Util.isWindows() ? "call" : "";
+      var maven = String.join(" ", call, "mvn", plugin, "-D" + repository, "-D" + url).trim();
+      var lines = new ArrayList<String>();
+      for (var unit : realm.units) {
+        lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+      }
+      try {
+        Files.write(bach.project.targetDirectory.resolve("maven-deploy.sh"), lines);
+        Files.write(bach.project.targetDirectory.resolve("maven-deploy.bat"), lines);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);
+      }
+    }
+
+    private String generateMavenArtifactLine(Project.ModuleSourceUnit unit) {
+      var pom = "pomFile=" + Util.require(unit.mavenPom().orElseThrow(), Files::isRegularFile);
+      var file = "file=" + Util.require(target.modularJar(unit), Util::isJarFile);
+      var sources = "sources=" + Util.require(target.sourcesJar(unit), Util::isJarFile);
+      var javadoc = "javadoc=" + Util.require(javadocJar, Util::isJarFile);
+      return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
     }
   }
 
@@ -1395,8 +1461,7 @@ public class Bach {
       try {
         return testToolProvider(unit, modulePath);
       } finally {
-        var windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
-        if (windows) {
+        if (Util.isWindows()) {
           System.gc();
           Util.sleep(1234);
         }
@@ -1526,6 +1591,10 @@ public class Bach {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
 
+    static boolean isWindows() {
+      return System.getProperty("os.name", "?").toLowerCase().contains("win");
+    }
+
     static List<Path> list(Path directory) {
       return list(directory, __ -> true);
     }
@@ -1560,6 +1629,13 @@ public class Bach {
       var name = jarFileName.substring(0, jarFileName.length() - 4);
       var matcher = Pattern.compile("-(\\d+(\\.|$))").matcher(name);
       return (matcher.find()) ? Optional.of(name.substring(matcher.start() + 1)) : Optional.empty();
+    }
+
+    static Path require(Path path, Predicate<Path> predicate) {
+      if (predicate.test(path)) {
+        return path;
+      }
+      throw new IllegalArgumentException("Path failed test: " + path);
     }
 
     static <C extends Collection<?>> C requireNonEmpty(C collection, String name) {

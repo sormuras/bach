@@ -44,7 +44,7 @@ public /*STATIC*/ class Project {
     if (!Files.isDirectory(base)) {
       throw new IllegalArgumentException("Expected a directory but got: " + base);
     }
-    var main = new Realm("main", false, 0, "src/*/main/java", List.of());
+    var main = new Realm("main", false, 0, "src/*/main/java", ToolArguments.of(), List.of());
     var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
     return new Project(
         base,
@@ -157,7 +157,7 @@ public /*STATIC*/ class Project {
       this(
           List.of(lib),
           UnmappedModuleException::throwForURI,
-          __ -> URI.create(Property.MAVEN_REPOSITORY.get()),
+          __ -> URI.create("https://repo1.maven.org/maven2"),
           UnmappedModuleException::throwForString,
           UnmappedModuleException::throwForString);
     }
@@ -213,15 +213,22 @@ public /*STATIC*/ class Project {
     public final List<Path> sources;
     /** Paths to the resource directories. */
     public final List<Path> resources;
+    /** Path to the associated Maven POM file, may be {@code null}. */
+    public final Path mavenPom;
 
-    public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources) {
+    public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
       this.info = info;
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
+      this.mavenPom = mavenPom;
     }
 
     public String name() {
       return info.descriptor().name();
+    }
+
+    public Optional<Path> mavenPom() {
+      return Optional.ofNullable(mavenPom);
     }
   }
 
@@ -236,10 +243,48 @@ public /*STATIC*/ class Project {
         ModuleInfoReference info,
         int copyModuleDescriptorToRootRelease,
         Map<Integer, Path> releases,
-        List<Path> resources) {
-      super(info, List.copyOf(new TreeMap<>(releases).values()), resources);
+        List<Path> resources,
+        Path mavenPom) {
+      super(info, List.copyOf(new TreeMap<>(releases).values()), resources, mavenPom);
       this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
       this.releases = releases;
+    }
+  }
+
+  /** Realm-specific tool argument collector. */
+  public static class ToolArguments {
+
+    public static final List<String> JAVAC = List.of("-encoding", "UTF-8", "-parameters", "-Xlint");
+
+    public static ToolArguments of() {
+      return new ToolArguments(JAVAC, null);
+    }
+
+    /** Option values passed to all {@code javac} calls. */
+    public final List<String> javac;
+    /** Arguments used for uploading modules, may be {@code null}. */
+    public final Deployment deployment;
+
+    public ToolArguments(List<String> javac, Deployment deployment) {
+      this.javac = List.copyOf(javac);
+      this.deployment = deployment;
+    }
+
+    public Optional<Deployment> deployment() {
+      return Optional.ofNullable(deployment);
+    }
+  }
+
+  /** Properties used to upload compiled modules. */
+  public static class Deployment {
+    /** Maven repository id. */
+    public final String mavenRepositoryId;
+    /** Maven URL as an URI. */
+    public final URI mavenUri;
+
+    public Deployment(String mavenRepositoryId, URI mavenUri) {
+      this.mavenRepositoryId = mavenRepositoryId;
+      this.mavenUri = mavenUri;
     }
   }
 
@@ -253,6 +298,8 @@ public /*STATIC*/ class Project {
     public final int release;
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
+    /** Option values passed to various tools. */
+    public final ToolArguments toolArguments;
     /** Map of all declared module source unit. */
     public final List<ModuleSourceUnit> units;
     /** List of required realms. */
@@ -263,12 +310,14 @@ public /*STATIC*/ class Project {
         boolean preview,
         int release,
         String moduleSourcePath,
+        ToolArguments toolArguments,
         List<ModuleSourceUnit> units,
         Realm... realms) {
       this.name = name;
       this.preview = preview;
       this.release = release;
       this.moduleSourcePath = moduleSourcePath;
+      this.toolArguments = toolArguments;
       this.units = units;
       this.realms = List.of(realms);
     }

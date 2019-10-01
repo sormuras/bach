@@ -17,6 +17,12 @@
 
 package de.sormuras.bach;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+
 /*BODY*/
 /** Create API documentation. */
 public /*STATIC*/ class Scribe {
@@ -25,12 +31,16 @@ public /*STATIC*/ class Scribe {
   private final Project project;
   private final Project.Realm realm;
   private final Project.Target target;
+  private final Path javadocJar;
 
   public Scribe(Bach bach, Project project, Project.Realm realm) {
     this.bach = bach;
     this.project = project;
     this.realm = realm;
     this.target = project.target(realm);
+
+    var nameDashVersion = project.name + '-' + project.version;
+    this.javadocJar = target.directory.resolve(nameDashVersion + "-javadoc.jar");
   }
 
   public void document() {
@@ -59,14 +69,61 @@ public /*STATIC*/ class Scribe {
     javadoc.add("--module", String.join(",", modules));
     bach.run(javadoc);
 
-    var nameDashVersion = project.name + '-' + project.version;
     bach.run(
         new Command("jar")
             .add("--create")
-            .add("--file", target.directory.resolve(nameDashVersion + "-javadoc.jar"))
+            .add("--file", javadocJar)
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
             .add("-C", destination)
             .add("."));
+  }
+
+  public void generateMavenInstallScript() {
+    var call = Util.isWindows() ? "call" : "";
+    var maven = String.join(" ", call, "mvn", "install:install-file").trim();
+    var lines = new ArrayList<String>();
+    for (var unit : realm.units) {
+      if (unit.mavenPom().isPresent()) {
+        lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+      }
+    }
+    if (lines.isEmpty()) {
+      bach.log("No maven-install script lines generated.");
+      return;
+    }
+    try {
+      Files.write(bach.project.targetDirectory.resolve("maven-install.sh"), lines);
+      Files.write(bach.project.targetDirectory.resolve("maven-install.bat"), lines);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Generating install script failed: " + e.getMessage(), e);
+    }
+  }
+
+  public void generateMavenDeployScript() {
+    var deployment = realm.toolArguments.deployment().orElseThrow();
+    var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
+    var repository = "repositoryId=" + deployment.mavenRepositoryId;
+    var url = "url=" + deployment.mavenUri;
+    var call = Util.isWindows() ? "call" : "";
+    var maven = String.join(" ", call, "mvn", plugin, "-D" + repository, "-D" + url).trim();
+    var lines = new ArrayList<String>();
+    for (var unit : realm.units) {
+      lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+    }
+    try {
+      Files.write(bach.project.targetDirectory.resolve("maven-deploy.sh"), lines);
+      Files.write(bach.project.targetDirectory.resolve("maven-deploy.bat"), lines);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);
+    }
+  }
+
+  private String generateMavenArtifactLine(Project.ModuleSourceUnit unit) {
+    var pom = "pomFile=" + Util.require(unit.mavenPom().orElseThrow(), Files::isRegularFile);
+    var file = "file=" + Util.require(target.modularJar(unit), Util::isJarFile);
+    var sources = "sources=" + Util.require(target.sourcesJar(unit), Util::isJarFile);
+    var javadoc = "javadoc=" + Util.require(javadocJar, Util::isJarFile);
+    return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
   }
 }

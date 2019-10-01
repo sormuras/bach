@@ -157,15 +157,27 @@ public class Bach {
       throw new AssertionError("No units declared: " + project.realms);
     }
 
+    // compile := javac + jar
     var realms = new ArrayDeque<>(project.realms);
     var main = realms.removeFirst();
     compile(main);
-    if (!main.units.isEmpty()) {
-      new Scribe(this, project, main).document();
+    for (var remaining : realms) {
+      compile(remaining);
     }
-    for (var realm : realms) {
-      compile(realm);
-      new Tester(this, realm).test();
+
+    // test
+    for (var remaining : realms) {
+      new Tester(this, remaining).test();
+    }
+
+    // document := javadoc + deploy
+    if (!main.units.isEmpty()) {
+      var scribe = new Scribe(this, project, main);
+      scribe.document();
+      scribe.generateMavenInstallScript();
+      if (main.toolArguments.deployment().isPresent()) {
+        scribe.generateMavenDeployScript();
+      }
     }
 
     summary(main);

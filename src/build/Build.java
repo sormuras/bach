@@ -18,6 +18,7 @@
 import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class Build {
   public static void main(String... args) {
     PrintWriter out = new PrintWriter(System.out, true);
     PrintWriter err = new PrintWriter(System.err, true);
-    new Bach(out, err, true, project("1.9.1")).build();
+    new Bach(out, err, true, project("1.9-ea")).build();
   }
 
   private static Bach.Project project(String version) {
@@ -47,12 +48,18 @@ public class Build {
         false,
         11,
         String.join(File.separator, "src", "modules", "*", "main", "java"),
+        new Bach.Project.ToolArguments(
+            Bach.Project.ToolArguments.JAVAC,
+            new Bach.Project.Deployment(
+                "bintray-sormuras-maven",
+                URI.create("https://api.bintray.com/maven/sormuras/maven/bach/;publish=0"))),
         List.of(
             new Bach.Project.ModuleSourceUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
-                List.of(Path.of("src/modules/de.sormuras.bach/main/resources")))));
+                List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
+                Path.of("src/modules/de.sormuras.bach/main/maven/pom.xml"))));
   }
 
   private static Bach.Project.Realm test(Bach.Project.Realm main) {
@@ -61,12 +68,14 @@ public class Build {
         true,
         Runtime.version().feature(),
         String.join(File.separator, "src", "modules", "*", "test", "java"),
+        Bach.Project.ToolArguments.of(),
         List.of(
             new Bach.Project.ModuleSourceUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/it/test/java/module-info.java")),
                 List.of(Path.of("src/modules/it/test/java")),
-                List.of(Path.of("src/modules/it/test/resources")))),
+                List.of(Path.of("src/modules/it/test/resources")),
+                null)),
         main);
   }
 }

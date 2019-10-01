@@ -32,7 +32,6 @@ class Merger {
   static Path TARGET = Path.of("bin/merged");
   static List<String> TYPES =
       List.of(
-          "Property",
           "Command",
           "Project",
           "Modules",
