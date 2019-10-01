@@ -22,41 +22,45 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class ToolProviderTests {
 
-  @Test
-  void findBachUsingServiceLoader() {
-    var bach =
-        ServiceLoader.load(ToolProvider.class, getClass().getClassLoader()).stream()
+  private Optional<ToolProvider> findBach() {
+    var currentClassLoader = getClass().getClassLoader();
+    if (currentClassLoader == ClassLoader.getSystemClassLoader()) {
+      return ToolProvider.findFirst("bach");
+    }
+    return ServiceLoader.load(ToolProvider.class, currentClassLoader).stream()
             .map(ServiceLoader.Provider::get)
             .filter(provider -> provider.name().equals("bach"))
             .findFirst();
-    assertTrue(bach.isPresent(), "Service 'bach' not found!");
+  }
+
+  @Test
+  void findBachUsingServiceLoader() {
+    assertTrue(findBach().isPresent(), "Service 'bach' not found!");
   }
 
   @Test
   void providerIsMemberOfNamedModule() {
-    var bach = ToolProvider.findFirst("bach").orElseThrow();
-    assertEquals("de.sormuras.bach", bach.getClass().getModule().getName());
+    assertEquals("de.sormuras.bach", findBach().orElseThrow().getClass().getModule().getName());
   }
 
   @Test
   void runVersionYieldsZero() {
-    var bach = ToolProvider.findFirst("bach").orElseThrow();
     var out = new PrintWriter(new StringWriter());
     var err = new PrintWriter(new StringWriter());
-    assertEquals(0, bach.run(out, err, "version"));
+    assertEquals(0, findBach().orElseThrow().run(out, err, "version"));
   }
 
   @Test
   void runUnsupportedArgumentYieldsOne() {
-    var bach = ToolProvider.findFirst("bach").orElseThrow();
     var out = new PrintWriter(new StringWriter());
     var err = new PrintWriter(new StringWriter());
-    assertEquals(1, bach.run(out, err, "?"));
+    assertEquals(1, findBach().orElseThrow().run(out, err, "?"));
   }
 }
