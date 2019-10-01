@@ -1,6 +1,9 @@
 name: Lib.java
 
-on: [push]
+on:
+  push:
+    paths:
+    - 'src/bach/Lib.java'
 
 jobs:
   linux:
