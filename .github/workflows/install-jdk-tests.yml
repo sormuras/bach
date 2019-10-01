@@ -1,6 +1,11 @@
 name: Test `install-jdk.sh`
 
-on: [push]
+on:
+  push:
+    paths:
+    - '.github/workflows/install-jdk-tests.yml'
+    - 'install-jdk.sh'
+    - 'install-jdk-tests.sh'
 
 jobs:
   linux:
