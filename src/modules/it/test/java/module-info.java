@@ -18,7 +18,7 @@
 open /*test*/ module it {
   requires de.sormuras.bach;
   requires org.junit.jupiter;
-  requires static org.junit.platform.console;
+  requires org.junit.platform.console;
 
   uses java.util.spi.ToolProvider;
 
