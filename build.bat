@@ -1,2 +1,2 @@
 @ECHO OFF
-jshell --show-version build.jsh
+jshell --show-version --enable-preview build.jsh
