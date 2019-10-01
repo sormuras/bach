@@ -21,4 +21,7 @@ open /*test*/ module it {
   requires static org.junit.platform.console;
 
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      it.Run;
 }
