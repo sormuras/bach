@@ -81,7 +81,13 @@ public /*STATIC*/ class Scribe {
   }
 
   public void generateMavenInstallScript() {
-    var maven = String.join(" ", "mvn", "install:install-file").trim();
+    var maven =
+        String.join(
+            " ",
+            "mvn",
+            "--batch-mode",
+            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+            "install:install-file");
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       if (unit.mavenPom().isPresent()) {
@@ -107,7 +113,15 @@ public /*STATIC*/ class Scribe {
     var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
     var repository = "repositoryId=" + deployment.mavenRepositoryId;
     var url = "url=" + deployment.mavenUri;
-    var maven = String.join(" ", "mvn", plugin, "-D" + repository, "-D" + url);
+    var maven =
+        String.join(
+            " ",
+            "mvn",
+            "--batch-mode",
+            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+            plugin,
+            "-D" + repository,
+            "-D" + url);
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
