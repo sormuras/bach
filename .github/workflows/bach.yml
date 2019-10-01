@@ -4,9 +4,13 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
-    container: openjdk:13
     steps:
+    - name: 'Checkout'
     - uses: actions/checkout@v1
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 13
     - name: 'Build Bach.java'
       run: ./build.jsh
     - name: 'Install modules into local Maven repository'
