@@ -44,14 +44,8 @@ class TestProjectTests {
             List.of(base.resolve("src/com.greetings")),
             List.of(),
             null);
-    var main =
-        new Project.Realm(
-            "main",
-            false,
-            0,
-            String.join(File.separator, base.toString(), "src"),
-            Project.ToolArguments.of(),
-            List.of(greetings));
+    var main = Project.Realm.of("main", greetings);
+    assertEquals(String.join(File.separator, base.toString(), "src"), main.moduleSourcePath);
     var library = new Project.Library(temp.resolve("lib"));
     var project =
         new Project(
@@ -82,21 +76,16 @@ class TestProjectTests {
             Project.ModuleInfoReference.of(base.resolve("src/main/com.greetings/module-info.java")),
             List.of(base.resolve("src/main/com.greetings")),
             List.of(),
-                null);
+            null);
     var astro =
         new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/main/org.astro/module-info.java")),
             List.of(base.resolve("src/main/org.astro")),
             List.of(),
-                null);
-    var main =
-        new Project.Realm(
-            "main",
-            false,
-            0,
-            String.join(File.separator, base.toString(), "src", "main"),
-                Project.ToolArguments.of(),
-            List.of(greetings, astro));
+            null);
+    var main = Project.Realm.of("main", List.of(greetings, astro));
+    assertEquals(
+        String.join(File.separator, base.toString(), "src", "main"), main.moduleSourcePath);
     var library = new Project.Library(temp.resolve("lib"));
     var project =
         new Project(
@@ -131,13 +120,13 @@ class TestProjectTests {
                 9, base.resolve("src/a/main/java-9"),
                 11, base.resolve("src/a/main/java-11")),
             List.of(),
-                null);
+            null);
     var b =
         new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/b/main/java/module-info.java")),
             List.of(base.resolve("src/b/main/java")),
             List.of(),
-                null);
+            null);
     var c =
         new Project.MultiReleaseUnit(
             Project.ModuleInfoReference.of(base.resolve("src/c/main/java-9/module-info.java")),
@@ -148,24 +137,20 @@ class TestProjectTests {
                 10, base.resolve("src/c/main/java-10"),
                 11, base.resolve("src/c/main/java-11")),
             List.of(),
-                null);
+            null);
     var d =
         new Project.ModuleSourceUnit(
             Project.ModuleInfoReference.of(base.resolve("src/d/main/java/module-info.java")),
             List.of(base.resolve("src/d/main/java")),
             List.of(),
-                null);
-    var main =
-        new Project.Realm(
-            "main",
-            false,
-            0,
-            String.join(
-                File.pathSeparator,
-                String.join(File.separator, base.toString(), "src", "*", "main", "java"),
-                String.join(File.separator, base.toString(), "src", "*", "main", "java-9")),
-                Project.ToolArguments.of(),
-            List.of(a, b, c, d));
+            null);
+    var main = Project.Realm.of("main", List.of(a, b, c, d));
+    assertEquals(
+        String.join(
+            File.pathSeparator,
+            String.join(File.separator, base.toString(), "src", "*", "main", "java-9"),
+            String.join(File.separator, base.toString(), "src", "*", "main", "java")),
+        main.moduleSourcePath);
     var library = new Project.Library(temp);
     var project =
         new Project(
@@ -202,20 +187,16 @@ class TestProjectTests {
             Project.ModuleInfoReference.of(base.resolve("src/a/main/java/module-info.java")),
             List.of(base.resolve("src/a/main/java")),
             List.of(),
-                null);
+            null);
     assertEquals(
         ModuleDescriptor.newModule("a")
             .requires(Set.of(), "org.objectweb.asm", ModuleDescriptor.Version.parse("7.1"))
             .build(),
         a.info.descriptor());
-    var main =
-        new Project.Realm(
-            "main",
-            false,
-            0,
-            String.join(File.separator, base.toString(), "src", "*", "main", "java"),
-                Project.ToolArguments.of(),
-            List.of(a));
+    var main = Project.Realm.of("main", a);
+    assertEquals(
+        String.join(File.separator, base.toString(), "src", "*", "main", "java"),
+        main.moduleSourcePath);
     var library = new Project.Library(temp.resolve("lib"));
     var project =
         new Project(

@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-01T09:14:13.824915300Z
+// THIS FILE WAS GENERATED ON 2019-10-02T04:48:07.442654300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -51,6 +51,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -531,23 +532,48 @@ public class Bach {
     public static class ModuleInfoReference extends ModuleReference {
 
       /** Module compilation unit parser. */
-      public static ModuleInfoReference of(Path path) {
-        if (!Util.isModuleInfo(path)) {
-          throw new IllegalArgumentException("Expected module-info.java path, but got: " + path);
+      public static ModuleInfoReference of(Path info) {
+        if (!Util.isModuleInfo(info)) {
+          throw new IllegalArgumentException("Expected module-info.java path, but got: " + info);
         }
         try {
-          return new ModuleInfoReference(Modules.describe(Files.readString(path)), path);
+          return new ModuleInfoReference(Modules.describe(Files.readString(info)), info);
         } catch (IOException e) {
-          throw new UncheckedIOException("Reading module declaration failed: " + path, e);
+          throw new UncheckedIOException("Reading module declaration failed: " + info, e);
         }
+      }
+
+      /** Compute module's source path. */
+      public static String moduleSourcePath(Path info, String name) {
+        var directory = Util.requireNonNull(info, "info").getParent();
+        if (directory == null) {
+          throw new IllegalArgumentException("Not in a directory: " + info);
+        }
+        var names = new ArrayList<String>();
+        directory.forEach(element -> names.add(element.toString()));
+        int frequency = Collections.frequency(names, name);
+        if (frequency == 0) {
+          return directory.toString();
+        }
+        if (frequency == 1) {
+          if (directory.endsWith(name)) {
+            return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
+          }
+          var star = names.stream().map(e -> e.equals(name) ? "*" : e).collect(Collectors.toList());
+          return String.join(File.separator, star);
+        }
+        throw new IllegalArgumentException("Ambiguous module source path: " + info);
       }
 
       /** Path to the backing {@code module-info.java} file. */
       public final Path path;
+      /** Module source path. */
+      public final String moduleSourcePath;
 
       private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
         super(descriptor, path.toUri());
         this.path = path;
+        this.moduleSourcePath = moduleSourcePath(path, descriptor.name());
       }
 
       @Override
@@ -567,7 +593,8 @@ public class Bach {
       /** Path to the associated Maven POM file, may be {@code null}. */
       public final Path mavenPom;
 
-      public ModuleSourceUnit(ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
+      public ModuleSourceUnit(
+          ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
@@ -576,6 +603,10 @@ public class Bach {
 
       public String name() {
         return info.descriptor().name();
+      }
+
+      public String path() {
+        return info.moduleSourcePath;
       }
 
       public Optional<Path> mavenPom() {
@@ -641,6 +672,20 @@ public class Bach {
 
     /** Main- and test realms. */
     public static class Realm {
+
+      /** Single module realm factory. */
+      public static Realm of(String name, ModuleSourceUnit unit, Realm... realms) {
+        var moduleSourcePath = unit.info.moduleSourcePath;
+        return new Realm(name, false, 0, moduleSourcePath, ToolArguments.of(), List.of(unit), realms);
+      }
+
+      /** Multi-module realm factory. */
+      public static Realm of(String name, List<ModuleSourceUnit> units, Realm... realms) {
+        var distinctPaths = units.stream().map(ModuleSourceUnit::path).distinct();
+        var moduleSourcePath = distinctPaths.collect(Collectors.joining(File.pathSeparator));
+        return new Realm(name, false, 0, moduleSourcePath, ToolArguments.of(), units, realms);
+      }
+
       /** Name of the realm. */
       public final String name;
       /** Enable preview features. */

@@ -17,6 +17,7 @@
 
 package it;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import de.sormuras.bach.Project;
@@ -61,22 +62,20 @@ class DemoTests {
 
     var integration = Path.of("demo/src/integration/test/java");
     var test =
-        new Project.Realm(
+        Project.Realm.of(
             "test",
-            false,
-            0,
-            String.join(
-                File.pathSeparator,
-                String.join(File.separator, "demo", "src", "*", "test", "java"),
-                String.join(File.separator, "demo", "src", "*", "test", "module")),
-            Project.ToolArguments.of(),
-            List.of(
-                new Project.ModuleSourceUnit(
-                    Project.ModuleInfoReference.of(integration.resolve("module-info.java")),
-                    List.of(integration),
-                    List.of(),
-                    null)),
+            new Project.ModuleSourceUnit(
+                Project.ModuleInfoReference.of(integration.resolve("module-info.java")),
+                List.of(integration),
+                List.of(),
+                null),
             main);
+
+    assertEquals(
+        String.join(
+            File.pathSeparator, String.join(File.separator, "demo", "src", "*", "test", "java")
+            /*String.join(File.separator, "demo", "src", "*", "test", "module")*/ ),
+        test.moduleSourcePath);
 
     var library = new Project.Library(Path.of("demo/lib"));
     var project =
