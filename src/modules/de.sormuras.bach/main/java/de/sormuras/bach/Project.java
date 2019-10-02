@@ -234,6 +234,13 @@ public /*STATIC*/ class Project {
 
   /** Java module source unit. */
   public static class ModuleSourceUnit {
+
+    /** Create default unit for the specified path.  */
+    public static ModuleSourceUnit of(Path path) {
+      var reference = ModuleInfoReference.of(path.resolve("module-info.java"));
+      return new ModuleSourceUnit(reference, List.of(path), List.of(), null);
+    }
+
     /** Source-based module reference. */
     public final ModuleInfoReference info;
     /** Paths to the source directories. */

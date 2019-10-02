@@ -45,11 +45,7 @@ class DemoTests {
                 String.join(File.separator, "demo", "src", "*", "main", "java-9")),
             Project.ToolArguments.of(),
             List.of(
-                new Project.ModuleSourceUnit(
-                    Project.ModuleInfoReference.of(demo.resolve("module-info.java")),
-                    List.of(demo),
-                    List.of(),
-                    null),
+                Project.ModuleSourceUnit.of(demo),
                 new Project.MultiReleaseUnit(
                     Project.ModuleInfoReference.of(multi.resolve("java-9/module-info.java")),
                     9,
@@ -61,15 +57,7 @@ class DemoTests {
                     null)));
 
     var integration = Path.of("demo/src/integration/test/java");
-    var test =
-        Project.Realm.of(
-            "test",
-            new Project.ModuleSourceUnit(
-                Project.ModuleInfoReference.of(integration.resolve("module-info.java")),
-                List.of(integration),
-                List.of(),
-                null),
-            main);
+    var test = Project.Realm.of("test", Project.ModuleSourceUnit.of(integration), main);
 
     assertEquals(
         String.join(

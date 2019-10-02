@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-02T04:48:07.442654300Z
+// THIS FILE WAS GENERATED ON 2019-10-02T18:21:13.402505500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -584,6 +584,13 @@ public class Bach {
 
     /** Java module source unit. */
     public static class ModuleSourceUnit {
+
+      /** Create default unit for the specified path.  */
+      public static ModuleSourceUnit of(Path path) {
+        var reference = ModuleInfoReference.of(path.resolve("module-info.java"));
+        return new ModuleSourceUnit(reference, List.of(path), List.of(), null);
+      }
+
       /** Source-based module reference. */
       public final ModuleInfoReference info;
       /** Paths to the source directories. */

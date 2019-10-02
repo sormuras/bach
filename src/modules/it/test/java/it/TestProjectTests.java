@@ -38,12 +38,7 @@ class TestProjectTests {
   @Test
   void jigsawGreetings(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "jigsaw-greetings");
-    var greetings =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/com.greetings/module-info.java")),
-            List.of(base.resolve("src/com.greetings")),
-            List.of(),
-            null);
+    var greetings = Project.ModuleSourceUnit.of(base.resolve("src/com.greetings"));
     var main = Project.Realm.of("main", greetings);
     assertEquals(String.join(File.separator, base.toString(), "src"), main.moduleSourcePath);
     var library = new Project.Library(temp.resolve("lib"));
@@ -71,18 +66,8 @@ class TestProjectTests {
   @Test
   void jigsawWorld(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "jigsaw-world");
-    var greetings =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/main/com.greetings/module-info.java")),
-            List.of(base.resolve("src/main/com.greetings")),
-            List.of(),
-            null);
-    var astro =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/main/org.astro/module-info.java")),
-            List.of(base.resolve("src/main/org.astro")),
-            List.of(),
-            null);
+    var greetings = Project.ModuleSourceUnit.of(base.resolve("src/main/com.greetings"));
+    var astro = Project.ModuleSourceUnit.of(base.resolve("src/main/org.astro"));
     var main = Project.Realm.of("main", List.of(greetings, astro));
     assertEquals(
         String.join(File.separator, base.toString(), "src", "main"), main.moduleSourcePath);
@@ -121,12 +106,7 @@ class TestProjectTests {
                 11, base.resolve("src/a/main/java-11")),
             List.of(),
             null);
-    var b =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/b/main/java/module-info.java")),
-            List.of(base.resolve("src/b/main/java")),
-            List.of(),
-            null);
+    var b = Project.ModuleSourceUnit.of(base.resolve("src/b/main/java"));
     var c =
         new Project.MultiReleaseUnit(
             Project.ModuleInfoReference.of(base.resolve("src/c/main/java-9/module-info.java")),
@@ -138,12 +118,7 @@ class TestProjectTests {
                 11, base.resolve("src/c/main/java-11")),
             List.of(),
             null);
-    var d =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/d/main/java/module-info.java")),
-            List.of(base.resolve("src/d/main/java")),
-            List.of(),
-            null);
+    var d = Project.ModuleSourceUnit.of(base.resolve("src/d/main/java"));
     var main = Project.Realm.of("main", List.of(a, b, c, d));
     assertEquals(
         String.join(
@@ -182,12 +157,7 @@ class TestProjectTests {
   @Test
   void requiresAsm(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "requires-asm");
-    var a =
-        new Project.ModuleSourceUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/a/main/java/module-info.java")),
-            List.of(base.resolve("src/a/main/java")),
-            List.of(),
-            null);
+    var a = Project.ModuleSourceUnit.of(base.resolve("src/a/main/java"));
     assertEquals(
         ModuleDescriptor.newModule("a")
             .requires(Set.of(), "org.objectweb.asm", ModuleDescriptor.Version.parse("7.1"))
