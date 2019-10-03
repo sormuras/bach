@@ -60,10 +60,10 @@ public /*STATIC*/ class Scribe {
             .add("--module-path", project.library.modulePaths)
             .add("--module-source-path", realm.moduleSourcePath);
 
-    for (var unit : realm.units(Project.MultiReleaseUnit.class)) {
+    for (var unit : realm.units(Project.ModuleUnit::isMultiRelease)) {
       var base = unit.sources.get(0);
-      if (!unit.info.path.startsWith(base)) {
-        javadoc.add("--patch-module", unit.name() + "=" + base);
+      if (!unit.info.path.startsWith(base.path)) {
+        javadoc.add("--patch-module", unit.name() + "=" + base.path);
       }
     }
 

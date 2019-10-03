@@ -187,11 +187,11 @@ public class Bach {
     if (realm.units.isEmpty()) {
       return;
     }
-    var hydras = realm.names(Project.MultiReleaseUnit.class);
+    var hydras = realm.names(true);
     if (!hydras.isEmpty()) {
       new Hydra(this, project, realm).compile(hydras);
     }
-    var jigsaws = realm.names(Project.ModuleUnit.class);
+    var jigsaws = realm.names(false);
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
     }

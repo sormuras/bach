@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T05:06:26.794471500Z
+// THIS FILE WAS GENERATED ON 2019-10-03T05:55:33.675155900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -231,11 +231,11 @@ public class Bach {
     if (realm.units.isEmpty()) {
       return;
     }
-    var hydras = realm.names(Project.MultiReleaseUnit.class);
+    var hydras = realm.names(true);
     if (!hydras.isEmpty()) {
       new Hydra(this, project, realm).compile(hydras);
     }
-    var jigsaws = realm.names(Project.ModuleUnit.class);
+    var jigsaws = realm.names(false);
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
     }
@@ -543,7 +543,6 @@ public class Bach {
         }
       }
 
-
       /** Path to the backing {@code module-info.java} file. */
       public final Path path;
       /** Module source path. */
@@ -561,30 +560,56 @@ public class Bach {
       }
     }
 
+    /** Single source path with optional release directive. */
+    public static class Source {
+
+      /** Create default source for the specified path. */
+      public static Source of(Path path) {
+        return new Source(path, 0, false);
+      }
+
+      public final Path path;
+      public final int release;
+      public final boolean merge;
+
+      public Source(Path path, int release, boolean merge) {
+        this.path = path;
+        this.release = release;
+        this.merge = merge;
+      }
+
+      public boolean isRelease() {
+        return release != 0;
+      }
+    }
+
     /** Java module source unit. */
     public static class ModuleUnit {
 
       /** Create default unit for the specified path. */
       public static ModuleUnit of(Path path) {
-        var reference = ModuleInfo.of(path.resolve("module-info.java"));
-        return new ModuleUnit(reference, List.of(path), List.of(), null);
+        var info = ModuleInfo.of(path.resolve("module-info.java"));
+        return new ModuleUnit(info, List.of(Source.of(path)), List.of(), null);
       }
 
       /** Source-based module reference. */
       public final ModuleInfo info;
       /** Paths to the source directories. */
-      public final List<Path> sources;
+      public final List<Source> sources;
       /** Paths to the resource directories. */
       public final List<Path> resources;
       /** Path to the associated Maven POM file, may be {@code null}. */
       public final Path mavenPom;
 
-      public ModuleUnit(
-              ModuleInfo info, List<Path> sources, List<Path> resources, Path mavenPom) {
+      public ModuleUnit(ModuleInfo info, List<Source> sources, List<Path> resources, Path mavenPom) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
         this.mavenPom = mavenPom;
+      }
+
+      public boolean isMultiRelease() {
+        return sources.stream().allMatch(Source::isRelease);
       }
 
       public String name() {
@@ -597,25 +622,6 @@ public class Bach {
 
       public Optional<Path> mavenPom() {
         return Optional.ofNullable(mavenPom);
-      }
-    }
-
-    /** Multi-release module source unit. */
-    public static class MultiReleaseUnit extends ModuleUnit {
-      /** Feature release number to source path map. */
-      public final Map<Integer, Path> releases;
-      /** Copy this module descriptor to the root of the generated modular jar. */
-      public final int copyModuleDescriptorToRootRelease;
-
-      public MultiReleaseUnit(
-          ModuleInfo info,
-          int copyModuleDescriptorToRootRelease,
-          Map<Integer, Path> releases,
-          List<Path> resources,
-          Path mavenPom) {
-        super(info, List.copyOf(new TreeMap<>(releases).values()), resources, mavenPom);
-        this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
-        this.releases = releases;
       }
     }
 
@@ -714,18 +720,15 @@ public class Bach {
       }
 
       /** Names of modules declared in this realm of the passed type. */
-      List<String> names(Class<? extends ModuleUnit> type) {
+      List<String> names(boolean multiRelease) {
         return units.stream()
-            .filter(unit -> type.equals(unit.getClass()))
+            .filter(unit -> unit.isMultiRelease() == multiRelease)
             .map(ModuleUnit::name)
             .collect(Collectors.toList());
       }
 
-      public <T extends ModuleUnit> List<T> units(Class<T> type) {
-        return units.stream()
-            .filter(unit -> type.equals(unit.getClass()))
-            .map(type::cast)
-            .collect(Collectors.toList());
+      public List<ModuleUnit> units(Predicate<ModuleUnit> filter) {
+        return units.stream().filter(filter).collect(Collectors.toList());
       }
     }
   }
@@ -876,7 +879,7 @@ public class Bach {
               .add("--file", target.sourcesJar(unit))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
-              .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
+              .addEach(unit.sources, (cmd, source) -> cmd.add("-C", source.path).add("."))
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
     }
   }
@@ -901,44 +904,41 @@ public class Bach {
     public void compile(Collection<String> modules) {
       bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
       for (var module : modules) {
-        var unit = (Project.MultiReleaseUnit) realm.unit(module).orElseThrow();
-        compile(unit);
+        compile(realm.unit(module).orElseThrow());
       }
     }
 
-    private void compile(Project.MultiReleaseUnit unit) {
-      var sorted = new TreeSet<>(unit.releases.keySet());
-      int base = sorted.first();
-      bach.log("Base feature release number is: %d", base);
+    private void compile(Project.ModuleUnit unit) {
+      var base = unit.sources.get(0);
+      bach.log("Base feature release number is: %d", base.release);
 
-      for (int release : sorted) {
-        compileRelease(unit, base, release);
+      for (var source : unit.sources) {
+        compile(unit, base, source);
       }
       jarModule(unit);
       jarSources(unit);
     }
 
-    private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
+    private void compile(Project.ModuleUnit unit, Project.Source base, Project.Source source) {
       var module = unit.info.descriptor().name();
-      var source = unit.releases.get(release);
-      var destination = classes.resolve(source.getFileName());
-      var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
-      var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
-      if (Util.isModuleInfo(source.resolve("module-info.java"))) {
+      var baseClasses = classes.resolve(base.path.getFileName()).resolve(module);
+      var destination = classes.resolve(source.path.getFileName());
+      var javac = new Command("javac").add("--release", source.release);
+      if (Util.isModuleInfo(source.path.resolve("module-info.java"))) {
         javac
             .addEach(realm.toolArguments.javac)
             .add("-d", destination)
             .add("--module-version", project.version)
             .add("--module-path", project.modulePaths(target))
             .add("--module-source-path", realm.moduleSourcePath);
-        if (base != release) {
+        if (base != source) {
           javac.add("--patch-module", module + '=' + baseClasses);
         }
         javac.add("--module", module);
       } else {
         javac.add("-d", destination.resolve(module));
         var classPath = new ArrayList<Path>();
-        if (base != release) {
+        if (base != source) {
           classPath.add(baseClasses);
         }
         if (Files.isDirectory(target.modules)) {
@@ -952,14 +952,14 @@ public class Bach {
           classPath.addAll(Util.list(path, Util::isJarFile));
         }
         javac.add("--class-path", classPath);
-        javac.addEach(Util.find(List.of(source), Util::isJavaFile));
+        javac.addEach(Util.find(List.of(source.path), Util::isJavaFile));
       }
       bach.run(javac);
     }
 
-    private void jarModule(Project.MultiReleaseUnit unit) {
-      var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-      var base = unit.releases.get(releases.pop()).getFileName();
+    private void jarModule(Project.ModuleUnit unit) {
+      var sources = new ArrayDeque<>(unit.sources);
+      var base = sources.pop().path.getFileName();
       var module = unit.info.descriptor().name();
       var jar =
           new Command("jar")
@@ -969,14 +969,14 @@ public class Bach {
               .add("-C", classes.resolve(base).resolve(module))
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
-      for (var release : releases) {
-        var path = unit.releases.get(release).getFileName();
+      for (var source : sources) {
+        var path = source.path.getFileName();
         var released = classes.resolve(path).resolve(module);
-        if (unit.copyModuleDescriptorToRootRelease == release) {
+        if (source.merge) {
           jar.add("-C", released);
           jar.add("module-info.class");
         }
-        jar.add("--release", release);
+        jar.add("--release", source.release);
         jar.add("-C", released);
         jar.add(".");
       }
@@ -986,20 +986,20 @@ public class Bach {
       }
     }
 
-    private void jarSources(Project.MultiReleaseUnit unit) {
-      var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
+    private void jarSources(Project.ModuleUnit unit) {
+      var sources = new ArrayDeque<>(unit.sources);
       var jar =
           new Command("jar")
               .add("--create")
               .add("--file", target.sourcesJar(unit))
               .addIff(bach.verbose(), "--verbose")
               .add("--no-manifest")
-              .add("-C", releases.removeFirst().getValue())
+              .add("-C", sources.removeFirst().path)
               .add(".")
               .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
-      for (var release : releases) {
-        jar.add("--release", release.getKey());
-        jar.add("-C", release.getValue());
+      for (var source : sources) {
+        jar.add("--release", source.release);
+        jar.add("-C", source.path);
         jar.add(".");
       }
       bach.run(jar);
@@ -1310,10 +1310,10 @@ public class Bach {
               .add("--module-path", project.library.modulePaths)
               .add("--module-source-path", realm.moduleSourcePath);
 
-      for (var unit : realm.units(Project.MultiReleaseUnit.class)) {
+      for (var unit : realm.units(Project.ModuleUnit::isMultiRelease)) {
         var base = unit.sources.get(0);
-        if (!unit.info.path.startsWith(base)) {
-          javadoc.add("--patch-module", unit.name() + "=" + base);
+        if (!unit.info.path.startsWith(base.path)) {
+          javadoc.add("--patch-module", unit.name() + "=" + base.path);
         }
       }
 

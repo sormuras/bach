@@ -25,7 +25,6 @@ import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class DemoTests {
@@ -46,13 +45,12 @@ class DemoTests {
             Project.ToolArguments.of(),
             List.of(
                 Project.ModuleUnit.of(demo),
-                new Project.MultiReleaseUnit(
+                new Project.ModuleUnit(
                     Project.ModuleInfo.of(multi.resolve("java-9/module-info.java")),
-                    9,
-                    Map.of(
-                        8, multi.resolve("java-8"),
-                        9, multi.resolve("java-9"),
-                        11, multi.resolve("java-11")),
+                    List.of(
+                        new Project.Source(multi.resolve("java-8"), 8, false),
+                        new Project.Source(multi.resolve("java-9"), 9, true),
+                        new Project.Source(multi.resolve("java-11"), 11, false)),
                     List.of(),
                     null)));
 

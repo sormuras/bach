@@ -23,8 +23,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 /*BODY*/
 /** Multi-release module compiler. */
@@ -47,44 +45,41 @@ public /*STATIC*/ class Hydra {
   public void compile(Collection<String> modules) {
     bach.log("Generating commands for %s realm multi-release modules(s): %s", realm.name, modules);
     for (var module : modules) {
-      var unit = (Project.MultiReleaseUnit) realm.unit(module).orElseThrow();
-      compile(unit);
+      compile(realm.unit(module).orElseThrow());
     }
   }
 
-  private void compile(Project.MultiReleaseUnit unit) {
-    var sorted = new TreeSet<>(unit.releases.keySet());
-    int base = sorted.first();
-    bach.log("Base feature release number is: %d", base);
+  private void compile(Project.ModuleUnit unit) {
+    var base = unit.sources.get(0);
+    bach.log("Base feature release number is: %d", base.release);
 
-    for (int release : sorted) {
-      compileRelease(unit, base, release);
+    for (var source : unit.sources) {
+      compile(unit, base, source);
     }
     jarModule(unit);
     jarSources(unit);
   }
 
-  private void compileRelease(Project.MultiReleaseUnit unit, int base, int release) {
+  private void compile(Project.ModuleUnit unit, Project.Source base, Project.Source source) {
     var module = unit.info.descriptor().name();
-    var source = unit.releases.get(release);
-    var destination = classes.resolve(source.getFileName());
-    var baseClasses = classes.resolve(unit.releases.get(base).getFileName()).resolve(module);
-    var javac = new Command("javac").addIff(false, "-verbose").add("--release", release);
-    if (Util.isModuleInfo(source.resolve("module-info.java"))) {
+    var baseClasses = classes.resolve(base.path.getFileName()).resolve(module);
+    var destination = classes.resolve(source.path.getFileName());
+    var javac = new Command("javac").add("--release", source.release);
+    if (Util.isModuleInfo(source.path.resolve("module-info.java"))) {
       javac
           .addEach(realm.toolArguments.javac)
           .add("-d", destination)
           .add("--module-version", project.version)
           .add("--module-path", project.modulePaths(target))
           .add("--module-source-path", realm.moduleSourcePath);
-      if (base != release) {
+      if (base != source) {
         javac.add("--patch-module", module + '=' + baseClasses);
       }
       javac.add("--module", module);
     } else {
       javac.add("-d", destination.resolve(module));
       var classPath = new ArrayList<Path>();
-      if (base != release) {
+      if (base != source) {
         classPath.add(baseClasses);
       }
       if (Files.isDirectory(target.modules)) {
@@ -98,14 +93,14 @@ public /*STATIC*/ class Hydra {
         classPath.addAll(Util.list(path, Util::isJarFile));
       }
       javac.add("--class-path", classPath);
-      javac.addEach(Util.find(List.of(source), Util::isJavaFile));
+      javac.addEach(Util.find(List.of(source.path), Util::isJavaFile));
     }
     bach.run(javac);
   }
 
-  private void jarModule(Project.MultiReleaseUnit unit) {
-    var releases = new ArrayDeque<>(new TreeSet<>(unit.releases.keySet()));
-    var base = unit.releases.get(releases.pop()).getFileName();
+  private void jarModule(Project.ModuleUnit unit) {
+    var sources = new ArrayDeque<>(unit.sources);
+    var base = sources.pop().path.getFileName();
     var module = unit.info.descriptor().name();
     var jar =
         new Command("jar")
@@ -115,14 +110,14 @@ public /*STATIC*/ class Hydra {
             .add("-C", classes.resolve(base).resolve(module))
             .add(".")
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
-    for (var release : releases) {
-      var path = unit.releases.get(release).getFileName();
+    for (var source : sources) {
+      var path = source.path.getFileName();
       var released = classes.resolve(path).resolve(module);
-      if (unit.copyModuleDescriptorToRootRelease == release) {
+      if (source.merge) {
         jar.add("-C", released);
         jar.add("module-info.class");
       }
-      jar.add("--release", release);
+      jar.add("--release", source.release);
       jar.add("-C", released);
       jar.add(".");
     }
@@ -132,20 +127,20 @@ public /*STATIC*/ class Hydra {
     }
   }
 
-  private void jarSources(Project.MultiReleaseUnit unit) {
-    var releases = new ArrayDeque<>(new TreeMap<>(unit.releases).entrySet());
+  private void jarSources(Project.ModuleUnit unit) {
+    var sources = new ArrayDeque<>(unit.sources);
     var jar =
         new Command("jar")
             .add("--create")
             .add("--file", target.sourcesJar(unit))
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
-            .add("-C", releases.removeFirst().getValue())
+            .add("-C", sources.removeFirst().path)
             .add(".")
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
-    for (var release : releases) {
-      jar.add("--release", release.getKey());
-      jar.add("-C", release.getValue());
+    for (var source : sources) {
+      jar.add("--release", source.release);
+      jar.add("-C", source.path);
       jar.add(".");
     }
     bach.run(jar);

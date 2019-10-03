@@ -29,10 +29,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -192,7 +191,6 @@ public /*STATIC*/ class Project {
       }
     }
 
-
     /** Path to the backing {@code module-info.java} file. */
     public final Path path;
     /** Module source path. */
@@ -210,30 +208,56 @@ public /*STATIC*/ class Project {
     }
   }
 
+  /** Single source path with optional release directive. */
+  public static class Source {
+
+    /** Create default source for the specified path. */
+    public static Source of(Path path) {
+      return new Source(path, 0, false);
+    }
+
+    public final Path path;
+    public final int release;
+    public final boolean merge;
+
+    public Source(Path path, int release, boolean merge) {
+      this.path = path;
+      this.release = release;
+      this.merge = merge;
+    }
+
+    public boolean isRelease() {
+      return release != 0;
+    }
+  }
+
   /** Java module source unit. */
   public static class ModuleUnit {
 
     /** Create default unit for the specified path. */
     public static ModuleUnit of(Path path) {
-      var reference = ModuleInfo.of(path.resolve("module-info.java"));
-      return new ModuleUnit(reference, List.of(path), List.of(), null);
+      var info = ModuleInfo.of(path.resolve("module-info.java"));
+      return new ModuleUnit(info, List.of(Source.of(path)), List.of(), null);
     }
 
     /** Source-based module reference. */
     public final ModuleInfo info;
     /** Paths to the source directories. */
-    public final List<Path> sources;
+    public final List<Source> sources;
     /** Paths to the resource directories. */
     public final List<Path> resources;
     /** Path to the associated Maven POM file, may be {@code null}. */
     public final Path mavenPom;
 
-    public ModuleUnit(
-            ModuleInfo info, List<Path> sources, List<Path> resources, Path mavenPom) {
+    public ModuleUnit(ModuleInfo info, List<Source> sources, List<Path> resources, Path mavenPom) {
       this.info = info;
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
       this.mavenPom = mavenPom;
+    }
+
+    public boolean isMultiRelease() {
+      return sources.stream().allMatch(Source::isRelease);
     }
 
     public String name() {
@@ -246,25 +270,6 @@ public /*STATIC*/ class Project {
 
     public Optional<Path> mavenPom() {
       return Optional.ofNullable(mavenPom);
-    }
-  }
-
-  /** Multi-release module source unit. */
-  public static class MultiReleaseUnit extends ModuleUnit {
-    /** Feature release number to source path map. */
-    public final Map<Integer, Path> releases;
-    /** Copy this module descriptor to the root of the generated modular jar. */
-    public final int copyModuleDescriptorToRootRelease;
-
-    public MultiReleaseUnit(
-        ModuleInfo info,
-        int copyModuleDescriptorToRootRelease,
-        Map<Integer, Path> releases,
-        List<Path> resources,
-        Path mavenPom) {
-      super(info, List.copyOf(new TreeMap<>(releases).values()), resources, mavenPom);
-      this.copyModuleDescriptorToRootRelease = copyModuleDescriptorToRootRelease;
-      this.releases = releases;
     }
   }
 
@@ -363,18 +368,15 @@ public /*STATIC*/ class Project {
     }
 
     /** Names of modules declared in this realm of the passed type. */
-    List<String> names(Class<? extends ModuleUnit> type) {
+    List<String> names(boolean multiRelease) {
       return units.stream()
-          .filter(unit -> type.equals(unit.getClass()))
+          .filter(unit -> unit.isMultiRelease() == multiRelease)
           .map(ModuleUnit::name)
           .collect(Collectors.toList());
     }
 
-    public <T extends ModuleUnit> List<T> units(Class<T> type) {
-      return units.stream()
-          .filter(unit -> type.equals(unit.getClass()))
-          .map(type::cast)
-          .collect(Collectors.toList());
+    public List<ModuleUnit> units(Predicate<ModuleUnit> filter) {
+      return units.stream().filter(filter).collect(Collectors.toList());
     }
   }
 }

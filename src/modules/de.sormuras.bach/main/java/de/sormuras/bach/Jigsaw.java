@@ -81,7 +81,7 @@ public /*STATIC*/ class Jigsaw {
             .add("--file", target.sourcesJar(unit))
             .addIff(bach.verbose(), "--verbose")
             .add("--no-manifest")
-            .addEach(unit.sources, (cmd, path) -> cmd.add("-C", path).add("."))
+            .addEach(unit.sources, (cmd, source) -> cmd.add("-C", source.path).add("."))
             .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add(".")));
   }
 }

@@ -26,7 +26,6 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
@@ -97,25 +96,23 @@ class TestProjectTests {
   void multiReleaseMultiModule(@TempDir Path temp) {
     var base = Path.of("src", "test-project", "multi-release-multi-module");
     var a =
-        new Project.MultiReleaseUnit(
+        new Project.ModuleUnit(
             Project.ModuleInfo.of(base.resolve("src/a/main/java-9/module-info.java")),
-            9,
-            Map.of(
-                8, base.resolve("src/a/main/java-8"),
-                9, base.resolve("src/a/main/java-9"),
-                11, base.resolve("src/a/main/java-11")),
+            List.of(
+                new Project.Source(base.resolve("src/a/main/java-8"), 8, false),
+                new Project.Source(base.resolve("src/a/main/java-9"), 9, false),
+                new Project.Source(base.resolve("src/a/main/java-11"), 11, false)),
             List.of(),
             null);
     var b = Project.ModuleUnit.of(base.resolve("src/b/main/java"));
     var c =
-        new Project.MultiReleaseUnit(
+        new Project.ModuleUnit(
             Project.ModuleInfo.of(base.resolve("src/c/main/java-9/module-info.java")),
-            9,
-            Map.of(
-                8, base.resolve("src/c/main/java-8"),
-                9, base.resolve("src/c/main/java-9"),
-                10, base.resolve("src/c/main/java-10"),
-                11, base.resolve("src/c/main/java-11")),
+            List.of(
+                new Project.Source(base.resolve("src/c/main/java-8"), 8, false),
+                new Project.Source(base.resolve("src/c/main/java-9"), 9, false),
+                new Project.Source(base.resolve("src/c/main/java-10"), 10, false),
+                new Project.Source(base.resolve("src/c/main/java-11"), 11, false)),
             List.of(),
             null);
     var d = Project.ModuleUnit.of(base.resolve("src/d/main/java"));

@@ -57,7 +57,7 @@ public class Build {
             new Bach.Project.ModuleUnit(
                 Bach.Project.ModuleInfo.of(
                     Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
-                List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
+                List.of(Bach.Project.Source.of(Path.of("src/modules/de.sormuras.bach/main/java"))),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
                 Path.of("src/modules/de.sormuras.bach/main/maven/pom.xml"))));
   }
@@ -71,9 +71,8 @@ public class Build {
         Bach.Project.ToolArguments.of(),
         List.of(
             new Bach.Project.ModuleUnit(
-                Bach.Project.ModuleInfo.of(
-                    Path.of("src/modules/it/test/java/module-info.java")),
-                List.of(Path.of("src/modules/it/test/java")),
+                Bach.Project.ModuleInfo.of(Path.of("src/modules/it/test/java/module-info.java")),
+                List.of(Bach.Project.Source.of(Path.of("src/modules/it/test/java"))),
                 List.of(Path.of("src/modules/it/test/resources")),
                 null)),
         main);
