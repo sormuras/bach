@@ -191,7 +191,7 @@ public class Bach {
     if (!hydras.isEmpty()) {
       new Hydra(this, project, realm).compile(hydras);
     }
-    var jigsaws = realm.names(Project.ModuleSourceUnit.class);
+    var jigsaws = realm.names(Project.ModuleUnit.class);
     if (!jigsaws.isEmpty()) {
       new Jigsaw(this, project, realm).compile(jigsaws);
     }

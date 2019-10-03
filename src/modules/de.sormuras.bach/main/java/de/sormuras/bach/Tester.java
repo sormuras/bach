@@ -57,7 +57,7 @@ import java.util.stream.StreamSupport;
     }
   }
 
-  private void test(Project.ModuleSourceUnit unit) {
+  private void test(Project.ModuleUnit unit) {
     var errors = new StringBuilder();
     errors.append(testToolProvider(unit));
     if (errors.toString().replace('0', ' ').isBlank()) {
@@ -66,7 +66,7 @@ import java.util.stream.StreamSupport;
     throw new AssertionError("Test run failed!");
   }
 
-  private int testToolProvider(Project.ModuleSourceUnit unit) {
+  private int testToolProvider(Project.ModuleUnit unit) {
     var target = bach.project.target(test);
     var modulePath = bach.project.modulePaths(target, target.modularJar(unit));
     try {
@@ -79,7 +79,7 @@ import java.util.stream.StreamSupport;
     }
   }
 
-  private int testToolProvider(Project.ModuleSourceUnit unit, List<Path> modulePath) {
+  private int testToolProvider(Project.ModuleUnit unit, List<Path> modulePath) {
     var key = "test(" + unit.name() + ")";
     var layer = layer(modulePath, unit.name());
     var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);

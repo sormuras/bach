@@ -54,7 +54,7 @@ public class Build {
                 "bintray-sormuras-maven",
                 URI.create("https://api.bintray.com/maven/sormuras/maven/bach/;publish=0"))),
         List.of(
-            new Bach.Project.ModuleSourceUnit(
+            new Bach.Project.ModuleUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
                 List.of(Path.of("src/modules/de.sormuras.bach/main/java")),
@@ -70,7 +70,7 @@ public class Build {
         String.join(File.separator, "src", "modules", "*", "test", "java"),
         Bach.Project.ToolArguments.of(),
         List.of(
-            new Bach.Project.ModuleSourceUnit(
+            new Bach.Project.ModuleUnit(
                 Bach.Project.ModuleInfoReference.of(
                     Path.of("src/modules/it/test/java/module-info.java")),
                 List.of(Path.of("src/modules/it/test/java")),

@@ -56,7 +56,7 @@ public /*STATIC*/ class Jigsaw {
     }
   }
 
-  private void jarModule(Project.ModuleSourceUnit unit) {
+  private void jarModule(Project.ModuleUnit unit) {
     var descriptor = unit.info.descriptor();
     bach.run(
         new Command("jar")
@@ -74,7 +74,7 @@ public /*STATIC*/ class Jigsaw {
     }
   }
 
-  private void jarSources(Project.ModuleSourceUnit unit) {
+  private void jarSources(Project.ModuleUnit unit) {
     bach.run(
         new Command("jar")
             .add("--create")

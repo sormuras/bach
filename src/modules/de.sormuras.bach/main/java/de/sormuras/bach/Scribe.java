@@ -136,7 +136,7 @@ public /*STATIC*/ class Scribe {
     }
   }
 
-  private String generateMavenArtifactLine(Project.ModuleSourceUnit unit) {
+  private String generateMavenArtifactLine(Project.ModuleUnit unit) {
     var pom = "pomFile=" + Util.require(unit.mavenPom().orElseThrow(), Files::isRegularFile);
     var file = "file=" + Util.require(target.modularJar(unit), Util::isJarFile);
     var sources = "sources=" + Util.require(target.sourcesJar(unit), Util::isJarFile);

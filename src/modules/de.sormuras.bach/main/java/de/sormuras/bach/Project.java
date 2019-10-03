@@ -117,23 +117,23 @@ public /*STATIC*/ class Project {
     }
 
     /** Return base file name for the passed module unit. */
-    public String file(ModuleSourceUnit unit) {
+    public String file(ModuleUnit unit) {
       var descriptor = unit.info.descriptor();
       return descriptor.name() + "-" + descriptor.version().orElse(version);
     }
 
     /** Return file name for the passed module unit. */
-    public String file(ModuleSourceUnit unit, String extension) {
+    public String file(ModuleUnit unit, String extension) {
       return file(unit) + extension;
     }
 
     /** Return modular JAR file path for the passed module unit. */
-    public Path modularJar(ModuleSourceUnit unit) {
+    public Path modularJar(ModuleUnit unit) {
       return modules.resolve(file(unit, ".jar"));
     }
 
     /** Return sources JAR file path for the passed module unit. */
-    public Path sourcesJar(ModuleSourceUnit unit) {
+    public Path sourcesJar(ModuleUnit unit) {
       return directory.resolve(file(unit, "-sources.jar"));
     }
   }
@@ -233,12 +233,12 @@ public /*STATIC*/ class Project {
   }
 
   /** Java module source unit. */
-  public static class ModuleSourceUnit {
+  public static class ModuleUnit {
 
-    /** Create default unit for the specified path.  */
-    public static ModuleSourceUnit of(Path path) {
+    /** Create default unit for the specified path. */
+    public static ModuleUnit of(Path path) {
       var reference = ModuleInfoReference.of(path.resolve("module-info.java"));
-      return new ModuleSourceUnit(reference, List.of(path), List.of(), null);
+      return new ModuleUnit(reference, List.of(path), List.of(), null);
     }
 
     /** Source-based module reference. */
@@ -250,7 +250,7 @@ public /*STATIC*/ class Project {
     /** Path to the associated Maven POM file, may be {@code null}. */
     public final Path mavenPom;
 
-    public ModuleSourceUnit(
+    public ModuleUnit(
         ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
       this.info = info;
       this.sources = List.copyOf(sources);
@@ -272,7 +272,7 @@ public /*STATIC*/ class Project {
   }
 
   /** Multi-release module source unit. */
-  public static class MultiReleaseUnit extends ModuleSourceUnit {
+  public static class MultiReleaseUnit extends ModuleUnit {
     /** Feature release number to source path map. */
     public final Map<Integer, Path> releases;
     /** Copy this module descriptor to the root of the generated modular jar. */
@@ -331,14 +331,14 @@ public /*STATIC*/ class Project {
   public static class Realm {
 
     /** Single module realm factory. */
-    public static Realm of(String name, ModuleSourceUnit unit, Realm... realms) {
+    public static Realm of(String name, ModuleUnit unit, Realm... realms) {
       var moduleSourcePath = unit.info.moduleSourcePath;
       return new Realm(name, false, 0, moduleSourcePath, ToolArguments.of(), List.of(unit), realms);
     }
 
     /** Multi-module realm factory. */
-    public static Realm of(String name, List<ModuleSourceUnit> units, Realm... realms) {
-      var distinctPaths = units.stream().map(ModuleSourceUnit::path).distinct();
+    public static Realm of(String name, List<ModuleUnit> units, Realm... realms) {
+      var distinctPaths = units.stream().map(ModuleUnit::path).distinct();
       var moduleSourcePath = distinctPaths.collect(Collectors.joining(File.pathSeparator));
       return new Realm(name, false, 0, moduleSourcePath, ToolArguments.of(), units, realms);
     }
@@ -354,7 +354,7 @@ public /*STATIC*/ class Project {
     /** Option values passed to various tools. */
     public final ToolArguments toolArguments;
     /** Map of all declared module source unit. */
-    public final List<ModuleSourceUnit> units;
+    public final List<ModuleUnit> units;
     /** List of required realms. */
     public final List<Realm> realms;
 
@@ -364,7 +364,7 @@ public /*STATIC*/ class Project {
         int release,
         String moduleSourcePath,
         ToolArguments toolArguments,
-        List<ModuleSourceUnit> units,
+        List<ModuleUnit> units,
         Realm... realms) {
       this.name = name;
       this.preview = preview;
@@ -375,24 +375,24 @@ public /*STATIC*/ class Project {
       this.realms = List.of(realms);
     }
 
-    Optional<ModuleSourceUnit> unit(String name) {
+    Optional<ModuleUnit> unit(String name) {
       return units.stream().filter(unit -> unit.name().equals(name)).findAny();
     }
 
     /** Names of all modules declared in this realm. */
     List<String> names() {
-      return units.stream().map(Project.ModuleSourceUnit::name).collect(Collectors.toList());
+      return units.stream().map(ModuleUnit::name).collect(Collectors.toList());
     }
 
     /** Names of modules declared in this realm of the passed type. */
-    List<String> names(Class<? extends ModuleSourceUnit> type) {
+    List<String> names(Class<? extends ModuleUnit> type) {
       return units.stream()
           .filter(unit -> type.equals(unit.getClass()))
-          .map(Project.ModuleSourceUnit::name)
+          .map(ModuleUnit::name)
           .collect(Collectors.toList());
     }
 
-    public <T extends ModuleSourceUnit> List<T> units(Class<T> type) {
+    public <T extends ModuleUnit> List<T> units(Class<T> type) {
       return units.stream()
           .filter(unit -> type.equals(unit.getClass()))
           .map(type::cast)
