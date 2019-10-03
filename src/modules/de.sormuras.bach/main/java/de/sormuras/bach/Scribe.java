@@ -82,12 +82,7 @@ public /*STATIC*/ class Scribe {
 
   public void generateMavenInstallScript() {
     var maven =
-        String.join(
-            " ",
-            "mvn",
-            "--batch-mode",
-            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-            "install:install-file");
+        String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", "install:install-file");
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       if (unit.mavenPom().isPresent()) {
@@ -118,7 +113,7 @@ public /*STATIC*/ class Scribe {
             " ",
             "mvn",
             "--batch-mode",
-            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+            "--no-transfer-progress",
             plugin,
             "-D" + repository,
             "-D" + url);
