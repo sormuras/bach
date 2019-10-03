@@ -8,6 +8,7 @@ open /*test*/ module integration {
   // modules used for testing
   requires org.junit.jupiter;
   requires org.junit.platform.launcher;
+  requires org.junit.platform.console;
 
   provides java.util.spi.ToolProvider with
       integration.Main;
