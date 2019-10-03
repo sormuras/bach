@@ -58,44 +58,24 @@ import java.util.stream.StreamSupport;
   }
 
   private void test(Project.ModuleUnit unit) {
-    var errors = new StringBuilder();
-    errors.append(testToolProvider(unit));
-    if (errors.toString().replace('0', ' ').isBlank()) {
-      return;
-    }
-    throw new AssertionError("Test run failed!");
-  }
-
-  private int testToolProvider(Project.ModuleUnit unit) {
     var target = bach.project.target(test);
     var modulePath = bach.project.modulePaths(target, target.modularJar(unit));
+    var layer = layer(modulePath, unit.name());
+
+    var errors = new StringBuilder();
     try {
-      return testToolProvider(unit, modulePath);
+      errors.append(new ToolProviderTester(layer, unit).test());
+      errors.append(new JUnitConsoleTester(layer, unit).test());
     } finally {
       if (Util.isWindows()) {
         System.gc();
         Util.sleep(1234);
       }
     }
-  }
-
-  private int testToolProvider(Project.ModuleUnit unit, List<Path> modulePath) {
-    var key = "test(" + unit.name() + ")";
-    var layer = layer(modulePath, unit.name());
-    var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
-    var tools =
-        StreamSupport.stream(serviceLoader.spliterator(), false)
-            .filter(provider -> provider.name().equals(key))
-            .collect(Collectors.toList());
-    if (tools.isEmpty()) {
-      // bach.warn("No tool provider named '%s' found in: %s", key, layer);
-      return 0;
+    if (errors.toString().replace('0', ' ').isBlank()) {
+      return;
     }
-    int sum = 0;
-    for (var tool : tools) {
-      sum += run(tool);
-    }
-    return sum;
+    throw new AssertionError("Test run failed!");
   }
 
   private ModuleLayer layer(List<Path> modulePath, String module) {
@@ -106,8 +86,8 @@ import java.util.stream.StreamSupport;
     var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
     bach.log("Finder finds module(s):");
     finder.findAll().stream()
-            .sorted(Comparator.comparing(ModuleReference::descriptor))
-            .forEach(reference -> bach.log("  -> %s", reference));
+        .sorted(Comparator.comparing(ModuleReference::descriptor))
+        .forEach(reference -> bach.log("  -> %s", reference));
     var roots = List.of(module);
     bach.log("Root module(s):");
     for (var root : roots) {
@@ -130,11 +110,64 @@ import java.util.stream.StreamSupport;
       parent.setDefaultAssertionStatus(true);
       parent = parent.getParent();
     }
-
     try {
+      bach.log("Running %s %s", tool.name(), String.join(" ", args));
       return tool.run(bach.out, bach.err, args);
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
+    }
+  }
+
+  class ToolProviderTester {
+
+    private final ModuleLayer layer;
+    private final Project.ModuleUnit unit;
+
+    ToolProviderTester(ModuleLayer layer, Project.ModuleUnit unit) {
+      this.layer = layer;
+      this.unit = unit;
+    }
+
+    int test() {
+      var key = "test(" + unit.name() + ")";
+      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+      var tools =
+              StreamSupport.stream(serviceLoader.spliterator(), false)
+                      .filter(provider -> provider.name().equals(key))
+                      .collect(Collectors.toList());
+      if (tools.isEmpty()) {
+        bach.log("No tool provider named '%s' found in: %s", key, layer);
+        return 0;
+      }
+      int sum = 0;
+      for (var tool : tools) {
+        sum += run(tool);
+      }
+      return sum;
+    }
+  }
+
+  class JUnitConsoleTester {
+
+    private final ModuleLayer layer;
+    private final Project.ModuleUnit unit;
+
+    JUnitConsoleTester(ModuleLayer layer, Project.ModuleUnit unit) {
+      this.layer = layer;
+      this.unit = unit;
+    }
+
+    int test() {
+      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+      var junit =
+          StreamSupport.stream(serviceLoader.spliterator(), false)
+              .filter(provider -> provider.name().equals("junit"))
+              .findFirst();
+      if (junit.isEmpty()) {
+        bach.warn("No tool provider named 'junit' for %s found in: %s", unit.name(), layer);
+        return 0;
+      }
+      return run(junit.get(), "--select-module", unit.name());
     }
   }
 }
