@@ -56,13 +56,21 @@ class DemoTests {
                     List.of(),
                     null)));
 
-    var integration = Path.of("demo/src/integration/test/java");
-    var test = Project.Realm.of("test", Project.ModuleUnit.of(integration), main);
+    var integration = Project.ModuleUnit.of(Path.of("demo/src/integration/test/java"));
+    var demoPath = Path.of("demo/src/de.sormuras.bach.demo/test");
+    var demoTest =
+        new Project.ModuleUnit(
+            Project.ModuleInfo.of(demoPath.resolve("module/module-info.java")),
+            List.of(Project.Source.of(demoPath.resolve("java"))),
+            List.of(), // resources
+            null);
+    var test = Project.Realm.of("test", List.of(integration, demoTest), main);
 
     assertEquals(
         String.join(
-            File.pathSeparator, String.join(File.separator, "demo", "src", "*", "test", "java")
-            /*String.join(File.separator, "demo", "src", "*", "test", "module")*/ ),
+            File.pathSeparator,
+            String.join(File.separator, "demo", "src", "*", "test", "java"),
+            String.join(File.separator, "demo", "src", "*", "test", "module")),
         test.moduleSourcePath);
 
     var library = new Project.Library(Path.of("demo/lib"));

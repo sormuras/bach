@@ -59,7 +59,10 @@ class UtilTests {
     var err = new StringWriter();
     var transfer = new Util.Downloader(new PrintWriter(out), new PrintWriter(err));
     var paths = transfer.download(download, items);
-    reporter.publishEntry("err", err.toString());
+    var errors = err.toString();
+    if (!errors.isBlank()) {
+      reporter.publishEntry("errors", errors);
+    }
 
     assertEquals(Set.of(a2, b2, c2), paths);
     assertLinesMatch(Files.readAllLines(a), Files.readAllLines(a2));
