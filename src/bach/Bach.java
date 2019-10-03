@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T07:14:13.069373100Z
+// THIS FILE WAS GENERATED ON 2019-10-03T15:35:43.565255500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -863,12 +863,30 @@ public class Bach {
               .add("--module-path", project.modulePaths(target))
               .add("--module-source-path", realm.moduleSourcePath)
               .add("--module-version", project.version)
-              .add("--module", String.join(",", modules)));
+              .addEach(patches(modules))
+              .add("--module", String.join(",", modules)) //
+          );
       for (var module : modules) {
         var unit = realm.unit(module).orElseThrow();
         jarModule(unit);
         jarSources(unit);
       }
+    }
+
+    private List<String> patches(Collection<String> modules) {
+      var patches = new Command("<patches>");
+      for (var module : modules) {
+        var other =
+            realm.realms.stream()
+                .flatMap(r -> r.units.stream())
+                .filter(u -> u.name().equals(module))
+                .findFirst();
+        other.ifPresent(
+            unit ->
+                patches.add(
+                    "--patch-module", unit.sources.stream().map(s -> s.path), v -> module + "=" + v));
+      }
+      return patches.getArguments();
     }
 
     private void jarModule(Project.ModuleUnit unit) {
@@ -1347,12 +1365,7 @@ public class Bach {
 
     public void generateMavenInstallScript() {
       var maven =
-          String.join(
-              " ",
-              "mvn",
-              "--batch-mode",
-              "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-              "install:install-file");
+          String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", "install:install-file");
       var lines = new ArrayList<String>();
       for (var unit : realm.units) {
         if (unit.mavenPom().isPresent()) {
@@ -1383,7 +1396,7 @@ public class Bach {
               " ",
               "mvn",
               "--batch-mode",
-              "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+              "--no-transfer-progress",
               plugin,
               "-D" + repository,
               "-D" + url);
@@ -1529,44 +1542,24 @@ public class Bach {
     }
 
     private void test(Project.ModuleUnit unit) {
-      var errors = new StringBuilder();
-      errors.append(testToolProvider(unit));
-      if (errors.toString().replace('0', ' ').isBlank()) {
-        return;
-      }
-      throw new AssertionError("Test run failed!");
-    }
-
-    private int testToolProvider(Project.ModuleUnit unit) {
       var target = bach.project.target(test);
       var modulePath = bach.project.modulePaths(target, target.modularJar(unit));
+      var layer = layer(modulePath, unit.name());
+
+      var errors = new StringBuilder();
       try {
-        return testToolProvider(unit, modulePath);
+        errors.append(new ToolProviderTester(layer, unit).test());
+        errors.append(new JUnitConsoleTester(layer, unit).test());
       } finally {
         if (Util.isWindows()) {
           System.gc();
           Util.sleep(1234);
         }
       }
-    }
-
-    private int testToolProvider(Project.ModuleUnit unit, List<Path> modulePath) {
-      var key = "test(" + unit.name() + ")";
-      var layer = layer(modulePath, unit.name());
-      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
-      var tools =
-          StreamSupport.stream(serviceLoader.spliterator(), false)
-              .filter(provider -> provider.name().equals(key))
-              .collect(Collectors.toList());
-      if (tools.isEmpty()) {
-        // bach.warn("No tool provider named '%s' found in: %s", key, layer);
-        return 0;
+      if (errors.toString().replace('0', ' ').isBlank()) {
+        return;
       }
-      int sum = 0;
-      for (var tool : tools) {
-        sum += run(tool);
-      }
-      return sum;
+      throw new AssertionError("Test run failed!");
     }
 
     private ModuleLayer layer(List<Path> modulePath, String module) {
@@ -1577,8 +1570,8 @@ public class Bach {
       var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
       bach.log("Finder finds module(s):");
       finder.findAll().stream()
-              .sorted(Comparator.comparing(ModuleReference::descriptor))
-              .forEach(reference -> bach.log("  -> %s", reference));
+          .sorted(Comparator.comparing(ModuleReference::descriptor))
+          .forEach(reference -> bach.log("  -> %s", reference));
       var roots = List.of(module);
       bach.log("Root module(s):");
       for (var root : roots) {
@@ -1601,11 +1594,64 @@ public class Bach {
         parent.setDefaultAssertionStatus(true);
         parent = parent.getParent();
       }
-
       try {
+        bach.log("Running %s %s", tool.name(), String.join(" ", args));
         return tool.run(bach.out, bach.err, args);
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
+      }
+    }
+
+    class ToolProviderTester {
+
+      private final ModuleLayer layer;
+      private final Project.ModuleUnit unit;
+
+      ToolProviderTester(ModuleLayer layer, Project.ModuleUnit unit) {
+        this.layer = layer;
+        this.unit = unit;
+      }
+
+      int test() {
+        var key = "test(" + unit.name() + ")";
+        var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+        var tools =
+                StreamSupport.stream(serviceLoader.spliterator(), false)
+                        .filter(provider -> provider.name().equals(key))
+                        .collect(Collectors.toList());
+        if (tools.isEmpty()) {
+          // bach.warn("No tool provider named '%s' found in: %s", key, layer);
+          return 0;
+        }
+        int sum = 0;
+        for (var tool : tools) {
+          sum += run(tool);
+        }
+        return sum;
+      }
+    }
+
+    class JUnitConsoleTester {
+
+      private final ModuleLayer layer;
+      private final Project.ModuleUnit unit;
+
+      JUnitConsoleTester(ModuleLayer layer, Project.ModuleUnit unit) {
+        this.layer = layer;
+        this.unit = unit;
+      }
+
+      int test() {
+        var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+        var junit =
+            StreamSupport.stream(serviceLoader.spliterator(), false)
+                .filter(provider -> provider.name().equals("junit"))
+                .findFirst();
+        if (junit.isEmpty()) {
+          bach.warn("No tool provider named 'junit' for %s found in: %s", unit.name(), layer);
+          return 0;
+        }
+        return run(junit.get(), "--select-module", unit.name());
       }
     }
   }
