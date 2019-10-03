@@ -99,9 +99,9 @@ class TestProjectTests {
         new Project.ModuleUnit(
             Project.ModuleInfo.of(base.resolve("src/a/main/java-9/module-info.java")),
             List.of(
-                new Project.Source(base.resolve("src/a/main/java-8"), 8, false),
-                new Project.Source(base.resolve("src/a/main/java-9"), 9, false),
-                new Project.Source(base.resolve("src/a/main/java-11"), 11, false)),
+                Project.Source.of(base.resolve("src/a/main/java-8"), 8),
+                Project.Source.of(base.resolve("src/a/main/java-9"), 9),
+                Project.Source.of(base.resolve("src/a/main/java-11"), 11)),
             List.of(),
             null);
     var b = Project.ModuleUnit.of(base.resolve("src/b/main/java"));
@@ -109,10 +109,10 @@ class TestProjectTests {
         new Project.ModuleUnit(
             Project.ModuleInfo.of(base.resolve("src/c/main/java-9/module-info.java")),
             List.of(
-                new Project.Source(base.resolve("src/c/main/java-8"), 8, false),
-                new Project.Source(base.resolve("src/c/main/java-9"), 9, false),
-                new Project.Source(base.resolve("src/c/main/java-10"), 10, false),
-                new Project.Source(base.resolve("src/c/main/java-11"), 11, false)),
+                Project.Source.of(base.resolve("src/c/main/java-8"), 8),
+                Project.Source.of(base.resolve("src/c/main/java-9"), 9),
+                Project.Source.of(base.resolve("src/c/main/java-10"), 10),
+                Project.Source.of(base.resolve("src/c/main/java-11"), 11)),
             List.of(),
             null);
     var d = Project.ModuleUnit.of(base.resolve("src/d/main/java"));

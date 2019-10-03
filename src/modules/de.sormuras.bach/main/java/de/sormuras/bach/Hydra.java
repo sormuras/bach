@@ -113,11 +113,9 @@ public /*STATIC*/ class Hydra {
     for (var source : sources) {
       var path = source.path.getFileName();
       var released = classes.resolve(path).resolve(module);
-      if (source.merge) {
-        jar.add("-C", released);
-        jar.add("module-info.class");
+      if (source.isVersioned()) {
+        jar.add("--release", source.release);
       }
-      jar.add("--release", source.release);
       jar.add("-C", released);
       jar.add(".");
     }

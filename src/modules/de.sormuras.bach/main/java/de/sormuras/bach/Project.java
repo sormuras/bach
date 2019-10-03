@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -210,24 +211,41 @@ public /*STATIC*/ class Project {
 
   /** Single source path with optional release directive. */
   public static class Source {
-
-    /** Create default source for the specified path. */
-    public static Source of(Path path) {
-      return new Source(path, 0, false);
+    /** Source-specific flag. */
+    public enum Flag {
+      /** Store binary assets in {@code META-INF/versions/${release}/} directory of the jar. */
+      VERSIONED
     }
 
-    public final Path path;
-    public final int release;
-    public final boolean merge;
+    /** Create default non-targeted source for the specified path. */
+    public static Source of(Path path) {
+      return new Source(path, 0, Set.of());
+    }
 
-    public Source(Path path, int release, boolean merge) {
+    /** Create targeted source for the specified path, the release, and optional flags. */
+    public static Source of(Path path, int release, Flag... flags) {
+      return new Source(path, release, Util.concat(Set.of(Flag.VERSIONED), Set.of(flags)));
+    }
+
+    /** Source path. */
+    public final Path path;
+    /** Java feature release target number, with zero indicating the current runtime release. */
+    public final int release;
+    /** Optional flags. */
+    public final Set<Flag> flags;
+
+    public Source(Path path, int release, Set<Flag> flags) {
       this.path = path;
       this.release = release;
-      this.merge = merge;
+      this.flags = Set.copyOf(flags);
     }
 
-    public boolean isRelease() {
+    public boolean isTargeted() {
       return release != 0;
+    }
+
+    public boolean isVersioned() {
+      return flags.contains(Flag.VERSIONED);
     }
   }
 
@@ -257,7 +275,7 @@ public /*STATIC*/ class Project {
     }
 
     public boolean isMultiRelease() {
-      return sources.stream().allMatch(Source::isRelease);
+      return sources.stream().allMatch(Source::isTargeted);
     }
 
     public String name() {
@@ -330,7 +348,7 @@ public /*STATIC*/ class Project {
     public final String name;
     /** Enable preview features. */
     public final boolean preview;
-    /** Java feature release target number. */
+    /** Java feature release target number, with zero indicating the current runtime release. */
     public final int release;
     /** Module source path specifies where to find input source files for multiple modules. */
     public final String moduleSourcePath;
