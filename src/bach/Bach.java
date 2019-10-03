@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T15:35:43.565255500Z
+// THIS FILE WAS GENERATED ON 2019-10-03T16:19:34.006682400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1620,7 +1620,7 @@ public class Bach {
                         .filter(provider -> provider.name().equals(key))
                         .collect(Collectors.toList());
         if (tools.isEmpty()) {
-          // bach.warn("No tool provider named '%s' found in: %s", key, layer);
+          bach.log("No tool provider named '%s' found in: %s", key, layer);
           return 0;
         }
         int sum = 0;
