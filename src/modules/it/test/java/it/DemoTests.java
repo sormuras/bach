@@ -47,7 +47,7 @@ class DemoTests {
             List.of(
                 Project.ModuleUnit.of(demo),
                 new Project.MultiReleaseUnit(
-                    Project.ModuleInfoReference.of(multi.resolve("java-9/module-info.java")),
+                    Project.ModuleInfo.of(multi.resolve("java-9/module-info.java")),
                     9,
                     Map.of(
                         8, multi.resolve("java-8"),

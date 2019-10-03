@@ -98,7 +98,7 @@ class TestProjectTests {
     var base = Path.of("src", "test-project", "multi-release-multi-module");
     var a =
         new Project.MultiReleaseUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/a/main/java-9/module-info.java")),
+            Project.ModuleInfo.of(base.resolve("src/a/main/java-9/module-info.java")),
             9,
             Map.of(
                 8, base.resolve("src/a/main/java-8"),
@@ -109,7 +109,7 @@ class TestProjectTests {
     var b = Project.ModuleUnit.of(base.resolve("src/b/main/java"));
     var c =
         new Project.MultiReleaseUnit(
-            Project.ModuleInfoReference.of(base.resolve("src/c/main/java-9/module-info.java")),
+            Project.ModuleInfo.of(base.resolve("src/c/main/java-9/module-info.java")),
             9,
             Map.of(
                 8, base.resolve("src/c/main/java-8"),

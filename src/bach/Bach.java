@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T04:26:50.787370700Z
+// THIS FILE WAS GENERATED ON 2019-10-03T04:46:10.973190800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -529,15 +529,15 @@ public class Bach {
     }
 
     /** Source-based module reference. */
-    public static class ModuleInfoReference extends ModuleReference {
+    public static class ModuleInfo extends ModuleReference {
 
       /** Module compilation unit parser. */
-      public static ModuleInfoReference of(Path info) {
+      public static ModuleInfo of(Path info) {
         if (!Util.isModuleInfo(info)) {
           throw new IllegalArgumentException("Expected module-info.java path, but got: " + info);
         }
         try {
-          return new ModuleInfoReference(Modules.describe(Files.readString(info)), info);
+          return new ModuleInfo(Modules.describe(Files.readString(info)), info);
         } catch (IOException e) {
           throw new UncheckedIOException("Reading module declaration failed: " + info, e);
         }
@@ -570,7 +570,7 @@ public class Bach {
       /** Module source path. */
       public final String moduleSourcePath;
 
-      private ModuleInfoReference(ModuleDescriptor descriptor, Path path) {
+      private ModuleInfo(ModuleDescriptor descriptor, Path path) {
         super(descriptor, path.toUri());
         this.path = path;
         this.moduleSourcePath = moduleSourcePath(path, descriptor.name());
@@ -587,12 +587,12 @@ public class Bach {
 
       /** Create default unit for the specified path. */
       public static ModuleUnit of(Path path) {
-        var reference = ModuleInfoReference.of(path.resolve("module-info.java"));
+        var reference = ModuleInfo.of(path.resolve("module-info.java"));
         return new ModuleUnit(reference, List.of(path), List.of(), null);
       }
 
       /** Source-based module reference. */
-      public final ModuleInfoReference info;
+      public final ModuleInfo info;
       /** Paths to the source directories. */
       public final List<Path> sources;
       /** Paths to the resource directories. */
@@ -601,7 +601,7 @@ public class Bach {
       public final Path mavenPom;
 
       public ModuleUnit(
-          ModuleInfoReference info, List<Path> sources, List<Path> resources, Path mavenPom) {
+              ModuleInfo info, List<Path> sources, List<Path> resources, Path mavenPom) {
         this.info = info;
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
@@ -629,7 +629,7 @@ public class Bach {
       public final int copyModuleDescriptorToRootRelease;
 
       public MultiReleaseUnit(
-          ModuleInfoReference info,
+          ModuleInfo info,
           int copyModuleDescriptorToRootRelease,
           Map<Integer, Path> releases,
           List<Path> resources,
