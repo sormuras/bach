@@ -43,6 +43,7 @@ public class Build {
   }
 
   private static Bach.Project.Realm main() {
+    var main = Path.of("src/modules/de.sormuras.bach/main");
     return new Bach.Project.Realm(
         "main",
         false,
@@ -55,14 +56,14 @@ public class Build {
                 URI.create("https://api.bintray.com/maven/sormuras/maven/bach/;publish=0"))),
         List.of(
             new Bach.Project.ModuleUnit(
-                Bach.Project.ModuleInfo.of(
-                    Path.of("src/modules/de.sormuras.bach/main/java/module-info.java")),
-                List.of(Bach.Project.Source.of(Path.of("src/modules/de.sormuras.bach/main/java"))),
-                List.of(Path.of("src/modules/de.sormuras.bach/main/resources")),
-                Path.of("src/modules/de.sormuras.bach/main/maven/pom.xml"))));
+                Bach.Project.ModuleInfo.of(main.resolve("java/module-info.java")),
+                List.of(Bach.Project.Source.of(main.resolve("java"))),
+                List.of(main.resolve("resources")),
+                main.resolve("maven/pom.xml"))));
   }
 
   private static Bach.Project.Realm test(Bach.Project.Realm main) {
+    var test = Path.of("src/modules/it/test");
     return new Bach.Project.Realm(
         "test",
         true,
@@ -71,9 +72,9 @@ public class Build {
         Bach.Project.ToolArguments.of(),
         List.of(
             new Bach.Project.ModuleUnit(
-                Bach.Project.ModuleInfo.of(Path.of("src/modules/it/test/java/module-info.java")),
-                List.of(Bach.Project.Source.of(Path.of("src/modules/it/test/java"))),
-                List.of(Path.of("src/modules/it/test/resources")),
+                Bach.Project.ModuleInfo.of(test.resolve("java/module-info.java")),
+                List.of(Bach.Project.Source.of(test.resolve("java"))),
+                List.of(test.resolve("resources")),
                 null)),
         main);
   }
