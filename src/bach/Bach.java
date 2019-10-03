@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T04:46:10.973190800Z
+// THIS FILE WAS GENERATED ON 2019-10-03T05:06:26.794471500Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -543,27 +543,6 @@ public class Bach {
         }
       }
 
-      /** Compute module's source path. */
-      public static String moduleSourcePath(Path info, String name) {
-        var directory = Util.requireNonNull(info, "info").getParent();
-        if (directory == null) {
-          throw new IllegalArgumentException("Not in a directory: " + info);
-        }
-        var names = new ArrayList<String>();
-        directory.forEach(element -> names.add(element.toString()));
-        int frequency = Collections.frequency(names, name);
-        if (frequency == 0) {
-          return directory.toString();
-        }
-        if (frequency == 1) {
-          if (directory.endsWith(name)) {
-            return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
-          }
-          var star = names.stream().map(e -> e.equals(name) ? "*" : e).collect(Collectors.toList());
-          return String.join(File.separator, star);
-        }
-        throw new IllegalArgumentException("Ambiguous module source path: " + info);
-      }
 
       /** Path to the backing {@code module-info.java} file. */
       public final Path path;
@@ -573,7 +552,7 @@ public class Bach {
       private ModuleInfo(ModuleDescriptor descriptor, Path path) {
         super(descriptor, path.toUri());
         this.path = path;
-        this.moduleSourcePath = moduleSourcePath(path, descriptor.name());
+        this.moduleSourcePath = Modules.moduleSourcePath(path, descriptor.name());
       }
 
       @Override
@@ -778,8 +757,6 @@ public class Bach {
                 + "\\s+([\\w.,\\s]+)" // comma separated list of type names
                 + "\\s*;"); // end marker
 
-
-
     private Modules() {}
 
     /** Module descriptor parser. */
@@ -814,6 +791,28 @@ public class Bach {
         builder.provides(providesService, List.of(providesTypes.trim().split("\\s*,\\s*")));
       }
       return builder.build();
+    }
+
+    /** Compute module's source path. */
+    public static String moduleSourcePath(Path path, String module) {
+      var directory = Files.isDirectory(path) ? path : Objects.requireNonNull(path.getParent());
+      if (Files.notExists(directory.resolve("module-info.java"))) {
+        throw new IllegalArgumentException("No 'module-info.java' file found in: " + directory);
+      }
+      var names = new ArrayList<String>();
+      directory.forEach(element -> names.add(element.toString()));
+      int frequency = Collections.frequency(names, module);
+      if (frequency == 0) {
+        return directory.toString();
+      }
+      if (frequency == 1) {
+        if (directory.endsWith(module)) {
+          return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
+        }
+        var elements = names.stream().map(name -> name.equals(module) ? "*" : name);
+        return String.join(File.separator, elements.collect(Collectors.toList()));
+      }
+      throw new IllegalArgumentException("Ambiguous module source path: " + path);
     }
   }
 

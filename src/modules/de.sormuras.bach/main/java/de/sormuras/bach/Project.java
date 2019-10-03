@@ -28,7 +28,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -193,27 +192,6 @@ public /*STATIC*/ class Project {
       }
     }
 
-    /** Compute module's source path. */
-    public static String moduleSourcePath(Path info, String name) {
-      var directory = Util.requireNonNull(info, "info").getParent();
-      if (directory == null) {
-        throw new IllegalArgumentException("Not in a directory: " + info);
-      }
-      var names = new ArrayList<String>();
-      directory.forEach(element -> names.add(element.toString()));
-      int frequency = Collections.frequency(names, name);
-      if (frequency == 0) {
-        return directory.toString();
-      }
-      if (frequency == 1) {
-        if (directory.endsWith(name)) {
-          return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
-        }
-        var star = names.stream().map(e -> e.equals(name) ? "*" : e).collect(Collectors.toList());
-        return String.join(File.separator, star);
-      }
-      throw new IllegalArgumentException("Ambiguous module source path: " + info);
-    }
 
     /** Path to the backing {@code module-info.java} file. */
     public final Path path;
@@ -223,7 +201,7 @@ public /*STATIC*/ class Project {
     private ModuleInfo(ModuleDescriptor descriptor, Path path) {
       super(descriptor, path.toUri());
       this.path = path;
-      this.moduleSourcePath = moduleSourcePath(path, descriptor.name());
+      this.moduleSourcePath = Modules.moduleSourcePath(path, descriptor.name());
     }
 
     @Override
