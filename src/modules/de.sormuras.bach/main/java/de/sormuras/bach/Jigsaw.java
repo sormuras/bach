@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 
 /*BODY*/
 public /*STATIC*/ class Jigsaw {
@@ -48,12 +49,30 @@ public /*STATIC*/ class Jigsaw {
             .add("--module-path", project.modulePaths(target))
             .add("--module-source-path", realm.moduleSourcePath)
             .add("--module-version", project.version)
-            .add("--module", String.join(",", modules)));
+            .addEach(patches(modules))
+            .add("--module", String.join(",", modules)) //
+        );
     for (var module : modules) {
       var unit = realm.unit(module).orElseThrow();
       jarModule(unit);
       jarSources(unit);
     }
+  }
+
+  private List<String> patches(Collection<String> modules) {
+    var patches = new Command("<patches>");
+    for (var module : modules) {
+      var other =
+          realm.realms.stream()
+              .flatMap(r -> r.units.stream())
+              .filter(u -> u.name().equals(module))
+              .findFirst();
+      other.ifPresent(
+          unit ->
+              patches.add(
+                  "--patch-module", unit.sources.stream().map(s -> s.path), v -> module + "=" + v));
+    }
+    return patches.getArguments();
   }
 
   private void jarModule(Project.ModuleUnit unit) {
