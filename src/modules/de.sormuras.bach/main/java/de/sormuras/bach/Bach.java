@@ -49,6 +49,14 @@ public class Bach {
       bach.err.printf("Bach.java (%s) failed: %s%n", VERSION, throwable.getMessage());
       if (bach.verbose) {
         throwable.printStackTrace(bach.err);
+      } else {
+        var causes = new ArrayDeque<>();
+        var cause = throwable;
+        while (cause != null && !causes.contains(cause)) {
+          causes.add(cause);
+          cause = cause.getCause();
+        }
+        bach.err.println(causes.getLast());
       }
     }
   }
