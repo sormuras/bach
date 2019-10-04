@@ -42,7 +42,7 @@ public /*STATIC*/ class Project {
 
   /** Create default project parsing the passed base directory. */
   public static Project of(Path base) {
-    return ProjectBuilder.of(base);
+    return ProjectBuilder.build(base);
   }
 
   /** Base directory. */

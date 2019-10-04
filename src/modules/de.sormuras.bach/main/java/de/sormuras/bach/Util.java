@@ -145,6 +145,11 @@ import java.util.stream.Stream;
     return path == null ? Optional.empty() : Optional.of(path.substring(path.lastIndexOf('/') + 1));
   }
 
+  /** Null-safe file name getter. */
+  static Optional<String> findFileName(Path path) {
+    return Optional.ofNullable(path.toAbsolutePath().getFileName()).map(Path::toString);
+  }
+
   static Optional<String> findVersion(String jarFileName) {
     if (!jarFileName.endsWith(".jar")) return Optional.empty();
     var name = jarFileName.substring(0, jarFileName.length() - 4);
