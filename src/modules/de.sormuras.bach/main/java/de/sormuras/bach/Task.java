@@ -62,7 +62,7 @@ public interface Task extends Consumer<Bach> {
         bach.log("Invoking %s()...", name);
         handle.invokeExact(bach);
       } catch (Throwable t) {
-        throw new AssertionError("Running method failed: " + handle, t);
+        throw new AssertionError("Running method failed: " + name, t);
       }
     }
 
