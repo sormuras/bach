@@ -220,7 +220,28 @@ public class Bach {
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
-    out.printf("Project %s %s%n", project.name, project.version);
+    out.printf("+===%n");
+    out.printf("| Project %s %s%n", project.name, project.version);
+    out.printf("+===%n");
+    try {
+      for (var field : project.getClass().getFields()) {
+        out.printf("  %s = %s%n", field.getName(), field.get(project));
+      }
+      for (var realm : project.realms) {
+        out.printf("+ Realm %s%n", realm.name);
+        for (var field : realm.getClass().getFields()) {
+          out.printf("  %s.%s = %s%n", realm.name, field.getName(), field.get(realm));
+        }
+        for (var unit : realm.units) {
+          out.printf("- ModuleUnit %s%n", unit.name());
+          for (var field : unit.getClass().getFields()) {
+            out.printf("  (%s).%s = %s%n", unit.name(), field.getName(), field.get(unit));
+          }
+        }
+      }
+    } catch (ReflectiveOperationException e) {
+      e.printStackTrace(err);
+    }
   }
 
   /** Resolve missing modules. */
