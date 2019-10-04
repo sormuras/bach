@@ -220,7 +220,7 @@ public class Bach {
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
-    out.printf("Project '%s'%n", project.name);
+    out.printf("Project %s %s%n", project.name, project.version);
   }
 
   /** Resolve missing modules. */
