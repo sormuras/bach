@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /*BODY*/
 /** Static helpers. */
@@ -125,6 +126,14 @@ import java.util.stream.Stream;
       return stream.filter(filter).sorted().collect(Collectors.toList());
     } catch (IOException e) {
       throw new UncheckedIOException("list directory failed: " + directory, e);
+    }
+  }
+
+  static List<Path> list(Path directory, String glob) {
+    try (var items = Files.newDirectoryStream(directory, glob)) {
+      return StreamSupport.stream(items.spliterator(), false).sorted().collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new UncheckedIOException("list directory using glob failed: " + directory, e);
     }
   }
 

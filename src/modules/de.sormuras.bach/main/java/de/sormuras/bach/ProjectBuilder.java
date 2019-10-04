@@ -54,23 +54,44 @@ public /*STATIC*/ class ProjectBuilder {
       return System.getProperty(property.key, properties.getProperty(property.key, defaultValue));
     }
 
-    List<Project.ModuleUnit> units(Path src, String realm, String offset) {
+    List<Project.ModuleUnit> units(Path src, String realm) {
       var units = new ArrayList<Project.ModuleUnit>();
       for (var module : Util.list(src, Files::isDirectory)) {
-        var path = module.resolve(realm).resolve(offset);
-        if (Files.isDirectory(path)) {
+        var path = module.resolve(realm);
+        if (Files.notExists(path)) {
+          continue;
+        }
+        // jigsaw
+        if (Files.isDirectory(path.resolve("java"))) {
           try {
-            units.add(Project.ModuleUnit.of(path));
+            units.add(Project.ModuleUnit.of(path.resolve("java")));
+            continue;
           } catch (IllegalArgumentException e) {
             // ignore
           }
+        }
+        if (!Util.list(path, "java-*").isEmpty()) {
+          Project.ModuleInfo info = null;
+          var sources = new ArrayList<Project.Source>();
+          for (int feature = 7; feature <= Runtime.version().feature(); feature++) {
+            var sourced = path.resolve("java-" + feature);
+            if (Files.notExists(sourced)) {
+              continue;
+            }
+            sources.add(Project.Source.of(sourced, feature));
+            var infoPath = sourced.resolve("module-info.java");
+            if (Util.isModuleInfo(infoPath)) {
+              info = Project.ModuleInfo.of(infoPath);
+            }
+          }
+          units.add(new Project.ModuleUnit(info, sources, List.of(), null));
         }
       }
       return units;
     }
 
     Project.Realm realm(String name, Project.Realm... realms) {
-      var units = units(base.resolve("src"), name, "java");
+      var units = units(base.resolve("src"), name);
       return Project.Realm.of(name, units, realms);
     }
 
