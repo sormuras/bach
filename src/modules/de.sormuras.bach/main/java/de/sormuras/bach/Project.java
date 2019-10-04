@@ -42,18 +42,7 @@ public /*STATIC*/ class Project {
 
   /** Create default project parsing the passed base directory. */
   public static Project of(Path base) {
-    if (!Files.isDirectory(base)) {
-      throw new IllegalArgumentException("Expected a directory but got: " + base);
-    }
-    var main = new Realm("main", false, 0, "src/*/main/java", ToolArguments.of(), List.of());
-    var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
-    return new Project(
-        base,
-        base.resolve("bin"),
-        name.orElse(Path.of("project")).toString().toLowerCase(),
-        Version.parse("0"),
-        new Library(base.resolve("lib")),
-        List.of(main));
+    return ProjectBuilder.of(base);
   }
 
   /** Base directory. */
