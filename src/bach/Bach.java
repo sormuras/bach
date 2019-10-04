@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-03T16:19:34.006682400Z
+// THIS FILE WAS GENERATED ON 2019-10-04T06:46:33.515099300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -93,6 +93,14 @@ public class Bach {
       bach.err.printf("Bach.java (%s) failed: %s%n", VERSION, throwable.getMessage());
       if (bach.verbose) {
         throwable.printStackTrace(bach.err);
+      } else {
+        var causes = new ArrayDeque<>();
+        var cause = throwable;
+        while (cause != null && !causes.contains(cause)) {
+          causes.add(cause);
+          cause = cause.getCause();
+        }
+        bach.err.println(causes.getLast());
       }
     }
   }
@@ -256,7 +264,28 @@ public class Bach {
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
-    out.printf("Project '%s'%n", project.name);
+    out.printf("+===%n");
+    out.printf("| Project %s %s%n", project.name, project.version);
+    out.printf("+===%n");
+    try {
+      for (var field : project.getClass().getFields()) {
+        out.printf("  %s = %s%n", field.getName(), field.get(project));
+      }
+      for (var realm : project.realms) {
+        out.printf("+ Realm %s%n", realm.name);
+        for (var field : realm.getClass().getFields()) {
+          out.printf("  %s.%s = %s%n", realm.name, field.getName(), field.get(realm));
+        }
+        for (var unit : realm.units) {
+          out.printf("- ModuleUnit %s%n", unit.name());
+          for (var field : unit.getClass().getFields()) {
+            out.printf("  (%s).%s = %s%n", unit.name(), field.getName(), field.get(unit));
+          }
+        }
+      }
+    } catch (ReflectiveOperationException e) {
+      e.printStackTrace(err);
+    }
   }
 
   /** Resolve missing modules. */
@@ -393,18 +422,7 @@ public class Bach {
 
     /** Create default project parsing the passed base directory. */
     public static Project of(Path base) {
-      if (!Files.isDirectory(base)) {
-        throw new IllegalArgumentException("Expected a directory but got: " + base);
-      }
-      var main = new Realm("main", false, 0, "src/*/main/java", ToolArguments.of(), List.of());
-      var name = Optional.ofNullable(base.toAbsolutePath().getFileName());
-      return new Project(
-          base,
-          base.resolve("bin"),
-          name.orElse(Path.of("project")).toString().toLowerCase(),
-          Version.parse("0"),
-          new Library(base.resolve("lib")),
-          List.of(main));
+      return ProjectBuilder.build(base);
     }
 
     /** Base directory. */
@@ -746,6 +764,86 @@ public class Bach {
 
       public List<ModuleUnit> units(Predicate<ModuleUnit> filter) {
         return units.stream().filter(filter).collect(Collectors.toList());
+      }
+    }
+  }
+
+  /** Build project. */
+  public static class ProjectBuilder {
+
+    /** Supported properties. */
+    public enum Property {
+      /** Name of the project. */
+      NAME("project"),
+
+      /** Version of the project, consumable by {@link Version#parse(String)}. */
+      VERSION("0");
+
+      public final String key;
+      public final String defaultValue;
+
+      Property(String defaultValue) {
+        this.key = name().toLowerCase();
+        this.defaultValue = defaultValue;
+      }
+    }
+
+    /** Create default project scanning the passed base directory. */
+    public static Project build(Path base) {
+      if (!Files.isDirectory(base)) {
+        throw new IllegalArgumentException("Expected a directory but got: " + base);
+      }
+      return new Scanner(base).project();
+    }
+
+    static class Scanner {
+
+      private final Path base;
+      private final Properties properties;
+
+      Scanner(Path base) {
+        this.base = base;
+        this.properties = Util.load(new Properties(), base.resolve(".bach").resolve(".properties"));
+      }
+
+      String get(Property property) {
+        return get(property, property.defaultValue);
+      }
+
+      String get(Property property, String defaultValue) {
+        return System.getProperty(property.key, properties.getProperty(property.key, defaultValue));
+      }
+
+      List<Project.ModuleUnit> units(Path src, String realm, String offset) {
+        var units = new ArrayList<Project.ModuleUnit>();
+        for (var module : Util.list(src, Files::isDirectory)) {
+          var path = module.resolve(realm).resolve(offset);
+          if (Files.isDirectory(path)) {
+            try {
+              units.add(Project.ModuleUnit.of(path));
+            } catch (IllegalArgumentException e) {
+              // ignore
+            }
+          }
+        }
+        return units;
+      }
+
+      Project.Realm realm(String name, Project.Realm... realms) {
+        var units = units(base.resolve("src"), name, "java");
+        return Project.Realm.of(name, units, realms);
+      }
+
+      Project project() {
+        var main = realm("main");
+        var test = realm("test", main);
+        return new Project(
+            base,
+            base.resolve("bin"),
+            get(Property.NAME, Util.findFileName(base).orElse(Property.NAME.defaultValue)),
+            Version.parse(get(Property.VERSION)),
+            new Project.Library(base.resolve("lib")),
+            List.of(main, test));
       }
     }
   }
@@ -1474,7 +1572,7 @@ public class Bach {
           bach.log("Invoking %s()...", name);
           handle.invokeExact(bach);
         } catch (Throwable t) {
-          throw new AssertionError("Running method failed: " + handle, t);
+          throw new AssertionError("Running method failed: " + name, t);
         }
       }
 
@@ -1750,6 +1848,11 @@ public class Bach {
     static Optional<String> findFileName(URI uri) {
       var path = uri.getPath();
       return path == null ? Optional.empty() : Optional.of(path.substring(path.lastIndexOf('/') + 1));
+    }
+
+    /** Null-safe file name getter. */
+    static Optional<String> findFileName(Path path) {
+      return Optional.ofNullable(path.toAbsolutePath().getFileName()).map(Path::toString);
     }
 
     static Optional<String> findVersion(String jarFileName) {
