@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-04T07:46:13.806383700Z
+// THIS FILE WAS GENERATED ON 2019-10-04T10:16:37.125077200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -624,7 +624,11 @@ public class Bach {
       /** Create default unit for the specified path. */
       public static ModuleUnit of(Path path) {
         var info = ModuleInfo.of(path.resolve("module-info.java"));
-        return new ModuleUnit(info, List.of(Source.of(path)), List.of(), null);
+        var sources = List.of(Source.of(path));
+        var parent = path.getParent();
+        var resources = Util.findExistingDirectories(List.of(parent.resolve("resources")));
+        var pom = parent.resolve("maven").resolve("pom.xml");
+        return new ModuleUnit(info, sources, resources, pom);
       }
 
       /** Source-based module reference. */
@@ -633,11 +637,11 @@ public class Bach {
       public final List<Source> sources;
       /** Paths to the resource directories. */
       public final List<Path> resources;
-      /** Path to the associated Maven POM file, may be {@code null}. */
+      /** Path to the associated Maven POM file. */
       public final Path mavenPom;
 
       public ModuleUnit(ModuleInfo info, List<Source> sources, List<Path> resources, Path mavenPom) {
-        this.info = info;
+        this.info = Util.requireNonNull(info, "info");
         this.sources = List.copyOf(sources);
         this.resources = List.copyOf(resources);
         this.mavenPom = mavenPom;
@@ -656,7 +660,7 @@ public class Bach {
       }
 
       public Optional<Path> mavenPom() {
-        return Optional.ofNullable(mavenPom);
+        return Files.isRegularFile(mavenPom) ? Optional.of(mavenPom) : Optional.empty();
       }
     }
 
@@ -823,13 +827,14 @@ public class Bach {
           }
           // jigsaw
           if (Files.isDirectory(path.resolve("java"))) {
-            try {
-              units.add(Project.ModuleUnit.of(path.resolve("java")));
-              continue;
-            } catch (IllegalArgumentException e) {
-              // ignore
-            }
+            var info = Project.ModuleInfo.of(path.resolve("java").resolve("module-info.java"));
+            var sources = List.of(Project.Source.of(path.resolve("java")));
+            var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
+            var mavenPom = path.resolve("maven").resolve("pom.xml");
+            units.add(new Project.ModuleUnit(info, sources, resources, mavenPom));
+            continue;
           }
+          // multi-release
           if (!Util.list(path, "java-*").isEmpty()) {
             Project.ModuleInfo info = null;
             var sources = new ArrayList<Project.Source>();
@@ -840,12 +845,16 @@ public class Bach {
               }
               sources.add(Project.Source.of(sourced, feature));
               var infoPath = sourced.resolve("module-info.java");
-              if (Util.isModuleInfo(infoPath)) {
+              if (info == null && Util.isModuleInfo(infoPath)) { // select first
                 info = Project.ModuleInfo.of(infoPath);
               }
             }
-            units.add(new Project.ModuleUnit(info, sources, List.of(), null));
+            var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
+            var mavenPom = path.resolve("maven").resolve("pom.xml");
+            units.add(new Project.ModuleUnit(info, sources, resources, mavenPom));
+            continue;
           }
+          throw new IllegalStateException("Failed to scan module: " + module);
         }
         return units;
       }

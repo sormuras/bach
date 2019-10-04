@@ -103,7 +103,7 @@ class TestProjectTests {
                 Project.Source.of(base.resolve("src/a/main/java-9"), 9),
                 Project.Source.of(base.resolve("src/a/main/java-11"), 11)),
             List.of(),
-            null);
+            Path.of("pom.xml"));
     var b = Project.ModuleUnit.of(base.resolve("src/b/main/java"));
     var c =
         new Project.ModuleUnit(
@@ -114,7 +114,7 @@ class TestProjectTests {
                 Project.Source.of(base.resolve("src/c/main/java-10"), 10),
                 Project.Source.of(base.resolve("src/c/main/java-11"), 11)),
             List.of(),
-            null);
+            Path.of("pom.xml"));
     var d = Project.ModuleUnit.of(base.resolve("src/d/main/java"));
     var main = Project.Realm.of("main", List.of(a, b, c, d));
     assertEquals(

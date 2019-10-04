@@ -63,13 +63,14 @@ public /*STATIC*/ class ProjectBuilder {
         }
         // jigsaw
         if (Files.isDirectory(path.resolve("java"))) {
-          try {
-            units.add(Project.ModuleUnit.of(path.resolve("java")));
-            continue;
-          } catch (IllegalArgumentException e) {
-            // ignore
-          }
+          var info = Project.ModuleInfo.of(path.resolve("java").resolve("module-info.java"));
+          var sources = List.of(Project.Source.of(path.resolve("java")));
+          var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
+          var mavenPom = path.resolve("maven").resolve("pom.xml");
+          units.add(new Project.ModuleUnit(info, sources, resources, mavenPom));
+          continue;
         }
+        // multi-release
         if (!Util.list(path, "java-*").isEmpty()) {
           Project.ModuleInfo info = null;
           var sources = new ArrayList<Project.Source>();
@@ -80,12 +81,16 @@ public /*STATIC*/ class ProjectBuilder {
             }
             sources.add(Project.Source.of(sourced, feature));
             var infoPath = sourced.resolve("module-info.java");
-            if (Util.isModuleInfo(infoPath)) {
+            if (info == null && Util.isModuleInfo(infoPath)) { // select first
               info = Project.ModuleInfo.of(infoPath);
             }
           }
-          units.add(new Project.ModuleUnit(info, sources, List.of(), null));
+          var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
+          var mavenPom = path.resolve("maven").resolve("pom.xml");
+          units.add(new Project.ModuleUnit(info, sources, resources, mavenPom));
+          continue;
         }
+        throw new IllegalStateException("Failed to scan module: " + module);
       }
       return units;
     }

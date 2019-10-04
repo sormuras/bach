@@ -244,7 +244,11 @@ public /*STATIC*/ class Project {
     /** Create default unit for the specified path. */
     public static ModuleUnit of(Path path) {
       var info = ModuleInfo.of(path.resolve("module-info.java"));
-      return new ModuleUnit(info, List.of(Source.of(path)), List.of(), null);
+      var sources = List.of(Source.of(path));
+      var parent = path.getParent();
+      var resources = Util.findExistingDirectories(List.of(parent.resolve("resources")));
+      var pom = parent.resolve("maven").resolve("pom.xml");
+      return new ModuleUnit(info, sources, resources, pom);
     }
 
     /** Source-based module reference. */
@@ -253,11 +257,11 @@ public /*STATIC*/ class Project {
     public final List<Source> sources;
     /** Paths to the resource directories. */
     public final List<Path> resources;
-    /** Path to the associated Maven POM file, may be {@code null}. */
+    /** Path to the associated Maven POM file. */
     public final Path mavenPom;
 
     public ModuleUnit(ModuleInfo info, List<Source> sources, List<Path> resources, Path mavenPom) {
-      this.info = info;
+      this.info = Util.requireNonNull(info, "info");
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
       this.mavenPom = mavenPom;
@@ -276,7 +280,7 @@ public /*STATIC*/ class Project {
     }
 
     public Optional<Path> mavenPom() {
-      return Optional.ofNullable(mavenPom);
+      return Files.isRegularFile(mavenPom) ? Optional.of(mavenPom) : Optional.empty();
     }
   }
 

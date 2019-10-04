@@ -54,7 +54,7 @@ class DemoTests {
                         new Project.Source(multi.resolve("java-9"), 9, Set.of()),
                         Project.Source.of(multi.resolve("java-11"), 11)),
                     List.of(),
-                    null)));
+                    Path.of("pom.xml"))));
 
     var integration = Project.ModuleUnit.of(Path.of("demo/src/integration/test/java"));
     var demoPath = Path.of("demo/src/de.sormuras.bach.demo/test");
@@ -63,7 +63,7 @@ class DemoTests {
             Project.ModuleInfo.of(demoPath.resolve("module/module-info.java")),
             List.of(Project.Source.of(demoPath.resolve("java"))),
             List.of(), // resources
-            null);
+            Path.of("pom.xml"));
     var test = Project.Realm.of("test", List.of(integration, demoTest), main);
 
     assertEquals(
