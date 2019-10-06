@@ -41,6 +41,7 @@ public /*STATIC*/ class Modules {
       Pattern.compile(
           "(?:module)" // key word
               + "\\s+([\\w.]+)" // module name
+              + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
               + "\\s*\\{"); // end marker
 
   private static final Pattern MODULE_REQUIRES_PATTERN =

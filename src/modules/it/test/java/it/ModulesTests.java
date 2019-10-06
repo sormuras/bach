@@ -48,4 +48,10 @@ class ModulesTests {
     var actual = Modules.describe("// --main-class a.Main\nmodule a{}");
     assertEquals(ModuleDescriptor.newModule("a").mainClass("a.Main").build(), actual);
   }
+
+  @Test
+  void moduleDeclarationWithComments() {
+    var actual = Modules.describe("open /*test*/ module a /*extends a*/ {}");
+    assertEquals(ModuleDescriptor.newModule("a").build(), actual);
+  }
 }
