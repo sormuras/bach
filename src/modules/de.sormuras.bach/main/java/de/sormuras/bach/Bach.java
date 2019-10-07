@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /*BODY*/
 public class Bach {
 
-  public static String VERSION = "2-ea";
+  public static String VERSION = "1.9.1";
 
   /**
    * Main entry-point.
