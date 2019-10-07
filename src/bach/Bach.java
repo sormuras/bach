@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-04T10:16:37.125077200Z
+// THIS FILE WAS GENERATED ON 2019-10-07T07:33:47.772432400Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -78,7 +78,7 @@ import javax.lang.model.SourceVersion;
 
 public class Bach {
 
-  public static String VERSION = "2-ea";
+  public static String VERSION = "1.9.1";
 
   /**
    * Main entry-point.
@@ -781,13 +781,16 @@ public class Bach {
       NAME("project"),
 
       /** Version of the project, consumable by {@link Version#parse(String)}. */
-      VERSION("0");
+      VERSION("0"),
+
+      /** Directory that contains all modules. */
+      SRC_PATH("src");
 
       public final String key;
       public final String defaultValue;
 
       Property(String defaultValue) {
-        this.key = name().toLowerCase();
+        this.key = name().replace('_', '-').toLowerCase();
         this.defaultValue = defaultValue;
       }
     }
@@ -818,6 +821,16 @@ public class Bach {
         return System.getProperty(property.key, properties.getProperty(property.key, defaultValue));
       }
 
+      Project.ModuleInfo info(Path path) {
+        for (var directory : List.of("java", "module")) {
+          var info = path.resolve(directory).resolve("module-info.java");
+          if (Util.isModuleInfo(info)) {
+            return Project.ModuleInfo.of(info);
+          }
+        }
+        throw new IllegalArgumentException("Couldn't find module-info.java file in: " + path);
+      }
+
       List<Project.ModuleUnit> units(Path src, String realm) {
         var units = new ArrayList<Project.ModuleUnit>();
         for (var module : Util.list(src, Files::isDirectory)) {
@@ -827,7 +840,7 @@ public class Bach {
           }
           // jigsaw
           if (Files.isDirectory(path.resolve("java"))) {
-            var info = Project.ModuleInfo.of(path.resolve("java").resolve("module-info.java"));
+            var info = info(path);
             var sources = List.of(Project.Source.of(path.resolve("java")));
             var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
             var mavenPom = path.resolve("maven").resolve("pom.xml");
@@ -860,7 +873,7 @@ public class Bach {
       }
 
       Project.Realm realm(String name, Project.Realm... realms) {
-        var units = units(base.resolve("src"), name);
+        var units = units(base.resolve(get(Property.SRC_PATH)), name);
         return Project.Realm.of(name, units, realms);
       }
 
@@ -887,6 +900,7 @@ public class Bach {
         Pattern.compile(
             "(?:module)" // key word
                 + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
                 + "\\s*\\{"); // end marker
 
     private static final Pattern MODULE_REQUIRES_PATTERN =
