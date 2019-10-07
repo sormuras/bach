@@ -17,13 +17,16 @@ public /*STATIC*/ class ProjectBuilder {
     NAME("project"),
 
     /** Version of the project, consumable by {@link Version#parse(String)}. */
-    VERSION("0");
+    VERSION("0"),
+
+    /** Directory that contains all modules. */
+    SRC_PATH("src");
 
     public final String key;
     public final String defaultValue;
 
     Property(String defaultValue) {
-      this.key = name().toLowerCase();
+      this.key = name().replace('_', '-').toLowerCase();
       this.defaultValue = defaultValue;
     }
   }
@@ -54,6 +57,16 @@ public /*STATIC*/ class ProjectBuilder {
       return System.getProperty(property.key, properties.getProperty(property.key, defaultValue));
     }
 
+    Project.ModuleInfo info(Path path) {
+      for (var directory : List.of("java", "module")) {
+        var info = path.resolve(directory).resolve("module-info.java");
+        if (Util.isModuleInfo(info)) {
+          return Project.ModuleInfo.of(info);
+        }
+      }
+      throw new IllegalArgumentException("Couldn't find module-info.java file in: " + path);
+    }
+
     List<Project.ModuleUnit> units(Path src, String realm) {
       var units = new ArrayList<Project.ModuleUnit>();
       for (var module : Util.list(src, Files::isDirectory)) {
@@ -63,7 +76,7 @@ public /*STATIC*/ class ProjectBuilder {
         }
         // jigsaw
         if (Files.isDirectory(path.resolve("java"))) {
-          var info = Project.ModuleInfo.of(path.resolve("java").resolve("module-info.java"));
+          var info = info(path);
           var sources = List.of(Project.Source.of(path.resolve("java")));
           var resources = Util.findExistingDirectories(List.of(path.resolve("resources")));
           var mavenPom = path.resolve("maven").resolve("pom.xml");
@@ -96,7 +109,7 @@ public /*STATIC*/ class ProjectBuilder {
     }
 
     Project.Realm realm(String name, Project.Realm... realms) {
-      var units = units(base.resolve("src"), name);
+      var units = units(base.resolve(get(Property.SRC_PATH)), name);
       return Project.Realm.of(name, units, realms);
     }
 
