@@ -27,7 +27,7 @@ public class Build {
   public static void main(String... args) {
     PrintWriter out = new PrintWriter(System.out, true);
     PrintWriter err = new PrintWriter(System.err, true);
-    new Bach(out, err, true, project("1.9-ea")).build();
+    new Bach(out, err, true, project(Bach.VERSION)).build();
   }
 
   private static Bach.Project project(String version) {
