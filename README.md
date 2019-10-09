@@ -92,6 +92,7 @@ foo/
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
+Find a Travis CI matrix configuration at [sormuras.github.io/.travis.yml](https://github.com/sormuras/sormuras.github.io/blob/master/.travis.yml). 
 
 #### Options of `install-jdk.sh`
 ```
@@ -123,12 +124,6 @@ foo/
 
   - `JAVA_HOME=$(./install-jdk.sh --silent --emit-java-home)`
   - `JAVA_HOME=$(./install-jdk.sh --emit-java-home | tail --lines 1)`
-
-#### JDK Build Matrix at Travis CI
-
-See `sormuras.github.io`'s [Travic CI configuration](https://github.com/sormuras/sormuras.github.io/blob/master/.travis.yml) for details.
-
-[![matrix](https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/blog/2019-07-09-jdk-matrix-screenshot.png)](https://travis-ci.org/sormuras/sormuras.github.io)
 
 # be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
