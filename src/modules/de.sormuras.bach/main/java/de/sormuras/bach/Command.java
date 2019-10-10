@@ -42,6 +42,18 @@ public /*STATIC*/ class Command {
     addEach(args);
   }
 
+  /** Initialize Command instance with zero or more arguments. */
+  public Command(String name, Iterable<?> arguments) {
+    this.name = name;
+    addEach(arguments);
+  }
+
+  @Override
+  @SuppressWarnings("MethodDoesntCallSuperMethod")
+  public Command clone() {
+    return new Command(name, arguments);
+  }
+
   /** Add single argument by invoking {@link Object#toString()} on the given argument. */
   public Command add(Object argument) {
     arguments.add(argument.toString());
