@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-07T07:33:47.772432400Z
+// THIS FILE WAS GENERATED ON 2019-10-10T09:50:16.076892600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -251,13 +251,29 @@ public class Bach {
 
   /** Print summary. */
   public void summary(Project.Realm realm) {
+    out.println();
+    out.printf("+===%n");
+    out.printf("| Project %s %s summary%n", project.name, project.version);
+    out.printf("+===%n");
     var target = project.target(realm);
+    try {
+      for (var jar : Util.list(target.modules, Util::isJarFile)) {
+        out.printf("%5d %s %n", Files.size(jar), jar);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    out.println();
+    var modulePath = project.modulePaths(target);
+    var names = String.join(",", realm.names());
+    var deps = new Command("jdeps").add("--module-path", modulePath).add("--multi-release", "BASE");
+    run(
+        deps.clone()
+            .add("-summary")
+            .add("--dot-output", target.directory.resolve("jdeps"))
+            .add("--add-modules", names));
     if (verbose) {
-      run(
-          new Command("jdeps")
-              .add("--module-path", project.modulePaths(target))
-              .add("--multi-release", "BASE")
-              .add("--check", String.join(",", realm.names())));
+      run(deps.clone().add("--check", names));
     }
   }
 
@@ -308,6 +324,18 @@ public class Bach {
     public Command(String name, Object... args) {
       this.name = name;
       addEach(args);
+    }
+
+    /** Initialize Command instance with zero or more arguments. */
+    public Command(String name, Iterable<?> arguments) {
+      this.name = name;
+      addEach(arguments);
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public Command clone() {
+      return new Command(name, arguments);
     }
 
     /** Add single argument by invoking {@link Object#toString()} on the given argument. */
