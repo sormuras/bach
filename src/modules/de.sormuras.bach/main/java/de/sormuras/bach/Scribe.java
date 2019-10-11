@@ -55,6 +55,7 @@ public /*STATIC*/ class Scribe {
         new Command("javadoc")
             .add("-d", destination)
             .add("-encoding", "UTF-8")
+            .add("-locale", "en")
             .addIff(!bach.verbose(), "-quiet")
             .add("-Xdoclint:-missing")
             .add("--module-path", project.library.modulePaths)

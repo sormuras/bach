@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-10T09:50:16.076892600Z
+// THIS FILE WAS GENERATED ON 2019-10-11T04:05:40.069409200Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1508,6 +1508,7 @@ public class Bach {
           new Command("javadoc")
               .add("-d", destination)
               .add("-encoding", "UTF-8")
+              .add("-locale", "en")
               .addIff(!bach.verbose(), "-quiet")
               .add("-Xdoclint:-missing")
               .add("--module-path", project.library.modulePaths)
