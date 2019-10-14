@@ -46,8 +46,8 @@ jobs:
     - name: 'Deploy (bintray)'
       run: |
         mkdir --parents ~/.m2
-        echo "<settings><servers><server><id>bintray</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
-        source bin/maven-deploy-bintray.sh
+        echo "<settings><servers><server><id>bintray-sormuras-maven</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
+        source bin/maven-deploy-bintray-sormuras-maven.sh
     - name: 'Restore previous version from bin/VERSION'
       run: |
         java src/build/Version.java $(<bin/VERSION)
