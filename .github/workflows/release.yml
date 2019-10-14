@@ -21,7 +21,7 @@ jobs:
         git checkout master
         git remote rm origin
         git remote add origin "https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
-    - name: 'Stash current version'
+    - name: 'Stash current version to bin/VERSION'
       run: |
         mkdir --parents bin
         echo $(java src/build/Version.java) > bin/VERSION
