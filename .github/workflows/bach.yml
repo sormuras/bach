@@ -17,3 +17,5 @@ jobs:
       run: ./build.jsh
     - name: 'Install modules into local Maven repository'
       run: source bin/maven-install.sh
+    - name: 'Show deploy script(s)'
+      run: cat bin/maven-deploy-bintray.sh
