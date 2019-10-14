@@ -1,0 +1,14 @@
+name: Deploy
+
+on:
+  release:
+    types: published
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   
+    steps:
+    - name: 'Show release event information (${GITHUB_REF})'
+      run: |
+        echo "release.name     = ${{ github.event.release.name }}"
+        echo "release.html_url = ${{ github.event.release.html_url }}"
