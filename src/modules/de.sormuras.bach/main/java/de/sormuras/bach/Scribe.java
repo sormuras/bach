@@ -22,11 +22,38 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /*BODY*/
 /** Create API documentation. */
 public /*STATIC*/ class Scribe {
+
+  enum ScriptType {
+    BASH(".sh", '\''),
+    WIN(".bat", '"') {
+      @Override
+      List<String> lines(List<String> lines) {
+        return lines.stream().map(line -> "call " + line).collect(Collectors.toList());
+      }
+    };
+
+    final String extension;
+    final char quote;
+
+    ScriptType(String extension, char quote) {
+      this.extension = extension;
+      this.quote = quote;
+    }
+
+    String quote(Object object) {
+      return quote + object.toString() + quote;
+    }
+
+    List<String> lines(List<String> lines) {
+      return lines;
+    }
+  }
 
   private final Bach bach;
   private final Project project;
@@ -82,12 +109,18 @@ public /*STATIC*/ class Scribe {
   }
 
   public void generateMavenInstallScript() {
-    var maven =
-        String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", "install:install-file");
+    for (var type : ScriptType.values()) {
+      generateMavenInstallScript(type);
+    }
+  }
+
+  private void generateMavenInstallScript(ScriptType type) {
+    var plugin = "install:install-file";
+    var maven = String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", plugin);
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       if (unit.mavenPom().isPresent()) {
-        lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+        lines.add(String.join(" ", maven, generateMavenArtifactLine(unit, type)));
       }
     }
     if (lines.isEmpty()) {
@@ -95,49 +128,44 @@ public /*STATIC*/ class Scribe {
       return;
     }
     try {
-      Files.write(bach.project.targetDirectory.resolve("maven-install.sh"), lines);
-      Files.write(
-          bach.project.targetDirectory.resolve("maven-install.bat"),
-          lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
+      var script = bach.project.targetDirectory.resolve("maven-install" + type.extension);
+      Files.write(script, type.lines(lines));
     } catch (IOException e) {
       throw new UncheckedIOException("Generating install script failed: " + e.getMessage(), e);
     }
   }
 
   public void generateMavenDeployScript() {
+    for (var type : ScriptType.values()) {
+      generateMavenDeployScript(type);
+    }
+  }
+
+  private void generateMavenDeployScript(ScriptType type) {
     var deployment = realm.toolArguments.deployment().orElseThrow();
     var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
-    var repository = "repositoryId=" + deployment.mavenRepositoryId;
-    var url = "url=" + deployment.mavenUri;
-    var maven =
-        String.join(
-            " ",
-            "mvn",
-            "--batch-mode",
-            "--no-transfer-progress",
-            plugin,
-            "-D" + repository,
-            "-D" + url);
+    var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId);
+    var url = "url=" + type.quote(deployment.mavenUri);
+    var maven = String.join(" ", "mvn", "--batch-mode", plugin);
+    var repoAndUrl = String.join("-D" + repository, "-D" + url);
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
-      lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
+      lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
     }
-    var script = "maven-deploy-" + deployment.mavenRepositoryId;
     try {
-      Files.write(bach.project.targetDirectory.resolve(script + ".sh"), lines);
-      Files.write(
-          bach.project.targetDirectory.resolve(script + ".bat"),
-          lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
+      var name = "maven-deploy-" + deployment.mavenRepositoryId;
+      var script = bach.project.targetDirectory.resolve(name + type.extension);
+      Files.write(script, type.lines(lines));
     } catch (IOException e) {
       throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);
     }
   }
 
-  private String generateMavenArtifactLine(Project.ModuleUnit unit) {
-    var pom = "pomFile=" + Util.require(unit.mavenPom().orElseThrow(), Files::isRegularFile);
-    var file = "file=" + Util.require(target.modularJar(unit), Util::isJarFile);
-    var sources = "sources=" + Util.require(target.sourcesJar(unit), Util::isJarFile);
-    var javadoc = "javadoc=" + Util.require(javadocJar, Util::isJarFile);
+  private String generateMavenArtifactLine(Project.ModuleUnit unit, ScriptType type) {
+    var pom = "pomFile=" + type.quote(Util.require(unit.mavenPom().orElseThrow(), Files::exists));
+    var file = "file=" + type.quote(Util.require(target.modularJar(unit), Util::isJarFile));
+    var sources = "sources=" + type.quote(Util.require(target.sourcesJar(unit), Util::isJarFile));
+    var javadoc = "javadoc=" + type.quote(Util.require(javadocJar, Util::isJarFile));
     return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
   }
 }
