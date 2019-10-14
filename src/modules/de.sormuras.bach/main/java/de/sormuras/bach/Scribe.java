@@ -147,7 +147,7 @@ public /*STATIC*/ class Scribe {
     var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId);
     var url = "url=" + type.quote(deployment.mavenUri);
     var maven = String.join(" ", "mvn", "--batch-mode", plugin);
-    var repoAndUrl = String.join("-D" + repository, "-D" + url);
+    var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
     var lines = new ArrayList<String>();
     for (var unit : realm.units) {
       lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));

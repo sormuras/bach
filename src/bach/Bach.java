@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-14T10:16:54.111129100Z
+// THIS FILE WAS GENERATED ON 2019-10-14T11:03:07.746296Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1599,7 +1599,7 @@ public class Bach {
       var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId);
       var url = "url=" + type.quote(deployment.mavenUri);
       var maven = String.join(" ", "mvn", "--batch-mode", plugin);
-      var repoAndUrl = String.join("-D" + repository, "-D" + url);
+      var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
       var lines = new ArrayList<String>();
       for (var unit : realm.units) {
         lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
