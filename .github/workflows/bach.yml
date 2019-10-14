@@ -11,6 +11,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 13
+    - name: 'Show Bach.java version: $(java src/build/Version.java)'
+      run: java src/build/Version.java
     - name: 'Build Bach.java'
       run: ./build.jsh
     - name: 'Install modules into local Maven repository'
