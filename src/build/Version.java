@@ -18,11 +18,25 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Properties;
 
 /** Set various version values to the one of this program's first argument. */
 public class Version {
   public static void main(String... args) throws Exception {
-    if (args.length != 1) {
+    if (args.length == 0) {
+      var path = Path.of(".bach/.properties");
+      var properties = new Properties();
+      try (var reader = Files.newBufferedReader(path)) {
+        properties.load(reader);
+      }
+      if (properties.containsKey("version")) {
+        System.out.println(properties.getProperty("version"));
+        return;
+      }
+      throw new Error("Property 'version' not loadable from: " + path);
+    }
+
+    if (args.length > 1) {
       throw new Error("Exactly one argument, the new version, expected! args=" + List.of(args));
     }
     var version = args[0];
