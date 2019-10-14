@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-11T04:05:40.069409200Z
+// THIS FILE WAS GENERATED ON 2019-10-14T04:58:32.555644800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1575,10 +1575,11 @@ public class Bach {
       for (var unit : realm.units) {
         lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
       }
+      var script = "maven-deploy-" + deployment.mavenRepositoryId;
       try {
-        Files.write(bach.project.targetDirectory.resolve("maven-deploy.sh"), lines);
+        Files.write(bach.project.targetDirectory.resolve(script + ".sh"), lines);
         Files.write(
-            bach.project.targetDirectory.resolve("maven-deploy.bat"),
+            bach.project.targetDirectory.resolve(script + ".bat"),
             lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
       } catch (IOException e) {
         throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);

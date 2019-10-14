@@ -122,10 +122,11 @@ public /*STATIC*/ class Scribe {
     for (var unit : realm.units) {
       lines.add(String.join(" ", maven, generateMavenArtifactLine(unit)));
     }
+    var script = "maven-deploy-" + deployment.mavenRepositoryId;
     try {
-      Files.write(bach.project.targetDirectory.resolve("maven-deploy.sh"), lines);
+      Files.write(bach.project.targetDirectory.resolve(script + ".sh"), lines);
       Files.write(
-          bach.project.targetDirectory.resolve("maven-deploy.bat"),
+          bach.project.targetDirectory.resolve(script + ".bat"),
           lines.stream().map(l -> "call " + l).collect(Collectors.toList()));
     } catch (IOException e) {
       throw new UncheckedIOException("Deploy failed: " + e.getMessage(), e);
