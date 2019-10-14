@@ -44,3 +44,8 @@ jobs:
         java src/build/Version.java $(<bin/VERSION)
         git commit --all --message "Back to development of version $(<bin/VERSION)"
         git push origin master
+    - name: 'Deploy (bintray)'
+      run: |
+        mkdir --parents ~/.m2
+        echo "<settings><servers><server><id>bintray</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
+        source bin/maven-deploy-bintray.sh

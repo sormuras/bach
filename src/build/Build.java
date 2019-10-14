@@ -52,7 +52,7 @@ public class Build {
         new Bach.Project.ToolArguments(
             Bach.Project.ToolArguments.JAVAC,
             new Bach.Project.Deployment(
-                "bintray-sormuras-maven",
+                "bintray",
                 URI.create("https://api.bintray.com/maven/sormuras/maven/bach/;publish=0"))),
         List.of(
             new Bach.Project.ModuleUnit(
