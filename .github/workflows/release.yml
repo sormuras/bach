@@ -8,10 +8,10 @@ jobs:
   build:
     runs-on: ubuntu-latest   
     steps:
-      - name: 'Set up JDK'
-        uses: actions/setup-java@v1
-        with:
-          java-version: 13
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 13
     - name: 'Checkout project'
       uses: actions/checkout@v1
     - name: 'Attach git to origin with write access'
