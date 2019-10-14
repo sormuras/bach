@@ -45,10 +45,12 @@ public class Version {
     var moduleBach = Path.of("src/modules/de.sormuras.bach/main/java/de/sormuras/bach/Bach.java");
     var mavenPom = Path.of("src/modules/de.sormuras.bach/main/maven/pom.xml");
 
+    mergedBach.toFile().setWritable(true);
     sed(properties, "version=.+", "version=" + version);
     sed(mergedBach, "VERSION = \".+\";", "VERSION = \"" + version + "\";");
     sed(moduleBach, "VERSION = \".+\";", "VERSION = \"" + version + "\";");
     sed(mavenPom, "<version>.+</version>", "<version>" + version + "</version>");
+    mergedBach.toFile().setWritable(false);
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
