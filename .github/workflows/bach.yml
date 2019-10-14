@@ -17,5 +17,13 @@ jobs:
       run: ./build.jsh
     - name: 'Install modules into local Maven repository'
       run: source bin/maven-install.sh
-    - name: 'Show deploy script(s)'
-      run: cat bin/maven-deploy-bintray.sh
+    - name: 'Show generated binaries and deploy script'
+      run: |
+        VERSION=$(java src/build/Version.java)
+        file src/modules/de.sormuras.bach/main/maven/pom.xml
+        file bin/realm/main/modules/de.sormuras.bach-${VERSION}.jar
+        file bin/realm/main/de.sormuras.bach-${VERSION}-sources.jar
+        file bin/realm/main/bach-${VERSION}-javadoc.jar
+        cat src/modules/de.sormuras.bach/main/maven/pom.xml
+        cat bin/maven-deploy-bintray.sh
+        cat bin/maven-install.sh
