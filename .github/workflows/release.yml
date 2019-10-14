@@ -39,7 +39,7 @@ jobs:
         release_name: Release ${{ github.event.milestone.title }}
         draft: false
         prerelease: false
-    - name: 'Restore previous version $(<bin/VERSION)'
+    - name: 'Restore previous version from bin/VERSION'
       run: |
         java src/build/Version.java $(<bin/VERSION)
         git commit --all --message "Back to development of version $(<bin/VERSION)"
