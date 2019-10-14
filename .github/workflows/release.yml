@@ -52,4 +52,5 @@ jobs:
       run: |
         mkdir --parents ~/.m2
         echo "<settings><servers><server><id>bintray</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
-        source bin/maven-deploy-bintray.sh
+        cat bin/maven-deploy-bintray.sh
+        mvn --batch-mode -X org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file -DrepositoryId=bintray -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=0 -DpomFile=src\modules\de.sormuras.bach\main\maven\pom.xml -Dfile=bin\realm\main\modules\de.sormuras.bach-${{ github.event.milestone.title }}.jar -Dsources=bin\realm\main\de.sormuras.bach-${{ github.event.milestone.title }}-sources.jar -Djavadoc=bin\realm\main\bach-${{ github.event.milestone.title }}-javadoc.jar
