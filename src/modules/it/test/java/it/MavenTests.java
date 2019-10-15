@@ -3,15 +3,12 @@ package it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import de.sormuras.bach.Log;
 import de.sormuras.bach.Maven;
 import de.sormuras.bach.Resources;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 
@@ -19,33 +16,39 @@ class MavenTests {
 
   @Test
   void testJUnit4() {
-    var log = Log.ofSystem();
-    var resources = new Resources(log, HttpClient.newHttpClient());
-    var maven = new Maven(log, resources, moduleMavenProperties(), moduleVersionProperties());
-    assertEquals("junit:junit:4.13-beta-3", maven.lookup("junit"));
-    assertEquals("junit:junit:4.12", maven.lookup("junit", "4.12"));
+    var recorder = new Recorder();
+    var maven = newMaven(recorder);
+    assertEquals("junit:junit:4.13-beta-3", maven.lookup("junit"), recorder.toString());
+    assertEquals("junit:junit:4.12", maven.lookup("junit", "4.12"), recorder.toString());
     assertEquals(
-        "https://repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.jar",
-        maven.toUri("junit", "junit", "4.12").toString());
+        URI.create("https://repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.jar"),
+        maven.toUri("junit", "junit", "4.12"));
   }
 
   @Test
   @DisabledIfSystemProperty(named = "offline", matches = "true")
   void testJUnit5() throws Exception {
     var recorder = new Recorder();
-    var resources = new Resources(recorder.log, HttpClient.newHttpClient());
-    var maven = new Maven(recorder.log, resources, moduleMavenProperties(), moduleVersionProperties());
+    var resources = newResources(recorder);
+    var maven = newMaven(recorder, resources);
     var uri = maven.toUri("org.junit.jupiter", "junit-jupiter", "5.6.0-SNAPSHOT");
-    var request =
-        HttpRequest.newBuilder()
-            .uri(uri)
-            .timeout(Duration.ofSeconds(20))
-            .method("HEAD", HttpRequest.BodyPublishers.noBody())
-            .build();
-    var response = resources.http().send(request, HttpResponse.BodyHandlers.ofString());
-    assertEquals(200, response.statusCode(), recorder.toString());
+    var head = resources.head(uri);
+    assertEquals(200, head.statusCode(), recorder.toString());
     assertLinesMatch(List.of("Read .+/maven-metadata.xml", ">> LOG >>"), recorder.lines());
     assertLinesMatch(List.of(), recorder.errors());
+  }
+
+  private static Resources newResources(Recorder recorder) {
+    var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    return new Resources(recorder.log, http);
+  }
+
+  private static Maven newMaven(Recorder recorder) {
+    return newMaven(recorder, newResources(recorder));
+  }
+
+  private static Maven newMaven(Recorder recorder, Resources resources) {
+    return new Maven(recorder.log, resources, moduleMavenProperties(), moduleVersionProperties());
   }
 
   // https://github.com/sormuras/modules/blob/master/module-maven.properties

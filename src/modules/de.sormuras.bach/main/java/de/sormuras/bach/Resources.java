@@ -34,12 +34,15 @@ public /*STATIC*/ class Resources {
     this.http = http;
   }
 
-  public HttpClient http() {
-    return http;
+  public HttpResponse<Void> head(URI uri) throws IOException, InterruptedException {
+    var nobody = HttpRequest.BodyPublishers.noBody();
+    var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).build();
+    return http.send(request, HttpResponse.BodyHandlers.discarding());
   }
 
   /** Copy all content from a uri to a target file. */
-  public Path copy(URI uri, Path path, CopyOption... options) throws IOException, InterruptedException {
+  public Path copy(URI uri, Path path, CopyOption... options)
+      throws IOException, InterruptedException {
     log.debug("Copy %s to %s", uri, path);
     if ("file".equals(uri.getScheme())) {
       try {

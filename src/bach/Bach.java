@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-15T15:35:49.882809Z
+// THIS FILE WAS GENERATED ON 2019-10-15T18:33:11.885147900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1609,12 +1609,15 @@ public class Bach {
       this.http = http;
     }
 
-    public HttpClient http() {
-      return http;
+    public HttpResponse<Void> head(URI uri) throws IOException, InterruptedException {
+      var nobody = HttpRequest.BodyPublishers.noBody();
+      var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).build();
+      return http.send(request, HttpResponse.BodyHandlers.discarding());
     }
 
     /** Copy all content from a uri to a target file. */
-    public Path copy(URI uri, Path path, CopyOption... options) throws IOException, InterruptedException {
+    public Path copy(URI uri, Path path, CopyOption... options)
+        throws IOException, InterruptedException {
       log.debug("Copy %s to %s", uri, path);
       if ("file".equals(uri.getScheme())) {
         try {
