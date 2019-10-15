@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-14T11:03:07.746296Z
+// THIS FILE WAS GENERATED ON 2019-10-15T15:35:49.882809Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -41,6 +41,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -114,11 +115,12 @@ public class Bach {
 
   /** Initialize default instance. */
   public Bach() {
-    this(
-        new PrintWriter(System.out, true),
-        new PrintWriter(System.err, true),
-        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
-        Project.of(Path.of("")));
+    this(Log.ofSystem(), Project.of(Path.of("")));
+  }
+
+  /** Initialize. */
+  public Bach(Log log, Project project) {
+    this(log.out, log.err, log.verbose, project);
   }
 
   /** Initialize. */
@@ -919,6 +921,118 @@ public class Bach {
     }
   }
 
+  /** Simplistic logging support. */
+  public static class Log {
+
+    /** Create new Log instance using system default text output streams. */
+    public static Log ofSystem() {
+      var verbose = Boolean.getBoolean("verbose");
+      var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+      return ofSystem(verbose || debug);
+    }
+
+    /** Create new Log instance using system default text output streams. */
+    public static Log ofSystem(boolean verbose) {
+      return new Log(new PrintWriter(System.out, true), new PrintWriter(System.err, true), verbose);
+    }
+
+    /** Text-output writer. */
+    private final PrintWriter out, err;
+    /** Be verbose. */
+    private final boolean verbose;
+
+    public Log(PrintWriter out, PrintWriter err, boolean verbose) {
+      this.out = out;
+      this.err = err;
+      this.verbose = verbose;
+    }
+
+    /** Print "debug" message to the standard output stream. */
+    public void debug(String format, Object... args) {
+      if (verbose) out.println(String.format(format, args));
+    }
+
+    /** Print "information" message to the standard output stream. */
+    public void info(String format, Object... args) {
+      out.println(String.format(format, args));
+    }
+
+    /** Print "warn" message to the error output stream. */
+    public void warn(String format, Object... args) {
+      err.println(String.format(format, args));
+    }
+  }
+
+  /** Maven 2 repository support. */
+  public static class Maven {
+
+    private final Log log;
+    private final Resources resources;
+    private final Properties moduleMavenProperties;
+    private final Properties moduleVersionProperties;
+
+    public Maven(
+        Log log,
+        Resources resources,
+        Properties moduleMavenProperties,
+        Properties moduleVersionProperties) {
+      this.log = log;
+      this.resources = resources;
+      this.moduleMavenProperties = moduleMavenProperties;
+      this.moduleVersionProperties = moduleVersionProperties;
+    }
+
+    public String lookup(String module) {
+      return lookup(module, moduleVersionProperties.getProperty(module));
+    }
+
+    public String lookup(String module, String version) {
+      return moduleMavenProperties.getProperty(module) + ':' + version;
+    }
+
+    public URI toUri(String group, String artifact, String version) {
+      var repository =
+          version.endsWith("SNAPSHOT")
+              ? "https://oss.sonatype.org/content/repositories/snapshots"
+              : "https://repo1.maven.org/maven2";
+      return toUri(repository, group, artifact, version, "", "jar");
+    }
+
+    public URI toUri(
+        String repository,
+        String group,
+        String artifact,
+        String version,
+        String classifier,
+        String type) {
+      var versionAndClassifier = classifier.isBlank() ? version : version + '-' + classifier;
+      var file = artifact + '-' + versionAndClassifier + '.' + type;
+      if (version.endsWith("SNAPSHOT")) {
+        var base = String.join("/", repository, group.replace('.', '/'), artifact, version);
+        var xml = URI.create(base + "/maven-metadata.xml");
+        try {
+          var meta = resources.read(xml);
+          var timestamp = substring(meta, "<timestamp>", "<");
+          var buildNumber = substring(meta, "<buildNumber>", "<");
+          var replacement = timestamp + '-' + buildNumber;
+          log.debug("%s:%s:%s -> %s", group, artifact, version, replacement);
+          file = file.replace("SNAPSHOT", replacement);
+        } catch (Exception e) {
+          log.warn("Maven metadata extraction from %s failed: %s", xml, e);
+        }
+      }
+      var uri = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
+      return URI.create(uri);
+    }
+
+    /** Extract substring between begin and end tags. */
+    static String substring(String string, String beginTag, String endTag) {
+      int beginIndex = string.indexOf(beginTag) + beginTag.length();
+      int endIndex = string.indexOf(endTag, beginIndex);
+      return string.substring(beginIndex, endIndex).trim();
+    }
+  }
+
   /** Static helper for modules and their friends. */
   public static class Modules {
 
@@ -1475,6 +1589,88 @@ public class Bach {
           return URI.create(uri);
         }
       }
+    }
+  }
+
+  /** Uniform Resource Identifier ({@link java.net.URI}) read and download support. */
+  public static class Resources {
+
+    public static Resources ofSystem() {
+      var log = Log.ofSystem();
+      var httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+      return new Resources(log, httpClient);
+    }
+
+    private final Log log;
+    private final HttpClient http;
+
+    public Resources(Log log, HttpClient http) {
+      this.log = log;
+      this.http = http;
+    }
+
+    public HttpClient http() {
+      return http;
+    }
+
+    /** Copy all content from a uri to a target file. */
+    public Path copy(URI uri, Path path, CopyOption... options) throws IOException, InterruptedException {
+      log.debug("Copy %s to %s", uri, path);
+      if ("file".equals(uri.getScheme())) {
+        try {
+          return Files.copy(Path.of(uri), path, options);
+        } catch (Exception e) {
+          throw new IllegalArgumentException("copy file failed:" + uri, e);
+        }
+      }
+      var request = HttpRequest.newBuilder(uri).GET();
+      if (Files.exists(path)) {
+        try {
+          var etagBytes = (byte[]) Files.getAttribute(path, "user:etag");
+          var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
+          request.setHeader("If-None-Match", etag);
+        } catch (Exception e) {
+          log.warn("Couldn't get 'user:etag' file attribute: %s", e);
+        }
+      }
+      var handler = HttpResponse.BodyHandlers.ofFile(path);
+      var response = http.send(request.build(), handler);
+      if (response.statusCode() == 200) {
+        if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+          var etagHeader = response.headers().firstValue("etag");
+          if (etagHeader.isPresent()) {
+            try {
+              var etag = etagHeader.get();
+              Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
+            } catch (Exception e) {
+              log.warn("Couldn't set 'user:etag' file attribute: %s", e);
+            }
+          }
+          var lastModifiedHeader = response.headers().firstValue("last-modified");
+          if (lastModifiedHeader.isPresent()) {
+            try {
+              var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+              var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
+              var fileTime = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
+              Files.setLastModifiedTime(path, fileTime);
+            } catch (Exception e) {
+              log.warn("Couldn't set last modified file attribute: %s", e);
+            }
+          }
+        }
+        log.debug("%s <- %s", path, uri);
+      }
+      return path;
+    }
+
+    /** Read all content from a uri into a string. */
+    public String read(URI uri) throws IOException, InterruptedException {
+      log.debug("Read %s", uri);
+      if ("file".equals(uri.getScheme())) {
+        return Files.readString(Path.of(uri));
+      }
+      var request = HttpRequest.newBuilder(uri).GET();
+      return http.send(request.build(), HttpResponse.BodyHandlers.ofString()).body();
     }
   }
 
