@@ -71,11 +71,12 @@ public class Bach {
 
   /** Initialize default instance. */
   public Bach() {
-    this(
-        new PrintWriter(System.out, true),
-        new PrintWriter(System.err, true),
-        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
-        Project.of(Path.of("")));
+    this(Log.ofSystem(), Project.of(Path.of("")));
+  }
+
+  /** Initialize. */
+  public Bach(Log log, Project project) {
+    this(log.out, log.err, log.verbose, project);
   }
 
   /** Initialize. */
