@@ -19,17 +19,49 @@ package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Maven;
 import de.sormuras.bach.Resources;
+import de.sormuras.bach.UnmappedModuleException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 class MavenTests {
+
+  @Test
+  void lookupEmptyPropertiesThrows() {
+    var lookup = newLookup(Map.of(), Map.of());
+    assertThrows(UnmappedModuleException.class, () -> lookup.apply("foo"));
+  }
+
+  @Test
+  void lookupViaCustom() {
+    var lookup = new Maven.Lookup(m -> "bar", Map.of(), Map.of());
+    assertEquals("bar", lookup.apply("foo"));
+  }
+
+  @Test
+  void lookupViaLibrary() {
+    var lookup = newLookup(Map.of("foo", "bar"), Map.of());
+    assertEquals("bar", lookup.apply("foo"));
+  }
+
+  @Test
+  void lookupViaPattern() {
+    var lookup = newLookup(Map.of("...", "bar"), Map.of());
+    assertEquals("bar", lookup.apply("foo"));
+  }
+
+  @Test
+  void lookupViaFallback() {
+    var lookup = newLookup(Map.of(), Map.of("foo", "bar"));
+    assertEquals("bar", lookup.apply("foo"));
+  }
 
   @Test
   void testJUnit4() {
@@ -39,7 +71,7 @@ class MavenTests {
     assertEquals("junit:junit:4.12", maven.lookup("junit", "4.12"), recorder.toString());
     assertEquals(
         URI.create("https://repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.jar"),
-        maven.toUri("junit", "junit", "4.12"));
+        maven.toUri("https://repo1.maven.org/maven2", "junit", "junit", "4.12"));
   }
 
   @Test
@@ -48,7 +80,12 @@ class MavenTests {
     var recorder = new Recorder();
     var resources = newResources(recorder);
     var maven = newMaven(recorder, resources);
-    var uri = maven.toUri("org.junit.jupiter", "junit-jupiter", "5.6.0-SNAPSHOT");
+    var uri =
+        maven.toUri(
+            "https://oss.sonatype.org/content/repositories/snapshots",
+            "org.junit.jupiter",
+            "junit-jupiter",
+            "5.6.0-SNAPSHOT");
     var head = resources.head(uri);
     assertEquals(200, head.statusCode(), recorder.toString());
     assertLinesMatch(List.of("Read .+/maven-metadata.xml", ">> LOG >>"), recorder.lines());
@@ -65,22 +102,26 @@ class MavenTests {
   }
 
   private static Maven newMaven(Recorder recorder, Resources resources) {
-    return new Maven(recorder.log, resources, moduleMavenProperties(), moduleVersionProperties());
+    var gas =
+        new Maven.Lookup(
+            UnmappedModuleException::throwForString, Map.of(), moduleMavenProperties());
+    var ver =
+        new Maven.Lookup(
+            UnmappedModuleException::throwForString, Map.of(), moduleVersionProperties());
+    return new Maven(recorder.log, resources, gas, ver);
+  }
+
+  private static Maven.Lookup newLookup(Map<String, String> library, Map<String, String> fallback) {
+    return new Maven.Lookup(UnmappedModuleException::throwForString, library, fallback);
   }
 
   // https://github.com/sormuras/modules/blob/master/module-maven.properties
-  private static Properties moduleMavenProperties() {
-    var properties = new Properties();
-    properties.setProperty("de.sormuras.bach", "de.sormuras.bach:de.sormuras.bach");
-    properties.setProperty("junit", "junit:junit");
-    return properties;
+  private static Map<String, String> moduleMavenProperties() {
+    return Map.of("de.sormuras.bach", "de.sormuras.bach:de.sormuras.bach", "junit", "junit:junit");
   }
 
   // https://github.com/sormuras/modules/blob/master/module-version.properties
-  private static Properties moduleVersionProperties() {
-    var properties = new Properties();
-    properties.setProperty("de.sormuras.bach", "1.9.7");
-    properties.setProperty("junit", "4.13-beta-3");
-    return properties;
+  private static Map<String, String> moduleVersionProperties() {
+    return Map.of("de.sormuras.bach", "1.9.7", "junit", "4.13-beta-3");
   }
 }
