@@ -21,7 +21,7 @@ import java.net.URI;
 
 /*BODY*/
 /** Unchecked exception thrown when a module name is not mapped. */
-public /*STATIC*/ class UnmappedModuleException extends IllegalStateException {
+public /*STATIC*/ class UnmappedModuleException extends RuntimeException {
 
   public static String throwForString(String module) {
     throw new UnmappedModuleException(module);
