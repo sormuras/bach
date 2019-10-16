@@ -58,9 +58,9 @@ public /*STATIC*/ class Resources {
   }
 
   /** Copy all content from a uri to a target file. */
-  public Path copy(URI uri, Path path, CopyOption... options)
-      throws IOException, InterruptedException {
+  public Path copy(URI uri, Path path, CopyOption... options) throws Exception {
     log.debug("Copy %s to %s", uri, path);
+    Files.createDirectories(path.getParent());
     if ("file".equals(uri.getScheme())) {
       try {
         return Files.copy(Path.of(uri), path, options);

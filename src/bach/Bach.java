@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-16T06:33:07.445460800Z
+// THIS FILE WAS GENERATED ON 2019-10-16T10:16:20.054419700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -66,6 +67,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -201,7 +203,7 @@ public class Bach {
   }
 
   /** Build. */
-  public void build() {
+  public void build() throws Exception {
     info();
 
     resolve();
@@ -307,7 +309,7 @@ public class Bach {
   }
 
   /** Resolve missing modules. */
-  public void resolve() {
+  public void resolve() throws Exception {
     new Resolver(this).resolve();
   }
 
@@ -542,12 +544,19 @@ public class Bach {
 
     /** Manage external 3rd-party modules. */
     public static class Library {
+
+      public static String defaultRepository(String group, String version) {
+        return version.endsWith("SNAPSHOT")
+            ? "https://oss.sonatype.org/content/repositories/snapshots"
+            : "https://repo1.maven.org/maven2";
+      }
+
       /** List of library paths to external 3rd-party modules. */
       public final List<Path> modulePaths;
       /** Map external 3rd-party module names to their {@code URI}s. */
       public final Function<String, URI> moduleMapper;
-      /** Map external 3rd-party module names to their Maven repository. */
-      public final Function<String, URI> mavenRepositoryMapper;
+      /** Map Maven group ID and version to their Maven repository. */
+      public final BinaryOperator<String> mavenRepositoryMapper;
       /** Map external 3rd-party module names to their colon-separated Maven Group and Artifact ID. */
       public final UnaryOperator<String> mavenGroupColonArtifactMapper;
       /** Map external 3rd-party module names to their Maven version. */
@@ -557,7 +566,7 @@ public class Bach {
         this(
             List.of(lib),
             UnmappedModuleException::throwForURI,
-            __ -> URI.create("https://repo1.maven.org/maven2"),
+            Library::defaultRepository,
             UnmappedModuleException::throwForString,
             UnmappedModuleException::throwForString);
       }
@@ -565,7 +574,7 @@ public class Bach {
       public Library(
           List<Path> modulePaths,
           Function<String, URI> moduleMapper,
-          Function<String, URI> mavenRepositoryMapper,
+          BinaryOperator<String> mavenRepositoryMapper,
           UnaryOperator<String> mavenGroupColonArtifactMapper,
           UnaryOperator<String> mavenVersionMapper) {
         this.modulePaths = List.copyOf(Util.requireNonEmpty(modulePaths, "modulePaths"));
@@ -1443,7 +1452,7 @@ public class Bach {
       this.project = bach.project;
     }
 
-    public void resolve() {
+    public void resolve() throws Exception {
       var entries = project.library.modulePaths.toArray(Path[]::new);
       var library = scan(ModuleFinder.of(entries));
       bach.log("Library of -> %s", project.library.modulePaths);
@@ -1474,18 +1483,62 @@ public class Bach {
         return;
       }
 
-      var downloader = new Util.Downloader(bach.out, bach.err);
-      var worker = new Scanner.Worker(project, downloader);
+      var lib = project.library.modulePaths.get(0);
+      var uris = Util.load(new Properties(), lib.resolve("module-uri.properties"));
+      var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+      var log = new Log(bach.out, bach.err, bach.verbose());
+      var resources = new Resources(log, http);
+
+      var cache =
+          Files.createDirectories(Path.of(System.getProperty("user.home")).resolve(".bach/modules"));
+      var artifactPath =
+          resources.copy(
+              URI.create("https://github.com/sormuras/modules/raw/master/module-maven.properties"),
+              cache.resolve("module-maven.properties"),
+              StandardCopyOption.COPY_ATTRIBUTES);
+
+      var artifactLookup =
+          new Maven.Lookup(
+              project.library.mavenGroupColonArtifactMapper,
+              Util.map(Util.load(new Properties(), lib.resolve("module-maven.properties"))),
+              Util.map(Util.load(new Properties(), artifactPath)));
+
+      var versionPath =
+          resources.copy(
+              URI.create("https://github.com/sormuras/modules/raw/master/module-version.properties"),
+              cache.resolve("module-version.properties"),
+              StandardCopyOption.COPY_ATTRIBUTES);
+
+      var versionLookup =
+          new Maven.Lookup(
+              project.library.mavenVersionMapper,
+              Util.map(Util.load(new Properties(), lib.resolve("module-version.properties"))),
+              Util.map(Util.load(new Properties(), versionPath)));
+      var maven = new Maven(log, resources, artifactLookup, versionLookup);
+
       do {
         bach.log("Loading missing modules: %s", missing);
-        var items = new ArrayList<Util.Downloader.Item>();
         for (var entry : missing.entrySet()) {
           var module = entry.getKey();
+          var direct = uris.getProperty(module);
+          if (direct != null) {
+            var uri = URI.create(direct);
+            var jar = lib.resolve(module + ".jar");
+            resources.copy(uri, jar, StandardCopyOption.COPY_ATTRIBUTES);
+            continue;
+          }
           var versions = entry.getValue();
-          items.add(worker.toTransferItem(module, versions));
+          var version =
+              Util.singleton(versions).map(Object::toString).orElse(versionLookup.apply(module));
+          var ga = maven.lookup(module, version).split(":");
+          var group = ga[0];
+          var artifact = ga[1];
+          var repository = project.library.mavenRepositoryMapper.apply(group, version);
+          resources.copy(
+              maven.toUri(repository, group, artifact, version),
+              lib.resolve(module + '-' + version + ".jar"),
+              StandardCopyOption.COPY_ATTRIBUTES);
         }
-        var lib = project.library.modulePaths.get(0);
-        downloader.download(lib, items);
         library = scan(ModuleFinder.of(entries));
         missing = new TreeMap<>(library.requires);
         library.getDeclaredModules().forEach(missing::remove);
@@ -1522,118 +1575,6 @@ public class Bach {
         }
         return versions.stream().findFirst();
       }
-
-      static class Worker {
-
-        static class Lookup {
-
-          final String name;
-          final Properties properties;
-          final Set<Pattern> patterns;
-          final UnaryOperator<String> custom;
-
-          Lookup(Util.Downloader downloader, Path lib, String name, UnaryOperator<String> custom) {
-            this.name = name;
-            var uri = "https://github.com/sormuras/modules/raw/master/" + name;
-            var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
-            try {
-              Files.createDirectories(modules);
-            } catch (IOException e) {
-              throw new UncheckedIOException("Creating directories failed: " + modules, e);
-            }
-            var defaultModules = downloader.download(URI.create(uri), modules.resolve(name));
-            var defaults = Util.load(new Properties(), defaultModules);
-            this.properties = Util.load(new Properties(defaults), lib.resolve(name));
-            this.patterns =
-                properties.keySet().stream()
-                    .map(Object::toString)
-                    .filter(key -> !SourceVersion.isName(key))
-                    .map(Pattern::compile)
-                    .collect(Collectors.toSet());
-            this.custom = custom;
-          }
-
-          String get(String key) {
-            try {
-              return custom.apply(key);
-            } catch (UnmappedModuleException e) {
-              // fall-through
-            }
-            var value = properties.getProperty(key);
-            if (value != null) {
-              return value;
-            }
-            for (var pattern : patterns) {
-              if (pattern.matcher(key).matches()) {
-                return properties.getProperty(pattern.pattern());
-              }
-            }
-            throw new IllegalStateException("No lookup value mapped for: " + key);
-          }
-
-          @Override
-          public String toString() {
-            var size = properties.size();
-            var names = properties.stringPropertyNames().size();
-            return String.format(
-                "module properties {name: %s, size: %d, names: %d}", name, size, names);
-          }
-        }
-
-        final Project project;
-        final Properties moduleUri;
-        final Lookup moduleMaven, moduleVersion;
-
-        Worker(Project project, Util.Downloader transfer) {
-          this.project = project;
-          var lib = project.library.modulePaths.get(0);
-          this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
-          this.moduleMaven =
-              new Lookup(
-                  transfer,
-                  lib,
-                  "module-maven.properties",
-                  project.library.mavenGroupColonArtifactMapper);
-          this.moduleVersion =
-              new Lookup(
-                  transfer, lib, "module-version.properties", project.library.mavenVersionMapper);
-        }
-
-        private URI getModuleUri(String module) {
-          try {
-            return project.library.moduleMapper.apply(module);
-          } catch (UnmappedModuleException e) {
-            var uri = moduleUri.getProperty(module);
-            if (uri == null) {
-              return null;
-            }
-            return URI.create(uri);
-          }
-        }
-
-        Util.Downloader.Item toTransferItem(String module, Set<Version> set) {
-          var uri = getModuleUri(module);
-          if (uri != null) {
-            var file = Util.findFileName(uri);
-            var version = Util.findVersion(file.orElse(""));
-            return Util.Downloader.Item.of(
-                uri, module + version.map(v -> '-' + v).orElse("") + ".jar");
-          }
-          var repository = project.library.mavenRepositoryMapper.apply(module);
-          var maven = moduleMaven.get(module).split(":");
-          var group = maven[0];
-          var artifact = maven[1];
-          var version = Util.singleton(set).map(Object::toString).orElse(moduleVersion.get(module));
-          var mappedUri = toUri(repository.toString(), group, artifact, version);
-          return Util.Downloader.Item.of(mappedUri, module + '-' + version + ".jar");
-        }
-
-        private URI toUri(String repository, String group, String artifact, String version) {
-          var file = artifact + '-' + version + ".jar";
-          var uri = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
-          return URI.create(uri);
-        }
-      }
     }
   }
 
@@ -1664,6 +1605,7 @@ public class Bach {
     public Path copy(URI uri, Path path, CopyOption... options)
         throws IOException, InterruptedException {
       log.debug("Copy %s to %s", uri, path);
+      Files.createDirectories(path.getParent());
       if ("file".equals(uri.getScheme())) {
         try {
           return Files.copy(Path.of(uri), path, options);
@@ -2197,6 +2139,14 @@ public class Bach {
       return properties;
     }
 
+    static Map<String, String> map(Properties properties) {
+      var map = new HashMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        map.put(name, properties.getProperty(name));
+      }
+      return Map.copyOf(map);
+    }
+
     /** Extract last path element from the supplied uri. */
     static Optional<String> findFileName(URI uri) {
       var path = uri.getPath();
@@ -2284,99 +2234,6 @@ public class Bach {
         }
       } catch (IOException e) {
         throw new UncheckedIOException("tree delete failed: " + root, e);
-      }
-    }
-
-    /** File transfer utility. */
-    static class Downloader {
-
-      static class Item {
-
-        static Item of(URI uri, String file) {
-          return new Item(uri, file);
-        }
-
-        private final URI uri;
-        private final String file;
-
-        private Item(URI uri, String file) {
-          this.uri = uri;
-          this.file = file;
-        }
-      }
-
-      private final PrintWriter out, err;
-      private final HttpClient client;
-
-      Downloader(PrintWriter out, PrintWriter err) {
-        this(out, err, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
-      }
-
-      private Downloader(PrintWriter out, PrintWriter err, HttpClient client) {
-        this.out = out;
-        this.err = err;
-        this.client = client;
-      }
-
-      Set<Path> download(Path directory, Collection<Item> items) {
-        Util.treeCreate(directory);
-        return items.stream()
-            .parallel()
-            .map(item -> download(item.uri, directory.resolve(item.file)))
-            .collect(Collectors.toCollection(TreeSet::new));
-      }
-
-      Path download(URI uri, Path path) {
-        if ("file".equals(uri.getScheme())) {
-          try {
-            return Files.copy(Path.of(uri), path, StandardCopyOption.REPLACE_EXISTING);
-          } catch (Exception e) {
-            throw new IllegalArgumentException("copy file failed:" + uri, e);
-          }
-        }
-        var request = HttpRequest.newBuilder(uri).GET();
-        if (Files.exists(path)) {
-          try {
-            var etagBytes = (byte[]) Files.getAttribute(path, "user:etag");
-            var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
-            request.setHeader("If-None-Match", etag);
-          } catch (Exception e) {
-            err.println("Couldn't get 'user:etag' file attribute: " + e);
-          }
-        }
-        try {
-          var handler = HttpResponse.BodyHandlers.ofFile(path);
-          var response = client.send(request.build(), handler);
-          if (response.statusCode() == 200) {
-            var etagHeader = response.headers().firstValue("etag");
-            if (etagHeader.isPresent()) {
-              try {
-                var etag = etagHeader.get();
-                Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
-              } catch (Exception e) {
-                err.println("Couldn't set 'user:etag' file attribute: " + e);
-              }
-            }
-            var lastModifiedHeader = response.headers().firstValue("last-modified");
-            if (lastModifiedHeader.isPresent()) {
-              try {
-                var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
-                var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
-                var fileTime = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);
-                Files.setLastModifiedTime(path, fileTime);
-              } catch (Exception e) {
-                err.println("Couldn't set last modified file attribute: " + e);
-              }
-            }
-            synchronized (out) {
-              out.println(path + " <- " + uri);
-            }
-          }
-        } catch (IOException | InterruptedException e) {
-          err.println("Failed to load: " + uri + " -> " + e);
-          e.printStackTrace(err);
-        }
-        return path;
       }
     }
   }

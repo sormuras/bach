@@ -24,7 +24,7 @@ import java.util.List;
 
 /** Use {@code Bach.java} to build {@code de.sormuras.bach} module. */
 public class Build {
-  public static void main(String... args) {
+  public static void main(String... args) throws Exception {
     PrintWriter out = new PrintWriter(System.out, true);
     PrintWriter err = new PrintWriter(System.err, true);
     new Bach(out, err, true, project(Bach.VERSION)).build();

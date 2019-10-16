@@ -157,7 +157,7 @@ public class Bach {
   }
 
   /** Build. */
-  public void build() {
+  public void build() throws Exception {
     info();
 
     resolve();
@@ -263,7 +263,7 @@ public class Bach {
   }
 
   /** Resolve missing modules. */
-  public void resolve() {
+  public void resolve() throws Exception {
     new Resolver(this).resolve();
   }
 
