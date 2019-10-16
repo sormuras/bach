@@ -6,7 +6,7 @@
 
     <groupId>de.sormuras.bach</groupId>
     <artifactId>de.sormuras.bach</artifactId>
-    <version>1.9-ea</version>
+    <version>1.9.8</version>
 
     <name>Bach.java</name>
     <description>Java Shell Builder - Use jshell/java to build your modular Java project</description>
