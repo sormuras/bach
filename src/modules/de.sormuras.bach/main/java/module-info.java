@@ -19,7 +19,7 @@ module de.sormuras.bach {
   exports de.sormuras.bach;
 
   requires java.compiler; // for javax.lang.model.SourceVersion and friends
-  requires java.net.http; // for downloading 3rd-party modules
+  requires transitive java.net.http; // for downloading 3rd-party modules
 
   uses java.util.spi.ToolProvider; // running 'javac', 'jar', and other foundation tools
 
