@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-15T18:33:11.885147900Z
+// THIS FILE WAS GENERATED ON 2019-10-16T04:33:38.916042300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -966,35 +966,76 @@ public class Bach {
   /** Maven 2 repository support. */
   public static class Maven {
 
+    public static class Lookup implements UnaryOperator<String> {
+
+      final UnaryOperator<String> custom;
+      final Map<String, String> library;
+      final Set<Pattern> libraryPatterns;
+      final Map<String, String> fallback;
+
+      public Lookup(
+          UnaryOperator<String> custom, Map<String, String> library, Map<String, String> fallback) {
+        this.custom = custom;
+        this.library = library;
+        this.fallback = fallback;
+        this.libraryPatterns =
+            library.keySet().stream()
+                .map(Object::toString)
+                .filter(key -> !SourceVersion.isName(key))
+                .map(Pattern::compile)
+                .collect(Collectors.toSet());
+      }
+
+      @Override
+      public String apply(String module) {
+        try {
+          var custom = this.custom.apply(module);
+          if (custom != null) {
+            return custom;
+          }
+        } catch (UnmappedModuleException e) {
+          // fall-through
+        }
+        var library = this.library.get(module);
+        if (library != null) {
+          return library;
+        }
+        if (libraryPatterns.size() > 0) {
+          for (var pattern : libraryPatterns) {
+            if (pattern.matcher(module).matches()) {
+              return this.library.get(pattern.pattern());
+            }
+          }
+        }
+        var fallback = this.fallback.get(module);
+        if (fallback != null) {
+          return fallback;
+        }
+        throw new UnmappedModuleException(module);
+      }
+    }
+
     private final Log log;
     private final Resources resources;
-    private final Properties moduleMavenProperties;
-    private final Properties moduleVersionProperties;
+    private final Lookup groupArtifacts;
+    private final Lookup versions;
 
-    public Maven(
-        Log log,
-        Resources resources,
-        Properties moduleMavenProperties,
-        Properties moduleVersionProperties) {
+    public Maven(Log log, Resources resources, Lookup groupArtifacts, Lookup versions) {
       this.log = log;
       this.resources = resources;
-      this.moduleMavenProperties = moduleMavenProperties;
-      this.moduleVersionProperties = moduleVersionProperties;
+      this.groupArtifacts = groupArtifacts;
+      this.versions = versions;
     }
 
     public String lookup(String module) {
-      return lookup(module, moduleVersionProperties.getProperty(module));
+      return lookup(module, versions.apply(module));
     }
 
     public String lookup(String module, String version) {
-      return moduleMavenProperties.getProperty(module) + ':' + version;
+      return groupArtifacts.apply(module) + ':' + version;
     }
 
-    public URI toUri(String group, String artifact, String version) {
-      var repository =
-          version.endsWith("SNAPSHOT")
-              ? "https://oss.sonatype.org/content/repositories/snapshots"
-              : "https://repo1.maven.org/maven2";
+    public URI toUri(String repository, String group, String artifact, String version) {
       return toUri(repository, group, artifact, version, "", "jar");
     }
 
@@ -2337,7 +2378,7 @@ public class Bach {
   }
 
   /** Unchecked exception thrown when a module name is not mapped. */
-  public static class UnmappedModuleException extends IllegalStateException {
+  public static class UnmappedModuleException extends RuntimeException {
 
     public static String throwForString(String module) {
       throw new UnmappedModuleException(module);
