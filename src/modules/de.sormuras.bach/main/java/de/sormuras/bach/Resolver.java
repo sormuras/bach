@@ -25,8 +25,10 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -36,11 +38,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.lang.model.SourceVersion;
 
 /*BODY*/
 /** 3rd-party module resolver. */
@@ -118,7 +116,7 @@ public /*STATIC*/ class Resolver {
     this.project = bach.project;
   }
 
-  public void resolve() {
+  public void resolve() throws Exception {
     var entries = project.library.modulePaths.toArray(Path[]::new);
     var library = scan(ModuleFinder.of(entries));
     bach.log("Library of -> %s", project.library.modulePaths);
@@ -149,18 +147,62 @@ public /*STATIC*/ class Resolver {
       return;
     }
 
-    var downloader = new Util.Downloader(bach.out, bach.err);
-    var worker = new Scanner.Worker(project, downloader);
+    var lib = project.library.modulePaths.get(0);
+    var uris = Util.load(new Properties(), lib.resolve("module-uri.properties"));
+    var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    var log = new Log(bach.out, bach.err, bach.verbose());
+    var resources = new Resources(log, http);
+
+    var cache =
+        Files.createDirectories(Path.of(System.getProperty("user.home")).resolve(".bach/modules"));
+    var artifactPath =
+        resources.copy(
+            URI.create("https://github.com/sormuras/modules/raw/master/module-maven.properties"),
+            cache.resolve("module-maven.properties"),
+            StandardCopyOption.COPY_ATTRIBUTES);
+
+    var artifactLookup =
+        new Maven.Lookup(
+            project.library.mavenGroupColonArtifactMapper,
+            Util.map(Util.load(new Properties(), lib.resolve("module-maven.properties"))),
+            Util.map(Util.load(new Properties(), artifactPath)));
+
+    var versionPath =
+        resources.copy(
+            URI.create("https://github.com/sormuras/modules/raw/master/module-version.properties"),
+            cache.resolve("module-version.properties"),
+            StandardCopyOption.COPY_ATTRIBUTES);
+
+    var versionLookup =
+        new Maven.Lookup(
+            project.library.mavenVersionMapper,
+            Util.map(Util.load(new Properties(), lib.resolve("module-version.properties"))),
+            Util.map(Util.load(new Properties(), versionPath)));
+    var maven = new Maven(log, resources, artifactLookup, versionLookup);
+
     do {
       bach.log("Loading missing modules: %s", missing);
-      var items = new ArrayList<Util.Downloader.Item>();
       for (var entry : missing.entrySet()) {
         var module = entry.getKey();
+        var direct = uris.getProperty(module);
+        if (direct != null) {
+          var uri = URI.create(direct);
+          var jar = lib.resolve(module + ".jar");
+          resources.copy(uri, jar, StandardCopyOption.COPY_ATTRIBUTES);
+          continue;
+        }
         var versions = entry.getValue();
-        items.add(worker.toTransferItem(module, versions));
+        var version =
+            Util.singleton(versions).map(Object::toString).orElse(versionLookup.apply(module));
+        var ga = maven.lookup(module, version).split(":");
+        var group = ga[0];
+        var artifact = ga[1];
+        var repository = project.library.mavenRepositoryMapper.apply(group, version);
+        resources.copy(
+            maven.toUri(repository, group, artifact, version),
+            lib.resolve(module + '-' + version + ".jar"),
+            StandardCopyOption.COPY_ATTRIBUTES);
       }
-      var lib = project.library.modulePaths.get(0);
-      downloader.download(lib, items);
       library = scan(ModuleFinder.of(entries));
       missing = new TreeMap<>(library.requires);
       library.getDeclaredModules().forEach(missing::remove);
@@ -196,118 +238,6 @@ public /*STATIC*/ class Resolver {
         throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
       }
       return versions.stream().findFirst();
-    }
-
-    static class Worker {
-
-      static class Lookup {
-
-        final String name;
-        final Properties properties;
-        final Set<Pattern> patterns;
-        final UnaryOperator<String> custom;
-
-        Lookup(Util.Downloader downloader, Path lib, String name, UnaryOperator<String> custom) {
-          this.name = name;
-          var uri = "https://github.com/sormuras/modules/raw/master/" + name;
-          var modules = Path.of(System.getProperty("user.home")).resolve(".bach/modules");
-          try {
-            Files.createDirectories(modules);
-          } catch (IOException e) {
-            throw new UncheckedIOException("Creating directories failed: " + modules, e);
-          }
-          var defaultModules = downloader.download(URI.create(uri), modules.resolve(name));
-          var defaults = Util.load(new Properties(), defaultModules);
-          this.properties = Util.load(new Properties(defaults), lib.resolve(name));
-          this.patterns =
-              properties.keySet().stream()
-                  .map(Object::toString)
-                  .filter(key -> !SourceVersion.isName(key))
-                  .map(Pattern::compile)
-                  .collect(Collectors.toSet());
-          this.custom = custom;
-        }
-
-        String get(String key) {
-          try {
-            return custom.apply(key);
-          } catch (UnmappedModuleException e) {
-            // fall-through
-          }
-          var value = properties.getProperty(key);
-          if (value != null) {
-            return value;
-          }
-          for (var pattern : patterns) {
-            if (pattern.matcher(key).matches()) {
-              return properties.getProperty(pattern.pattern());
-            }
-          }
-          throw new IllegalStateException("No lookup value mapped for: " + key);
-        }
-
-        @Override
-        public String toString() {
-          var size = properties.size();
-          var names = properties.stringPropertyNames().size();
-          return String.format(
-              "module properties {name: %s, size: %d, names: %d}", name, size, names);
-        }
-      }
-
-      final Project project;
-      final Properties moduleUri;
-      final Lookup moduleMaven, moduleVersion;
-
-      Worker(Project project, Util.Downloader transfer) {
-        this.project = project;
-        var lib = project.library.modulePaths.get(0);
-        this.moduleUri = Util.load(new Properties(), lib.resolve("module-uri.properties"));
-        this.moduleMaven =
-            new Lookup(
-                transfer,
-                lib,
-                "module-maven.properties",
-                project.library.mavenGroupColonArtifactMapper);
-        this.moduleVersion =
-            new Lookup(
-                transfer, lib, "module-version.properties", project.library.mavenVersionMapper);
-      }
-
-      private URI getModuleUri(String module) {
-        try {
-          return project.library.moduleMapper.apply(module);
-        } catch (UnmappedModuleException e) {
-          var uri = moduleUri.getProperty(module);
-          if (uri == null) {
-            return null;
-          }
-          return URI.create(uri);
-        }
-      }
-
-      Util.Downloader.Item toTransferItem(String module, Set<Version> set) {
-        var uri = getModuleUri(module);
-        if (uri != null) {
-          var file = Util.findFileName(uri);
-          var version = Util.findVersion(file.orElse(""));
-          return Util.Downloader.Item.of(
-              uri, module + version.map(v -> '-' + v).orElse("") + ".jar");
-        }
-        var repository = project.library.mavenRepositoryMapper.apply(module);
-        var maven = moduleMaven.get(module).split(":");
-        var group = maven[0];
-        var artifact = maven[1];
-        var version = Util.singleton(set).map(Object::toString).orElse(moduleVersion.get(module));
-        var mappedUri = toUri(repository.toString(), group, artifact, version);
-        return Util.Downloader.Item.of(mappedUri, module + '-' + version + ".jar");
-      }
-
-      private URI toUri(String repository, String group, String artifact, String version) {
-        var file = artifact + '-' + version + ".jar";
-        var uri = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
-        return URI.create(uri);
-      }
     }
   }
 }
