@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-16T04:33:38.916042300Z
+// THIS FILE WAS GENERATED ON 2019-10-16T06:33:07.445460800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -697,7 +697,11 @@ public class Bach {
     /** Realm-specific tool argument collector. */
     public static class ToolArguments {
 
-      public static final List<String> JAVAC = List.of("-encoding", "UTF-8", "-parameters", "-Xlint");
+      public static final List<String> JAVAC =
+          List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint");
+
+      public static final List<String> JAVAC_PREVIEW =
+          List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint:-preview");
 
       public static ToolArguments of() {
         return new ToolArguments(JAVAC, null);

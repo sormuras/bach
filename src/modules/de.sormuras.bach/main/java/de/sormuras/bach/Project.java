@@ -287,7 +287,11 @@ public /*STATIC*/ class Project {
   /** Realm-specific tool argument collector. */
   public static class ToolArguments {
 
-    public static final List<String> JAVAC = List.of("-encoding", "UTF-8", "-parameters", "-Xlint");
+    public static final List<String> JAVAC =
+        List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint");
+
+    public static final List<String> JAVAC_PREVIEW =
+        List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint:-preview");
 
     public static ToolArguments of() {
       return new ToolArguments(JAVAC, null);

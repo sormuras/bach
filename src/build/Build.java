@@ -69,7 +69,7 @@ public class Build {
         true,
         Runtime.version().feature(),
         String.join(File.separator, "src", "modules", "*", "test", "java"),
-        Bach.Project.ToolArguments.of(),
+        new Bach.Project.ToolArguments(Bach.Project.ToolArguments.JAVAC_PREVIEW, null),
         List.of(
             new Bach.Project.ModuleUnit(
                 Bach.Project.ModuleInfo.of(test.resolve("java/module-info.java")),
