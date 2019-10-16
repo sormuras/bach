@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -132,12 +133,19 @@ public /*STATIC*/ class Project {
 
   /** Manage external 3rd-party modules. */
   public static class Library {
+
+    public static String defaultRepository(String group, String version) {
+      return version.endsWith("SNAPSHOT")
+          ? "https://oss.sonatype.org/content/repositories/snapshots"
+          : "https://repo1.maven.org/maven2";
+    }
+
     /** List of library paths to external 3rd-party modules. */
     public final List<Path> modulePaths;
     /** Map external 3rd-party module names to their {@code URI}s. */
     public final Function<String, URI> moduleMapper;
-    /** Map external 3rd-party module names to their Maven repository. */
-    public final Function<String, URI> mavenRepositoryMapper;
+    /** Map Maven group ID and version to their Maven repository. */
+    public final BinaryOperator<String> mavenRepositoryMapper;
     /** Map external 3rd-party module names to their colon-separated Maven Group and Artifact ID. */
     public final UnaryOperator<String> mavenGroupColonArtifactMapper;
     /** Map external 3rd-party module names to their Maven version. */
@@ -147,7 +155,7 @@ public /*STATIC*/ class Project {
       this(
           List.of(lib),
           UnmappedModuleException::throwForURI,
-          __ -> URI.create("https://repo1.maven.org/maven2"),
+          Library::defaultRepository,
           UnmappedModuleException::throwForString,
           UnmappedModuleException::throwForString);
     }
@@ -155,7 +163,7 @@ public /*STATIC*/ class Project {
     public Library(
         List<Path> modulePaths,
         Function<String, URI> moduleMapper,
-        Function<String, URI> mavenRepositoryMapper,
+        BinaryOperator<String> mavenRepositoryMapper,
         UnaryOperator<String> mavenGroupColonArtifactMapper,
         UnaryOperator<String> mavenVersionMapper) {
       this.modulePaths = List.copyOf(Util.requireNonEmpty(modulePaths, "modulePaths"));
