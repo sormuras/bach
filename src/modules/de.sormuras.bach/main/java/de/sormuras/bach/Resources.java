@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Set;
 
@@ -51,9 +52,10 @@ public /*STATIC*/ class Resources {
     this.http = http;
   }
 
-  public HttpResponse<Void> head(URI uri) throws IOException, InterruptedException {
+  public HttpResponse<Void> head(URI uri, int timeout) throws IOException, InterruptedException {
     var nobody = HttpRequest.BodyPublishers.noBody();
-    var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).build();
+    var duration = Duration.ofSeconds(timeout);
+    var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
     return http.send(request, HttpResponse.BodyHandlers.discarding());
   }
 

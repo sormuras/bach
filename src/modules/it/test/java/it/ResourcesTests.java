@@ -29,7 +29,7 @@ class ResourcesTests {
   @Test
   @DisabledIfSystemProperty(named = "offline", matches = "true")
   void headRequestOfHttpsGoogleComUsingSystemResourcesIsRespondedWithStatus200() throws Exception {
-    assertEquals(200, Resources.ofSystem().head(URI.create("https://google.com")).statusCode());
+    assertEquals(200, Resources.ofSystem().head(URI.create("https://google.com"), 9).statusCode());
   }
   /*
 

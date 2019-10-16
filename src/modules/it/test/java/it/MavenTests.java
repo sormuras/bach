@@ -24,10 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import de.sormuras.bach.Maven;
 import de.sormuras.bach.Resources;
 import de.sormuras.bach.UnmappedModuleException;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -79,14 +81,18 @@ class MavenTests {
   void testJUnit5() throws Exception {
     var recorder = new Recorder();
     var resources = newResources(recorder);
+
+    var repository = "https://oss.sonatype.org/content/repositories/snapshots";
+    var domain = URI.create(repository + "/org/junit/");
+    try {
+      resources.head(domain, 10);
+    } catch (HttpTimeoutException e) {
+      Assumptions.assumeTrue(false, "HEAD(" + domain + "): " + e);
+    }
+
     var maven = newMaven(recorder, resources);
-    var uri =
-        maven.toUri(
-            "https://oss.sonatype.org/content/repositories/snapshots",
-            "org.junit.jupiter",
-            "junit-jupiter",
-            "5.6.0-SNAPSHOT");
-    var head = resources.head(uri);
+    var uri = maven.toUri(repository, "org.junit.jupiter", "junit-jupiter", "5.6.0-SNAPSHOT");
+    var head = resources.head(uri, 10);
     assertEquals(200, head.statusCode(), recorder.toString());
     assertLinesMatch(List.of("Read .+/maven-metadata.xml", ">> LOG >>"), recorder.lines());
     assertLinesMatch(List.of(), recorder.errors());
