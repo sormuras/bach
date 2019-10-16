@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-16T10:16:20.054419700Z
+// THIS FILE WAS GENERATED ON 2019-10-16T13:04:59.505936700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1602,8 +1602,7 @@ public class Bach {
     }
 
     /** Copy all content from a uri to a target file. */
-    public Path copy(URI uri, Path path, CopyOption... options)
-        throws IOException, InterruptedException {
+    public Path copy(URI uri, Path path, CopyOption... options) throws Exception {
       log.debug("Copy %s to %s", uri, path);
       Files.createDirectories(path.getParent());
       if ("file".equals(uri.getScheme())) {
@@ -2139,6 +2138,7 @@ public class Bach {
       return properties;
     }
 
+    /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */
     static Map<String, String> map(Properties properties) {
       var map = new HashMap<String, String>();
       for (var name : properties.stringPropertyNames()) {
