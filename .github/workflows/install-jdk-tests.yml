@@ -6,6 +6,8 @@ on:
     - '.github/workflows/install-jdk-tests.yml'
     - 'install-jdk.sh'
     - 'install-jdk-tests.sh'
+  schedule:
+    - cron:  '0 1 * * *'
 
 jobs:
   linux:
