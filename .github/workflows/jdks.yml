@@ -1,0 +1,15 @@
+name: JDK
+
+on:
+  push:
+    paths:
+    - '.github/workflows/jdks.yml'
+    - 'install-jdk.sh'
+
+jobs:
+  ea:
+    name: 'JDK ea'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: source install-jdk.sh --dry-run
