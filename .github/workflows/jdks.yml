@@ -1,17 +1,31 @@
 name: JDK
 
 on:
+  
   push:
     paths:
     - '.github/workflows/jdks.yml'
     - 'install-jdk.sh'
 
 jobs:
+  
   jdk-ea:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: source install-jdk.sh --dry-run
+  
+  jdk-6:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: wget http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk-6u45-linux-x64.tar.gz
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '1.6'
+        jdkFile: jdk-6u45-linux-x64.tar.gz
+    - run: java -version
+  
   jdk-5:
     runs-on: ubuntu-latest
     steps:
@@ -22,15 +36,4 @@ jobs:
         java-version: '1.5.0'
         architecture: x86
         jdkFile: jdk1.5.0_22.tar.gz
-    - run: java -version
-  jdk-1:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: wget http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk-1_2_2_017-linux-i586.tar.gz
-    - uses: actions/setup-java@v1
-      with:
-        java-version: '1.2.2'
-        architecture: x86
-        jdkFile: jdk-1_2_2_017-linux-i586.tar.gz
     - run: java -version
