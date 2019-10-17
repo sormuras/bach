@@ -21,9 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - run: wget http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk1.5.0_22.tar.gz
     - uses: actions/setup-java@v1
       with:
         java-version: '1.5.0'
-        architecture: x64
-        jdkFile: 'http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk1.5.0_22.tar.gz'
+        architecture: x86
+        jdkFile: jdk1.5.0_22.tar.gz
     - run: java -version
