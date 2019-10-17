@@ -16,5 +16,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: source install-jdk.sh --url https://igm.univ-mlv.fr/~forax/tmp/jdk/jdk-1_2_2_017-linux-i586.tar.gz
+    - run: source install-jdk.sh --url 'https://igm.univ-mlv.fr/~forax/tmp/jdk/jdk-1_2_2_017-linux-i586.tar.gz'
     - run: java -version
