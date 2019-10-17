@@ -20,13 +20,35 @@ package it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.Bach;
+import java.lang.module.ModuleDescriptor;
+import java.util.List;
+import java.util.Set;
+import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class ModuleSystemTests {
 
   @Test
-  void moduleIsNamed() {
+  void testModuleIsNamed() {
     assertTrue(getClass().getModule().isNamed());
     assertEquals("it", getClass().getModule().getName());
+  }
+
+  @Test
+  void bachModule() {
+    // exploded and jarred module fixtures
+    var expected =
+        ModuleDescriptor.newModule("de.sormuras.bach")
+            .exports("de.sormuras.bach")
+            .requires("java.compiler")
+            .requires(Set.of(ModuleDescriptor.Requires.Modifier.TRANSITIVE), "java.net.http")
+            .uses(ToolProvider.class.getName())
+            .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"));
+    // only the jarred module provides the following attributes
+    var actual = Bach.class.getModule().getDescriptor();
+    actual.version().ifPresent(__ -> expected.version(Bach.VERSION));
+    actual.mainClass().ifPresent(__ -> expected.mainClass("de.sormuras.bach.Bach"));
+    assertEquals(expected.build(), actual);
   }
 }
