@@ -7,12 +7,12 @@ on:
     - 'install-jdk.sh'
 
 jobs:
-  ea:
+  jdk-ea:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: source install-jdk.sh --dry-run
-  1.2.2:
+  jdk-1:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
