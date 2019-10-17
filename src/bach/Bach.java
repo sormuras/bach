@@ -82,7 +82,7 @@ import javax.lang.model.SourceVersion;
 
 public class Bach {
 
-  public static String VERSION = "1.9-ea";
+  public static String VERSION = "1.9.9";
 
   /**
    * Main entry-point.
