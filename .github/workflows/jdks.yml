@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 1
-    - run: source install-jdk.sh --dry-run
+    - run: source install-jdk.sh --feature ea --os linux-x64
     - run: java -version
 
   jdk-6:
