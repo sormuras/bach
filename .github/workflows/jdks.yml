@@ -13,23 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
     - run: source install-jdk.sh --dry-run
-  
+    - run: java -version
+
   jdk-6:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
     - run: wget http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk-6u45-linux-x64.tar.gz
     - uses: actions/setup-java@v1
       with:
         java-version: '1.6'
         jdkFile: jdk-6u45-linux-x64.tar.gz
     - run: java -version
-  
+
   jdk-5:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
     - run: wget http://igm.univ-mlv.fr/~forax/tmp/jdk/jdk1.5.0_22.tar.gz
     - uses: actions/setup-java@v1
       with:
