@@ -24,7 +24,10 @@ import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -68,6 +71,8 @@ public class Bach {
   private final boolean verbose;
   /** Project to be built. */
   /*PRIVATE*/ final Project project;
+  /** Summary. */
+  final Summary summary;
 
   /** Initialize default instance. */
   public Bach() {
@@ -85,6 +90,7 @@ public class Bach {
     this.err = Util.requireNonNull(err, "err");
     this.verbose = verbose;
     this.project = project;
+    this.summary = new Summary();
     log("New Bach.java (%s) instance initialized: %s", VERSION, this);
   }
 
@@ -107,8 +113,9 @@ public class Bach {
 
   /** Run the passed command. */
   void run(Command command) {
-    var tool = ToolProvider.findFirst(command.getName());
-    int code = run(tool.orElseThrow(), command.toStringArray());
+    var name = command.getName();
+    var tool = ToolProvider.findFirst(name);
+    int code = run(tool.orElseThrow(() -> new RuntimeException(name)), command.toStringArray());
     if (code != 0) {
       throw new AssertionError("Running command failed: " + command);
     }
@@ -116,8 +123,13 @@ public class Bach {
 
   /** Run the tool using the passed provider and arguments. */
   int run(ToolProvider tool, String... arguments) {
-    log("Running %s %s", tool.name(), String.join(" ", arguments));
-    return tool.run(out, err, arguments);
+    var line = tool.name() + (arguments.length == 0 ? "" : ' ' + String.join(" ", arguments));
+    log("Running %s", line);
+    var start = Instant.now();
+    int code = tool.run(out, err, arguments);
+    var duration = Duration.between(start, Instant.now());
+    summary.runs.add(String.format("%d %6s ms %s", code, duration.toMillis(), line));
+    return code;
   }
 
   /** Get the {@code Bach.java} banner. */
@@ -208,20 +220,13 @@ public class Bach {
   }
 
   /** Print summary. */
-  public void summary(Project.Realm realm) {
+  public void summary(Project.Realm realm) throws Exception {
     out.println();
     out.printf("+===%n");
     out.printf("| Project %s %s summary%n", project.name, project.version);
     out.printf("+===%n");
-    var target = project.target(realm);
-    try {
-      for (var jar : Util.list(target.modules, Util::isJarFile)) {
-        out.printf("%5d %s %n", Files.size(jar), jar);
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
     out.println();
+    var target = project.target(realm);
     var modulePath = project.modulePaths(target);
     var names = String.join(",", realm.names());
     var deps = new Command("jdeps").add("--module-path", modulePath).add("--multi-release", "BASE");
@@ -232,6 +237,14 @@ public class Bach {
             .add("--add-modules", names));
     if (verbose) {
       run(deps.clone().add("--check", names));
+    }
+    summary.runs.forEach(out::println);
+    out.println();
+    var jars = Util.list(target.modules, Util::isJarFile);
+    out.printf("%d module(s) built: %s%n", jars.size(), target.modules.toUri());
+    out.printf("%12s %s%n", "size (bytes)", "file");
+    for (var jar : jars) {
+      out.printf("%,12d %s%n", Files.size(jar), jar.getFileName());
     }
   }
 
@@ -270,5 +283,9 @@ public class Bach {
   /** Print Bach.java's version to the standard output stream. */
   public void version() {
     out.println(VERSION);
+  }
+
+  private static class Summary {
+    final List<String> runs = new ArrayList<>();
   }
 }
