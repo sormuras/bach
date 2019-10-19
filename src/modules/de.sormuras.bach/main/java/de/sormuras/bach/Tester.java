@@ -111,8 +111,7 @@ import java.util.stream.StreamSupport;
       parent = parent.getParent();
     }
     try {
-      bach.log("Running %s %s", tool.name(), String.join(" ", args));
-      return tool.run(bach.out, bach.err, args);
+      return bach.run(tool, args);
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
     }
