@@ -222,9 +222,9 @@ public class Bach {
   /** Print summary. */
   public void summary(Project.Realm realm) throws Exception {
     out.println();
-    out.printf("+===%n");
-    out.printf("| Project %s %s summary%n", project.name, project.version);
-    out.printf("+===%n");
+    out.printf("+---%n");
+    out.printf("| Summary for project %s %s%n", project.name, project.version);
+    out.printf("+---%n");
     out.println();
     var target = project.target(realm);
     var modulePath = project.modulePaths(target);
@@ -238,22 +238,25 @@ public class Bach {
     if (verbose) {
       run(deps.clone().add("--check", names));
     }
-    summary.runs.forEach(out::println);
+    out.printf("Commands%n");
+    var summaryBatch = ("summary-commands-" + Instant.now() + ".bat").replace(':', '-');
+    Files.write(project.targetDirectory.resolve(summaryBatch), summary.runs);
+    summary.runs.forEach(line -> out.printf("%.120s%s%n", line, line.length() <= 120 ? "" : "..."));
     out.println();
+    out.printf("Modules%n");
     var jars = Util.list(target.modules, Util::isJarFile);
-    out.printf("%d module(s) built: %s%n", jars.size(), target.modules.toUri());
-    out.printf("%12s %s%n", "size (bytes)", "file");
+    out.printf("%d jar(s) found in: %s%n", jars.size(), target.modules.toUri());
     for (var jar : jars) {
-      out.printf("%,12d %s%n", Files.size(jar), jar.getFileName());
+      out.printf("%,11d %s%n", Files.size(jar), jar.getFileName());
     }
   }
 
   /** Print all "interesting" information. */
   public void info() {
     out.printf("Bach.java (%s)%n", VERSION);
-    out.printf("+===%n");
+    out.printf("+---%n");
     out.printf("| Project %s %s%n", project.name, project.version);
-    out.printf("+===%n");
+    out.printf("+---%n");
     try {
       for (var field : project.getClass().getFields()) {
         out.printf("  %s = %s%n", field.getName(), field.get(project));
