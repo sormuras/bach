@@ -32,7 +32,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -232,7 +231,7 @@ public /*STATIC*/ class Resolver {
     public Optional<Version> getRequiredVersion(String requiredModule) {
       var versions = requires.get(requiredModule);
       if (versions == null) {
-        throw new NoSuchElementException("Module " + requiredModule + " is not mapped");
+        throw new UnmappedModuleException(requiredModule);
       }
       if (versions.size() > 1) {
         throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);

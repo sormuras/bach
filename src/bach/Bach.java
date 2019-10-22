@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-19T07:34:25.438395100Z
+// THIS FILE WAS GENERATED ON 2019-10-22T15:01:49.657402Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -60,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -1587,7 +1586,7 @@ public class Bach {
       public Optional<Version> getRequiredVersion(String requiredModule) {
         var versions = requires.get(requiredModule);
         if (versions == null) {
-          throw new NoSuchElementException("Module " + requiredModule + " is not mapped");
+          throw new UnmappedModuleException(requiredModule);
         }
         if (versions.size() > 1) {
           throw new IllegalStateException("Multiple versions: " + requiredModule + " -> " + versions);
