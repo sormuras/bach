@@ -32,6 +32,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.spi.ToolProvider;
+
+import de.sormuras.bach.UnmappedModuleException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -97,7 +99,7 @@ class ResolverTests {
     assertEquals(Set.of("a", "c"), resolver.getRequiredModules());
     assertEquals(Optional.empty(), resolver.getRequiredVersion("a"));
     assertEquals("2", resolver.getRequiredVersion("c").orElseThrow().toString());
-    var e = assertThrows(NoSuchElementException.class, () -> resolver.getRequiredVersion("x"));
+    var e = assertThrows(UnmappedModuleException.class, () -> resolver.getRequiredVersion("x"));
     assertEquals("Module x is not mapped", e.getMessage());
   }
 }
