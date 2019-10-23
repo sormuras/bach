@@ -139,6 +139,8 @@ public /*STATIC*/ class Resolver {
     var missing = new TreeMap<String, Set<Version>>();
     missing.putAll(sources.requires);
     missing.putAll(library.requires);
+    addMissingTestEngines(missing);
+    addMissingConsoleLauncher(missing);
     sources.getDeclaredModules().forEach(missing::remove);
     library.getDeclaredModules().forEach(missing::remove);
     systems.getDeclaredModules().forEach(missing::remove);
@@ -207,6 +209,21 @@ public /*STATIC*/ class Resolver {
       library.getDeclaredModules().forEach(missing::remove);
       systems.getDeclaredModules().forEach(missing::remove);
     } while (!missing.isEmpty());
+  }
+
+  private void addMissingTestEngines(Map<String, Set<Version>> map) {
+    if (map.containsKey("org.junit.jupiter") || map.containsKey("org.junit.jupiter.api")) {
+      map.putIfAbsent("org.junit.jupiter.engine", Set.of());
+    }
+    if (map.containsKey("junit")) {
+      map.putIfAbsent("org.junit.vintage", Set.of());
+    }
+  }
+
+  private void addMissingConsoleLauncher(Map<String, Set<Version>> map) {
+    if (map.containsKey("org.junit.jupiter.engine") || map.containsKey("org.junit.vintage")) {
+      map.putIfAbsent("org.junit.platform.console", Set.of());
+    }
   }
 
   /** Module Scanner. */
