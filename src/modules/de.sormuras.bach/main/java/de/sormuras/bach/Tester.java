@@ -53,7 +53,14 @@ import java.util.stream.StreamSupport;
         bach.warn("No test module unit available for: %s", module);
         continue;
       }
-      test(unit.get());
+      try {
+        test(unit.get());
+      } finally {
+        if (Util.isWindows()) {
+          System.gc(); // module layer is null here
+          Util.sleep(1234);
+        }
+      }
     }
   }
 
@@ -63,15 +70,8 @@ import java.util.stream.StreamSupport;
     var layer = layer(modulePath, unit.name());
 
     var errors = new StringBuilder();
-    try {
-      errors.append(new ToolProviderTester(layer, unit).test());
-      errors.append(new JUnitConsoleTester(layer, unit).test());
-    } finally {
-      if (Util.isWindows()) {
-        System.gc();
-        Util.sleep(1234);
-      }
-    }
+    errors.append(new ToolProviderTester(layer, unit).test());
+    errors.append(new JUnitConsoleTester(layer, unit).test());
     if (errors.toString().replace('0', ' ').isBlank()) {
       return;
     }
@@ -131,9 +131,9 @@ import java.util.stream.StreamSupport;
       var key = "test(" + unit.name() + ")";
       var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
       var tools =
-              StreamSupport.stream(serviceLoader.spliterator(), false)
-                      .filter(provider -> provider.name().equals(key))
-                      .collect(Collectors.toList());
+          StreamSupport.stream(serviceLoader.spliterator(), false)
+              .filter(provider -> provider.name().equals(key))
+              .collect(Collectors.toList());
       if (tools.isEmpty()) {
         bach.log("No tool provider named '%s' found in: %s", key, layer);
         return 0;
