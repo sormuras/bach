@@ -56,10 +56,9 @@ import java.util.stream.StreamSupport;
       try {
         test(unit.get());
       } finally {
-        if (Util.isWindows()) {
-          System.gc(); // module layer is null here
-          Util.sleep(2345);
-        }
+        System.gc(); // module layer is null here
+        var millis = Util.isWindows() ? "4321" : "1";
+        Util.sleep(Long.parseLong(System.getProperty("bach.tester.sleep", millis)));
       }
     }
   }

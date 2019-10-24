@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-24T04:05:01.916578600Z
+// THIS FILE WAS GENERATED ON 2019-10-24T05:33:54.823454900Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1961,8 +1961,9 @@ public class Bach {
           test(unit.get());
         } finally {
           if (Util.isWindows()) {
+            Util.sleep(1234);
             System.gc(); // module layer is null here
-            Util.sleep(2345);
+            Util.sleep(3210);
           }
         }
       }
