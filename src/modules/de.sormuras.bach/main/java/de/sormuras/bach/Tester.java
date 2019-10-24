@@ -58,7 +58,7 @@ import java.util.stream.StreamSupport;
       } finally {
         if (Util.isWindows()) {
           System.gc(); // module layer is null here
-          Util.sleep(1234);
+          Util.sleep(2345);
         }
       }
     }
