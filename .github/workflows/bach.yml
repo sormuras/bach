@@ -2,18 +2,19 @@ name: Bach.java
 on: push
 jobs:
   build:
-    name: Linux
-    runs-on: ubuntu-latest
+    name: Build on Java ${{ matrix.java }} and ${{ matrix.os }}
     strategy:
       matrix:
-        java-version: [11, 13]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        java: [11, 13]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: 'Checkout'
       uses: actions/checkout@v1
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
-        java-version: ${{ matrix.java-version }}
+        java-version: ${{ matrix.java }}
     - name: 'Show Bach.java version'
       run: java src/build/Version.java
     - name: 'Build Bach.java'
