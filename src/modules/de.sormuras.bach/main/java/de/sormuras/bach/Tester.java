@@ -53,13 +53,7 @@ import java.util.stream.StreamSupport;
         bach.warn("No test module unit available for: %s", module);
         continue;
       }
-      try {
-        test(unit.get());
-      } finally {
-        System.gc(); // module layer is null here
-        var millis = Util.isWindows() ? "4321" : "1";
-        Util.sleep(Long.parseLong(System.getProperty("bach.tester.sleep", millis)));
-      }
+      test(unit.get());
     }
   }
 

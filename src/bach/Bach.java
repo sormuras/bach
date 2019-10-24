@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-24T05:33:54.823454900Z
+// THIS FILE WAS GENERATED ON 2019-10-24T06:21:17.959859300Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1957,15 +1957,7 @@ public class Bach {
           bach.warn("No test module unit available for: %s", module);
           continue;
         }
-        try {
-          test(unit.get());
-        } finally {
-          if (Util.isWindows()) {
-            Util.sleep(1234);
-            System.gc(); // module layer is null here
-            Util.sleep(3210);
-          }
-        }
+        test(unit.get());
       }
     }
 
