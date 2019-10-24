@@ -58,7 +58,7 @@ class SanityTests {
             BACH);
     process.getOutputStream().write(source.getBytes());
     process.getOutputStream().flush();
-    process.waitFor(19, TimeUnit.SECONDS);
+    process.waitFor(30, TimeUnit.SECONDS);
     assertStreams(List.of(), process);
     assertEquals(0, process.exitValue(), process.toString());
   }
@@ -71,7 +71,7 @@ class SanityTests {
     builder.command().add(BACH);
     builder.command().add("version");
     var process = builder.start();
-    process.waitFor(19, TimeUnit.SECONDS);
+    process.waitFor(20, TimeUnit.SECONDS);
     assertStreams(List.of(), process);
     assertEquals(0, process.exitValue(), process.toString());
   }
