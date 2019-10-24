@@ -2,11 +2,11 @@ name: Bach.java
 on: push
 jobs:
   build:
-    name: Build on Java ${{ matrix.java }} and ${{ matrix.os }}
+    name: "${{ matrix.os }} + Java ${{ matrix.java }}"
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
         java: [11, 13]
     runs-on: ${{ matrix.os }}
     steps:
@@ -21,4 +21,8 @@ jobs:
     - name: 'Build Bach.java'
       run: jshell --show-version build.jsh
     - name: 'Install modules into local Maven repository'
+      if: ${{ matrix.os }} != 'windows-latest'
       run: source bin/maven-install.sh
+    - name: 'Install modules into local Maven repository'
+      if: ${{ matrix.os }} == 'windows-latest'
+      run: bin/maven-install.bat
