@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-24T07:23:02.326746700Z
+// THIS FILE WAS GENERATED ON 2019-10-24T07:30:14.948671700Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -236,6 +236,7 @@ public class Bach {
       new Tester(this, remaining).test();
     }
     System.gc(); // free file handles, e.g. modules loaded by custom module layer
+    Util.sleep(Util.isWindows() ? 2345 : 1);
 
     // document := javadoc + deploy
     if (!main.units.isEmpty()) {
