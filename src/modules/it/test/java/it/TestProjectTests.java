@@ -63,8 +63,17 @@ class TestProjectTests {
   }
 
   @Test
-  void jigsawWorld(@TempDir Path temp) {
-    var base = Path.of("src", "test-project", "jigsaw-world");
+  void jigsawWorld(@TempDir Path temp) throws Exception {
+    try {
+      jigsawWorld(temp, Path.of("src", "test-project", "jigsaw-world"));
+    } finally {
+      System.gc();
+      boolean windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
+      Thread.sleep(windows ? 1234 : 1);
+    }
+  }
+
+  private void jigsawWorld(Path temp, Path base) {
     var greetings = Project.ModuleUnit.of(base.resolve("src/main/com.greetings"));
     var astro = Project.ModuleUnit.of(base.resolve("src/main/org.astro"));
     var main = Project.Realm.of("main", List.of(greetings, astro));

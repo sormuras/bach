@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-24T07:30:14.948671700Z
+// THIS FILE WAS GENERATED ON 2019-10-24T07:39:40.262768800Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -235,8 +235,6 @@ public class Bach {
     for (var remaining : realms) {
       new Tester(this, remaining).test();
     }
-    System.gc(); // free file handles, e.g. modules loaded by custom module layer
-    Util.sleep(Util.isWindows() ? 2345 : 1);
 
     // document := javadoc + deploy
     if (!main.units.isEmpty()) {
@@ -2133,10 +2131,6 @@ public class Bach {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
 
-    static boolean isWindows() {
-      return System.getProperty("os.name", "?").toLowerCase().contains("win");
-    }
-
     static List<Path> list(Path directory) {
       return list(directory, __ -> true);
     }
@@ -2221,15 +2215,6 @@ public class Bach {
         throw new IllegalStateException("Too many elements: " + collection);
       }
       return Optional.of(collection.iterator().next());
-    }
-
-    /** Sleep and silently clear current thread's interrupted status. */
-    static void sleep(long millis) {
-      try {
-        Thread.sleep(millis);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-      }
     }
 
     /** @see Files#createDirectories(Path, FileAttribute[]) */

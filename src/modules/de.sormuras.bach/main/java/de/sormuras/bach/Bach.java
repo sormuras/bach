@@ -191,8 +191,6 @@ public class Bach {
     for (var remaining : realms) {
       new Tester(this, remaining).test();
     }
-    System.gc(); // free file handles, e.g. modules loaded by custom module layer
-    Util.sleep(Util.isWindows() ? 2345 : 1);
 
     // document := javadoc + deploy
     if (!main.units.isEmpty()) {

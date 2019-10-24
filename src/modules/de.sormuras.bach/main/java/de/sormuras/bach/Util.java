@@ -105,10 +105,6 @@ import java.util.stream.StreamSupport;
     return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
   }
 
-  static boolean isWindows() {
-    return System.getProperty("os.name", "?").toLowerCase().contains("win");
-  }
-
   static List<Path> list(Path directory) {
     return list(directory, __ -> true);
   }
@@ -193,15 +189,6 @@ import java.util.stream.StreamSupport;
       throw new IllegalStateException("Too many elements: " + collection);
     }
     return Optional.of(collection.iterator().next());
-  }
-
-  /** Sleep and silently clear current thread's interrupted status. */
-  static void sleep(long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      Thread.interrupted();
-    }
   }
 
   /** @see Files#createDirectories(Path, FileAttribute[]) */
