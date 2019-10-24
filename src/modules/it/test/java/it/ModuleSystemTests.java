@@ -38,11 +38,15 @@ class ModuleSystemTests {
   @Test
   void bachModule() {
     // exploded and jarred module fixtures
+    var mandated = Set.of(ModuleDescriptor.Requires.Modifier.MANDATED);
+    var transitive = Set.of(ModuleDescriptor.Requires.Modifier.TRANSITIVE);
+    var version = Object.class.getModule().getDescriptor().version().orElseThrow();
     var expected =
         ModuleDescriptor.newModule("de.sormuras.bach")
             .exports("de.sormuras.bach")
-            .requires("java.compiler")
-            .requires(Set.of(ModuleDescriptor.Requires.Modifier.TRANSITIVE), "java.net.http")
+            .requires(mandated, "java.base", version)
+            .requires(Set.of(), "java.compiler", version)
+            .requires(transitive, "java.net.http", version)
             .uses(ToolProvider.class.getName())
             .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"));
     // only the jarred module provides the following attributes
