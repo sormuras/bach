@@ -30,6 +30,10 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.io.TempDir;
 
 class TestProjectTests {
@@ -62,16 +66,20 @@ class TestProjectTests {
     bach.errors().forEach(System.err::println);
   }
 
-  @Test
-  void jigsawWorld(@TempDir Path temp) {
-    try {
-      jigsawWorld(temp, Path.of("src", "test-project", "jigsaw-world"));
-    } finally {
+
+  public static class GC implements AfterTestExecutionCallback {
+
+    @Override
+    public void afterTestExecution(ExtensionContext extensionContext) throws Exception {
       System.gc();
+      Thread.sleep(OS.WINDOWS.isCurrentOs() ? 2345 : 1);
     }
   }
 
-  private void jigsawWorld(Path temp, Path base) {
+  @Test
+  @ExtendWith(GC.class)
+  void jigsawWorld(@TempDir Path temp) {
+    var base = Path.of("src", "test-project", "jigsaw-world");
     var greetings = Project.ModuleUnit.of(base.resolve("src/main/com.greetings"));
     var astro = Project.ModuleUnit.of(base.resolve("src/main/org.astro"));
     var main = Project.Realm.of("main", List.of(greetings, astro));
