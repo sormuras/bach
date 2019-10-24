@@ -63,13 +63,11 @@ class TestProjectTests {
   }
 
   @Test
-  void jigsawWorld(@TempDir Path temp) throws Exception {
+  void jigsawWorld(@TempDir Path temp) {
     try {
       jigsawWorld(temp, Path.of("src", "test-project", "jigsaw-world"));
     } finally {
       System.gc();
-      boolean windows = System.getProperty("os.name", "?").toLowerCase().contains("win");
-      Thread.sleep(windows ? 1234 : 1);
     }
   }
 
