@@ -191,6 +191,7 @@ public class Bach {
     for (var remaining : realms) {
       new Tester(this, remaining).test();
     }
+    System.gc(); // free file handles, e.g. modules loaded by custom module layer
 
     // document := javadoc + deploy
     if (!main.units.isEmpty()) {
