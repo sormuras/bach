@@ -4,6 +4,7 @@ jobs:
   build:
     name: Build on Java ${{ matrix.java }} and ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         java: [11, 13]
@@ -18,6 +19,6 @@ jobs:
     - name: 'Show Bach.java version'
       run: java src/build/Version.java
     - name: 'Build Bach.java'
-      run: ./build.jsh
+      run: jshell --show-version build.jsh
     - name: 'Install modules into local Maven repository'
       run: source bin/maven-install.sh
