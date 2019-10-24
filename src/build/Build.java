@@ -66,7 +66,7 @@ public class Build {
     var test = Path.of("src/modules/it/test");
     return new Bach.Project.Realm(
         "test",
-        true,
+        false,
         Runtime.version().feature(),
         String.join(File.separator, "src", "modules", "*", "test", "java"),
         new Bach.Project.ToolArguments(Bach.Project.ToolArguments.JAVAC_PREVIEW, null),
