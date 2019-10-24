@@ -17,11 +17,13 @@
 
 package it;
 
+import static java.lang.module.ModuleDescriptor.Requires.Modifier.MANDATED;
+import static java.lang.module.ModuleDescriptor.Requires.Modifier.TRANSITIVE;
+import static java.lang.module.ModuleDescriptor.newModule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
-import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;
@@ -38,17 +40,24 @@ class ModuleSystemTests {
   @Test
   void bachModule() {
     // exploded and jarred module fixtures
-    var mandated = Set.of(ModuleDescriptor.Requires.Modifier.MANDATED);
-    var transitive = Set.of(ModuleDescriptor.Requires.Modifier.TRANSITIVE);
-    var version = Object.class.getModule().getDescriptor().version().orElseThrow();
     var expected =
-        ModuleDescriptor.newModule("de.sormuras.bach")
+        newModule("de.sormuras.bach")
             .exports("de.sormuras.bach")
-            .requires(mandated, "java.base", version)
-            .requires(Set.of(), "java.compiler", version)
-            .requires(transitive, "java.net.http", version)
             .uses(ToolProvider.class.getName())
             .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"));
+    // requires may contain compiled version
+    if (Runtime.version().feature() <= 11) {
+      var version = Object.class.getModule().getDescriptor().version().orElseThrow();
+      expected
+          .requires(Set.of(MANDATED), "java.base", version)
+          .requires(Set.of(), "java.compiler", version)
+          .requires(Set.of(TRANSITIVE), "java.net.http", version);
+    } else {
+      expected
+          .requires(Set.of(MANDATED), "java.base")
+          .requires(Set.of(), "java.compiler")
+          .requires(Set.of(TRANSITIVE), "java.net.http");
+    }
     // only the jarred module provides the following attributes
     var actual = Bach.class.getModule().getDescriptor();
     actual.version().ifPresent(__ -> expected.version(Bach.VERSION));
