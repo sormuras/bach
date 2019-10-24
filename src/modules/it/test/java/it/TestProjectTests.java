@@ -70,15 +70,16 @@ class TestProjectTests {
     var main = Project.Realm.of("main", List.of(greetings, astro));
     assertEquals(
         String.join(File.separator, base.toString(), "src", "main"), main.moduleSourcePath);
-    var test = Project.Realm.of("test", Project.ModuleUnit.of(base.resolve("src/test/integration")), main);
+    var test =
+        Project.Realm.of("test", Project.ModuleUnit.of(base.resolve("src/test/integration")), main);
     assertEquals(
-            String.join(File.separator, base.toString(), "src", "test"), test.moduleSourcePath);
+        String.join(File.separator, base.toString(), "src", "test"), test.moduleSourcePath);
     var library = new Project.Library(temp.resolve("lib"));
     var project =
         new Project(
             base,
             temp,
-            "jigsaw-greetings",
+            "jigsaw-world",
             ModuleDescriptor.Version.parse("0"),
             library,
             List.of(main, test));
