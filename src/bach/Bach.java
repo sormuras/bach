@@ -1,4 +1,4 @@
-// THIS FILE WAS GENERATED ON 2019-10-22T15:01:49.657402Z
+// THIS FILE WAS GENERATED ON 2019-10-24T04:05:01.916578600Z
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -1494,6 +1494,8 @@ public class Bach {
       var missing = new TreeMap<String, Set<Version>>();
       missing.putAll(sources.requires);
       missing.putAll(library.requires);
+      addMissingTestEngines(missing);
+      addMissingConsoleLauncher(missing);
       sources.getDeclaredModules().forEach(missing::remove);
       library.getDeclaredModules().forEach(missing::remove);
       systems.getDeclaredModules().forEach(missing::remove);
@@ -1562,6 +1564,21 @@ public class Bach {
         library.getDeclaredModules().forEach(missing::remove);
         systems.getDeclaredModules().forEach(missing::remove);
       } while (!missing.isEmpty());
+    }
+
+    private void addMissingTestEngines(Map<String, Set<Version>> map) {
+      if (map.containsKey("org.junit.jupiter") || map.containsKey("org.junit.jupiter.api")) {
+        map.putIfAbsent("org.junit.jupiter.engine", Set.of());
+      }
+      if (map.containsKey("junit")) {
+        map.putIfAbsent("org.junit.vintage", Set.of());
+      }
+    }
+
+    private void addMissingConsoleLauncher(Map<String, Set<Version>> map) {
+      if (map.containsKey("org.junit.jupiter.engine") || map.containsKey("org.junit.vintage")) {
+        map.putIfAbsent("org.junit.platform.console", Set.of());
+      }
     }
 
     /** Module Scanner. */
@@ -1940,7 +1957,14 @@ public class Bach {
           bach.warn("No test module unit available for: %s", module);
           continue;
         }
-        test(unit.get());
+        try {
+          test(unit.get());
+        } finally {
+          if (Util.isWindows()) {
+            System.gc(); // module layer is null here
+            Util.sleep(2345);
+          }
+        }
       }
     }
 
@@ -1950,15 +1974,8 @@ public class Bach {
       var layer = layer(modulePath, unit.name());
 
       var errors = new StringBuilder();
-      try {
-        errors.append(new ToolProviderTester(layer, unit).test());
-        errors.append(new JUnitConsoleTester(layer, unit).test());
-      } finally {
-        if (Util.isWindows()) {
-          System.gc();
-          Util.sleep(1234);
-        }
-      }
+      errors.append(new ToolProviderTester(layer, unit).test());
+      errors.append(new JUnitConsoleTester(layer, unit).test());
       if (errors.toString().replace('0', ' ').isBlank()) {
         return;
       }
@@ -2018,9 +2035,9 @@ public class Bach {
         var key = "test(" + unit.name() + ")";
         var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
         var tools =
-                StreamSupport.stream(serviceLoader.spliterator(), false)
-                        .filter(provider -> provider.name().equals(key))
-                        .collect(Collectors.toList());
+            StreamSupport.stream(serviceLoader.spliterator(), false)
+                .filter(provider -> provider.name().equals(key))
+                .collect(Collectors.toList());
         if (tools.isEmpty()) {
           bach.log("No tool provider named '%s' found in: %s", key, layer);
           return 0;
