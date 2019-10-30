@@ -18,14 +18,21 @@
 
 // default package
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.lang.module.ModuleDescriptor;
 import org.junit.jupiter.api.Test;
 
 class ToccataTests {
   @Test
-  void constructor() {
+  void checkDefaultConstructorAndProperties() {
     var toccata = new Toccata();
     assertEquals("Toccata", toccata.getClass().getSimpleName());
+  }
+
+  @Test
+  void moduleDescriptorParsesVersion() {
+    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(Toccata.VERSION));
   }
 }

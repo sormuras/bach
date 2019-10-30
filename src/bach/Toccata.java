@@ -16,5 +16,14 @@
  * limitations under the License.
  */
 
-/** Build modular Java project. */
-public class Toccata {}
+import java.nio.file.Path;
+
+/** Generate Java program building a modular Java project. */
+public class Toccata {
+  static final String VERSION = "1-ea";
+
+  public static void main(String... args) {
+    System.out.println("Toccata " + VERSION);
+    System.out.println(Path.of(System.getProperty("user.dir")));
+  }
+}
