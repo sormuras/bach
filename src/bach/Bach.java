@@ -15,16 +15,44 @@
  * limitations under the License.
  */
 
+import java.lang.module.ModuleDescriptor.Version;
+import java.util.ArrayList;
+import java.util.List;
+
 public class Bach {
 
   public static String VERSION = "2.0-ea";
 
   /**
    * Main entry-point.
-   *
-   * @param args List of API method or tool names.
    */
   public static void main(String... args) {
     System.out.println("Bach " + VERSION);
+  }
+
+  /**
+   * Project model.
+   */
+  public static /*record*/ class Project {
+    final String name;
+    final Version version;
+
+    public Project(String name, Version version) {
+      this.name = name;
+      this.version = version;
+    }
+  }
+
+  public static class SourceGenerator {
+
+    String $(Object object) {
+      return object == null ? "null" : "\"" + object + "\"";
+    }
+
+    public List<String> toSource(Project project) {
+      var lines = new ArrayList<String>();
+      lines.add(String.format("new Project(%s, Version.parse(%s));", $(project.name), $(project.version)));
+      return lines;
+    }
   }
 }

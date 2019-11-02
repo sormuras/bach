@@ -40,7 +40,8 @@ public class Build {
         Path.of("bin/build/classes").toString(),
         "-cp",
         String.join(File.pathSeparator, Path.of("bin/build/classes").toString(), junit.toString()),
-        Path.of("src/test/BachTests.java").toString());
+        Path.of("src/test/BachTests.java").toString(),
+        Path.of("src/test/ProjectTests.java").toString());
     build.start("java", "--show-version", "-jar", junit.toString(), "--scan-class-path", "--class-path=" + Path.of("bin/build/classes"));
   }
 
@@ -84,6 +85,5 @@ public class Build {
     if (process.waitFor() != 0) {
       throw new Error("Non-zero exit code for " + line);
     }
-    System.out.println(process);
   }
 }
