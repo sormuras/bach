@@ -16,8 +16,11 @@
  */
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Build modular Java project.
@@ -43,6 +46,40 @@ public class Bach {
     public Project(String name, Version version) {
       this.name = name;
       this.version = version;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Project project = (Project) o;
+      return name.equals(project.name) &&
+             version.equals(project.version);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, version);
+    }
+  }
+
+  /**
+   * Mutable project builder.
+   */
+  public static class ProjectBuilder {
+
+    static ProjectBuilder of(Path path) {
+      var builder = new ProjectBuilder();
+      builder.name = Optional.ofNullable(path.toAbsolutePath().getFileName()).map(Path::toString).orElse("project");
+      builder.version = "0";
+      return builder;
+    }
+
+    String name = "project";
+    String version = "0";
+
+    Project build() {
+      return new Project(name, Version.parse(version));
     }
   }
 
