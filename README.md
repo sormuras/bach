@@ -3,9 +3,8 @@
 [![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
-[![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/search?q=g:de.sormuras.bach%20AND%20a:de.sormuras.bach)
 
-Use Java source (in [jshell]) to build your modular Java project.
+Use Java source to build your modular Java project.
 
 ```text
     ___      ___      ___      ___
@@ -21,73 +20,9 @@ Use Java source (in [jshell]) to build your modular Java project.
 
 :scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-## Execute Bach.java on-the-fly
+## U N D E R C O N S T R U C T I O N
 
-This section will help you get started with `Bach.jsh` used as a remote `load-file` of [jshell].
-
-##### 0. Install JDK 11 or later
-Make sure you have JDK 11 or later installed and configured.
-`jshell` should be executable from any directory and print its version via: 
-```text
-<path/> jshell --version
-jshell 11.0.2
-```
-
-##### 1. Source `Bach.jsh` into JShell
-
-Open a command shell and change into the directory containing your modular Java project. 
-
-```text
-<path/> jshell https://bit.ly/bach-jsh
-```
-
-:sparkles: That's all you need to build a modular Java project. :sparkles:
-
-> Note: the shortened `https://bit.ly/bach-jsh` expands to https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh
-
-For more information what `Bach.java` is doing at runtime, use:
-
-```text
-jshell -R-Debug https://bit.ly/bach-jsh
-```
-
-For more details consult the output of `jshell --help`.
-
-## Directory Layout
-
-The following layout of directories is supported by Bach.java out-of-the-box:
-- `foo/` is the root directory of the project and all relative paths use it as their base path
-- `foo/bin/` contains all compiled assets and should be ignored by version control system
-- `foo/lib/` contains all required 3rd-party modules
-- `foo/src/` contains all module sources, i.e. sub directory names are module names
-
-```
-foo/                    .___
-  lib/              .---| bin/
-  src/             /    | *.jar
-  .gitignore  <---°
-```
-
-Expanding the first level directories reveals:
-
-```
-foo/
-  lib/                            ,___
-    module-version.properties <---| org.junit.jupiter.* = 5.5.2
-    org.junit.jupiter-5.5.2.jar   | org.junit.platform.* = 1.5.2
-    [...]                         | org.slf4j.* = 2.0.0-alpha.jar
-    org.slf4j-2.0.0-alpha.jar
-  src/
-    org.foo/     <----------------| root directory of module "org.foo"
-    org.foo.bar/ <----------------| root directory of module "org.foo.bar"
-  .gitignore
-```
-
-## bit.ly links
-
-- [https://bit.ly/bach-java](https://bit.ly/bach-java) :wavy_dash: [src/bach/Bach.java](src/bach/Bach.java)
-- [https://bit.ly/bach-jsh](https://bit.ly/bach-jsh) :wavy_dash: [src/bach/Bach.jsh](src/bach/Bach.jsh)
-- [https://bit.ly/boot-bach](https://bit.ly/boot-bach) :wavy_dash: [boot.jsh](boot.jsh)
+_Rebooting into version `2-ea` in progress..._
 
 # install-jdk.sh
 
