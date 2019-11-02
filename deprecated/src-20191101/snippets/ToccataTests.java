@@ -1,7 +1,6 @@
-//usr/bin/env jshell --show-version --enable-preview "$0" "$@"; exit $?
-
 /*
- * Bach - Java Shell Builder
+ * Bach - Toccata
+ *
  * Copyright (C) 2019 Christian Stein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,15 +16,23 @@
  * limitations under the License.
  */
 
-/open src/bach/Bach.java
-/open src/build/Build.java
+// default package
 
-var code = 0
-try {
-  Build.main();
-} catch (Throwable throwable) {
-  throwable.printStackTrace();
-  code = 1;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.lang.module.ModuleDescriptor;
+import org.junit.jupiter.api.Test;
+
+class ToccataTests {
+  @Test
+  void checkDefaultConstructorAndProperties() {
+    var toccata = new Toccata();
+    assertEquals("Toccata", toccata.getClass().getSimpleName());
+  }
+
+  @Test
+  void moduleDescriptorParsesVersion() {
+    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(Toccata.VERSION));
+  }
 }
-
-/exit code

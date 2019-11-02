@@ -1,3 +1,5 @@
+//usr/bin/env jshell --execution local --show-version "$0" "$@"; exit $?
+
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2019 Christian Stein
@@ -15,16 +17,14 @@
  * limitations under the License.
  */
 
-public class Bach {
+/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
-  public static String VERSION = "2.0-ea";
-
-  /**
-   * Main entry-point.
-   *
-   * @param args List of API method or tool names.
-   */
-  public static void main(String... args) {
-    System.out.println("Bach " + VERSION);
-  }
+var code = 0
+try {
+  Bach.main();
+} catch (Throwable throwable) {
+  System.err.println(throwable.getMessage());
+  code = 1;
 }
+
+/exit code

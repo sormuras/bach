@@ -16,13 +16,5 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Show Bach.java version'
-      run: java src/build/Version.java
     - name: 'Build Bach.java'
-      run: jshell --show-version build.jsh
-    - name: 'Install modules into local Maven repository'
-      if: matrix.os != 'windows-latest'
-      run: source bin/maven-install.sh
-    - name: 'Install modules into local Maven repository'
-      if: matrix.os == 'windows-latest'
-      run: bin/maven-install.bat
+      run: java src/bach/Build.java
