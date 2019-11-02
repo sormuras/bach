@@ -22,7 +22,7 @@
  */
 var version = "master"
 var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
-var target = Path.of(".bach/" + version)
+var target = Path.of(".bach/src")
 var bach = target.resolve("Bach.java")
 
 /open PRINTING
