@@ -1,1 +1,0 @@
-[jigsaw/quick-start](https://openjdk.java.net/projects/jigsaw/quick-start)

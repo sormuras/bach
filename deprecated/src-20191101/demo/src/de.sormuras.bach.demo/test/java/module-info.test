@@ -1,4 +1,0 @@
---add-reads
-  de.sormuras.bach.demo=org.junit.jupiter.api
---add-opens
-  de.sormuras.bach.demo/de.sormuras.bach.demo=org.junit.platform.commons

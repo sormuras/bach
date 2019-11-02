@@ -1,1 +1,0 @@
-Externals overrides module "junit3" with custom Maven coordinates.

@@ -1,4 +1,0 @@
-module de.sormuras.solartools {
-  exports de.sormuras.solartools;
-  requires org.junit.jupiter.api;
-}

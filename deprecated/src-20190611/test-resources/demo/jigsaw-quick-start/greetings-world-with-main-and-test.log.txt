@@ -1,9 +1,0 @@
-build()
-assemble()
->> ASSEMBLE >>
-External module names: [org.apiguardian.api, org.junit.jupiter.api, org.junit.platform.commons, org.opentest4j]
->> ASSEMBLE >>
-main.compile()
->> MAIN >>
-test.compile()
->> TEST >>
