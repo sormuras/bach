@@ -1,7 +1,6 @@
-before_install:
-- source install-jdk.sh --feature ea
+jdk:
+  - openjdk11
 
 install:
-- unset JAVA_TOOL_OPTIONS
-- ./build.jsh
-- source bin/maven-install.sh
+  - unset JAVA_TOOL_OPTIONS
+  - java src/bach/Build.java
