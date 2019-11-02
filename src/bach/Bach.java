@@ -19,6 +19,9 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Build modular Java project.
+ */
 public class Bach {
 
   public static String VERSION = "2.0-ea";
@@ -43,6 +46,9 @@ public class Bach {
     }
   }
 
+  /**
+   * Java source generator.
+   */
   public static class SourceGenerator {
 
     String $(Object object) {
