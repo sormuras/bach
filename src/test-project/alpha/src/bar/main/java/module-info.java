@@ -1,0 +1,3 @@
+module bar {
+  requires foo;
+}
