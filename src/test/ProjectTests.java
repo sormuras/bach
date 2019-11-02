@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -28,5 +31,15 @@ class ProjectTests {
     assertLinesMatch(
         List.of("new Project(\"foo\", Version.parse(\"47.11\"));"),
         new Bach.SourceGenerator().toSource(project));
+  }
+
+  @Nested
+  class TestProject {
+    @Test
+    void alpha() {
+      var expected = new Bach.Project("alpha", Version.parse("0"));
+      var actual = Bach.ProjectBuilder.of(Path.of("src/test-project/alpha")).build();
+      assertEquals(expected, actual);
+    }
   }
 }
