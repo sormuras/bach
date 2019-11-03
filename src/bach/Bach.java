@@ -138,11 +138,11 @@ public class Bach {
           throw new IllegalArgumentException("Not a directory: " + base);
         }
         var path = base.toAbsolutePath().normalize();
-        var builder = new Builder();
-        builder.name = Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project");
-        builder.version = System.getProperty(".bach/project.version", "0");
+        var builder = new Builder()
+            .name(Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project"))
+            .version(System.getProperty(".bach/project.version", "0"));
         try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
-          stream.sorted().forEach(info -> builder.units.add(Unit.of(info)));
+          stream.sorted().forEach(builder::unit);
         } catch (Exception e) {
           throw new Error("Finding module-info.java files failed", e);
         }
@@ -150,26 +150,36 @@ public class Bach {
       }
 
       String name = "project";
-      String version = "0";
+      Version version = Version.parse("0");
       List<Unit> units = new ArrayList<>();
 
+      Builder name(String name) {
+        this.name = name;
+        return this;
+      }
+
+      Builder version(String version) {
+        this.version = Version.parse(version);
+        return this;
+      }
+
+      Builder unit(Path info) {
+        try {
+          var descriptor = Modules.describe(Files.readString(info));
+          var moduleSourcePath = Modules.moduleSourcePath(info, descriptor.name());
+          units.add(new Unit(info, descriptor, moduleSourcePath));
+        } catch (Exception e) {
+          throw new Error("Reading module declaration failed: " + info, e);
+        }
+        return this;
+      }
+
       Project build() {
-        return new Project(name, Version.parse(version), units);
+        return new Project(name, version, units);
       }
     }
 
     public static /*record*/ class Unit {
-
-      public static Unit of(Path info) {
-        try {
-          var descriptor = Modules.describe(Files.readString(info));
-          var moduleSourcePath = Modules.moduleSourcePath(info, descriptor.name());
-          return new Unit(info, descriptor, moduleSourcePath);
-        } catch (Exception e) {
-          throw new Error("Reading module declaration failed: " + info, e);
-        }
-      }
-
       /**
        * Path to the backing {@code module-info.java} file.
        */

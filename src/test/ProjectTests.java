@@ -61,8 +61,12 @@ class ProjectTests {
       var base = Path.of("src/test-project/alpha");
       var bar = base.resolve("src/bar/main/java/module-info.java");
       var foo = base.resolve("src/foo/main/java/module-info.java");
-      var units = List.of(Bach.Project.Unit.of(bar), Bach.Project.Unit.of(foo));
-      var expected = new Bach.Project("alpha", Version.parse("0"), units);
+      var expected = new Bach.Project.Builder()
+          .name("alpha")
+          .version("0")
+          .unit(bar)
+          .unit(foo)
+          .build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected, actual);
       assertLinesMatch(List.of("new Project(",
