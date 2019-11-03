@@ -142,6 +142,38 @@ public class Bach {
   }
 
   /**
+   * Command.
+   */
+  public static class Command implements Cloneable {
+    final String name;
+    final List<String> arguments;
+
+    public Command(String name, String... args) {
+      this.name = name;
+      this.arguments = new ArrayList<>(List.of(args));
+    }
+
+    public Command add(Object object) {
+      arguments.add(object.toString());
+      return this;
+    }
+
+    public Command add(String key, Object value) {
+      return add(key).add(value.toString());
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public Command clone() {
+      return new Command(name, toStringArray());
+    }
+
+    public String[] toStringArray() {
+      return arguments.toArray(String[]::new);
+    }
+  }
+
+  /**
    * Java source generator.
    */
   public static class SourceGenerator {
