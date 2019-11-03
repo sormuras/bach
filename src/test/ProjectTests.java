@@ -18,6 +18,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -26,10 +27,30 @@ import org.junit.jupiter.api.Test;
 
 class ProjectTests {
   @Test
-  void generateJavaSource() {
+  void generateSourceForBasicProject() {
     var project = new Bach.Project("foo", Version.parse("47.11"), List.of());
     assertLinesMatch(
-        List.of("new Project(\"foo\", Version.parse(\"47.11\"))"),
+        List.of("new Project(\"foo\", Version.parse(\"47.11\"), List.of())"),
+        new Bach.SourceGenerator().generate(project));
+  }
+
+  @Test
+  void generateSourceForProjectWithSingleModule() {
+    var project = new Bach.Project(
+        "foo",
+        Version.parse("47.11"),
+        List.of(
+            new Bach.Project.Unit(Path.of("src/foo/module-info.java"),
+                ModuleDescriptor.newModule("foo").build(),
+                "src")));
+    assertLinesMatch(
+        List.of("new Project(",
+            "    \"foo\",",
+            "    Version.parse(\"47.11\"),",
+            "    List.of(",
+            "        Project.Unit.of(Path.of(\"src/foo/module-info.java\"))",
+            "    )",
+            ")"),
         new Bach.SourceGenerator().generate(project));
   }
 
@@ -38,12 +59,20 @@ class ProjectTests {
     @Test
     void alpha() {
       var base = Path.of("src/test-project/alpha");
-      var units = List.of(
-          Bach.Project.Unit.of(base.resolve("src/bar/main/java/module-info.java")),
-          Bach.Project.Unit.of(base.resolve("src/foo/main/java/module-info.java"))
-      );
+      var bar = base.resolve("src/bar/main/java/module-info.java");
+      var foo = base.resolve("src/foo/main/java/module-info.java");
+      var units = List.of(Bach.Project.Unit.of(bar), Bach.Project.Unit.of(foo));
       var expected = new Bach.Project("alpha", Version.parse("0"), units);
-      assertEquals(expected, Bach.Project.Builder.build(base));
+      var actual = Bach.Project.Builder.build(base);
+      assertEquals(expected, actual);
+      assertLinesMatch(List.of("new Project(",
+          "    \"alpha\",",
+          "    Version.parse(\"0\"),",
+          "    List.of(",
+          "        Project.Unit.of(" + Bach.SourceGenerator.$(bar) + "),",
+          "        Project.Unit.of(" + Bach.SourceGenerator.$(foo) + ")",
+          "    )",
+          ")"), new Bach.SourceGenerator().generate(actual));
     }
   }
 }

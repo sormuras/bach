@@ -168,11 +168,17 @@ public class Bach {
         }
       }
 
-      /** Path to the backing {@code module-info.java} file. */
+      /**
+       * Path to the backing {@code module-info.java} file.
+       */
       final Path info;
-      /** Underlying module descriptor.*/
+      /**
+       * Underlying module descriptor.
+       */
       final ModuleDescriptor descriptor;
-      /** Module source path. */
+      /**
+       * Module source path.
+       */
       final String moduleSourcePath;
 
       public Unit(Path info, ModuleDescriptor descriptor, String moduleSourcePath) {
@@ -198,7 +204,9 @@ public class Bach {
     }
   }
 
-  /** Static helper for modules and their friends. */
+  /**
+   * Static helper for modules and their friends.
+   */
   public static class Modules {
 
     private static final Pattern MAIN_CLASS = Pattern.compile("//\\s*(?:--main-class)\\s+([\\w.]+)");
@@ -226,9 +234,12 @@ public class Bach {
             + "\\s+([\\w.,\\s]+)" // comma separated list of type names
             + "\\s*;"); // end marker
 
-    private Modules() {}
+    private Modules() {
+    }
 
-    /** Module descriptor parser. */
+    /**
+     * Module descriptor parser.
+     */
     public static ModuleDescriptor describe(String source) {
       // "module name {"
       var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
@@ -262,7 +273,9 @@ public class Bach {
       return builder.build();
     }
 
-    /** Compute module's source path. */
+    /**
+     * Compute module's source path.
+     */
     public static String moduleSourcePath(Path path, String module) {
       var directory = path.endsWith("module-info.java") ? path.getParent() : path;
       var names = new ArrayList<String>();
@@ -319,17 +332,35 @@ public class Bach {
    */
   public static class SourceGenerator {
 
-    String $(Object object) {
+    static String $(Object object) {
       return object == null ? "null" : "\"" + object + "\"";
     }
 
-    String $(List<?> objects) {
-      return String.join(", ", objects.stream().map(this::$).toArray(String[]::new));
+    static String $(Path path) {
+      return path == null ? "null" : "Path.of(\"" + path.toString().replace('\\', '/') + "\")";
+    }
+
+    static String $(List<?> objects) {
+      return String.join(", ", objects.stream().map(SourceGenerator::$).toArray(String[]::new));
     }
 
     public List<String> generate(Project project) {
+      if (project.units.isEmpty()) {
+        var line = "new Project(%s, Version.parse(%s), List.of())";
+        return List.of(String.format(line, $(project.name), $(project.version)));
+      }
       var lines = new ArrayList<String>();
-      lines.add(String.format("new Project(%s, Version.parse(%s))", $(project.name), $(project.version)));
+      lines.add("new Project(");
+      lines.add("    " + $(project.name) + ",");
+      lines.add("    Version.parse(" + $(project.version) + "),");
+      lines.add("    List.of(");
+      var last = project.units.get(project.units.size() -1);
+      for (var unit : project.units) {
+        var comma = unit == last ? "" : ",";
+        lines.add("        Project.Unit.of(" + $(unit.info) + ")" + comma);
+      }
+      lines.add("    )");
+      lines.add(")");
       return lines;
     }
 
