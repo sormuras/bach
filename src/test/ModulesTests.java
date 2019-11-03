@@ -17,8 +17,10 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -67,5 +69,17 @@ class ModulesTests {
   void moduleDeclarationWithComments() {
     var actual = Bach.Modules.describe("open /*test*/ module a /*extends a*/ {}");
     assertEquals(ModuleDescriptor.newModule("a").build(), actual);
+  }
+
+  @Test
+  void moduleSourcePathWithModuleNameAtTheEnd() {
+    var actual = Bach.Modules.moduleSourcePath(Path.of("src/main/a.b.c"), "a.b.c");
+    assertEquals(Path.of("src/main").toString(), actual);
+  }
+
+  @Test
+  void moduleSourcePathWithNestedModuleName() {
+    var actual = Bach.Modules.moduleSourcePath(Path.of("src/a.b.c/main/java"), "a.b.c");
+    assertEquals(String.join(File.separator, "src", "*", "main", "java"), actual);
   }
 }

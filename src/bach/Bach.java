@@ -15,17 +15,20 @@
  * limitations under the License.
  */
 
+import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Build modular Java project.
@@ -179,6 +182,25 @@ public class Bach {
         builder.provides(providesService, List.of(providesTypes.trim().split("\\s*,\\s*")));
       }
       return builder.build();
+    }
+
+    /** Compute module's source path. */
+    public static String moduleSourcePath(Path path, String module) {
+      var directory = path.endsWith("module-info.java") ? path.getParent() : path;
+      var names = new ArrayList<String>();
+      directory.forEach(element -> names.add(element.toString()));
+      int frequency = Collections.frequency(names, module);
+      if (frequency == 0) {
+        return directory.toString();
+      }
+      if (frequency == 1) {
+        if (directory.endsWith(module)) {
+          return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
+        }
+        var elements = names.stream().map(name -> name.equals(module) ? "*" : name);
+        return elements.collect(Collectors.joining(File.separator));
+      }
+      throw new IllegalArgumentException("Ambiguous module source path: " + path);
     }
   }
 
