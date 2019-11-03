@@ -182,9 +182,21 @@ public class Bach {
       return object == null ? "null" : "\"" + object + "\"";
     }
 
+    String $(List<?> objects) {
+      return String.join(", ", objects.stream().map(this::$).toArray(String[]::new));
+    }
+
     public List<String> generate(Project project) {
       var lines = new ArrayList<String>();
       lines.add(String.format("new Project(%s, Version.parse(%s))", $(project.name), $(project.version)));
+      return lines;
+    }
+
+    public List<String> generate(Command command) {
+      var lines = new ArrayList<String>();
+      var tool = "java.util.spi.ToolProvider.findFirst(%s).orElseThrow()";
+      var args = command.arguments.isEmpty() ? "" : ", " + $(List.of(command.toStringArray()));
+      lines.add(String.format(tool + ".run(System.out, System.err%s)", $(command.name), args));
       return lines;
     }
   }
