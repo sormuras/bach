@@ -16,8 +16,11 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +30,16 @@ class CommandTests {
     assertArrayEquals(new String[0], new Bach.Command("empty").toStringArray());
     assertArrayEquals(new String[]{"1"}, new Bach.Command("one").add(1).toStringArray());
     assertArrayEquals(new String[]{"2", "2"}, new Bach.Command("two").add("2", 2).toStringArray());
+  }
+
+  @Test
+  void addListOfPath() {
+    assertEquals(
+        List.of("b", "\"c\""),
+        new Bach.Command("a").add("b", List.of(Path.of("c"))).arguments);
+    assertEquals(
+        List.of("b", "\"c" + File.pathSeparator + "d\""),
+        new Bach.Command("a").add("b", List.of(Path.of("c"), Path.of("d"))).arguments);
   }
 
   @Test

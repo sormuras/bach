@@ -90,6 +90,8 @@ public class Bach {
 
   public void build() {
     System.out.printf("Building project %s %s...%n", project.name, project.version);
+    System.out.println("user.dir=" + System.getProperty("user.dir"));
+
   }
 
   /**
@@ -308,18 +310,31 @@ public class Bach {
     }
 
     public Command add(Object object) {
-      arguments.add(object.toString());
+      arguments.add(requiresQuote(object) ? quote(object) : object.toString());
       return this;
     }
 
     public Command add(String key, Object value) {
-      return add(key).add(value.toString());
+      return add(key).add(value);
+    }
+
+    public Command add(String key, List<Path> paths) {
+      var strings = paths.stream().map(Path::toString);
+      return add(key).add(quote(strings.collect(Collectors.joining(File.pathSeparator))));
     }
 
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Command clone() {
       return new Command(name, toStringArray());
+    }
+
+    private static String quote(Object object) {
+      return '"' + object.toString() + '"';
+    }
+
+    private static boolean requiresQuote(Object object) {
+      return object instanceof Path;
     }
 
     public String[] toStringArray() {
@@ -354,7 +369,7 @@ public class Bach {
       lines.add("    " + $(project.name) + ",");
       lines.add("    Version.parse(" + $(project.version) + "),");
       lines.add("    List.of(");
-      var last = project.units.get(project.units.size() -1);
+      var last = project.units.get(project.units.size() - 1);
       for (var unit : project.units) {
         var comma = unit == last ? "" : ",";
         lines.add("        Project.Unit.of(" + $(unit.info) + ")" + comma);
