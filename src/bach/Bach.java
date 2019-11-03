@@ -140,7 +140,7 @@ public class Bach {
         builder.name = Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project");
         builder.version = System.getProperty(".bach/project.version", "0");
         try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
-          stream.forEach(info -> builder.units.add(Unit.of(info)));
+          stream.sorted().forEach(info -> builder.units.add(Unit.of(info)));
         } catch (Exception e) {
           throw new Error("Finding module-info.java files failed", e);
         }

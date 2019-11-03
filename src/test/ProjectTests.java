@@ -43,8 +43,7 @@ class ProjectTests {
           Bach.Project.Unit.of(base.resolve("src/foo/main/java/module-info.java"))
       );
       var expected = new Bach.Project("alpha", Version.parse("0"), units);
-      var actual = Bach.Project.Builder.of(base).build();
-      assertEquals(expected, actual);
+      assertEquals(expected, Bach.Project.Builder.build(base));
     }
   }
 }
