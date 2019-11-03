@@ -44,7 +44,7 @@ public class Build {
         Path.of("src/test/CommandTests.java").toString(),
         Path.of("src/test/ModulesTests.java").toString(),
         Path.of("src/test/ProjectTests.java").toString());
-    build.start("java", "--show-version", "-jar", junit.toString(), "--scan-class-path", "--class-path=" + Path.of("bin/build/classes"));
+    build.start("java", "-ea", "--show-version", "-jar", junit.toString(), "--scan-class-path", "--class-path=" + Path.of("bin/build/classes"));
   }
 
   final HttpClient http = HttpClient.newHttpClient();
