@@ -22,7 +22,7 @@ Use Java source to build your modular Java project.
 
 ## U N D E R C O N S T R U C T I O N
 
-_Rebooting into version `2-ea` in progress..._
+_Reboot into version `2-ea` in progress..._
 
 # install-jdk.sh
 
