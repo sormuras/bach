@@ -16,7 +16,9 @@
  */
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,13 +29,61 @@ import java.util.Optional;
  */
 public class Bach {
 
+  /**
+   * Bach.java version.
+   */
   public static String VERSION = "2.0-ea";
+
+  /**
+   * Create project instance to build.
+   */
+  private static Project project() {
+    return ProjectBuilder.build(Path.of(""));
+  }
 
   /**
    * Main entry-point.
    */
   public static void main(String... args) {
-    System.out.println("Bach " + VERSION);
+    var project = project();
+    if (args.length == 0) {
+      System.out.println("Usage: java Bach.java action [args...]");
+      System.out.println("Available actions:");
+      System.out.println(" build");
+      System.out.println("   Build project " + project.name + " " + project.version);
+      System.out.println(" project [path]");
+      System.out.println("   Print source representation of the project to be built");
+      System.out.println(" version");
+      System.out.println("   Print version of Bach.java: " + VERSION);
+      System.out.println();
+      return;
+    }
+    var arguments = new ArrayDeque<>(List.of(args));
+    switch (arguments.pop()) {
+      case "build":
+        var bach = new Bach(project);
+        bach.build();
+        return;
+      case "project":
+        var it = arguments.isEmpty() ? project : ProjectBuilder.build(Path.of(arguments.pop()));
+        new SourceGenerator().generate(it).forEach(System.out::println);
+        return;
+      case "version":
+        System.out.println(VERSION);
+        return;
+      default:
+        throw new Error("Unknown action: " + String.join(" ", args));
+    }
+  }
+
+  private final Project project;
+
+  public Bach(Project project) {
+    this.project = project;
+  }
+
+  public void build() {
+    System.out.printf("Building project %s %s...%n", project.name, project.version);
   }
 
   /**
@@ -68,10 +118,18 @@ public class Bach {
    */
   public static class ProjectBuilder {
 
-    static ProjectBuilder of(Path path) {
+    static Project build(Path base) {
+      return of(base).build();
+    }
+
+    static ProjectBuilder of(Path base) {
+      if (!Files.isDirectory(base)) {
+        throw new IllegalArgumentException("Not a directory: " + base);
+      }
+      var path = base.toAbsolutePath().normalize();
       var builder = new ProjectBuilder();
-      builder.name = Optional.ofNullable(path.toAbsolutePath().getFileName()).map(Path::toString).orElse("project");
-      builder.version = "0";
+      builder.name = Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project");
+      builder.version = System.getProperty(".bach/project.version", "0");
       return builder;
     }
 
@@ -92,9 +150,9 @@ public class Bach {
       return object == null ? "null" : "\"" + object + "\"";
     }
 
-    public List<String> toSource(Project project) {
+    public List<String> generate(Project project) {
       var lines = new ArrayList<String>();
-      lines.add(String.format("new Project(%s, Version.parse(%s));", $(project.name), $(project.version)));
+      lines.add(String.format("new Project(%s, Version.parse(%s))", $(project.name), $(project.version)));
       return lines;
     }
   }

@@ -29,8 +29,8 @@ class ProjectTests {
   void generateJavaSource() {
     var project = new Bach.Project("foo", Version.parse("47.11"));
     assertLinesMatch(
-        List.of("new Project(\"foo\", Version.parse(\"47.11\"));"),
-        new Bach.SourceGenerator().toSource(project));
+        List.of("new Project(\"foo\", Version.parse(\"47.11\"))"),
+        new Bach.SourceGenerator().generate(project));
   }
 
   @Nested
