@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class ProjectTests {
   @Test
   void generateJavaSource() {
-    var project = new Bach.Project("foo", Version.parse("47.11"));
+    var project = new Bach.Project("foo", Version.parse("47.11"), List.of());
     assertLinesMatch(
         List.of("new Project(\"foo\", Version.parse(\"47.11\"))"),
         new Bach.SourceGenerator().generate(project));
@@ -37,8 +37,13 @@ class ProjectTests {
   class TestProject {
     @Test
     void alpha() {
-      var expected = new Bach.Project("alpha", Version.parse("0"));
-      var actual = Bach.ProjectBuilder.of(Path.of("src/test-project/alpha")).build();
+      var base = Path.of("src/test-project/alpha");
+      var units = List.of(
+          Bach.Project.Unit.of(base.resolve("src/bar/main/java/module-info.java")),
+          Bach.Project.Unit.of(base.resolve("src/foo/main/java/module-info.java"))
+      );
+      var expected = new Bach.Project("alpha", Version.parse("0"), units);
+      var actual = Bach.Project.Builder.of(base).build();
       assertEquals(expected, actual);
     }
   }

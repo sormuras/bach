@@ -44,7 +44,7 @@ public class Bach {
    * Create project instance to build.
    */
   private static Project project() {
-    return ProjectBuilder.build(Path.of(""));
+    return Project.Builder.build(Path.of(""));
   }
 
   /**
@@ -71,7 +71,7 @@ public class Bach {
         bach.build();
         return;
       case "project":
-        var it = arguments.isEmpty() ? project : ProjectBuilder.build(Path.of(arguments.pop()));
+        var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
         new SourceGenerator().generate(it).forEach(System.out::println);
         return;
       case "version":
@@ -95,30 +95,108 @@ public class Bach {
   /**
    * Project model.
    */
-  public static /*record*/ class Project {
+  public static class Project {
+
     final String name;
     final Version version;
+    final List<Unit> units;
 
-    public Project(String name, Version version) {
+    public Project(String name, Version version, List<Unit> units) {
       this.name = name;
       this.version = version;
+      this.units = units;
     }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      Project project = (Project) o;
-      return name.equals(project.name) &&
-             version.equals(project.version);
+      var other = (Project) o;
+      return name.equals(other.name) &&
+             version.equals(other.version) &&
+             units.equals(other.units);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, version);
+      return Objects.hash(name, version, units);
+    }
+
+    /**
+     * Mutable project builder.
+     */
+    public static class Builder {
+
+      static Project build(Path base) {
+        return of(base).build();
+      }
+
+      static Builder of(Path base) {
+        if (!Files.isDirectory(base)) {
+          throw new IllegalArgumentException("Not a directory: " + base);
+        }
+        var path = base.toAbsolutePath().normalize();
+        var builder = new Builder();
+        builder.name = Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project");
+        builder.version = System.getProperty(".bach/project.version", "0");
+        try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
+          stream.forEach(info -> builder.units.add(Unit.of(info)));
+        } catch (Exception e) {
+          throw new Error("Finding module-info.java files failed", e);
+        }
+        return builder;
+      }
+
+      String name = "project";
+      String version = "0";
+      List<Unit> units = new ArrayList<>();
+
+      Project build() {
+        return new Project(name, Version.parse(version), units);
+      }
+    }
+
+    public static /*record*/ class Unit {
+
+      public static Unit of(Path info) {
+        try {
+          var descriptor = Modules.describe(Files.readString(info));
+          var moduleSourcePath = Modules.moduleSourcePath(info, descriptor.name());
+          return new Unit(info, descriptor, moduleSourcePath);
+        } catch (Exception e) {
+          throw new Error("Reading module declaration failed: " + info, e);
+        }
+      }
+
+      /** Path to the backing {@code module-info.java} file. */
+      final Path info;
+      /** Underlying module descriptor.*/
+      final ModuleDescriptor descriptor;
+      /** Module source path. */
+      final String moduleSourcePath;
+
+      public Unit(Path info, ModuleDescriptor descriptor, String moduleSourcePath) {
+        this.info = info;
+        this.descriptor = descriptor;
+        this.moduleSourcePath = moduleSourcePath;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        var other = (Unit) o;
+        return info.equals(other.info) &&
+               descriptor.equals(other.descriptor) &&
+               moduleSourcePath.equals(other.moduleSourcePath);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(info, descriptor, moduleSourcePath);
+      }
     }
   }
-
 
   /** Static helper for modules and their friends. */
   public static class Modules {
@@ -201,34 +279,6 @@ public class Bach {
         return elements.collect(Collectors.joining(File.separator));
       }
       throw new IllegalArgumentException("Ambiguous module source path: " + path);
-    }
-  }
-
-  /**
-   * Mutable project builder.
-   */
-  public static class ProjectBuilder {
-
-    static Project build(Path base) {
-      return of(base).build();
-    }
-
-    static ProjectBuilder of(Path base) {
-      if (!Files.isDirectory(base)) {
-        throw new IllegalArgumentException("Not a directory: " + base);
-      }
-      var path = base.toAbsolutePath().normalize();
-      var builder = new ProjectBuilder();
-      builder.name = Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project");
-      builder.version = System.getProperty(".bach/project.version", "0");
-      return builder;
-    }
-
-    String name = "project";
-    String version = "0";
-
-    Project build() {
-      return new Project(name, Version.parse(version));
     }
   }
 
