@@ -59,18 +59,6 @@ public class Bach {
     return Project.Builder.build(Path.of(""));
   }
 
-  @SuppressWarnings("unused")
-  public static int mkdir(PrintWriter out, PrintWriter err, String... args) {
-    var directory = Path.of(args[0]);
-    try {
-      Files.createDirectories(directory);
-      return 0;
-    } catch (Exception e) {
-      e.printStackTrace(err);
-      return 1;
-    }
-  }
-
   /**
    * Main entry-point.
    */
