@@ -17,7 +17,6 @@
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -35,31 +34,30 @@ class CommandTests {
   @Test
   void addListOfPath() {
     assertEquals(
-        List.of("b", "\"c\""),
+        List.of("b", "c"),
         new Bach.Command("a").add("b", List.of(Path.of("c"))).arguments);
+    var paths = new Bach.Command("a").add("b", List.of(Path.of("c"), Path.of("d")));
     assertEquals(
-        List.of("b", "\"c" + File.pathSeparator + "d\""),
-        new Bach.Command("a").add("b", List.of(Path.of("c"), Path.of("d"))).arguments);
+        List.of("b", "c" + File.pathSeparator + "d"),
+        paths.arguments);
+    assertEquals(List.of(".add(\"b\", Path.of(\"c\"), Path.of(\"d\"))"), paths.additions);
   }
 
   @Test
   void generateSourceForCommandWithoutArguments() {
     var command = new Bach.Command("empty");
-    var actual = new Bach.SourceGenerator().generate(command);
-    assertLinesMatch(List.of("java.util.spi.ToolProvider.findFirst(\"empty\").orElseThrow().run(System.out, System.err)"), actual);
+    assertEquals("new Command(\"empty\")", command.toSource());
   }
 
   @Test
   void generateSourceForCommandWithSingleArgument() {
-    var command = new Bach.Command("one", "1");
-    var actual = new Bach.SourceGenerator().generate(command);
-    assertLinesMatch(List.of("java.util.spi.ToolProvider.findFirst(\"one\").orElseThrow().run(System.out, System.err, \"1\")"), actual);
+    var command = new Bach.Command("one").add("1");
+    assertEquals("new Command(\"one\").add(\"1\")", command.toSource());
   }
 
   @Test
   void generateSourceForCommandWithTwoArguments() {
-    var command = new Bach.Command("two", "1", "2");
-    var actual = new Bach.SourceGenerator().generate(command);
-    assertLinesMatch(List.of("java.util.spi.ToolProvider.findFirst(\"two\").orElseThrow().run(System.out, System.err, \"1\", \"2\")"), actual);
+    var command = new Bach.Command("two").add("1", "2");
+    assertEquals("new Command(\"two\").add(\"1\", \"2\")", command.toSource());
   }
 }

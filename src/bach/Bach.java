@@ -24,6 +24,8 @@ import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,14 +120,14 @@ public class Bach {
   }
 
   public void build() {
-    log.info("Building project %s %s...", project.name, project.version);
+    log.info("Build of project %s %s started...", project.name, project.version);
     if (log.verbose) {
-      log.debug("\nRuntime information");
+      log.debug("%nRuntime information");
       log.debug("  - java.version = " + System.getProperty("java.version"));
       log.debug("  - user.dir = " + System.getProperty("user.dir"));
-      log.debug("\nProject information");
+      log.debug("%nProject information");
       new SourceGenerator().generate(project).forEach(log::debug);
-      log.debug("\nTools of the trade");
+      log.debug("%nTools of the trade");
       tools.print(log.out);
       log.debug("");
     }
@@ -133,21 +135,38 @@ public class Bach {
       log.warn("Not a single module unit declared, no build.");
       return;
     }
-    var javac = new Command("javac", "--version");
-    run(javac.name, javac.toStringArray());
+    var start = Instant.now();
+    run(new Command("javac").add("--version").add("-d", Path.of(".")));
+    run("sleep", "1234"); // off the record
+
+    log.info("%nCommand history");
+    log.records.forEach(log::info);
+
+    log.info("%nBuild %d took millis.", Duration.between(start, Instant.now()).toMillis());
   }
 
   /**
-   * Run named tool with optional arguments.
+   * Run and record the given command instance.
    */
-  public void run(String name, String... args) {
-    var strings = args.length == 0 ? "" : '"' + String.join("\", \"", args) + '"';
-    log.info("| %s(%s)", name, strings);
-    var tool = tools.get(name);
-    int code = tool.run(log.out, log.err, args);
+  public void run(Command command) {
+    var start = Instant.now();
+    int code = run(command.name, command.toStringArray());
+    log.record(code, Duration.between(start, Instant.now()), command);
     if (code != 0) {
       throw new RuntimeException("Non-zero exit code: " + code);
     }
+  }
+
+  /**
+   * Run named tool (off record) with optional arguments.
+   */
+  public int run(String name, String... args) {
+    if (log.verbose) {
+      var strings = args.length == 0 ? "" : '"' + String.join("\", \"", args) + '"';
+      log.debug("| %s(%s)", name, strings);
+    }
+    var tool = tools.get(name);
+    return tool.run(log.out, log.err, args);
   }
 
   /**
@@ -172,6 +191,11 @@ public class Bach {
     }
 
     /**
+     * Recorded command history.
+     */
+    private final List<String> records;
+
+    /**
      * Text-output writer.
      */
     private final PrintWriter out, err;
@@ -184,6 +208,7 @@ public class Bach {
       this.out = out;
       this.err = err;
       this.verbose = verbose;
+      this.records = new ArrayList<>();
     }
 
     /**
@@ -205,6 +230,10 @@ public class Bach {
      */
     public void warn(String format, Object... args) {
       err.println(String.format(format, args));
+    }
+
+    public void record(int code, Duration duration, Command command) {
+      records.add(String.format("%3d %5d ms %s", code, duration.toMillis(), command.toSource()));
     }
   }
 
@@ -437,41 +466,61 @@ public class Bach {
   /**
    * Command.
    */
-  public static class Command implements Cloneable {
+  public static class Command {
     final String name;
     final List<String> arguments;
+    final List<String> additions;
 
-    public Command(String name, String... args) {
+    public Command(String name) {
       this.name = name;
-      this.arguments = new ArrayList<>(List.of(args));
+      this.arguments = new ArrayList<>();
+      this.additions = new ArrayList<>();
     }
 
-    public Command add(Object object) {
-      arguments.add(requiresQuote(object) ? quote(object) : object.toString());
+    private Command arg(Object object) {
+      arguments.add(object.toString());
       return this;
     }
 
-    public Command add(String key, Object value) {
-      return add(key).add(value);
+    public Command add(String string) {
+      additions.add(String.format(".add(%s)", SourceGenerator.$(string)));
+      return arg(string);
+    }
+
+    public Command add(Path path) {
+      additions.add(String.format(".add(%s)", SourceGenerator.$(path)));
+      return arg(path);
+    }
+
+    public Command add(Number number) {
+      additions.add(String.format(".add(%s)", number));
+      return arg(number);
+    }
+
+    public Command add(String key, String string) {
+      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), SourceGenerator.$(string)));
+      return arg(key).arg(string);
+    }
+
+    public Command add(String key, Path path) {
+      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), SourceGenerator.$(path)));
+      return arg(key).arg(path);
+    }
+
+    public Command add(String key, Number number) {
+      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), number));
+      return arg(key).arg(number);
     }
 
     public Command add(String key, List<Path> paths) {
+      var p = String.join(", ", paths.stream().map(SourceGenerator::$).toArray(String[]::new));
+      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), p));
       var strings = paths.stream().map(Path::toString);
-      return add(key).add(quote(strings.collect(Collectors.joining(File.pathSeparator))));
+      return arg(key).arg(strings.collect(Collectors.joining(File.pathSeparator)));
     }
 
-    @Override
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    public Command clone() {
-      return new Command(name, toStringArray());
-    }
-
-    private static String quote(Object object) {
-      return '"' + object.toString() + '"';
-    }
-
-    private static boolean requiresQuote(Object object) {
-      return object instanceof Path;
+    public String toSource() {
+      return String.format("new Command(%s)%s", SourceGenerator.$(name), String.join("", additions));
     }
 
     public String[] toStringArray() {
@@ -492,10 +541,6 @@ public class Bach {
       return path == null ? "null" : "Path.of(\"" + path.toString().replace('\\', '/') + "\")";
     }
 
-    static String $(List<?> objects) {
-      return String.join(", ", objects.stream().map(SourceGenerator::$).toArray(String[]::new));
-    }
-
     public List<String> generate(Project project) {
       if (project.units.isEmpty()) {
         var line = "new Project(%s, Version.parse(%s), List.of())";
@@ -513,14 +558,6 @@ public class Bach {
       }
       lines.add("    )");
       lines.add(")");
-      return lines;
-    }
-
-    public List<String> generate(Command command) {
-      var lines = new ArrayList<String>();
-      var tool = "java.util.spi.ToolProvider.findFirst(%s).orElseThrow()";
-      var args = command.arguments.isEmpty() ? "" : ", " + $(List.of(command.toStringArray()));
-      lines.add(String.format(tool + ".run(System.out, System.err%s)", $(command.name), args));
       return lines;
     }
   }
