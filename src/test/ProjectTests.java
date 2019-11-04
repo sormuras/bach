@@ -73,8 +73,8 @@ class ProjectTests {
           "    \"alpha\",",
           "    Version.parse(\"0\"),",
           "    List.of(",
-          "        Project.Unit.of(" + Bach.Sources.$(bar) + "),",
-          "        Project.Unit.of(" + Bach.Sources.$(foo) + ")",
+          "        Project.Unit.of(" + Bach.$(bar) + "),",
+          "        Project.Unit.of(" + Bach.$(foo) + ")",
           "    )",
           ")"), actual.toSourceLines());
     }

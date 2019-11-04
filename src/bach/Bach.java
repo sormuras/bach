@@ -45,27 +45,34 @@ import java.util.stream.Collectors;
 public class Bach {
 
   /**
-   * Bach.java version.
-   */
-  public static final String VERSION = "2.0-ea";
-
-  /**
    * Create project instance to build.
    */
-  private static Project project() {
+  public static Project project() {
     return Project.Builder.build(Path.of(""));
+  }
+
+  @SuppressWarnings("unused")
+  public static void direct(String... args) {
+    var tools = new Tools(Log.ofSystem(true));
+    tools.run(new Command("javac").add("--version"));
   }
 
   /**
    * Main entry-point.
    */
-  public static void main(String... args) {
+  public static void main(String... args) throws Exception {
     var project = project();
     if (args.length == 0) {
-      System.out.println("Usage: java Bach.java action [args...]");
+      System.out.println();
+      System.out.println("Usage: java Bach.java <action> [args...]");
+      System.out.println();
       System.out.println("Available actions:");
       System.out.println(" build");
       System.out.println("   Build project " + project.name + " " + project.version);
+      System.out.println(" call <entry-point> [args...]");
+      System.out.println("   Invoke the named entry-point method. The method signature must match");
+      System.out.println("   the Java main default: public static void <name>(String... args) and");
+      System.out.println("   it may throw any exception type. Example: java Bach.java call direct");
       System.out.println(" project [path]");
       System.out.println("   Print source representation of the project to be built");
       System.out.println(" version");
@@ -77,6 +84,10 @@ public class Bach {
     switch (arguments.pop()) {
       case "build":
         new Bach(Log.ofSystem(), project).build();
+        return;
+      case "call":
+        var strings = arguments.toArray(String[]::new);
+        Bach.class.getMethod(arguments.pop(), String[].class).invoke(null, (Object) strings);
         return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
@@ -97,7 +108,7 @@ public class Bach {
   public Bach(Log log, Project project) {
     this.log = log;
     this.project = project;
-    this.tools = new Tools();
+    this.tools = new Tools(log);
   }
 
   public void build() {
@@ -130,23 +141,11 @@ public class Bach {
    */
   public void run(Command command) {
     var start = Instant.now();
-    int code = run(command.name, command.toStringArray());
+    int code = tools.run(command);
     log.record(code, Duration.between(start, Instant.now()), command);
     if (code != 0) {
       throw new RuntimeException("Non-zero exit code: " + code);
     }
-  }
-
-  /**
-   * Run named tool (off record) with optional arguments.
-   */
-  public int run(String name, String... args) {
-    if (log.verbose) {
-      var strings = args.length == 0 ? "" : '"' + String.join("\", \"", args) + '"';
-      log.debug("| %s(%s)", name, strings);
-    }
-    var tool = tools.get(name);
-    return tool.run(log.out, log.err, args);
   }
 
   /**
@@ -250,17 +249,17 @@ public class Bach {
     public List<String> toSourceLines() {
       if (units.isEmpty()) {
         var line = "new Project(%s, Version.parse(%s), List.of())";
-        return List.of(String.format(line, Sources.$(name), Sources.$(version)));
+        return List.of(String.format(line, $(name), $(version)));
       }
       var lines = new ArrayList<String>();
       lines.add("new Project(");
-      lines.add("    " + Sources.$(name) + ",");
-      lines.add("    Version.parse(" + Sources.$(version) + "),");
+      lines.add("    " + $(name) + ",");
+      lines.add("    Version.parse(" + $(version) + "),");
       lines.add("    List.of(");
       var last = units.get(units.size() - 1);
       for (var unit : units) {
         var comma = unit == last ? "" : ",";
-        lines.add("        Project.Unit.of(" + Sources.$(unit.info) + ")" + comma);
+        lines.add("        Project.Unit.of(" + $(unit.info) + ")" + comma);
       }
       lines.add("    )");
       lines.add(")");
@@ -483,12 +482,12 @@ public class Bach {
     }
 
     public Command add(String string) {
-      additions.add(String.format(".add(%s)", Sources.$(string)));
+      additions.add(String.format(".add(%s)", $(string)));
       return arg(string);
     }
 
     public Command add(Path path) {
-      additions.add(String.format(".add(%s)", Sources.$(path)));
+      additions.add(String.format(".add(%s)", $(path)));
       return arg(path);
     }
 
@@ -498,29 +497,29 @@ public class Bach {
     }
 
     public Command add(String key, String string) {
-      additions.add(String.format(".add(%s, %s)", Sources.$(key), Sources.$(string)));
+      additions.add(String.format(".add(%s, %s)", $(key), $(string)));
       return arg(key).arg(string);
     }
 
     public Command add(String key, Path path) {
-      additions.add(String.format(".add(%s, %s)", Sources.$(key), Sources.$(path)));
+      additions.add(String.format(".add(%s, %s)", $(key), $(path)));
       return arg(key).arg(path);
     }
 
     public Command add(String key, Number number) {
-      additions.add(String.format(".add(%s, %s)", Sources.$(key), number));
+      additions.add(String.format(".add(%s, %s)", $(key), number));
       return arg(key).arg(number);
     }
 
     public Command add(String key, List<Path> paths) {
-      var p = String.join(", ", paths.stream().map(Sources::$).toArray(String[]::new));
-      additions.add(String.format(".add(%s, %s)", Sources.$(key), p));
+      var p = String.join(", ", paths.stream().map(Bach::$).toArray(String[]::new));
+      additions.add(String.format(".add(%s, %s)", $(key), p));
       var strings = paths.stream().map(Path::toString);
       return arg(key).arg(strings.collect(Collectors.joining(File.pathSeparator)));
     }
 
     public String toSource() {
-      return String.format("new Command(%s)%s", Sources.$(name), String.join("", additions));
+      return String.format("new Command(%s)%s", $(name), String.join("", additions));
     }
 
     public String[] toStringArray() {
@@ -529,26 +528,14 @@ public class Bach {
   }
 
   /**
-   * Java source generating helpers.
+   * Tool registry and command runner support.
    */
-  public static class Sources {
-
-    private Sources() {
-    }
-
-    static String $(Object object) {
-      return object == null ? "null" : "\"" + object + "\"";
-    }
-
-    static String $(Path path) {
-      return path == null ? "null" : "Path.of(\"" + path.toString().replace('\\', '/') + "\")";
-    }
-  }
-
   public static class Tools {
+    final Log log;
     final Map<String, ToolProvider> map;
 
-    Tools() {
+    public Tools(Log log) {
+      this.log = log;
       this.map = new TreeMap<>();
       ServiceLoader.load(ToolProvider.class).stream()
           .map(ServiceLoader.Provider::get)
@@ -570,5 +557,23 @@ public class Bach {
         writer.printf("  - %8s [%s] %s%n", name, Modules.origin(tool), tool);
       }
     }
+
+    int run(Command command) {
+      if (log.verbose) {
+        var args = command.arguments.isEmpty() ? "" : '"' + String.join("\", \"", command.arguments) + '"';
+        log.debug("| %s(%s)", command.name, args);
+      }
+      return get(command.name).run(log.out, log.err, command.toStringArray());
+    }
+  }
+
+  static final String VERSION = "2.0-ea";
+
+  static String $(Object object) {
+    return object == null ? "null" : "\"" + object.toString().replace("\"", "\\\"") + "\"";
+  }
+
+  static String $(Path path) {
+    return path == null ? "null" : "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
   }
 }
