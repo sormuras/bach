@@ -19,8 +19,6 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +26,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -100,10 +97,7 @@ public class Bach {
   public Bach(Log log, Project project) {
     this.log = log;
     this.project = project;
-    this.tools = new Tools.Builder(log)
-        .with(ServiceLoader.load(ToolProvider.class))
-        .with(MethodToolProvider.find(getClass()))
-        .build();
+    this.tools = new Tools();
   }
 
   public void build() {
@@ -549,42 +543,13 @@ public class Bach {
   }
 
   public static class Tools {
-
-    public static class Builder {
-      final Log log;
-      final Map<String, ToolProvider> map = new TreeMap<>();
-
-      Builder(Log log) {
-        this.log = log;
-      }
-
-      Tools build() {
-        return new Tools(Collections.unmodifiableMap(map));
-      }
-
-      Builder with(ToolProvider provider) {
-        var old = map.putIfAbsent(provider.name(), provider);
-        if (old != null) {
-          log.warn("Tool '%s' re-mapped.%n", provider.name());
-        }
-        return this;
-      }
-
-      Builder with(Iterable<ToolProvider> providers) {
-        providers.forEach(this::with);
-        return this;
-      }
-
-      Builder with(ServiceLoader<ToolProvider> loader) {
-        loader.stream().map(ServiceLoader.Provider::get).forEach(this::with);
-        return this;
-      }
-    }
-
     final Map<String, ToolProvider> map;
 
-    Tools(Map<String, ToolProvider> map) {
-      this.map = map;
+    Tools() {
+      this.map = new TreeMap<>();
+      ServiceLoader.load(ToolProvider.class).stream()
+          .map(ServiceLoader.Provider::get)
+          .forEach(provider -> map.putIfAbsent(provider.name(), provider));
     }
 
     ToolProvider get(String name) {
@@ -603,49 +568,4 @@ public class Bach {
       }
     }
   }
-
-  private static class MethodToolProvider implements ToolProvider {
-
-    static final Class<?>[] TYPES = {PrintWriter.class, PrintWriter.class, String[].class};
-
-    static Iterable<ToolProvider> find(Class<?> declaringClass) {
-      var providers = new ArrayList<ToolProvider>();
-      for (var method : declaringClass.getMethods()) {
-        if (Modifier.isStatic(method.getModifiers())) {
-          if (Arrays.equals(TYPES, method.getParameterTypes())) {
-            providers.add(new MethodToolProvider(null, method));
-          }
-        }
-      }
-      return providers;
-    }
-
-    final Object object;
-    final Method method;
-
-    MethodToolProvider(Object object, Method method) {
-      this.object = object;
-      this.method = method;
-    }
-
-    @Override
-    public String name() {
-      return method.getName();
-    }
-
-    @Override
-    public int run(PrintWriter out, PrintWriter err, String... args) {
-      try {
-        var result = method.invoke(object, out, err, args);
-        if (method.getReturnType() == int.class) {
-          return (int) result;
-        }
-        return 0;
-      } catch (ReflectiveOperationException e) {
-        e.printStackTrace(err);
-        return 1;
-      }
-    }
-  }
-
 }
