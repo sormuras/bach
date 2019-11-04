@@ -21,7 +21,7 @@
 
 var code = 0
 try {
-  Bach.main();
+  Bach.main("build");
 } catch (Throwable throwable) {
   System.err.println(throwable.getMessage());
   code = 1;
