@@ -39,7 +39,7 @@ public class Bach {
   /**
    * Bach.java version.
    */
-  public static String VERSION = "2.0-ea";
+  public static final String VERSION = "2.0-ea";
 
   /**
    * Create project instance to build.
