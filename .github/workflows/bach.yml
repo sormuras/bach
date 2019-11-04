@@ -19,4 +19,6 @@ jobs:
     - name: 'Build Bach.java'
       run: java src/bach/Build.java
     - name: 'Build test projects'
-      run: cd ${GITHUB_WORKSPACE}/src/test-project/alpha && java -Debug ${GITHUB_WORKSPACE}/src/bach/Bach.java build
+      run: |
+        cd ${GITHUB_WORKSPACE}/src/test-project/alpha
+        java -Debug ${GITHUB_WORKSPACE}/src/bach/Bach.java build
