@@ -19,6 +19,7 @@ jobs:
     - name: 'Build Bach.java'
       run: java src/bach/Build.java
   jshell:
+    name: 'jshell https://bit.ly/bach-jsh'
     runs-on: ubuntu-latest
     steps:
     - name: 'Checkout'
