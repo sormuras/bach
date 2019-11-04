@@ -46,6 +46,10 @@ public class Build {
         Path.of("src/test/ModulesTests.java").toString(),
         Path.of("src/test/ProjectTests.java").toString());
     build.start("java", "-ea", "--show-version", "-jar", junit.toString(), "--scan-class-path", "--class-path=" + Path.of("bin/build/classes"));
+    // Build some test projects...
+    System.out.println("\nTest Project Builds\n");
+    var project = Path.of("src/test-project");
+    build.start(project.resolve("alpha"), "java", "-Debug", Path.of("src/bach/Bach.java").toAbsolutePath().toString(), "build");
   }
 
   final HttpClient http = HttpClient.newHttpClient();
@@ -82,9 +86,13 @@ public class Build {
   }
 
   void start(String... command) throws Exception {
+    start(Path.of("."), command);
+  }
+
+  void start(Path cd, String... command) throws Exception {
     var line = String.join(" ", command);
     System.out.printf("| %s%n", line);
-    var process = new ProcessBuilder(command).inheritIO().start();
+    var process = new ProcessBuilder(command).directory(cd.toFile()).inheritIO().start();
     if (process.waitFor() != 0) {
       throw new Error("Non-zero exit code for " + line);
     }
