@@ -36,15 +36,18 @@ class ProjectTests {
 
   @Test
   void generateSourceForProjectWithSingleModule() {
-    var project = new Bach.Project(
-        "foo",
-        Version.parse("47.11"),
-        List.of(
-            new Bach.Project.Unit(Path.of("src/foo/module-info.java"),
-                ModuleDescriptor.newModule("foo").build(),
-                "src")));
+    var project =
+        new Bach.Project(
+            "foo",
+            Version.parse("47.11"),
+            List.of(
+                new Bach.Project.Unit(
+                    Path.of("src/foo/module-info.java"),
+                    ModuleDescriptor.newModule("foo").build(),
+                    "src")));
     assertLinesMatch(
-        List.of("new Project(",
+        List.of(
+            "new Project(",
             "    \"foo\",",
             "    Version.parse(\"47.11\"),",
             "    List.of(",
@@ -61,22 +64,21 @@ class ProjectTests {
       var base = Path.of("src/test-project/alpha");
       var bar = base.resolve("src/bar/main/java/module-info.java");
       var foo = base.resolve("src/foo/main/java/module-info.java");
-      var expected = new Bach.Project.Builder()
-          .name("alpha")
-          .version("0")
-          .unit(bar)
-          .unit(foo)
-          .build();
+      var expected =
+          new Bach.Project.Builder().name("alpha").version("0").unit(bar).unit(foo).build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected, actual);
-      assertLinesMatch(List.of("new Project(",
-          "    \"alpha\",",
-          "    Version.parse(\"0\"),",
-          "    List.of(",
-          "        Project.Unit.of(" + Bach.$(bar) + "),",
-          "        Project.Unit.of(" + Bach.$(foo) + ")",
-          "    )",
-          ")"), actual.toSourceLines());
+      assertLinesMatch(
+          List.of(
+              "new Project(",
+              "    \"alpha\",",
+              "    Version.parse(\"0\"),",
+              "    List.of(",
+              "        Project.Unit.of(" + Bach.$(bar) + "),",
+              "        Project.Unit.of(" + Bach.$(foo) + ")",
+              "    )",
+              ")"),
+          actual.toSourceLines());
     }
   }
 }

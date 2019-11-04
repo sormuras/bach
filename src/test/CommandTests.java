@@ -27,8 +27,8 @@ class CommandTests {
   @Test
   void toStringArray() {
     assertArrayEquals(new String[0], new Bach.Command("empty").toStringArray());
-    assertArrayEquals(new String[]{"1"}, new Bach.Command("one").add(1).toStringArray());
-    assertArrayEquals(new String[]{"2", "2"}, new Bach.Command("two").add("2", 2).toStringArray());
+    assertArrayEquals(new String[] {"1"}, new Bach.Command("one").add(1).toStringArray());
+    assertArrayEquals(new String[] {"2", "2"}, new Bach.Command("two").add("2", 2).toStringArray());
   }
 
   @Test
@@ -41,12 +41,9 @@ class CommandTests {
   @Test
   void addListOfPath() {
     assertEquals(
-        List.of("b", "c"),
-        new Bach.Command("a").add("b", List.of(Path.of("c"))).arguments);
+        List.of("b", "c"), new Bach.Command("a").add("b", List.of(Path.of("c"))).arguments);
     var paths = new Bach.Command("a").add("b", List.of(Path.of("c"), Path.of("d")));
-    assertEquals(
-        List.of("b", "c" + File.pathSeparator + "d"),
-        paths.arguments);
+    assertEquals(List.of("b", "c" + File.pathSeparator + "d"), paths.arguments);
     assertEquals(List.of(".add(\"b\", Path.of(\"c\"), Path.of(\"d\"))"), paths.additions);
   }
 

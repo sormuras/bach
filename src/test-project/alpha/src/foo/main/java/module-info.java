@@ -1,2 +1,1 @@
-module foo {
-}
+module foo {}

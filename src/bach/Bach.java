@@ -39,14 +39,10 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
-/**
- * Build modular Java project.
- */
+/** Build modular Java project. */
 public class Bach {
 
-  /**
-   * Create project instance to build.
-   */
+  /** Create project instance to build. */
   public static Project project() {
     return Project.Builder.build(Path.of(""));
   }
@@ -57,9 +53,7 @@ public class Bach {
     tools.run(new Command("javac").add("--version"));
   }
 
-  /**
-   * Main entry-point.
-   */
+  /** Main entry-point. */
   public static void main(String... args) throws Exception {
     var project = project();
     if (args.length == 0) {
@@ -136,9 +130,7 @@ public class Bach {
     log.info("%nBuild %d took millis.", Duration.between(start, Instant.now()).toMillis());
   }
 
-  /**
-   * Run and record the given command instance.
-   */
+  /** Run and record the given command instance. */
   public void run(Command command) {
     var start = Instant.now();
     int code = tools.run(command);
@@ -148,39 +140,27 @@ public class Bach {
     }
   }
 
-  /**
-   * Simplistic logging support.
-   */
+  /** Simplistic logging support. */
   public static class Log {
 
-    /**
-     * Create new Log instance using system default text output streams.
-     */
+    /** Create new Log instance using system default text output streams. */
     public static Log ofSystem() {
       var verbose = Boolean.getBoolean("verbose");
       var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
       return ofSystem(verbose || debug);
     }
 
-    /**
-     * Create new Log instance using system default text output streams.
-     */
+    /** Create new Log instance using system default text output streams. */
     public static Log ofSystem(boolean verbose) {
       return new Log(new PrintWriter(System.out, true), new PrintWriter(System.err, true), verbose);
     }
 
-    /**
-     * Recorded command history.
-     */
+    /** Recorded command history. */
     private final List<String> records;
 
-    /**
-     * Text-output writer.
-     */
+    /** Text-output writer. */
     private final PrintWriter out, err;
-    /**
-     * Be verbose.
-     */
+    /** Be verbose. */
     private final boolean verbose;
 
     public Log(PrintWriter out, PrintWriter err, boolean verbose) {
@@ -190,23 +170,17 @@ public class Bach {
       this.records = new ArrayList<>();
     }
 
-    /**
-     * Print "debug" message to the standard output stream.
-     */
+    /** Print "debug" message to the standard output stream. */
     public void debug(String format, Object... args) {
       if (verbose) out.println(String.format(format, args));
     }
 
-    /**
-     * Print "information" message to the standard output stream.
-     */
+    /** Print "information" message to the standard output stream. */
     public void info(String format, Object... args) {
       out.println(String.format(format, args));
     }
 
-    /**
-     * Print "warn" message to the error output stream.
-     */
+    /** Print "warn" message to the error output stream. */
     public void warn(String format, Object... args) {
       err.println(String.format(format, args));
     }
@@ -216,9 +190,7 @@ public class Bach {
     }
   }
 
-  /**
-   * Project model.
-   */
+  /** Project model. */
   public static class Project {
 
     final String name;
@@ -236,9 +208,7 @@ public class Bach {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       var other = (Project) o;
-      return name.equals(other.name) &&
-             version.equals(other.version) &&
-             units.equals(other.units);
+      return name.equals(other.name) && version.equals(other.version) && units.equals(other.units);
     }
 
     @Override
@@ -266,9 +236,7 @@ public class Bach {
       return lines;
     }
 
-    /**
-     * Mutable project builder.
-     */
+    /** Mutable project builder. */
     public static class Builder {
 
       static Project build(Path base) {
@@ -280,9 +248,10 @@ public class Bach {
           throw new IllegalArgumentException("Not a directory: " + base);
         }
         var path = base.toAbsolutePath().normalize();
-        var builder = new Builder()
-            .name(Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project"))
-            .version(System.getProperty(".bach/project.version", "0"));
+        var builder =
+            new Builder()
+                .name(Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project"))
+                .version(System.getProperty(".bach/project.version", "0"));
         try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
           stream.sorted().forEach(builder::unit);
         } catch (Exception e) {
@@ -322,17 +291,11 @@ public class Bach {
     }
 
     public static /*record*/ class Unit {
-      /**
-       * Path to the backing {@code module-info.java} file.
-       */
+      /** Path to the backing {@code module-info.java} file. */
       final Path info;
-      /**
-       * Underlying module descriptor.
-       */
+      /** Underlying module descriptor. */
       final ModuleDescriptor descriptor;
-      /**
-       * Module source path.
-       */
+      /** Module source path. */
       final String moduleSourcePath;
 
       public Unit(Path info, ModuleDescriptor descriptor, String moduleSourcePath) {
@@ -346,9 +309,9 @@ public class Bach {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         var other = (Unit) o;
-        return info.equals(other.info) &&
-               descriptor.equals(other.descriptor) &&
-               moduleSourcePath.equals(other.moduleSourcePath);
+        return info.equals(other.info)
+            && descriptor.equals(other.descriptor)
+            && moduleSourcePath.equals(other.moduleSourcePath);
       }
 
       @Override
@@ -358,42 +321,38 @@ public class Bach {
     }
   }
 
-  /**
-   * Static helper for modules and their friends.
-   */
+  /** Static helper for modules and their friends. */
   public static class Modules {
 
-    private static final Pattern MAIN_CLASS = Pattern.compile("//\\s*(?:--main-class)\\s+([\\w.]+)");
+    private static final Pattern MAIN_CLASS =
+        Pattern.compile("//\\s*(?:--main-class)\\s+([\\w.]+)");
 
     private static final Pattern MODULE_NAME_PATTERN =
         Pattern.compile(
             "(?:module)" // key word
-            + "\\s+([\\w.]+)" // module name
-            + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
-            + "\\s*\\{"); // end marker
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                + "\\s*\\{"); // end marker
 
     private static final Pattern MODULE_REQUIRES_PATTERN =
         Pattern.compile(
             "(?:requires)" // key word
-            + "(?:\\s+[\\w.]+)?" // optional modifiers
-            + "\\s+([\\w.]+)" // module name
-            + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
-            + "\\s*;"); // end marker
+                + "(?:\\s+[\\w.]+)?" // optional modifiers
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                + "\\s*;"); // end marker
 
     private static final Pattern MODULE_PROVIDES_PATTERN =
         Pattern.compile(
             "(?:provides)" // key word
-            + "\\s+([\\w.]+)" // service name
-            + "\\s+with" // separator
-            + "\\s+([\\w.,\\s]+)" // comma separated list of type names
-            + "\\s*;"); // end marker
+                + "\\s+([\\w.]+)" // service name
+                + "\\s+with" // separator
+                + "\\s+([\\w.,\\s]+)" // comma separated list of type names
+                + "\\s*;"); // end marker
 
-    private Modules() {
-    }
+    private Modules() {}
 
-    /**
-     * Module descriptor parser.
-     */
+    /** Module descriptor parser. */
     public static ModuleDescriptor describe(String source) {
       // "module name {"
       var nameMatcher = MODULE_NAME_PATTERN.matcher(source);
@@ -427,9 +386,7 @@ public class Bach {
       return builder.build();
     }
 
-    /**
-     * Compute module's source path.
-     */
+    /** Compute module's source path. */
     public static String moduleSourcePath(Path path, String module) {
       var directory = path.endsWith("module-info.java") ? path.getParent() : path;
       var names = new ArrayList<String>();
@@ -462,9 +419,7 @@ public class Bach {
     }
   }
 
-  /**
-   * Command.
-   */
+  /** Command. */
   public static class Command {
     final String name;
     final List<String> arguments;
@@ -527,9 +482,7 @@ public class Bach {
     }
   }
 
-  /**
-   * Tool registry and command runner support.
-   */
+  /** Tool registry and command runner support. */
   public static class Tools {
     final Log log;
     final Map<String, ToolProvider> map;
@@ -560,7 +513,8 @@ public class Bach {
 
     int run(Command command) {
       if (log.verbose) {
-        var args = command.arguments.isEmpty() ? "" : '"' + String.join("\", \"", command.arguments) + '"';
+        var args =
+            command.arguments.isEmpty() ? "" : '"' + String.join("\", \"", command.arguments) + '"';
         log.debug("| %s(%s)", command.name, args);
       }
       return get(command.name).run(log.out, log.err, command.toStringArray());

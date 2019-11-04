@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * Generate IDEA project configuration directory.
- */
+/** Generate IDEA project configuration directory. */
 public class ToIdeaProject implements Consumer<Bach.Project> {
 
   public static void main(String... args) {
@@ -35,7 +33,9 @@ public class ToIdeaProject implements Consumer<Bach.Project> {
       return;
     }
     try {
-      write(project, project.units.stream().map(unit -> unit.descriptor).collect(Collectors.toList()));
+      write(
+          project,
+          project.units.stream().map(unit -> unit.descriptor).collect(Collectors.toList()));
     } catch (Exception e) {
       throw new Error("Writing IDEA project failed", e);
     }
@@ -79,7 +79,8 @@ public class ToIdeaProject implements Consumer<Bach.Project> {
             "    <modules>",
             "      <module " + moduleLocation(project.name) + " />"));
     var names = descriptors.stream().map(ModuleDescriptor::name).collect(Collectors.toList());
-    var modules = names.stream()
+    var modules =
+        names.stream()
             .map(name -> "      <module " + moduleLocation(name) + " />")
             .collect(Collectors.toList());
     Files.write(modulesXml, modules, StandardOpenOption.APPEND);
@@ -110,8 +111,7 @@ public class ToIdeaProject implements Consumer<Bach.Project> {
               "    <content url='file://$MODULE_DIR$/" + content + "'>",
               "      <sourceFolder " + folderUrl + " isTestSource='false' />",
               "    </content>",
-              "    <orderEntry type='sourceFolder' forTests='false' />")
-      );
+              "    <orderEntry type='sourceFolder' forTests='false' />"));
       for (var requires : module.requires()) {
         if (names.contains(requires.name())) {
           lines.add("    <orderEntry type='module' module-name='" + requires.name() + "' />");
@@ -123,8 +123,7 @@ public class ToIdeaProject implements Consumer<Bach.Project> {
               "    <orderEntry type='inheritedJdk' />",
               "  </component>",
               "</module>",
-              "")
-      );
+              ""));
       Files.write(idea.resolve(name + ".iml"), lines);
     }
     var libraries = Files.createDirectories(idea.resolve("libraries"));
