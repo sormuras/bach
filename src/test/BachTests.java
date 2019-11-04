@@ -42,6 +42,4 @@ class BachTests {
     assertLinesMatch(List.of("debug", "info"), log.lines());
     assertLinesMatch(List.of("warn"), log.errors());
   }
-
-
 }
