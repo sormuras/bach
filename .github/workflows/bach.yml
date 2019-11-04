@@ -18,3 +18,14 @@ jobs:
         java-version: ${{ matrix.java }}
     - name: 'Build Bach.java'
       run: java src/bach/Build.java
+  jshell:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: 'Build test project using jshell'
+      run: |
+        cd src/test-project/alpha
+        jshell https://bit.ly/bach-jsh
