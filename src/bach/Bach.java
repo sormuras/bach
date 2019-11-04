@@ -80,7 +80,7 @@ public class Bach {
         return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
-        new SourceGenerator().generate(it).forEach(System.out::println);
+        Sources.generate(it).forEach(System.out::println);
         return;
       case "version":
         System.out.println(VERSION);
@@ -107,7 +107,7 @@ public class Bach {
       log.debug("  - java.version = " + System.getProperty("java.version"));
       log.debug("  - user.dir = " + System.getProperty("user.dir"));
       log.debug("%nProject information");
-      new SourceGenerator().generate(project).forEach(log::debug);
+      Sources.generate(project).forEach(log::debug);
       log.debug("%nTools of the trade");
       tools.print(log.out);
       log.debug("");
@@ -463,12 +463,12 @@ public class Bach {
     }
 
     public Command add(String string) {
-      additions.add(String.format(".add(%s)", SourceGenerator.$(string)));
+      additions.add(String.format(".add(%s)", Sources.$(string)));
       return arg(string);
     }
 
     public Command add(Path path) {
-      additions.add(String.format(".add(%s)", SourceGenerator.$(path)));
+      additions.add(String.format(".add(%s)", Sources.$(path)));
       return arg(path);
     }
 
@@ -478,29 +478,29 @@ public class Bach {
     }
 
     public Command add(String key, String string) {
-      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), SourceGenerator.$(string)));
+      additions.add(String.format(".add(%s, %s)", Sources.$(key), Sources.$(string)));
       return arg(key).arg(string);
     }
 
     public Command add(String key, Path path) {
-      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), SourceGenerator.$(path)));
+      additions.add(String.format(".add(%s, %s)", Sources.$(key), Sources.$(path)));
       return arg(key).arg(path);
     }
 
     public Command add(String key, Number number) {
-      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), number));
+      additions.add(String.format(".add(%s, %s)", Sources.$(key), number));
       return arg(key).arg(number);
     }
 
     public Command add(String key, List<Path> paths) {
-      var p = String.join(", ", paths.stream().map(SourceGenerator::$).toArray(String[]::new));
-      additions.add(String.format(".add(%s, %s)", SourceGenerator.$(key), p));
+      var p = String.join(", ", paths.stream().map(Sources::$).toArray(String[]::new));
+      additions.add(String.format(".add(%s, %s)", Sources.$(key), p));
       var strings = paths.stream().map(Path::toString);
       return arg(key).arg(strings.collect(Collectors.joining(File.pathSeparator)));
     }
 
     public String toSource() {
-      return String.format("new Command(%s)%s", SourceGenerator.$(name), String.join("", additions));
+      return String.format("new Command(%s)%s", Sources.$(name), String.join("", additions));
     }
 
     public String[] toStringArray() {
@@ -509,9 +509,12 @@ public class Bach {
   }
 
   /**
-   * Java source generator.
+   * Java source generating helpers.
    */
-  public static class SourceGenerator {
+  public static class Sources {
+
+    private Sources() {
+    }
 
     static String $(Object object) {
       return object == null ? "null" : "\"" + object + "\"";
@@ -521,7 +524,7 @@ public class Bach {
       return path == null ? "null" : "Path.of(\"" + path.toString().replace('\\', '/') + "\")";
     }
 
-    public List<String> generate(Project project) {
+    public static List<String> generate(Project project) {
       if (project.units.isEmpty()) {
         var line = "new Project(%s, Version.parse(%s), List.of())";
         return List.of(String.format(line, $(project.name), $(project.version)));
