@@ -19,16 +19,25 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +55,18 @@ public class Bach {
    */
   private static Project project() {
     return Project.Builder.build(Path.of(""));
+  }
+
+  @SuppressWarnings("unused")
+  public static int mkdir(PrintWriter out, PrintWriter err, String... args) {
+    var directory = Path.of(args[0]);
+    try {
+      Files.createDirectories(directory);
+      return 0;
+    } catch (Exception e) {
+      e.printStackTrace(err);
+      return 1;
+    }
   }
 
   /**
@@ -84,21 +105,49 @@ public class Bach {
 
   private final Log log;
   private final Project project;
+  private final Tools tools;
 
   public Bach(Log log, Project project) {
     this.log = log;
     this.project = project;
+    this.tools = new Tools.Builder(log)
+        .with(ServiceLoader.load(ToolProvider.class))
+        .with(MethodToolProvider.find(getClass()))
+        .with(new Tools.Sleep())
+        .build();
   }
 
   public void build() {
+    log.info("Building project %s %s...", project.name, project.version);
     if (log.verbose) {
+      log.debug("\nRuntime information");
+      log.debug("  - java.version = " + System.getProperty("java.version"));
+      log.debug("  - user.dir = " + System.getProperty("user.dir"));
+      log.debug("\nProject information");
       new SourceGenerator().generate(project).forEach(log::debug);
+      log.debug("\nTools of the trade");
+      tools.print(log.out);
+      log.debug("");
     }
     if (project.units.isEmpty()) {
       log.warn("Not a single module unit declared, no build.");
       return;
     }
-    log.info("Building project %s %s...", project.name, project.version);
+    var javac = new Command("javac", "--version");
+    run(javac.name, javac.toStringArray());
+  }
+
+  /**
+   * Run named tool with optional arguments.
+   */
+  public void run(String name, String... args) {
+    var strings = args.length == 0 ? "" : '"' + String.join("\", \"", args) + '"';
+    log.info("| %s(%s)", name, strings);
+    var tool = tools.get(name);
+    int code = tool.run(log.out, log.err, args);
+    if (code != 0) {
+      throw new RuntimeException("Non-zero exit code: " + code);
+    }
   }
 
   /**
@@ -370,6 +419,19 @@ public class Bach {
       }
       throw new IllegalArgumentException("Ambiguous module source path: " + path);
     }
+
+    public static String origin(Object object) {
+      var module = object.getClass().getModule();
+      if (module.isNamed()) {
+        return module.getDescriptor().toNameAndVersion();
+      }
+      try {
+        var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
+        return Path.of(uri).getFileName().toString();
+      } catch (NullPointerException | URISyntaxException ignore) {
+        return module.toString();
+      }
+    }
   }
 
   /**
@@ -462,4 +524,131 @@ public class Bach {
       return lines;
     }
   }
+
+  public static class Tools {
+
+    public static class Builder {
+
+      final Log log;
+      final Map<String, ToolProvider> map = new TreeMap<>();
+
+      Builder(Log log) {
+        this.log = log;
+      }
+
+      Tools build() {
+        return new Tools(Collections.unmodifiableMap(map));
+      }
+
+      Builder with(ToolProvider provider) {
+        var old = map.putIfAbsent(provider.name(), provider);
+        if (old != null) {
+          log.warn("Tool '%s' re-mapped.%n", provider.name());
+        }
+        return this;
+      }
+
+      Builder with(Iterable<ToolProvider> providers) {
+        providers.forEach(this::with);
+        return this;
+      }
+
+      Builder with(ServiceLoader<ToolProvider> loader) {
+        loader.stream().map(ServiceLoader.Provider::get).forEach(this::with);
+        return this;
+      }
+
+    }
+
+    private static class Sleep implements ToolProvider {
+
+      @Override
+      public String name() {
+        return "sleep";
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        long millis = 123;
+        try {
+          millis = Long.parseLong(args[0]);
+        } catch (Exception e) {
+          // ignore
+        }
+        try {
+          Thread.sleep(millis);
+        } catch (InterruptedException e) {
+          Thread.interrupted();
+        }
+        return 0;
+      }
+    }
+
+    final Map<String, ToolProvider> map;
+
+    Tools(Map<String, ToolProvider> map) {
+      this.map = map;
+    }
+
+    ToolProvider get(String name) {
+      var tool = map.get(name);
+      if (tool == null) {
+        throw new NoSuchElementException("No such tool: " + name);
+      }
+      return tool;
+    }
+
+    void print(PrintWriter writer) {
+      for (var entry : map.entrySet()) {
+        var name = entry.getKey();
+        var tool = entry.getValue();
+        writer.printf("  - %8s [%s] %s%n", name, Modules.origin(tool), tool);
+      }
+    }
+  }
+
+  private static class MethodToolProvider implements ToolProvider {
+
+    static final Class<?>[] TYPES = {PrintWriter.class, PrintWriter.class, String[].class};
+
+    static Iterable<ToolProvider> find(Class<?> declaringClass) {
+      var providers = new ArrayList<ToolProvider>();
+      for (var method : declaringClass.getMethods()) {
+        if (Modifier.isStatic(method.getModifiers())) {
+          if (Arrays.equals(TYPES, method.getParameterTypes())) {
+            providers.add(new MethodToolProvider(null, method));
+          }
+        }
+      }
+      return providers;
+    }
+
+    final Object object;
+    final Method method;
+
+    MethodToolProvider(Object object, Method method) {
+      this.object = object;
+      this.method = method;
+    }
+
+    @Override
+    public String name() {
+      return method.getName();
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      try {
+        var result = method.invoke(object, out, err, args);
+        if (method.getReturnType() == int.class) {
+          return (int) result;
+        }
+        return 0;
+      } catch (ReflectiveOperationException e) {
+        e.printStackTrace(err);
+        return 1;
+      }
+    }
+  }
+
 }
