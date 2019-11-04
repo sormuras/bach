@@ -16,9 +16,11 @@
  */
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.module.ModuleDescriptor;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -30,4 +32,16 @@ class BachTests {
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("master"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("ea"));
   }
+
+  @Test
+  void log() {
+    var log = new Log();
+    log.debug("debug");
+    log.info("info");
+    log.warn("warn");
+    assertLinesMatch(List.of("debug", "info"), log.lines());
+    assertLinesMatch(List.of("warn"), log.errors());
+  }
+
+
 }

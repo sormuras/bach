@@ -16,6 +16,7 @@
  */
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -67,8 +68,7 @@ public class Bach {
     var arguments = new ArrayDeque<>(List.of(args));
     switch (arguments.pop()) {
       case "build":
-        var bach = new Bach(project);
-        bach.build();
+        new Bach(Log.ofSystem(), project).build();
         return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
@@ -82,16 +82,23 @@ public class Bach {
     }
   }
 
+  private final Log log;
   private final Project project;
 
-  public Bach(Project project) {
+  public Bach(Log log, Project project) {
+    this.log = log;
     this.project = project;
   }
 
   public void build() {
-    System.out.printf("Building project %s %s...%n", project.name, project.version);
-    System.out.println("user.dir=" + System.getProperty("user.dir"));
-
+    if (log.verbose) {
+      new SourceGenerator().generate(project).forEach(log::debug);
+    }
+    if (project.units.isEmpty()) {
+      log.warn("Not a single module unit declared, no build.");
+      return;
+    }
+    log.info("Building project %s %s...", project.name, project.version);
   }
 
   /**
@@ -213,6 +220,64 @@ public class Bach {
       public int hashCode() {
         return Objects.hash(info, descriptor, moduleSourcePath);
       }
+    }
+  }
+
+  /**
+   * Simplistic logging support.
+   */
+  public static class Log {
+
+    /**
+     * Create new Log instance using system default text output streams.
+     */
+    public static Log ofSystem() {
+      var verbose = Boolean.getBoolean("verbose");
+      var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+      return ofSystem(verbose || debug);
+    }
+
+    /**
+     * Create new Log instance using system default text output streams.
+     */
+    public static Log ofSystem(boolean verbose) {
+      return new Log(new PrintWriter(System.out, true), new PrintWriter(System.err, true), verbose);
+    }
+
+    /**
+     * Text-output writer.
+     */
+    private final PrintWriter out, err;
+    /**
+     * Be verbose.
+     */
+    private final boolean verbose;
+
+    public Log(PrintWriter out, PrintWriter err, boolean verbose) {
+      this.out = out;
+      this.err = err;
+      this.verbose = verbose;
+    }
+
+    /**
+     * Print "debug" message to the standard output stream.
+     */
+    public void debug(String format, Object... args) {
+      if (verbose) out.println(String.format(format, args));
+    }
+
+    /**
+     * Print "information" message to the standard output stream.
+     */
+    public void info(String format, Object... args) {
+      out.println(String.format(format, args));
+    }
+
+    /**
+     * Print "warn" message to the error output stream.
+     */
+    public void warn(String format, Object... args) {
+      err.println(String.format(format, args));
     }
   }
 
