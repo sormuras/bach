@@ -103,7 +103,6 @@ public class Bach {
     this.tools = new Tools.Builder(log)
         .with(ServiceLoader.load(ToolProvider.class))
         .with(MethodToolProvider.find(getClass()))
-        .with(new Tools.Sleep())
         .build();
   }
 
@@ -125,7 +124,6 @@ public class Bach {
     }
     var start = Instant.now();
     run(new Command("javac").add("--version").add("-d", Path.of(".")));
-    run("sleep", "1234"); // off the record
 
     log.info("%nCommand history");
     log.records.forEach(log::info);
@@ -553,7 +551,6 @@ public class Bach {
   public static class Tools {
 
     public static class Builder {
-
       final Log log;
       final Map<String, ToolProvider> map = new TreeMap<>();
 
@@ -581,31 +578,6 @@ public class Bach {
       Builder with(ServiceLoader<ToolProvider> loader) {
         loader.stream().map(ServiceLoader.Provider::get).forEach(this::with);
         return this;
-      }
-
-    }
-
-    private static class Sleep implements ToolProvider {
-
-      @Override
-      public String name() {
-        return "sleep";
-      }
-
-      @Override
-      public int run(PrintWriter out, PrintWriter err, String... args) {
-        long millis = 123;
-        try {
-          millis = Long.parseLong(args[0]);
-        } catch (Exception e) {
-          // ignore
-        }
-        try {
-          Thread.sleep(millis);
-        } catch (InterruptedException e) {
-          Thread.interrupted();
-        }
-        return 0;
       }
     }
 
