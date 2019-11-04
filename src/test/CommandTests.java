@@ -32,6 +32,13 @@ class CommandTests {
   }
 
   @Test
+  void addPath() {
+    var command = new Bach.Command("a").add(Path.of("a/b"));
+    assertEquals(List.of("a" + File.separator + "b"), command.arguments);
+    assertEquals("new Command(\"a\").add(Path.of(\"a/b\"))", command.toSource());
+  }
+
+  @Test
   void addListOfPath() {
     assertEquals(
         List.of("b", "c"),
