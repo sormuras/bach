@@ -31,7 +31,7 @@ class ProjectTests {
     var project = new Bach.Project("foo", Version.parse("47.11"), List.of());
     assertLinesMatch(
         List.of("new Project(\"foo\", Version.parse(\"47.11\"), List.of())"),
-        Bach.Sources.generate(project));
+        project.toSourceLines());
   }
 
   @Test
@@ -51,7 +51,7 @@ class ProjectTests {
             "        Project.Unit.of(Path.of(\"src/foo/module-info.java\"))",
             "    )",
             ")"),
-        Bach.Sources.generate(project));
+        project.toSourceLines());
   }
 
   @Nested
@@ -76,7 +76,7 @@ class ProjectTests {
           "        Project.Unit.of(" + Bach.Sources.$(bar) + "),",
           "        Project.Unit.of(" + Bach.Sources.$(foo) + ")",
           "    )",
-          ")"), Bach.Sources.generate(actual));
+          ")"), actual.toSourceLines());
     }
   }
 }

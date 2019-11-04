@@ -80,7 +80,7 @@ public class Bach {
         return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
-        Sources.generate(it).forEach(System.out::println);
+        it.toSourceLines().forEach(System.out::println);
         return;
       case "version":
         System.out.println(VERSION);
@@ -107,7 +107,7 @@ public class Bach {
       log.debug("  - java.version = " + System.getProperty("java.version"));
       log.debug("  - user.dir = " + System.getProperty("user.dir"));
       log.debug("%nProject information");
-      Sources.generate(project).forEach(log::debug);
+      project.toSourceLines().forEach(log::debug);
       log.debug("%nTools of the trade");
       tools.print(log.out);
       log.debug("");
@@ -245,6 +245,26 @@ public class Bach {
     @Override
     public int hashCode() {
       return Objects.hash(name, version, units);
+    }
+
+    public List<String> toSourceLines() {
+      if (units.isEmpty()) {
+        var line = "new Project(%s, Version.parse(%s), List.of())";
+        return List.of(String.format(line, Sources.$(name), Sources.$(version)));
+      }
+      var lines = new ArrayList<String>();
+      lines.add("new Project(");
+      lines.add("    " + Sources.$(name) + ",");
+      lines.add("    Version.parse(" + Sources.$(version) + "),");
+      lines.add("    List.of(");
+      var last = units.get(units.size() - 1);
+      for (var unit : units) {
+        var comma = unit == last ? "" : ",";
+        lines.add("        Project.Unit.of(" + Sources.$(unit.info) + ")" + comma);
+      }
+      lines.add("    )");
+      lines.add(")");
+      return lines;
     }
 
     /**
@@ -522,26 +542,6 @@ public class Bach {
 
     static String $(Path path) {
       return path == null ? "null" : "Path.of(\"" + path.toString().replace('\\', '/') + "\")";
-    }
-
-    public static List<String> generate(Project project) {
-      if (project.units.isEmpty()) {
-        var line = "new Project(%s, Version.parse(%s), List.of())";
-        return List.of(String.format(line, $(project.name), $(project.version)));
-      }
-      var lines = new ArrayList<String>();
-      lines.add("new Project(");
-      lines.add("    " + $(project.name) + ",");
-      lines.add("    Version.parse(" + $(project.version) + "),");
-      lines.add("    List.of(");
-      var last = project.units.get(project.units.size() - 1);
-      for (var unit : project.units) {
-        var comma = unit == last ? "" : ",";
-        lines.add("        Project.Unit.of(" + $(unit.info) + ")" + comma);
-      }
-      lines.add("    )");
-      lines.add(")");
-      return lines;
     }
   }
 
