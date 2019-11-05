@@ -645,7 +645,39 @@ public class Bach {
   static final String VERSION = "2.0-ea";
 
   static String $(Object object) {
-    return object == null ? "null" : "\"" + object.toString().replace("\"", "\\\"") + "\"";
+    if (object == null) return "null";
+    var string = object.toString();
+    var escaped = new StringBuilder();
+    for (int i = 0; i < string.length(); i++) {
+      char c = string.charAt(i);
+      switch (c) {
+        case '\t':
+          escaped.append("\\t");
+          break;
+        case '\b':
+          escaped.append("\\b");
+          break;
+        case '\n':
+          escaped.append("\\n");
+          break;
+        case '\r':
+          escaped.append("\\r");
+          break;
+        case '\f':
+          escaped.append("\\f");
+          break;
+        // case '\'': escaped.append("\\'"); break; // not needed
+        case '\"':
+          escaped.append("\\\"");
+          break;
+        case '\\':
+          escaped.append("\\\\");
+          break;
+        default:
+          escaped.append(c);
+      }
+    }
+    return "\"" + escaped + "\"";
   }
 
   static String $(Path path) {
