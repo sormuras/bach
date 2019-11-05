@@ -105,7 +105,7 @@ public class Bach {
     this.tools = new Tools(log);
   }
 
-  public void build() {
+  public void build() throws Exception {
     log.info("Build of project %s %s started...", project.name, project.version);
     if (log.verbose) {
       log.debug("%nRuntime information");
@@ -126,6 +126,8 @@ public class Bach {
 
     log.info("%nCommand history");
     log.records.forEach(log::info);
+    var logfile = ("build-" + start + ".log").replace(':', '-');
+    Files.write(project.dir(Path.of(".bach/out"), true).resolve(logfile), log.records);
 
     log.info("%nBuild %d took millis.", Duration.between(start, Instant.now()).toMillis());
   }
@@ -215,6 +217,18 @@ public class Bach {
     @Override
     public int hashCode() {
       return Objects.hash(base, name, version, units);
+    }
+
+    public Path dir(Path path, boolean create) {
+      var directory = base.resolve(path);
+      if (create) {
+        try {
+          Files.createDirectories(directory);
+        } catch (Exception e) {
+          throw new RuntimeException("Create directories failed", e);
+        }
+      }
+      return directory;
     }
 
     public List<String> toSourceLines() {

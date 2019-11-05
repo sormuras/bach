@@ -27,19 +27,20 @@ import java.util.spi.ToolProvider;
 public class Build {
   public static void main(String... args) throws Exception {
     System.out.printf("Building Bach.java...%n");
+    var out = Path.of(".bach/out/build");
     var build = new Build();
     build.run(
         "javac",
         "-d",
-        Path.of("bin/build/classes").toString(),
+        out.resolve("classes").toString(),
         Path.of("src/bach/Bach.java").toString());
-    var junit = build.assemble(Path.of("bin/build/lib"));
+    var junit = build.assemble(out.resolve("lib"));
     build.run(
         "javac",
         "-d",
-        Path.of("bin/build/classes").toString(),
+        out.resolve("classes").toString(),
         "-cp",
-        String.join(File.pathSeparator, Path.of("bin/build/classes").toString(), junit.toString()),
+        String.join(File.pathSeparator, out.resolve("classes").toString(), junit.toString()),
         Path.of("src/test/BachTests.java").toString(),
         Path.of("src/test/CommandTests.java").toString(),
         Path.of("src/test/Log.java").toString(),
@@ -52,7 +53,7 @@ public class Build {
         "-jar",
         junit.toString(),
         "--scan-class-path",
-        "--class-path=" + Path.of("bin/build/classes"));
+        "--class-path=" + out.resolve("classes"));
     // Build some test projects...
     System.out.println("\nTest Project Builds\n");
     var project = Path.of("src/test-project");
