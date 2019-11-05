@@ -136,8 +136,10 @@ public class Bach {
 
     log.info("%nCommand history");
     log.records.forEach(log::info);
-    var logfile = ("build-" + start + ".log").replace(':', '-');
-    Files.write(project.dir(Path.of(".bach/out"), true).resolve(logfile), log.records);
+    var logfile = ("build-commands-" + start + ".log").replace(':', '-');
+    Files.write(
+        project.dir(Path.of(".bach/out"), true).resolve(logfile),
+        log.commands.stream().map(Command::toSource).collect(Collectors.toList()));
 
     log.info("%nBuild %d took millis.", Duration.between(start, Instant.now()).toMillis());
   }
@@ -168,6 +170,8 @@ public class Bach {
     }
 
     /** Recorded command history. */
+    private final List<Command> commands;
+    /** Recorded command history. */
     private final List<String> records;
 
     /** Text-output writer. */
@@ -179,6 +183,7 @@ public class Bach {
       this.out = out;
       this.err = err;
       this.verbose = verbose;
+      this.commands = new ArrayList<>();
       this.records = new ArrayList<>();
     }
 
@@ -198,7 +203,9 @@ public class Bach {
     }
 
     public void record(int code, Duration duration, Command command) {
-      records.add(String.format("%3d %5d ms %s", code, duration.toMillis(), command.toSource()));
+      commands.add(command);
+      var args = command.arguments.isEmpty() ? "" : " " + String.join(" ", command.arguments);
+      records.add(String.format("%3d %5d ms %s%s", code, duration.toMillis(), command.name, args));
     }
   }
 
@@ -567,9 +574,9 @@ public class Bach {
           units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet());
       run(
           new Command("javac")
+              .add("-d", classes)
               .add("--module", String.join(",", moduleNames))
               // .addEach(realm.toolArguments.javac)
-              .add("-d", classes)
               // .iff(realm.preview, c -> c.add("--enable-preview"))
               // .iff(realm.release != 0, c -> c.add("--release", realm.release))
               .add("--module-path", List.of())
