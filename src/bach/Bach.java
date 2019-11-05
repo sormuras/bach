@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +52,9 @@ public class Bach {
   }
 
   @SuppressWarnings("unused")
-  public static void direct(String... args) {
+  public static void versions(String... args) {
     var tools = new Tools(Log.ofSystem(true));
-    tools.run(new Command("javac").add("--version"));
+    tools.map.values().forEach(tool -> tools.run(new Command(tool.name()).add("--version")));
   }
 
   /** Main entry-point. */
@@ -63,16 +65,21 @@ public class Bach {
       System.out.println("Usage: java Bach.java <action> [args...]");
       System.out.println();
       System.out.println("Available actions:");
-      System.out.println(" build");
-      System.out.println("   Build project " + project.name + " " + project.version);
-      System.out.println(" call <entry-point> [args...]");
-      System.out.println("   Invoke the named entry-point method. The method signature must match");
-      System.out.println("   the Java main default: public static void <name>(String... args) and");
-      System.out.println("   it may throw any exception type. Example: java Bach.java call direct");
-      System.out.println(" project [path]");
-      System.out.println("   Print source representation of the project to be built");
-      System.out.println(" version");
-      System.out.println("   Print version of Bach.java: " + VERSION);
+      System.out.println("build");
+      System.out.println("  Build project " + project.name + " " + project.version);
+      System.out.println("call <entry-point> [args...]");
+      System.out.println("  Invoke the named entry-point method. The method signature must match");
+      System.out.println("  the Java main default: public static void <name>(String... args) and");
+      System.out.println("  it may throw any exception type. Valid calls are:");
+      Arrays.stream(Bach.class.getMethods())
+          .filter(m -> Arrays.equals(m.getParameterTypes(), new Class[] {String[].class}))
+          .map(Method::getName)
+          .sorted()
+          .forEach(name -> System.out.println("    java Bach.java call " + name + " [args...]"));
+      System.out.println("project [path]");
+      System.out.println("  Print source representation of the project to be built");
+      System.out.println("version");
+      System.out.println("  Print version of Bach.java: " + VERSION);
       System.out.println();
       return;
     }
