@@ -193,36 +193,38 @@ public class Bach {
   /** Project model. */
   public static class Project {
 
+    final Path base;
     final String name;
     final Version version;
     final List<Unit> units;
 
-    public Project(String name, Version version, List<Unit> units) {
+    public Project(Path base, String name, Version version, List<Unit> units) {
+      this.base = base;
       this.name = name;
       this.version = version;
       this.units = units;
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      var other = (Project) o;
-      return name.equals(other.name) && version.equals(other.version) && units.equals(other.units);
+    public boolean equals(Object that) {
+      if (this == that) return true;
+      if (that == null || getClass() != that.getClass()) return false;
+      return this.hashCode() == that.hashCode();
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, version, units);
+      return Objects.hash(base, name, version, units);
     }
 
     public List<String> toSourceLines() {
       if (units.isEmpty()) {
-        var line = "new Project(%s, Version.parse(%s), List.of())";
-        return List.of(String.format(line, $(name), $(version)));
+        var line = "new Project(%s, %s, Version.parse(%s), List.of())";
+        return List.of(String.format(line, $(base), $(name), $(version)));
       }
       var lines = new ArrayList<String>();
       lines.add("new Project(");
+      lines.add("    " + $(base) + ",");
       lines.add("    " + $(name) + ",");
       lines.add("    Version.parse(" + $(version) + "),");
       lines.add("    List.of(");
@@ -250,6 +252,7 @@ public class Bach {
         var path = base.toAbsolutePath().normalize();
         var builder =
             new Builder()
+                .base(base)
                 .name(Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project"))
                 .version(System.getProperty(".bach/project.version", "0"));
         try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
@@ -260,9 +263,15 @@ public class Bach {
         return builder;
       }
 
+      Path base = Path.of("");
       String name = "project";
       Version version = Version.parse("0");
       List<Unit> units = new ArrayList<>();
+
+      Builder base(Path base) {
+        this.base = base;
+        return this;
+      }
 
       Builder name(String name) {
         this.name = name;
@@ -286,7 +295,7 @@ public class Bach {
       }
 
       Project build() {
-        return new Project(name, version, units);
+        return new Project(base, name, version, units);
       }
     }
 
@@ -305,13 +314,10 @@ public class Bach {
       }
 
       @Override
-      public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        var other = (Unit) o;
-        return info.equals(other.info)
-            && descriptor.equals(other.descriptor)
-            && moduleSourcePath.equals(other.moduleSourcePath);
+      public boolean equals(Object that) {
+        if (this == that) return true;
+        if (that == null || getClass() != that.getClass()) return false;
+        return this.hashCode() == that.hashCode();
       }
 
       @Override

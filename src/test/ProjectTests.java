@@ -28,9 +28,9 @@ import org.junit.jupiter.api.Test;
 class ProjectTests {
   @Test
   void generateSourceForBasicProject() {
-    var project = new Bach.Project("foo", Version.parse("47.11"), List.of());
+    var project = new Bach.Project(Path.of(""), "foo", Version.parse("47.11"), List.of());
     assertLinesMatch(
-        List.of("new Project(\"foo\", Version.parse(\"47.11\"), List.of())"),
+        List.of("new Project(Path.of(\"\"), \"foo\", Version.parse(\"47.11\"), List.of())"),
         project.toSourceLines());
   }
 
@@ -38,6 +38,7 @@ class ProjectTests {
   void generateSourceForProjectWithSingleModule() {
     var project =
         new Bach.Project(
+            Path.of(""),
             "foo",
             Version.parse("47.11"),
             List.of(
@@ -48,6 +49,7 @@ class ProjectTests {
     assertLinesMatch(
         List.of(
             "new Project(",
+            "    Path.of(\"\"),",
             "    \"foo\",",
             "    Version.parse(\"47.11\"),",
             "    List.of(",
@@ -65,12 +67,19 @@ class ProjectTests {
       var bar = base.resolve("src/bar/main/java/module-info.java");
       var foo = base.resolve("src/foo/main/java/module-info.java");
       var expected =
-          new Bach.Project.Builder().name("alpha").version("0").unit(bar).unit(foo).build();
+          new Bach.Project.Builder()
+              .base(base)
+              .name("alpha")
+              .version("0")
+              .unit(bar)
+              .unit(foo)
+              .build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected, actual);
       assertLinesMatch(
           List.of(
               "new Project(",
+              "    " + Bach.$(base) + ",",
               "    \"alpha\",",
               "    Version.parse(\"0\"),",
               "    List.of(",
