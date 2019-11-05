@@ -386,6 +386,10 @@ public class Bach {
       public int hashCode() {
         return Objects.hash(info, descriptor, moduleSourcePath);
       }
+
+      String name() {
+        return descriptor.name();
+      }
     }
   }
 
@@ -599,9 +603,8 @@ public class Bach {
     final Path classes = project.dir(Path.of(".bach/out/classes/jigsaw"), false);
 
     void compile(List<Project.Unit> units) {
-      var moduleNames =
-          units.stream().map(unit -> unit.descriptor.name()).collect(Collectors.toList());
-      var moduleSourcePath =
+      var moduleNames = units.stream().map(Project.Unit::name).collect(Collectors.toList());
+      var moduleSourcePaths =
           units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet());
       run(
           new Command("javac")
@@ -611,7 +614,7 @@ public class Bach {
               // .iff(realm.preview, c -> c.add("--enable-preview"))
               // .iff(realm.release != 0, c -> c.add("--release", realm.release))
               .add("--module-path", List.of())
-              .add("--module-source-path", String.join(File.pathSeparator, moduleSourcePath))
+              .add("--module-source-path", String.join(File.pathSeparator, moduleSourcePaths))
               .add("--module-version", project.version.toString())
           // .addEach(patches(modules))
           );
@@ -641,7 +644,7 @@ public class Bach {
 
     private void jarModule(Project.Unit unit) {
       var directory = project.dir(Path.of(".bach/out/modules"), true);
-      var jar = directory.resolve(unit.descriptor.name() + ".jar");
+      var jar = directory.resolve(unit.name() + ".jar");
       run(
           new Command("jar")
               .add("--create")
@@ -649,7 +652,7 @@ public class Bach {
               .iff(log.verbose, c -> c.add("--verbose"))
               .iff(unit.descriptor.version(), (c, v) -> c.add("--module-version", v.toString()))
               .iff(unit.descriptor.mainClass(), (c, m) -> c.add("--main-class", m))
-              .add("-C", classes.resolve(unit.descriptor.name()))
+              .add("-C", classes.resolve(unit.name()))
               .add(".")
           // .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
           );
@@ -664,7 +667,7 @@ public class Bach {
       run(
           new Command("jar")
               .add("--create")
-              .add("--file", directory.resolve(unit.descriptor.name() + "-sources.jar"))
+              .add("--file", directory.resolve(unit.name() + "-sources.jar"))
               .iff(log.verbose, c -> c.add("--verbose"))
               .add("--no-manifest")
               .forEach(List.of(unit.info.getParent()), (cmd, path) -> cmd.add("-C", path).add("."))
@@ -697,7 +700,7 @@ public class Bach {
         case '\f':
           escaped.append("\\f");
           break;
-        // case '\'': escaped.append("\\'"); break; // not needed
+          // case '\'': escaped.append("\\'"); break; // not needed
         case '\"':
           escaped.append("\\\"");
           break;
