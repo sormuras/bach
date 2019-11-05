@@ -35,6 +35,8 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -122,7 +124,8 @@ public class Bach {
       return;
     }
     var start = Instant.now();
-    run(new Command("javac").add("--version").add("-d", Path.of(".")));
+
+    new Jigsaw().compile(project.units);
 
     log.info("%nCommand history");
     log.records.forEach(log::info);
@@ -487,10 +490,27 @@ public class Bach {
     }
 
     public Command add(String key, List<Path> paths) {
+      if (paths.isEmpty()) return this;
       var p = String.join(", ", paths.stream().map(Bach::$).toArray(String[]::new));
       additions.add(String.format(".add(%s, %s)", $(key), p));
       var strings = paths.stream().map(Path::toString);
       return arg(key).arg(strings.collect(Collectors.joining(File.pathSeparator)));
+    }
+
+    public <T> Command forEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
+      arguments.forEach(argument -> visitor.accept(this, argument));
+      return this;
+    }
+
+    public Command iff(boolean predicate, Consumer<Command> visitor) {
+      if (predicate) visitor.accept(this);
+      return this;
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public <T> Command iff(Optional<T> optional, BiConsumer<Command, T> visitor) {
+      optional.ifPresent(value -> visitor.accept(this, value));
+      return this;
     }
 
     public String toSource() {
@@ -526,6 +546,85 @@ public class Bach {
     public int run(Command command) {
       log.debug("| %s(%s)", command.name, String.join(", ", command.arguments));
       return get(command.name).run(log.out, log.err, command.toStringArray());
+    }
+  }
+
+  private class Jigsaw {
+
+    final Path classes = project.dir(Path.of(".bach/out/classes/jigsaw"), false);
+
+    void compile(List<Project.Unit> units) {
+      var moduleNames =
+          units.stream().map(unit -> unit.descriptor.name()).collect(Collectors.toList());
+      var moduleSourcePath =
+          units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet());
+      run(
+          new Command("javac")
+              .add("--module", String.join(",", moduleNames))
+              // .addEach(realm.toolArguments.javac)
+              .add("-d", classes)
+              // .iff(realm.preview, c -> c.add("--enable-preview"))
+              // .iff(realm.release != 0, c -> c.add("--release", realm.release))
+              .add("--module-path", List.of())
+              .add("--module-source-path", String.join(File.pathSeparator, moduleSourcePath))
+              .add("--module-version", project.version.toString())
+          // .addEach(patches(modules))
+          );
+      for (var unit : units) {
+        jarSources(unit);
+        jarModule(unit);
+      }
+    }
+
+    //    private List<String> patches(Collection<String> modules) {
+    //      var patches = new Command("<patches>");
+    //      for (var module : modules) {
+    //        var other =
+    //            realm.realms.stream()
+    //                .flatMap(r -> r.units.stream())
+    //                .filter(u -> u.name().equals(module))
+    //                .findFirst();
+    //        other.ifPresent(
+    //            unit ->
+    //                patches.add(
+    //                    "--patch-module",
+    //                    unit.sources.stream().map(s -> s.path),
+    //                    v -> module + "=" + v));
+    //      }
+    //      return patches.getArguments();
+    //    }
+
+    private void jarModule(Project.Unit unit) {
+      var directory = project.dir(Path.of(".bach/out/modules"), true);
+      var jar = directory.resolve(unit.descriptor.name() + ".jar");
+      run(
+          new Command("jar")
+              .add("--create")
+              .add("--file", jar)
+              .iff(log.verbose, c -> c.add("--verbose"))
+              .iff(unit.descriptor.version(), (c, v) -> c.add("--module-version", v.toString()))
+              .iff(unit.descriptor.mainClass(), (c, m) -> c.add("--main-class", m))
+              .add("-C", classes.resolve(unit.descriptor.name()))
+              .add(".")
+          // .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
+          );
+
+      if (log.verbose) {
+        run(new Command("jar").add("--describe-module").add("--file", jar));
+      }
+    }
+
+    private void jarSources(Project.Unit unit) {
+      var directory = project.dir(Path.of(".bach/out/sources"), true);
+      run(
+          new Command("jar")
+              .add("--create")
+              .add("--file", directory.resolve(unit.descriptor.name() + "-sources.jar"))
+              .iff(log.verbose, c -> c.add("--verbose"))
+              .add("--no-manifest")
+              .forEach(List.of(unit.info.getParent()), (cmd, path) -> cmd.add("-C", path).add("."))
+          // .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
+          );
     }
   }
 
