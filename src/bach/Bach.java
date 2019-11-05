@@ -114,7 +114,7 @@ public class Bach {
       log.debug("%nProject information");
       project.toSourceLines().forEach(log::debug);
       log.debug("%nTools of the trade");
-      tools.print(log.out);
+      tools.map.values().forEach(t -> log.debug("  - %8s [%s] %s", t.name(), Modules.origin(t), t));
       log.debug("");
     }
     if (project.units.isEmpty()) {
@@ -501,14 +501,6 @@ public class Bach {
         throw new NoSuchElementException("No such tool: " + name);
       }
       return tool;
-    }
-
-    void print(PrintWriter writer) {
-      for (var entry : map.entrySet()) {
-        var name = entry.getKey();
-        var tool = entry.getValue();
-        writer.printf("  - %8s [%s] %s%n", name, Modules.origin(tool), tool);
-      }
     }
 
     int run(Command command) {
