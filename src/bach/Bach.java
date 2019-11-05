@@ -495,7 +495,7 @@ public class Bach {
           .forEach(provider -> map.putIfAbsent(provider.name(), provider));
     }
 
-    ToolProvider get(String name) {
+    public ToolProvider get(String name) {
       var tool = map.get(name);
       if (tool == null) {
         throw new NoSuchElementException("No such tool: " + name);
@@ -503,12 +503,8 @@ public class Bach {
       return tool;
     }
 
-    int run(Command command) {
-      if (log.verbose) {
-        var args =
-            command.arguments.isEmpty() ? "" : '"' + String.join("\", \"", command.arguments) + '"';
-        log.debug("| %s(%s)", command.name, args);
-      }
+    public int run(Command command) {
+      log.debug("| %s(%s)", command.name, String.join(", ", command.arguments));
       return get(command.name).run(log.out, log.err, command.toStringArray());
     }
   }
