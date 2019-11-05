@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -115,6 +116,17 @@ public class Bach {
   }
 
   public void build() throws Exception {
+    buildInfo();
+    if (project.units.isEmpty()) {
+      log.warn("Not a single module unit declared, no build.");
+      return;
+    }
+    var start = Instant.now();
+    new Jigsaw().compile(project.units);
+    buildSummary(start);
+  }
+
+  private void buildInfo() {
     log.info("Build of project %s %s started...", project.name, project.version);
     if (log.verbose) {
       log.debug("%nRuntime information");
@@ -126,22 +138,6 @@ public class Bach {
       tools.map.values().forEach(t -> log.debug("  - %8s [%s] %s", t.name(), Modules.origin(t), t));
       log.debug("");
     }
-    if (project.units.isEmpty()) {
-      log.warn("Not a single module unit declared, no build.");
-      return;
-    }
-    var start = Instant.now();
-
-    new Jigsaw().compile(project.units);
-
-    log.info("%nCommand history");
-    log.records.forEach(log::info);
-    var logfile = ("build-commands-" + start + ".log").replace(':', '-');
-    Files.write(
-        project.dir(Path.of(".bach/out"), true).resolve(logfile),
-        log.commands.stream().map(Command::toSource).collect(Collectors.toList()));
-
-    log.info("%nBuild %d took millis.", Duration.between(start, Instant.now()).toMillis());
   }
 
   /** Run and record the given command instance. */
@@ -152,6 +148,41 @@ public class Bach {
     if (code != 0) {
       throw new RuntimeException("Non-zero exit code: " + code);
     }
+  }
+
+  private void buildSummary(Instant start) throws Exception {
+    var duration = Duration.between(start, Instant.now());
+    var lines = new ArrayList<String>();
+    lines.add(String.format("# Build of %s %s", project.name, project.version));
+    lines.add("- started: " + start);
+    lines.add("- duration: " + duration);
+    lines.add("");
+    lines.add("## Project Source");
+    lines.add("```");
+    lines.addAll(project.toSourceLines());
+    lines.add("```");
+    lines.add("## Tools");
+    tools.map.values().forEach(t -> lines.add("- `" + t.name() + "` from " + Modules.origin(t)));
+    log.debug("");
+    lines.add("## Commands");
+    lines.add("```");
+    log.commands.stream().map(Command::toSource).forEach(lines::add);
+    lines.add("```");
+    lines.add("");
+    lines.add("## System Properties");
+    System.getProperties().stringPropertyNames().stream()
+        .sorted()
+        .forEach(key -> lines.add("- `" + key + "`: `" + $(System.getProperty(key)) + "`"));
+
+    var directory = project.dir(Path.of(".bach/out"), true);
+    var withStart = ("build-summary-" + start + ".md").replace(':', '-');
+    var file = Files.write(directory.resolve(withStart), lines);
+    Files.copy(file, directory.resolve("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
+    if (log.verbose) lines.forEach(log::debug);
+
+    log.info("%nCommand history");
+    log.records.forEach(log::info);
+    log.info("%nBuild %d took millis.", duration.toMillis());
   }
 
   /** Simplistic logging support. */
