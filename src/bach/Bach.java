@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -174,10 +175,9 @@ public class Bach {
         .sorted()
         .forEach(key -> lines.add("- `" + key + "`: `" + $(System.getProperty(key)) + "`"));
 
-    var directory = project.dir(Path.of(".bach/out"), true);
     var withStart = ("build-summary-" + start + ".md").replace(':', '-');
-    var file = Files.write(directory.resolve(withStart), lines);
-    Files.copy(file, directory.resolve("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
+    var file = Files.write(Resources.createParents(project.path.log(withStart)), lines);
+    Files.copy(file, project.path.out("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
     if (log.verbose) lines.forEach(log::debug);
 
     log.info("%nCommand history");
@@ -244,12 +244,14 @@ public class Bach {
   public static class Project {
 
     final Path base;
+    final Paths path;
     final String name;
     final Version version;
     final List<Unit> units;
 
     public Project(Path base, String name, Version version, List<Unit> units) {
       this.base = base;
+      this.path = new Paths();
       this.name = name;
       this.version = version;
       this.units = units;
@@ -267,16 +269,8 @@ public class Bach {
       return Objects.hash(base, name, version, units);
     }
 
-    public Path dir(Path path, boolean create) {
-      var directory = base.resolve(path);
-      if (create) {
-        try {
-          Files.createDirectories(directory);
-        } catch (Exception e) {
-          throw new RuntimeException("Create directories failed", e);
-        }
-      }
-      return directory;
+    Version version(Unit unit) {
+      return unit.descriptor.version().orElse(version);
     }
 
     public List<String> toSourceLines() {
@@ -358,6 +352,34 @@ public class Bach {
 
       Project build() {
         return new Project(base, name, version, units);
+      }
+    }
+
+    /** Paths registry. */
+    class Paths {
+      Path resolve(Path path, String[] more) {
+        if (more.length == 0) return path;
+        return path.resolve(String.join(File.separator, more));
+      }
+
+      public Path out(String... more) {
+        return resolve(base.resolve(".bach/out"), more);
+      }
+
+      public Path lib(String... more) {
+        return resolve(base.resolve("lib"), more);
+      }
+
+      public Path log(String... more) {
+        return resolve(out().resolve("log"), more);
+      }
+
+      public Path realm(String realm, String... more) {
+        return resolve(out().resolve(realm), more);
+      }
+
+      public Path modules(String realm, String... more) {
+        return resolve(realm(realm).resolve("modules"), more);
       }
     }
 
@@ -571,6 +593,33 @@ public class Bach {
     }
   }
 
+  /** {@link Path}-related helpers. */
+  public static class Resources {
+    private Resources() {}
+
+    public static List<Path> filter(List<Path> paths, Predicate<Path> filter) {
+      return paths.stream().filter(filter).collect(Collectors.toList());
+    }
+
+    public static List<Path> filterExisting(List<Path> paths) {
+      return filter(paths, Files::exists);
+    }
+
+    public static Path createDirectories(Path directory) {
+      try {
+        Files.createDirectories(directory);
+      } catch (Exception e) {
+        throw new RuntimeException("Create directories failed: " + directory, e);
+      }
+      return directory;
+    }
+
+    public static Path createParents(Path file) {
+      createDirectories(file.getParent());
+      return file;
+    }
+  }
+
   /** Tool registry and command runner support. */
   public static class Tools {
     final Log log;
@@ -600,12 +649,17 @@ public class Bach {
 
   private class Jigsaw {
 
-    final Path classes = project.dir(Path.of(".bach/out/classes/jigsaw"), false);
+    final Path realm = project.path.realm("main");
+    final Path classes = realm.resolve("classes/jigsaw");
+    final Path modules = Resources.createDirectories(project.path.modules("main"));
 
     void compile(List<Project.Unit> units) {
       var moduleNames = units.stream().map(Project.Unit::name).collect(Collectors.toList());
+      var modulePaths = Resources.filterExisting(List.of(project.path.lib()));
       var moduleSourcePaths =
-          units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet());
+          String.join(
+              File.pathSeparator,
+              units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet()));
       run(
           new Command("javac")
               .add("-d", classes)
@@ -613,8 +667,8 @@ public class Bach {
               // .addEach(realm.toolArguments.javac)
               // .iff(realm.preview, c -> c.add("--enable-preview"))
               // .iff(realm.release != 0, c -> c.add("--release", realm.release))
-              .add("--module-path", List.of())
-              .add("--module-source-path", String.join(File.pathSeparator, moduleSourcePaths))
+              .add("--module-path", modulePaths)
+              .add("--module-source-path", moduleSourcePaths)
               .add("--module-version", project.version.toString())
           // .addEach(patches(modules))
           );
@@ -643,12 +697,11 @@ public class Bach {
     //    }
 
     private void jarModule(Project.Unit unit) {
-      var directory = project.dir(Path.of(".bach/out/modules"), true);
-      var jar = directory.resolve(unit.name() + ".jar");
+      var jar = modules.resolve(unit.name() + '-' + project.version(unit) + ".jar");
       run(
           new Command("jar")
               .add("--create")
-              .add("--file", jar)
+              .add("--file", jar) // "jar" doesn't create parent directories
               .iff(log.verbose, c -> c.add("--verbose"))
               .iff(unit.descriptor.version(), (c, v) -> c.add("--module-version", v.toString()))
               .iff(unit.descriptor.mainClass(), (c, m) -> c.add("--main-class", m))
@@ -663,11 +716,11 @@ public class Bach {
     }
 
     private void jarSources(Project.Unit unit) {
-      var directory = project.dir(Path.of(".bach/out/sources"), true);
+      var jar = realm.resolve(unit.name() + '-' + project.version(unit) + "-sources.jar");
       run(
           new Command("jar")
               .add("--create")
-              .add("--file", directory.resolve(unit.name() + "-sources.jar"))
+              .add("--file", jar)
               .iff(log.verbose, c -> c.add("--verbose"))
               .add("--no-manifest")
               .forEach(List.of(unit.info.getParent()), (cmd, path) -> cmd.add("-C", path).add("."))
