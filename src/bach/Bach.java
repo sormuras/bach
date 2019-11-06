@@ -177,6 +177,15 @@ public class Bach {
 
     log.info("%nCommand history");
     log.records.forEach(log::info);
+
+    log.info("%nModules");
+    var modules = project.paths.modules("main");
+    var jars = Resources.list(modules, path -> path.getFileName().toString().endsWith(".jar"));
+    log.info("%d jar(s) found in: %s", jars.size(), modules.toUri());
+    for (var jar : jars) {
+      log.info("%,11d %s", Files.size(jar), jar.getFileName());
+    }
+
     log.info("%nBuild %d took millis.", duration.toMillis());
   }
 
