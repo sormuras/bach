@@ -146,16 +146,6 @@ public class Bach {
     }
   }
 
-  /** Run and record the given command instance. */
-  public void run(Command command) {
-    var start = Instant.now();
-    int code = tools.run(command);
-    log.record(code, Duration.between(start, Instant.now()), command);
-    if (code != 0) {
-      throw new RuntimeException("Non-zero exit code: " + code);
-    }
-  }
-
   private void buildSummary(Instant start) throws Exception {
     var duration = Duration.between(start, Instant.now());
     var lines = new ArrayList<String>();
@@ -188,6 +178,16 @@ public class Bach {
     log.info("%nCommand history");
     log.records.forEach(log::info);
     log.info("%nBuild %d took millis.", duration.toMillis());
+  }
+
+  /** Run and record the given command instance. */
+  public void run(Command command) {
+    var start = Instant.now();
+    int code = tools.run(command);
+    log.record(code, Duration.between(start, Instant.now()), command);
+    if (code != 0) {
+      throw new RuntimeException("Non-zero exit code: " + code);
+    }
   }
 
   /** Simplistic logging support. */
