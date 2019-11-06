@@ -175,6 +175,21 @@ public class Bach {
     Files.copy(file, project.paths.out("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
     if (log.verbose) lines.forEach(log::debug);
 
+    var main = project.realms.stream().filter(r -> r.name.equals("main")).findFirst().orElseThrow();
+    var names =
+        main.units(project.units).stream().map(Project.Unit::name).collect(Collectors.joining(","));
+    var test = project.realms.stream().filter(r -> r.name.equals("test")).findFirst().orElseThrow();
+    var deps =
+        new Command("jdeps").add("--module-path", test.modulePaths).add("--multi-release", "BASE");
+    run(
+        deps.clone()
+            .add("-summary")
+            .add("--dot-output", project.paths.realm("main"))
+            .add("--add-modules", names));
+    if (log.verbose) {
+      run(deps.clone().add("--check", names));
+    }
+
     log.info("%nCommand history");
     log.records.forEach(log::info);
 
@@ -634,6 +649,12 @@ public class Bach {
       this.additions = new ArrayList<>();
     }
 
+    public Command(Command that) {
+      this.name = that.name;
+      this.arguments = new ArrayList<>(that.arguments);
+      this.additions = new ArrayList<>(that.additions);
+    }
+
     private Command arg(Object object) {
       arguments.add(object.toString());
       return this;
@@ -691,6 +712,12 @@ public class Bach {
     public <T> Command iff(Optional<T> optional, BiConsumer<Command, T> visitor) {
       optional.ifPresent(value -> visitor.accept(this, value));
       return this;
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public Command clone() {
+      return new Command(this);
     }
 
     public String toSource() {
