@@ -44,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /** Build modular Java project. */
 public class Bach {
@@ -351,17 +352,13 @@ public class Bach {
                     "test",
                     List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
                     List.of(paths.modules("main"), paths.lib()));
-        try (var directories = Files.newDirectoryStream(base.resolve(src), Files::isDirectory)) {
-          for (var directory : directories) { // directory = "src/{MODULE}"
-            for (var realm : List.of("main", "test")) {
-              var info = directory.resolve(realm).resolve("java/module-info.java");
-              if (Files.isRegularFile(info)) {
-                builder.unit(directory, realm, Modules.describe(Files.readString(info)));
-              }
+        for (var directory : Resources.list(base.resolve(src), Files::isDirectory)) {
+          for (var realm : List.of("main", "test")) {
+            var info = directory.resolve(realm).resolve("java/module-info.java");
+            if (Files.isRegularFile(info)) {
+              builder.unit(directory, realm, Modules.describe(Resources.readString(info)));
             }
           }
-        } catch (Exception e) {
-          throw new Error("Parsing directory for Java modules failed: " + base, e);
         }
         return builder;
       }
@@ -700,14 +697,6 @@ public class Bach {
   public static class Resources {
     private Resources() {}
 
-    public static List<Path> filter(List<Path> paths, Predicate<Path> filter) {
-      return paths.stream().filter(filter).collect(Collectors.toList());
-    }
-
-    public static List<Path> filterExisting(List<Path> paths) {
-      return filter(paths, Files::exists);
-    }
-
     public static Path createDirectories(Path directory) {
       try {
         Files.createDirectories(directory);
@@ -720,6 +709,40 @@ public class Bach {
     public static Path createParents(Path file) {
       createDirectories(file.getParent());
       return file;
+    }
+
+    public static List<Path> filter(List<Path> paths, Predicate<Path> filter) {
+      return paths.stream().filter(filter).collect(Collectors.toList());
+    }
+
+    public static List<Path> filterExisting(List<Path> paths) {
+      return filter(paths, Files::exists);
+    }
+
+    public static List<Path> list(Path directory, Predicate<Path> filter) {
+      try (var stream = Files.list(directory)) {
+        return stream.filter(filter).sorted().collect(Collectors.toList());
+      } catch (Exception e) {
+        throw new RuntimeException("List directory failed: " + directory, e);
+      }
+    }
+
+    public static List<Path> list(Path directory, String glob) {
+      try (var items = Files.newDirectoryStream(directory, glob)) {
+        return StreamSupport.stream(items.spliterator(), false)
+            .sorted()
+            .collect(Collectors.toList());
+      } catch (Exception e) {
+        throw new RuntimeException("List directory using glob failed: " + directory, e);
+      }
+    }
+
+    public static String readString(Path path) {
+      try {
+        return Files.readString(path);
+      } catch (Exception e) {
+        throw new Error("Read all content from file failed: " + path, e);
+      }
     }
   }
 
