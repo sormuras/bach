@@ -123,7 +123,11 @@ public class Bach {
       return;
     }
     var start = Instant.now();
-    new Jigsaw().compile(project.units);
+    for (var realm : project.realms) {
+      var units = realm.units(project.units);
+      if (units.isEmpty()) continue;
+      new Jigsaw(realm).compile(units);
+    }
     buildSummary(start);
   }
 
@@ -176,8 +180,8 @@ public class Bach {
         .forEach(key -> lines.add("- `" + key + "`: `" + $(System.getProperty(key)) + "`"));
 
     var withStart = ("build-summary-" + start + ".md").replace(':', '-');
-    var file = Files.write(Resources.createParents(project.path.log(withStart)), lines);
-    Files.copy(file, project.path.out("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
+    var file = Files.write(Resources.createParents(project.paths.log(withStart)), lines);
+    Files.copy(file, project.paths.out("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
     if (log.verbose) lines.forEach(log::debug);
 
     log.info("%nCommand history");
@@ -244,17 +248,19 @@ public class Bach {
   public static class Project {
 
     final Path base;
-    final Paths path;
+    final Paths paths;
     final String name;
     final Version version;
+    final List<Realm> realms;
     final List<Unit> units;
 
-    public Project(Path base, String name, Version version, List<Unit> units) {
+    public Project(Path base, String name, Version version, List<Realm> realms, List<Unit> units) {
       this.base = base;
-      this.path = new Paths();
+      this.paths = new Paths(base);
       this.name = name;
       this.version = version;
-      this.units = units;
+      this.realms = List.copyOf(realms);
+      this.units = List.copyOf(units);
     }
 
     @Override
@@ -266,7 +272,7 @@ public class Bach {
 
     @Override
     public int hashCode() {
-      return Objects.hash(base, name, version, units);
+      return Objects.hash(base, name, version, realms, units);
     }
 
     Version version(Unit unit) {
@@ -274,8 +280,8 @@ public class Bach {
     }
 
     public List<String> toSourceLines() {
-      if (units.isEmpty()) {
-        var line = "new Project(%s, %s, Version.parse(%s), List.of())";
+      if (realms.isEmpty() && units.isEmpty()) {
+        var line = "new Project(%s, %s, Version.parse(%s), List.of(), List.of())";
         return List.of(String.format(line, $(base), $(name), $(version)));
       }
       var lines = new ArrayList<String>();
@@ -284,10 +290,34 @@ public class Bach {
       lines.add("    " + $(name) + ",");
       lines.add("    Version.parse(" + $(version) + "),");
       lines.add("    List.of(");
-      var last = units.get(units.size() - 1);
+      var lastRealm = realms.get(realms.size() - 1);
+      for (var realm : realms) {
+        var comma = realm == lastRealm ? "" : ",";
+        lines.add(
+            "        new Project.Realm("
+                + $(realm.name)
+                + ", "
+                + $(realm.sourcePaths)
+                + ", "
+                + $(realm.modulePaths)
+                + ")"
+                + comma);
+      }
+      lines.add("    ),");
+      lines.add("    List.of(");
+      var lastUnit = units.get(units.size() - 1);
       for (var unit : units) {
-        var comma = unit == last ? "" : ",";
-        lines.add("        Project.Unit.of(" + $(unit.info) + ")" + comma);
+        var descriptor = "ModuleDescriptor.newModule(" + $(unit.name()) + ").build()";
+        var comma = unit == lastUnit ? "" : ",";
+        lines.add(
+            "        new Project.Unit("
+                + $(unit.root)
+                + ", "
+                + $(unit.realm)
+                + ", "
+                + descriptor
+                + ")"
+                + comma);
       }
       lines.add("    )");
       lines.add(")");
@@ -305,16 +335,33 @@ public class Bach {
         if (!Files.isDirectory(base)) {
           throw new IllegalArgumentException("Not a directory: " + base);
         }
-        var path = base.toAbsolutePath().normalize();
+        var name =
+            Optional.ofNullable(base.toAbsolutePath().normalize().getFileName())
+                .map(Path::toString)
+                .orElse("project");
+        var src = Path.of(System.getProperty(".bach/project.path.src", "src"));
+        var paths = new Paths(base);
         var builder =
             new Builder()
                 .base(base)
-                .name(Optional.ofNullable(path.getFileName()).map(Path::toString).orElse("project"))
-                .version(System.getProperty(".bach/project.version", "0"));
-        try (var stream = Files.find(base, 10, (p, __) -> p.endsWith("module-info.java"))) {
-          stream.sorted().forEach(builder::unit);
+                .name(name)
+                .version(System.getProperty(".bach/project.version", "0"))
+                .realm("main", List.of(src.resolve("{MODULE}/main/java")), List.of(paths.lib()))
+                .realm(
+                    "test",
+                    List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
+                    List.of(paths.modules("main"), paths.lib()));
+        try (var directories = Files.newDirectoryStream(base.resolve(src), Files::isDirectory)) {
+          for (var directory : directories) { // directory = "src/{MODULE}"
+            for (var realm : List.of("main", "test")) {
+              var info = directory.resolve(realm).resolve("java/module-info.java");
+              if (Files.isRegularFile(info)) {
+                builder.unit(directory, realm, Modules.describe(Files.readString(info)));
+              }
+            }
+          }
         } catch (Exception e) {
-          throw new Error("Finding module-info.java files failed", e);
+          throw new Error("Parsing directory for Java modules failed: " + base, e);
         }
         return builder;
       }
@@ -322,6 +369,7 @@ public class Bach {
       Path base = Path.of("");
       String name = "project";
       Version version = Version.parse("0");
+      List<Realm> realms = new ArrayList<>();
       List<Unit> units = new ArrayList<>();
 
       Builder base(Path base) {
@@ -339,24 +387,30 @@ public class Bach {
         return this;
       }
 
-      Builder unit(Path info) {
-        try {
-          var descriptor = Modules.describe(Files.readString(info));
-          var moduleSourcePath = Modules.moduleSourcePath(info, descriptor.name());
-          units.add(new Unit(info, descriptor, moduleSourcePath));
-        } catch (Exception e) {
-          throw new Error("Reading module declaration failed: " + info, e);
-        }
+      Builder realm(String name, List<Path> moduleSourcePaths, List<Path> modulePaths) {
+        realms.add(new Realm(name, moduleSourcePaths, modulePaths));
+        return this;
+      }
+
+      Builder unit(Path root, String realm, ModuleDescriptor descriptor) {
+        units.add(new Unit(root, realm, descriptor));
         return this;
       }
 
       Project build() {
-        return new Project(base, name, version, units);
+        return new Project(base, name, version, realms, units);
       }
     }
 
     /** Paths registry. */
-    class Paths {
+    static class Paths {
+
+      final Path base;
+
+      Paths(Path base) {
+        this.base = base;
+      }
+
       Path resolve(Path path, String[] more) {
         if (more.length == 0) return path;
         return path.resolve(String.join(File.separator, more));
@@ -383,18 +437,15 @@ public class Bach {
       }
     }
 
-    public static /*record*/ class Unit {
-      /** Path to the backing {@code module-info.java} file. */
-      final Path info;
-      /** Underlying module descriptor. */
-      final ModuleDescriptor descriptor;
-      /** Module source path. */
-      final String moduleSourcePath;
+    public static /*record*/ class Realm {
+      final String name;
+      final List<Path> sourcePaths;
+      final List<Path> modulePaths;
 
-      public Unit(Path info, ModuleDescriptor descriptor, String moduleSourcePath) {
-        this.info = info;
-        this.descriptor = descriptor;
-        this.moduleSourcePath = moduleSourcePath;
+      public Realm(String name, List<Path> sourcePaths, List<Path> modulePaths) {
+        this.name = name;
+        this.sourcePaths = sourcePaths;
+        this.modulePaths = modulePaths;
       }
 
       @Override
@@ -406,7 +457,59 @@ public class Bach {
 
       @Override
       public int hashCode() {
-        return Objects.hash(info, descriptor, moduleSourcePath);
+        return Objects.hash(name, sourcePaths, modulePaths);
+      }
+
+      List<Unit> units(List<Unit> units) {
+        return units.stream().filter(unit -> name.equals(unit.realm)).collect(Collectors.toList());
+      }
+
+      String moduleSourcePath() {
+        return sourcePaths.stream()
+            .map(Path::toString)
+            .map(path -> path.replace("{MODULE}", "*"))
+            .collect(Collectors.joining(File.pathSeparator));
+      }
+
+      @Override
+      public String toString() {
+        return "Realm{"
+            + "name='"
+            + name
+            + '\''
+            + ", sourcePaths="
+            + sourcePaths
+            + ", modulePaths="
+            + modulePaths
+            + '}';
+      }
+    }
+
+    public static /*record*/ class Unit {
+      final Path root; // "src/foo.bar"
+      final String realm; // "main"
+      final ModuleDescriptor descriptor; // module foo.bar {...}
+      final List<Path> sources;
+      final List<Path> resources;
+
+      public Unit(Path root, String realm, ModuleDescriptor descriptor) {
+        this.root = root;
+        this.realm = realm;
+        this.sources = List.of(root.resolve(realm).resolve("java"));
+        this.resources = List.of(root.resolve(realm).resolve("resources"));
+        this.descriptor = descriptor;
+      }
+
+      @Override
+      public boolean equals(Object that) {
+        if (this == that) return true;
+        if (that == null || getClass() != that.getClass()) return false;
+        return this.hashCode() == that.hashCode();
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(root, realm, descriptor, sources, resources);
       }
 
       String name() {
@@ -649,17 +752,21 @@ public class Bach {
 
   private class Jigsaw {
 
-    final Path realm = project.path.realm("main");
-    final Path classes = realm.resolve("classes/jigsaw");
-    final Path modules = Resources.createDirectories(project.path.modules("main"));
+    final Project.Realm realm;
+    final Path work;
+    final Path classes;
+    final Path modules;
+
+    Jigsaw(Project.Realm realm) {
+      this.realm = realm;
+      this.work = project.paths.realm(realm.name);
+      this.classes = work.resolve("classes/jigsaw");
+      this.modules = Resources.createDirectories(project.paths.modules(realm.name));
+    }
 
     void compile(List<Project.Unit> units) {
       var moduleNames = units.stream().map(Project.Unit::name).collect(Collectors.toList());
-      var modulePaths = Resources.filterExisting(List.of(project.path.lib()));
-      var moduleSourcePaths =
-          String.join(
-              File.pathSeparator,
-              units.stream().map(unit -> unit.moduleSourcePath).collect(Collectors.toSet()));
+      var modulePaths = Resources.filterExisting(List.of(project.paths.lib()));
       run(
           new Command("javac")
               .add("-d", classes)
@@ -668,7 +775,7 @@ public class Bach {
               // .iff(realm.preview, c -> c.add("--enable-preview"))
               // .iff(realm.release != 0, c -> c.add("--release", realm.release))
               .add("--module-path", modulePaths)
-              .add("--module-source-path", moduleSourcePaths)
+              .add("--module-source-path", realm.moduleSourcePath())
               .add("--module-version", project.version.toString())
           // .addEach(patches(modules))
           );
@@ -698,6 +805,7 @@ public class Bach {
 
     private void jarModule(Project.Unit unit) {
       var jar = modules.resolve(unit.name() + '-' + project.version(unit) + ".jar");
+      var resources = Resources.filterExisting(unit.resources);
       run(
           new Command("jar")
               .add("--create")
@@ -707,25 +815,24 @@ public class Bach {
               .iff(unit.descriptor.mainClass(), (c, m) -> c.add("--main-class", m))
               .add("-C", classes.resolve(unit.name()))
               .add(".")
-          // .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
-          );
-
+              .forEach(resources, (cmd, path) -> cmd.add("-C", path).add(".")));
       if (log.verbose) {
         run(new Command("jar").add("--describe-module").add("--file", jar));
       }
     }
 
     private void jarSources(Project.Unit unit) {
-      var jar = realm.resolve(unit.name() + '-' + project.version(unit) + "-sources.jar");
+      var jar = work.resolve(unit.name() + '-' + project.version(unit) + "-sources.jar");
+      var sources = Resources.filterExisting(unit.sources);
+      var resources = Resources.filterExisting(unit.resources);
       run(
           new Command("jar")
               .add("--create")
               .add("--file", jar)
               .iff(log.verbose, c -> c.add("--verbose"))
               .add("--no-manifest")
-              .forEach(List.of(unit.info.getParent()), (cmd, path) -> cmd.add("-C", path).add("."))
-          // .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
-          );
+              .forEach(sources, (cmd, path) -> cmd.add("-C", path).add("."))
+              .forEach(resources, (cmd, path) -> cmd.add("-C", path).add(".")));
     }
   }
 
@@ -769,5 +876,9 @@ public class Bach {
 
   static String $(Path path) {
     return path == null ? "null" : "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+  }
+
+  static String $(List<Path> paths) {
+    return "List.of(" + paths.stream().map(Bach::$).collect(Collectors.joining(", ")) + ")";
   }
 }
