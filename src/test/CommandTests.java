@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 class CommandTests {
   @Test
   void toStringArray() {
-    assertArrayEquals(new String[0], new Bach.Command("empty").toStringArray());
-    assertArrayEquals(new String[] {"1"}, new Bach.Command("one").add(1).toStringArray());
-    assertArrayEquals(new String[] {"2", "2"}, new Bach.Command("two").add("2", 2).toStringArray());
+    assertArrayEquals(new String[0], new Bach.Command("empty").toArguments());
+    assertArrayEquals(new String[] {"1"}, new Bach.Command("one").add(1).toArguments());
+    assertArrayEquals(new String[] {"2", "2"}, new Bach.Command("two").add("2", 2).toArguments());
   }
 
   @Test

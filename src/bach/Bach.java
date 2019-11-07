@@ -668,8 +668,13 @@ public class Bach {
       return new Command(this);
     }
 
-    public String[] toStringArray() {
+    public String[] toArguments() {
       return arguments.toArray(String[]::new);
+    }
+
+    @Override
+    public String toString() {
+      return "Command{" + "name='" + name + '\'' + ", arguments=" + arguments + '}';
     }
   }
 
@@ -840,7 +845,7 @@ public class Bach {
 
     public int run(Command command) {
       log.debug("| %s(%s)", command.name, String.join(", ", command.arguments));
-      return get(command.name).run(log.out, log.err, command.toStringArray());
+      return get(command.name).run(log.out, log.err, command.toArguments());
     }
   }
 
