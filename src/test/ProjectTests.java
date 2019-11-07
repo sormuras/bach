@@ -49,7 +49,7 @@ class ProjectTests {
             List.of(new Bach.Project.Realm("", List.of(Path.of("src")), List.of())),
             List.of(
                 new Bach.Project.Unit(
-                    Path.of("src/foo"), "", ModuleDescriptor.newModule("foo").build())));
+                    ModuleDescriptor.newModule("foo").build(), Path.of("src/foo"), "", List.of())));
     assertLinesMatch(
         List.of(
             "new Project(",
@@ -60,7 +60,7 @@ class ProjectTests {
             "        new Project.Realm(\"\", List.of(Path.of(\"src\")), List.of())",
             "    ),",
             "    List.of(",
-            "        new Project.Unit(Path.of(\"src/foo\"), \"\", ModuleDescriptor.newModule(\"foo\").build())",
+            "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/foo\"), \"\", List.of())",
             "    )",
             ")"),
         project.toSourceLines());
@@ -85,20 +85,23 @@ class ProjectTests {
                   List.of(Path.of("src/{MODULE}/test/java"), Path.of("src/{MODULE}/test/module")),
                   List.of(paths.modules("main"), paths.lib()))
               .unit(
+                  Bach.Modules.describe(
+                      Files.readString(bar.resolve("main/java/module-info.java"))),
                   bar,
                   "main",
-                  Bach.Modules.describe(
-                      Files.readString(bar.resolve("main/java/module-info.java"))))
+                  List.of())
               .unit(
+                  Bach.Modules.describe(
+                      Files.readString(foo.resolve("main/java/module-info.java"))),
                   foo,
                   "main",
-                  Bach.Modules.describe(
-                      Files.readString(foo.resolve("main/java/module-info.java"))))
+                  List.of())
               .unit(
+                  Bach.Modules.describe(
+                      Files.readString(foo.resolve("test/module/module-info.java"))),
                   foo,
                   "test",
-                  Bach.Modules.describe(
-                      Files.readString(foo.resolve("test/module/module-info.java"))))
+                  List.of(Path.of("src/foo/main/java")))
               .build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected.base, actual.base);
@@ -118,9 +121,9 @@ class ProjectTests {
               "        new Project.Realm(\"test\", List.of(Path.of(\"src/{MODULE}/test/java\"), Path.of(\"src/{MODULE}/test/module\")), List.of(Path.of(\"src/test-project/alpha/.bach/out/main/modules\"), Path.of(\"src/test-project/alpha/lib\")))",
               "    ),",
               "    List.of(",
-              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/bar\"), \"main\", ModuleDescriptor.newModule(\"bar\").build()),",
-              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/foo\"), \"main\", ModuleDescriptor.newModule(\"foo\").build()),",
-              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/foo\"), \"test\", ModuleDescriptor.newModule(\"foo\").build())",
+              "        new Project.Unit(ModuleDescriptor.newModule(\"bar\").build(), Path.of(\"src/test-project/alpha/src/bar\"), \"main\", List.of()),",
+              "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/test-project/alpha/src/foo\"), \"main\", List.of()),",
+              "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/test-project/alpha/src/foo\"), \"test\", List.of(Path.of(\"src/foo/main/java\")))",
               "    )",
               ")"),
           actual.toSourceLines());

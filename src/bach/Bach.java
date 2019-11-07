@@ -347,11 +347,13 @@ public class Bach {
         var comma = unit == lastUnit ? "" : ",";
         lines.add(
             "        new Project.Unit("
+                + descriptor
+                + ", "
                 + $(unit.root)
                 + ", "
                 + $(unit.realm)
                 + ", "
-                + descriptor
+                + $(unit.patches)
                 + ")"
                 + comma);
       }
@@ -387,16 +389,24 @@ public class Bach {
                     "test",
                     List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
                     List.of(paths.modules("main"), paths.lib()));
-        for (var module : Bach.Paths.list(base.resolve(src), Files::isDirectory)) {
-          if (!SourceVersion.isName(module.getFileName().toString().replace(".", ""))) {
+        var modules = new TreeMap<String, List<String>>();
+        for (var root : Bach.Paths.list(base.resolve(src), Files::isDirectory)) {
+          var module = root.getFileName().toString();
+          if (!SourceVersion.isName(module.replace(".", ""))) {
             continue;
           }
           realm:
           for (var realm : List.of("main", "test")) {
+            modules.putIfAbsent(realm, new ArrayList<>());
             for (var zone : List.of("java", "module")) {
-              var info = module.resolve(realm).resolve(zone).resolve("module-info.java");
+              var info = root.resolve(realm).resolve(zone).resolve("module-info.java");
               if (Files.isRegularFile(info)) {
-                builder.unit(module, realm, Modules.describe(Bach.Paths.readString(info)));
+                var patches = new ArrayList<Path>();
+                if (realm.equals("test") && modules.get("main").contains(module)) {
+                  patches.add(src.resolve(module).resolve("main/java"));
+                }
+                builder.unit(Modules.describe(Bach.Paths.readString(info)), root, realm, patches);
+                modules.get(realm).add(module);
                 continue realm; // first zone hit wins
               }
             }
@@ -431,8 +441,8 @@ public class Bach {
         return this;
       }
 
-      Builder unit(Path root, String realm, ModuleDescriptor descriptor) {
-        units.add(new Unit(root, realm, descriptor));
+      Builder unit(ModuleDescriptor descriptor, Path root, String realm, List<Path> patches) {
+        units.add(new Unit(descriptor, root, realm, patches));
         return this;
       }
 
@@ -504,10 +514,7 @@ public class Bach {
       }
 
       String moduleSourcePath() {
-        return sourcePaths.stream()
-            .map(Path::toString)
-            .map(path -> path.replace("{MODULE}", "*"))
-            .collect(Collectors.joining(File.pathSeparator));
+        return Bach.Paths.join(sourcePaths).replace("{MODULE}", "*");
       }
 
       @Override
@@ -525,18 +532,20 @@ public class Bach {
     }
 
     public static /*record*/ class Unit {
+      final ModuleDescriptor descriptor; // module foo.bar {...}
       final Path root; // "src/foo.bar"
       final String realm; // "main"
-      final ModuleDescriptor descriptor; // module foo.bar {...}
       final List<Path> sources;
       final List<Path> resources;
+      final List<Path> patches;
 
-      public Unit(Path root, String realm, ModuleDescriptor descriptor) {
+      public Unit(ModuleDescriptor descriptor, Path root, String realm, List<Path> patches) {
+        this.descriptor = descriptor;
         this.root = root;
         this.realm = realm;
         this.sources = List.of(root.resolve(realm).resolve("java"));
         this.resources = List.of(root.resolve(realm).resolve("resources"));
-        this.descriptor = descriptor;
+        this.patches = List.copyOf(patches);
       }
 
       @Override
@@ -548,7 +557,7 @@ public class Bach {
 
       @Override
       public int hashCode() {
-        return Objects.hash(root, realm, descriptor, sources, resources);
+        return Objects.hash(descriptor, root, realm, sources, resources, patches);
       }
 
       String name() {
@@ -712,8 +721,7 @@ public class Bach {
       if (paths.isEmpty()) return this;
       var p = String.join(", ", paths.stream().map(Bach::$).toArray(String[]::new));
       additions.add(String.format(".add(%s, %s)", $(key), p));
-      var strings = paths.stream().map(Path::toString);
-      return arg(key).arg(strings.collect(Collectors.joining(File.pathSeparator)));
+      return arg(key).arg(Paths.join(paths));
     }
 
     public <T> Command forEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
@@ -771,6 +779,10 @@ public class Bach {
 
     public static List<Path> filterExisting(List<Path> paths) {
       return filter(paths, Files::exists);
+    }
+
+    public static String join(List<Path> paths) {
+      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
     }
 
     public static List<Path> list(Path directory, Predicate<Path> filter) {
@@ -941,31 +953,17 @@ public class Bach {
               .add("--module-path", modulePaths)
               .add("--module-source-path", realm.moduleSourcePath())
               .add("--module-version", project.version.toString())
-          // .addEach(patches(modules))
-          );
+              .forEach(units, this::patchModule));
       for (var unit : units) {
         jarSources(unit);
         jarModule(unit);
       }
     }
 
-    //    private List<String> patches(Collection<String> modules) {
-    //      var patches = new Command("<patches>");
-    //      for (var module : modules) {
-    //        var other =
-    //            realm.realms.stream()
-    //                .flatMap(r -> r.units.stream())
-    //                .filter(u -> u.name().equals(module))
-    //                .findFirst();
-    //        other.ifPresent(
-    //            unit ->
-    //                patches.add(
-    //                    "--patch-module",
-    //                    unit.sources.stream().map(s -> s.path),
-    //                    v -> module + "=" + v));
-    //      }
-    //      return patches.getArguments();
-    //    }
+    private void patchModule(Command command, Project.Unit unit) {
+      if (unit.patches.isEmpty()) return;
+      command.add("--patch-module", unit.name() + '=' + Paths.join(unit.patches));
+    }
 
     private void jarModule(Project.Unit unit) {
       var jar = modules.resolve(unit.name() + '-' + project.version(unit) + ".jar");
