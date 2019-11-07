@@ -181,7 +181,7 @@ public class Bach {
         .forEach(key -> lines.add("- `" + key + "`: `" + $(System.getProperty(key)) + "`"));
 
     var withStart = ("build-summary-" + start + ".md").replace(':', '-');
-    var file = Files.write(Resources.createParents(project.paths.log(withStart)), lines);
+    var file = Files.write(Paths.createParents(project.paths.log(withStart)), lines);
     Files.copy(file, project.paths.out("build-summary.md"), StandardCopyOption.REPLACE_EXISTING);
     if (log.verbose) lines.forEach(log::debug);
 
@@ -205,7 +205,7 @@ public class Bach {
 
     log.info("%nModules");
     var modules = project.paths.modules("main");
-    var jars = Resources.list(modules, path -> path.getFileName().toString().endsWith(".jar"));
+    var jars = Paths.list(modules, path -> path.getFileName().toString().endsWith(".jar"));
     log.info("%d jar(s) found in: %s", jars.size(), modules.toUri());
     for (var jar : jars) {
       log.info("%,11d %s", Files.size(jar), jar.getFileName());
@@ -386,11 +386,11 @@ public class Bach {
                     "test",
                     List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
                     List.of(paths.modules("main"), paths.lib()));
-        for (var directory : Resources.list(base.resolve(src), Files::isDirectory)) {
+        for (var directory : Bach.Paths.list(base.resolve(src), Files::isDirectory)) {
           for (var realm : List.of("main", "test")) {
             var info = directory.resolve(realm).resolve("java/module-info.java");
             if (Files.isRegularFile(info)) {
-              builder.unit(directory, realm, Modules.describe(Resources.readString(info)));
+              builder.unit(directory, realm, Modules.describe(Bach.Paths.readString(info)));
             }
           }
         }
@@ -740,8 +740,8 @@ public class Bach {
   }
 
   /** {@link Path}-related helpers. */
-  public static class Resources {
-    private Resources() {}
+  public static class Paths {
+    private Paths() {}
 
     public static Path createDirectories(Path directory) {
       try {
@@ -916,12 +916,12 @@ public class Bach {
       this.realm = realm;
       this.work = project.paths.realm(realm.name);
       this.classes = work.resolve("classes/jigsaw");
-      this.modules = Resources.createDirectories(project.paths.modules(realm.name));
+      this.modules = Paths.createDirectories(project.paths.modules(realm.name));
     }
 
     void compile(List<Project.Unit> units) {
       var moduleNames = units.stream().map(Project.Unit::name).collect(Collectors.toList());
-      var modulePaths = Resources.filterExisting(List.of(project.paths.lib()));
+      var modulePaths = Paths.filterExisting(List.of(project.paths.lib()));
       run(
           new Command("javac")
               .add("-d", classes)
@@ -960,7 +960,7 @@ public class Bach {
 
     private void jarModule(Project.Unit unit) {
       var jar = modules.resolve(unit.name() + '-' + project.version(unit) + ".jar");
-      var resources = Resources.filterExisting(unit.resources);
+      var resources = Paths.filterExisting(unit.resources);
       run(
           new Command("jar")
               .add("--create")
@@ -978,8 +978,8 @@ public class Bach {
 
     private void jarSources(Project.Unit unit) {
       var jar = work.resolve(unit.name() + '-' + project.version(unit) + "-sources.jar");
-      var sources = Resources.filterExisting(unit.sources);
-      var resources = Resources.filterExisting(unit.resources);
+      var sources = Paths.filterExisting(unit.sources);
+      var resources = Paths.filterExisting(unit.resources);
       run(
           new Command("jar")
               .add("--create")

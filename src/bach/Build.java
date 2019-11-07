@@ -42,6 +42,7 @@ public class Build {
         Path.of("src/test/CommandTests.java").toString(),
         Path.of("src/test/Log.java").toString(),
         Path.of("src/test/ModulesTests.java").toString(),
+        Path.of("src/test/PathsTests.java").toString(),
         Path.of("src/test/ProjectTests.java").toString(),
         Path.of("src/test/UrisTests.java").toString());
     build.start(
