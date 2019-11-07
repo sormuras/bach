@@ -30,10 +30,7 @@ public class Build {
     var out = Path.of(".bach/out/build");
     var build = new Build();
     build.run(
-        "javac",
-        "-d",
-        out.resolve("classes").toString(),
-        Path.of("src/bach/Bach.java").toString());
+        "javac", "-d", out.resolve("classes").toString(), Path.of("src/bach/Bach.java").toString());
     var junit = build.assemble(out.resolve("lib"));
     build.run(
         "javac",
@@ -45,11 +42,13 @@ public class Build {
         Path.of("src/test/CommandTests.java").toString(),
         Path.of("src/test/Log.java").toString(),
         Path.of("src/test/ModulesTests.java").toString(),
-        Path.of("src/test/ProjectTests.java").toString());
+        Path.of("src/test/ProjectTests.java").toString(),
+        Path.of("src/test/UrisTests.java").toString());
     build.start(
         "java",
         "-ea",
         "--show-version",
+        "-D" + "online=true",
         "-jar",
         junit.toString(),
         "--scan-class-path",
