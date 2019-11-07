@@ -35,7 +35,6 @@ class CommandTests {
   void addPath() {
     var command = new Bach.Command("a").add(Path.of("a/b"));
     assertEquals(List.of("a" + File.separator + "b"), command.arguments);
-    assertEquals("new Command(\"a\").add(Path.of(\"a/b\"))", command.toSource());
   }
 
   @Test
@@ -44,24 +43,5 @@ class CommandTests {
         List.of("b", "c"), new Bach.Command("a").add("b", List.of(Path.of("c"))).arguments);
     var paths = new Bach.Command("a").add("b", List.of(Path.of("c"), Path.of("d")));
     assertEquals(List.of("b", "c" + File.pathSeparator + "d"), paths.arguments);
-    assertEquals(List.of(".add(\"b\", Path.of(\"c\"), Path.of(\"d\"))"), paths.additions);
-  }
-
-  @Test
-  void generateSourceForCommandWithoutArguments() {
-    var command = new Bach.Command("empty");
-    assertEquals("new Command(\"empty\")", command.toSource());
-  }
-
-  @Test
-  void generateSourceForCommandWithSingleArgument() {
-    var command = new Bach.Command("one").add("1");
-    assertEquals("new Command(\"one\").add(\"1\")", command.toSource());
-  }
-
-  @Test
-  void generateSourceForCommandWithTwoArguments() {
-    var command = new Bach.Command("two").add("1", "2");
-    assertEquals("new Command(\"two\").add(\"1\", \"2\")", command.toSource());
   }
 }

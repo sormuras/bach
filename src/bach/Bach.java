@@ -108,7 +108,7 @@ public class Bach {
         return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
-        it.toSourceLines().forEach(System.out::println);
+        System.out.println(it);
         return;
       case "version":
         System.out.println(VERSION);
@@ -150,7 +150,7 @@ public class Bach {
       log.debug("  - java.version = " + System.getProperty("java.version"));
       log.debug("  - user.dir = " + System.getProperty("user.dir"));
       log.debug("%nProject information");
-      project.toSourceLines().forEach(log::debug);
+      project.toString().lines().forEach(log::debug);
       log.debug("%nTools of the trade");
       tools.map.values().forEach(t -> log.debug("  - %8s [%s] %s", t.name(), Modules.origin(t), t));
       log.debug("");
@@ -166,20 +166,20 @@ public class Bach {
     lines.add("");
     lines.add("## Project Source");
     lines.add("```");
-    lines.addAll(project.toSourceLines());
+    project.toString().lines().forEach(lines::add);
     lines.add("```");
     lines.add("## Tools");
     tools.map.values().forEach(t -> lines.add("- `" + t.name() + "` from " + Modules.origin(t)));
     log.debug("");
     lines.add("## Commands");
     lines.add("```");
-    log.commands.stream().map(Command::toSource).forEach(lines::add);
+    log.commands.stream().map(Command::toString).forEach(lines::add);
     lines.add("```");
     lines.add("");
     lines.add("## System Properties");
     System.getProperties().stringPropertyNames().stream()
         .sorted()
-        .forEach(key -> lines.add("- `" + key + "`: `" + $(System.getProperty(key)) + "`"));
+        .forEach(key -> lines.add("- `" + key + "`: `" + System.getProperty(key) + "`"));
 
     var withStart = ("build-summary-" + start + ".md").replace(':', '-');
     var file = Files.write(Paths.createParents(project.paths.log(withStart)), lines);
@@ -313,53 +313,6 @@ public class Bach {
 
     Version version(Unit unit) {
       return unit.descriptor.version().orElse(version);
-    }
-
-    public List<String> toSourceLines() {
-      if (realms.isEmpty() && units.isEmpty()) {
-        var line = "new Project(%s, %s, Version.parse(%s), List.of(), List.of())";
-        return List.of(String.format(line, $(base), $(name), $(version)));
-      }
-      var lines = new ArrayList<String>();
-      lines.add("new Project(");
-      lines.add("    " + $(base) + ",");
-      lines.add("    " + $(name) + ",");
-      lines.add("    Version.parse(" + $(version) + "),");
-      lines.add("    List.of(");
-      var lastRealm = realms.get(realms.size() - 1);
-      for (var realm : realms) {
-        var comma = realm == lastRealm ? "" : ",";
-        lines.add(
-            "        new Project.Realm("
-                + $(realm.name)
-                + ", "
-                + $(realm.sourcePaths)
-                + ", "
-                + $(realm.modulePaths)
-                + ")"
-                + comma);
-      }
-      lines.add("    ),");
-      lines.add("    List.of(");
-      var lastUnit = units.get(units.size() - 1);
-      for (var unit : units) {
-        var descriptor = "ModuleDescriptor.newModule(" + $(unit.name()) + ").build()";
-        var comma = unit == lastUnit ? "" : ",";
-        lines.add(
-            "        new Project.Unit("
-                + descriptor
-                + ", "
-                + $(unit.root)
-                + ", "
-                + $(unit.realm)
-                + ", "
-                + $(unit.patches)
-                + ")"
-                + comma);
-      }
-      lines.add("    )");
-      lines.add(")");
-      return lines;
     }
 
     /** Mutable project builder. */
@@ -668,60 +621,29 @@ public class Bach {
   public static class Command {
     final String name;
     final List<String> arguments;
-    final List<String> additions;
 
     public Command(String name) {
       this.name = name;
       this.arguments = new ArrayList<>();
-      this.additions = new ArrayList<>();
     }
 
     public Command(Command that) {
       this.name = that.name;
       this.arguments = new ArrayList<>(that.arguments);
-      this.additions = new ArrayList<>(that.additions);
     }
 
-    private Command arg(Object object) {
+    public Command add(Object object) {
       arguments.add(object.toString());
       return this;
     }
 
-    public Command add(String string) {
-      additions.add(String.format(".add(%s)", $(string)));
-      return arg(string);
-    }
-
-    public Command add(Path path) {
-      additions.add(String.format(".add(%s)", $(path)));
-      return arg(path);
-    }
-
-    public Command add(Number number) {
-      additions.add(String.format(".add(%s)", number));
-      return arg(number);
-    }
-
-    public Command add(String key, String string) {
-      additions.add(String.format(".add(%s, %s)", $(key), $(string)));
-      return arg(key).arg(string);
-    }
-
-    public Command add(String key, Path path) {
-      additions.add(String.format(".add(%s, %s)", $(key), $(path)));
-      return arg(key).arg(path);
-    }
-
-    public Command add(String key, Number number) {
-      additions.add(String.format(".add(%s, %s)", $(key), number));
-      return arg(key).arg(number);
+    public Command add(String key, Object value) {
+      return add(key).add(value);
     }
 
     public Command add(String key, List<Path> paths) {
       if (paths.isEmpty()) return this;
-      var p = String.join(", ", paths.stream().map(Bach::$).toArray(String[]::new));
-      additions.add(String.format(".add(%s, %s)", $(key), p));
-      return arg(key).arg(Paths.join(paths));
+      return add(key).add(Paths.join(paths));
     }
 
     public <T> Command forEach(Iterable<T> arguments, BiConsumer<Command, T> visitor) {
@@ -744,10 +666,6 @@ public class Bach {
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Command clone() {
       return new Command(this);
-    }
-
-    public String toSource() {
-      return String.format("new Command(%s)%s", $(name), String.join("", additions));
     }
 
     public String[] toStringArray() {
@@ -999,48 +917,4 @@ public class Bach {
   }
 
   static final String VERSION = "2.0-ea";
-
-  static String $(Object object) {
-    if (object == null) return "null";
-    var string = object.toString();
-    var escaped = new StringBuilder();
-    for (int i = 0; i < string.length(); i++) {
-      char c = string.charAt(i);
-      switch (c) {
-        case '\t':
-          escaped.append("\\t");
-          break;
-        case '\b':
-          escaped.append("\\b");
-          break;
-        case '\n':
-          escaped.append("\\n");
-          break;
-        case '\r':
-          escaped.append("\\r");
-          break;
-        case '\f':
-          escaped.append("\\f");
-          break;
-          // case '\'': escaped.append("\\'"); break; // not needed
-        case '\"':
-          escaped.append("\\\"");
-          break;
-        case '\\':
-          escaped.append("\\\\");
-          break;
-        default:
-          escaped.append(c);
-      }
-    }
-    return "\"" + escaped + "\"";
-  }
-
-  static String $(Path path) {
-    return path == null ? "null" : "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
-  }
-
-  static String $(List<Path> paths) {
-    return "List.of(" + paths.stream().map(Bach::$).collect(Collectors.joining(", ")) + ")";
-  }
 }

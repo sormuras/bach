@@ -17,11 +17,8 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.io.IOException;
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -29,42 +26,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
-  @Test
-  void generateSourceForBasicProject() {
-    var project =
-        new Bach.Project(Path.of(""), "foo", Version.parse("47.11"), List.of(), List.of());
-    assertLinesMatch(
-        List.of(
-            "new Project(Path.of(\"\"), \"foo\", Version.parse(\"47.11\"), List.of(), List.of())"),
-        project.toSourceLines());
-  }
-
-  @Test
-  void generateSourceForProjectWithSingleModule() {
-    var project =
-        new Bach.Project(
-            Path.of(""),
-            "foo",
-            Version.parse("47.11"),
-            List.of(new Bach.Project.Realm("", List.of(Path.of("src")), List.of())),
-            List.of(
-                new Bach.Project.Unit(
-                    ModuleDescriptor.newModule("foo").build(), Path.of("src/foo"), "", List.of())));
-    assertLinesMatch(
-        List.of(
-            "new Project(",
-            "    Path.of(\"\"),",
-            "    \"foo\",",
-            "    Version.parse(\"47.11\"),",
-            "    List.of(",
-            "        new Project.Realm(\"\", List.of(Path.of(\"src\")), List.of())",
-            "    ),",
-            "    List.of(",
-            "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/foo\"), \"\", List.of())",
-            "    )",
-            ")"),
-        project.toSourceLines());
-  }
 
   @Nested
   class TestProject {
@@ -110,23 +71,6 @@ class ProjectTests {
       assertIterableEquals(expected.realms, actual.realms);
       assertIterableEquals(expected.units, actual.units);
       assertEquals(expected, actual);
-      assertLinesMatch(
-          List.of(
-              "new Project(",
-              "    " + Bach.$(base) + ",",
-              "    \"alpha\",",
-              "    Version.parse(\"0\"),",
-              "    List.of(",
-              "        new Project.Realm(\"main\", List.of(Path.of(\"src/{MODULE}/main/java\")), List.of(Path.of(\"src/test-project/alpha/lib\"))),",
-              "        new Project.Realm(\"test\", List.of(Path.of(\"src/{MODULE}/test/java\"), Path.of(\"src/{MODULE}/test/module\")), List.of(Path.of(\"src/test-project/alpha/.bach/out/main/modules\"), Path.of(\"src/test-project/alpha/lib\")))",
-              "    ),",
-              "    List.of(",
-              "        new Project.Unit(ModuleDescriptor.newModule(\"bar\").build(), Path.of(\"src/test-project/alpha/src/bar\"), \"main\", List.of()),",
-              "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/test-project/alpha/src/foo\"), \"main\", List.of()),",
-              "        new Project.Unit(ModuleDescriptor.newModule(\"foo\").build(), Path.of(\"src/test-project/alpha/src/foo\"), \"test\", List.of(Path.of(\"src/foo/main/java\")))",
-              "    )",
-              ")"),
-          actual.toSourceLines());
     }
   }
 }
