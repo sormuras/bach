@@ -55,6 +55,7 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.lang.model.SourceVersion;
 
 /** Build modular Java project. */
 public class Bach {
@@ -386,11 +387,18 @@ public class Bach {
                     "test",
                     List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
                     List.of(paths.modules("main"), paths.lib()));
-        for (var directory : Bach.Paths.list(base.resolve(src), Files::isDirectory)) {
+        for (var module : Bach.Paths.list(base.resolve(src), Files::isDirectory)) {
+          if (!SourceVersion.isName(module.getFileName().toString().replace(".", ""))) {
+            continue;
+          }
+          realm:
           for (var realm : List.of("main", "test")) {
-            var info = directory.resolve(realm).resolve("java/module-info.java");
-            if (Files.isRegularFile(info)) {
-              builder.unit(directory, realm, Modules.describe(Bach.Paths.readString(info)));
+            for (var zone : List.of("java", "module")) {
+              var info = module.resolve(realm).resolve(zone).resolve("module-info.java");
+              if (Files.isRegularFile(info)) {
+                builder.unit(module, realm, Modules.describe(Bach.Paths.readString(info)));
+                continue realm; // first zone hit wins
+              }
             }
           }
         }
@@ -853,6 +861,7 @@ public class Bach {
           var lastModifiedHeader = response.headers().firstValue("last-modified");
           if (lastModifiedHeader.isPresent()) {
             try {
+              //noinspection SpellCheckingInspection
               var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
               var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
               var fileTime = FileTime.fromMillis(millis == 0 ? System.currentTimeMillis() : millis);

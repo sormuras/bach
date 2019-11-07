@@ -94,6 +94,11 @@ class ProjectTests {
                   "main",
                   Bach.Modules.describe(
                       Files.readString(foo.resolve("main/java/module-info.java"))))
+              .unit(
+                  foo,
+                  "test",
+                  Bach.Modules.describe(
+                      Files.readString(foo.resolve("test/module/module-info.java"))))
               .build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected.base, actual.base);
@@ -114,7 +119,8 @@ class ProjectTests {
               "    ),",
               "    List.of(",
               "        new Project.Unit(Path.of(\"src/test-project/alpha/src/bar\"), \"main\", ModuleDescriptor.newModule(\"bar\").build()),",
-              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/foo\"), \"main\", ModuleDescriptor.newModule(\"foo\").build())",
+              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/foo\"), \"main\", ModuleDescriptor.newModule(\"foo\").build()),",
+              "        new Project.Unit(Path.of(\"src/test-project/alpha/src/foo\"), \"test\", ModuleDescriptor.newModule(\"foo\").build())",
               "    )",
               ")"),
           actual.toSourceLines());
