@@ -24,6 +24,18 @@ Use Java source to build your modular Java project.
 
 _Reboot into version `2-ea` in progress..._
 
+## Features of Bach.java
+
+- zero installation required (besides JDK 11+, using `jshell`)
+- zero extra configuration required (conventions and information gathered from `module-info.java`)
+- easy to customize using plain Java (`java Bach.java`)
+- _3rd-party modules in plain sight_ (single `lib/` directory)
+- considers compile (`javac`) and package (`jar`) as an atomic step
+- single-pass multi-module processing (`--module-source-path`)
+- _multi-release modules_ (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
+- _automated checks_ (`test(${MODULE})`,`junit`)
+- _document_ (`-javadoc.jar`, `-sources.jar`)
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
