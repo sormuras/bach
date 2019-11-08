@@ -1157,5 +1157,23 @@ public class Bach {
     }
   }
 
+  /** Unchecked exception thrown when a module name is not mapped. */
+  public static class UnmappedModuleException extends RuntimeException {
+
+    public static String throwForString(String module) {
+      throw new UnmappedModuleException(module);
+    }
+
+    public static URI throwForURI(String module) {
+      throw new UnmappedModuleException(module);
+    }
+
+    private static final long serialVersionUID = 6985648789039587477L;
+
+    public UnmappedModuleException(String module) {
+      super("Module " + module + " is not mapped");
+    }
+  }
+
   static final String VERSION = "2.0-ea";
 }
