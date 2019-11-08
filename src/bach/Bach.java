@@ -651,9 +651,9 @@ public class Bach {
     final String name;
     final List<String> arguments;
 
-    public Command(String name) {
+    public Command(String name, String... args) {
       this.name = name;
-      this.arguments = new ArrayList<>();
+      this.arguments = new ArrayList<>(List.of(args));
     }
 
     public Command(Command that) {
@@ -1024,7 +1024,11 @@ public class Bach {
           parent.setDefaultAssertionStatus(true);
           parent = parent.getParent();
         }
-        return tool.run(log.out, log.err, args);
+        var start = Instant.now();
+        int code = tool.run(log.out, log.err, args);
+        var command = new Command(tool.name(), args);
+        log.record(code, Duration.between(start, Instant.now()), command);
+        return code;
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
       }
