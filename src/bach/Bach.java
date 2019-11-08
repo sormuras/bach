@@ -133,27 +133,29 @@ public class Bach {
   }
 
   public void build() throws Exception {
+    log.record("Build");
     buildInfo();
     if (project.units.isEmpty()) {
       log.warn("Not a single module unit declared, no build.");
       return;
     }
-    // assemble
+    log.record("Assemble");
     // TODO Load missing modules
-    // compile
+    log.record("Compile");
     var start = Instant.now();
     for (var realm : project.realms) {
       var units = realm.units(project.units);
       if (units.isEmpty()) continue;
       new Jigsaw(realm).compile(units);
     }
-    // test
+    log.record("Test");
     for (var realm : project.realms) {
       if (!realm.modifiers.contains(Project.Realm.Modifier.TEST)) continue;
       var units = realm.units(project.units);
       if (units.isEmpty()) continue;
       new Tester(realm).test(units);
     }
+    log.record("Summary");
     buildSummary(start);
   }
 
@@ -291,6 +293,10 @@ public class Bach {
       commands.add(command);
       var args = command.arguments.isEmpty() ? "" : " " + String.join(" ", command.arguments);
       records.add(String.format("%3d %5d ms %s%s", code, duration.toMillis(), command.name, args));
+    }
+
+    public void record(String line) {
+      records.add(line);
     }
   }
 
