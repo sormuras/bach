@@ -142,6 +142,7 @@ public class Bach {
     }
     log.record("Assemble");
     // TODO Load missing modules
+    tools.maven("--version");
     log.record("Compile");
     var start = Instant.now();
     for (var realm : project.realms) {
@@ -958,6 +959,41 @@ public class Bach {
     public int run(Command command) {
       log.debug("| %s(%s)", command.name, String.join(", ", command.arguments));
       return get(command.name).run(log.out, log.err, command.toArguments());
+    }
+
+    void maven(Object... args) throws Exception {
+      // log.debug("maven(" + List.of(args) + ")");
+      var zip =
+          Uris.ofSystem()
+              .copy(
+                  URI.create(
+                      "https://archive.apache.org/dist/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.zip"),
+                  Paths.USER_HOME
+                      .resolve(".bach/tools")
+                      .resolve("maven")
+                      .resolve("apache-maven-3.6.2-bin.zip"),
+                  StandardCopyOption.COPY_ATTRIBUTES);
+      // log.debug("unzip(" + zip + ")");
+      var home = Paths.unzip(zip);
+      var win = System.getProperty("os.name").toLowerCase().contains("win");
+      var name = "mvn" + (win ? ".cmd" : "");
+      var executable = home.resolve("bin").resolve(name);
+      executable.toFile().setExecutable(true);
+      var list = new ArrayList<String>();
+      list.add(executable.toString());
+      for (var arg : args) list.add(arg.toString());
+      var start = Instant.now();
+      var process =
+          new ProcessBuilder(list)
+              .directory(project().base.toAbsolutePath().toFile())
+              .inheritIO()
+              .start();
+      var code = process.waitFor();
+      var command = new Command("<tool>", list.toArray(String[]::new));
+      log.record(code, Duration.between(start, Instant.now()), command);
+      if (code != 0) {
+        throw new Error("Non-zero exit code " + code + " for " + String.join(" ", list));
+      }
     }
   }
 
