@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -136,11 +138,21 @@ public class Bach {
       log.warn("Not a single module unit declared, no build.");
       return;
     }
+    // assemble
+    // TODO Load missing modules
+    // compile
     var start = Instant.now();
     for (var realm : project.realms) {
       var units = realm.units(project.units);
       if (units.isEmpty()) continue;
       new Jigsaw(realm).compile(units);
+    }
+    // test
+    for (var realm : project.realms) {
+      if (!realm.modifiers.contains(Project.Realm.Modifier.TEST)) continue;
+      var units = realm.units(project.units);
+      if (units.isEmpty()) continue;
+      new Tester(realm).test(units);
     }
     buildSummary(start);
   }
@@ -461,7 +473,8 @@ public class Bach {
       final List<Path> sourcePaths;
       final List<Path> modulePaths;
 
-      public Realm(String name, List<Path> sourcePaths, List<Path> modulePaths) {
+      public Realm(
+          String name, Set<Modifier> modifiers, List<Path> sourcePaths, List<Path> modulePaths) {
         this.name = name;
         this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
         this.sourcePaths = List.copyOf(sourcePaths);
@@ -934,6 +947,87 @@ public class Bach {
               .add("--no-manifest")
               .forEach(sources, (cmd, path) -> cmd.add("-C", path).add("."))
               .forEach(resources, (cmd, path) -> cmd.add("-C", path).add(".")));
+    }
+  }
+
+  private class Tester {
+
+    Project.Realm realm;
+
+    Tester(Project.Realm realm) {
+      this.realm = realm;
+    }
+
+    void test(Iterable<Project.Unit> units) {
+      log.debug("Launching all tests in realm " + realm);
+      for (var unit : units) {
+        log.debug("%n%n%n--> %s%n%n%n", unit);
+        test(unit);
+      }
+    }
+
+    private void test(Project.Unit unit) {
+      var modulePath = new ArrayList<Path>();
+      modulePath.add(project.paths.modules(realm.name));
+      modulePath.addAll(realm.modulePaths);
+      var layer = layer(modulePath, unit.name());
+
+      var errors = new StringBuilder();
+      errors.append(run(layer, "test(" + unit.name() + ")"));
+      errors.append(run(layer, "junit", "--select-module", unit.name()));
+      if (errors.toString().replace('0', ' ').isBlank()) {
+        return;
+      }
+      throw new AssertionError("Test run failed!");
+    }
+
+    private ModuleLayer layer(List<Path> modulePath, String module) {
+      var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+      var roots = List.of(module);
+      if (log.verbose) {
+        log.debug("Module path:");
+        for (var element : modulePath) {
+          log.debug("  -> %s", element);
+        }
+        log.debug("Finder finds module(s):");
+        finder.findAll().stream()
+            .sorted(Comparator.comparing(ModuleReference::descriptor))
+            .forEach(reference -> log.debug("  -> %s", reference));
+        log.debug("Root module(s):");
+        for (var root : roots) {
+          log.debug("  -> %s", root);
+        }
+      }
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var loader = ClassLoader.getPlatformClassLoader();
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
+      return controller.layer();
+    }
+
+    private int run(ModuleLayer layer, String name, String... args) {
+      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+      return StreamSupport.stream(serviceLoader.spliterator(), false)
+          .filter(provider -> provider.name().equals(name))
+          .mapToInt(tool -> Math.abs(run(tool, args)))
+          .sum();
+    }
+
+    private int run(ToolProvider tool, String... args) {
+      var toolLoader = tool.getClass().getClassLoader();
+      var currentThread = Thread.currentThread();
+      var currentContextLoader = currentThread.getContextClassLoader();
+      currentThread.setContextClassLoader(toolLoader);
+      try {
+        var parent = toolLoader;
+        while (parent != null) {
+          parent.setDefaultAssertionStatus(true);
+          parent = parent.getParent();
+        }
+        return tool.run(log.out, log.err, args);
+      } finally {
+        currentThread.setContextClassLoader(currentContextLoader);
+      }
     }
   }
 

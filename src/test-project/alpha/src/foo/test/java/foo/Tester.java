@@ -12,7 +12,7 @@ public class Tester implements ToolProvider {
 
   @Override
   public String name() {
-    return "test(" + getClass().getModule() + ")";
+    return "test(foo)";
   }
 
   @Override
