@@ -39,6 +39,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -337,9 +339,14 @@ public class Bach {
                 .base(base)
                 .name(name)
                 .version(System.getProperty(".bach/project.version", "0"))
-                .realm("main", List.of(src.resolve("{MODULE}/main/java")), List.of(paths.lib()))
+                .realm(
+                    "main",
+                    Set.of(),
+                    List.of(src.resolve("{MODULE}/main/java")),
+                    List.of(paths.lib()))
                 .realm(
                     "test",
+                    Set.of(Realm.Modifier.TEST),
                     List.of(src.resolve("{MODULE}/test/java"), src.resolve("{MODULE}/test/module")),
                     List.of(paths.modules("main"), paths.lib()));
         var modules = new TreeMap<String, List<String>>();
@@ -389,8 +396,12 @@ public class Bach {
         return this;
       }
 
-      Builder realm(String name, List<Path> moduleSourcePaths, List<Path> modulePaths) {
-        realms.add(new Realm(name, moduleSourcePaths, modulePaths));
+      Builder realm(
+          String name,
+          Set<Realm.Modifier> modifiers,
+          List<Path> moduleSourcePaths,
+          List<Path> modulePaths) {
+        realms.add(new Realm(name, modifiers, moduleSourcePaths, modulePaths));
         return this;
       }
 
@@ -440,14 +451,21 @@ public class Bach {
     }
 
     public static /*record*/ class Realm {
+
+      public enum Modifier {
+        TEST
+      }
+
       final String name;
+      final Set<Modifier> modifiers;
       final List<Path> sourcePaths;
       final List<Path> modulePaths;
 
       public Realm(String name, List<Path> sourcePaths, List<Path> modulePaths) {
         this.name = name;
-        this.sourcePaths = sourcePaths;
-        this.modulePaths = modulePaths;
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+        this.sourcePaths = List.copyOf(sourcePaths);
+        this.modulePaths = List.copyOf(modulePaths);
       }
 
       @Override
@@ -459,7 +477,7 @@ public class Bach {
 
       @Override
       public int hashCode() {
-        return Objects.hash(name, sourcePaths, modulePaths);
+        return Objects.hash(name, modifiers, sourcePaths, modulePaths);
       }
 
       List<Unit> units(List<Unit> units) {
@@ -472,15 +490,8 @@ public class Bach {
 
       @Override
       public String toString() {
-        return "Realm{"
-            + "name='"
-            + name
-            + '\''
-            + ", sourcePaths="
-            + sourcePaths
-            + ", modulePaths="
-            + modulePaths
-            + '}';
+        var pattern = "Realm{'%s', %s, sourcePaths=%s, modulePaths=%s}";
+        return String.format(pattern, name, modifiers, sourcePaths, modulePaths);
       }
     }
 
@@ -515,6 +526,11 @@ public class Bach {
 
       String name() {
         return descriptor.name();
+      }
+
+      @Override
+      public String toString() {
+        return "Unit{descriptor=" + descriptor + '}';
       }
     }
   }

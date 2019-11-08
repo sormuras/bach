@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -40,9 +41,10 @@ class ProjectTests {
               .base(base)
               .name("alpha")
               .version("0")
-              .realm("main", List.of(Path.of("src/{MODULE}/main/java")), List.of(paths.lib()))
+              .realm("main", Set.of(), List.of(Path.of("src/{MODULE}/main/java")), List.of(paths.lib()))
               .realm(
                   "test",
+                  Set.of(Bach.Project.Realm.Modifier.TEST),
                   List.of(Path.of("src/{MODULE}/test/java"), Path.of("src/{MODULE}/test/module")),
                   List.of(paths.modules("main"), paths.lib()))
               .unit(
