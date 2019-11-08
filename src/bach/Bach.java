@@ -18,6 +18,7 @@
 import java.io.File;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
@@ -41,6 +42,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -53,12 +55,14 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.lang.model.SourceVersion;
 
@@ -559,6 +563,7 @@ public class Bach {
 
   /** Static helper for modules and their friends. */
   public static class Modules {
+    private Modules() {}
 
     private static final Pattern MAIN_CLASS =
         Pattern.compile("//\\s*(?:--main-class)\\s+([\\w.]+)");
@@ -586,7 +591,88 @@ public class Bach {
                 + "\\s+([\\w.,\\s]+)" // comma separated list of type names
                 + "\\s*;"); // end marker
 
-    private Modules() {}
+    /** Declared and requires module and optional version holder. */
+    public static /*record*/ class Survey {
+
+      public static Survey of(ModuleFinder finder) {
+        var declaredModules = new TreeSet<String>();
+        var requiredModules = new TreeMap<String, Set<Version>>();
+        var stream =
+            finder.findAll().stream()
+                .map(ModuleReference::descriptor)
+                .peek(descriptor -> declaredModules.add(descriptor.name()))
+                .map(ModuleDescriptor::requires)
+                .flatMap(Set::stream)
+                .filter(r -> !r.modifiers().contains(Requires.Modifier.STATIC));
+        merge(requiredModules, stream);
+        return new Survey(declaredModules, requiredModules);
+      }
+
+      public static Survey of(String... sources) {
+        var declaredModules = new TreeSet<String>();
+        var requiredModules = new TreeMap<String, Set<Version>>();
+        for (var source : sources) {
+          var descriptor = describe(source);
+          declaredModules.add(descriptor.name());
+          merge(requiredModules, descriptor.requires().stream());
+        }
+        return new Survey(declaredModules, requiredModules);
+      }
+
+      static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
+        stream
+            .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+            .forEach(
+                requires ->
+                    requiredModules.merge(
+                        requires.name(),
+                        requires.compiledVersion().map(Set::of).orElse(Set.of()),
+                        Survey::concat));
+      }
+
+      static <E extends Comparable<E>> Set<E> concat(Set<E> s, Set<E> t) {
+        return Stream.concat(s.stream(), t.stream()).collect(Collectors.toCollection(TreeSet::new));
+      }
+
+      public static Survey of(Collection<Path> paths) {
+        var sources = new ArrayList<String>();
+        for (var path : paths) {
+          if (Files.isDirectory(path)) {
+            path = path.resolve("module-info.java");
+          }
+          sources.add(Paths.readString(path));
+        }
+        return of(sources.toArray(new String[0]));
+      }
+
+      final Set<String> declaredModules;
+      final Map<String, Set<Version>> requiresMap;
+
+      Survey(Set<String> declaredModules, Map<String, Set<Version>> requiresMap) {
+        this.declaredModules = declaredModules;
+        this.requiresMap = requiresMap;
+      }
+
+      public Set<String> getDeclaredModules() {
+        return declaredModules;
+      }
+
+      public Set<String> getRequiredModules() {
+        return requiresMap.keySet();
+      }
+
+      public Optional<Version> getRequiredVersion(String requiredModule) {
+        var versions = requiresMap.get(requiredModule);
+        if (versions == null) {
+          UnmappedModuleException.throwForString(requiredModule);
+        }
+        if (versions.size() > 1) {
+          throw new IllegalStateException(
+              "Multiple versions: " + requiredModule + " -> " + versions);
+        }
+        return versions.stream().findFirst();
+      }
+    }
 
     /** Module descriptor parser. */
     public static ModuleDescriptor describe(String source) {
