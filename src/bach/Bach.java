@@ -30,6 +30,7 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -471,7 +472,8 @@ public class Bach {
     public static /*record*/ class Realm {
 
       public enum Modifier {
-        DOCUMENT, TEST
+        DOCUMENT,
+        TEST
       }
 
       final String name;
@@ -717,6 +719,54 @@ public class Bach {
   public static class Paths {
     private Paths() {}
 
+    /** Convenient short-cut to {@code "user.home"} as a path. */
+    public static final Path USER_HOME = Path.of(System.getProperty("user.home"));
+
+    /** Copy all files and directories from source to target directory. */
+    public static void copy(Path source, Path target) {
+      copy(source, target, __ -> true);
+    }
+
+    /** Copy selected files and directories from source to target directory. */
+    public static void copy(Path source, Path target, Predicate<Path> filter) {
+      if (!Files.exists(source)) {
+        throw new IllegalArgumentException("source must exist: " + source);
+      }
+      if (!Files.isDirectory(source)) {
+        throw new IllegalArgumentException("source must be a directory: " + source);
+      }
+      if (Files.exists(target)) {
+        if (target.equals(source)) return;
+        if (!Files.isDirectory(target)) {
+          throw new IllegalArgumentException("target must be a directory: " + target);
+        }
+        if (target.startsWith(source)) { // copy "a/" to "a/b/"...
+          throw new IllegalArgumentException("target must not a child of source");
+        }
+      }
+      var options = Set.of(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+      try (var stream = Files.walk(source).sorted()) {
+        var paths = stream.filter(filter).collect(Collectors.toList());
+        for (var path : paths) {
+          var destination = target.resolve(source.relativize(path).toString());
+          var lastModified = Files.getLastModifiedTime(path);
+          if (Files.isDirectory(path)) {
+            Files.createDirectories(destination);
+            Files.setLastModifiedTime(destination, lastModified);
+            continue;
+          }
+          if (Files.exists(destination)) {
+            if (lastModified.equals(Files.getLastModifiedTime(destination))) {
+              continue;
+            }
+          }
+          Files.copy(path, destination, options.toArray(CopyOption[]::new));
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("copy failed: " + source + " -> " + target, e);
+      }
+    }
+
     public static Path createDirectories(Path directory) {
       try {
         Files.createDirectories(directory);
@@ -767,6 +817,30 @@ public class Bach {
       } catch (Exception e) {
         throw new Error("Read all content from file failed: " + path, e);
       }
+    }
+
+    /** Unzip file "in place". */
+    public static Path unzip(Path zip) throws Exception {
+      return unzip(zip, zip.toAbsolutePath().getParent());
+    }
+
+    /** Unzip file to specified destination directory. */
+    public static Path unzip(Path zip, Path destination) throws Exception {
+      var loader = Bach.class.getClassLoader();
+      try (var zipFileSystem = FileSystems.newFileSystem(zip, loader)) {
+        var root = zipFileSystem.getPath(zipFileSystem.getSeparator());
+        copy(root, destination);
+        // Single subdirectory in root of the zip file?
+        var stream = Files.list(root);
+        var entries = stream.collect(Collectors.toList());
+        if (entries.size() == 1) {
+          var singleton = entries.get(0);
+          if (Files.isDirectory(singleton)) {
+            return destination.resolve(singleton.getFileName().toString());
+          }
+        }
+      }
+      return destination;
     }
   }
 
@@ -827,6 +901,8 @@ public class Bach {
             } catch (Exception e) {
               log.warn("Couldn't set 'user:etag' file attribute: %s", e);
             }
+          } else {
+            log.warn("No etag provided in response: %s", response);
           }
           var lastModifiedHeader = response.headers().firstValue("last-modified");
           if (lastModifiedHeader.isPresent()) {
@@ -859,6 +935,7 @@ public class Bach {
 
   /** Tool registry and command runner support. */
   public static class Tools {
+
     final Log log;
     final Map<String, ToolProvider> map;
 
