@@ -41,7 +41,11 @@ class ProjectTests {
               .base(base)
               .name("alpha")
               .version("0")
-              .realm("main", Set.of(), List.of(Path.of("src/{MODULE}/main/java")), List.of(paths.lib()))
+              .realm(
+                  "main",
+                  Set.of(Bach.Project.Realm.Modifier.DOCUMENT),
+                  List.of(Path.of("src/{MODULE}/main/java")),
+                  List.of(paths.lib()))
               .realm(
                   "test",
                   Set.of(Bach.Project.Realm.Modifier.TEST),

@@ -359,7 +359,7 @@ public class Bach {
                 .version(System.getProperty(".bach/project.version", "0"))
                 .realm(
                     "main",
-                    Set.of(),
+                    Set.of(Realm.Modifier.DOCUMENT),
                     List.of(src.resolve("{MODULE}/main/java")),
                     List.of(paths.lib()))
                 .realm(
@@ -471,7 +471,7 @@ public class Bach {
     public static /*record*/ class Realm {
 
       public enum Modifier {
-        TEST
+        DOCUMENT, TEST
       }
 
       final String name;
@@ -913,7 +913,10 @@ public class Bach {
               .add("--module-version", project.version.toString())
               .forEach(units, this::patchModule));
       for (var unit : units) {
-        jarSources(unit);
+        if (realm.modifiers.contains(Project.Realm.Modifier.DOCUMENT)) {
+          jarSources(unit);
+          // TODO javadoc(unit);
+        }
         jarModule(unit);
       }
     }
