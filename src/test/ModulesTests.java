@@ -130,9 +130,9 @@ class ModulesTests {
     @Test
     void ofSystem() {
       var system = Bach.Modules.Survey.of(ModuleFinder.ofSystem());
-      assertTrue(system.getDeclaredModules().contains("java.base"));
-      assertFalse(system.getRequiredModules().contains("java.base")); // mandated are ignored
-      assertTrue(system.getDeclaredModules().size() > system.getRequiredModules().size());
+      assertTrue(system.declaredModules().contains("java.base"));
+      assertFalse(system.requiredModules().contains("java.base")); // mandated are ignored
+      assertTrue(system.declaredModules().size() > system.requiredModules().size());
     }
   }
 
@@ -142,11 +142,11 @@ class ModulesTests {
   }
 
   private static void assertABC(Bach.Modules.Survey survey) {
-    assertEquals(Set.of("a", "b"), survey.getDeclaredModules());
-    assertEquals(Set.of("a", "c"), survey.getRequiredModules());
-    assertEquals(Optional.empty(), survey.getRequiredVersion("a"));
-    assertEquals("2", survey.getRequiredVersion("c").orElseThrow().toString());
-    var e = assertThrows(Bach.UnmappedModuleException.class, () -> survey.getRequiredVersion("x"));
-    assertEquals("Module x is not mapped", e.getMessage());
+    assertEquals(Set.of("a", "b"), survey.declaredModules());
+    assertEquals(Set.of("a", "c"), survey.requiredModules());
+    assertEquals(Optional.empty(), survey.requiredVersion("a"));
+    assertEquals("2", survey.requiredVersion("c").orElseThrow().toString());
+    assertThrows(Bach.Modules.UnmappedModuleException.class, () -> survey.requiredVersion("b"));
+    assertThrows(Bach.Modules.UnmappedModuleException.class, () -> survey.requiredVersion("x"));
   }
 }

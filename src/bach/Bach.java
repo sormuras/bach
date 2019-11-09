@@ -591,6 +591,15 @@ public class Bach {
                 + "\\s+([\\w.,\\s]+)" // comma separated list of type names
                 + "\\s*;"); // end marker
 
+    /** Unchecked exception thrown when a module name is not mapped. */
+    public static class UnmappedModuleException extends RuntimeException {
+      private static final long serialVersionUID = 6985648789039587478L;
+
+      public UnmappedModuleException(String module) {
+        super("Module " + module + " is not mapped");
+      }
+    }
+
     /** Declared and requires module and optional version holder. */
     public static /*record*/ class Survey {
 
@@ -653,18 +662,18 @@ public class Bach {
         this.requiresMap = requiresMap;
       }
 
-      public Set<String> getDeclaredModules() {
+      public Set<String> declaredModules() {
         return declaredModules;
       }
 
-      public Set<String> getRequiredModules() {
+      public Set<String> requiredModules() {
         return requiresMap.keySet();
       }
 
-      public Optional<Version> getRequiredVersion(String requiredModule) {
+      public Optional<Version> requiredVersion(String requiredModule) {
         var versions = requiresMap.get(requiredModule);
         if (versions == null) {
-          UnmappedModuleException.throwForString(requiredModule);
+          throw new UnmappedModuleException(requiredModule);
         }
         if (versions.size() > 1) {
           throw new IllegalStateException(
@@ -1240,24 +1249,6 @@ public class Bach {
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
       }
-    }
-  }
-
-  /** Unchecked exception thrown when a module name is not mapped. */
-  public static class UnmappedModuleException extends RuntimeException {
-
-    public static String throwForString(String module) {
-      throw new UnmappedModuleException(module);
-    }
-
-    public static URI throwForURI(String module) {
-      throw new UnmappedModuleException(module);
-    }
-
-    private static final long serialVersionUID = 6985648789039587477L;
-
-    public UnmappedModuleException(String module) {
-      super("Module " + module + " is not mapped");
     }
   }
 
