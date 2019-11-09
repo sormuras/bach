@@ -115,6 +115,17 @@ public class Bach {
         var strings = arguments.toArray(String[]::new);
         Bach.class.getMethod(arguments.pop(), String[].class).invoke(null, (Object) strings);
         return;
+      case "mvn dependency":
+        var artifact = arguments.pop();
+        var mvn = new Command("mvn");
+        mvn.add("--quiet");
+        mvn.add("org.apache.maven.plugins:maven-dependency-plugin:3.1.1:copy");
+        mvn.add("-D" + "outputDirectory=lib");
+        mvn.add("-D" + "transitive=false");
+        mvn.add("-D" + "artifact=" + artifact);
+        mvn.arguments.addAll(arguments);
+        Tools.maven(Log.ofSystem(true), mvn.arguments);
+        return;
       case "project":
         var it = arguments.isEmpty() ? project : Project.Builder.build(Path.of(arguments.pop()));
         System.out.println(it);
@@ -146,7 +157,6 @@ public class Bach {
     }
     log.record("Assemble");
     // TODO Load missing modules
-    tools.maven("--version");
     log.record("Compile");
     var start = Instant.now();
     for (var realm : project.realms) {
@@ -1056,7 +1066,7 @@ public class Bach {
       return get(command.name).run(log.out, log.err, command.toArguments());
     }
 
-    void maven(Object... args) throws Exception {
+    static void maven(Log log, List<String> args) throws Exception {
       // log.debug("maven(" + List.of(args) + ")");
       var zip =
           Uris.ofSystem()
@@ -1076,7 +1086,7 @@ public class Bach {
       executable.toFile().setExecutable(true);
       var list = new ArrayList<String>();
       list.add(executable.toString());
-      for (var arg : args) list.add(arg.toString());
+      list.addAll(args);
       var start = Instant.now();
       var process =
           new ProcessBuilder(list)
