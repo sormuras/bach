@@ -61,6 +61,8 @@ public class Build {
         project.resolve("alpha"),
         "java",
         "-Debug",
+        "-D" + "file.encoding=UTF-8",
+        "-D" + "user.language=en",
         Path.of("src/bach/Bach.java").toAbsolutePath().toString(),
         "build");
   }
