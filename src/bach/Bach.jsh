@@ -17,14 +17,11 @@
  * limitations under the License.
  */
 
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+/open https://github.com/sormuras/bach/raw/master/BUILDING
 
-var code = 0
-try {
-  Bach.main("build");
-} catch (Throwable throwable) {
-  System.err.println(throwable.getMessage());
-  code = 1;
-}
+get("lib", URI.create("https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/bach-master-SNAPSHOT.jar"))
+
+var java = Path.of(System.getProperty("java.home")).resolve("bin/java").toString()
+var code = exe(java, "--module-path", "lib", "--module", "de.sormuras.bach/de.sormuras.bach.Bach")
 
 /exit code
