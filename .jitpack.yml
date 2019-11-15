@@ -3,4 +3,4 @@ jdk:
 
 install:
   - unset JAVA_TOOL_OPTIONS
-  - java src/bach/Build.java
+  - java src/bach/Bach.java
