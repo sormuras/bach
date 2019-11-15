@@ -19,16 +19,19 @@ package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public /*record*/ class Project {
   private final Folder folder;
   private final String name;
   private final Version version;
+  private final Structure structure;
 
-  public Project(Path base, String name, Version version) {
+  public Project(Path base, String name, Version version, Structure structure) {
     this.folder = new Folder(base);
     this.name = name;
     this.version = version;
+    this.structure = structure;
   }
 
   public Folder folder() {
@@ -41,5 +44,26 @@ public /*record*/ class Project {
 
   public Version version() {
     return version;
+  }
+
+  public Structure structure() {
+    return structure;
+  }
+
+  public Optional<Unit> unit(String realmName, String unitName) {
+    for (var realm : structure.realms()) {
+      if (realm.name().equals(realmName)) {
+        for (var unit : structure.units()) {
+          if (unit.name().equals(unitName)) {
+            return Optional.of(unit);
+          }
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  public Version version(Unit unit) {
+    return unit.descriptor().version().orElse(version);
   }
 }

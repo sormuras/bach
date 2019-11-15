@@ -18,19 +18,28 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Structure;
+import de.sormuras.bach.project.Unit;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
   @Test
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
-    var project = new Project(base, "simple", Version.parse("123"));
+    var realm = new Realm("realm");
+    var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build());
+    var structure = new Structure(List.of(realm), List.of(unit));
+    var project = new Project(base, "simple", Version.parse("0"), structure);
     assertEquals("simple", project.name());
-    assertEquals("123", project.version().toString());
+    assertEquals("0", project.version().toString());
     var folder = project.folder();
     assertEquals(base, folder.base());
     assertEquals(base.resolve(".bach/out"), folder.out());
@@ -39,5 +48,8 @@ class ProjectTests {
     assertEquals(base.resolve(".bach/out/realm"), folder.realm("realm"));
     assertEquals(base.resolve(".bach/out/realm/modules"), folder.modules("realm"));
     assertEquals(base.resolve("lib"), folder.lib());
+    assertSame(structure, project.structure());
+    assertSame(unit, project.unit("realm", "unit").orElseThrow());
+    assertEquals("1", project.version(unit).toString());
   }
 }
