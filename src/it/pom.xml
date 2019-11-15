@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.sormuras.bach</groupId>
+        <artifactId>parent-pom</artifactId>
+        <version>2.0-ea</version>
+    </parent>
+
+    <artifactId>it</artifactId>
+
+    <properties>
+        <maven.install.skip>true</maven.install.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>de.sormuras.bach</groupId>
+            <artifactId>de.sormuras.bach</artifactId>
+            <version>2.0-ea</version>
+        </dependency>
+        <dependency>
+            <scope>test</scope>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.6.0-M1</version>
+        </dependency>
+    </dependencies>
+</project>

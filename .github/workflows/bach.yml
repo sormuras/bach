@@ -16,8 +16,10 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Launch Bach.java'
-      run: java src/bach/Bach.java
+    - name: 'Build with Maven'
+      run: |
+        - cd src
+        - mvn verify
   jshell:
     name: 'jshell https://bit.ly/bach-jsh'
     runs-on: ubuntu-latest
@@ -28,5 +30,5 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - name: 'Build using jshell'
+    - name: 'Invoke Bach.java via JShell'
       run: jshell https://bit.ly/bach-jsh
