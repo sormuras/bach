@@ -18,8 +18,6 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +29,7 @@ class ProjectTests {
   @Nested
   class TestProject {
     @Test
-    void alpha() throws IOException {
+    void alpha() {
       var base = Path.of("src/test-project/alpha");
       var bar = base.resolve("src/bar");
       var foo = base.resolve("src/foo");
@@ -51,24 +49,9 @@ class ProjectTests {
                   Set.of(Bach.Project.Realm.Modifier.TEST),
                   List.of(Path.of("src/{MODULE}/test/java"), Path.of("src/{MODULE}/test/module")),
                   List.of(paths.modules("main"), paths.lib()))
-              .unit(
-                  Bach.Modules.describe(
-                      Files.readString(bar.resolve("main/java/module-info.java"))),
-                  bar,
-                  "main",
-                  List.of())
-              .unit(
-                  Bach.Modules.describe(
-                      Files.readString(foo.resolve("main/java/module-info.java"))),
-                  foo,
-                  "main",
-                  List.of())
-              .unit(
-                  Bach.Modules.describe(
-                      Files.readString(foo.resolve("test/module/module-info.java"))),
-                  foo,
-                  "test",
-                  List.of(Path.of("src/foo/main/java")))
+              .unit(bar.resolve("main/java"), bar, "main", List.of())
+              .unit(foo.resolve("main/java"), foo, "main", List.of())
+              .unit(foo.resolve("test/module"), foo, "test", List.of(Path.of("src/foo/main/java")))
               .build();
       var actual = Bach.Project.Builder.build(base);
       assertEquals(expected.base, actual.base);

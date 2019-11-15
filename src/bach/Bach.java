@@ -439,6 +439,12 @@ public class Bach {
         return this;
       }
 
+      Builder unit(Path path, Path root, String realm, List<Path> patches) {
+        var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
+        var descriptor = Bach.Modules.describe(Bach.Paths.readString(info));
+        return unit(descriptor, root, realm, patches);
+      }
+
       Builder unit(ModuleDescriptor descriptor, Path root, String realm, List<Path> patches) {
         units.add(new Unit(descriptor, root, realm, patches));
         return this;
