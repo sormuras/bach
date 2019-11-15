@@ -20,8 +20,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-maven-
+        key: ${{ runner.os }}-${{ matrix.java }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
     - name: 'Build with Maven'
       run: |
         cd src
