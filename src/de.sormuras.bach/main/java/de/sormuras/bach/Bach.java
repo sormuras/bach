@@ -17,13 +17,38 @@
 
 package de.sormuras.bach;
 
+import java.time.Duration;
+import java.time.Instant;
+
 /** Build modular Java project. */
 public class Bach {
 
+  /** Bach.java's version. */
+  public static final String VERSION = "2.0-ea";
+
   /** Main entry-point. */
   public static void main(String... args) {
-    System.out.printf("Reboot into version %s in progress...%n", VERSION);
+    var log = Log.ofSystem();
+    var bach = new Bach(log);
+    bach.build();
   }
 
-  public static final String VERSION = "2.0-ea";
+  private final Log log;
+
+  public Bach(Log log) {
+    this.log = log;
+    log.debug("Bach.java %s initialized.", VERSION);
+  }
+
+  public void build() {
+    log.debug("build()");
+    var start = Instant.now();
+    try {
+      Thread.sleep(234);
+    } catch (InterruptedException e) {
+      // ignore
+    }
+    var duration = Duration.between(start, Instant.now());
+    log.info("Build %d took millis.", duration.toMillis());
+  }
 }
