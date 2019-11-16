@@ -23,7 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Structure;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +44,9 @@ class BachTests {
   @Test
   void buildJustWorks() {
     var log = new Log();
-    new Bach(log).execute(Task.build());
+    var structure = new Structure(List.of(new Realm("none")), List.of());
+    var project = new Project(Path.of(""), "zero", ModuleDescriptor.Version.parse("0"), structure);
+    new Bach(log, project).execute(Task.build());
 
     assertLinesMatch(List.of(), log.errors());
     assertLinesMatch(
@@ -48,6 +54,8 @@ class BachTests {
             "Bach.java " + Bach.VERSION + " initialized.",
             "Executing task: BuildTask",
             "Executing task: SummaryTask",
+            "Modules of none realm",
+            "Modules folder not found: " + project.folder().modules("none"),
             "Build \\d+ took millis."),
         log.lines());
   }
