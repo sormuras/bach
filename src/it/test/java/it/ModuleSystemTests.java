@@ -43,6 +43,7 @@ class ModuleSystemTests {
         newModule("de.sormuras.bach")
             .exports("de.sormuras.bach")
             .exports("de.sormuras.bach.project")
+            .packages(Set.of("de.sormuras.bach.task"))
         // .uses(ToolProvider.class.getName())
         // .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"))
         ;

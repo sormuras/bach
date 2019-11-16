@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Task;
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,12 +40,15 @@ class BachTests {
   @Test
   void buildJustWorks() {
     var log = new Log();
-    var bach = new Bach(log);
-    bach.build();
+    new Bach(log).execute(Task.build());
+
     assertLinesMatch(List.of(), log.errors());
     assertLinesMatch(
         List.of(
-            "Bach.java " + Bach.VERSION + " initialized.", "build()", "Build \\d+ took millis."),
+            "Bach.java " + Bach.VERSION + " initialized.",
+            "Executing task: BuildTask",
+            "Executing task: SummaryTask",
+            "Build \\d+ took millis."),
         log.lines());
   }
 }

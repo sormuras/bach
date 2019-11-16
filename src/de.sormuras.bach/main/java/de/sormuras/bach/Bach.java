@@ -17,9 +17,6 @@
 
 package de.sormuras.bach;
 
-import java.time.Duration;
-import java.time.Instant;
-
 /** Build modular Java project. */
 public class Bach {
 
@@ -30,7 +27,7 @@ public class Bach {
   public static void main(String... args) {
     var log = Log.ofSystem();
     var bach = new Bach(log);
-    bach.build();
+    bach.execute(Task.build());
   }
 
   private final Log log;
@@ -40,15 +37,18 @@ public class Bach {
     log.debug("Bach.java %s initialized.", VERSION);
   }
 
-  public void build() {
-    log.debug("build()");
-    var start = Instant.now();
+  public Log log() {
+    return log;
+  }
+
+  public void execute(Task... tasks) {
     try {
-      Thread.sleep(234);
-    } catch (InterruptedException e) {
-      // ignore
+      for (var task : tasks) {
+        log.debug("Executing task: %s", task.getClass().getSimpleName());
+        task.execute(this);
+      }
+    } catch (Exception e) {
+      throw new Error("Task failed to execute: " + e, e);
     }
-    var duration = Duration.between(start, Instant.now());
-    log.info("Build %d took millis.", duration.toMillis());
   }
 }

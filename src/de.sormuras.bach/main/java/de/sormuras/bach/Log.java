@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.io.PrintWriter;
+import java.time.Instant;
 
 /** Logbook. */
 public class Log {
@@ -34,15 +35,23 @@ public class Log {
     return new Log(new PrintWriter(System.out, true), new PrintWriter(System.err, true), verbose);
   }
 
+  /** Instant of creation. */
+  private final Instant created;
   /** Text-output writer. */
   private final PrintWriter out, err;
   /** Be verbose. */
   private final boolean verbose;
 
   protected Log(PrintWriter out, PrintWriter err, boolean verbose) {
+    this.created = Instant.now();
     this.out = out;
     this.err = err;
     this.verbose = verbose;
+  }
+
+  /** Instant of creation. */
+  public Instant created() {
+    return created;
   }
 
   /** Print "debug" message to the standard output stream. */
