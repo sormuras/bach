@@ -56,6 +56,7 @@ class DemoTests {
         List.of(
             "Bach.java " + Bach.VERSION + " initialized.",
             "Executing task: BuildTask",
+            "Executing task: SanityTask",
             "Executing task: SummaryTask",
             "Modules of main realm",
             // WARNING "Modules folder not found: " + project.folder().modules("main"),

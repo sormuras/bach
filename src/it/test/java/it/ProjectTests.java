@@ -19,7 +19,10 @@ package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.Bach;
+import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Realm;
@@ -30,6 +33,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ProjectTests {
   @Test
@@ -57,5 +61,39 @@ class ProjectTests {
     assertSame(unit, project.unit("realm", "unit").orElseThrow());
     assertEquals("1", project.version(unit).toString());
     assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
+  }
+
+  @Test
+  void executeRuntimeExceptionThrowingTaskIsReportedAsAnError() {
+    var exception = new RuntimeException("!");
+    class RuntimeExceptionThrowingTask implements Task {
+      @Override
+      public void execute(Bach bach) {
+        throw exception;
+      }
+    }
+
+    var structure = new Structure(Folder.of(), List.of(), List.of());
+    var project = new Project("zero", Version.parse("0"), structure);
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(new RuntimeExceptionThrowingTask()));
+    assertSame(exception, error.getCause());
+    assertEquals("Task failed to execute: java.lang.RuntimeException: !", error.getMessage());
+  }
+
+  @Test
+  void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
+    var main = new Realm("main");
+    var unit = new Unit(main, ModuleDescriptor.newModule("unit").build());
+    var structure = new Structure(Folder.of(temp), List.of(main), List.of(unit));
+    var project = new Project("empty", Version.parse("0"), structure);
+
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(Task.build()));
+    assertEquals("Base directory is empty: " + temp.toUri(), error.getMessage());
   }
 }
