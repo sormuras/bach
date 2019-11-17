@@ -51,12 +51,12 @@ class ModuleSystemTests {
     if (Runtime.version().feature() <= 11) {
       var version = Object.class.getModule().getDescriptor().version().orElseThrow();
       expected.requires(Set.of(MANDATED), "java.base", version)
-      // .requires(Set.of(), "java.compiler", version)
+      .requires(Set.of(), "java.compiler", version)
       // .requires(Set.of(TRANSITIVE), "java.net.http", version)
       ;
     } else {
       expected.requires(Set.of(MANDATED), "java.base")
-      // .requires(Set.of(), "java.compiler")
+      .requires(Set.of(), "java.compiler")
       // .requires(Set.of(TRANSITIVE), "java.net.http")
       ;
     }

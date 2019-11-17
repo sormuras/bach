@@ -22,6 +22,10 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public /*record*/ class Project {
+  public static Project of() {
+    return ProjectBuilder.build(Path.of(""));
+  }
+
   private final String name;
   private final Version version;
   private final Structure structure;

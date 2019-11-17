@@ -24,6 +24,7 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.ProjectBuilder;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Unit;
@@ -37,6 +38,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class DemoTests {
+
+  @Test
+  void autoConfigureDemoProjectAndCheckComponents() {
+    var project = ProjectBuilder.build(Path.of("demo"));
+    assertEquals("demo", project.name());
+    assertEquals("0", project.version().toString());
+    assertEquals("demo.core", project.unit("main", "demo.core").orElseThrow().name());
+  }
 
   @Test
   void build(@TempDir Path temp) throws Exception {

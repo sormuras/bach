@@ -17,11 +17,7 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
-import de.sormuras.bach.project.Structure;
-import java.lang.module.ModuleDescriptor.Version;
-import java.util.List;
 
 /** Build modular Java project. */
 public class Bach {
@@ -31,10 +27,8 @@ public class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    var structure = new Structure(Folder.of(), List.of(), List.of());
-    var project = new Project("zero", Version.parse("0"), structure);
-    // TODO new Bach(Log.ofSystem(), project).execute(Task.build());
-    System.err.println("TODO: Execute build task for auto-configured project: " + project);
+    var bach = new Bach(Log.ofSystem(), Project.of());
+    bach.execute(Task.build());
   }
 
   private final Log log;
