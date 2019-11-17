@@ -3,12 +3,13 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.util.Paths;
 import java.nio.file.Files;
 
 public class SanityTask implements Task {
 
   @Override
-  public void execute(Bach bach) throws Exception {
+  public void execute(Bach bach) {
     var log = bach.getLog();
     var project = bach.getProject();
     var realms = project.structure().realms();
@@ -17,10 +18,8 @@ public class SanityTask implements Task {
     if (!Files.isDirectory(base)) {
       throw error(log, "Base must be a directory: %s", base.toUri());
     }
-    try (var stream = Files.newDirectoryStream(base)) {
-      if (!stream.iterator().hasNext()) {
-        throw error(log, "Base directory is empty: %s", base.toUri());
-      }
+    if (Paths.list(base, __ -> true).isEmpty()) {
+      throw error(log, "Base directory is empty: %s", base.toUri());
     }
   }
 
