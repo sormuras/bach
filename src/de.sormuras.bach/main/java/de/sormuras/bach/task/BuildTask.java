@@ -8,7 +8,7 @@ public class BuildTask implements Task {
   @Override
   public void execute(Bach bach) throws InterruptedException {
     bach.execute(new SanityTask());
-    Thread.sleep(123); // Here be dragons!
+    Thread.sleep(100); // Here be dragons!
     bach.execute(new SummaryTask());
   }
 }
