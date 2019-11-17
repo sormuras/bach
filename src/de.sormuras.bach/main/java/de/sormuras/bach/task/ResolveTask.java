@@ -20,14 +20,11 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
 
-public class BuildTask implements Task {
+public class ResolveTask implements Task {
 
   @Override
   public void execute(Bach bach) {
-    bach.execute(new SanityTask());
-    bach.execute(new ResolveTask());
-    bach.execute(new CompileTask());
-    bach.execute(new TestTask());
-    bach.execute(new SummaryTask());
+    var log = bach.getLog();
+    log.debug("TODO Resolving missing external modules");
   }
 }

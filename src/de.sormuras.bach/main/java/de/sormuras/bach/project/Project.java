@@ -19,7 +19,9 @@ package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public /*record*/ class Project {
   public static Project of() {
@@ -63,6 +65,12 @@ public /*record*/ class Project {
       }
     }
     return Optional.empty();
+  }
+
+  public List<Unit> units(Realm realm) {
+    return structure().units().stream()
+        .filter(unit -> unit.realm() == realm)
+        .collect(Collectors.toList());
   }
 
   public Path modularJar(Unit unit) {
