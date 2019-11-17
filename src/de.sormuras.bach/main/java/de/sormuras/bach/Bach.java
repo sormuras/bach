@@ -33,8 +33,8 @@ public class Bach {
   public static void main(String... args) {
     var structure = new Structure(Folder.of(), List.of(), List.of());
     var project = new Project("zero", Version.parse("0"), structure);
-    var bach = new Bach(Log.ofSystem(), project);
-    bach.execute(Task.build());
+    // TODO new Bach(Log.ofSystem(), project).execute(Task.build());
+    System.err.println("TODO: Execute build task for auto-configured project: " + project);
   }
 
   private final Log log;
