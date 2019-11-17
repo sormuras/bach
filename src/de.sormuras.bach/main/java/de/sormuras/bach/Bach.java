@@ -17,10 +17,10 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Structure;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Path;
 import java.util.List;
 
 /** Build modular Java project. */
@@ -31,10 +31,9 @@ public class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    var log = Log.ofSystem();
-    var structure = new Structure(List.of(), List.of());
-    var project = new Project(Path.of(""), "zero", Version.parse("0"), structure);
-    var bach = new Bach(log, project);
+    var structure = new Structure(Folder.of(), List.of(), List.of());
+    var project = new Project("zero", Version.parse("0"), structure);
+    var bach = new Bach(Log.ofSystem(), project);
     bach.execute(Task.build());
   }
 

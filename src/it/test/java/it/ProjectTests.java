@@ -20,6 +20,7 @@ package it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Structure;
@@ -36,8 +37,8 @@ class ProjectTests {
     var base = Path.of("simple");
     var realm = new Realm("realm");
     var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build());
-    var structure = new Structure(List.of(realm), List.of(unit));
-    var project = new Project(base, "simple", Version.parse("0"), structure);
+    var structure = new Structure(Folder.of(base), List.of(realm), List.of(unit));
+    var project = new Project("simple", Version.parse("0"), structure);
     assertEquals("simple", project.name());
     assertEquals("0", project.version().toString());
     var folder = project.folder();
@@ -45,11 +46,16 @@ class ProjectTests {
     assertEquals(base.resolve(".bach/out"), folder.out());
     assertEquals(base.resolve(".bach/out/README.md"), folder.out("README.md"));
     assertEquals(base.resolve(".bach/out/log"), folder.log());
+    assertEquals(base.resolve(".bach/out/log/123.log"), folder.log("123.log"));
     assertEquals(base.resolve(".bach/out/realm"), folder.realm("realm"));
+    assertEquals(base.resolve(".bach/out/realm/classes"), folder.realm("realm", "classes"));
     assertEquals(base.resolve(".bach/out/realm/modules"), folder.modules("realm"));
+    assertEquals(base.resolve(".bach/out/realm/modules/m.jar"), folder.modules("realm", "m.jar"));
+
     assertEquals(base.resolve("lib"), folder.lib());
     assertSame(structure, project.structure());
     assertSame(unit, project.unit("realm", "unit").orElseThrow());
     assertEquals("1", project.version(unit).toString());
+    assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
   }
 }

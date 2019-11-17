@@ -20,12 +20,18 @@ package de.sormuras.bach.project;
 import java.util.List;
 
 public /*record*/ class Structure {
+  private final Folder folder;
   private final List<Realm> realms;
   private final List<Unit> units;
 
-  public Structure(List<Realm> realms, List<Unit> units) {
+  public Structure(Folder folder, List<Realm> realms, List<Unit> units) {
+    this.folder = folder;
     this.realms = List.copyOf(realms);
     this.units = List.copyOf(units);
+  }
+
+  public Folder folder() {
+    return folder;
   }
 
   public List<Realm> realms() {

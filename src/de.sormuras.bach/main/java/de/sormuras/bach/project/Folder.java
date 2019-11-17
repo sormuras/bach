@@ -21,10 +21,25 @@ import java.io.File;
 import java.nio.file.Path;
 
 public /*record*/ class Folder {
-  private final Path base;
 
-  public Folder(Path base) {
+  public static Folder of() {
+    return of(Path.of(""));
+  }
+
+  public static Folder of(Path base) {
+    return new Folder(base, base.resolve("lib"), base.resolve(".bach/out"));
+  }
+
+  private final Path base;
+  private final Path lib;
+  private final Path out;
+  private final Path log;
+
+  public Folder(Path base, Path lib, Path out) {
     this.base = base;
+    this.lib = lib;
+    this.out = out;
+    this.log = out.resolve("log");
   }
 
   static Path resolve(Path path, String... more) {
@@ -36,23 +51,31 @@ public /*record*/ class Folder {
     return base;
   }
 
-  public Path out(String... more) {
-    return resolve(base.resolve(".bach/out"), more);
+  public Path out() {
+    return out;
   }
 
-  public Path lib(String... more) {
-    return resolve(base.resolve("lib"), more);
+  public Path out(String... more) {
+    return resolve(out, more);
+  }
+
+  public Path lib() {
+    return lib;
+  }
+
+  public Path log() {
+    return log;
   }
 
   public Path log(String... more) {
-    return resolve(out().resolve("log"), more);
+    return resolve(log, more);
   }
 
   public Path realm(String realm, String... more) {
-    return resolve(out().resolve(realm), more);
+    return resolve(out.resolve(realm), more);
   }
 
   public Path modules(String realm, String... more) {
-    return resolve(realm(realm).resolve("modules"), more);
+    return resolve(realm(realm,"modules"), more);
   }
 }

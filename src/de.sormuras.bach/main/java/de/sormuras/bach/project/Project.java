@@ -22,20 +22,18 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public /*record*/ class Project {
-  private final Folder folder;
   private final String name;
   private final Version version;
   private final Structure structure;
 
-  public Project(Path base, String name, Version version, Structure structure) {
-    this.folder = new Folder(base);
+  public Project(String name, Version version, Structure structure) {
     this.name = name;
     this.version = version;
     this.structure = structure;
   }
 
   public Folder folder() {
-    return folder;
+    return structure.folder();
   }
 
   public String name() {
@@ -61,6 +59,11 @@ public /*record*/ class Project {
       }
     }
     return Optional.empty();
+  }
+
+  public Path modularJar(Unit unit) {
+    var jar = unit.name() + '-' + version(unit) + ".jar";
+    return folder().modules(unit.realm().name(), jar);
   }
 
   public Version version(Unit unit) {
