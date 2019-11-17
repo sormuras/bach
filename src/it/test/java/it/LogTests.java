@@ -28,8 +28,8 @@ class LogTests {
     var log = new Log();
     log.debug("debug");
     log.info("info");
-    log.warn("warn");
+    log.warning("warning");
     assertLinesMatch(List.of("debug", "info"), log.lines());
-    assertLinesMatch(List.of("warn"), log.errors());
+    assertLinesMatch(List.of("warning"), log.errors());
   }
 }
