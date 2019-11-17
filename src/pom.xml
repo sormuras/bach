@@ -56,6 +56,9 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.22.2</version>
+                    <configuration>
+                        <workingDirectory>${user.dir}</workingDirectory>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

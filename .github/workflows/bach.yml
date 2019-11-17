@@ -23,9 +23,7 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.java }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
     - name: 'Build with Maven'
-      run: |
-        cd src
-        mvn verify
+      run: mvn --file src verify
   jshell:
     name: 'jshell https://bit.ly/bach-jsh'
     runs-on: ubuntu-latest

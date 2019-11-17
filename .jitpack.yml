@@ -3,5 +3,4 @@ jdk:
 
 install:
   - unset JAVA_TOOL_OPTIONS
-  - cd src
-  - mvn install
+  - mvn --file src install
