@@ -50,6 +50,6 @@ public class SummaryTask implements Task {
   }
 
   private String toString(Log.Entry entry) {
-    return String.format("%s|%s|%s", entry.instant, entry.level, entry.message);
+    return String.format("%s|%s|%s", entry.instant(), entry.level(), entry.message());
   }
 }

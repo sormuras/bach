@@ -17,6 +17,7 @@
 
 package it;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.util.List;
@@ -26,9 +27,9 @@ class LogTests {
   @Test
   void messagesOnAllLevelsAreLogged() {
     var log = new Log();
-    log.debug("debug");
-    log.info("info");
-    log.warning("warning");
+    assertEquals("debug", log.debug("debug").message());
+    assertEquals("info", log.info("info").message());
+    assertEquals("warning", log.warning("warning").message());
     assertLinesMatch(List.of("debug", "info"), log.lines());
     assertLinesMatch(List.of("warning"), log.errors());
   }

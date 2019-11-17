@@ -70,38 +70,56 @@ public class Log {
     return messages;
   }
 
-  private String message(System.Logger.Level level, String format, Object... args) {
+  private Entry message(System.Logger.Level level, String format, Object... args) {
     var message = String.format(format, args);
     messages.add(message);
-    entries.add(new Entry(level, message));
-    return message;
+    var entry = new Entry(level, message);
+    entries.add(entry);
+    return entry;
   }
 
   /** Print "debug" message to the standard output stream. */
-  public void debug(String format, Object... args) {
-    var message = message(System.Logger.Level.DEBUG, format, args);
-    if (verbose) out.println(message);
+  public Entry debug(String format, Object... args) {
+    var entry = message(System.Logger.Level.DEBUG, format, args);
+    if (verbose) out.println(entry.message);
+    return entry;
   }
 
   /** Print "information" message to the standard output stream. */
-  public void info(String format, Object... args) {
-    out.println(message(System.Logger.Level.INFO, format, args));
+  public Entry info(String format, Object... args) {
+    var entry = message(System.Logger.Level.INFO, format, args);
+    out.println(entry.message);
+    return entry;
   }
 
   /** Print "warning" message to the error output stream. */
-  public void warning(String format, Object... args) {
-    err.println(message(System.Logger.Level.WARNING, format, args));
+  public Entry warning(String format, Object... args) {
+    var entry = message(System.Logger.Level.WARNING, format, args);
+    err.println(entry.message);
+    return entry;
   }
 
   public static /*record*/ class Entry {
-    public final Instant instant;
-    public final System.Logger.Level level;
-    public final String message;
+    private final Instant instant;
+    private final System.Logger.Level level;
+    private final String message;
 
     private Entry(System.Logger.Level level, String message) {
       this.instant = Instant.now();
       this.level = level;
       this.message = message;
+    }
+
+    public Instant instant() {
+      return instant;
+    }
+
+    public System.Logger.Level level() {
+      return level;
+    }
+
+    public String message() {
+      return message;
     }
 
     public boolean isWarning() {
