@@ -39,4 +39,9 @@ public /*record*/ class Unit {
   public Realm realm() {
     return realm;
   }
+
+  @Override
+  public String toString() {
+    return descriptor.toNameAndVersion();
+  }
 }
