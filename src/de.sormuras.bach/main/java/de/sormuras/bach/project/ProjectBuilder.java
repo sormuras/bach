@@ -17,8 +17,8 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +56,7 @@ public class ProjectBuilder {
             // if (realm.name().equals("test") && modules.get("main").contains(module)) {
             //  patches.add(src.resolve(module).resolve("main/java"));
             // }
-            var descriptor = ModuleDescriptor.newModule(module).build();
+            var descriptor = Modules.describe(Paths.readString(info));
             units.add(new Unit(realm, descriptor));
             modules.get(realm.name()).add(module);
             continue realm; // first zone hit wins

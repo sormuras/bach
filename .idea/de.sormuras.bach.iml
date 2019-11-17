@@ -4,8 +4,10 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/src/de.sormuras.bach">
       <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/test/java" isTestSource="true" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />
+    <orderEntry type="library" scope="TEST" name="JUnit Jupiter" level="project" />
   </component>
 </module>

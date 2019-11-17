@@ -48,4 +48,12 @@ public class Paths {
       throw new RuntimeException("List directory using glob failed: " + directory, e);
     }
   }
+
+  public static String readString(Path path) {
+    try {
+      return Files.readString(path);
+    } catch (Exception e) {
+      throw new RuntimeException("Read all content from file failed: " + path, e);
+    }
+  }
 }
