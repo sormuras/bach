@@ -54,6 +54,15 @@ public /*record*/ class Unit {
     return descriptor.toNameAndVersion();
   }
 
+  public List<Path> sources() {
+    var sources = new ArrayList<Path>();
+    for (var source : realm.sourcePaths()) {
+      var path = Path.of(source.toString().replace("{MODULE}", name()));
+      sources.add(path);
+    }
+    return List.copyOf(sources);
+  }
+
   public List<Path> resources() {
     var resources = new ArrayList<Path>();
     for (var source : realm.sourcePaths()) {
