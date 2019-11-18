@@ -32,6 +32,23 @@ public class Paths {
   /** Convenient short-cut to {@code "user.home"} as a path. */
   public static final Path USER_HOME = Path.of(System.getProperty("user.home"));
 
+  public static Path createDirectories(Path directory) {
+    try {
+      Files.createDirectories(directory);
+    } catch (Exception e) {
+      throw new RuntimeException("Create directories failed: " + directory, e);
+    }
+    return directory;
+  }
+
+  public static List<Path> filter(List<Path> paths, Predicate<Path> filter) {
+    return paths.stream().filter(filter).collect(Collectors.toList());
+  }
+
+  public static List<Path> filterExisting(List<Path> paths) {
+    return filter(paths, Files::exists);
+  }
+
   public static String join(List<Path> paths) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
   }
