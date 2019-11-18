@@ -3,12 +3,11 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.util.Paths;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class SummaryTask implements Task {
@@ -30,10 +29,7 @@ public class SummaryTask implements Task {
         }
         continue;
       }
-      var jars = new ArrayList<Path>();
-      try (var stream = Files.newDirectoryStream(modules, "*.jar")) {
-        stream.forEach(jars::add);
-      }
+      var jars = Paths.list(modules, "*.jar");
       log.info("%d jar(s) found in: %s", jars.size(), modules.toUri());
       for (var jar : jars) {
         log.info("%,11d %s", Files.size(jar), jar.getFileName());
