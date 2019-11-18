@@ -34,6 +34,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,7 +42,7 @@ class ProjectTests {
   @Test
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
-    var realm = new Realm("realm", List.of(), List.of());
+    var realm = new Realm("realm", Set.of(), List.of(), List.of());
     var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build(), List.of());
     var structure = new Structure(Folder.of(base), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure);
@@ -107,7 +108,7 @@ class ProjectTests {
 
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
-    var main = new Realm("main", List.of(), List.of());
+    var main = new Realm("main", Set.of(), List.of(), List.of());
     var unit = new Unit(main, ModuleDescriptor.newModule("unit").build(), List.of());
     var structure = new Structure(Folder.of(temp), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure);

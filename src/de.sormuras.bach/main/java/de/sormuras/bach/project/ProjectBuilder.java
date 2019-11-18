@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import javax.lang.model.SourceVersion;
 
@@ -43,11 +44,13 @@ public class ProjectBuilder {
     var main =
         new Realm(
             "main",
+            Set.of(),
             List.of(folder.base().resolve("src/{MODULE}/main/java")),
             List.of(folder.lib()));
     var test =
         new Realm(
             "test",
+            Set.of(Realm.Modifier.TEST),
             List.of(
                 folder.base().resolve("src/{MODULE}/test/java"),
                 folder.base().resolve("src/{MODULE}/test/module")),
