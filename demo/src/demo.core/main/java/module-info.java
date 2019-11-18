@@ -1,1 +1,3 @@
-module demo.core {}
+module demo.core {
+  exports demo.core;
+}
