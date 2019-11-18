@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.util;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,6 +32,10 @@ public class Paths {
   /** Convenient short-cut to {@code "user.home"} as a path. */
   public static final Path USER_HOME = Path.of(System.getProperty("user.home"));
 
+  public static String join(List<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
   public static List<Path> list(Path directory, Predicate<Path> filter) {
     try (var stream = Files.list(directory)) {
       return stream.filter(filter).sorted().collect(Collectors.toList());
@@ -41,9 +46,7 @@ public class Paths {
 
   public static List<Path> list(Path directory, String glob) {
     try (var items = Files.newDirectoryStream(directory, glob)) {
-      return StreamSupport.stream(items.spliterator(), false)
-          .sorted()
-          .collect(Collectors.toList());
+      return StreamSupport.stream(items.spliterator(), false).sorted().collect(Collectors.toList());
     } catch (Exception e) {
       throw new RuntimeException("List directory using glob failed: " + directory, e);
     }
