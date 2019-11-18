@@ -51,6 +51,10 @@ public class Bach {
     return project;
   }
 
+  public boolean isVerbose() {
+    return log.verbose;
+  }
+
   public void execute(Task... tasks) {
     try {
       for (var task : tasks) {

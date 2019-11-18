@@ -46,7 +46,7 @@ public class Log {
   /** Text-output writer. */
   /*package-private*/ final PrintWriter out, err;
   /** Be verbose. */
-  private final boolean verbose;
+  /*package-private*/ final boolean verbose;
 
   protected Log(PrintWriter out, PrintWriter err, boolean verbose) {
     this.instant = Instant.now();
