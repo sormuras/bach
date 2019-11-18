@@ -9,7 +9,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class SummaryTask implements Task {
@@ -37,8 +36,7 @@ public class SummaryTask implements Task {
       }
       log.info("%d jar(s) found in: %s", jars.size(), modules.toUri());
       for (var jar : jars) {
-        var size = String.format(Locale.ROOT, "%,d", Files.size(jar));
-        log.info("%11s %s", size, jar.getFileName());
+        log.info("%,11d %s", Files.size(jar), jar.getFileName());
       }
     }
 

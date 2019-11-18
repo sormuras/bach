@@ -58,7 +58,6 @@
                     <version>2.22.2</version>
                     <configuration>
                         <workingDirectory>${user.dir}</workingDirectory>
-                        <trimStackTrace>false</trimStackTrace>
                     </configuration>
                 </plugin>
             </plugins>

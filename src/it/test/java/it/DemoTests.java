@@ -64,12 +64,12 @@ class DemoTests {
             "Executing task: SummaryTask",
             "Modules of main realm",
             "2 jar(s) found in: " + folder.modules("main").toUri(),
-            "      1.600 demo.core-0.jar",
-            "      1.175 demo.mantle-0.jar",
+            String.format("%,11d demo.core-0.jar", 1600),
+            String.format("%,11d demo.mantle-0.jar", 1175),
             "Modules of test realm",
             "2 jar(s) found in: " + folder.modules("test").toUri(),
-            "      2.157 demo.mantle-0.jar",
-            "        612 it-0.jar",
+            String.format("%,11d demo.mantle-0.jar", 2157),
+            String.format("%,11d it-0.jar", 612),
             "Build \\d+ took millis."),
         log.lines());
 
