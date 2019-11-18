@@ -32,10 +32,14 @@ public class ProjectBuilder {
 
   /** Create project instance auto-configured by scanning the current working directory. */
   public static Project build(Path base) {
+    return build(Folder.of(base));
+  }
+
+  public static Project build(Folder folder) {
+    var base = folder.base();
     if (!Files.isDirectory(base)) {
       throw new IllegalArgumentException("Not a directory: " + base);
     }
-    var folder = Folder.of(base);
     var main =
         new Realm(
             "main",
