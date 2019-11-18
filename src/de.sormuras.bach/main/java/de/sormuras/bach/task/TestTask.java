@@ -23,8 +23,19 @@ import de.sormuras.bach.Task;
 public class TestTask implements Task {
 
   @Override
-  public void execute(Bach bach) {
+  public void execute(Bach bach) throws Exception {
     var log = bach.getLog();
-    log.debug("TODO Testing modules");
+    var project = bach.getProject();
+    for (var realm : project.structure().realms()) {
+      if (!realm.isTestRealm()) continue;
+      var units = project.units(realm);
+      if (units.isEmpty()) continue;
+      log.debug("Testing %d %s unit(s): %s", units.size(), realm.name(), units);
+      new Tester(bach, realm).test(units);
+    }
+    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+      System.gc(); // Release JAR files held ModuleLayer instance
+      Thread.sleep(256);
+    }
   }
 }
