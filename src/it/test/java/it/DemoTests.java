@@ -71,7 +71,8 @@ class DemoTests {
             String.format("%,11d demo.mantle-0.jar", 2157),
             String.format("%,11d it-0.jar", 612),
             "Build \\d+ took millis."),
-        log.lines());
+        log.lines(),
+        Files.readString(folder.out("summary.log")));
 
     assertEquals(0, log.getEntries().stream().filter(Log.Entry::isWarning).count());
 
