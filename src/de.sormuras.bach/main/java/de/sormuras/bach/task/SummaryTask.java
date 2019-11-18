@@ -25,7 +25,9 @@ public class SummaryTask implements Task {
       log.info("Modules of %s realm", realm.name());
       var modules = project.folder().modules(realm.name());
       if (Files.notExists(modules)) {
-        log.warning("Modules folder not found: %s", modules);
+        if (!project.units(realm).isEmpty()) {
+          log.warning("Modules folder not found: %s", modules);
+        }
         continue;
       }
       var jars = new ArrayList<Path>();
