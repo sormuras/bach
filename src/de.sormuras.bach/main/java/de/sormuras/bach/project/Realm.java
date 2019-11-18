@@ -17,14 +17,34 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.util.Paths;
+import java.nio.file.Path;
+import java.util.List;
+
 public /*record*/ class Realm {
   private final String name;
+  private final List<Path> sourcePaths;
+  private final List<Path> modulePaths;
 
-  public Realm(String name) {
+  public Realm(String name, List<Path> sourcePaths, List<Path> modulePaths) {
     this.name = name;
+    this.sourcePaths = List.copyOf(sourcePaths);
+    this.modulePaths = List.copyOf(modulePaths);
   }
 
   public String name() {
     return name;
+  }
+
+  public List<Path> sourcePaths() {
+    return sourcePaths;
+  }
+
+  public List<Path> modulePaths() {
+    return modulePaths;
+  }
+
+  public String moduleSourcePath() {
+    return Paths.join(sourcePaths).replace("{MODULE}", "*");
   }
 }

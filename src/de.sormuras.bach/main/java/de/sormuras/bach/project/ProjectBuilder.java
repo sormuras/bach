@@ -35,9 +35,19 @@ public class ProjectBuilder {
     if (!Files.isDirectory(base)) {
       throw new IllegalArgumentException("Not a directory: " + base);
     }
-
-    var main = new Realm("main");
-    var test = new Realm("test");
+    var folder = Folder.of(base);
+    var main =
+        new Realm(
+            "main",
+            List.of(folder.base().resolve("src/{MODULE}/main/java")),
+            List.of(folder.lib()));
+    var test =
+        new Realm(
+            "test",
+            List.of(
+                folder.base().resolve("src/{MODULE}/test/java"),
+                folder.base().resolve("src/{MODULE}/test/module")),
+            List.of(folder.modules("main"), folder.lib()));
     var realms = List.of(main, test);
 
     var src = base.resolve("src"); // TODO System.getProperty(".bach/project.path.src", "src")
@@ -52,12 +62,12 @@ public class ProjectBuilder {
         for (var zone : List.of("java", "module")) {
           var info = root.resolve(realm.name()).resolve(zone).resolve("module-info.java");
           if (Files.isRegularFile(info)) {
-            // var patches = new ArrayList<Path>();
-            // if (realm.name().equals("test") && modules.get("main").contains(module)) {
-            //  patches.add(src.resolve(module).resolve("main/java"));
-            // }
+            var patches = new ArrayList<Path>();
+            if (realm.name().equals("test") && modules.get("main").contains(module)) {
+              patches.add(src.resolve(module).resolve("main/java"));
+            }
             var descriptor = Modules.describe(Paths.readString(info));
-            units.add(new Unit(realm, descriptor));
+            units.add(new Unit(realm, descriptor, patches));
             modules.get(realm.name()).add(module);
             continue realm; // first zone hit wins
           }
@@ -67,7 +77,7 @@ public class ProjectBuilder {
 
     var name = Optional.ofNullable(base.toAbsolutePath().getFileName()).map(Path::toString);
     var version = Version.parse("0");
-    var structure = new Structure(Folder.of(base), realms, units);
+    var structure = new Structure(folder, realms, units);
 
     return new Project(name.orElse("project"), version, structure);
   }

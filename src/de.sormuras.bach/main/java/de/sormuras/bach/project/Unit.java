@@ -18,14 +18,19 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public /*record*/ class Unit {
   private final Realm realm;
   private final ModuleDescriptor descriptor;
+  private final List<Path> patches;
 
-  public Unit(Realm realm, ModuleDescriptor descriptor) {
+  public Unit(Realm realm, ModuleDescriptor descriptor, List<Path> patches) {
     this.realm = realm;
     this.descriptor = descriptor;
+    this.patches = patches;
   }
 
   public ModuleDescriptor descriptor() {
@@ -40,8 +45,22 @@ public /*record*/ class Unit {
     return realm;
   }
 
+  public List<Path> patches() {
+    return patches;
+  }
+
   @Override
   public String toString() {
     return descriptor.toNameAndVersion();
+  }
+
+  public List<Path> resources() {
+    var resources = new ArrayList<Path>();
+    for (var source : realm.sourcePaths()) {
+      var directory = source.getParent().resolve("resources");
+      var path = Path.of(directory.toString().replace("{MODULE}", name()));
+      resources.add(path);
+    }
+    return List.copyOf(resources);
   }
 }

@@ -41,8 +41,8 @@ class ProjectTests {
   @Test
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
-    var realm = new Realm("realm");
-    var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build());
+    var realm = new Realm("realm", List.of(), List.of());
+    var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build(), List.of());
     var structure = new Structure(Folder.of(base), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure);
     assertEquals("simple", project.name());
@@ -107,8 +107,8 @@ class ProjectTests {
 
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
-    var main = new Realm("main");
-    var unit = new Unit(main, ModuleDescriptor.newModule("unit").build());
+    var main = new Realm("main", List.of(), List.of());
+    var unit = new Unit(main, ModuleDescriptor.newModule("unit").build(), List.of());
     var structure = new Structure(Folder.of(temp), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure);
 
