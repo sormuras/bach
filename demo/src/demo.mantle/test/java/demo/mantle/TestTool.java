@@ -11,7 +11,8 @@ public class TestTool implements java.util.spi.ToolProvider {
     try {
       checkMantle();
       return 0;
-    } catch (Throwable t) {
+    } catch (Throwable throwable) {
+      throwable.printStackTrace(err);
       return 1;
     }
   }
