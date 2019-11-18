@@ -20,4 +20,6 @@ module de.sormuras.bach {
 
   exports de.sormuras.bach;
   exports de.sormuras.bach.project;
+
+  uses java.util.spi.ToolProvider; // in de.sormuras.bach.util.Tools
 }

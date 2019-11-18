@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import de.sormuras.bach.Bach;
 import java.util.Set;
+import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class ModuleSystemTests {
@@ -44,19 +45,19 @@ class ModuleSystemTests {
             .exports("de.sormuras.bach")
             .exports("de.sormuras.bach.project")
             .packages(Set.of("de.sormuras.bach.task", "de.sormuras.bach.util"))
-        // .uses(ToolProvider.class.getName())
+            .uses(ToolProvider.class.getName())
         // .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"))
         ;
     // requires may contain compiled version
     if (Runtime.version().feature() <= 11) {
       var version = Object.class.getModule().getDescriptor().version().orElseThrow();
-      expected.requires(Set.of(MANDATED), "java.base", version)
-      .requires(Set.of(), "java.compiler", version)
+      expected
+          .requires(Set.of(MANDATED), "java.base", version)
+          .requires(Set.of(), "java.compiler", version)
       // .requires(Set.of(TRANSITIVE), "java.net.http", version)
       ;
     } else {
-      expected.requires(Set.of(MANDATED), "java.base")
-      .requires(Set.of(), "java.compiler")
+      expected.requires(Set.of(MANDATED), "java.base").requires(Set.of(), "java.compiler")
       // .requires(Set.of(TRANSITIVE), "java.net.http")
       ;
     }
