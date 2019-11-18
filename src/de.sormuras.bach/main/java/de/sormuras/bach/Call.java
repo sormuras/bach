@@ -10,8 +10,8 @@ import java.util.function.Consumer;
 
 /** Tool call builder. */
 public class Call {
-  private final String name;
-  private final List<String> arguments;
+  /*package-private*/ final String name;
+  /*package-private*/ final List<String> arguments;
 
   public Call(String name, String... args) {
     this.name = name;

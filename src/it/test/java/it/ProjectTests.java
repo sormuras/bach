@@ -18,10 +18,12 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Call;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
@@ -81,6 +83,26 @@ class ProjectTests {
     var error = assertThrows(Error.class, () -> bach.execute(new RuntimeExceptionThrowingTask()));
     assertSame(exception, error.getCause());
     assertEquals("Task failed to execute: java.lang.RuntimeException: !", error.getMessage());
+  }
+
+  @Test
+  void executeNonZeroToolProviderIsReportedAsAnError() {
+    var structure = new Structure(Folder.of(), List.of(), List.of());
+    var project = new Project("zero", Version.parse("0"), structure);
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(new Call("javac", "*")));
+    assertEquals(
+        "Call exited with non-zero status code: 2 <- Call{name='javac', arguments=[*]}",
+        error.getMessage());
+    assertLinesMatch(List.of("Bach.java 2.0-ea initialized.", "| javac(*)"), log.lines());
+    assertLinesMatch(
+        List.of(
+            "error: invalid flag: *",
+            "Usage: javac <options> <source files>",
+            "use --help for a list of possible options"),
+        log.errors());
   }
 
   @Test

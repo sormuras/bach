@@ -44,7 +44,7 @@ public class Log {
   /** All "simple text" messages. */
   private final List<String> messages;
   /** Text-output writer. */
-  private final PrintWriter out, err;
+  /*package-private*/ final PrintWriter out, err;
   /** Be verbose. */
   private final boolean verbose;
 

@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.util.Tools;
 
 /** Build modular Java project. */
 public class Bach {
@@ -33,10 +34,12 @@ public class Bach {
 
   private final Log log;
   private final Project project;
+  private final Tools tools;
 
   public Bach(Log log, Project project) {
     this.log = log;
     this.project = project;
+    this.tools = new Tools();
     log.debug("Bach.java %s initialized.", VERSION);
   }
 
@@ -57,5 +60,19 @@ public class Bach {
     } catch (Exception e) {
       throw new Error("Task failed to execute: " + e, e);
     }
+  }
+
+  public void execute(Call... calls) {
+    for (var call : calls) {
+      var status = run(call);
+      if (status != 0) {
+        throw new Error("Call exited with non-zero status code: " + status + " <- " + call);
+      }
+    }
+  }
+
+  public int run(Call call) {
+    log.debug("| %s(%s)", call.name, String.join(", ", call.arguments));
+    return tools.get(call.name).run(log.out, log.err, call.toArray(false));
   }
 }
