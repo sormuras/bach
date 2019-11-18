@@ -35,4 +35,4 @@ jobs:
       with:
         java-version: 11
     - name: 'Invoke Bach.java via JShell'
-      run: jshell https://bit.ly/bach-jsh
+      run: cd demo && jshell https://bit.ly/bach-jsh
