@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.util.Tools;
+import java.util.spi.ToolProvider;
 
 /** Build modular Java project. */
 public class Bach {
@@ -76,7 +77,11 @@ public class Bach {
   }
 
   public int run(Call call) {
-    log.debug("| %s(%s)", call.name, String.join(", ", call.arguments));
-    return tools.get(call.name).run(log.out, log.err, call.toArray(false));
+    return run(tools.get(call.name), call);
+  }
+
+  public int run(ToolProvider tool, Call call) {
+    log.debug("| %s(%s)", tool.name(), String.join(", ", call.arguments));
+    return tool.run(log.out, log.err, call.toArray(false));
   }
 }
