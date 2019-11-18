@@ -23,13 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
-import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
-import de.sormuras.bach.project.Realm;
-import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.Unit;
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,17 +43,9 @@ class DemoTests {
 
   @Test
   void build(@TempDir Path temp) throws Exception {
-    var folder = new Folder(Path.of("demo"), temp.resolve("lib"), temp);
-    var main = new Realm("main");
-    var core = new Unit(main, ModuleDescriptor.newModule("demo.core").build());
-    var structure = new Structure(folder, List.of(main), List.of(core));
-    var project = new Project("demo", Version.parse("1"), structure);
-
     var log = new Log();
-    new Bach(log, project).execute(Task.build());
-
-    assertLinesMatch(
-        List.of("Modules folder not found: " + project.folder().modules("main")), log.errors());
+    var folder = new Folder(Path.of("demo"), temp.resolve("lib"), temp);
+    new Bach(log, ProjectBuilder.build(folder)).execute(Task.build());
 
     assertLinesMatch(
         List.of(
@@ -69,21 +55,30 @@ class DemoTests {
             "Executing task: ResolveTask",
             "TODO Resolving missing external modules",
             "Executing task: CompileTask",
-            "TODO Compiling 1 main unit(s): [demo.core]",
+            "Compiling 2 main unit(s): [demo.core, demo.mantle]",
+            ">> JAVAC, JAR, ... >>",
+            "Compiling 2 test unit(s): [demo.mantle, it]",
+            ">> JAVAC, JAR, ... >>",
             "Executing task: TestTask",
             "TODO Testing modules",
             "Executing task: SummaryTask",
             "Modules of main realm",
-            // WARNING "Modules folder not found: " + project.folder().modules("main"),
+            "2 jar(s) found in: " + folder.modules("main").toUri(),
+            "      1.600 demo.core-0.jar",
+            "      1.175 demo.mantle-0.jar",
+            "Modules of test realm",
+            "2 jar(s) found in: " + folder.modules("test").toUri(),
+            "      2.157 demo.mantle-0.jar",
+            "        612 it-0.jar",
             "Build \\d+ took millis."),
         log.lines());
 
-    assertEquals(1, log.getEntries().stream().filter(Log.Entry::isWarning).count());
+    assertEquals(0, log.getEntries().stream().filter(Log.Entry::isWarning).count());
 
     assertLinesMatch(
         log.getMessages().stream()
             .map(message -> ".+|.+|\\Q" + message + "\\E")
             .collect(Collectors.toList()),
-        Files.readAllLines(temp.resolve("summary.log")));
+        Files.readAllLines(folder.out("summary.log")));
   }
 }

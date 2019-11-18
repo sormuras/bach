@@ -29,8 +29,8 @@ public class CompileTask implements Task {
     for (var realm : project.structure().realms()) {
       var units = project.units(realm);
       if (units.isEmpty()) continue;
-      log.debug("TODO Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
-      // new Jigsaw(realm).compile(units);
+      log.debug("Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
+      new Jigsaw(bach, realm).compile(units);
     }
   }
 }
