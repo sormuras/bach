@@ -24,17 +24,23 @@ import java.util.List;
 
 public /*record*/ class Unit {
   private final Realm realm;
+  private final Path info;
   private final ModuleDescriptor descriptor;
   private final List<Path> patches;
 
-  public Unit(Realm realm, ModuleDescriptor descriptor, List<Path> patches) {
+  public Unit(Realm realm, Path info, ModuleDescriptor descriptor, List<Path> patches) {
     this.realm = realm;
+    this.info = info;
     this.descriptor = descriptor;
     this.patches = patches;
   }
 
   public ModuleDescriptor descriptor() {
     return descriptor;
+  }
+
+  public Path info() {
+    return info;
   }
 
   public String name() {

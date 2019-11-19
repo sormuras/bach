@@ -45,7 +45,7 @@ class ProjectTests {
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
     var realm = new Realm("realm", Set.of(), List.of(), List.of());
-    var unit = new Unit(realm, ModuleDescriptor.newModule("unit").version("1").build(), List.of());
+    var unit = new Unit(realm, Path.of("?"), descriptor("unit", 1), List.of());
     var structure = new Structure(Folder.of(base), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure);
     assertEquals("simple", project.name());
@@ -113,7 +113,7 @@ class ProjectTests {
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
     var main = new Realm("main", Set.of(), List.of(), List.of());
-    var unit = new Unit(main, ModuleDescriptor.newModule("unit").build(), List.of());
+    var unit = new Unit(main, Path.of("?"), descriptor("unit", 0), List.of());
     var structure = new Structure(Folder.of(temp), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure);
 
@@ -122,5 +122,9 @@ class ProjectTests {
 
     var error = assertThrows(Error.class, () -> bach.execute(Task.build()));
     assertEquals("Base directory is empty: " + temp.toUri(), error.getMessage());
+  }
+
+  static ModuleDescriptor descriptor(String name, int version) {
+    return ModuleDescriptor.newModule(name).version("" + version).build();
   }
 }

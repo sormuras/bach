@@ -74,7 +74,7 @@ public class ProjectBuilder {
               patches.add(src.resolve(module).resolve("main/java"));
             }
             var descriptor = Modules.describe(Paths.readString(info));
-            units.add(new Unit(realm, descriptor, patches));
+            units.add(new Unit(realm, info, descriptor, patches));
             modules.get(realm.name()).add(module);
             continue realm; // first zone hit wins
           }
