@@ -54,12 +54,12 @@ class ModuleSystemTests {
       expected
           .requires(Set.of(MANDATED), "java.base", version)
           .requires(Set.of(), "java.compiler", version)
-      // .requires(Set.of(TRANSITIVE), "java.net.http", version)
-      ;
+          .requires(Set.of(), "java.net.http", version);
     } else {
-      expected.requires(Set.of(MANDATED), "java.base").requires(Set.of(), "java.compiler")
-      // .requires(Set.of(TRANSITIVE), "java.net.http")
-      ;
+      expected
+          .requires(Set.of(MANDATED), "java.base")
+          .requires(Set.of(), "java.compiler")
+          .requires(Set.of(), "java.net.http");
     }
     // only the jarred module provides the following attributes
     actual.version().ifPresent(__ -> expected.version(Bach.VERSION));

@@ -28,6 +28,7 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Structure;
@@ -45,8 +46,8 @@ class ProjectTests {
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
     var realm = new Realm("realm", Set.of(), List.of(), List.of());
-    var unit = new Unit(realm, Path.of("?"), descriptor("unit", 1), List.of());
-    var structure = new Structure(Folder.of(base), List.of(realm), List.of(unit));
+    var unit = new Unit(realm, Path.of("."), descriptor("unit", 1), List.of());
+    var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure);
     assertEquals("simple", project.name());
     assertEquals("0", project.version().toString());
@@ -80,7 +81,7 @@ class ProjectTests {
       }
     }
 
-    var structure = new Structure(Folder.of(), List.of(), List.of());
+    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
     var project = new Project("zero", Version.parse("0"), structure);
     var log = new Log();
     var bach = new Bach(log, project);
@@ -92,7 +93,7 @@ class ProjectTests {
 
   @Test
   void executeNonZeroToolProviderIsReportedAsAnError() {
-    var structure = new Structure(Folder.of(), List.of(), List.of());
+    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
     var project = new Project("zero", Version.parse("0"), structure);
     var log = new Log();
     var bach = new Bach(log, project);
@@ -113,8 +114,8 @@ class ProjectTests {
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
     var main = new Realm("main", Set.of(), List.of(), List.of());
-    var unit = new Unit(main, Path.of("?"), descriptor("unit", 0), List.of());
-    var structure = new Structure(Folder.of(temp), List.of(main), List.of(unit));
+    var unit = new Unit(main, Path.of("."), descriptor("unit", 0), List.of());
+    var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure);
 
     var log = new Log();
