@@ -56,9 +56,8 @@ class Tester {
   }
 
   private void test(Unit unit) {
-    var modulePath = new ArrayList<Path>();
+    var modulePath = new ArrayList<>(realm.modulePaths());
     modulePath.add(folder.modules(realm.name()));
-    modulePath.addAll(realm.modulePaths());
     var layer = layer(modulePath, unit.name());
 
     var errors = new StringBuilder();
