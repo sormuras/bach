@@ -73,9 +73,12 @@ class DemoTests {
             ".+\\Q it-0.jar\\E",
             "Build \\d+ took millis."),
         log.lines(),
-        Files.readString(folder.out("summary.log")));
+        "Log lines don't match expectations:\n" + Files.readString(folder.out("summary.log")));
 
-    assertEquals(0, log.getEntries().stream().filter(Log.Entry::isWarning).count());
+    assertEquals(
+        0,
+        log.getEntries().stream().filter(Log.Entry::isWarning).count(),
+        "Expected zero warnings in log, but got:\n" + Files.readString(folder.out("summary.log")));
 
     assertLinesMatch(
         log.getMessages().stream()
