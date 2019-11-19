@@ -23,5 +23,5 @@ public class Bach {
     System.out.printf("Reboot into version %s in progress...%n", VERSION);
   }
 
-  static final String VERSION = "2.0-ea";
+  static final String VERSION = "2.0-M2";
 }
