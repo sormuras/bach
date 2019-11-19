@@ -24,8 +24,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public /*record*/ class Project {
-  public static Project of() {
-    return ProjectBuilder.build(Path.of(""));
+  public static Project of(String path) {
+    return ProjectBuilder.build(Path.of(path).normalize());
   }
 
   private final String name;

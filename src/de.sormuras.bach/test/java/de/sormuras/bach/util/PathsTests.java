@@ -38,4 +38,12 @@ class PathsTests {
     assertEquals(List.of(), Paths.list(temp, Files::isRegularFile));
     assertEquals(List.of(), Paths.list(temp, Files::isDirectory));
   }
+
+  @Test
+  void normalize() {
+    assertEquals("", Path.of("").normalize().toString());
+    assertEquals("", Path.of(".").normalize().toString());
+    assertEquals("", Path.of("a/..").normalize().toString());
+    assertEquals("", Path.of("a/b/../../.").normalize().toString());
+  }
 }

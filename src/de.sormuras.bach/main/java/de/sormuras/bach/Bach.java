@@ -29,7 +29,7 @@ public class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    var bach = new Bach(Log.ofSystem(), Project.of());
+    var bach = new Bach(Log.ofSystem(), Project.of("."));
     bach.execute(Task.build());
   }
 
