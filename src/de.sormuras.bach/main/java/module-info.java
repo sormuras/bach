@@ -16,10 +16,11 @@
  */
 
 module de.sormuras.bach {
-  requires java.compiler; // javax.lang.model.SourceVersion and friends
+  requires java.compiler;
+  requires java.net.http;
 
   exports de.sormuras.bach;
   exports de.sormuras.bach.project;
 
-  uses java.util.spi.ToolProvider; // in de.sormuras.bach.util.Tools
+  uses java.util.spi.ToolProvider;
 }
