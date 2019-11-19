@@ -53,7 +53,7 @@ public class Uris {
       }
     }
     var request = HttpRequest.newBuilder(uri).GET();
-    if (Files.exists(path)) {
+    if (Files.exists(path) && Files.getFileStore(path).supportsFileAttributeView("user")) {
       try {
         var etagBytes = (byte[]) Files.getAttribute(path, "user:etag");
         var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
@@ -67,7 +67,7 @@ public class Uris {
     if (response.statusCode() == 200) {
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
         var etagHeader = response.headers().firstValue("etag");
-        if (etagHeader.isPresent()) {
+        if (etagHeader.isPresent() && Files.getFileStore(path).supportsFileAttributeView("user")) {
           try {
             var etag = etagHeader.get();
             Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
