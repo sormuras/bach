@@ -25,7 +25,7 @@ import java.util.spi.ToolProvider;
 public class Bach {
 
   /** Bach.java's version. */
-  public static final String VERSION = "2.0-M2";
+  public static final String VERSION = "2.0-ea";
 
   /** Main entry-point. */
   public static void main(String... args) {
