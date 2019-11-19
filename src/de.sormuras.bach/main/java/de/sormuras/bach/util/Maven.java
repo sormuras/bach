@@ -98,6 +98,10 @@ public class Maven {
     return groupArtifacts.apply(module) + ':' + version;
   }
 
+  public String version(String module) {
+    return versions.apply(module);
+  }
+
   public URI toUri(String repository, String group, String artifact, String version) {
     return toUri(repository, group, artifact, version, "", "jar");
   }

@@ -46,19 +46,63 @@ class Resolver {
   private final Log log;
   private final Project project;
   private final Path lib;
+  private final Library library;
 
   Resolver(Bach bach) {
     this.log = bach.getLog();
     this.project = bach.getProject();
     this.lib = project.folder().lib();
+    this.library = project.structure().library();
   }
 
   public void resolve() throws Exception {
+    var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
+    var missing = findMissingModules(systemModulesSurvey);
+    if (missing.isEmpty()) {
+      return;
+    }
+
+    var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    var uris = new Uris(log, http);
+    var maven = createMaven(uris);
+
+    var moduleUriProperties = load(new Properties(), lib.resolve("module-uri.properties"));
+    do {
+      log.debug("Loading missing modules: %s", missing);
+      for (var entry : missing.entrySet()) {
+        var module = entry.getKey();
+        var direct = moduleUriProperties.getProperty(module);
+        if (direct != null) {
+          var uri = URI.create(direct);
+          var jar = lib.resolve(module + ".jar");
+          uris.copy(uri, jar, StandardCopyOption.COPY_ATTRIBUTES);
+          continue;
+        }
+        var versions = entry.getValue();
+        var version = singleton(versions).map(Object::toString).orElse(maven.version(module));
+        var ga = maven.lookup(module, version).split(":");
+        var group = ga[0];
+        var artifact = ga[1];
+        var repository = library.mavenRepositoryMapper().apply(group, version);
+        uris.copy(
+            maven.toUri(repository, group, artifact, version),
+            lib.resolve(module + '-' + version + ".jar"),
+            StandardCopyOption.COPY_ATTRIBUTES);
+      }
+      missing.clear();
+      var library2 = Modules.Survey.of(ModuleFinder.of(lib));
+      library2.putAllRequiresTo(missing);
+      library2.declaredModules().forEach(missing::remove);
+      systemModulesSurvey.declaredModules().forEach(missing::remove);
+    } while (!missing.isEmpty());
+  }
+
+  Map<String, Set<Version>> findMissingModules(Modules.Survey systemModulesSurvey) {
     var units = project.structure().units().stream().map(Unit::info).collect(Collectors.toList());
     var projectModulesSurvey = Modules.Survey.of(units);
     var libraryModulesSurvey = Modules.Survey.of(ModuleFinder.of(lib));
-    var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
-    log.debug("Project modules survey of -> %s", units);
+
+    log.debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
     log.debug("  declared -> " + projectModulesSurvey.declaredModules());
     log.debug("  requires -> " + projectModulesSurvey.requiredModules());
     log.debug("Library modules survey of -> %s", lib.toUri());
@@ -66,7 +110,6 @@ class Resolver {
     log.debug("  requires -> " + libraryModulesSurvey.requiredModules());
     log.debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
 
-    var library = project.structure().library();
     var missing = new TreeMap<String, Set<Version>>();
     projectModulesSurvey.putAllRequiresTo(missing);
     libraryModulesSurvey.putAllRequiresTo(missing);
@@ -75,13 +118,10 @@ class Resolver {
     projectModulesSurvey.declaredModules().forEach(missing::remove);
     libraryModulesSurvey.declaredModules().forEach(missing::remove);
     systemModulesSurvey.declaredModules().forEach(missing::remove);
-    if (missing.isEmpty()) {
-      return;
-    }
+    return missing;
+  }
 
-    var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-    var uris = new Uris(log, http);
-
+  Maven createMaven(Uris uris) throws Exception {
     var cache =
         Files.createDirectories(Path.of(System.getProperty("user.home")).resolve(".bach/modules"));
     var artifactPath =
@@ -107,37 +147,7 @@ class Resolver {
             library.mavenVersionMapper(),
             map(load(new Properties(), lib.resolve("module-version.properties"))),
             map(load(new Properties(), versionPath)));
-    var maven = new Maven(log, uris, artifactLookup, versionLookup);
-
-    var moduleUriProperties = load(new Properties(), lib.resolve("module-uri.properties"));
-    do {
-      log.debug("Loading missing modules: %s", missing);
-      for (var entry : missing.entrySet()) {
-        var module = entry.getKey();
-        var direct = moduleUriProperties.getProperty(module);
-        if (direct != null) {
-          var uri = URI.create(direct);
-          var jar = lib.resolve(module + ".jar");
-          uris.copy(uri, jar, StandardCopyOption.COPY_ATTRIBUTES);
-          continue;
-        }
-        var versions = entry.getValue();
-        var version = singleton(versions).map(Object::toString).orElse(versionLookup.apply(module));
-        var ga = maven.lookup(module, version).split(":");
-        var group = ga[0];
-        var artifact = ga[1];
-        var repository = library.mavenRepositoryMapper().apply(group, version);
-        uris.copy(
-            maven.toUri(repository, group, artifact, version),
-            lib.resolve(module + '-' + version + ".jar"),
-            StandardCopyOption.COPY_ATTRIBUTES);
-      }
-      missing.clear();
-      var library2 = Modules.Survey.of(ModuleFinder.of(lib));
-      library2.putAllRequiresTo(missing);
-      library2.declaredModules().forEach(missing::remove);
-      systemModulesSurvey.declaredModules().forEach(missing::remove);
-    } while (!missing.isEmpty());
+    return new Maven(log, uris, artifactLookup, versionLookup);
   }
 
   static Properties load(Properties properties, Path path) {
