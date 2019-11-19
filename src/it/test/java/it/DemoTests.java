@@ -53,7 +53,7 @@ class DemoTests {
             "Executing task: BuildTask",
             "Executing task: SanityTask",
             "Executing task: ResolveTask",
-            "TODO Resolving missing external modules",
+            ">> MODULE SURVEYS, DOWNLOADS, ... >>",
             "Executing task: CompileTask",
             "Compiling 2 main unit(s): [demo.core, demo.mantle]",
             ">> JAVAC, JAR, ... >>",

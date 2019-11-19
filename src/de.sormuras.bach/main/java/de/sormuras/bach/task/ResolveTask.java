@@ -23,8 +23,7 @@ import de.sormuras.bach.Task;
 public class ResolveTask implements Task {
 
   @Override
-  public void execute(Bach bach) {
-    var log = bach.getLog();
-    log.debug("TODO Resolving missing external modules");
+  public void execute(Bach bach) throws Exception {
+    new Resolver(bach).resolve();
   }
 }
