@@ -146,6 +146,10 @@ public class Modules {
       return requiresMap.keySet();
     }
 
+    public void putAllRequiresTo(Map<String, Set<Version>> map) {
+      map.putAll(requiresMap);
+    }
+
     public Optional<Version> requiredVersion(String requiredModule) {
       var versions = requiresMap.get(requiredModule);
       if (versions == null) {
