@@ -18,9 +18,11 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
@@ -61,6 +63,8 @@ class ProjectTests {
 
     assertEquals(base.resolve("lib"), folder.lib());
     assertSame(structure, project.structure());
+    assertTrue(realm.modifiers().isEmpty());
+    assertFalse(realm.isTestRealm());
     assertSame(unit, project.unit("realm", "unit").orElseThrow());
     assertEquals("1", project.version(unit).toString());
     assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
