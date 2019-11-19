@@ -83,7 +83,7 @@ public class ProjectBuilder {
     }
 
     var name = Optional.ofNullable(base.toAbsolutePath().getFileName()).map(Path::toString);
-    var version = Version.parse("0");
+    var version = Version.parse(System.getProperty(".bach/project.version", "0"));
     var structure = new Structure(folder, Library.of(), realms, units);
 
     return new Project(name.orElse("project"), version, structure);
