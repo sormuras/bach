@@ -1,5 +1,5 @@
 package demo.mantle;
 
-class Mantle {
+public class Mantle {
   Object core = new demo.core.PublicCore();
 }
