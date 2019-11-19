@@ -14,7 +14,7 @@ public class Tools {
 
   public Tools() {
     this.map = new TreeMap<>();
-    ServiceLoader.load(ToolProvider.class).stream()
+    ServiceLoader.load(ToolProvider.class, ClassLoader.getSystemClassLoader()).stream()
         .map(ServiceLoader.Provider::get)
         .forEach(provider -> map.putIfAbsent(provider.name(), provider));
   }
