@@ -89,8 +89,7 @@ class Jigsaw {
   }
 
   private void jarSources(Unit unit) {
-    var jar = unit.name() + '-' + bach.getProject().version(unit) + "-sources.jar";
-    var file = folder.realm(realm.name(), jar); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
+    var file = bach.getProject().sourcesJar(unit); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
     var sources = Paths.filterExisting(unit.sources());
     var resources = Paths.filterExisting(unit.resources());
     bach.execute(

@@ -18,6 +18,11 @@
 package de.sormuras.bach.util;
 
 import de.sormuras.bach.Log;
+import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.Unit;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import javax.lang.model.SourceVersion;
 import java.net.URI;
 import java.util.Map;
@@ -138,5 +143,101 @@ public class Maven {
     int beginIndex = string.indexOf(beginTag) + beginTag.length();
     int endIndex = string.indexOf(endTag, beginIndex);
     return string.substring(beginIndex, endIndex).trim();
+  }
+
+  public static class Scribe {
+
+    enum ScriptType {
+      BASH(".sh", '\''),
+      WIN(".bat", '"') {
+        @Override
+        List<String> lines(List<String> lines) {
+          return lines.stream().map(line -> "call " + line).collect(Collectors.toList());
+        }
+      };
+
+      final String extension;
+      final char quote;
+
+      ScriptType(String extension, char quote) {
+        this.extension = extension;
+        this.quote = quote;
+      }
+
+      String quote(Object object) {
+        return quote + object.toString() + quote;
+      }
+
+      List<String> lines(List<String> lines) {
+        return lines;
+      }
+    }
+
+    final Project project;
+
+    public Scribe(Project project) {
+      this.project = project;
+    }
+
+    public void generateMavenInstallScript(Iterable<Unit> units) {
+      for (var type : ScriptType.values()) {
+        generateMavenInstallScript(type, units);
+      }
+    }
+
+    void generateMavenInstallScript(ScriptType type, Iterable<Unit> units) {
+      var plugin = "install:install-file";
+      var maven = String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", plugin);
+      var lines = new ArrayList<String>();
+      for (var unit : units) {
+        if (unit.mavenPom().isPresent()) {
+          lines.add(String.join(" ", maven, generateMavenArtifactLine(unit, type)));
+        }
+      }
+      if (lines.isEmpty()) {
+        // log("No maven-install script lines generated.");
+        return;
+      }
+      try {
+        var script = project.folder().out("maven-install" + type.extension);
+        Files.write(script, type.lines(lines));
+      } catch (Exception e) {
+        throw new RuntimeException("Generating install script failed: " + e.getMessage(), e);
+      }
+    }
+
+    //    public void generateMavenDeployScript() {
+    //      for (var type : ScriptType.values()) {
+    //        generateMavenDeployScript(type);
+    //      }
+    //    }
+
+    //    void generateMavenDeployScript(ScriptType type) {
+    //      var deployment = realm.toolArguments.deployment().orElseThrow();
+    //      var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
+    //      var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId);
+    //      var url = "url=" + type.quote(deployment.mavenUri);
+    //      var maven = String.join(" ", "mvn", "--batch-mode", plugin);
+    //      var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
+    //      var lines = new ArrayList<String>();
+    //      for (var unit : realm.units) {
+    //        lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
+    //      }
+    //      try {
+    //        var name = "maven-deploy-" + deployment.mavenRepositoryId;
+    //        var script = bach.project.targetDirectory.resolve(name + type.extension);
+    //        Files.write(script, type.lines(lines));
+    //      } catch (Exception e) {
+    //        throw new RuntimeException("Deploy failed: " + e.getMessage(), e);
+    //      }
+    //    }
+
+    String generateMavenArtifactLine(Unit unit, ScriptType type) {
+      var pom = "pomFile=" + type.quote(unit.mavenPom().orElseThrow());
+      var file = "file=" + type.quote(project.modularJar(unit));
+      var sources = "sources=" + type.quote(project.sourcesJar(unit));
+      // TODO var javadoc = "javadoc=" + type.quote(javadocJar);
+      return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources /*, "-D" + javadoc*/);
+    }
   }
 }

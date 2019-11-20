@@ -18,9 +18,11 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public /*record*/ class Unit {
   private final Realm realm;
@@ -77,5 +79,14 @@ public /*record*/ class Unit {
       resources.add(path);
     }
     return List.copyOf(resources);
+  }
+
+  public Optional<Path> mavenPom() {
+    for (var source : realm.sourcePaths()) {
+      var pom = source.getParent().resolve("maven").resolve("pom.xml");
+      var path = Path.of(pom.toString().replace("{MODULE}", name()));
+      if (Files.isRegularFile(path)) return Optional.of(path);
+    }
+    return Optional.empty();
   }
 }

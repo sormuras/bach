@@ -78,6 +78,11 @@ public /*record*/ class Project {
     return folder().modules(unit.realm().name(), jar);
   }
 
+  public Path sourcesJar(Unit unit) {
+    var jar = unit.name() + '-' + version(unit) + "-sources.jar";
+    return folder().realm(unit.realm().name(), jar);
+  }
+
   public Version version(Unit unit) {
     return unit.descriptor().version().orElse(version);
   }
