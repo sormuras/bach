@@ -19,6 +19,7 @@
 
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
+System.setProperty("Bach.java/transferIO", "true")
 var code = 0
 try {
   Bach.main();

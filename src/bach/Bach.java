@@ -27,35 +27,47 @@ import java.util.List;
 /** Build modular Java project. */
 public class Bach {
 
-  /** This program is launched via JEP 330, if no argument is passed */
-  public static final Path DEFAULT_BUILD_PROGRAM = Path.of("src/bach/Build.java");
+  /** The version of module {@code de.sormuras.bach} to load and use. */
+  static final String BACH_VERSION = System.getProperty("Bach.java/version", "master-SNAPSHOT");
+
+  /** Directory to store module {@code de.sormuras.bach-{VERSION}.jar} to. */
+  static final Path LIB = Path.of(System.getProperty("Bach.java/lib", ".bach/build/lib"));
+
+  /** Transfer output stream of started process to this {@code System.out} stream. */
+  static final boolean TRANSFER_IO = Boolean.getBoolean("Bach.java/transferIO");
+
+  /** This program is launched via JEP 330, if no argument is passed to the main method. */
+  static final Path DEFAULT_BUILD_PROGRAM = Path.of("src/bach/Build.java");
 
   public static void main(String... args) throws Exception {
-    var version = System.getProperty("bach.version", "master-SNAPSHOT");
-    var lib = Path.of(System.getProperty("bach.lib", ".bach/build/lib"));
-    System.out.printf("Loading module Bach.java %s to %s...%n", version, lib.toUri());
-    load(
-        lib,
-        "de.sormuras.bach",
-        version,
-        URI.create(
-            "https://jitpack.io/com/github/sormuras/bach/"
-                + version
-                + "/bach-"
-                + version
-                + ".jar"));
+    System.out.println();
+    System.out.println("Bach.java // https://github.com/sponsors/sormuras");
+    System.out.println();
+    System.out.println(". BEGIN");
+    System.out.println("|   -DBach.java/version=" + BACH_VERSION);
+    System.out.println("|   -DBach.java/lib=" + LIB);
+    System.out.println("|   -DBach.java/transferIO=" + TRANSFER_IO);
+    System.out.println("| Default build program");
+    System.out.println("|   path: " + DEFAULT_BUILD_PROGRAM);
+    System.out.println("|   exists: " + isRegularFile(DEFAULT_BUILD_PROGRAM));
+    System.out.println("| Arguments");
+    System.out.println("|   args: " + List.of(args));
+    System.out.println("|");
+
+    var uri = "https://jitpack.io/com/github/sormuras/bach/{VERSION}/bach-{VERSION}.jar";
+    load("de.sormuras.bach", BACH_VERSION, URI.create(uri.replace("{VERSION}", BACH_VERSION)));
 
     var java = new ArrayList<String>();
     java.add(ProcessHandle.current().info().command().orElse("java"));
     java.add("-D" + "user.language=en");
-    java.add("--module-path=" + lib);
+    java.add("--module-path=" + LIB);
     if (args.length == 0) {
       if (isRegularFile(DEFAULT_BUILD_PROGRAM)) {
         java.add("--add-modules=de.sormuras.bach");
         java.add(DEFAULT_BUILD_PROGRAM.toString());
       } else {
         java.add("--module");
-        java.add("de.sormuras.bach/de.sormuras.bach");
+        java.add("de.sormuras.bach/de.sormuras.bach.Bach"); // TODO Remove entry-point part
       }
     }
     if (args.length == 1) {
@@ -63,13 +75,20 @@ public class Bach {
       java.add(Path.of(args[0]).toString()); // "etc/CustomBuild.java"
     }
     start(java);
+    System.out.println("|");
+    System.out.println("' END.");
+    System.out.println();
+    System.out.println(
+        "Thanks for using Bach.java!"
+            + " Support its development at https://github.com/sponsors/sormuras (-:");
   }
 
-  static void load(Path lib, String module, String version, URI uri) throws Exception {
-    var jar = lib.resolve(module + '-' + version + ".jar");
+  static void load(String module, String version, URI uri) throws Exception {
+    System.out.printf("| Loading module Bach.java %s to %s...%n", version, LIB.toUri());
+    var jar = LIB.resolve(module + '-' + version + ".jar");
     if (isRegularFile(jar) && !version.endsWith("SNAPSHOT")) return;
-    System.out.printf("%s <- %s%n", jar, uri);
-    createDirectories(lib);
+    System.out.printf("| %s <- %s%n", jar, uri);
+    createDirectories(LIB);
     try (var source = uri.toURL().openStream();
         var target = newOutputStream(jar)) {
       source.transferTo(target);
@@ -77,8 +96,12 @@ public class Bach {
   }
 
   static void start(List<String> command) throws Exception {
-    System.out.printf("%s%n", String.join(" ", command));
-    var process = new ProcessBuilder(command).inheritIO().start();
+    System.out.printf("| %s%n", String.join(" ", command));
+    var builder = new ProcessBuilder(command);
+    if (TRANSFER_IO) builder.redirectErrorStream(true);
+    else builder.inheritIO();
+    var process = builder.start();
+    if (TRANSFER_IO) process.getInputStream().transferTo(System.out);
     int code = process.waitFor();
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
