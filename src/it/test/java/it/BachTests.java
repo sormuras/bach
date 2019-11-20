@@ -20,14 +20,17 @@ package it;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import de.sormuras.bach.Bach;
 import java.lang.module.ModuleDescriptor;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
   @Test
   void moduleDescriptorParsesVersion() {
-    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse("2.0-ea"));
+    var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss").withZone(ZoneId.of("UTC"));
+    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(pattern.format(Instant.now())));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse(""));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("-"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("master"));
