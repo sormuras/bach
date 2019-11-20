@@ -50,7 +50,7 @@ class DemoTests {
 
     assertLinesMatch(
         List.of(
-            "Bach.java " + Bach.VERSION + " initialized.",
+            "Bach.java (.+) initialized.",
             "Executing task: BuildTask",
             "Executing task: SanityTask",
             "Executing task: ResolveTask",

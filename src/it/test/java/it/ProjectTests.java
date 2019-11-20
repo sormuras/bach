@@ -102,7 +102,7 @@ class ProjectTests {
     assertEquals(
         "Call exited with non-zero status code: 2 <- Call{name='javac', arguments=[*]}",
         error.getMessage());
-    assertLinesMatch(List.of("Bach.java 2.0-ea initialized.", "| javac(*)"), log.lines());
+    assertLinesMatch(List.of("Bach.java (.+) initialized.", "| javac(*)"), log.lines());
     assertLinesMatch(
         List.of(
             "error: invalid flag: *",

@@ -62,7 +62,7 @@ class ModuleSystemTests {
           .requires(Set.of(), "java.net.http");
     }
     // only the jarred module provides the following attributes
-    actual.version().ifPresent(__ -> expected.version(Bach.VERSION));
+    actual.version().ifPresent(expected::version); // reflexive
     actual.mainClass().ifPresent(__ -> expected.mainClass("de.sormuras.bach.Bach"));
     assertEquals(expected.build(), actual);
   }

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class BachTests {
   @Test
   void moduleDescriptorParsesVersion() {
-    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(Bach.VERSION));
+    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse("2.0-ea"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse(""));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("-"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("master"));

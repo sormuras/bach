@@ -19,17 +19,21 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.util.Tools;
+import java.lang.module.ModuleDescriptor;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
 
 /** Build modular Java project. */
 public class Bach {
 
-  /** Bach.java's version. */
-  public static final String VERSION = "2.0-ea";
-
   /** Main entry-point. */
   public static void main(String... args) {
-    var bach = new Bach(Log.ofSystem(), Project.of("."));
+    build(Log.ofSystem(), Project.of("."));
+  }
+
+  /** */
+  public static void build(Log log, Project project) {
+    var bach = new Bach(log, project);
     bach.execute(Task.build());
   }
 
@@ -41,7 +45,11 @@ public class Bach {
     this.log = log;
     this.project = project;
     this.tools = new Tools();
-    log.debug("Bach.java %s initialized.", VERSION);
+    var nameAndVersion =
+        Optional.ofNullable(getClass().getModule().getDescriptor())
+            .map(ModuleDescriptor::toNameAndVersion)
+            .orElse("UNNAMED MODULE");
+    log.debug("Bach.java (%s) initialized.", nameAndVersion);
   }
 
   public Log getLog() {
