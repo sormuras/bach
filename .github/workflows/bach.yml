@@ -23,9 +23,7 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.java }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
     - name: 'Build with Bach.java'
-      run: |
-        java src/bach/Bootstrap.java
-        source .bach/out/maven-install.sh
+      run: java src/bach/Bootstrap.java
   jshell:
     name: 'jshell https://bit.ly/bach-jsh'
     runs-on: ubuntu-latest
