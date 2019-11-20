@@ -44,7 +44,8 @@ class DemoTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var log = new Log();
-    var folder = new Folder(Path.of("demo"), temp.resolve("lib"), temp);
+    var base = Path.of("demo");
+    var folder = new Folder(base, base.resolve("src"), temp.resolve("lib"), temp);
     new Bach(log, ProjectBuilder.build(folder)).execute(Task.build());
 
     assertLinesMatch(

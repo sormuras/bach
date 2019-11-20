@@ -27,16 +27,18 @@ public /*record*/ class Folder {
   }
 
   public static Folder of(Path base) {
-    return new Folder(base, base.resolve("lib"), base.resolve(".bach/out"));
+    return new Folder(base, base.resolve("src"), base.resolve("lib"), base.resolve(".bach/out"));
   }
 
   private final Path base;
+  private final Path src;
   private final Path lib;
   private final Path out;
   private final Path log;
 
-  public Folder(Path base, Path lib, Path out) {
+  public Folder(Path base, Path src, Path lib, Path out) {
     this.base = base;
+    this.src = src;
     this.lib = lib;
     this.out = out;
     this.log = out.resolve("log");
@@ -61,6 +63,14 @@ public /*record*/ class Folder {
 
   public Path lib() {
     return lib;
+  }
+
+  public Path src() {
+    return src;
+  }
+
+  public Path src(String... more) {
+    return resolve(src, more);
   }
 
   public Path log() {
