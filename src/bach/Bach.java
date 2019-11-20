@@ -28,7 +28,7 @@ import java.util.List;
 public class Bach {
 
   /** The version of module {@code de.sormuras.bach} to load and use. */
-  static final String BACH_VERSION = System.getProperty("Bach.java/version", "2.0-M2");
+  static final String BACH_VERSION = System.getProperty("Bach.java/version", "master-SNAPSHOT");
 
   /** Directory to store module {@code de.sormuras.bach-{VERSION}.jar} to. */
   static final Path LIB = Path.of(System.getProperty("Bach.java/lib", ".bach/build/lib"));

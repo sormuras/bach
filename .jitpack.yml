@@ -3,5 +3,5 @@ jdk:
 
 install:
   - unset JAVA_TOOL_OPTIONS
-  - java -DBach.java/version=2.0-M2 src/bach/Bach.java
+  - java src/bach/Bootstrap.java
   - source .bach/out/maven-install.sh
