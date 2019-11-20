@@ -41,7 +41,7 @@ public class Bach {
 
   public static void main(String... args) throws Exception {
     System.out.println();
-    System.out.println("Bach.java // https://github.com/sponsors/sormuras");
+    System.out.println("Bach.java // https://github.com/sormuras/bach");
     System.out.println();
     System.out.println(". BEGIN");
     System.out.println("|   -DBach.java/version=" + BACH_VERSION);
