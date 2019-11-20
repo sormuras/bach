@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// --main-class de.sormuras.bach.Bach
 module de.sormuras.bach {
   requires java.compiler;
   requires java.net.http;
