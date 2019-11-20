@@ -37,30 +37,32 @@ public class ProjectBuilder {
   }
 
   public static Project build(Folder folder) {
-    var base = folder.base();
-    if (!Files.isDirectory(base)) {
-      throw new IllegalArgumentException("Not a directory: " + base);
+    return new Project(
+        Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
+            .map(Path::toString)
+            .orElse("project"),
+        Version.parse(System.getProperty(".bach/project.version", "0")),
+        structure(folder));
+  }
+
+  public static Structure structure(Folder folder) {
+    if (!Files.isDirectory(folder.base())) {
+      throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
     var main =
         new Realm(
-            "main",
-            Set.of(),
-            List.of(folder.base().resolve("src/{MODULE}/main/java")),
-            List.of(folder.lib()));
+            "main", Set.of(), List.of(folder.src("{MODULE}/main/java")), List.of(folder.lib()));
     var test =
         new Realm(
             "test",
             Set.of(Realm.Modifier.TEST),
-            List.of(
-                folder.base().resolve("src/{MODULE}/test/java"),
-                folder.base().resolve("src/{MODULE}/test/module")),
+            List.of(folder.src("{MODULE}/test/java"), folder.src("{MODULE}/test/module")),
             List.of(folder.modules("main"), folder.lib()));
     var realms = List.of(main, test);
 
-    var src = base.resolve("src"); // TODO System.getProperty(".bach/project.path.src", "src")
     var modules = new TreeMap<String, List<String>>(); // local realm-based module registry
     var units = new ArrayList<Unit>();
-    for (var root : Paths.list(src, Files::isDirectory)) {
+    for (var root : Paths.list(folder.src(), Files::isDirectory)) {
       var module = root.getFileName().toString();
       if (!SourceVersion.isName(module.replace(".", ""))) continue;
       realm:
@@ -71,7 +73,7 @@ public class ProjectBuilder {
           if (Files.isRegularFile(info)) {
             var patches = new ArrayList<Path>();
             if (realm.name().equals("test") && modules.get("main").contains(module)) {
-              patches.add(src.resolve(module).resolve("main/java"));
+              patches.add(folder.src().resolve(module).resolve("main/java"));
             }
             var descriptor = Modules.describe(Paths.readString(info));
             units.add(new Unit(realm, info, descriptor, patches));
@@ -82,10 +84,6 @@ public class ProjectBuilder {
       }
     }
 
-    var name = Optional.ofNullable(base.toAbsolutePath().getFileName()).map(Path::toString);
-    var version = Version.parse(System.getProperty(".bach/project.version", "0"));
-    var structure = new Structure(folder, Library.of(), realms, units);
-
-    return new Project(name.orElse("project"), version, structure);
+    return new Structure(folder, Library.of(), realms, units);
   }
 }
