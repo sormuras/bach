@@ -59,6 +59,7 @@ class Jigsaw {
             .add("--module-version", bach.getProject().version()));
 
     if (realm.isDeployRealm()) {
+      Paths.createDirectories(javadoc);
       bach.execute(
           new Call("javadoc")
               .add("-d", javadoc)
