@@ -67,7 +67,7 @@ public class Bach {
         java.add(DEFAULT_BUILD_PROGRAM.toString());
       } else {
         java.add("--module");
-        java.add("de.sormuras.bach/de.sormuras.bach.Bach"); // TODO Remove entry-point part
+        java.add("de.sormuras.bach");
       }
     }
     if (args.length == 1) {
@@ -84,10 +84,10 @@ public class Bach {
   }
 
   static void load(String module, String version, URI uri) throws Exception {
-    System.out.printf("| Loading module Bach.java %s to %s...%n", version, LIB.toUri());
+    System.out.printf("| Loading module de.sormuras.bach %s to %s...%n", version, LIB.toUri());
     var jar = LIB.resolve(module + '-' + version + ".jar");
     if (isRegularFile(jar) && !version.endsWith("SNAPSHOT")) return;
-    System.out.printf("| %s <- %s%n", jar, uri);
+    System.out.printf("|   %s <- %s%n", jar, uri);
     createDirectories(LIB);
     try (var source = uri.toURL().openStream();
         var target = newOutputStream(jar)) {
@@ -96,13 +96,14 @@ public class Bach {
   }
 
   static void start(List<String> command) throws Exception {
-    System.out.printf("| %s%n", String.join(" ", command));
+    System.out.printf("! %s%n", String.join(" ", command));
     var builder = new ProcessBuilder(command);
     if (TRANSFER_IO) builder.redirectErrorStream(true);
     else builder.inheritIO();
     var process = builder.start();
     if (TRANSFER_IO) process.getInputStream().transferTo(System.out);
     int code = process.waitFor();
+    System.out.println("¡");
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 }
