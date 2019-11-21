@@ -27,8 +27,11 @@ import java.util.List;
 /** Build modular Java project. */
 public class Bach {
 
+  /** The {@code Bach.java} version constant. */
+  static final String VERSION = "2.0-ea";
+
   /** The version of module {@code de.sormuras.bach} to load and use. */
-  static final String BACH_VERSION = System.getProperty("Bach.java/version", "master-SNAPSHOT");
+  static final String BACH_VERSION = System.getProperty("Bach.java/version", VERSION);
 
   /** Directory to store module {@code de.sormuras.bach-{VERSION}.jar} to. */
   static final Path LIB = Path.of(System.getProperty("Bach.java/lib", ".bach/build/lib"));
@@ -40,11 +43,12 @@ public class Bach {
   static final Path DEFAULT_BUILD_PROGRAM = Path.of("src/bach/Build.java");
 
   public static void main(String... args) throws Exception {
+    var version = BACH_VERSION.endsWith("-ea") ? "master-SNAPSHOT" : BACH_VERSION;
     System.out.println();
     System.out.println("Bach.java // https://github.com/sormuras/bach");
     System.out.println();
     System.out.println(". BEGIN");
-    System.out.println("|   -DBach.java/version=" + BACH_VERSION);
+    System.out.println("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
     System.out.println("|   -DBach.java/lib=" + LIB);
     System.out.println("|   -DBach.java/transferIO=" + TRANSFER_IO);
     System.out.println("| Default build program");
@@ -55,7 +59,7 @@ public class Bach {
     System.out.println("|");
 
     var uri = "https://jitpack.io/com/github/sormuras/bach/{VERSION}/bach-{VERSION}.jar";
-    load("de.sormuras.bach", BACH_VERSION, URI.create(uri.replace("{VERSION}", BACH_VERSION)));
+    load("de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
 
     var java = new ArrayList<String>();
     java.add(ProcessHandle.current().info().command().orElse("java"));
