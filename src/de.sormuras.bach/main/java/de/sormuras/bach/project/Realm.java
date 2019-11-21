@@ -26,6 +26,7 @@ import java.util.Set;
 public /*record*/ class Realm {
 
   public enum Modifier {
+    DEPLOY,
     TEST
   }
 
@@ -47,6 +48,10 @@ public /*record*/ class Realm {
 
   public Set<Modifier> modifiers() {
     return modifiers;
+  }
+
+  public boolean isDeployRealm() {
+    return modifiers.contains(Modifier.DEPLOY);
   }
 
   public boolean isTestRealm() {

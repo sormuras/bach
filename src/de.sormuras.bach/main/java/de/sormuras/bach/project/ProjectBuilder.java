@@ -42,7 +42,8 @@ public class ProjectBuilder {
             .map(Path::toString)
             .orElse("project"),
         Version.parse(System.getProperty(".bach/project.version", "0")),
-        structure(folder));
+        structure(folder),
+        null);
   }
 
   public static Structure structure(Folder folder) {
@@ -51,7 +52,10 @@ public class ProjectBuilder {
     }
     var main =
         new Realm(
-            "main", Set.of(), List.of(folder.src("{MODULE}/main/java")), List.of(folder.lib()));
+            "main",
+            Set.of(Realm.Modifier.DEPLOY),
+            List.of(folder.src("{MODULE}/main/java")),
+            List.of(folder.lib()));
     var test =
         new Realm(
             "test",

@@ -32,7 +32,9 @@ public class CompileTask implements Task {
       if (units.isEmpty()) continue;
       log.debug("Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
       new Jigsaw(bach, realm).compile(units);
-      new Maven.Scribe(project).generateMavenInstallScript(units);
+      var scribe = new Maven.Scribe(project);
+      scribe.generateMavenInstallScript(units);
+      if (realm.isDeployRealm()) scribe.generateMavenDeployScript(units);
     }
   }
 }

@@ -58,10 +58,10 @@ class Jigsaw {
     Paths.createDirectories(folder.modules(realm.name()));
     for (var unit : units) {
       jarModule(unit);
-      // if (realm.modifiers.contains(Project.Realm.Modifier.DOCUMENT)) {
-      jarSources(unit);
-      //   TODO javadoc(unit);
-      // }
+      if (realm.isDeployRealm()) {
+        jarSources(unit);
+        // TODO javadoc(unit);
+      }
     }
   }
 

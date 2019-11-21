@@ -48,7 +48,7 @@ class ProjectTests {
     var realm = new Realm("realm", Set.of(), List.of(), List.of());
     var unit = new Unit(realm, Path.of("."), descriptor("unit", 1), List.of());
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
-    var project = new Project("simple", Version.parse("0"), structure);
+    var project = new Project("simple", Version.parse("0"), structure, null);
     assertEquals("simple", project.name());
     assertEquals("0", project.version().toString());
     var folder = project.folder();
@@ -82,7 +82,7 @@ class ProjectTests {
     }
 
     var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", Version.parse("0"), structure);
+    var project = new Project("zero", Version.parse("0"), structure, null);
     var log = new Log();
     var bach = new Bach(log, project);
 
@@ -94,7 +94,7 @@ class ProjectTests {
   @Test
   void executeNonZeroToolProviderIsReportedAsAnError() {
     var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", Version.parse("0"), structure);
+    var project = new Project("zero", Version.parse("0"), structure, null);
     var log = new Log();
     var bach = new Bach(log, project);
 
@@ -116,7 +116,7 @@ class ProjectTests {
     var main = new Realm("main", Set.of(), List.of(), List.of());
     var unit = new Unit(main, Path.of("."), descriptor("unit", 0), List.of());
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
-    var project = new Project("empty", Version.parse("0"), structure);
+    var project = new Project("empty", Version.parse("0"), structure, null);
 
     var log = new Log();
     var bach = new Bach(log, project);

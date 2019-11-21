@@ -18,6 +18,7 @@
 package de.sormuras.bach.util;
 
 import de.sormuras.bach.Log;
+import de.sormuras.bach.project.Deployment;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Unit;
 import java.nio.file.Files;
@@ -206,31 +207,39 @@ public class Maven {
       }
     }
 
-    //    public void generateMavenDeployScript() {
-    //      for (var type : ScriptType.values()) {
-    //        generateMavenDeployScript(type);
-    //      }
-    //    }
+    public void generateMavenDeployScript(Iterable<Unit> units) {
+      var deployment = project.deployment();
+      if (deployment.isEmpty()) {
+        // log("No Maven deployment record available.");
+        return;
+      }
+      for (var type : ScriptType.values()) {
+        generateMavenDeployScript(type, deployment.get(), units);
+      }
+    }
 
-    //    void generateMavenDeployScript(ScriptType type) {
-    //      var deployment = realm.toolArguments.deployment().orElseThrow();
-    //      var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
-    //      var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId);
-    //      var url = "url=" + type.quote(deployment.mavenUri);
-    //      var maven = String.join(" ", "mvn", "--batch-mode", plugin);
-    //      var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
-    //      var lines = new ArrayList<String>();
-    //      for (var unit : realm.units) {
-    //        lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
-    //      }
-    //      try {
-    //        var name = "maven-deploy-" + deployment.mavenRepositoryId;
-    //        var script = bach.project.targetDirectory.resolve(name + type.extension);
-    //        Files.write(script, type.lines(lines));
-    //      } catch (Exception e) {
-    //        throw new RuntimeException("Deploy failed: " + e.getMessage(), e);
-    //      }
-    //    }
+    void generateMavenDeployScript(ScriptType type, Deployment deployment, Iterable<Unit> units) {
+      var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
+      var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId());
+      var url = "url=" + type.quote(deployment.mavenUri());
+      var maven = String.join(" ", "mvn", "--batch-mode", plugin);
+      var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
+      var lines = new ArrayList<String>();
+      for (var unit : units) {
+        lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
+      }
+      if (lines.isEmpty()) {
+        // log("No maven-deploy script lines generated.");
+        return;
+      }
+      try {
+        var name = "maven-deploy-" + deployment.mavenRepositoryId();
+        var script = project.folder().out(name + type.extension);
+        Files.write(script, type.lines(lines));
+      } catch (Exception e) {
+        throw new RuntimeException("Deploy failed: " + e.getMessage(), e);
+      }
+    }
 
     String generateMavenArtifactLine(Unit unit, ScriptType type) {
       var pom = "pomFile=" + type.quote(unit.mavenPom().orElseThrow());

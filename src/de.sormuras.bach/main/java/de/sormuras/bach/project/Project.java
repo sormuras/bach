@@ -31,11 +31,13 @@ public /*record*/ class Project {
   private final String name;
   private final Version version;
   private final Structure structure;
+  private final Deployment deployment; // null-able
 
-  public Project(String name, Version version, Structure structure) {
+  public Project(String name, Version version, Structure structure, Deployment deployment) {
     this.name = name;
     this.version = version;
     this.structure = structure;
+    this.deployment = deployment;
   }
 
   public Folder folder() {
@@ -52,6 +54,10 @@ public /*record*/ class Project {
 
   public Structure structure() {
     return structure;
+  }
+
+  public Optional<Deployment> deployment() {
+    return Optional.ofNullable(deployment);
   }
 
   public Optional<Unit> unit(String realmName, String unitName) {
