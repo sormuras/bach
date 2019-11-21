@@ -4,6 +4,7 @@
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 [![jitpack](https://jitpack.io/v/sormuras/bach.svg)](https://jitpack.io/#sormuras/bach)
+[![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
 
 Use Java source to build your modular Java project.
 
@@ -23,7 +24,7 @@ Use Java source to build your modular Java project.
 
 ## U N D E R C O N S T R U C T I O N
 
-_Reboot into version `2-ea` in progress..._
+_Reboot into version `2.0-ea` in progress..._
 
 # install-jdk.sh
 
