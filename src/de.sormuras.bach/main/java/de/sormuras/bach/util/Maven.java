@@ -245,8 +245,8 @@ public class Maven {
       var pom = "pomFile=" + type.quote(unit.mavenPom().orElseThrow());
       var file = "file=" + type.quote(project.modularJar(unit));
       var sources = "sources=" + type.quote(project.sourcesJar(unit));
-      // TODO var javadoc = "javadoc=" + type.quote(javadocJar);
-      return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources /*, "-D" + javadoc*/);
+      var javadoc = "javadoc=" + type.quote(project.javadocJar(unit.realm()));
+      return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
     }
   }
 }
