@@ -33,12 +33,14 @@ class Jigsaw {
   private final Realm realm;
   private final Folder folder;
   private final Path classes;
+  private final Path javadoc;
 
   Jigsaw(Bach bach, Realm realm) {
     this.bach = bach;
     this.realm = realm;
     this.folder = bach.getProject().folder();
     this.classes = folder.realm(realm.name()).resolve("classes/jigsaw");
+    this.javadoc = folder.realm(realm.name()).resolve("javadoc/jigsaw");
   }
 
   void compile(List<Unit> units) {
@@ -55,12 +57,40 @@ class Jigsaw {
             .forEach(units, this::patchModule)
             .add("--module-path", modulePaths)
             .add("--module-version", bach.getProject().version()));
+
+    if (realm.isDeployRealm()) {
+      bach.execute(
+          new Call("javadoc")
+              .add("-d", javadoc)
+              .add("--module", String.join(",", moduleNames))
+              .add("-encoding", "UTF-8")
+              .add("-locale", "en")
+              .iff(!bach.isVerbose(), c -> c.add("-quiet"))
+              .add("-Xdoclint:-missing")
+              .add("--module-path", modulePaths)
+              .add("--module-source-path", realm.moduleSourcePath()));
+      // for (var unit : realm.units(Project.ModuleUnit::isMultiRelease)) {
+      //   var base = unit.sources.get(0);
+      //   if (!unit.info.path.startsWith(base.path)) {
+      //     call.add("--patch-module", unit.name() + "=" + base.path);
+      //   }
+      // }
+
+      bach.execute(
+          new Call("jar")
+              .add("--create")
+              .add("--file", bach.getProject().javadocJar(realm))
+              .iff(bach.isVerbose(), c -> c.add("--verbose"))
+              .add("--no-manifest")
+              .add("-C", javadoc)
+              .add("."));
+    }
+
     Paths.createDirectories(folder.modules(realm.name()));
     for (var unit : units) {
       jarModule(unit);
       if (realm.isDeployRealm()) {
         jarSources(unit);
-        // TODO javadoc(unit);
       }
     }
   }

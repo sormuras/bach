@@ -89,6 +89,11 @@ public /*record*/ class Project {
     return folder().realm(unit.realm().name(), jar);
   }
 
+  public Path javadocJar(Realm realm) {
+    var jar = name + '-' + version + "-javadoc.jar";
+    return folder().realm(realm.name(), jar);
+  }
+
   public Version version(Unit unit) {
     return unit.descriptor().version().orElse(version);
   }
