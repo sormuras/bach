@@ -17,16 +17,18 @@
 
 // --main-class de.sormuras.bach.Bach
 open /*test*/ module de.sormuras.bach /*extends "main" module*/ {
+
+  // "test"
+
   requires org.junit.jupiter;
 
-  // ---
+  // "main"
 
   requires java.compiler;
   requires java.net.http;
 
-  // exports de.sormuras.bach;
-  // exports de.sormuras.bach.project;
-  // exports de.sormuras.bach.project;
+  exports de.sormuras.bach;
+  exports de.sormuras.bach.project;
 
   uses java.util.spi.ToolProvider;
 }
