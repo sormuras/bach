@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import javax.lang.model.SourceVersion;
@@ -37,13 +38,20 @@ public class ProjectBuilder {
   }
 
   public static Project build(Folder folder) {
-    return new Project(
-        Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
-            .map(Path::toString)
-            .orElse("project"),
-        Version.parse(System.getProperty(".bach/project.version", "0")),
-        structure(folder),
-        null);
+    // TODO Read default values from `.bach/project.properties`
+    var properties = new Properties();
+    return build(folder, properties);
+  }
+
+  public static Project build(Folder folder, Properties properties) {
+    var name =
+        properties.getProperty(
+            "name",
+            Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
+                .map(Path::toString)
+                .orElse("project"));
+    var version = properties.getProperty("version", "0");
+    return new Project(name, Version.parse(version), structure(folder), null);
   }
 
   public static Structure structure(Folder folder) {
