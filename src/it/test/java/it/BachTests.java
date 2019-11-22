@@ -18,13 +18,29 @@
 package it;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.Bach;
+import de.sormuras.bach.Call;
+import de.sormuras.bach.Task;
+import de.sormuras.bach.project.Folder;
+import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Structure;
+import de.sormuras.bach.project.Unit;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
   @Test
@@ -35,5 +51,62 @@ class BachTests {
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("-"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("master"));
     assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("ea"));
+  }
+
+  @Test
+  void executeRuntimeExceptionThrowingTaskIsReportedAsAnError() {
+    var exception = new RuntimeException("!");
+    class RuntimeExceptionThrowingTask implements Task {
+      @Override
+      public void execute(Bach bach) {
+        throw exception;
+      }
+    }
+
+    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
+    var project = new Project("zero", ModuleDescriptor.Version.parse("0"), structure, null);
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(new RuntimeExceptionThrowingTask()));
+    assertSame(exception, error.getCause());
+    assertEquals("Task failed to execute: java.lang.RuntimeException: !", error.getMessage());
+  }
+
+  @Test
+  void executeNonZeroToolProviderIsReportedAsAnError() {
+    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
+    var project = new Project("zero", ModuleDescriptor.Version.parse("0"), structure, null);
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(new Call("javac", "*")));
+    assertEquals(
+        "Call exited with non-zero status code: 2 <- Call{name='javac', arguments=[*]}",
+        error.getMessage());
+    assertLinesMatch(List.of("Bach.java (.+) initialized.", "| javac(*)"), log.lines());
+    assertLinesMatch(
+        List.of(
+            "error: invalid flag: *",
+            "Usage: javac <options> <source files>",
+            "use --help for a list of possible options"),
+        log.errors());
+  }
+
+  @Test
+  void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
+    var main = new Realm("main", Set.of(), List.of(), List.of());
+    var unit = new Unit(main, Path.of("."), descriptor("unit", 0), List.of(), List.of());
+    var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
+    var project = new Project("empty", ModuleDescriptor.Version.parse("0"), structure, null);
+    var log = new Log();
+    var bach = new Bach(log, project);
+
+    var error = assertThrows(Error.class, () -> bach.execute(Task.build()));
+    assertEquals("Base directory is empty: " + temp.toUri(), error.getMessage());
+  }
+
+  static ModuleDescriptor descriptor(String name, int version) {
+    return ModuleDescriptor.newModule(name).version("" + version).build();
   }
 }
