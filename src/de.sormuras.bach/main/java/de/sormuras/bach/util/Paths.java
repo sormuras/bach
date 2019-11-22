@@ -20,7 +20,9 @@ package de.sormuras.bach.util;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -47,6 +49,35 @@ public class Paths {
 
   public static List<Path> filterExisting(List<Path> paths) {
     return filter(paths, Files::exists);
+  }
+
+  /** Walk all trees to find matching paths the given filter starting at given root paths. */
+  public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+    var files = new TreeSet<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(filter).forEach(files::add);
+      } catch (Exception e) {
+        throw new Error("Walking directory '" + root + "' failed: " + e, e);
+      }
+    }
+    return List.copyOf(files);
+  }
+
+  /** Test supplied path for pointing to a Java source compilation unit. */
+  public static boolean isJavaFile(Path path) {
+    if (Files.isRegularFile(path)) {
+      var name = path.getFileName().toString();
+      if (name.endsWith(".java")) {
+        return name.indexOf('.') == name.length() - 5; // single dot in filename
+      }
+    }
+    return false;
+  }
+
+  /** Test supplied path for pointing to a {@code J}ava {@code AR}chive file. */
+  public static boolean isJarFile(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
   }
 
   public static String join(List<Path> paths) {
