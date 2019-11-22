@@ -24,9 +24,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public /*record*/ class Project {
-  public static Project of(String path) {
-    return ProjectBuilder.build(Path.of(path).normalize());
-  }
 
   private final String name;
   private final Version version;

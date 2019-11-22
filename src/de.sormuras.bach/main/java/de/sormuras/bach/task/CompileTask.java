@@ -31,6 +31,7 @@ public class CompileTask implements Task {
       var units = project.units(realm);
       if (units.isEmpty()) continue;
       log.debug("Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
+      new Hydra(bach, realm).compile(units);
       new Jigsaw(bach, realm).compile(units);
       var scribe = new Maven.Scribe(project);
       scribe.generateMavenInstallScript(units);

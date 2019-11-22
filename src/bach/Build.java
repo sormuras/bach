@@ -15,7 +15,7 @@ public class Build {
   public static void main(String... args) {
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss").withZone(ZoneId.of("UTC"));
     var version = Version.parse(pattern.format(Instant.now()));
-    var structure = ProjectBuilder.structure(Folder.of(Path.of("")));
+    var structure = new ProjectBuilder().structure(Folder.of(Path.of("")));
     var deployment =
         new Deployment(
             "bintray-sormuras-maven",

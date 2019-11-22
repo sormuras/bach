@@ -18,8 +18,10 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.ProjectBuilder;
 import de.sormuras.bach.util.Tools;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 
@@ -28,7 +30,10 @@ public class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    build(Log.ofSystem(), Project.of("."));
+    var log = Log.ofSystem();
+    var base = Path.of(".").normalize();
+    var project = new ProjectBuilder(log).auto(base);
+    build(log, project);
   }
 
   /** */

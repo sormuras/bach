@@ -65,11 +65,11 @@ class Jigsaw {
             .add("--module-version", bach.getProject().version()));
 
     if (realm.isDeployRealm()) {
-      var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
+      // TODO var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
       bach.execute(
           new Call("javadoc")
               .add("-d", Paths.createDirectories(javadoc))
-              .add("--module", allModuleNames)
+              .add("--module", normalNames)
               .add("-encoding", "UTF-8")
               .add("-locale", "en")
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
@@ -95,6 +95,7 @@ class Jigsaw {
 
     Paths.createDirectories(folder.modules(realm.name()));
     for (var unit : units) {
+      if (unit.isMultiRelease()) continue;
       jarModule(unit);
       if (realm.isDeployRealm()) {
         jarSources(unit);

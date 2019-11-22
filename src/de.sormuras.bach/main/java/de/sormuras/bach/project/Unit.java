@@ -20,41 +20,77 @@ package de.sormuras.bach.project;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public /*record*/ class Unit {
+
+  /** Unit type, which hints at source directory layout and other properties. */
+  public enum Type {
+    /** Default Jigsaw-style source layout: {@code java/} */
+    JIGSAW,
+    /** Multi-release JAR-style source layout: {@code java-${BASE}/}, ..., {@code java-${N}/} */
+    MULTI_RELEASE
+  }
+
   private final Realm realm;
-  private final Path info;
   private final ModuleDescriptor descriptor;
+  private final Path info;
+  private final Type type;
   private final List<Source> sources;
+  private final List<Path> resources;
   private final List<Path> patches;
 
-  public Unit(Realm realm, Path info, ModuleDescriptor descriptor, List<Source> sources, List<Path> patches) {
-    this.realm = realm;
-    this.info = info;
-    this.descriptor = descriptor;
+  public Unit(
+      Realm realm,
+      ModuleDescriptor descriptor,
+      Path info,
+      Type type,
+      List<Source> sources,
+      List<Path> resources,
+      List<Path> patches) {
+    this.realm = Objects.requireNonNull(realm, "realm");
+    this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+    this.info = Objects.requireNonNull(info, "info");
+    this.type = Objects.requireNonNull(type, "type");
     this.sources = List.copyOf(sources);
+    this.resources = List.copyOf(resources);
     this.patches = List.copyOf(patches);
+  }
+
+  public Realm realm() {
+    return realm;
   }
 
   public ModuleDescriptor descriptor() {
     return descriptor;
   }
 
-  public Path info() {
-    return info;
-  }
-
   public String name() {
     return descriptor.name();
   }
 
-  public Realm realm() {
-    return realm;
+  public Path info() {
+    return info;
+  }
+
+  public Type type() {
+    return type;
+  }
+
+  public List<Source> sources() {
+    return sources;
+  }
+
+  public <T> List<T> sources(Function<Source, T> mapper) {
+    return sources.stream().map(mapper).collect(Collectors.toList());
+  }
+
+  public List<Path> resources() {
+    return resources;
   }
 
   public List<Path> patches() {
@@ -66,26 +102,8 @@ public /*record*/ class Unit {
     return descriptor.toNameAndVersion();
   }
 
-  public List<Source> sources() {
-    return sources;
-  }
-
-  public <T> List<T> sources(Function<Source, T> mapper) {
-    return sources.stream().map(mapper).collect(Collectors.toList());
-  }
-
   public boolean isMultiRelease() {
     return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
-  }
-
-  public List<Path> resources() {
-    var resources = new ArrayList<Path>();
-    for (var source : realm.sourcePaths()) {
-      var directory = source.getParent().resolve("resources");
-      var path = Path.of(directory.toString().replace("{MODULE}", name()));
-      resources.add(path);
-    }
-    return List.copyOf(resources);
   }
 
   public Optional<Path> mavenPom() {

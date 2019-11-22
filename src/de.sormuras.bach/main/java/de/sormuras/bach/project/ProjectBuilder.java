@@ -17,8 +17,10 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Log;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,22 +30,33 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
-  /** Create project instance auto-configured by scanning the current working directory. */
-  public static Project build(Path base) {
-    return build(Folder.of(base));
+  private final Log log;
+
+  public ProjectBuilder() {
+    this(Log.ofNullWriter());
   }
 
-  public static Project build(Folder folder) {
+  public ProjectBuilder(Log log) {
+    this.log = log;
+  }
+
+  /** Create project instance auto-configured by scanning the current working directory. */
+  public Project auto(Path base) {
+    return auto(Folder.of(base));
+  }
+
+  public Project auto(Folder folder) {
     var path = folder.base().resolve(".bach").resolve("project.properties");
     var properties = Paths.load(new Properties(), path);
-    return build(folder, properties);
+    return auto(folder, properties);
   }
 
-  public static Project build(Folder folder, Properties properties) {
+  public Project auto(Folder folder, Properties properties) {
     var name =
         properties.getProperty(
             "name",
@@ -54,7 +67,7 @@ public class ProjectBuilder {
     return new Project(name, Version.parse(version), structure(folder), null);
   }
 
-  public static Structure structure(Folder folder) {
+  public Structure structure(Folder folder) {
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
@@ -75,32 +88,84 @@ public class ProjectBuilder {
     var modules = new TreeMap<String, List<String>>(); // local realm-based module registry
     var units = new ArrayList<Unit>();
     for (var root : Paths.list(folder.src(), Files::isDirectory)) {
+      log.debug("root = %s", root);
       var module = root.getFileName().toString();
       if (!SourceVersion.isName(module.replace(".", ""))) continue;
-      realm:
+      log.debug("module = %s", module);
       for (var realm : realms) {
         modules.putIfAbsent(realm.name(), new ArrayList<>());
-        for (var zone : List.of("java", "module")) {
-          var info = root.resolve(realm.name()).resolve(zone).resolve("module-info.java");
-          if (Files.isRegularFile(info)) {
-            var sources = new ArrayList<Source>();
-            for (var source : realm.sourcePaths()) {
-              var path = Path.of(source.toString().replace("{MODULE}", module));
-              sources.add(Source.of(path));
-            }
-            var patches = new ArrayList<Path>();
-            if (realm.name().equals("test") && modules.get("main").contains(module)) {
-              patches.add(folder.src().resolve(module).resolve("main/java"));
-            }
-            var descriptor = Modules.describe(Paths.readString(info));
-            units.add(new Unit(realm, info, descriptor, sources, patches));
-            modules.get(realm.name()).add(module);
-            continue realm; // first zone hit wins
-          }
+        log.debug("realm.name = %s", realm.name());
+        if (Files.isDirectory(root.resolve(realm.name()))) {
+          var unit =
+              unit(
+                  root,
+                  realm,
+                  () -> {
+                    var patches = new ArrayList<Path>();
+                    if (realm == test && modules.get("main").contains(module)) {
+                      patches.add(folder.src().resolve(module).resolve("main/java"));
+                    }
+                    return patches;
+                  });
+          modules.get(realm.name()).add(module);
+          units.add(unit);
         }
       }
     }
-
     return new Structure(folder, Library.of(), realms, units);
+  }
+
+  private Path info(Path path) {
+    for (var directory : List.of("java", "module")) {
+      var info = path.resolve(directory).resolve("module-info.java");
+      if (Paths.isJavaFile(info)) return info;
+    }
+    throw new IllegalArgumentException("Couldn't find module-info.java file in: " + path);
+  }
+
+  private Unit unit(Path root, Realm realm, Supplier<List<Path>> patcher) {
+    var module = root.getFileName().toString();
+    var relative = root.resolve(realm.name()); // realm-relative
+    // jigsaw
+    if (Files.isDirectory(relative.resolve("java"))) { // no trailing "...-${N}"
+      var info = info(relative);
+      var descriptor = Modules.describe(Paths.readString(info));
+      var sources = List.of(Source.of(relative.resolve("java")));
+      var resources = Paths.filterExisting(List.of(root.resolve("resources")));
+      var patches = patcher.get();
+      log.debug("info = %s", info);
+      log.debug("descriptor = %s", descriptor);
+      log.debug("sources = %s", sources);
+      log.debug("resources = %s", resources);
+      log.debug("patches = %s", patches);
+      return new Unit(realm, descriptor, info, Unit.Type.JIGSAW, sources, resources, patches);
+    }
+    // multi-release
+    if (!Paths.list(relative, "java-*").isEmpty()) {
+      Path info = null;
+      ModuleDescriptor descriptor = null;
+      var sources = new ArrayList<Source>();
+      for (int feature = 7; feature <= Runtime.version().feature(); feature++) {
+        var sourced = relative.resolve("java-" + feature);
+        if (Files.notExists(sourced)) continue; // feature
+        log.debug("sourced = %s", sourced);
+        sources.add(Source.of(sourced, feature));
+        var infoPath = sourced.resolve("module-info.java");
+        if (info == null && Paths.isJavaFile(infoPath)) { // select first
+          info = infoPath;
+          descriptor = Modules.describe(Paths.readString(info));
+        }
+      }
+      var resources = Paths.filterExisting(List.of(root.resolve("resources")));
+      var patches = patcher.get();
+      log.debug("info = %s", info);
+      log.debug("descriptor = %s", descriptor);
+      log.debug("sources = %s", sources);
+      log.debug("resources = %s", resources);
+      log.debug("patches = %s", patches);
+
+      return new Unit(realm, descriptor, info, Unit.Type.MULTI_RELEASE, sources, resources, patches);
+    }
+    throw new IllegalArgumentException("Unknown unit layout: " + module + " <- " + root.toUri());
   }
 }
