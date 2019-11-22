@@ -75,12 +75,17 @@ public class ProjectBuilder {
         for (var zone : List.of("java", "module")) {
           var info = root.resolve(realm.name()).resolve(zone).resolve("module-info.java");
           if (Files.isRegularFile(info)) {
+            var sources = new ArrayList<Source>();
+            for (var source : realm.sourcePaths()) {
+              var path = Path.of(source.toString().replace("{MODULE}", module));
+              sources.add(Source.of(path));
+            }
             var patches = new ArrayList<Path>();
             if (realm.name().equals("test") && modules.get("main").contains(module)) {
               patches.add(folder.src().resolve(module).resolve("main/java"));
             }
             var descriptor = Modules.describe(Paths.readString(info));
-            units.add(new Unit(realm, info, descriptor, patches));
+            units.add(new Unit(realm, info, descriptor, sources, patches));
             modules.get(realm.name()).add(module);
             continue realm; // first zone hit wins
           }

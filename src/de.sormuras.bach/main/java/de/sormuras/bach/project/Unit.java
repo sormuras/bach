@@ -23,18 +23,22 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public /*record*/ class Unit {
   private final Realm realm;
   private final Path info;
   private final ModuleDescriptor descriptor;
+  private final List<Source> sources;
   private final List<Path> patches;
 
-  public Unit(Realm realm, Path info, ModuleDescriptor descriptor, List<Path> patches) {
+  public Unit(Realm realm, Path info, ModuleDescriptor descriptor, List<Source> sources, List<Path> patches) {
     this.realm = realm;
     this.info = info;
     this.descriptor = descriptor;
-    this.patches = patches;
+    this.sources = List.copyOf(sources);
+    this.patches = List.copyOf(patches);
   }
 
   public ModuleDescriptor descriptor() {
@@ -62,13 +66,16 @@ public /*record*/ class Unit {
     return descriptor.toNameAndVersion();
   }
 
-  public List<Path> sources() {
-    var sources = new ArrayList<Path>();
-    for (var source : realm.sourcePaths()) {
-      var path = Path.of(source.toString().replace("{MODULE}", name()));
-      sources.add(path);
-    }
-    return List.copyOf(sources);
+  public List<Source> sources() {
+    return sources;
+  }
+
+  public <T> List<T> sources(Function<Source, T> mapper) {
+    return sources.stream().map(mapper).collect(Collectors.toList());
+  }
+
+  public boolean isMultiRelease() {
+    return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
   }
 
   public List<Path> resources() {

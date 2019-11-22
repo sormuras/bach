@@ -21,10 +21,12 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Source;
 import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.util.Paths;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class Jigsaw {
@@ -44,12 +46,16 @@ class Jigsaw {
   }
 
   void compile(List<Unit> units) {
-    var moduleNames = units.stream().map(Unit::name).collect(Collectors.toList());
+    var normalNames =
+        units.stream()
+            .filter(Predicate.not(Unit::isMultiRelease))
+            .map(Unit::name)
+            .collect(Collectors.joining(","));
     var modulePaths = Paths.filterExisting(realm.modulePaths());
     bach.execute(
         new Call("javac")
             .add("-d", classes)
-            .add("--module", String.join(",", moduleNames))
+            .add("--module", normalNames)
             // .addEach(realm.toolArguments.javac)
             // .iff(realm.preview(), c -> c.add("--enable-preview"))
             // .iff(realm.release() != 0, c -> c.add("--release", realm.release()))
@@ -59,18 +65,18 @@ class Jigsaw {
             .add("--module-version", bach.getProject().version()));
 
     if (realm.isDeployRealm()) {
-      Paths.createDirectories(javadoc);
+      var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
       bach.execute(
           new Call("javadoc")
-              .add("-d", javadoc)
-              .add("--module", String.join(",", moduleNames))
+              .add("-d", Paths.createDirectories(javadoc))
+              .add("--module", allModuleNames)
               .add("-encoding", "UTF-8")
               .add("-locale", "en")
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
               .add("-Xdoclint:-missing")
               .add("--module-path", modulePaths)
               .add("--module-source-path", realm.moduleSourcePath()));
-      // for (var unit : realm.units(Project.ModuleUnit::isMultiRelease)) {
+      // for (var unit : realm.units(Unit::isMultiRelease)) {
       //   var base = unit.sources.get(0);
       //   if (!unit.info.path.startsWith(base.path)) {
       //     call.add("--patch-module", unit.name() + "=" + base.path);
@@ -121,7 +127,7 @@ class Jigsaw {
 
   private void jarSources(Unit unit) {
     var file = bach.getProject().sourcesJar(unit); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
-    var sources = Paths.filterExisting(unit.sources());
+    var sources = Paths.filterExisting(unit.sources(Source::path));
     var resources = Paths.filterExisting(unit.resources());
     bach.execute(
         new Call("jar")
