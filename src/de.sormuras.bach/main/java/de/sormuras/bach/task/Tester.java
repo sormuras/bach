@@ -56,8 +56,10 @@ class Tester {
   }
 
   private void test(Unit unit) {
-    var modulePath = new ArrayList<>(realm.modulePaths());
-    modulePath.add(folder.modules(realm.name()));
+    var modulePath = new ArrayList<Path>();
+    modulePath.add(bach.getProject().modularJar(unit)); // test module first
+    modulePath.addAll(realm.modulePaths()); // compile dependencies next, like "main"...
+    modulePath.add(folder.modules(realm.name())); // same realm last, like "test"...
     var layer = layer(modulePath, unit.name());
 
     var errors = new StringBuilder();
