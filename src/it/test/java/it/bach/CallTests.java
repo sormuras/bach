@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package it;
+package it.bach;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-class CommandTests {
+class CallTests {
   @Test
   void addPath() {
     var call = new Call("a").add(Path.of("b/c"));
