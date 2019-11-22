@@ -33,6 +33,7 @@ import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Unit;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -46,11 +47,11 @@ class BachTests {
   @Test
   void moduleDescriptorParsesVersion() {
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss").withZone(ZoneId.of("UTC"));
-    assertDoesNotThrow(() -> ModuleDescriptor.Version.parse(pattern.format(Instant.now())));
-    assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse(""));
-    assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("-"));
-    assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("master"));
-    assertThrows(IllegalArgumentException.class, () -> ModuleDescriptor.Version.parse("ea"));
+    assertDoesNotThrow(() -> Version.parse(pattern.format(Instant.now())));
+    assertThrows(IllegalArgumentException.class, () -> Version.parse(""));
+    assertThrows(IllegalArgumentException.class, () -> Version.parse("-"));
+    assertThrows(IllegalArgumentException.class, () -> Version.parse("master"));
+    assertThrows(IllegalArgumentException.class, () -> Version.parse("ea"));
   }
 
   @Test
@@ -64,7 +65,7 @@ class BachTests {
     }
 
     var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", ModuleDescriptor.Version.parse("0"), structure, null);
+    var project = new Project("zero", Version.parse("0"), structure, null);
     var log = new Log();
     var bach = new Bach(log, project);
 
@@ -76,7 +77,7 @@ class BachTests {
   @Test
   void executeNonZeroToolProviderIsReportedAsAnError() {
     var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", ModuleDescriptor.Version.parse("0"), structure, null);
+    var project = new Project("zero", Version.parse("0"), structure, null);
     var log = new Log();
     var bach = new Bach(log, project);
 
@@ -96,14 +97,19 @@ class BachTests {
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
     var main = new Realm("main", Set.of(), List.of(), List.of());
-    var unit = new Unit(main, Path.of("."), descriptor("unit", 0), List.of(), List.of());
+    var unit = unit(main, "unit", 0, Unit.Type.JIGSAW);
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
-    var project = new Project("empty", ModuleDescriptor.Version.parse("0"), structure, null);
+    var project = new Project("empty", Version.parse("0"), structure, null);
     var log = new Log();
     var bach = new Bach(log, project);
 
     var error = assertThrows(Error.class, () -> bach.execute(Task.build()));
     assertEquals("Base directory is empty: " + temp.toUri(), error.getMessage());
+  }
+
+  static Unit unit(Realm realm, String name, int version, Unit.Type type) {
+    var info = Path.of("module-info.java");
+    return new Unit(realm, descriptor(name, version), info, type, List.of(), List.of(), List.of());
   }
 
   static ModuleDescriptor descriptor(String name, int version) {

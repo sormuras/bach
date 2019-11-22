@@ -35,16 +35,18 @@ class DemoTests {
 
   @Test
   void autoConfigureDemoProjectAndCheckComponents() {
-    var project = ProjectBuilder.build(Path.of("demo"));
+    var log = new Log();
+    var project = new ProjectBuilder(log).auto(Path.of("demo"));
     assertEquals("demo", project.name());
     assertEquals("0", project.version().toString());
     // main realm
     assertEquals("demo.core", project.unit("main", "demo.core").orElseThrow().name());
     assertEquals("demo.mantle", project.unit("main", "demo.mantle").orElseThrow().name());
-    // TODO assertEquals("demo.shell", project.unit("main", "demo.shell").orElseThrow().name());
+    assertEquals("demo.shell", project.unit("main", "demo.shell").orElseThrow().name());
     // test realm
     assertEquals("demo.mantle", project.unit("test", "demo.mantle").orElseThrow().name());
     assertEquals("it", project.unit("test", "it").orElseThrow().name());
+    // log.lines().forEach(System.out::println);
   }
 
   @Test
@@ -52,17 +54,18 @@ class DemoTests {
     var log = new Log();
     var base = Path.of("demo");
     var folder = new Folder(base, base.resolve("src"), temp.resolve("lib"), temp);
-    new Bach(log, ProjectBuilder.build(folder)).execute(Task.build());
+    new Bach(log, new ProjectBuilder(log).auto(folder)).execute(Task.build());
 
     assertLinesMatch(
         List.of(
+            ">> AUTO CONFIGURE DEMO PROJECT >>",
             "Bach.java (.+) initialized.",
             "Executing task: BuildTask",
             "Executing task: SanityTask",
             "Executing task: ResolveTask",
             ">> MODULE SURVEYS, DOWNLOADS, ... >>",
             "Executing task: CompileTask",
-            "Compiling 2 main unit(s): [demo.core, demo.mantle]",
+            "Compiling 3 main unit(s): [demo.core, demo.mantle, demo.shell]",
             ">> JAVAC, JAR, ... >>",
             "Compiling 2 test unit(s): [demo.mantle, it]",
             ">> JAVAC, JAR, ... >>",
@@ -71,9 +74,10 @@ class DemoTests {
             ">> TEST(MODULE), JUNIT(MODULE), ... >>",
             "Executing task: SummaryTask",
             "Modules of main realm",
-            "2 jar(s) found in: " + folder.modules("main").toUri(),
+            "3 jar(s) found in: " + folder.modules("main").toUri(),
             ".+\\Q demo.core-0.jar\\E",
             ".+\\Q demo.mantle-0.jar\\E",
+            ".+\\Q demo.shell-0.jar\\E",
             "Modules of test realm",
             "2 jar(s) found in: " + folder.modules("test").toUri(),
             ".+\\Q demo.mantle-0.jar\\E",

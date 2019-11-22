@@ -40,7 +40,7 @@ class ProjectTests {
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
     var realm = new Realm("realm", Set.of(), List.of(), List.of());
-    var unit = new Unit(realm, Path.of("."), descriptor("unit", 1), List.of(), List.of());
+    var unit = unit(realm, "unit", 1, Unit.Type.JIGSAW);
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure, null);
     assertEquals("simple", project.name());
@@ -63,6 +63,11 @@ class ProjectTests {
     assertSame(unit, project.unit("realm", "unit").orElseThrow());
     assertEquals("1", project.version(unit).toString());
     assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
+  }
+
+  static Unit unit(Realm realm, String name, int version, Unit.Type type) {
+    var info = Path.of("module-info.java");
+    return new Unit(realm, descriptor(name, version), info, type, List.of(), List.of(), List.of());
   }
 
   static ModuleDescriptor descriptor(String name, int version) {
