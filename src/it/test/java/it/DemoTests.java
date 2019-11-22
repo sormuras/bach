@@ -38,7 +38,13 @@ class DemoTests {
     var project = ProjectBuilder.build(Path.of("demo"));
     assertEquals("demo", project.name());
     assertEquals("0", project.version().toString());
+    // main realm
     assertEquals("demo.core", project.unit("main", "demo.core").orElseThrow().name());
+    assertEquals("demo.mantle", project.unit("main", "demo.mantle").orElseThrow().name());
+    // TODO assertEquals("demo.shell", project.unit("main", "demo.shell").orElseThrow().name());
+    // test realm
+    assertEquals("demo.mantle", project.unit("test", "demo.mantle").orElseThrow().name());
+    assertEquals("it", project.unit("test", "it").orElseThrow().name());
   }
 
   @Test

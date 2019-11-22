@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -82,6 +83,17 @@ public class Paths {
 
   public static String join(List<Path> paths) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
+  public static Properties load(Properties properties, Path path) {
+    if (Files.isRegularFile(path)) {
+      try (var reader = Files.newBufferedReader(path)) {
+        properties.load(reader);
+      } catch (Exception e) {
+        throw new RuntimeException("Load properties failed: " + path, e);
+      }
+    }
+    return properties;
   }
 
   public static List<Path> list(Path directory, Predicate<Path> filter) {

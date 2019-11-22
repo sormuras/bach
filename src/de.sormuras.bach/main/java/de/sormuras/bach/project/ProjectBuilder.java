@@ -38,8 +38,8 @@ public class ProjectBuilder {
   }
 
   public static Project build(Folder folder) {
-    // TODO Read default values from `.bach/project.properties`
-    var properties = new Properties();
+    var path = folder.base().resolve(".bach").resolve("project.properties");
+    var properties = Paths.load(new Properties(), path);
     return build(folder, properties);
   }
 
