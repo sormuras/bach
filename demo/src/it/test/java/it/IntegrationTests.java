@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import demo.core.PublicCore;
+import demo.shell.Shell;
 import org.junit.jupiter.api.Test;
 
 class IntegrationTests {
@@ -28,5 +29,11 @@ class IntegrationTests {
             + " cannot access class demo.mantle.Mantle (in module demo.mantle)"
             + " because module demo.mantle does not export demo.mantle to module it",
         e.getMessage());
+  }
+
+  @Test
+  void createShell() {
+    var expected = String.format("Shell(%d)", Runtime.getVersion().getFeature());
+    assertEquals(expected, new Shell().toString());
   }
 }
