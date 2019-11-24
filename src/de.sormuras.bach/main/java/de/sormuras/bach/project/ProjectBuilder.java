@@ -18,6 +18,7 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.Log;
+import de.sormuras.bach.project.Unit.Type;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor;
@@ -35,6 +36,25 @@ import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
+  enum Property {
+    NAME("project"),
+    VERSION("0");
+
+    final String defaultValue;
+
+    Property(String defaultValue) {
+      this.defaultValue = defaultValue;
+    }
+
+    String get(Properties properties) {
+      return get(properties, defaultValue);
+    }
+
+    String get(Properties properties, String defaultValue) {
+      return properties.getProperty(name().toLowerCase(), defaultValue);
+    }
+  }
+
   private final Log log;
 
   public ProjectBuilder() {
@@ -51,19 +71,18 @@ public class ProjectBuilder {
   }
 
   public Project auto(Folder folder) {
-    var path = folder.base().resolve(".bach").resolve("project.properties");
-    var properties = Paths.load(new Properties(), path);
+    var file = System.getProperty("project.properties", ".bach/project.properties");
+    var properties = Paths.load(new Properties(), folder.base().resolve(file));
     return auto(folder, properties);
   }
 
   public Project auto(Folder folder, Properties properties) {
-    var name =
-        properties.getProperty(
-            "name",
-            Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
-                .map(Path::toString)
-                .orElse("project"));
-    var version = properties.getProperty("version", "0");
+    var directory =
+        Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
+            .map(Path::toString)
+            .orElse(Property.NAME.defaultValue);
+    var name = Property.NAME.get(properties, directory);
+    var version = Property.VERSION.get(properties);
     return new Project(name, Version.parse(version), structure(folder), null);
   }
 
@@ -138,7 +157,7 @@ public class ProjectBuilder {
       log.debug("sources = %s", sources);
       log.debug("resources = %s", resources);
       log.debug("patches = %s", patches);
-      return new Unit(realm, descriptor, info, Unit.Type.JIGSAW, sources, resources, patches);
+      return new Unit(realm, descriptor, info, Type.JIGSAW, sources, resources, patches);
     }
     // multi-release
     if (!Paths.list(relative, "java-*").isEmpty()) {
@@ -163,8 +182,7 @@ public class ProjectBuilder {
       log.debug("sources = %s", sources);
       log.debug("resources = %s", resources);
       log.debug("patches = %s", patches);
-
-      return new Unit(realm, descriptor, info, Unit.Type.MULTI_RELEASE, sources, resources, patches);
+      return new Unit(realm, descriptor, info, Type.MULTI_RELEASE, sources, resources, patches);
     }
     throw new IllegalArgumentException("Unknown unit layout: " + module + " <- " + root.toUri());
   }
