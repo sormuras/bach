@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -95,13 +96,20 @@ public class ProjectBuilder {
             "main",
             Set.of(Realm.Modifier.DEPLOY),
             List.of(folder.src("{MODULE}/main/java")),
-            List.of(folder.lib()));
+            List.of(folder.lib()),
+            Map.of(
+                "javac",
+                List.of("-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint")));
     var test =
         new Realm(
             "test",
             Set.of(Realm.Modifier.TEST),
             List.of(folder.src("{MODULE}/test/java"), folder.src("{MODULE}/test/module")),
-            List.of(folder.modules("main"), folder.lib()));
+            List.of(folder.modules("main"), folder.lib()),
+            Map.of(
+                "javac",
+                List.of(
+                    "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint:-preview")));
     var realms = List.of(main, test);
 
     var modules = new TreeMap<String, List<String>>(); // local realm-based module registry

@@ -32,6 +32,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ class ProjectTests {
   @Test
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
-    var realm = new Realm("realm", Set.of(), List.of(), List.of());
+    var realm = new Realm("realm", Set.of(), List.of(), List.of(), Map.of());
     var unit = unit(realm, "unit", 1, Unit.Type.JIGSAW);
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure, null);

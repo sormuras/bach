@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -96,7 +97,7 @@ class BachTests {
 
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
-    var main = new Realm("main", Set.of(), List.of(), List.of());
+    var main = new Realm("main", Set.of(), List.of(), List.of(), Map.of());
     var unit = unit(main, "unit", 0, Unit.Type.JIGSAW);
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure, null);

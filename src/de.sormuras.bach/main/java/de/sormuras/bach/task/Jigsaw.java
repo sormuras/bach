@@ -56,11 +56,9 @@ class Jigsaw {
     if (!normalNames.isBlank()) {
       bach.execute(
           new Call("javac")
+              .forEach(realm.argumentsFor("javac"), Call::add)
               .add("-d", classesDirectory)
               .add("--module", normalNames)
-              // .addEach(realm.toolArguments.javac)
-              // .iff(realm.preview(), c -> c.add("--enable-preview"))
-              // .iff(realm.release() != 0, c -> c.add("--release", realm.release()))
               .add("--module-source-path", realm.moduleSourcePath())
               .forEach(units, this::patchModule)
               .add("--module-path", modulePaths)

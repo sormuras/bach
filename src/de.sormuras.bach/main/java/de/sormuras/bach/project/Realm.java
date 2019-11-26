@@ -21,6 +21,7 @@ import de.sormuras.bach.util.Paths;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public /*record*/ class Realm {
@@ -34,12 +35,19 @@ public /*record*/ class Realm {
   private final Set<Modifier> modifiers;
   private final List<Path> sourcePaths;
   private final List<Path> modulePaths;
+  private final Map<String, List<String>> argumentsFor;
 
-  public Realm(String name, Set<Modifier> modifiers, List<Path> sourcePaths, List<Path> modulePaths) {
+  public Realm(
+      String name,
+      Set<Modifier> modifiers,
+      List<Path> sourcePaths,
+      List<Path> modulePaths,
+      Map<String, List<String>> argumentsFor) {
     this.name = name;
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.sourcePaths = List.copyOf(sourcePaths);
     this.modulePaths = List.copyOf(modulePaths);
+    this.argumentsFor = Map.copyOf(argumentsFor);
   }
 
   public String name() {
@@ -68,5 +76,9 @@ public /*record*/ class Realm {
 
   public String moduleSourcePath() {
     return Paths.join(sourcePaths).replace("{MODULE}", "*");
+  }
+
+  public List<String> argumentsFor(String tool) {
+    return argumentsFor.getOrDefault(tool, List.of());
   }
 }
