@@ -3,11 +3,13 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.util.Paths;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class SummaryTask implements Task {
@@ -39,15 +41,41 @@ public class SummaryTask implements Task {
     var duration = Duration.between(log.getInstant(), Instant.now());
     log.info("Build %d took millis.", duration.toMillis());
 
-    var entries = log.getEntries();
-    var timestamp = log.getInstant().toString().replace(":", "-");
-    var summary = project.folder().log("summary-" + timestamp + ".log");
-    Files.createDirectories(project.folder().log());
-    Files.write(summary, entries.stream().map(this::toString).collect(Collectors.toList()));
-    Files.copy(summary, project.folder().out("summary.log"), StandardCopyOption.REPLACE_EXISTING);
+    writeSummaryLog(log, project.folder());
+    writeSummaryMarkdown(log, project.folder());
   }
 
   private String toString(Log.Entry entry) {
     return String.format("%s|%s|%s", entry.instant(), entry.level(), entry.message());
+  }
+
+  private void writeSummaryLog(Log log, Folder folder) throws Exception {
+    var entries = log.getEntries();
+    var timestamp = log.getInstant().toString().replace(":", "-");
+    var summary = folder.log("summary-" + timestamp + ".log");
+    Files.createDirectories(folder.log());
+    Files.write(summary, entries.stream().map(this::toString).collect(Collectors.toList()));
+    Files.copy(summary, folder.out("summary.log"), StandardCopyOption.REPLACE_EXISTING);
+  }
+
+  private void writeSummaryMarkdown(Log log, Folder folder) throws Exception {
+    var lines = new ArrayList<String>();
+    lines.add("# Summary");
+    lines.add("");
+    lines.add("## Messages logged at INFO and more severe levels");
+    lines.add("");
+    for (var entry : log.getEntries()) {
+      if (entry.level().getSeverity() >= System.Logger.Level.INFO.getSeverity()) {
+        lines.add("- " + entry.message());
+      }
+    }
+    lines.add("");
+    lines.add("## All log entries");
+    lines.add("");
+    for (var entry : log.getEntries()) {
+      lines.add("- " + entry.message());
+    }
+    lines.add("");
+    Files.write(folder.out("summary.md"), lines);
   }
 }
