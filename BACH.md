@@ -4,15 +4,37 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 
 ## Uniques
 
-- zero installation required (besides JDK 11+, using `jshell`)
-- zero extra configuration required (conventions and information gathered from `module-info.java`)
-- easy to customize using plain Java (no other programming language, perhaps `.properties` files to define hints)
-- 3rd-party modules in plain sight (single `lib/` directory)
-- considers compile (`javac`) and package (`jar`) as an atomic step
-- single-pass multi-module processing (`--module-source-path`)
-- multi-release modules (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
-- automated checks (`test(${MODULE})`,`junit`)
-- document (`${MODULE}-javadoc.jar`, `${MODULE}-sources.jar`)
+- [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
+- [x] [zero extra configuration](#zero-extra-configuration) required (conventions and information gathered from `module-info.java` files)
+- [ ] easy to customize using plain Java (no other programming language, perhaps `.properties` files to define hints)
+- [ ] 3rd-party modules in plain sight (single `lib/` directory)
+- [ ] considers compile (`javac`) and package (`jar`) as an atomic step
+- [ ] single-pass multi-module processing (`--module-source-path`)
+- [ ] multi-release modules (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
+- [ ] automated checks (`test(${MODULE})`,`junit`)
+- [ ] document (`${MODULE}-javadoc.jar`, `${MODULE}-sources.jar`)
+
+## Zero Installation
+
+Enter the base directory of your Java project, open a shell, and execute one of the following commands:
+
+- Long: `jshell https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh`
+- Shorter: `jshell https://github.com/sormuras/bach/raw/master/src/bach/Bach.jsh`
+- Shortened: `jshell https://bit.ly/bach-jsh`
+
+That's it.
+
+## Zero Extra Configuration
+
+Almost all required information to build a modular Java project is either deduced from conventions or gathered from
+module declarations, i.e. `module-info.java` files.
+
+- Required modules' versions via https://github.com/sormuras/modules
+
+Also, the following attributes are extracted from comments (soon annotations?) found in module declarations: 
+
+- Module version `--module-version ...`
+- Module entry-point `--main-class ...`
 
 ## Singe-File Source-Code program or modular library?
 
