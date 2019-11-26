@@ -106,34 +106,34 @@ public /*STATIC*/ class Hydra {
     bach.execute(javac);
   }
 
-    private void jarModule(Unit unit) {
-      var sources = new ArrayDeque<>(unit.sources());
-      var base = sources.pop().path().getFileName();
-      var module = unit.name();
-      var file = bach.getProject().modularJar(unit);
-      var jar =
-          new Call("jar")
-              .add("--create")
-              .add("--file", file)
-              .iff(bach.isVerbose(), c -> c.add("--verbose"))
-              .add("-C", classes.resolve(base).resolve(module))
-              .add(".")
-              .forEach(unit.resources(), (cmd, path) -> cmd.add("-C", path).add("."));
-      for (var source : sources) {
-        var path = source.path().getFileName();
-        var released = classes.resolve(path).resolve(module);
-        if (source.isVersioned()) {
-          jar.add("--release", source.release());
-        }
-        jar.add("-C", released);
-        jar.add(".");
+  private void jarModule(Unit unit) {
+    var sources = new ArrayDeque<>(unit.sources());
+    var base = sources.pop().path().getFileName();
+    var module = unit.name();
+    var file = bach.getProject().modularJar(unit);
+    var jar =
+        new Call("jar")
+            .add("--create")
+            .add("--file", file)
+            .iff(bach.isVerbose(), c -> c.add("--verbose"))
+            .add("-C", classes.resolve(base).resolve(module))
+            .add(".")
+            .forEach(unit.resources(), (cmd, path) -> cmd.add("-C", path).add("."));
+    for (var source : sources) {
+      var path = source.path().getFileName();
+      var released = classes.resolve(path).resolve(module);
+      if (source.isVersioned()) {
+        jar.add("--release", source.release());
       }
-      Paths.createDirectories(folder.modules(unit.realm().name()));
-      bach.execute(jar);
-      if (bach.isVerbose()) {
-        bach.execute(new Call("jar", "--describe-module", "--file", file.toString()));
-      }
+      jar.add("-C", released);
+      jar.add(".");
     }
+    Paths.createDirectories(folder.modules(unit.realm().name()));
+    bach.execute(jar);
+    if (bach.isVerbose()) {
+      bach.execute(new Call("jar", "--describe-module", "--file", file.toString()));
+    }
+  }
 
   //  private void jarSources(Project.ModuleUnit unit) {
   //    var sources = new ArrayDeque<>(unit.sources);
