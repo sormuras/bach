@@ -89,7 +89,7 @@ class Tester {
       }
     }
     var boot = ModuleLayer.boot();
-    var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+    var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.ofSystem(), roots);
     var loader = ClassLoader.getPlatformClassLoader();
     var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
     return controller.layer();
