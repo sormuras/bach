@@ -7,7 +7,7 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 - [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
 - [x] [zero extra configuration](#zero-extra-configuration) required (conventions and information gathered from `module-info.java` files)
 - [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
-- [x] [write own build program](#write-own-build-program) using plain old Java (`src/bach/Build.java`)
+- [x] [b-y-o-b](#bring-your-own-build) program using plain old Java (`src/bach/Build.java`)
 - [ ] 3rd-party modules in plain sight (single `lib/` directory)
 - [ ] considers compile (`javac`) and package (`jar`) as an atomic step
 - [ ] single-pass multi-module processing (`--module-source-path`)
@@ -43,7 +43,7 @@ The default [ProjectBuilder](https://github.com/sormuras/bach/blob/master/src/de
 implementation loads some properties from a `.bach/project.properties` file.
 Here, you may set different values for project properties like `name`, `version`, etc.
 
-## Write Own Build Program
+## Bring You Own Build
 
 Does your project use a different structure?
 Want to execute tasks is a different order?
