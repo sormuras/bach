@@ -62,7 +62,7 @@ public /*STATIC*/ class Hydra {
       compile(unit, base, source);
     }
     jarModule(unit);
-    // TODO jarSources(unit);
+    jarSources(unit);
     // javadoc(unit) and jarJavadoc(unit) is provided by Jigsaw
   }
 
@@ -135,22 +135,23 @@ public /*STATIC*/ class Hydra {
     }
   }
 
-  //  private void jarSources(Project.ModuleUnit unit) {
-  //    var sources = new ArrayDeque<>(unit.sources);
-  //    var jar =
-  //        new Command("jar")
-  //            .add("--create")
-  //            .add("--file", target.sourcesJar(unit))
-  //            .addIff(bach.verbose(), "--verbose")
-  //            .add("--no-manifest")
-  //            .add("-C", sources.removeFirst().path)
-  //            .add(".")
-  //            .addEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."));
-  //    for (var source : sources) {
-  //      jar.add("--release", source.release);
-  //      jar.add("-C", source.path);
-  //      jar.add(".");
-  //    }
-  //    bach.run(jar);
-  //  }
+  private void jarSources(Unit unit) {
+    var file = bach.getProject().sourcesJar(unit); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
+    var sources = new ArrayDeque<>(unit.sources());
+    var jar =
+        new Call("jar")
+            .add("--create")
+            .add("--file", file)
+            .iff(bach.isVerbose(), c -> c.add("--verbose"))
+            .add("--no-manifest")
+            .add("-C", sources.removeFirst().path())
+            .add(".")
+            .forEach(unit.resources(), (cmd, path) -> cmd.add("-C", path).add("."));
+    for (var source : sources) {
+      jar.add("--release", source.release());
+      jar.add("-C", source.path());
+      jar.add(".");
+    }
+    bach.execute(jar);
+  }
 }
