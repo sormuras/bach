@@ -43,7 +43,7 @@ The default [ProjectBuilder](https://github.com/sormuras/bach/blob/master/src/de
 implementation loads some properties from a `.bach/project.properties` file.
 Here, you may set different values for project properties like `name`, `version`, etc.
 
-## Bring You Own Build
+## Bring Your Own Build
 
 Does your project use a different structure?
 Want to execute tasks is a different order?
