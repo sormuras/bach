@@ -31,6 +31,8 @@ public class Bootstrap {
         "--module-path",
         destination,
         "--add-modules",
+        "ALL-SYSTEM",
+        "--add-modules",
         "de.sormuras.bach",
         "src/bach/Build.java");
   }

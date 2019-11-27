@@ -65,6 +65,7 @@ public class Bach {
     java.add(ProcessHandle.current().info().command().orElse("java"));
     java.add("-D" + "user.language=en");
     java.add("--module-path=" + LIB);
+    java.add("--add-modules=" + "ALL-SYSTEM");
     if (args.length == 0) {
       if (isRegularFile(DEFAULT_BUILD_PROGRAM)) {
         java.add("--add-modules=de.sormuras.bach");

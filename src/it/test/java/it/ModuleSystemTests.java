@@ -20,12 +20,22 @@ package it;
 import static java.lang.module.ModuleDescriptor.Requires.Modifier.MANDATED;
 import static java.lang.module.ModuleDescriptor.newModule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import de.sormuras.bach.Bach;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
+import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 class ModuleSystemTests {
 
@@ -65,5 +75,35 @@ class ModuleSystemTests {
     actual.version().ifPresent(expected::version); // reflexive
     actual.mainClass().ifPresent(__ -> expected.mainClass("de.sormuras.bach.Bach"));
     assertEquals(expected.build(), actual);
+  }
+
+  @TestFactory
+  Stream<DynamicTest> findSystemModuleViaNameUsingCustomLayer() {
+    var allSystemModuleNames =
+        ModuleFinder.ofSystem().findAll().stream()
+            .map(ModuleReference::descriptor)
+            .map(ModuleDescriptor::name)
+            .sorted()
+            .collect(Collectors.toList());
+
+    assertTrue(allSystemModuleNames.contains("java.base"));
+    assertTrue(allSystemModuleNames.contains("java.compiler"));
+    // ...
+    assertTrue(allSystemModuleNames.contains("java.xml.crypto"));
+    assertTrue(allSystemModuleNames.contains("jdk.accessibility"));
+    // ...
+    assertTrue(allSystemModuleNames.contains("jdk.zipfs"));
+    assertTrue(allSystemModuleNames.size() > 50);
+
+    var before = ModuleFinder.of();
+    var after = ModuleFinder.of();
+    var roots = List.of("java.base");
+    var boot = ModuleLayer.boot();
+    var configuration = boot.configuration().resolveAndBind(before, after, roots);
+    var loader = ClassLoader.getPlatformClassLoader();
+    var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
+    var layer = controller.layer();
+    return allSystemModuleNames.stream()
+        .map(module -> dynamicTest(module, () -> assertTrue(layer.findModule(module).isPresent())));
   }
 }
