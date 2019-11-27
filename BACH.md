@@ -43,16 +43,18 @@ The default [ProjectBuilder](https://github.com/sormuras/bach/blob/master/src/de
 implementation loads some properties from a `.bach/project.properties` file.
 Here, you may set different values for project properties like `name`, `version`, etc.
 
-## Write Build Program
+## Write Own Build Program
 
 Does your project use a different structure?
-Want to execute task is a different order?
-Need additional task to be executed?
+Want to execute tasks is a different order?
+Need additional tasks to be executed?
+Want skip tests?
 
-Write your own build program using Java!
+Write your own build program using plain old Java!
 
-Store it as [`src/bach/Build.java`](https://github.com/sormuras/bach/blob/master/src/bach/Build.java) and [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java#L43) will delegate to it.
+Store your build program as [`src/bach/Build.java`](https://github.com/sormuras/bach/blob/master/src/bach/Build.java) and [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java#L43) will delegate to it.
 To make your own build program runnable from within an IDE, you need to download and mount module `de.sormuras.bach` first.
+After that simply run the `de.sormuras.bach` module.
 
 ## Singe-File Source-Code program or modular library?
 
