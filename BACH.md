@@ -6,7 +6,8 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 
 - [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
 - [x] [zero extra configuration](#zero-extra-configuration) required (conventions and information gathered from `module-info.java` files)
-- [ ] easy to customize using plain Java (no other programming language, perhaps `.properties` files to define hints)
+- [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
+- [x] [write own build program](#write-own-build-program) using plain old Java (`src/bach/Build.java`)
 - [ ] 3rd-party modules in plain sight (single `lib/` directory)
 - [ ] considers compile (`javac`) and package (`jar`) as an atomic step
 - [ ] single-pass multi-module processing (`--module-source-path`)
@@ -35,6 +36,23 @@ Also, the following attributes are extracted from comments (soon annotations?) f
 
 - Module version `--module-version ...`
 - Module entry-point `--main-class ...`
+
+## Customize Via Properties
+
+The default [ProjectBuilder](https://github.com/sormuras/bach/blob/master/src/de.sormuras.bach/main/java/de/sormuras/bach/project/ProjectBuilder.java)
+implementation loads some properties from a `.bach/project.properties` file.
+Here, you may set different values for project properties like `name`, `version`, etc.
+
+## Write Build Program
+
+Does your project use a different structure?
+Want to execute task is a different order?
+Need additional task to be executed?
+
+Write your own build program using Java!
+
+Store it as [`src/bach/Build.java`](https://github.com/sormuras/bach/blob/master/src/bach/Build.java) and [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java#L43) will delegate to it.
+To make your own build program runnable from within an IDE, you need to download and mount module `de.sormuras.bach` first.
 
 ## Singe-File Source-Code program or modular library?
 
