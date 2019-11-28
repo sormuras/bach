@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// default package
+
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.isRegularFile;
 import static java.nio.file.Files.newOutputStream;
