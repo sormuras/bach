@@ -8,7 +8,7 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 - [x] [zero extra configuration](#zero-extra-configuration) required (conventions and information gathered from `module-info.java` files)
 - [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
 - [x] [b-y-o-b](#bring-your-own-build) program using plain old Java (`src/bach/Build.java`)
-- [ ] 3rd-party modules in plain sight (single `lib/` directory)
+- [x] [3rd-party modules](#3rd-party-modules) in plain sight (single `lib/` directory)
 - [ ] considers compile (`javac`) and package (`jar`) as an atomic step
 - [ ] single-pass multi-module processing (`--module-source-path`)
 - [ ] multi-release modules (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
@@ -55,6 +55,17 @@ Write your own build program using plain old Java!
 Store your build program as [`src/bach/Build.java`](https://github.com/sormuras/bach/blob/master/src/bach/Build.java) and [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java#L43) will delegate to it.
 To make your own build program runnable from within an IDE, you need to download and mount module `de.sormuras.bach` first.
 After that simply run the `de.sormuras.bach` module.
+
+## 3rd-party Modules
+
+All 3rd-party modules are stored in plain sight: `lib/`
+3rd-party modules are all modules that are not declared in your project and that are not modules provided by the _system_, i.e. the current Java runtime.
+
+How do you provide 3rd-party modules?
+
+- Load and drop modular JAR files into the `lib/` directory.
+
+Missing 3rd-party modules are being resolved in a best-effort manner using [sormuras/modules](https://github.com/sormuras/modules) database.
 
 ## Singe-File Source-Code program or modular library?
 
