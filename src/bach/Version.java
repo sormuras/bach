@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// default package
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,7 +25,7 @@ import java.util.Properties;
 /** Set various version values to the one of this program's first argument. */
 public class Version {
 
-  private static final Path PROPERTIES = Path.of(".bach/bach.properties");
+  private static final Path PROPERTIES = Path.of(".bach/project.properties");
 
   public static void main(String... args) throws Exception {
     if (args.length == 0) {
