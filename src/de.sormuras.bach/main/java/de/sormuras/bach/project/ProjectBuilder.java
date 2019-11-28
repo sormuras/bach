@@ -72,9 +72,7 @@ public class ProjectBuilder {
   }
 
   public Project auto(Folder folder) {
-    var file = System.getProperty("project.properties", ".bach/project.properties");
-    var properties = Paths.load(new Properties(), folder.base().resolve(file));
-    return auto(folder, properties);
+    return auto(folder, properties(folder));
   }
 
   public Project auto(Folder folder, Properties properties) {
@@ -85,6 +83,11 @@ public class ProjectBuilder {
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
     return new Project(name, Version.parse(version), structure(folder), null);
+  }
+
+  public Properties properties(Folder folder) {
+    var file = System.getProperty("project.properties", ".bach/project.properties");
+    return Paths.load(new Properties(), folder.base().resolve(file));
   }
 
   public Structure structure(Folder folder) {
