@@ -64,7 +64,14 @@ class Tester {
 
     var errors = new StringBuilder();
     errors.append(run(layer, "test(" + unit.name() + ")"));
-    errors.append(run(layer, "junit", "--select-module", unit.name()));
+    errors.append(
+        run(
+            layer,
+            "junit",
+            "--select-module",
+            unit.name(),
+            "--reports-dir",
+            folder.realm(realm.name(), "junit-reports").toString()));
     if (errors.toString().replace('0', ' ').isBlank()) {
       return;
     }
