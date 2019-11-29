@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package it;
+package test.modules;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;

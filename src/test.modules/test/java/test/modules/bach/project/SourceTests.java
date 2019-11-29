@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package it;
+package test.modules.bach.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
+import de.sormuras.bach.project.Source;
+import java.nio.file.Path;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class LogTests {
+class SourceTests {
   @Test
-  void messagesOnAllLevelsAreLogged() {
-    var log = new Log();
-    assertEquals("debug", log.debug("debug").message());
-    assertEquals("info", log.info("info").message());
-    assertEquals("warning", log.warning("warning").message());
-    assertLinesMatch(List.of("debug", "info"), log.lines());
-    assertLinesMatch(List.of("warning"), log.errors());
+  void defaultComponents() {
+    var source = Source.of(Path.of(""));
+    assertEquals(Path.of(""), source.path());
+    assertEquals(0, source.release());
+    assertEquals(Set.of(), source.modifiers());
+
+    assertFalse(source.isTargeted());
+    assertFalse(source.isVersioned());
+    assertTrue(source.target().isEmpty());
   }
 }

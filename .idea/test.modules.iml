@@ -2,12 +2,13 @@
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/it">
-      <sourceFolder url="file://$MODULE_DIR$/src/it/test/java" isTestSource="true" />
+    <content url="file://$MODULE_DIR$/src/test.modules">
+      <sourceFolder url="file://$MODULE_DIR$/src/test.modules/test/java" isTestSource="true" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="de.sormuras.bach" scope="TEST" />
     <orderEntry type="library" name="JUnit Jupiter" level="project" />
     <orderEntry type="inheritedJdk" />
+    <orderEntry type="module" module-name="test.base" scope="TEST" />
   </component>
 </module>

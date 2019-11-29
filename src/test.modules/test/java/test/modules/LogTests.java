@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-package it;
+package test.modules;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
-class Log extends de.sormuras.bach.Log {
-
-  private final StringWriter out, err;
-
-  Log() {
-    this(new StringWriter(), new StringWriter());
-  }
-
-  private Log(StringWriter out, StringWriter err) {
-    super(new PrintWriter(out, true), new PrintWriter(err, true), true);
-    this.out = out;
-    this.err = err;
-  }
-
-  List<String> lines() {
-    return Strings.lines(out);
-  }
-
-  List<String> errors() {
-    return Strings.lines(err);
+class LogTests {
+  @Test
+  void messagesOnAllLevelsAreLogged() {
+    var log = new Log();
+    assertEquals("debug", log.debug("debug").message());
+    assertEquals("info", log.info("info").message());
+    assertEquals("warning", log.warning("warning").message());
+    assertLinesMatch(List.of("debug", "info"), log.lines());
+    assertLinesMatch(List.of("warning"), log.errors());
   }
 }

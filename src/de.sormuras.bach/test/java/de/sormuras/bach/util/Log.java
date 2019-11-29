@@ -20,6 +20,7 @@ package de.sormuras.bach.util;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import test.base.Strings;
 
 class Log extends de.sormuras.bach.Log {
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package it;
+package test.modules;
 
 import static java.lang.module.ModuleDescriptor.Requires.Modifier.MANDATED;
 import static java.lang.module.ModuleDescriptor.newModule;
@@ -40,9 +40,9 @@ import org.junit.jupiter.api.TestFactory;
 class ModuleSystemTests {
 
   @Test
-  void testModuleIsNamedAndTheNameIsIT() {
+  void testModuleIsNamedAndTheNameIsTestModules() {
     assumeTrue(getClass().getModule().isNamed(), "not running on the module path");
-    assertEquals("it", getClass().getModule().getName());
+    assertEquals("test.modules", getClass().getModule().getName());
   }
 
   @Test

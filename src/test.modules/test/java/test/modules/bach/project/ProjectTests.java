@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package it.bach.project;
+package test.modules.bach.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -15,17 +15,32 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.util;
+package test.modules;
 
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.stream.Collectors;
+import test.base.Strings;
 
-class Strings {
+class Log extends de.sormuras.bach.Log {
 
-  private Strings() {}
+  private final StringWriter out, err;
 
-  public static List<String> lines(StringWriter writer) {
-    return List.copyOf(writer.toString().lines().collect(Collectors.toList()));
+  Log() {
+    this(new StringWriter(), new StringWriter());
+  }
+
+  private Log(StringWriter out, StringWriter err) {
+    super(new PrintWriter(out, true), new PrintWriter(err, true), true);
+    this.out = out;
+    this.err = err;
+  }
+
+  List<String> lines() {
+    return Strings.lines(out);
+  }
+
+  List<String> errors() {
+    return Strings.lines(err);
   }
 }

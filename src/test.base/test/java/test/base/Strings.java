@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package it;
+package test.base;
 
 import java.io.StringWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class Strings {
+public class Strings {
 
   private Strings() {}
 

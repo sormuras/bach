@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="All tests in it" type="JUnit" factoryName="JUnit">
-    <module name="it" />
+  <configuration default="false" name="All tests in test.modules" type="JUnit" factoryName="JUnit">
+    <module name="test.modules" />
     <option name="PACKAGE_NAME" value="" />
     <option name="MAIN_CLASS_NAME" value="" />
     <option name="METHOD_NAME" value="" />

@@ -21,6 +21,7 @@ open /*test*/ module de.sormuras.bach /*extends "main" module*/ {
   // "test"
 
   requires org.junit.jupiter;
+  requires test.base;
 
   // "main"
 
