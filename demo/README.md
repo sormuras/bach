@@ -1,3 +1,5 @@
 # demo
 
-Showing all features of Bach.java
+Showing most features of Bach.java
+
+Slides: https://gitpitch.com/sormuras/bach?p=demo
