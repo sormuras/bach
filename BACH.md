@@ -20,8 +20,10 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
 
 `Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
 
-Using information stored in `module-info.java` files.
-Renders re-declaration of names, dependencies, and structural information redundant.
+- Simplistic: Use [`Bach.java`](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java) as a Java-based script template and manually call JDK Foundation Tools -- just like in platform-specific scripts.
+
+- Lightweight: Let module `de.sormuras.bach` automatically order the right calls to JDK Foundation Tools based on your `module-info.java` declarations.
+
 
 ## Singe-File Source-Code program or modular library?
 
