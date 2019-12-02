@@ -2,6 +2,27 @@
 
 Ideas, thoughts, and more on the architecture of `Bach.java`.
 
+## A lightweight Java build tool
+
+From [JDK Foundation Tools], over [Apache Ant] to multi-language, multi-purpose build tools.
+
+```text
+JDK Foundation Tools                    Multi-Purpose Build Tools
+ |                                                  Maven
+ |                                Ant(+Ivy)          | Gradle
+ |                 Bach.java       |                 |  | Bazel Buildr
+ |  Scripts         |              |                 | Buck| sbt |
+ |   |              |              |                 |  |  |  |  |
+ +---+--------------+--------------+-----------------+--+--+--+--+-----
+ |
+  \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
+```
+
+`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
+
+Using information stored in `module-info.java` files.
+Renders re-declaration of names, dependencies, and structural information redundant.
+
 ## Singe-File Source-Code program or modular library?
 
 - `Bach.java`
@@ -25,3 +46,7 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
       and services
   - Types can be merged to a single-file source-code `Bach.java` program via `Merge.java` to
     support a similar setup
+
+
+[Apache Ant]: https://ant.apache.org
+[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
