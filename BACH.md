@@ -18,12 +18,14 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
   \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
 ```
 
-`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
+- `Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
 
-- Simplistic: Use [`Bach.java`](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java) as a Java-based script template and manually call JDK Foundation Tools -- just like in platform-specific scripts.
+- Simplistic: Use [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java) as a Java-based script template and manually call JDK Foundation Tools -- just like in platform-specific scripts.
+  Call `load(URI)` to load 3rd-party modules, `run(String tool, String... args)` to run provided tools, and `start(String... command)` to execute commands on the command-line.
 
 - Lightweight: Let module `de.sormuras.bach` automatically order the right calls to JDK Foundation Tools based on your `module-info.java` declarations.
-
+  - Installation-free via `jshell https://bit.ly/bach-jsh`.
+  - [Download](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach) module `de.sormuras.bach` to your `lib/` directory and use it directly.
 
 ## Singe-File Source-Code program or modular library?
 
