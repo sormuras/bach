@@ -184,7 +184,7 @@ public class ProjectBuilder {
       var info = info(relative);
       var descriptor = Modules.describe(Paths.readString(info));
       var sources = List.of(Source.of(relative.resolve("java")));
-      var resources = Paths.filterExisting(List.of(root.resolve("resources")));
+      var resources = Paths.filterExisting(List.of(relative.resolve("resources")));
       var patches = patcher.get();
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
@@ -209,7 +209,7 @@ public class ProjectBuilder {
           descriptor = Modules.describe(Paths.readString(info));
         }
       }
-      var resources = Paths.filterExisting(List.of(root.resolve("resources")));
+      var resources = Paths.filterExisting(List.of(relative.resolve("resources")));
       var patches = patcher.get();
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);

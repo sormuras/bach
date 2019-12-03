@@ -47,6 +47,9 @@ class DemoTests {
     assertEquals("demo.mantle", project.unit("test", "demo.mantle").orElseThrow().name());
     assertEquals("it", project.unit("test", "it").orElseThrow().name());
     // log.lines().forEach(System.out::println);
+
+    var core = project.unit("main", "demo.core").orElseThrow();
+    assertEquals(List.of(Path.of("demo/src/demo.core/main/resources")), core.resources());
   }
 
   @Test
