@@ -68,7 +68,7 @@ class DemoTests {
             "Executing task: ResolveTask",
             ">> MODULE SURVEYS, DOWNLOADS, ... >>",
             "Executing task: CompileTask",
-            "Compiling 3 main unit(s): [demo.core, demo.mantle, demo.shell]",
+            "Compiling 3 main unit(s): [demo.core, demo.shell, demo.mantle]",
             ">> JAVAC, JAR, ... >>",
             "Compiling 2 test unit(s): [demo.mantle, it]",
             ">> JAVAC, JAR, ... >>",
