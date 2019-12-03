@@ -23,9 +23,11 @@ import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,26 +35,44 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
-  enum Property {
+  public enum Property {
     NAME("project"),
-    VERSION("0");
+    VERSION("0"),
 
+    REALM_MAIN_JAVAC_ARGS(
+        String.join("|", "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint")),
+    REALM_TEST_JAVAC_ARGS(
+        String.join(
+            "|", "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint:-preview")),
+
+    DEPLOYMENT_REPOSITORY_ID(null),
+    DEPLOYMENT_URL(null);
+
+    final String key;
     final String defaultValue;
 
     Property(String defaultValue) {
+      this.key = name().toLowerCase().replace('_', '.');
       this.defaultValue = defaultValue;
     }
 
-    String get(Properties properties) {
+    public String get(Properties properties) {
       return get(properties, defaultValue);
     }
 
-    String get(Properties properties, String defaultValue) {
-      return properties.getProperty(name().toLowerCase(), defaultValue);
+    public String get(Properties properties, String defaultValue) {
+      return properties.getProperty(key, defaultValue);
+    }
+
+    public List<String> list(Properties properties, String regex) {
+      var value = get(properties);
+      if (value.isBlank()) return List.of();
+      return Arrays.stream(value.split(regex)).map(String::strip).collect(Collectors.toList());
     }
   }
 
@@ -82,7 +102,9 @@ public class ProjectBuilder {
             .orElse(Property.NAME.defaultValue);
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
-    return new Project(name, Version.parse(version), structure(folder), null);
+    var structure = structure(folder, properties);
+    var deployment = deployment(properties);
+    return new Project(name, Version.parse(version), structure, deployment);
   }
 
   public Properties properties(Folder folder) {
@@ -90,7 +112,13 @@ public class ProjectBuilder {
     return Paths.load(new Properties(), folder.base().resolve(file));
   }
 
-  public Structure structure(Folder folder) {
+  public Deployment deployment(Properties properties) {
+    var id = Property.DEPLOYMENT_REPOSITORY_ID.get(properties);
+    var uri = Property.DEPLOYMENT_URL.get(properties);
+    return (id == null || uri == null) ? null : new Deployment(id, URI.create(uri));
+  }
+
+  public Structure structure(Folder folder, Properties properties) {
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
@@ -100,19 +128,14 @@ public class ProjectBuilder {
             Set.of(Realm.Modifier.DEPLOY),
             List.of(folder.src("{MODULE}/main/java")),
             List.of(folder.lib()),
-            Map.of(
-                "javac",
-                List.of("-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint")));
+            Map.of("javac", Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|")));
     var test =
         new Realm(
             "test",
             Set.of(Realm.Modifier.TEST),
             List.of(folder.src("{MODULE}/test/java"), folder.src("{MODULE}/test/module")),
             List.of(folder.modules("main"), folder.lib()),
-            Map.of(
-                "javac",
-                List.of(
-                    "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint:-preview")));
+            Map.of("javac", Property.REALM_TEST_JAVAC_ARGS.list(properties, "\\|")));
     var realms = List.of(main, test);
 
     var modules = new TreeMap<String, List<String>>(); // local realm-based module registry

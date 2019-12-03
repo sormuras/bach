@@ -19,12 +19,10 @@
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
-import de.sormuras.bach.project.Deployment;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.nio.file.Path;
 
 /** Program building module {@code de.sormuras.bach} itself. */
@@ -33,14 +31,12 @@ public class Build {
     var log = Log.ofSystem(true);
     var builder = new ProjectBuilder(log);
     var folder = Folder.of(Path.of(""));
+    var properties = builder.properties(folder);
 
-    var name = "Bach.java";
-    var version = builder.properties(folder).getProperty("version");
-    var structure = builder.structure(folder);
-    var deployment =
-        new Deployment(
-            "bintray-sormuras-maven",
-            URI.create("https://api.bintray.com/maven/sormuras/maven/bach/;publish=1"));
+    var name = ProjectBuilder.Property.NAME.get(properties);
+    var version = ProjectBuilder.Property.VERSION.get(properties);
+    var structure = builder.structure(folder, properties);
+    var deployment = builder.deployment(properties);
 
     var project = new Project(name, Version.parse(version), structure, deployment);
     Bach.build(log, project);
