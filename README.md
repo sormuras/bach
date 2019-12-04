@@ -6,21 +6,33 @@
 [![jitpack](https://jitpack.io/v/sormuras/bach.svg)](https://jitpack.io/#sormuras/bach)
 [![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
 
-Use Java source to build your modular Java project.
+:scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
-```text
-    ___      ___      ___      ___
-   /\  \    /\  \    /\  \    /\__\
-  /  \  \  /  \  \  /  \  \  / /__/_
- /  \ \__\/  \ \__\/ /\ \__\/  \/\__\
- \ \  /  /\/\  /  /\ \ \/__/\/\  /  /
-  \  /  /   / /  /  \ \__\    / /  /
-   \/__/    \/__/    \/__/    \/__/.java
-```
+Use Java source to build your modular Java project.
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
 
-:scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
+Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to multi-language, multi-purpose build tools...
+```text
+JDK Foundation Tools                    Multi-Purpose Build Tools
+ |                                                  Maven
+ |                                Ant(+Ivy)          | Gradle
+ |                 Bach.java       |                 |  | Bazel Buildr
+ |  Scripts         |              |                 | Buck| sbt |
+ |   |              |              |                 |  |  |  |  |
+ +---+--------------+-+------------+-----------------+--+--+--+--+-----
+ |
+  \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
+```
+
+...`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
+
+**Simplistic** Use [Bach.java](https://github.com/sormuras/bach/blob/master/src/bach/Bach.java) as a Java-based script template and manually call [JDK Foundation Tools] -- just like in platform-specific shell scripts.
+Call `load(URI)` to load 3rd-party modules, `run(String tool, String... args)` to run provided tools, and `start(String... command)` to execute commands on the command-line.
+
+**Lightweight** Let module `de.sormuras.bach` automatically order the right calls to [JDK Foundation Tools] based on your `module-info.java` declarations.
+- Installation-free via `jshell https://bit.ly/bach-jsh`.
+- [Download](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach) module `de.sormuras.bach` to your `lib/` directory and use it directly.
 
 ## Uniques
 
@@ -31,8 +43,8 @@ Use Java source to build your modular Java project.
 - [x] [3rd-party modules](#3rd-party-modules) in plain sight (single `lib/` directory)
 - [x] [compilation](#compilation--compile--package) is compile (`javac`) and package (`jar`) as an atomic step
 - [x] [multi-module](#multi-module) compilation in a single pass (`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`)
-- [x] [multi-release](#multi-release) module are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
-- [x] [automated checks](#automated-checks) aka testing built-in (`test(${MODULE})`,`junit`)
+- [x] [multi-release](#multi-release) modules are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
+- [x] [automated checks](#automated-checks) (aka testing) built-in (`test(${MODULE})`,`junit`)
 - [x] [deployment](#deployment) support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
 
 ## Zero Installation
@@ -229,8 +241,8 @@ Find a Travis CI matrix configuration at [sormuras.github.io/.travis.yml](https:
 # be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
+[Apache Ant]: https://ant.apache.org
 [bach.jsh]: https://github.com/sormuras/bach/blob/master/bach.jsh
-[boot.jsh]: https://github.com/sormuras/bach/blob/master/boot.jsh
-[Bach.java]: https://github.com/sormuras/bach/blob/master/src/main/Bach.java
 [install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
+[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
+[jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
