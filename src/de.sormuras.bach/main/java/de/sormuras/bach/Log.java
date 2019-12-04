@@ -18,9 +18,13 @@
 package de.sormuras.bach;
 
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
 /** Logbook. */
 public class Log {
@@ -45,10 +49,14 @@ public class Log {
 
   /** Instant of creation. */
   private final Instant instant;
+  /** Task-related contexts. */
+  private final Deque<Context> contexts;
   /** All log entries. */
   private final List<Entry> entries;
   /** All "simple text" messages. */
   private final List<String> messages;
+  /** All tool runs. */
+  private final List<Run> runs;
   /** Text-output writer. */
   /*package-private*/ final PrintWriter out, err;
   /** Be verbose. */
@@ -56,8 +64,10 @@ public class Log {
 
   protected Log(PrintWriter out, PrintWriter err, boolean verbose) {
     this.instant = Instant.now();
+    this.contexts = new ArrayDeque<>();
     this.entries = new ArrayList<>();
     this.messages = new ArrayList<>();
+    this.runs = new ArrayList<>();
     this.out = out;
     this.err = err;
     this.verbose = verbose;
@@ -74,6 +84,14 @@ public class Log {
 
   public List<String> getMessages() {
     return messages;
+  }
+
+  public List<Run> getRuns() {
+    return runs;
+  }
+
+  Context context(Task task) {
+    return new Context(task);
   }
 
   private Entry message(System.Logger.Level level, String format, Object... args) {
@@ -105,6 +123,36 @@ public class Log {
     return entry;
   }
 
+  /** Log tool run. */
+  void tool(String name, String[] args, Duration duration, int code) {
+    var task =
+        Optional.ofNullable(contexts.peek())
+            .map(c -> c.task().getClass().getSimpleName())
+            .orElse("<none>");
+    runs.add(new Run(task, name, args, duration, code));
+  }
+
+  public class Context implements AutoCloseable {
+
+    private final Task task;
+
+    private Context(Task task) {
+      this.task = task;
+      contexts.push(this);
+      // entry(Type.CONTEXT_BEGIN, System.Logger.Level.TRACE, task + " start.");
+    }
+
+    public Task task() {
+      return task;
+    }
+
+    @Override
+    public void close() {
+      // entry(Type.CONTEXT_END, System.Logger.Level.TRACE, task + " end.");
+      contexts.pop();
+    }
+  }
+
   public static /*record*/ class Entry {
     private final Instant instant;
     private final System.Logger.Level level;
@@ -130,6 +178,42 @@ public class Log {
 
     public boolean isWarning() {
       return level == System.Logger.Level.WARNING;
+    }
+  }
+
+  public static /*record*/ class Run {
+    private final String task;
+    private final String name;
+    private final String[] args;
+    private final Duration duration;
+    private final int code;
+
+    Run(String task, String name, String[] args, Duration duration, int code) {
+      this.task = task;
+      this.name = name;
+      this.args = args;
+      this.duration = duration;
+      this.code = code;
+    }
+
+    public String task() {
+      return task;
+    }
+
+    public String name() {
+      return name;
+    }
+
+    public String[] args() {
+      return args;
+    }
+
+    public Duration duration() {
+      return duration;
+    }
+
+    public int code() {
+      return code;
     }
   }
 }

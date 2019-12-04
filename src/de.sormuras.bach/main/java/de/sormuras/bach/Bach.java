@@ -22,6 +22,8 @@ import de.sormuras.bach.project.ProjectBuilder;
 import de.sormuras.bach.util.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 
@@ -72,8 +74,13 @@ public class Bach {
   public void execute(Task... tasks) {
     try {
       for (var task : tasks) {
-        log.debug("Executing task: %s", task.getClass().getSimpleName());
-        task.execute(this);
+        var name = task.getClass().getSimpleName();
+        try (var context = log.context(task)) {
+          var entry = log.debug("Executing task: %s", name);
+          context.task().execute(this);
+          var duration = Duration.between(entry.instant(), Instant.now()).toMillis();
+          log.debug("%s took %d millis.", name, duration);
+        }
       }
     } catch (Exception e) {
       throw new Error("Task failed to execute: " + e, e);
@@ -82,9 +89,9 @@ public class Bach {
 
   public void execute(Call... calls) {
     for (var call : calls) {
-      var status = run(call);
-      if (status != 0) {
-        throw new Error("Call exited with non-zero status code: " + status + " <- " + call);
+      var code = run(call);
+      if (code != 0) {
+        throw new Error("Call exited with non-zero exit code: " + code + " <- " + call);
       }
     }
   }
@@ -94,7 +101,11 @@ public class Bach {
   }
 
   public int run(ToolProvider tool, Call call) {
-    log.debug("| %s(%s)", tool.name(), String.join(", ", call.arguments));
-    return tool.run(log.out, log.err, call.toArray(false));
+    var name = tool.name();
+    var args = call.toArray(false);
+    var entry = log.debug("Running tool: %s %s", name, String.join(" ", args));
+    var code = tool.run(log.out, log.err, args);
+    log.tool(name, args, Duration.between(entry.instant(), Instant.now()), code);
+    return code;
   }
 }

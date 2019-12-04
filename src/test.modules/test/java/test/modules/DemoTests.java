@@ -65,6 +65,7 @@ class DemoTests {
             "Bach.java (.+) initialized.",
             "Executing task: BuildTask",
             "Executing task: SanityTask",
+            "SanityTask took \\d+ millis.",
             "Executing task: ResolveTask",
             ">> MODULE SURVEYS, DOWNLOADS, ... >>",
             "Executing task: CompileTask",
@@ -76,6 +77,8 @@ class DemoTests {
             "Testing 2 test unit(s): [demo.mantle, it]",
             ">> TEST(MODULE), JUNIT(MODULE), ... >>",
             "Executing task: SummaryTask",
+            "Tool runs",
+            ">> TOOLS RUNS: javac, jar, javadoc, junit... >>",
             "Modules of main realm",
             "3 jar(s) found in: " + folder.modules("main").toUri(),
             ".+\\Q demo.core-0.jar\\E",
@@ -85,7 +88,9 @@ class DemoTests {
             "2 jar(s) found in: " + folder.modules("test").toUri(),
             ".+\\Q demo.mantle-0.jar\\E",
             ".+\\Q it-0.jar\\E",
-            "Build \\d+ took millis."),
+            "Build \\d+ took millis.",
+            "SummaryTask took \\d+ millis.",
+            "BuildTask took \\d+ millis."),
         log.lines(),
         "Log lines don't match expectations:\n" + Files.readString(folder.out("summary.log")));
 
@@ -94,8 +99,10 @@ class DemoTests {
         log.getEntries().stream().filter(Log.Entry::isWarning).count(),
         "Expected zero warnings in log, but got:\n" + Files.readString(folder.out("summary.log")));
 
+    var messages = log.getMessages();
     assertLinesMatch(
-        log.getMessages().stream()
+        messages.stream()
+            .limit(messages.size() - 2) // "SummaryTask took..." and "BuildTask took..."
             .map(message -> ".+|.+|\\Q" + message + "\\E")
             .collect(Collectors.toList()),
         Files.readAllLines(folder.out("summary.log")));

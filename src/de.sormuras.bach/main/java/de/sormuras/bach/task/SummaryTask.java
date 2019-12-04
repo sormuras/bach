@@ -22,6 +22,12 @@ public class SummaryTask implements Task {
     if (realms.isEmpty()) {
       log.warning("No realm configured in project: %s", project);
     }
+    log.info("Tool runs");
+    for (var run : log.getRuns()) {
+      var args = run.args().length == 0 ? "" : ' ' + String.join(" ", run.args());
+      var trim = args.length() <= 111 ? args : args.substring(0, 111 - 3) + "...";
+      log.info("  %6d %s%s", run.duration().toMillis(), run.name(), trim);
+    }
     for (var realm : realms) {
       log.info("Modules of %s realm", realm.name());
       var modules = project.folder().modules(realm.name());
@@ -61,6 +67,19 @@ public class SummaryTask implements Task {
   private void writeSummaryMarkdown(Log log, Folder folder) throws Exception {
     var lines = new ArrayList<String>();
     lines.add("# Summary");
+    lines.add("");
+    lines.add("## Tools");
+    lines.add("");
+    lines.add("| Task | Duration (millis) | Exit Code | Tool Name | Arguments |");
+    lines.add("| ---: | ----------------: | --------: | :-------- | --------- |");
+    for (var run : log.getRuns()) {
+      var task = run.task();
+      var millis = run.duration().toMillis();
+      var code = run.code();
+      var name = run.name();
+      var args = run.args().length == 0 ? "" : '`' + String.join(" ", run.args()) + '`';
+      lines.add(String.format("| %s | %d |  %d | `%s` | %s |", task, millis, code, name, args));
+    }
     lines.add("");
     lines.add("## Messages logged at INFO and more severe levels");
     lines.add("");
