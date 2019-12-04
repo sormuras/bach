@@ -19,7 +19,7 @@
 
 ---
 
-## Status Quo
+## JDK Tools 2019
 
 ```text
 JDK Foundation Tools                    Multi-Purpose Build Tools
@@ -32,6 +32,13 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
  |
   \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
 ```
+
+---
+
+## JDK Tools 2020+
+
+- **14** `jpackage` https://openjdk.java.net/jeps/343
+- **?** `jbach`, `jbuild`, `javab`, ... JEP ?
 
 ---
 
