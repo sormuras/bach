@@ -36,7 +36,7 @@ public class Bach {
     build(log, project);
   }
 
-  /** */
+  /** Build entry-point. */
   public static void build(Log log, Project project) {
     var bach = new Bach(log, project);
     bach.execute(Task.build());

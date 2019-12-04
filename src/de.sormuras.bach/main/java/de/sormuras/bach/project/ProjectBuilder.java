@@ -82,7 +82,7 @@ public class ProjectBuilder {
     this.log = log;
   }
 
-  /** Create project instance auto-configured by scanning the current working directory. */
+  /** Create project instance auto-configured by scanning the given base directory. */
   public Project auto(Path base) {
     return auto(Folder.of(base));
   }

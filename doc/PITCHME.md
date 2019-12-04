@@ -28,7 +28,7 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
  |                 Bach.java       |                 |  | Bazel Buildr
  |  Scripts         |              |                 | Buck| sbt |
  |   |              |              |                 |  |  |  |  |
- +---+--------------+-+------------+-----------------+--+--+--+--+-----
+ +---+--------------+--------------+-----------------+--+--+--+--+-----
  |
   \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
 ```
