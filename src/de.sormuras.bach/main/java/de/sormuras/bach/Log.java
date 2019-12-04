@@ -27,8 +27,8 @@ public class Log {
 
   /** Create new Log instance using {@link PrintWriter#nullWriter()} as target. */
   public static Log ofNullWriter() {
-    var nil = PrintWriter.nullWriter();
-    return new Log(new PrintWriter(nil), new PrintWriter(nil), false);
+    var writer = PrintWriter.nullWriter();
+    return new Log(new PrintWriter(writer), new PrintWriter(writer), false);
   }
 
   /** Create new Log instance using system default text output streams. */
