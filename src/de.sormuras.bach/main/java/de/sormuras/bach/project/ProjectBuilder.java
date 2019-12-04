@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 
@@ -136,31 +135,37 @@ public class ProjectBuilder {
     var realms = List.of(main, test);
     log.debug("realms = %s", realms);
 
-    var modules = new TreeMap<String, List<String>>(); // local realm-based module registry
+    var modules = new TreeMap<String, List<String>>(); // local realm-based module name registry
+    realms.forEach(realm -> modules.put(realm.name(), new ArrayList<>()));
     var units = new ArrayList<Unit>();
     for (var root : Paths.list(folder.src(), Files::isDirectory)) {
       log.debug("root = %s", root);
       var module = root.getFileName().toString();
       if (!SourceVersion.isName(module.replace(".", ""))) continue;
       log.debug("module = %s", module);
-      for (var realm : realms) {
-        modules.putIfAbsent(realm.name(), new ArrayList<>());
-        log.debug("realm.name = %s", realm.name());
-        if (Files.isDirectory(root.resolve(realm.name()))) {
-          var unit =
-              unit(
-                  root,
-                  realm,
-                  () -> {
-                    var patches = new ArrayList<Path>();
-                    if (realm == test && modules.get("main").contains(module)) {
-                      patches.add(folder.src().resolve(module).resolve("main/java"));
-                    }
-                    return patches;
-                  });
-          modules.get(realm.name()).add(module);
-          units.add(unit);
+      var moduleFilesInRoot = Paths.find(Set.of(root), Paths::isModuleFile);
+      if (moduleFilesInRoot.isEmpty()) continue;
+      int mark = units.size();
+      if (Files.isDirectory(root.resolve("main"))) {
+        var resources = Paths.filterExisting(List.of(root.resolve("main/resources")));
+        var unit = unit(root, main, resources, List.of());
+        modules.get("main").add(module);
+        units.add(unit);
+      }
+      if (Files.isDirectory(root.resolve("test"))) {
+        var resources =
+            Paths.filterExisting(
+                List.of(root.resolve("test/resources"), root.resolve("main/resources")));
+        var patches = new ArrayList<Path>();
+        if (modules.get("main").contains(module)) {
+          patches.add(root.resolve("main/java"));
         }
+        var unit = unit(root, test, resources, patches);
+        modules.get("test").add(module);
+        units.add(unit);
+      }
+      if (mark == units.size()) {
+        log.warning("Ignoring %s -- it's tree layout is not supported: %s", root, moduleFilesInRoot);
       }
     }
     var names = units.stream().map(Unit::name).collect(Collectors.toSet());
@@ -183,7 +188,7 @@ public class ProjectBuilder {
     throw new IllegalArgumentException("Couldn't find module-info.java file in: " + path);
   }
 
-  private Unit unit(Path root, Realm realm, Supplier<List<Path>> patcher) {
+  private Unit unit(Path root, Realm realm, List<Path> resources, List<Path> patches) {
     var module = root.getFileName().toString();
     var relative = root.resolve(realm.name()); // realm-relative
     // jigsaw
@@ -191,8 +196,6 @@ public class ProjectBuilder {
       var info = info(relative);
       var descriptor = Modules.describe(Paths.readString(info));
       var sources = List.of(Source.of(relative.resolve("java")));
-      var resources = Paths.filterExisting(List.of(relative.resolve("resources")));
-      var patches = patcher.get();
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
       log.debug("sources = %s", sources);
@@ -216,8 +219,6 @@ public class ProjectBuilder {
           descriptor = Modules.describe(Paths.readString(info));
         }
       }
-      var resources = Paths.filterExisting(List.of(relative.resolve("resources")));
-      var patches = patcher.get();
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
       log.debug("sources = %s", sources);

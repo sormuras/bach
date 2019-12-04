@@ -76,6 +76,11 @@ public class Paths {
     return false;
   }
 
+  /** Test supplied path for pointing to a Java module declaration compilation unit. */
+  public static boolean isModuleFile(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
+  }
+
   /** Test supplied path for pointing to a {@code J}ava {@code AR}chive file. */
   public static boolean isJarFile(Path path) {
     return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar");
