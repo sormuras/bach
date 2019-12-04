@@ -19,7 +19,6 @@ package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -74,7 +73,6 @@ public /*record*/ class Project {
   public List<Unit> units(Realm realm) {
     return structure().units().stream()
         .filter(unit -> unit.realm() == realm)
-        .sorted(Comparator.comparingInt(this::sizeOfProjectInternalRequires))
         .collect(Collectors.toList());
   }
 
@@ -95,12 +93,5 @@ public /*record*/ class Project {
 
   public Version version(Unit unit) {
     return unit.descriptor().version().orElse(version);
-  }
-
-  private int sizeOfProjectInternalRequires(Unit unit) {
-    return (int)
-        unit.descriptor().requires().stream()
-            .filter(requires -> unit(unit.realm().name(), requires.name()).isPresent())
-            .count();
   }
 }

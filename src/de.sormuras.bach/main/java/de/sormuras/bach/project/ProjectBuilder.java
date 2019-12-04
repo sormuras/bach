@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -133,6 +134,7 @@ public class ProjectBuilder {
             List.of(folder.modules("main"), folder.lib()),
             Map.of("javac", Property.REALM_TEST_JAVAC_ARGS.list(properties, "\\|")));
     var realms = List.of(main, test);
+    log.debug("realms = %s", realms);
 
     var modules = new TreeMap<String, List<String>>(); // local realm-based module registry
     var units = new ArrayList<Unit>();
@@ -161,7 +163,16 @@ public class ProjectBuilder {
         }
       }
     }
+    var names = units.stream().map(Unit::name).collect(Collectors.toSet());
+    units.sort(Comparator.comparingLong(unit -> countProjectInternalRequires(unit, names)));
+    log.debug("units = %s", units);
     return new Structure(folder, Library.of(), realms, units);
+  }
+
+  private long countProjectInternalRequires(Unit unit, Set<String> names) {
+    return unit.descriptor().requires().stream()
+        .filter(requires -> names.contains(requires.name()))
+        .count();
   }
 
   private Path info(Path path) {
