@@ -78,10 +78,6 @@ public class ProjectBuilder {
 
   private final Log log;
 
-  public ProjectBuilder() {
-    this(Log.ofNullWriter());
-  }
-
   public ProjectBuilder(Log log) {
     this.log = log;
   }
