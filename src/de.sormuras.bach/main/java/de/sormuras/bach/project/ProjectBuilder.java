@@ -145,6 +145,16 @@ public class ProjectBuilder {
       var moduleFilesInRoot = Paths.find(Set.of(root), Paths::isModuleFile);
       if (moduleFilesInRoot.isEmpty()) continue;
       int mark = units.size();
+      if (Paths.isModuleFile(root.resolve("module-info.java"))) {
+        var info = root.resolve("module-info.java");
+        var descriptor = Modules.describe(Paths.readString(info));
+        var pom = root.resolve("pom.xml");
+        var sources = List.of(Source.of(root));
+        var unit = new Unit(main, descriptor, info, pom, sources, List.of(), List.of());
+        modules.get("main").add(module);
+        units.add(unit);
+        continue;
+      }
       if (Files.isDirectory(root.resolve("main"))) {
         var resources = Paths.filterExisting(List.of(root.resolve("main/resources")));
         var unit = unit(root, main, resources, List.of());
