@@ -69,7 +69,7 @@ class Jigsaw {
       var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
       var allModuleSourcePaths =
           units.stream()
-              .map(unit -> unit.info().getParent().toString().replace(unit.name(), "*"))
+              .map(unit -> Paths.star(unit.info(), unit.name()))
               .distinct()
               .collect(Collectors.joining(File.pathSeparator));
       var javadoc =

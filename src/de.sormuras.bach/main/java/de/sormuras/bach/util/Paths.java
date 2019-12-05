@@ -20,6 +20,8 @@ package de.sormuras.bach.util;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -123,5 +125,26 @@ public class Paths {
     } catch (Exception e) {
       throw new RuntimeException("Read all content from file failed: " + path, e);
     }
+  }
+
+  /** Convert path to string and replace first element named {@code key} with a {@code '*'}. */
+  public static String star(Path path, String key) {
+    return toString(path, key, true, "*");
+  }
+
+  /** Convert path to string. */
+  public static String toString(Path path, String key, boolean consume, String... replacements) {
+    var deque = new ArrayDeque<>(List.of(replacements));
+    var strings = new ArrayList<String>();
+    for (var element : path) {
+      var string = element.toString();
+      if (string.equals("module-info.java")) break;
+      if (!deque.isEmpty() && string.equals(key)) {
+        strings.add(consume ? deque.pop() : deque.peek());
+      } else {
+        strings.add(string);
+      }
+    }
+    return String.join(File.separator, strings);
   }
 }
