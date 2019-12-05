@@ -41,7 +41,7 @@ class ProjectTests {
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
     var realm = new Realm("realm", Set.of(), List.of(), List.of(), Map.of());
-    var unit = unit(realm, "unit", 1, Unit.Type.JIGSAW);
+    var unit = unit(realm, "unit", 1);
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
     var project = new Project("simple", Version.parse("0"), structure, null);
     assertEquals("simple", project.name());
@@ -66,9 +66,10 @@ class ProjectTests {
     assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
   }
 
-  static Unit unit(Realm realm, String name, int version, Unit.Type type) {
+  static Unit unit(Realm realm, String name, int version) {
     var info = Path.of("module-info.java");
-    return new Unit(realm, descriptor(name, version), info, type, List.of(), List.of(), List.of());
+    var pom = Path.of("pom.xml");
+    return new Unit(realm, descriptor(name, version), info, pom, List.of(), List.of(), List.of());
   }
 
   static ModuleDescriptor descriptor(String name, int version) {

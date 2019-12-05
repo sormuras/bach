@@ -28,18 +28,10 @@ import java.util.stream.Collectors;
 
 public /*record*/ class Unit {
 
-  /** Unit type, which hints at source directory layout and other properties. */
-  public enum Type {
-    /** Default Jigsaw-style source layout: {@code java/} */
-    JIGSAW,
-    /** Multi-release JAR-style source layout: {@code java-${BASE}/}, ..., {@code java-${N}/} */
-    MULTI_RELEASE
-  }
-
   private final Realm realm;
   private final ModuleDescriptor descriptor;
   private final Path info;
-  private final Type type;
+  private final Path pom;
   private final List<Source> sources;
   private final List<Path> resources;
   private final List<Path> patches;
@@ -48,14 +40,14 @@ public /*record*/ class Unit {
       Realm realm,
       ModuleDescriptor descriptor,
       Path info,
-      Type type,
+      Path pom,
       List<Source> sources,
       List<Path> resources,
       List<Path> patches) {
     this.realm = Objects.requireNonNull(realm, "realm");
     this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
     this.info = Objects.requireNonNull(info, "info");
-    this.type = Objects.requireNonNull(type, "type");
+    this.pom = pom;
     this.sources = List.copyOf(sources);
     this.resources = List.copyOf(resources);
     this.patches = List.copyOf(patches);
@@ -77,8 +69,8 @@ public /*record*/ class Unit {
     return info;
   }
 
-  public Type type() {
-    return type;
+  public Optional<Path> mavenPom() {
+    return pom != null && Files.isRegularFile(pom) ? Optional.of(pom) : Optional.empty();
   }
 
   public List<Source> sources() {
@@ -104,14 +96,5 @@ public /*record*/ class Unit {
 
   public boolean isMultiRelease() {
     return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
-  }
-
-  public Optional<Path> mavenPom() {
-    for (var source : realm.sourcePaths()) {
-      var pom = source.getParent().resolve("maven").resolve("pom.xml");
-      var path = Path.of(pom.toString().replace("{MODULE}", name()));
-      if (Files.isRegularFile(path)) return Optional.of(path);
-    }
-    return Optional.empty();
   }
 }

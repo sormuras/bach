@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.Log;
-import de.sormuras.bach.project.Unit.Type;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor;
@@ -165,7 +164,8 @@ public class ProjectBuilder {
         units.add(unit);
       }
       if (mark == units.size()) {
-        log.warning("Ignoring %s -- it's tree layout is not supported: %s", root, moduleFilesInRoot);
+        log.warning(
+            "Ignoring %s -- it's tree layout is not supported: %s", root, moduleFilesInRoot);
       }
     }
     var names = units.stream().map(Unit::name).collect(Collectors.toSet());
@@ -191,6 +191,10 @@ public class ProjectBuilder {
   private Unit unit(Path root, Realm realm, List<Path> resources, List<Path> patches) {
     var module = root.getFileName().toString();
     var relative = root.resolve(realm.name()); // realm-relative
+    var pom = relative.resolve("maven/pom.xml");
+    log.debug("pom = %s", pom);
+    log.debug("resources = %s", resources);
+    log.debug("patches = %s", patches);
     // jigsaw
     if (Files.isDirectory(relative.resolve("java"))) { // no trailing "...-${N}"
       var info = info(relative);
@@ -199,9 +203,7 @@ public class ProjectBuilder {
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
       log.debug("sources = %s", sources);
-      log.debug("resources = %s", resources);
-      log.debug("patches = %s", patches);
-      return new Unit(realm, descriptor, info, Type.JIGSAW, sources, resources, patches);
+      return new Unit(realm, descriptor, info, pom, sources, resources, patches);
     }
     // multi-release
     if (!Paths.list(relative, "java-*").isEmpty()) {
@@ -222,9 +224,7 @@ public class ProjectBuilder {
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
       log.debug("sources = %s", sources);
-      log.debug("resources = %s", resources);
-      log.debug("patches = %s", patches);
-      return new Unit(realm, descriptor, info, Type.MULTI_RELEASE, sources, resources, patches);
+      return new Unit(realm, descriptor, info, pom, sources, resources, patches);
     }
     throw new IllegalArgumentException("Unknown unit layout: " + module + " <- " + root.toUri());
   }

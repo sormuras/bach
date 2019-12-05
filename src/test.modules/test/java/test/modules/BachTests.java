@@ -98,7 +98,7 @@ class BachTests {
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
     var main = new Realm("main", Set.of(), List.of(), List.of(), Map.of());
-    var unit = unit(main, "unit", 0, Unit.Type.JIGSAW);
+    var unit = unit(main, "unit", 0);
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
     var project = new Project("empty", Version.parse("0"), structure, null);
     var log = new Log();
@@ -108,9 +108,10 @@ class BachTests {
     assertEquals("Base directory is empty: " + temp.toUri(), error.getMessage());
   }
 
-  static Unit unit(Realm realm, String name, int version, Unit.Type type) {
+  static Unit unit(Realm realm, String name, int version) {
     var info = Path.of("module-info.java");
-    return new Unit(realm, descriptor(name, version), info, type, List.of(), List.of(), List.of());
+    var pom = Path.of("pom.xml");
+    return new Unit(realm, descriptor(name, version), info, pom, List.of(), List.of(), List.of());
   }
 
   static ModuleDescriptor descriptor(String name, int version) {
