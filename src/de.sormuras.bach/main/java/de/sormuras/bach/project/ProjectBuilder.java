@@ -117,6 +117,38 @@ public class ProjectBuilder {
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
+
+    var moduleFilesInSrc = Paths.find(Set.of(folder.src()), Paths::isModuleFile);
+    if (moduleFilesInSrc.isEmpty())
+      throw new IllegalStateException("No module declared: " + folder.src());
+
+    // Simple single realm? All must match: "src/{MODULE}/module-info.java"
+    if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
+      var realm =
+          new Realm(
+              "realm",
+              Set.of(),
+              List.of(folder.src()),
+              List.of(folder.lib()),
+              Map.of("javac", Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|")));
+      var units = new ArrayList<Unit>();
+      for (var root : Paths.list(folder.src(), Files::isDirectory)) {
+        log.debug("root = %s", root);
+        var module = root.getFileName().toString();
+        if (!SourceVersion.isName(module.replace(".", ""))) continue;
+        if (Paths.isModuleFile(root.resolve("module-info.java"))) {
+          var info = root.resolve("module-info.java");
+          var descriptor = Modules.describe(Paths.readString(info));
+          var pom = root.resolve("pom.xml");
+          var sources = List.of(Source.of(root));
+          var unit = new Unit(realm, descriptor, info, pom, sources, List.of(), List.of());
+          units.add(unit);
+        }
+      }
+      return new Structure(folder, Library.of(), List.of(realm), units);
+    }
+
+    // Default "main" and "test" realms...
     var main =
         new Realm(
             "main",
@@ -134,8 +166,8 @@ public class ProjectBuilder {
     var realms = List.of(main, test);
     log.debug("realms = %s", realms);
 
-    var modules = new TreeMap<String, List<String>>(); // local realm-based module name registry
-    realms.forEach(realm -> modules.put(realm.name(), new ArrayList<>()));
+    var registry = new TreeMap<String, List<String>>(); // local realm-based module name registry
+    realms.forEach(realm -> registry.put(realm.name(), new ArrayList<>()));
     var units = new ArrayList<Unit>();
     for (var root : Paths.list(folder.src(), Files::isDirectory)) {
       log.debug("root = %s", root);
@@ -145,20 +177,10 @@ public class ProjectBuilder {
       var moduleFilesInRoot = Paths.find(Set.of(root), Paths::isModuleFile);
       if (moduleFilesInRoot.isEmpty()) continue;
       int mark = units.size();
-      if (Paths.isModuleFile(root.resolve("module-info.java"))) {
-        var info = root.resolve("module-info.java");
-        var descriptor = Modules.describe(Paths.readString(info));
-        var pom = root.resolve("pom.xml");
-        var sources = List.of(Source.of(root));
-        var unit = new Unit(main, descriptor, info, pom, sources, List.of(), List.of());
-        modules.get("main").add(module);
-        units.add(unit);
-        continue;
-      }
       if (Files.isDirectory(root.resolve("main"))) {
         var resources = Paths.filterExisting(List.of(root.resolve("main/resources")));
         var unit = unit(root, main, resources, List.of());
-        modules.get("main").add(module);
+        registry.get("main").add(module);
         units.add(unit);
       }
       if (Files.isDirectory(root.resolve("test"))) {
@@ -166,11 +188,11 @@ public class ProjectBuilder {
             Paths.filterExisting(
                 List.of(root.resolve("test/resources"), root.resolve("main/resources")));
         var patches = new ArrayList<Path>();
-        if (modules.get("main").contains(module)) {
+        if (registry.get("main").contains(module)) {
           patches.add(root.resolve("main/java"));
         }
         var unit = unit(root, test, resources, patches);
-        modules.get("test").add(module);
+        registry.get("test").add(module);
         units.add(unit);
       }
       if (mark == units.size()) {
