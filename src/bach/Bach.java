@@ -30,7 +30,7 @@ import java.util.List;
 public class Bach {
 
   /** The {@code Bach.java} version constant. */
-  static final String VERSION = "2.0-ea";
+  static final String VERSION = "2.0-M6";
 
   /** The version of module {@code de.sormuras.bach} to load and use. */
   static final String BACH_VERSION = System.getProperty("Bach.java/version", VERSION);
