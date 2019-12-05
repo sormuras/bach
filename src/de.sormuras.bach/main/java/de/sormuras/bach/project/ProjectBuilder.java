@@ -117,22 +117,15 @@ public class ProjectBuilder {
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
-
-    var moduleFilesInSrc = Paths.find(Set.of(folder.src()), Paths::isModuleFile);
-    if (moduleFilesInSrc.isEmpty())
-      throw new IllegalStateException("No module declared: " + folder.src());
+    var src = folder.src();
+    var moduleFilesInSrc = Paths.find(Set.of(src), Paths::isModuleFile);
+    if (moduleFilesInSrc.isEmpty()) throw new IllegalStateException("No module declared: " + src);
 
     // Simple single realm? All must match: "src/{MODULE}/module-info.java"
     if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
-      var realm =
-          new Realm(
-              "realm",
-              Set.of(),
-              List.of(folder.src()),
-              List.of(folder.lib()),
-              Map.of("javac", Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|")));
+      var realm = new Realm("realm", Set.of(), List.of(src), List.of(folder.lib()), Map.of());
       var units = new ArrayList<Unit>();
-      for (var root : Paths.list(folder.src(), Files::isDirectory)) {
+      for (var root : Paths.list(src, Files::isDirectory)) {
         log.debug("root = %s", root);
         var module = root.getFileName().toString();
         if (!SourceVersion.isName(module.replace(".", ""))) continue;
@@ -169,7 +162,7 @@ public class ProjectBuilder {
     var registry = new TreeMap<String, List<String>>(); // local realm-based module name registry
     realms.forEach(realm -> registry.put(realm.name(), new ArrayList<>()));
     var units = new ArrayList<Unit>();
-    for (var root : Paths.list(folder.src(), Files::isDirectory)) {
+    for (var root : Paths.list(src, Files::isDirectory)) {
       log.debug("root = %s", root);
       var module = root.getFileName().toString();
       if (!SourceVersion.isName(module.replace(".", ""))) continue;
