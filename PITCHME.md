@@ -1,36 +1,38 @@
 # Bach.java
 
 ---
-
+@snap[north span-90]
 ## Overview
-
+@snapend
 - Motivation
+- Usage
 - Features
 - Project Model
-- Usage
 - Outlook
 
 ---
-
+@snap[north span-90]
 ## Motivation
-
+@snapend
 - Why doesn't the JDK provide a build tool?
 - Why another build tool?
 
 ---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
+@title[JDK and Build Tools]
 @snap[north span-90]
 ## JDK and Build Tools
 @snapend
 
 +++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
+@title[JDK, Bach.java, Tools]
 @snap[north span-90]
-## JDK, Bach.java and Tools
+## JDK and Build Tools
 @snapend
 
----
-
++++
+@snap[north span-90]
 ## JDK Tools 2019
-
+@snapend
 @ul[text-08](false)
 - **1** `javac` Compiler for the Java programming language
 - **1** `javap` Class file disassembler
@@ -45,42 +47,9 @@
 @ulend
 
 ---
-
-## Features
-
-- Lightweight
-- Java
-- Modules
-
----
-
-## Project Model
-
-@ul[text-08](false)
-- Package `de.sormuras.bach.project`
-- `Project`
-  - `Name`
-  - `Version`
-- `Structure`
-  - `Folder`
-  - `Realm`
-  - `Unit`
-    - `Source`
-  - `Library`
-- `Deployment`
-@ulend
-
----
-
-## Usage
-
-- `jshell ...`
-- `java -p ... -m de.sormuras.bach`
-
----
-
+@snap[north span-90]
 ## Screenplays
-
+@snapend
 - from `build.bat`
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
@@ -94,7 +63,6 @@ Note:
 @snap[north-east]
 ## Demo 1
 @snapend
-
 @snap[east]
 @ol[text-08]
 1. Declare module
@@ -114,7 +82,6 @@ Note:
 @snap[north-east]
 ## Demo 2
 @snapend
-
 @snap[east]
 @ol[text-08]
 1. Declare module
@@ -134,7 +101,6 @@ Note:
 @snap[north-east]
 ## Demo 3
 @snapend
-
 @snap[east]
 @ol[text-08]
 1. Declare module
@@ -151,9 +117,42 @@ Note:
 - Using no extra script file
 
 ---
+@snap[north span-90]
+## Features
+@snapend
+- Lightweight
+- Java
+- Modules
 
+---
+@snap[north span-90]
+## Project Model
+@snapend
+@ul[text-08](false)
+- Package `de.sormuras.bach.project`
+- `Project`
+  - `Name`
+  - `Version`
+- `Structure`
+  - `Folder`
+  - `Realm`
+  - `Unit`
+    - `Source`
+  - `Library`
+- `Deployment`
+@ulend
+
+---
+@snap[north span-90]
+## Usage
+@snapend
+- `jshell ...`
+- `java -p ... -m de.sormuras.bach`
+
+---
+@snap[north span-90]
 ## Outlook
-
+@snapend
 @ul
 - from `Bach.java` to `{JDK_HOME}/bin/jbuild[.exe]`?
 - to `jbach`, `jbuild`, `javab`, ...
