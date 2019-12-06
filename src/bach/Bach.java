@@ -64,7 +64,7 @@ public class Bach {
     load("de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
 
     var java = new ArrayList<String>();
-    java.add(ProcessHandle.current().info().command().orElse("java"));
+    java.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
     java.add("-D" + "user.language=en");
     java.add("--module-path=" + LIB);
     java.add("--add-modules=" + "ALL-SYSTEM");
