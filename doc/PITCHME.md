@@ -87,21 +87,24 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
 
-+++?image=doc/screenplay/demo-1-build.gif&size=auto 90%
++++?image=doc/screenplay/demo-1-build.gif
+@snap[east span-30]
+#### Demo 1
+#### `build.bat`
+@snapend
 
-#### Demo 1 `build.bat`
+Note:
+6 steps
 
-+++
++++?image=doc/screenplay/demo-2-jshell.gif
 
+Note:
 #### Demo 2 `jshell build.jsh`
 
-![demo-2-jshell](doc/screenplay/demo-2-jshell.gif)
++++?image=doc/screenplay/demo-3-bach.gif
 
-+++
-
+Note:
 #### Demo 3 `jshell https://bit.ly/bach-jsh`
-
-![demo-3-bach](doc/screenplay/demo-3-bach.gif)
 
 ---
 
