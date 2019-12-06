@@ -18,7 +18,7 @@
 - Why another build tool?
 
 ---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
-@snap[north]
+@snap[north span-90]
 ## JDK and Build Tools
 @snapend
 
