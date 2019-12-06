@@ -2,7 +2,7 @@
 
 ## Slides
 
-- main https://gitpitch.com/sormuras/bach?p=doc
+- main https://gitpitch.com/sormuras/bach
 - demo https://gitpitch.com/sormuras/bach?p=demo
 
 ## Screenplays
