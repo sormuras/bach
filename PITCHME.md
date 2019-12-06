@@ -22,6 +22,11 @@
 ## JDK and Build Tools
 @snapend
 
++++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
+@snap[north span-90]
+## JDK, Bach.java and Tools
+@snapend
+
 ---
 
 ## JDK Tools 2019
