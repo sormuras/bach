@@ -17,8 +17,10 @@
 - Why doesn't the JDK provide a build tool?
 - Why another build tool?
 
----?image=doc/img/jdk-and-build-tools.svg&size=auto 90%
+---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
+@snap[north]
 ## JDK and Build Tools
+@snapend
 
 ---
 
