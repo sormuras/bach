@@ -87,21 +87,35 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
 
-+++?image=doc/screenplay/demo-1-build.gif
+Note:
+- From source to module in 6 steps
+- Created with DOS batch script
+- Recorded with https://blog.bahraniapps.com/gifcam-6-0/
+
++++?image=doc/screenplay/demo-1-build.gif&size=auto 90%
 @snap[east span-30]
 #### Demo 1
-#### `build.bat`
+@ul
+- ##### Step 1: Declare module
+- ##### Step 2: `build.bat`
+- ##### Step 3: Tree sources
+- ##### Step 4: Build!
+- ##### Step 5: Tree binaries
+- ##### Step 6: Describe module
+@ulend
+
 @snapend
 
 Note:
-6 steps
+- From source to module in 6 steps
+- Using DOS `.bat` syntax
 
-+++?image=doc/screenplay/demo-2-jshell.gif
++++?image=doc/screenplay/demo-2-jshell.gif&size=auto 90%
 
 Note:
 #### Demo 2 `jshell build.jsh`
 
-+++?image=doc/screenplay/demo-3-bach.gif
++++?image=doc/screenplay/demo-3-bach.gif&size=auto 90%
 
 Note:
 #### Demo 3 `jshell https://bit.ly/bach-jsh`
