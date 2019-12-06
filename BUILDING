@@ -30,7 +30,7 @@ class Arguments {
 
 int run(String tool, String... args) {
     printCommandDetails("run", tool, args);
-    return ToolProvider.findFirst(tool).get().run(System.out, System.err, args);
+    return java.util.spi.ToolProvider.findFirst(tool).get().run(System.out, System.err, args);
 }
 
 int exe(String executable, String... args) throws Exception {
