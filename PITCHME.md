@@ -4,19 +4,22 @@
 @snap[north span-90]
 ## Overview
 @snapend
-
+@snap[midpoint span-90]
 - Motivation
 - Usage
 - Features
 - Project Model
 - Outlook
+@snapend
 
 ---
 @snap[north span-90]
 ## Motivation
 @snapend
+@snap[midpoint span-90]
 - Why doesn't the JDK provide a build tool?
 - Why another build tool?
+@snapend
 
 ---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
 @title[JDK and Build Tools]
@@ -34,6 +37,7 @@
 @snap[north span-90]
 ## JDK Tools 2019
 @snapend
+@snap[midpoint span-90]
 @ul[text-08](false)
 - **1** `javac` Compiler for the Java programming language
 - **1** `javap` Class file disassembler
@@ -46,14 +50,17 @@
 - **9** `jmod` JMOD file manager
 - **14** `jpackage` Package self-contained Java applications
 @ulend
+@snapend
 
 ---
 @snap[north span-90]
 ## Screenplays
 @snapend
+@snap[midpoint span-90]
 - from `build.bat`
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
+@snapend
 
 Note:
 - From source to module in 6 steps
@@ -121,14 +128,17 @@ Note:
 @snap[north span-90]
 ## Features
 @snapend
+@snap[midpoint span-90]
 - Lightweight
 - Java
 - Modules
+@snapend
 
 ---
 @snap[north span-90]
 ## Project Model
 @snapend
+@snap[midpoint span-90]
 @ul[text-08](false)
 - Package `de.sormuras.bach.project`
 - `Project`
@@ -142,20 +152,25 @@ Note:
   - `Library`
 - `Deployment`
 @ulend
+@snapend
 
 ---
 @snap[north span-90]
 ## Usage
 @snapend
+@snap[midpoint span-90]
 - `jshell ...`
 - `java -p ... -m de.sormuras.bach`
+@snapend
 
 ---
 @snap[north span-90]
 ## Outlook
 @snapend
+@snap[midpoint span-90]
 @ul
 - from `Bach.java` to `{JDK_HOME}/bin/jbuild[.exe]`?
 - to `jbach`, `jbuild`, `javab`, ...
 - create a JEP?
 @ulend
+@snapend
