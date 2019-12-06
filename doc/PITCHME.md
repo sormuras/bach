@@ -87,7 +87,7 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
 
-+++?image=screenplay/demo-1-build.gif
++++?image=doc/screenplay/demo-1-build.gif&size=auto 90%
 
 #### Demo 1 `build.bat`
 
