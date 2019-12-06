@@ -144,7 +144,7 @@ Note:
 @snap[east]
 @ol[text-08]
 1. Declare module
-1. -
+1. *NOOP*
 1. Tree sources
 1. Build!
 1. Tree binaries
