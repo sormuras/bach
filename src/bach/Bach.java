@@ -49,9 +49,9 @@ public class Bach {
 
   public static void main(String... args) throws Exception {
     var version = BACH_VERSION.endsWith("-ea") ? "master-SNAPSHOT" : BACH_VERSION;
-    debug("");
-    debug("Bach.java // https://github.com/sormuras/bach");
-    debug("");
+    System.out.println();
+    System.out.println("Bach.java // https://github.com/sormuras/bach");
+    System.out.println();
     debug(". BEGIN");
     debug("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
     debug("|   -DBach.java/lib=" + LIB);
@@ -87,7 +87,7 @@ public class Bach {
     start(java);
     debug("|");
     debug("' END.");
-    debug(
+    System.out.println(
         "Thanks for using Bach.java!"
             + " Support its development at https://github.com/sponsors/sormuras (-:");
   }
