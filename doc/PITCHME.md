@@ -79,27 +79,31 @@ JDK Foundation Tools                    Multi-Purpose Build Tools
 - `jshell ...`
 - `java -p ... -m de.sormuras.bach`
 
+---
+
 ## Screenplays
 
-From `.bat` to `bach-jsh`
+- from `build.bat`
+- over `build.jsh`
+- to `https://bit.ly/bach-jsh`
 
 +++
 
-### Demo 1 `build.bat`
+#### Demo 1 `build.bat`
 
-![demo-1-build](screenplay/demo-1-build.gif)
-
-+++
-
-### Demo 2 `jshell build.jsh`
-
-![demo-2-jshell](screenplay/demo-2-jshell.gif)
+![demo-1-build](https://github.com/sormuras/bach/blob/master/doc/screenplay/demo-1-build.gif)
 
 +++
 
-### Demo 3 `jshell https://bit.ly/bach-jsh`
+#### Demo 2 `jshell build.jsh`
 
-![demo-3-bach](screenplay/demo-3-bach.gif)
+![demo-2-jshell](https://github.com/sormuras/bach/blob/master/doc/screenplay/demo-2-jshell.gif)
+
++++
+
+#### Demo 3 `jshell https://bit.ly/bach-jsh`
+
+![demo-3-bach](https://github.com/sormuras/bach/blob/master/doc/screenplay/demo-3-bach.gif)
 
 ---
 
