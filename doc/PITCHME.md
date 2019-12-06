@@ -93,18 +93,21 @@ Note:
 - Recorded with https://blog.bahraniapps.com/gifcam-6-0/
 
 +++?image=doc/screenplay/demo-1-build.gif&size=auto 90%
-@snap[north-east span-40]
-#### Demo 1 `build.bat`
+@title[Demo 1 `build.bat`]
+
+@snap[north-east text-08]
+Demo 1 `build.bat`
 @snapend
-@snap[east span-40]
-@ul
-- Step 1: Declare module
-- Step 2: `build.bat`
-- Step 3: Tree sources
-- Step 4: Build!
-- Step 5: Tree binaries
-- Step 6: Describe module
-@ulend
+
+@snap[east]
+@ol[text-06](true)
+1. Declare module
+1. `build.bat`
+1. Tree sources
+1. Build!
+1. Tree binaries
+1. Describe module
+@olend
 @snapend
 
 Note:
