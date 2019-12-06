@@ -17,21 +17,8 @@
 - Why doesn't the JDK provide a build tool?
 - Why another build tool?
 
----
-
+---?image=doc/img/jdk-and-build-tools.svg&size=auto 90%
 ## JDK and Build Tools
-
-```text
-JDK Foundation Tools                    Multi-Purpose Build Tools
- |                                                  Maven
- |                                Ant(+Ivy)          | Gradle
- |                 Bach.java       |                 |  | Bazel Buildr
- |  Scripts         |              |                 | Buck| sbt |
- |   |              |              |                 |  |  |  |  |
- +---+--------------+--------------+-----------------+--+--+--+--+-----
- |
-  \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
-```
 
 ---
 

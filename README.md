@@ -14,17 +14,7 @@ Use Java source to build your modular Java project.
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
 
 Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to multi-language, multi-purpose build tools...
-```text
-JDK Foundation Tools                    Multi-Purpose Build Tools
- |                                                  Maven
- |                                Ant(+Ivy)          | Gradle
- |                 Bach.java       |                 |  | Bazel Buildr
- |  Scripts         |              |                 | Buck| sbt |
- |   |              |              |                 |  |  |  |  |
- +---+--------------+--------------+-----------------+--+--+--+--+-----
- |
-  \ javac, javap, javadoc, java, jar, jlink, jmod, jdeps, and jdeprscan
-```
+![jdk-and-build-tools](doc/img/jdk-and-build-tools.svg)
 
 ...`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
 
