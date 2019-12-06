@@ -32,6 +32,9 @@ public class Bach {
   /** The {@code Bach.java} version constant. */
   static final String VERSION = "2.0-ea";
 
+  /** Debug flag. */
+  static final boolean DEBUG = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+
   /** The version of module {@code de.sormuras.bach} to load and use. */
   static final String BACH_VERSION = System.getProperty("Bach.java/version", VERSION);
 
@@ -46,19 +49,19 @@ public class Bach {
 
   public static void main(String... args) throws Exception {
     var version = BACH_VERSION.endsWith("-ea") ? "master-SNAPSHOT" : BACH_VERSION;
-    System.out.println();
-    System.out.println("Bach.java // https://github.com/sormuras/bach");
-    System.out.println();
-    System.out.println(". BEGIN");
-    System.out.println("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
-    System.out.println("|   -DBach.java/lib=" + LIB);
-    System.out.println("|   -DBach.java/transferIO=" + TRANSFER_IO);
-    System.out.println("| Default build program");
-    System.out.println("|   path: " + DEFAULT_BUILD_PROGRAM);
-    System.out.println("|   exists: " + isRegularFile(DEFAULT_BUILD_PROGRAM));
-    System.out.println("| Arguments");
-    System.out.println("|   args: " + List.of(args));
-    System.out.println("|");
+    debug("");
+    debug("Bach.java // https://github.com/sormuras/bach");
+    debug("");
+    debug(". BEGIN");
+    debug("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
+    debug("|   -DBach.java/lib=" + LIB);
+    debug("|   -DBach.java/transferIO=" + TRANSFER_IO);
+    debug("| Default build program");
+    debug("|   path: " + DEFAULT_BUILD_PROGRAM);
+    debug("|   exists: " + isRegularFile(DEFAULT_BUILD_PROGRAM));
+    debug("| Arguments");
+    debug("|   args: " + List.of(args));
+    debug("|");
 
     var uri = "https://jitpack.io/com/github/sormuras/bach/{VERSION}/bach-{VERSION}.jar";
     load("de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
@@ -82,19 +85,22 @@ public class Bach {
       java.add(Path.of(args[0]).toString()); // "etc/CustomBuild.java"
     }
     start(java);
-    System.out.println("|");
-    System.out.println("' END.");
-    System.out.println();
-    System.out.println(
+    debug("|");
+    debug("' END.");
+    debug(
         "Thanks for using Bach.java!"
             + " Support its development at https://github.com/sponsors/sormuras (-:");
   }
 
+  static void debug(String message) {
+    if (DEBUG) System.out.println(message);
+  }
+
   static void load(String module, String version, URI uri) throws Exception {
-    System.out.printf("| Loading module de.sormuras.bach %s to %s...%n", version, LIB.toUri());
+    debug(String.format("| Loading module de.sormuras.bach %s to %s...%n", version, LIB.toUri()));
     var jar = LIB.resolve(module + '-' + version + ".jar");
     if (isRegularFile(jar) && !version.endsWith("SNAPSHOT")) return;
-    System.out.printf("|   %s <- %s%n", jar, uri);
+    debug(String.format("|   %s <- %s%n", jar, uri));
     createDirectories(LIB);
     try (var source = uri.toURL().openStream();
         var target = newOutputStream(jar)) {
@@ -103,14 +109,14 @@ public class Bach {
   }
 
   static void start(List<String> command) throws Exception {
-    System.out.printf("! %s%n", String.join(" ", command));
+    debug("| Starting: " + String.join(" ", command));
     var builder = new ProcessBuilder(command);
     if (TRANSFER_IO) builder.redirectErrorStream(true);
     else builder.inheritIO();
     var process = builder.start();
     if (TRANSFER_IO) process.getInputStream().transferTo(System.out);
     int code = process.waitFor();
-    System.out.println("¡");
+    debug("|");
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 }
