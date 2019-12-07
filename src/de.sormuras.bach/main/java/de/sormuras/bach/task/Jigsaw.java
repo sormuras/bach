@@ -26,6 +26,7 @@ import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.util.Paths;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -47,6 +48,7 @@ class Jigsaw {
   }
 
   void compile(List<Unit> units) {
+    var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
     var normalNames =
         units.stream()
             .filter(Predicate.not(Unit::isMultiRelease))
@@ -66,7 +68,6 @@ class Jigsaw {
     }
 
     if (realm.isDeployRealm()) {
-      var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
       var allModuleSourcePaths =
           units.stream()
               .map(unit -> Paths.star(unit.info(), unit.name()))
@@ -107,6 +108,22 @@ class Jigsaw {
       jarModule(unit);
       if (realm.isDeployRealm()) {
         jarSources(unit);
+      }
+    }
+
+    /*if (realm.isDeployRealm())*/ {
+      var modulePath = new ArrayList<Path>();
+      modulePath.add(folder.modules(realm.name())); // current realm first, like "main/modules"...
+      modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
+      var jdeps = new Call("jdeps").add("--module-path", modulePath).add("--multi-release", "BASE");
+      bach.execute(
+          jdeps
+              .clone()
+              .add("-summary")
+              .add("--dot-output", folder.realm(realm.name(), "dot"))
+              .add("--add-modules", allModuleNames));
+      if (bach.isVerbose()) {
+        bach.execute(jdeps.clone().add("--check", allModuleNames));
       }
     }
   }
