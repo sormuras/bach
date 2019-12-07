@@ -46,12 +46,14 @@ public class Version {
     var readmeMd = Path.of("README.md");
     var mavenPom = Path.of("src/de.sormuras.bach/main/maven/pom.xml");
     var bachJava = Path.of("src/bach/Bach.java");
+    var bachJsh = Path.of("src/bach/Bach.jsh");
     // var mergedBach = Path.of("src/bach/MergedBach.java");
 
     sed(PROPERTIES, "version=.+", "version=" + version);
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(mavenPom, "<version>.+</version>", "<version>" + version + "</version>");
     sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
+    sed(bachJsh, "raw/.+/src", "raw/" + (version.endsWith("-ea") ? "master" : version) + "/src");
     // mergedBach.toFile().setWritable(true);
     // sed(mergedBach, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
     // mergedBach.toFile().setWritable(false);
