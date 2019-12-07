@@ -78,4 +78,9 @@ public /*record*/ class Source {
   public boolean isVersioned() {
     return modifiers.contains(Modifier.VERSIONED);
   }
+
+  @Override
+  public String toString() {
+    return String.format("Source{path=%s, release=%d, modifiers=%s", path, release, modifiers);
+  }
 }

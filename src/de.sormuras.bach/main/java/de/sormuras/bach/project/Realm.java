@@ -78,7 +78,16 @@ public /*record*/ class Realm {
     return Paths.join(sourcePaths).replace("{MODULE}", "*");
   }
 
+  public Map<String, List<String>> argumentsFor() {
+    return argumentsFor;
+  }
+
   public List<String> argumentsFor(String tool) {
     return argumentsFor.getOrDefault(tool, List.of());
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Realm{name=%s, modifiers=%s}", name, modifiers);
   }
 }
