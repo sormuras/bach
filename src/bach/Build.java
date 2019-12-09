@@ -20,6 +20,7 @@
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Folder;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
 import java.lang.module.ModuleDescriptor.Version;
@@ -35,7 +36,8 @@ public class Build {
 
     var name = properties.getProperty("name");
     var version = properties.getProperty("version");
-    var structure = builder.structure(folder, properties);
+    var library = Library.of();
+    var structure = builder.structure(folder, library, properties);
     var deployment = builder.deployment(properties);
 
     var project = new Project(name, Version.parse(version), structure, deployment);

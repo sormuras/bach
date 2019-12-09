@@ -101,7 +101,8 @@ public class ProjectBuilder {
             .orElse(Property.NAME.defaultValue);
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
-    var structure = structure(folder, properties);
+    var library = Library.of();
+    var structure = structure(folder, library, properties);
     var deployment = deployment(properties);
     return new Project(name, Version.parse(version), structure, deployment);
   }
@@ -118,7 +119,7 @@ public class ProjectBuilder {
     return (id == null || uri == null) ? null : new Deployment(id, URI.create(uri));
   }
 
-  public Structure structure(Folder folder, Properties properties) {
+  public Structure structure(Folder folder, Library library, Properties properties) {
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
@@ -143,7 +144,7 @@ public class ProjectBuilder {
           units.add(unit);
         }
       }
-      return new Structure(folder, Library.of(), List.of(realm), units);
+      return new Structure(folder, library, List.of(realm), units);
     }
 
     // Default "main" and "test" realms...
