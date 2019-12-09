@@ -22,6 +22,7 @@ import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -194,5 +195,18 @@ public class Modules {
       builder.provides(providesService, List.of(providesTypes.trim().split("\\s*,\\s*")));
     }
     return builder.build();
+  }
+
+  public static String origin(Object object) {
+    var module = object.getClass().getModule();
+    if (module.isNamed()) {
+      return module.getDescriptor().toNameAndVersion();
+    }
+    try {
+      var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
+      return Path.of(uri).getFileName().toString();
+    } catch (NullPointerException | URISyntaxException ignore) {
+      return module.toString();
+    }
   }
 }

@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
+import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
@@ -57,6 +58,37 @@ public class Bach {
             .map(ModuleDescriptor::toNameAndVersion)
             .orElse("UNNAMED MODULE");
     log.debug("Bach.java (%s) initialized.", nameAndVersion);
+    logRuntimeAndProjectInformation();
+  }
+
+  private void logRuntimeAndProjectInformation() {
+    log.debug("Runtime information");
+    log.debug("  - java.version = " + System.getProperty("java.version"));
+    log.debug("  - user.dir = " + System.getProperty("user.dir"));
+    log.debug("Tools of the trade");
+    tools.forEach(t -> log.debug("  - %8s [%s] %s", t.name(), Modules.origin(t), t));
+    log.info("Project %s %s", project.name(), project.version());
+    try {
+      for (var field : project.getClass().getFields()) {
+        log.debug("  %s = %s", field.getName(), field.get(project));
+      }
+      for (var realm : project.structure().realms()) {
+        log.debug("+ Realm %s", realm.name());
+        for (var method : realm.getClass().getDeclaredMethods()) {
+          if (method.getParameterCount() != 0) continue;
+          log.debug("  %s.%s() = %s", realm.name(), method.getName(), method.invoke(realm));
+        }
+        for (var unit : project.structure().units()) {
+          log.debug("- Unit %s", unit.name());
+          for (var method : unit.getClass().getDeclaredMethods()) {
+            if (method.getParameterCount() != 0) continue;
+            log.debug("  (%s).%s() = %s", unit.name(), method.getName(), method.invoke(unit));
+          }
+        }
+      }
+    } catch (ReflectiveOperationException e) {
+      log.warning(e.getMessage());
+    }
   }
 
   public Log getLog() {
@@ -108,4 +140,5 @@ public class Bach {
     log.tool(name, args, Duration.between(entry.instant(), Instant.now()), code);
     return code;
   }
+
 }

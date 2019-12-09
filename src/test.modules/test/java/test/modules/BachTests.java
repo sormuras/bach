@@ -86,7 +86,8 @@ class BachTests {
     assertEquals(
         "Call exited with non-zero exit code: 2 <- Call{name='javac', arguments=[*]}",
         error.getMessage());
-    assertLinesMatch(List.of("Bach.java (.+) initialized.", "Running tool: javac *"), log.lines());
+    assertLinesMatch(
+        List.of("Bach.java (.+) initialized.", ">>>>", "Running tool: javac *"), log.lines());
     assertLinesMatch(
         List.of(
             "error: invalid flag: *",

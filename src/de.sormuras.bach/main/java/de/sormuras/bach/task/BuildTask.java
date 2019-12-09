@@ -24,7 +24,6 @@ public class BuildTask implements Task {
 
   @Override
   public void execute(Bach bach) {
-    bach.execute(new InfoTask());
     bach.execute(new SanityTask());
     bach.execute(new ResolveTask());
     bach.execute(new CompileTask());
