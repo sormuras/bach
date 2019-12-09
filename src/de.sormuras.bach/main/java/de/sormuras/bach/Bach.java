@@ -21,11 +21,9 @@ import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Tools;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.spi.ToolProvider;
 
 /** Build modular Java project. */
@@ -53,11 +51,7 @@ public class Bach {
     this.log = log;
     this.project = project;
     this.tools = new Tools();
-    var nameAndVersion =
-        Optional.ofNullable(getClass().getModule().getDescriptor())
-            .map(ModuleDescriptor::toNameAndVersion)
-            .orElse("UNNAMED MODULE");
-    log.debug("Bach.java (%s) initialized.", nameAndVersion);
+    log.debug("Bach.java (%s) initialized.", Modules.origin(this));
     logRuntimeAndProjectInformation();
   }
 
