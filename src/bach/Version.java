@@ -25,7 +25,7 @@ import java.util.Properties;
 /** Set various version values to the one of this program's first argument. */
 public class Version {
 
-  private static final Path PROPERTIES = Path.of(".bach/project.properties");
+  private static final Path PROPERTIES = Path.of("src/project-info.java.properties");
 
   public static void main(String... args) throws Exception {
     if (args.length == 0) {

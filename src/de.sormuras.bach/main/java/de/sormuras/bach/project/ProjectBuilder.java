@@ -39,6 +39,9 @@ import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
+  /** Name of the project declaration "source unit". */
+  private static final String PROPERTIES = "project-info.java.properties";
+
   /** Project property enumeration. */
   private enum Property {
     NAME("project"),
@@ -104,7 +107,8 @@ public class ProjectBuilder {
   }
 
   public Properties properties(Folder folder) {
-    var file = System.getProperty("project.properties", ".bach/project.properties");
+    var properties = folder.src(PROPERTIES);
+    var file = System.getProperty(PROPERTIES, properties.toString());
     return Paths.load(new Properties(), folder.base().resolve(file));
   }
 
