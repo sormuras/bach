@@ -135,7 +135,7 @@ class Jigsaw {
 
   private void jarModule(Unit unit) {
     var file = bach.getProject().modularJar(unit); // "../{REALM}/modules/{MODULE}-{VERSION}.jar"
-    var resources = Paths.filterExisting(unit.resources()); // TODO include patched resources
+    var resources = Paths.filterExisting(unit.resources());
     bach.execute(
         new Call("jar")
             .add("--create")
