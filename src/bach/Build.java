@@ -28,13 +28,13 @@ import java.nio.file.Path;
 /** Program building module {@code de.sormuras.bach} itself. */
 public class Build {
   public static void main(String... args) {
-    var log = Log.ofSystem(true);
+    var log = Log.ofSystem(true); // be verbose, ignoring system properties like "-Debug"
     var builder = new ProjectBuilder(log);
     var folder = Folder.of(Path.of(""));
     var properties = builder.properties(folder);
 
-    var name = ProjectBuilder.Property.NAME.get(properties);
-    var version = ProjectBuilder.Property.VERSION.get(properties);
+    var name = properties.getProperty("name");
+    var version = properties.getProperty("version");
     var structure = builder.structure(folder, properties);
     var deployment = builder.deployment(properties);
 

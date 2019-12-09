@@ -39,7 +39,8 @@ import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
-  public enum Property {
+  /** Project property enumeration. */
+  private enum Property {
     NAME("project"),
     VERSION("0"),
 
