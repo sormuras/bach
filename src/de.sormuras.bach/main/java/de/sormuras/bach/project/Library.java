@@ -4,6 +4,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -13,17 +14,30 @@ import java.util.function.UnaryOperator;
 public /*record*/ class Library {
 
   public enum Modifier {
+    RESOLVE_RECURSIVELY,
     ADD_MISSING_JUNIT_TEST_ENGINES,
     ADD_MISSING_JUNIT_PLATFORM_CONSOLE
   }
 
   public static Library of() {
+    return of(new Properties());
+  }
+
+  public static Library of(Properties properties) {
     return new Library(
         EnumSet.allOf(Modifier.class),
-        module -> null,
+        module -> toUri(toString(properties, "module.uri-", module)),
         Library::defaultRepository,
-        module -> null,
-        module -> null);
+        module -> toString(properties, "module.maven-", module),
+        module -> toString(properties, "module.version-", module));
+  }
+
+  private static URI toUri(String string) {
+    return string == null ? null : URI.create(string);
+  }
+
+  private static String toString(Properties properties, String prefix, String module) {
+    return properties.getProperty(prefix + module);
   }
 
   public static String defaultRepository(String group, String version) {
@@ -74,7 +88,6 @@ public /*record*/ class Library {
     return modifiers;
   }
 
-  // TODO NOT USED?!
   public Function<String, URI> moduleMapper() {
     return moduleMapper;
   }
@@ -97,5 +110,9 @@ public /*record*/ class Library {
 
   public boolean addMissingJUnitPlatformConsole() {
     return modifiers.contains(Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE);
+  }
+
+  public boolean resolveRecursively() {
+    return modifiers.contains(Modifier.RESOLVE_RECURSIVELY);
   }
 }

@@ -101,7 +101,7 @@ public class ProjectBuilder {
             .orElse(Property.NAME.defaultValue);
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
-    var library = Library.of();
+    var library = Library.of(properties);
     var structure = structure(folder, library, properties);
     var deployment = deployment(properties);
     return new Project(name, Version.parse(version), structure, deployment);

@@ -24,12 +24,9 @@ import de.sormuras.bach.project.Unit;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import javax.lang.model.SourceVersion;
 import java.net.URI;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Maven 2 repository support. */
@@ -38,21 +35,11 @@ public class Maven {
   public static class Lookup implements UnaryOperator<String> {
 
     final UnaryOperator<String> custom;
-    final Map<String, String> library;
-    final Set<Pattern> libraryPatterns;
     final Map<String, String> fallback;
 
-    public Lookup(
-        UnaryOperator<String> custom, Map<String, String> library, Map<String, String> fallback) {
+    public Lookup(UnaryOperator<String> custom, Map<String, String> fallback) {
       this.custom = custom;
-      this.library = library;
       this.fallback = fallback;
-      this.libraryPatterns =
-          library.keySet().stream()
-              .map(Object::toString)
-              .filter(key -> !SourceVersion.isName(key))
-              .map(Pattern::compile)
-              .collect(Collectors.toSet());
     }
 
     @Override
@@ -64,17 +51,6 @@ public class Maven {
         }
       } catch (Modules.UnmappedModuleException e) {
         // fall-through
-      }
-      var library = this.library.get(module);
-      if (library != null) {
-        return library;
-      }
-      if (libraryPatterns.size() > 0) {
-        for (var pattern : libraryPatterns) {
-          if (pattern.matcher(module).matches()) {
-            return this.library.get(pattern.pattern());
-          }
-        }
       }
       var fallback = this.fallback.get(module);
       if (fallback != null) {
@@ -94,10 +70,6 @@ public class Maven {
     this.uris = uris;
     this.groupArtifacts = groupArtifacts;
     this.versions = versions;
-  }
-
-  public String lookup(String module) {
-    return lookup(module, versions.apply(module));
   }
 
   public String lookup(String module, String version) {

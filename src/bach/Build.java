@@ -36,7 +36,7 @@ public class Build {
 
     var name = properties.getProperty("name");
     var version = properties.getProperty("version");
-    var library = Library.of();
+    var library = Library.of(properties);
     var structure = builder.structure(folder, library, properties);
     var deployment = builder.deployment(properties);
 

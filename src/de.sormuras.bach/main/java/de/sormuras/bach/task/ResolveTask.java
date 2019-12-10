@@ -19,11 +19,75 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.util.Modules;
+import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public class ResolveTask implements Task {
 
   @Override
   public void execute(Bach bach) throws Exception {
-    new Resolver(bach).resolve();
+    var project = bach.getProject();
+    var log = bach.getLog();
+    var lib = project.folder().lib();
+    var library = project.structure().library();
+
+    var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
+    var missing = findMissingModules(bach, systemModulesSurvey);
+    if (missing.isEmpty()) {
+      log.debug("All required modules are locatable.");
+      return;
+    }
+
+    log.info("Resolving missing modules...");
+    var resolver = new Resolver(bach);
+    do {
+      var intersection = new TreeSet<>(missing.keySet());
+      resolver.loadMissingModules(missing);
+      missing.clear();
+      var libraryModulesSurvey = Modules.Survey.of(ModuleFinder.of(lib));
+      libraryModulesSurvey.putAllRequiresTo(missing);
+      libraryModulesSurvey.declaredModules().forEach(missing::remove);
+      systemModulesSurvey.declaredModules().forEach(missing::remove);
+      intersection.retainAll(missing.keySet());
+      if (!intersection.isEmpty())
+        throw new IllegalStateException("Unresolved module(s): " + intersection);
+    } while (library.resolveRecursively() && !missing.isEmpty());
+    // log.info("Loaded %d 3rd-party module(s): %s", loaded.size(), lib);
+  }
+
+  Map<String, Set<Version>> findMissingModules(Bach bach, Modules.Survey systemModulesSurvey) {
+    var project = bach.getProject();
+    var log = bach.getLog();
+    var lib = project.folder().lib();
+    var library = project.structure().library();
+    var units = project.structure().units().stream().map(Unit::info).collect(Collectors.toList());
+    var projectModulesSurvey = Modules.Survey.of(units);
+    var libraryModulesSurvey = Modules.Survey.of(ModuleFinder.of(lib));
+
+    log.debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
+    log.debug("  declared -> " + projectModulesSurvey.declaredModules());
+    log.debug("  requires -> " + projectModulesSurvey.requiredModules());
+    log.debug("Library modules survey of -> %s", lib.toUri());
+    log.debug("  declared -> " + libraryModulesSurvey.declaredModules());
+    log.debug("  requires -> " + libraryModulesSurvey.requiredModules());
+    log.debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
+
+    var missing = new TreeMap<String, Set<Version>>();
+    projectModulesSurvey.putAllRequiresTo(missing);
+    libraryModulesSurvey.putAllRequiresTo(missing);
+    if (library.addMissingJUnitTestEngines()) Library.addJUnitTestEngines(missing);
+    if (library.addMissingJUnitPlatformConsole()) Library.addJUnitPlatformConsole(missing);
+    projectModulesSurvey.declaredModules().forEach(missing::remove);
+    libraryModulesSurvey.declaredModules().forEach(missing::remove);
+    systemModulesSurvey.declaredModules().forEach(missing::remove);
+    return missing;
   }
 }
