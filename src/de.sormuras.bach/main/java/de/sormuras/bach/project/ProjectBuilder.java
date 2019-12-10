@@ -202,7 +202,7 @@ public class ProjectBuilder {
     var names = units.stream().map(Unit::name).collect(Collectors.toSet());
     units.sort(Comparator.comparingLong(unit -> countProjectInternalRequires(unit, names)));
     log.debug("units = %s", units);
-    return new Structure(folder, Library.of(), realms, units);
+    return new Structure(folder, library, realms, units);
   }
 
   private long countProjectInternalRequires(Unit unit, Set<String> names) {
