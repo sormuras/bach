@@ -64,12 +64,22 @@ class ModuleSystemTests {
       expected
           .requires(Set.of(MANDATED), "java.base", version)
           .requires(Set.of(), "java.compiler", version)
-          .requires(Set.of(), "java.net.http", version);
+          .requires(Set.of(), "java.net.http", version)
+          .requires(Set.of(), "jdk.compiler", version)
+          .requires(Set.of(), "jdk.jartool", version)
+          .requires(Set.of(), "jdk.javadoc", version)
+          .requires(Set.of(), "jdk.jdeps", version)
+          .requires(Set.of(), "jdk.jlink", version);
     } else {
       expected
           .requires(Set.of(MANDATED), "java.base")
           .requires(Set.of(), "java.compiler")
-          .requires(Set.of(), "java.net.http");
+          .requires(Set.of(), "java.net.http")
+          .requires(Set.of(), "jdk.compiler")
+          .requires(Set.of(), "jdk.jartool")
+          .requires(Set.of(), "jdk.javadoc")
+          .requires(Set.of(), "jdk.jdeps")
+          .requires(Set.of(), "jdk.jlink");
     }
     // only the jarred module provides the following attributes
     actual.version().ifPresent(expected::version); // reflexive

@@ -20,6 +20,12 @@ module de.sormuras.bach {
   requires java.compiler;
   requires java.net.http;
 
+  requires jdk.compiler;
+  requires jdk.jartool;
+  requires jdk.javadoc;
+  requires jdk.jdeps;
+  requires jdk.jlink;
+
   exports de.sormuras.bach;
   exports de.sormuras.bach.project;
 
