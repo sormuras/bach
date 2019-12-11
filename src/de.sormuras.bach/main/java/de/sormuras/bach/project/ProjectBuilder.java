@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -95,10 +94,7 @@ public class ProjectBuilder {
   }
 
   public Project auto(Folder folder, Properties properties) {
-    var directory =
-        Optional.ofNullable(folder.base().toAbsolutePath().getFileName())
-            .map(Path::toString)
-            .orElse(Property.NAME.defaultValue);
+    var directory = Paths.name(folder.base(), Property.NAME.defaultValue);
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
     var library = Library.of(properties);

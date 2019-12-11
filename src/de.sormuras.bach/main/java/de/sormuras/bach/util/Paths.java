@@ -119,6 +119,11 @@ public class Paths {
     }
   }
 
+  public static String name(Path path, String defaultName) {
+    var name = path.toAbsolutePath().getFileName();
+    return name != null ? name.toString() : defaultName;
+  }
+
   public static String readString(Path path) {
     try {
       return Files.readString(path);
