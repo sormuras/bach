@@ -46,6 +46,19 @@ public class Paths {
     return directory;
   }
 
+  public static Path deleteIfExists(Path directory) {
+    if (Files.notExists(directory)) return directory;
+    try (var stream = Files.walk(directory)) {
+      var selected = stream.sorted((p, q) -> -p.compareTo(q));
+      for (var path : selected.collect(Collectors.toList())) {
+        Files.deleteIfExists(path);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Delete directory failed: " + directory, e);
+    }
+    return directory;
+  }
+
   public static List<Path> filter(List<Path> paths, Predicate<Path> filter) {
     return paths.stream().filter(filter).collect(Collectors.toList());
   }

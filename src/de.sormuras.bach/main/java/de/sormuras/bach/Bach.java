@@ -17,10 +17,12 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
 import de.sormuras.bach.task.StartTask;
 import de.sormuras.bach.util.Modules;
+import de.sormuras.bach.util.Paths;
 import de.sormuras.bach.util.Tools;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,21 +38,25 @@ public class Bach {
   /** Main entry-point. */
   public static void main(String... args) {
     var log = Log.ofSystem();
+    var folder = Folder.of(Path.of(""));
     if (args.length == 0) {
-      build(log, new ProjectBuilder(log).auto(Path.of("")));
+      build(log, new ProjectBuilder(log).auto(folder));
       return;
     }
     var arguments = new ArrayDeque<>(List.of(args));
     var argument = arguments.pop();
     switch (argument) {
+      case "clean":
+        Paths.deleteIfExists(folder.out());
+        return;
       case "build":
-        build(log, new ProjectBuilder(log).auto(Path.of("")));
+        build(log, new ProjectBuilder(log).auto(folder));
         return;
       case "help":
         System.out.println("F1 F1 F1");
         return;
       case "start":
-        new Bach(log, new ProjectBuilder(log).auto(Path.of(""))).execute(new StartTask(arguments));
+        new Bach(log, new ProjectBuilder(log).auto(folder)).execute(new StartTask(arguments));
         return;
       default:
         throw new Error("Unsupported argument: " + argument + " // args = " + List.of(args));

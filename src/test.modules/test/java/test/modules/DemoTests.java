@@ -36,7 +36,7 @@ class DemoTests {
   @Test
   void autoConfigureDemoProjectAndCheckComponents() {
     var log = new Log();
-    var project = new ProjectBuilder(log).auto(Path.of("demo"));
+    var project = new ProjectBuilder(log).auto(Folder.of(Path.of("demo")));
     assertEquals("demo", project.name());
     assertEquals("0", project.version().toString());
     // main realm

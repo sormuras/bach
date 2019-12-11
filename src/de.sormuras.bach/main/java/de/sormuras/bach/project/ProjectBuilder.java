@@ -84,11 +84,6 @@ public class ProjectBuilder {
     this.log = log;
   }
 
-  /** Create project instance auto-configured by scanning the given base directory. */
-  public Project auto(Path base) {
-    return auto(Folder.of(base));
-  }
-
   public Project auto(Folder folder) {
     return auto(folder, properties(folder));
   }
@@ -125,7 +120,8 @@ public class ProjectBuilder {
 
     // Simple single realm? All must match: "src/{MODULE}/module-info.java"
     if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
-      var realm = new Realm("realm", Set.of(), List.of(src), List.of(folder.lib()), Map.of());
+      var modifiers = Set.of(Realm.Modifier.DEPLOY);
+      var realm = new Realm("realm", modifiers, List.of(src), List.of(folder.lib()), Map.of());
       var units = new ArrayList<Unit>();
       for (var root : Paths.list(src, Files::isDirectory)) {
         log.debug("root = %s", root);
