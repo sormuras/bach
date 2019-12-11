@@ -19,11 +19,15 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
+import de.sormuras.bach.task.StartTask;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Tools;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.List;
 import java.util.spi.ToolProvider;
 
 /** Build modular Java project. */
@@ -32,9 +36,25 @@ public class Bach {
   /** Main entry-point. */
   public static void main(String... args) {
     var log = Log.ofSystem();
-    var base = Path.of(".").normalize();
-    var project = new ProjectBuilder(log).auto(base);
-    build(log, project);
+    if (args.length == 0) {
+      build(log, new ProjectBuilder(log).auto(Path.of("")));
+      return;
+    }
+    var arguments = new ArrayDeque<>(List.of(args));
+    var argument = arguments.pop();
+    switch (argument) {
+      case "build":
+        build(log, new ProjectBuilder(log).auto(Path.of("")));
+        return;
+      case "help":
+        System.out.println("F1 F1 F1");
+        return;
+      case "start":
+        new Bach(log, new ProjectBuilder(log).auto(Path.of(""))).execute(new StartTask(arguments));
+        return;
+      default:
+        throw new Error("Unsupported argument: " + argument + " // args = " + List.of(args));
+    }
   }
 
   /** Build entry-point. */
@@ -135,4 +155,12 @@ public class Bach {
     return code;
   }
 
+  public int start(List<String> command) throws IOException, InterruptedException {
+    var name = command.get(0);
+    var args = command.subList(1, command.size()).toArray(String[]::new);
+    var entry = log.debug("Starting command: %s", String.join(" ", command));
+    var code = new ProcessBuilder(command).inheritIO().start().waitFor();
+    log.tool(name, args, Duration.between(entry.instant(), Instant.now()), code);
+    return code;
+  }
 }

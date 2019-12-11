@@ -97,4 +97,8 @@ public /*record*/ class Unit {
   public boolean isMultiRelease() {
     return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
   }
+
+  public boolean isMainClassPresent() {
+    return descriptor.mainClass().isPresent();
+  }
 }
