@@ -28,6 +28,7 @@ public class BuildTask implements Task {
     bach.execute(new ResolveTask());
     bach.execute(new CompileTask());
     bach.execute(new TestTask());
+    bach.execute(new LinkTask());
     bach.execute(new SummaryTask());
   }
 }

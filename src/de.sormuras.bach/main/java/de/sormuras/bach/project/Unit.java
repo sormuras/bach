@@ -101,4 +101,12 @@ public /*record*/ class Unit {
   public boolean isMainClassPresent() {
     return descriptor.mainClass().isPresent();
   }
+
+  public boolean isMainRealm() {
+    return realm.isDeployRealm();
+  }
+
+  public boolean isLinkable() {
+    return isMainRealm() && isMainClassPresent();
+  }
 }
