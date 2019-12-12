@@ -64,6 +64,14 @@ public /*record*/ class Library {
 
   /** Requires description. */
   public static /*record*/ class Requires {
+
+    public static Requires of(String requires) {
+      int indexOfAt = requires.indexOf('@');
+      var module = requires.substring(0, indexOfAt);
+      var version = indexOfAt > 0 ? Version.parse(requires.substring(indexOfAt + 1)) : null;
+      return new Requires(module, version);
+    }
+
     private final String name;
     private final Version version;
 
@@ -127,9 +135,10 @@ public /*record*/ class Library {
   }
 
   public static Library of(Properties properties) {
+    var modifiers = Property.LIBRARY_MODIFIERS.list(properties, ",", Library.Modifier::valueOf);
     var links = new DefaultLinks(properties);
-    // TODO Parse passed properties for library.requires set...
-    return new Library(EnumSet.allOf(Modifier.class), links, Set.of());
+    var requires = Property.LIBRARY_REQUIRES.list(properties, ",", Requires::of);
+    return new Library(EnumSet.copyOf(modifiers), links, requires);
   }
 
   public static void addJUnitTestEngines(Map<String, Set<Version>> map) {

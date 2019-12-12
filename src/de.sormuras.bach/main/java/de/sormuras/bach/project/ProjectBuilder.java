@@ -26,7 +26,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -41,43 +40,6 @@ public class ProjectBuilder {
   /** Name of the project declaration "source unit". */
   private static final String PROPERTIES = "project-info.java.properties";
 
-  /** Project property enumeration. */
-  private enum Property {
-    NAME("project"),
-    VERSION("0"),
-
-    REALM_MAIN_JAVAC_ARGS(
-        String.join("|", "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint")),
-    REALM_TEST_JAVAC_ARGS(
-        String.join(
-            "|", "-encoding", "UTF-8", "-parameters", "-W" + "error", "-X" + "lint:-preview")),
-
-    DEPLOYMENT_REPOSITORY_ID(null),
-    DEPLOYMENT_URL(null);
-
-    final String key;
-    final String defaultValue;
-
-    Property(String defaultValue) {
-      this.key = name().toLowerCase().replace('_', '.');
-      this.defaultValue = defaultValue;
-    }
-
-    public String get(Properties properties) {
-      return get(properties, defaultValue);
-    }
-
-    public String get(Properties properties, String defaultValue) {
-      return properties.getProperty(key, defaultValue);
-    }
-
-    public List<String> list(Properties properties, String regex) {
-      var value = get(properties);
-      if (value.isBlank()) return List.of();
-      return Arrays.stream(value.split(regex)).map(String::strip).collect(Collectors.toList());
-    }
-  }
-
   private final Log log;
 
   public ProjectBuilder(Log log) {
@@ -89,7 +51,7 @@ public class ProjectBuilder {
   }
 
   public Project auto(Folder folder, Properties properties) {
-    var directory = Paths.name(folder.base(), Property.NAME.defaultValue);
+    var directory = Paths.name(folder.base(), Property.NAME.getDefaultValue());
     var name = Property.NAME.get(properties, directory);
     var version = Property.VERSION.get(properties);
     var library = Library.of(properties);
