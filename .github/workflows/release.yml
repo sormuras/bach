@@ -21,8 +21,8 @@ jobs:
         git checkout master
         git remote rm origin
         git remote add origin "https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
-    - name: 'Stash current version to .bach/VERSION'
-      run: echo $(java src/bach/Version.java) > .bach/VERSION
+    - name: 'Stash current version to environment variable'
+      run: echo ::set-env name=BACH_VERSION::$(java src/bach/Version.java)
     - name: 'Set version to ${{ github.event.milestone.title }}'
       run: java src/bach/Version.java ${{ github.event.milestone.title }}
     - name: 'Build using Bootstrap.java'
@@ -48,8 +48,8 @@ jobs:
         mkdir --parents ~/.m2
         echo "<settings><servers><server><id>bintray-sormuras-maven</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
         source .bach/out/maven-deploy-bintray-sormuras-maven.sh
-    - name: 'Restore previous version from .bach/VERSION'
+    - name: 'Restore previous version from environment variable'
       run: |
-        java src/bach/Version.java $(<.bach/VERSION)
-        git commit --all --message "Back to development of version $(<.bach/VERSION)"
+        java src/bach/Version.java ${BACH_VERSION}
+        git commit --all --message "Back to development of version ${BACH_VERSION}"
         git push origin master
