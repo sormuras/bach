@@ -49,11 +49,16 @@ public /*record*/ class Library {
     }
 
     private final String reference;
-    private final Version defaultVersion;
+    private final Version version;
 
-    public Link(String reference, Version defaultVersion) {
+    public Link(String reference, Version version) {
       this.reference = reference;
-      this.defaultVersion = defaultVersion;
+      this.version = version;
+    }
+
+    @Override
+    public String toString() {
+      return "Link{" + reference + '@' + version + '}';
     }
   }
 
@@ -70,12 +75,27 @@ public /*record*/ class Library {
 
   @SuppressWarnings("serial")
   private static class DefaultLinks extends TreeMap<String, Link> {
-    private DefaultLinks() {
+    private DefaultLinks(Properties properties) {
       put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
       put("org.opentest4j", Link.central("org.opentest4j", "opentest4j", "1.2.0"));
       putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
       putJUnitJupiter("5.6.0-M1", "", "api", "engine", "params");
       putJUnitPlatform("1.6.0-M1", "commons", "console", "engine", "launcher", "reporting");
+      putAll(properties);
+    }
+
+    private void putAll(Properties properties) {
+      var marker = "module/";
+      for (var name : properties.stringPropertyNames()) {
+        if (!name.startsWith(marker)) continue;
+        var moduleAndVersion = name.substring(marker.length());
+        int indexOfAt = moduleAndVersion.indexOf('@');
+        if (indexOfAt < 0) throw new IllegalArgumentException("Expected @ character in: " + name);
+        var module = moduleAndVersion.substring(0, indexOfAt);
+        var reference = properties.getProperty(name);
+        var defaultVersion = Version.parse(moduleAndVersion.substring(indexOfAt + 1));
+        put(module, new Link(reference, defaultVersion));
+      }
     }
 
     private void putJavaFX(String version, String... names) {
@@ -107,8 +127,8 @@ public /*record*/ class Library {
   }
 
   public static Library of(Properties properties) {
-    var links = new DefaultLinks();
-    // TODO Parse passed properties for library links and requires and override default ones...
+    var links = new DefaultLinks(properties);
+    // TODO Parse passed properties for library.requires set...
     return new Library(EnumSet.allOf(Modifier.class), links, Set.of());
   }
 
@@ -165,20 +185,26 @@ public /*record*/ class Library {
     }
   }
 
-  void resolve(Path lib, String module, Version versionOrNull) throws Exception {
+  Link resolve(String module, Version versionOrNull) {
     var link = links.get(module);
     if (link == null) {
       // TODO Fall back to https://github.com/sormuras/modules database
       throw new Modules.UnmappedModuleException(module);
     }
-    var version = versionOrNull != null ? versionOrNull : link.defaultVersion;
+    var version = versionOrNull != null ? versionOrNull : link.version;
     var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
-    var uri =
+    var replaced =
         link.reference
             .replace(Link.VERSION, version.toString())
             .replace(Link.JAVAFX_PLATFORM, javafxPlatform);
-    var jar = lib.resolve(module + '-' + version + ".jar");
+    return new Link(replaced, version);
+  }
+
+  void resolve(Path lib, String module, Version versionOrNull) throws Exception {
+    var link = resolve(module, versionOrNull);
+    var uri = link.reference;
+    var jar = lib.resolve(module + '-' + link.version + ".jar");
     uris.copy(URI.create(uri), jar, StandardCopyOption.COPY_ATTRIBUTES);
   }
 
