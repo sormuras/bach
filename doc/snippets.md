@@ -56,13 +56,20 @@ Optional dependence, i.e. `requires static ${MODULE}` are not resolved. Use
 
 Algorithm outline: 
 
-1. User-defined *module-name-to-uri* mapping
+1. Pre-defined Links
 
-   - `module/org.junit.jupiter@5.5.2=https://repo1.maven.org/maven2/.../junit-jupiter-${VERSION}.jar`
+   - JavaFX
+   - JUnit Platform and Jupiter
+   - OpenTest4J
+   - APIGuardian
+
+1. User-defined *module-name-to-uri* Links
+
+   - `module/<name>@<default version>=https://repo1.maven.org/maven2/.../<artifactId>-${VERSION}.jar`
 
 1. Fall back to `sormuras/modules` based resolution
 
     1. User-defined "module version" beats `module-version.properties`
     1. User-defined "module group:artifact" over `module-maven.properties`
-    
+
 1. Throw `UnmappedModuleException`
