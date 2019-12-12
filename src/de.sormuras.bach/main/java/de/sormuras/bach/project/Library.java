@@ -1,14 +1,20 @@
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.util.Modules;
+import de.sormuras.bach.util.Uris;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
+import java.util.TreeMap;
 
 /** Manage external 3rd-party modules. */
 public /*record*/ class Library {
@@ -19,31 +25,90 @@ public /*record*/ class Library {
     ADD_MISSING_JUNIT_PLATFORM_CONSOLE
   }
 
+  /** Link a module name to resource and a default version. */
+  public static /*record*/ class Link {
+
+    public static final String VERSION = "${VERSION}";
+    public static final String JAVAFX_PLATFORM = "${JAVAFX-PLATFORM}";
+
+    public static Link central(String group, String artifact, String version) {
+      return central(group, artifact, version, "");
+    }
+
+    public static Link central(String group, String artifact, String version, String classifier) {
+      return of("https://repo1.maven.org/maven2", group, artifact, version, classifier);
+    }
+
+    public static Link of(
+        String repository, String group, String artifact, String version, String classifier) {
+      var versionAndClassifier = classifier.isBlank() ? VERSION : VERSION + '-' + classifier;
+      var type = "jar";
+      var file = artifact + '-' + versionAndClassifier + '.' + type;
+      var ref = String.join("/", repository, group.replace('.', '/'), artifact, VERSION, file);
+      return new Link(ref, Version.parse(version));
+    }
+
+    private final String reference;
+    private final Version defaultVersion;
+
+    public Link(String reference, Version defaultVersion) {
+      this.reference = reference;
+      this.defaultVersion = defaultVersion;
+    }
+  }
+
+  /** Requires description. */
+  public static /*record*/ class Requires {
+    private final String name;
+    private final Version version;
+
+    public Requires(String name, Version version) {
+      this.name = Objects.requireNonNull(name);
+      this.version = version;
+    }
+  }
+
+  private static class DefaultLinks extends TreeMap<String, Link> {
+    private DefaultLinks() {
+      put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
+      put("org.opentest4j", Link.central("org.opentest4j", "opentest4j", "1.2.0"));
+      putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
+      putJUnitJupiter("5.6.0-M1", "", "api", "engine", "params");
+      putJUnitPlatform("1.6.0-M1", "commons", "console", "engine", "launcher", "reporting");
+    }
+
+    private void putJavaFX(String version, String... names) {
+      for (var name : names) {
+        var link = Link.central("org.openjfx", "javafx-" + name, version, Link.JAVAFX_PLATFORM);
+        put("javafx." + name, link);
+      }
+    }
+
+    private void putJUnitJupiter(String version, String... names) {
+      for (var name : names) {
+        var artifact = "junit-jupiter" + (name.isEmpty() ? "" : '-' + name);
+        var link = Link.central("org.junit.jupiter", artifact, version);
+        var module = "org.junit.jupiter" + (name.isEmpty() ? "" : '.' + name);
+        put(module, link);
+      }
+    }
+
+    private void putJUnitPlatform(String version, String... names) {
+      for (var name : names) {
+        var link = Link.central("org.junit.platform", "junit-platform-" + name, version);
+        put("org.junit.platform." + name, link);
+      }
+    }
+  }
+
   public static Library of() {
     return of(new Properties());
   }
 
   public static Library of(Properties properties) {
-    return new Library(
-        EnumSet.allOf(Modifier.class),
-        module -> toUri(toString(properties, "module.uri-", module)),
-        Library::defaultRepository,
-        module -> toString(properties, "module.maven-", module),
-        module -> toString(properties, "module.version-", module));
-  }
-
-  private static URI toUri(String string) {
-    return string == null ? null : URI.create(string);
-  }
-
-  private static String toString(Properties properties, String prefix, String module) {
-    return properties.getProperty(prefix + module);
-  }
-
-  public static String defaultRepository(String group, String version) {
-    return version.endsWith("SNAPSHOT")
-        ? "https://oss.sonatype.org/content/repositories/snapshots"
-        : "https://repo1.maven.org/maven2";
+    var links = new DefaultLinks();
+    // TODO Parse passed properties for library links and requires and override default ones...
+    return new Library(EnumSet.allOf(Modifier.class), links, Set.of());
   }
 
   public static void addJUnitTestEngines(Map<String, Set<Version>> map) {
@@ -62,57 +127,71 @@ public /*record*/ class Library {
   }
 
   private final Set<Modifier> modifiers;
-  /** Map external 3rd-party module names to their {@code URI}s. */
-  private final Function<String, URI> moduleMapper;
-  /** Map Maven group ID and version to their Maven repository. */
-  private final BinaryOperator<String> mavenRepositoryMapper;
-  /** Map external 3rd-party module names to their colon-separated Maven Group and Artifact ID. */
-  private final UnaryOperator<String> mavenGroupColonArtifactMapper;
-  /** Map external 3rd-party module names to their Maven version. */
-  private final UnaryOperator<String> mavenVersionMapper;
+  private final Map<String, Link> links;
+  private final Collection<Requires> requires;
+  private final Uris uris;
 
-  Library(
-      Set<Modifier> modifiers,
-      Function<String, URI> moduleMapper,
-      BinaryOperator<String> mavenRepositoryMapper,
-      UnaryOperator<String> mavenGroupColonArtifactMapper,
-      UnaryOperator<String> mavenVersionMapper) {
+  Library(Set<Modifier> modifiers, Map<String, Link> links, Collection<Requires> requires) {
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
-    this.moduleMapper = moduleMapper;
-    this.mavenRepositoryMapper = mavenRepositoryMapper;
-    this.mavenGroupColonArtifactMapper = mavenGroupColonArtifactMapper;
-    this.mavenVersionMapper = mavenVersionMapper;
+    this.links = Map.copyOf(links);
+    this.requires = requires;
+    this.uris = Uris.ofSystem();
   }
 
   public Set<Modifier> modifiers() {
     return modifiers;
   }
 
-  public Function<String, URI> moduleMapper() {
-    return moduleMapper;
+  public Map<String, Link> links() {
+    return links;
   }
 
-  public BinaryOperator<String> mavenRepositoryMapper() {
-    return mavenRepositoryMapper;
+  public Collection<Requires> requires() {
+    return requires;
   }
 
-  public UnaryOperator<String> mavenGroupColonArtifactMapper() {
-    return mavenGroupColonArtifactMapper;
+  public void resolveRequires(Path lib) throws Exception {
+    for (var required : requires) {
+      resolve(lib, required.name, required.version);
+    }
   }
 
-  public UnaryOperator<String> mavenVersionMapper() {
-    return mavenVersionMapper;
+  public void resolveModules(Path lib, Map<String, Set<Version>> modules) throws Exception {
+    for (var entry : modules.entrySet()) {
+      var module = entry.getKey();
+      var version = singleton(entry.getValue()).orElse(null);
+      resolve(lib, module, version);
+    }
   }
 
-  public boolean addMissingJUnitTestEngines() {
-    return modifiers.contains(Modifier.ADD_MISSING_JUNIT_TEST_ENGINES);
+  void resolve(Path lib, String module, Version versionOrNull) throws Exception {
+    var link = links.get(module);
+    if (link == null) {
+      throw new Modules.UnmappedModuleException(module);
+    }
+    var version = versionOrNull != null ? versionOrNull : link.defaultVersion;
+    var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
+    var uri =
+        link.reference
+            .replace(Link.VERSION, version.toString())
+            .replace(Link.JAVAFX_PLATFORM, javafxPlatform);
+    var jar = lib.resolve(module + '-' + version + ".jar");
+    uris.copy(URI.create(uri), jar, StandardCopyOption.COPY_ATTRIBUTES);
   }
 
-  public boolean addMissingJUnitPlatformConsole() {
-    return modifiers.contains(Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE);
+  @Override
+  public String toString() {
+    return "Library{" + modifiers + ", links=" + links + ", requires=" + requires + '}';
   }
 
-  public boolean resolveRecursively() {
-    return modifiers.contains(Modifier.RESOLVE_RECURSIVELY);
+  private static <T> Optional<T> singleton(Collection<T> collection) {
+    if (collection.isEmpty()) {
+      return Optional.empty();
+    }
+    if (collection.size() != 1) {
+      throw new IllegalStateException("Too many elements: " + collection);
+    }
+    return Optional.of(collection.iterator().next());
   }
 }

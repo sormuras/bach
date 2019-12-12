@@ -39,6 +39,11 @@ public class ResolveTask implements Task {
     var lib = project.folder().lib();
     var library = project.structure().library();
 
+    var requires = library.requires();
+    if (!requires.isEmpty()) {
+      library.resolveRequires(lib);
+    }
+
     var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
     var missing = findMissingModules(bach, systemModulesSurvey);
     if (missing.isEmpty()) {
@@ -47,10 +52,10 @@ public class ResolveTask implements Task {
     }
 
     log.info("Resolving missing modules...");
-    var resolver = new Resolver(bach);
+    var repeat = library.modifiers().contains(Library.Modifier.RESOLVE_RECURSIVELY);
     do {
       var intersection = new TreeSet<>(missing.keySet());
-      resolver.loadMissingModules(missing);
+      library.resolveModules(lib, missing);
       missing.clear();
       var libraryModulesSurvey = Modules.Survey.of(ModuleFinder.of(lib));
       libraryModulesSurvey.putAllRequiresTo(missing);
@@ -59,7 +64,7 @@ public class ResolveTask implements Task {
       intersection.retainAll(missing.keySet());
       if (!intersection.isEmpty())
         throw new IllegalStateException("Unresolved module(s): " + intersection);
-    } while (library.resolveRecursively() && !missing.isEmpty());
+    } while (repeat && !missing.isEmpty());
     // log.info("Loaded %d 3rd-party module(s): %s", loaded.size(), lib);
   }
 
@@ -83,8 +88,10 @@ public class ResolveTask implements Task {
     var missing = new TreeMap<String, Set<Version>>();
     projectModulesSurvey.putAllRequiresTo(missing);
     libraryModulesSurvey.putAllRequiresTo(missing);
-    if (library.addMissingJUnitTestEngines()) Library.addJUnitTestEngines(missing);
-    if (library.addMissingJUnitPlatformConsole()) Library.addJUnitPlatformConsole(missing);
+    if (library.modifiers().contains(Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
+      Library.addJUnitTestEngines(missing);
+    if (library.modifiers().contains(Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
+      Library.addJUnitPlatformConsole(missing);
     projectModulesSurvey.declaredModules().forEach(missing::remove);
     libraryModulesSurvey.declaredModules().forEach(missing::remove);
     systemModulesSurvey.declaredModules().forEach(missing::remove);
