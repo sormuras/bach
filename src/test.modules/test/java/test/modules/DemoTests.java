@@ -17,6 +17,7 @@
 
 package test.modules;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
@@ -57,7 +58,10 @@ class DemoTests {
     var log = new Log();
     var base = Path.of("demo");
     var folder = new Folder(base, base.resolve("src"), temp.resolve("lib"), temp);
-    new Bach(log, new ProjectBuilder(log).auto(folder)).execute(Task.build());
+    var project = new ProjectBuilder(log).auto(folder);
+    assertDoesNotThrow(
+        () -> Bach.build(log, project),
+        String.join("\n", log.lines()) + "\n" + String.join("\n", log.errors()));
 
     assertLinesMatch(
         List.of(
