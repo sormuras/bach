@@ -168,6 +168,7 @@ public /*record*/ class Library {
   void resolve(Path lib, String module, Version versionOrNull) throws Exception {
     var link = links.get(module);
     if (link == null) {
+      // TODO Fall back to https://github.com/sormuras/modules database
       throw new Modules.UnmappedModuleException(module);
     }
     var version = versionOrNull != null ? versionOrNull : link.defaultVersion;
