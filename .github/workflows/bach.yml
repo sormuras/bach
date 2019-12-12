@@ -24,8 +24,10 @@ jobs:
         restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
     - name: 'Store current version in environment variable'
       run: echo ::set-env BACH_VERSION=$(java src/bach/Version.java)
-    - name: 'Build with Bach.java $BACH_VERSION'
+    - name: 'Build with Bootstrap.java'
       run: java src/bach/Bootstrap.java
+    - name: 'Echo version from environment variable'
+      run: echo "Bach.java ${BACH_VERSION}"
   jshell:
     name: 'jshell https://bit.ly/bach-jsh'
     runs-on: ubuntu-latest
