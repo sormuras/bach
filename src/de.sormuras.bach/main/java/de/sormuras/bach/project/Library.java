@@ -68,6 +68,7 @@ public /*record*/ class Library {
     }
   }
 
+  @SuppressWarnings("serial")
   private static class DefaultLinks extends TreeMap<String, Link> {
     private DefaultLinks() {
       put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
