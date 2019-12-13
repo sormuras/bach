@@ -18,15 +18,58 @@
 package de.sormuras.bach.util;
 
 import de.sormuras.bach.project.Deployment;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Unit;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /** Maven 2 repository support. */
 public class Maven {
+
+  public static class Central {
+
+    private final Map<String, String> mavens;
+    private final Map<String, String> versions;
+
+    public Central(Uris uris) throws Exception {
+      var user = Path.of(System.getProperty("user.home"));
+      var cache = Files.createDirectories(user.resolve(".bach/modules"));
+      var artifactPath =
+          uris.copy(
+              URI.create("https://github.com/sormuras/modules/raw/master/module-maven.properties"),
+              cache.resolve("module-maven.properties"),
+              StandardCopyOption.COPY_ATTRIBUTES);
+      this.mavens = map(Paths.load(new Properties(), artifactPath));
+      var versionPath =
+          uris.copy(
+              URI.create(
+                  "https://github.com/sormuras/modules/raw/master/module-version.properties"),
+              cache.resolve("module-version.properties"),
+              StandardCopyOption.COPY_ATTRIBUTES);
+      this.versions = map(Paths.load(new Properties(), versionPath));
+    }
+
+    public Library.Link link(String module) {
+      var maven = mavens.get(module);
+      if (maven == null) throw new Modules.UnmappedModuleException(module);
+      var indexOfColon = maven.indexOf(':');
+      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+      var group = maven.substring(0, indexOfColon);
+      var artifact = maven.substring(indexOfColon + 1);
+      var version = versions.get(module);
+      if (version == null) throw new Modules.UnmappedModuleException(module);
+      return Library.Link.central(group, artifact, version);
+    }
+  }
 
   public static class Scribe {
 
@@ -130,5 +173,14 @@ public class Maven {
       var javadoc = "javadoc=" + type.quote(project.javadocJar(unit.realm()));
       return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
     }
+  }
+
+  /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */
+  private static Map<String, String> map(Properties properties) {
+    var map = new HashMap<String, String>();
+    for (var name : properties.stringPropertyNames()) {
+      map.put(name, properties.getProperty(name));
+    }
+    return Map.copyOf(map);
   }
 }

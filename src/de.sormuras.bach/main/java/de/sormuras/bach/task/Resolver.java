@@ -19,7 +19,7 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Library;
-import de.sormuras.bach.util.Modules;
+import de.sormuras.bach.util.Maven;
 import de.sormuras.bach.util.Uris;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
@@ -30,11 +30,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 class Resolver {
+
   private final Log log;
   private final Library library;
   private final Uris uris;
+  private final AtomicReference<Maven.Central> central = new AtomicReference<>(null);
 
   Resolver(Log log, Library library) {
     this.log = log;
@@ -63,17 +66,30 @@ class Resolver {
     uris.copy(URI.create(uri), jar, StandardCopyOption.COPY_ATTRIBUTES);
   }
 
-  Library.Link lookup(String module, Version versionOrNull) {
-    log.debug("Resolving module %s [%s]", module, versionOrNull);
+  Library.Link lookup(String module) {
     var link = library.links().get(module);
-    if (link == null) {
-      // TODO Fall back to https://github.com/sormuras/modules database
-      throw new Modules.UnmappedModuleException(module);
-    }
-    return replace(link, versionOrNull != null ? versionOrNull : link.version());
+    if (link != null) return link;
+    return central().link(module); // create Maven Central link on-the-fly
   }
 
-  Library.Link replace(Library.Link link, Version version) {
+  Library.Link lookup(String module, Version versionOrNull) {
+    var lookup = lookup(module);
+    return replace(lookup, versionOrNull != null ? versionOrNull : lookup.version());
+  }
+
+  private Maven.Central central() {
+    var current = central.get();
+    if (current != null) return current;
+    try {
+      log.info("Create Maven Central link factory");
+      var newCentral = new Maven.Central(uris);
+      return central.compareAndSet(null, newCentral) ? newCentral : central.get();
+    } catch (Exception e) {
+      throw new AssertionError("Create Central failed", e);
+    }
+  }
+
+  static Library.Link replace(Library.Link link, Version version) {
     var reference = link.reference();
     if (reference.indexOf('$') < 0) return link;
     var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);

@@ -57,4 +57,16 @@ class ResolverTests {
     assertEquals("Link{baz(5)@5}", resolver.lookup("baz", null).toString());
     assertEquals("Link{baz(5)@5}", resolver.lookup("baz", Version.parse("6")).toString());
   }
+
+  @Test
+  void lookupJUnit4ModuleCreatesLibraryLinkOnTheFly() {
+    var library = Library.of();
+    var resolver = new Resolver(Log.ofNullWriter(), library);
+    assertTrue(
+        resolver
+            .lookup("junit")
+            .toString()
+            .startsWith(
+                "Link{https://repo1.maven.org/maven2/junit/junit/${VERSION}/junit-${VERSION}.jar@4."));
+  }
 }
