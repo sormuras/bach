@@ -39,10 +39,10 @@ public class ResolveTask implements Task {
     var log = bach.getLog();
     var lib = project.folder().lib();
     var library = project.structure().library();
+    var resolver = new Resolver(log, library);
 
     var requires = library.requires();
     if (!requires.isEmpty()) {
-      var resolver = new Resolver(log, library);
       resolver.resolveRequires(lib);
     }
 
@@ -56,7 +56,6 @@ public class ResolveTask implements Task {
     log.info("Resolving missing modules...");
     var loaded = new ArrayList<String>();
     var repeat = library.modifiers().contains(Library.Modifier.RESOLVE_RECURSIVELY);
-    var resolver = new Resolver(log, library);
     do {
       var intersection = new TreeSet<>(missing.keySet());
       resolver.resolveModules(lib, missing);
