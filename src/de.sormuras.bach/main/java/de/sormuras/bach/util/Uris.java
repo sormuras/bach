@@ -21,7 +21,10 @@ import java.util.Set;
 public class Uris {
 
   public static Uris ofSystem() {
-    var log = Log.ofSystem();
+    return of(Log.ofSystem());
+  }
+
+  public static Uris of(Log log) {
     var httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     return new Uris(log, httpClient);
   }
