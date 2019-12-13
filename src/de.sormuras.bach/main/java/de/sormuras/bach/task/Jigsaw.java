@@ -78,7 +78,7 @@ class Jigsaw {
       var javadoc =
           new Call("javadoc")
               .add("-d", Paths.createDirectories(javadocDirectory))
-              .add("--module", allModuleNames)
+              .add("--module", Boolean.getBoolean("normals") ? normalNames : allModuleNames)
               .add("-encoding", "UTF-8")
               .add("-locale", "en")
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
@@ -125,7 +125,8 @@ class Jigsaw {
               .add("--dot-output", folder.realm(realm.name(), "dot"))
               .add("--add-modules", allModuleNames));
       if (bach.isVerbose()) {
-        bach.execute(jdeps.clone().add("--check", allModuleNames));
+        var names = Boolean.getBoolean("normals") ? normalNames : allModuleNames;
+        bach.execute(jdeps.clone().add("--check", names));
       }
     }
   }
