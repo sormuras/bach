@@ -42,14 +42,19 @@ class ResolverTests {
     var properties = new Properties();
     properties.setProperty("module/foo@1", "foo(${VERSION})");
     properties.setProperty("module/bar@3", "bar(${VERSION})");
+    properties.setProperty("module/baz@5", "baz(5)"); // no placeholder
+
     var library = Library.of(properties);
     assertTrue(library.requires().isEmpty());
     assertEquals("Link{foo(${VERSION})@1}", library.links().get("foo").toString());
     assertEquals("Link{bar(${VERSION})@3}", library.links().get("bar").toString());
+    assertEquals("Link{baz(5)@5}", library.links().get("baz").toString());
 
     var resolver = new Resolver(Log.ofNullWriter(), library);
     assertEquals("Link{foo(1)@1}", resolver.lookup("foo", null).toString());
     assertEquals("Link{foo(2)@2}", resolver.lookup("foo", Version.parse("2")).toString());
     assertEquals("Link{bar(4)@4}", resolver.lookup("bar", Version.parse("4")).toString());
+    assertEquals("Link{baz(5)@5}", resolver.lookup("baz", null).toString());
+    assertEquals("Link{baz(5)@5}", resolver.lookup("baz", Version.parse("6")).toString());
   }
 }

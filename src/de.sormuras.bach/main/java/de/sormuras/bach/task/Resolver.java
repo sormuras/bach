@@ -74,10 +74,12 @@ class Resolver {
   }
 
   Library.Link replace(Library.Link link, Version version) {
+    var reference = link.reference();
+    if (reference.indexOf('$') < 0) return link;
     var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
     var replaced =
-        link.reference()
+        reference
             .replace(Library.Link.VERSION, version.toString())
             .replace(Library.Link.JAVAFX_PLATFORM, javafxPlatform);
     return new Library.Link(replaced, version);
