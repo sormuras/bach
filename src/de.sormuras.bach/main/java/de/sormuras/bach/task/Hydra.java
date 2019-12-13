@@ -71,25 +71,28 @@ public /*STATIC*/ class Hydra {
     var module = unit.name();
     var baseClasses = classes.resolve(base.path().getFileName()).resolve(module);
     var destination = classes.resolve(source.path().getFileName());
+    var modules = folder.modules(realm.name());
     var javac = new Call("javac").add("--release", source.release());
     if (Files.isRegularFile(source.path().resolve("module-info.java"))) {
+      var modulePath = new ArrayList<Path>();
+      modulePath.add(modules); // current realm first, like "main/modules"...
+      modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
       javac
           .forEach(realm.argumentsFor("javac"), Call::add)
-          .add("-d", destination)
+          .add("-d", destination.resolve(module))
           .add("--module-version", project.version(unit))
-          .add("--module-path", realm.modulePaths())
-          .add("--module-source-path", source.path().toString().replace(module, "*"));
+          .add("--module-path", Paths.filterExisting(modulePath));
+      //          .add("--module-source-path", source.path().toString().replace(module, "*"));
       if (base != source) {
         javac.add("--patch-module", module + '=' + baseClasses);
       }
-      javac.add("--module", module);
+      //      javac.add("--module", module);
     } else {
-      javac.add("-d", destination.resolve(module));
+      javac.forEach(realm.argumentsFor("javac"), Call::add).add("-d", destination.resolve(module));
       var classPath = new ArrayList<Path>();
       if (base != source) {
         classPath.add(baseClasses);
       }
-      var modules = folder.modules(realm.name());
       if (Files.isDirectory(modules)) {
         classPath.addAll(Paths.list(modules, Paths::isJarFile));
       }
@@ -99,10 +102,14 @@ public /*STATIC*/ class Hydra {
           continue;
         }
         classPath.addAll(Paths.list(path, Paths::isJarFile));
+        var jarsRelease = path.resolve("java-" + source.release());
+        if (Files.isDirectory(jarsRelease)) {
+          classPath.addAll(Paths.list(jarsRelease, Paths::isJarFile));
+        }
       }
       javac.add("--class-path", classPath);
-      javac.forEach(Paths.find(List.of(source.path()), Paths::isJavaFile), Call::add);
     }
+    javac.forEach(Paths.find(List.of(source.path()), Paths::isJavaFile), Call::add);
     bach.execute(javac);
   }
 
