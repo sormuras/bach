@@ -17,106 +17,16 @@
 
 package de.sormuras.bach.util;
 
-import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Deployment;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Unit;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.net.URI;
-import java.util.Map;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /** Maven 2 repository support. */
 public class Maven {
-
-  public static class Lookup implements UnaryOperator<String> {
-
-    final UnaryOperator<String> custom;
-    final Map<String, String> fallback;
-
-    public Lookup(UnaryOperator<String> custom, Map<String, String> fallback) {
-      this.custom = custom;
-      this.fallback = fallback;
-    }
-
-    @Override
-    public String apply(String module) {
-      try {
-        var custom = this.custom.apply(module);
-        if (custom != null) {
-          return custom;
-        }
-      } catch (Modules.UnmappedModuleException e) {
-        // fall-through
-      }
-      var fallback = this.fallback.get(module);
-      if (fallback != null) {
-        return fallback;
-      }
-      throw new Modules.UnmappedModuleException(module);
-    }
-  }
-
-  private final Log log;
-  private final Uris uris;
-  private final Lookup groupArtifacts;
-  private final Lookup versions;
-
-  public Maven(Log log, Uris uris, Lookup groupArtifacts, Lookup versions) {
-    this.log = log;
-    this.uris = uris;
-    this.groupArtifacts = groupArtifacts;
-    this.versions = versions;
-  }
-
-  public String lookup(String module, String version) {
-    return groupArtifacts.apply(module) + ':' + version;
-  }
-
-  public String version(String module) {
-    return versions.apply(module);
-  }
-
-  public URI toUri(String repository, String group, String artifact, String version) {
-    return toUri(repository, group, artifact, version, "", "jar");
-  }
-
-  public URI toUri(
-      String repository,
-      String group,
-      String artifact,
-      String version,
-      String classifier,
-      String type) {
-    var versionAndClassifier = classifier.isBlank() ? version : version + '-' + classifier;
-    var file = artifact + '-' + versionAndClassifier + '.' + type;
-    if (version.endsWith("SNAPSHOT")) {
-      var base = String.join("/", repository, group.replace('.', '/'), artifact, version);
-      var xml = URI.create(base + "/maven-metadata.xml");
-      try {
-        var meta = uris.read(xml);
-        var timestamp = substring(meta, "<timestamp>", "<");
-        var buildNumber = substring(meta, "<buildNumber>", "<");
-        var replacement = timestamp + '-' + buildNumber;
-        log.debug("%s:%s:%s -> %s", group, artifact, version, replacement);
-        file = file.replace("SNAPSHOT", replacement);
-      } catch (Exception e) {
-        log.warning("Maven metadata extraction from %s failed: %s", xml, e);
-      }
-    }
-    var uri = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
-    return URI.create(uri);
-  }
-
-  /** Extract substring between begin and end tags. */
-  static String substring(String string, String beginTag, String endTag) {
-    int beginIndex = string.indexOf(beginTag) + beginTag.length();
-    int endIndex = string.indexOf(endTag, beginIndex);
-    return string.substring(beginIndex, endIndex).trim();
-  }
 
   public static class Scribe {
 
