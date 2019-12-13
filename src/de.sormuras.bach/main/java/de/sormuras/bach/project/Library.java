@@ -68,6 +68,7 @@ public /*record*/ class Library {
 
     public static Requires of(String requires) {
       int indexOfAt = requires.indexOf('@');
+      if (indexOfAt < 0) return new Requires(requires, null);
       var module = requires.substring(0, indexOfAt);
       var version = indexOfAt > 0 ? Version.parse(requires.substring(indexOfAt + 1)) : null;
       return new Requires(module, version);
