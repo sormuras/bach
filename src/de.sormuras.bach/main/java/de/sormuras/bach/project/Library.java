@@ -1,17 +1,10 @@
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.util.Modules;
-import de.sormuras.bach.util.Uris;
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -56,6 +49,14 @@ public /*record*/ class Library {
       this.version = version;
     }
 
+    public String reference() {
+      return reference;
+    }
+
+    public Version version() {
+      return version;
+    }
+
     @Override
     public String toString() {
       return "Link{" + reference + '@' + version + '}';
@@ -78,6 +79,14 @@ public /*record*/ class Library {
     public Requires(String name, Version version) {
       this.name = Objects.requireNonNull(name);
       this.version = version;
+    }
+
+    public String name() {
+      return name;
+    }
+
+    public Version version() {
+      return version;
     }
   }
 
@@ -159,13 +168,11 @@ public /*record*/ class Library {
   private final Set<Modifier> modifiers;
   private final Map<String, Link> links;
   private final Collection<Requires> requires;
-  private final Uris uris;
 
   Library(Set<Modifier> modifiers, Map<String, Link> links, Collection<Requires> requires) {
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.links = Map.copyOf(links);
     this.requires = requires;
-    this.uris = Uris.ofSystem();
   }
 
   public Set<Modifier> modifiers() {
@@ -180,55 +187,8 @@ public /*record*/ class Library {
     return requires;
   }
 
-  public void resolveRequires(Path lib) throws Exception {
-    for (var required : requires) {
-      resolve(lib, required.name, required.version);
-    }
-  }
-
-  public void resolveModules(Path lib, Map<String, Set<Version>> modules) throws Exception {
-    for (var entry : modules.entrySet()) {
-      var module = entry.getKey();
-      var version = singleton(entry.getValue()).orElse(null);
-      resolve(lib, module, version);
-    }
-  }
-
-  Link resolve(String module, Version versionOrNull) {
-    var link = links.get(module);
-    if (link == null) {
-      // TODO Fall back to https://github.com/sormuras/modules database
-      throw new Modules.UnmappedModuleException(module);
-    }
-    var version = versionOrNull != null ? versionOrNull : link.version;
-    var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-    var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
-    var replaced =
-        link.reference
-            .replace(Link.VERSION, version.toString())
-            .replace(Link.JAVAFX_PLATFORM, javafxPlatform);
-    return new Link(replaced, version);
-  }
-
-  void resolve(Path lib, String module, Version versionOrNull) throws Exception {
-    var link = resolve(module, versionOrNull);
-    var uri = link.reference;
-    var jar = lib.resolve(module + '-' + link.version + ".jar");
-    uris.copy(URI.create(uri), jar, StandardCopyOption.COPY_ATTRIBUTES);
-  }
-
   @Override
   public String toString() {
     return "Library{" + modifiers + ", links=" + links + ", requires=" + requires + '}';
-  }
-
-  private static <T> Optional<T> singleton(Collection<T> collection) {
-    if (collection.isEmpty()) {
-      return Optional.empty();
-    }
-    if (collection.size() != 1) {
-      throw new IllegalStateException("Too many elements: " + collection);
-    }
-    return Optional.of(collection.iterator().next());
   }
 }

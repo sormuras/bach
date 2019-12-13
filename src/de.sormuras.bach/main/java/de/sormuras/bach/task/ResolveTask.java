@@ -24,6 +24,7 @@ import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.util.Modules;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -41,7 +42,8 @@ public class ResolveTask implements Task {
 
     var requires = library.requires();
     if (!requires.isEmpty()) {
-      library.resolveRequires(lib);
+      var resolver = new Resolver(log, library);
+      resolver.resolveRequires(lib);
     }
 
     var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
@@ -52,10 +54,13 @@ public class ResolveTask implements Task {
     }
 
     log.info("Resolving missing modules...");
+    var loaded = new ArrayList<String>();
     var repeat = library.modifiers().contains(Library.Modifier.RESOLVE_RECURSIVELY);
+    var resolver = new Resolver(log, library);
     do {
       var intersection = new TreeSet<>(missing.keySet());
-      library.resolveModules(lib, missing);
+      resolver.resolveModules(lib, missing);
+      loaded.addAll(missing.keySet());
       missing.clear();
       var libraryModulesSurvey = Modules.Survey.of(ModuleFinder.of(lib));
       libraryModulesSurvey.putAllRequiresTo(missing);
@@ -65,7 +70,7 @@ public class ResolveTask implements Task {
       if (!intersection.isEmpty())
         throw new IllegalStateException("Unresolved module(s): " + intersection);
     } while (repeat && !missing.isEmpty());
-    // log.info("Loaded %d 3rd-party module(s): %s", loaded.size(), lib);
+    log.info("Loaded %d 3rd-party module(s): %s", loaded.size(), lib);
   }
 
   Map<String, Set<Version>> findMissingModules(Bach bach, Modules.Survey systemModulesSurvey) {
