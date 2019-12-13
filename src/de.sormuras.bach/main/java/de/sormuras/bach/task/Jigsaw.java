@@ -54,7 +54,9 @@ class Jigsaw {
             .filter(Predicate.not(Unit::isMultiRelease))
             .map(Unit::name)
             .collect(Collectors.joining(","));
-    var modulePaths = Paths.filterExisting(realm.modulePaths());
+    var modulePath = new ArrayList<Path>();
+    modulePath.add(folder.modules(realm.name())); // current realm first, like "main/modules"...
+    modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
     if (!normalNames.isBlank()) {
       bach.execute(
           new Call("javac")
@@ -63,7 +65,7 @@ class Jigsaw {
               .add("--module", normalNames)
               .add("--module-source-path", realm.moduleSourcePath())
               .forEach(units, this::patchModule)
-              .add("--module-path", modulePaths)
+              .add("--module-path", Paths.filterExisting(modulePath))
               .add("--module-version", bach.getProject().version()));
     }
 
@@ -81,7 +83,7 @@ class Jigsaw {
               .add("-locale", "en")
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
               .add("-Xdoclint:-missing")
-              .add("--module-path", modulePaths)
+              .add("--module-path", Paths.filterExisting(modulePath))
               .add("--module-source-path", allModuleSourcePaths);
       for (var unit : units) {
         if (unit.isMultiRelease()) {
@@ -112,10 +114,10 @@ class Jigsaw {
     }
 
     /*if (realm.isDeployRealm())*/ {
-      var modulePath = new ArrayList<Path>();
-      modulePath.add(folder.modules(realm.name())); // current realm first, like "main/modules"...
-      modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
-      var jdeps = new Call("jdeps").add("--module-path", modulePath).add("--multi-release", "BASE");
+      var jdeps =
+          new Call("jdeps")
+              .add("--module-path", Paths.filterExisting(modulePath))
+              .add("--multi-release", "BASE");
       bach.execute(
           jdeps
               .clone()
