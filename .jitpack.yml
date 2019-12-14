@@ -3,6 +3,8 @@ jdk:
 
 install:
   - unset JAVA_TOOL_OPTIONS
-  - java src/bach/Version.java $(java src/bach/Version.java)-${GIT_COMMIT}
+  - VERSION=$(java src/bach/Version.java)
+  - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}-${GIT_COMMIT}; fi
+  - java src/bach/Version.java
   - java src/bach/Bootstrap.java
   - source .bach/out/maven-install.sh
