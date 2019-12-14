@@ -69,22 +69,23 @@ class Jigsaw {
               .add("--module-version", bach.getProject().version()));
     }
 
+    var javadocModulesOption = realm.argumentsFor(Realm.JAVADOC_MODULES_OPTION);
+    var javadocModules =
+        javadocModulesOption.isEmpty() || javadocModulesOption.equals(List.of(Realm.ALL_MODULES))
+            ? allModuleNames
+            : String.join(",", javadocModulesOption);
     if (realm.isDeployRealm()) {
       var allModuleSourcePaths =
           units.stream()
               .map(unit -> Paths.star(unit.info(), unit.name()))
               .distinct()
               .collect(Collectors.joining(File.pathSeparator));
-      var javadocModules = realm.argumentsFor(Realm.JAVADOC_MODULES_OPTION);
-      var modules =
-          javadocModules.equals(List.of(Realm.ALL_MODULES))
-              ? allModuleNames
-              : String.join(",", javadocModules);
+
       var javadoc =
           new Call("javadoc")
               .forEach(realm.argumentsFor("javadoc"), Call::add)
               .add("-d", Paths.createDirectories(javadocDirectory))
-              .add("--module", modules)
+              .add("--module", javadocModules)
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
               .add("--module-path", Paths.filterExisting(modulePath))
               .add("--module-source-path", allModuleSourcePaths);
@@ -128,8 +129,7 @@ class Jigsaw {
               .add("--dot-output", folder.realm(realm.name(), "dot"))
               .add("--add-modules", allModuleNames));
       if (bach.isVerbose()) {
-        var names = Boolean.getBoolean("normals") ? normalNames : allModuleNames;
-        bach.execute(jdeps.clone().add("--check", names));
+        bach.execute(jdeps.clone().add("--check", javadocModules));
       }
     }
   }
