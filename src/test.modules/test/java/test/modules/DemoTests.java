@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Task;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.ProjectBuilder;
 import java.nio.file.Files;
