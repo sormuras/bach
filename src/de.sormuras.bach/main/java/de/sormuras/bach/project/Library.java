@@ -1,6 +1,7 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
@@ -11,6 +12,9 @@ import java.util.TreeMap;
 
 /** Manage external 3rd-party modules. */
 public /*record*/ class Library {
+
+  public static final String[] ALL_MODIFIER_NAMES =
+      Arrays.stream(Modifier.values()).map(Enum::name).toArray(String[]::new);
 
   public enum Modifier {
     RESOLVE_RECURSIVELY,
@@ -145,7 +149,7 @@ public /*record*/ class Library {
   }
 
   public static Library of(Properties properties) {
-    var modifiers = Property.LIBRARY_MODIFIERS.list(properties, ",", Library.Modifier::valueOf);
+    var modifiers = Property.LIBRARY_MODIFIERS.list(properties, ",", Modifier::valueOf);
     var links = new DefaultLinks(properties);
     var requires = Property.LIBRARY_REQUIRES.list(properties, ",", Requires::of);
     return new Library(EnumSet.copyOf(modifiers), links, requires);

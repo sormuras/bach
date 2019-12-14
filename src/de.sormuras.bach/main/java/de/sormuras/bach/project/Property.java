@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
@@ -29,10 +28,7 @@ public enum Property {
   NAME("project"),
   VERSION("0"),
 
-  LIBRARY_MODIFIERS(
-      EnumSet.allOf(Library.Modifier.class).stream()
-          .map(Enum::name)
-          .collect(Collectors.joining(","))),
+  LIBRARY_MODIFIERS(String.join(",", Library.ALL_MODIFIER_NAMES)),
   LIBRARY_REQUIRES(""),
 
   REALM_MAIN_JAVAC_ARGS(String.join("|", "-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint")),
