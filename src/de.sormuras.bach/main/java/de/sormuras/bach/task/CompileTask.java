@@ -20,6 +20,8 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.util.Maven;
+import de.sormuras.bach.util.Paths;
+import java.nio.file.Files;
 
 public class CompileTask implements Task {
 
@@ -27,6 +29,11 @@ public class CompileTask implements Task {
   public void execute(Bach bach) {
     var log = bach.getLog();
     var project = bach.getProject();
+    var lib = project.folder().lib();
+    if (Files.isDirectory(lib)) {
+      log.debug("Library %s contains", lib.toAbsolutePath());
+      Paths.walk(lib, name -> log.debug("  %s", name));
+    }
     for (var realm : project.structure().realms()) {
       var units = project.units(realm);
       if (units.isEmpty()) continue;
