@@ -75,14 +75,17 @@ class Jigsaw {
               .map(unit -> Paths.star(unit.info(), unit.name()))
               .distinct()
               .collect(Collectors.joining(File.pathSeparator));
+      var javadocModules = realm.argumentsFor(Realm.JAVADOC_MODULES_OPTION);
+      var modules =
+          javadocModules.equals(List.of(Realm.ALL_MODULES))
+              ? allModuleNames
+              : String.join(",", javadocModules);
       var javadoc =
           new Call("javadoc")
+              .forEach(realm.argumentsFor("javadoc"), Call::add)
               .add("-d", Paths.createDirectories(javadocDirectory))
-              .add("--module", Boolean.getBoolean("normals") ? normalNames : allModuleNames)
-              .add("-encoding", "UTF-8")
-              .add("-locale", "en")
+              .add("--module", modules)
               .iff(!bach.isVerbose(), c -> c.add("-quiet"))
-              .add("-Xdoclint:-missing")
               .add("--module-path", Paths.filterExisting(modulePath))
               .add("--module-source-path", allModuleSourcePaths);
       for (var unit : units) {

@@ -26,6 +26,9 @@ import java.util.Set;
 
 public /*record*/ class Realm {
 
+  public static final String ALL_MODULES = "ALL-REALM";
+  public static final String JAVADOC_MODULES_OPTION = "javadoc --module";
+
   public enum Modifier {
     DEPLOY,
     TEST

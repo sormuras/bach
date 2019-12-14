@@ -108,7 +108,14 @@ public class ProjectBuilder {
             Set.of(Realm.Modifier.DEPLOY),
             List.of(folder.src("{MODULE}/main/java")),
             List.of(folder.lib()),
-            Map.of("javac", Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|")));
+            Map.of(
+                "javac",
+                Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|"),
+                "javadoc",
+                Property.REALM_MAIN_JAVADOC_ARGS.list(properties, "\\|"),
+                Realm.JAVADOC_MODULES_OPTION,
+                Property.JAVADOC_MODULES.list(properties, ",") //
+                ));
     var test =
         new Realm(
             "test",

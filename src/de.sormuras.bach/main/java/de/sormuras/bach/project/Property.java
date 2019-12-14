@@ -31,8 +31,12 @@ public enum Property {
   LIBRARY_MODIFIERS(String.join(",", Library.ALL_MODIFIER_NAMES)),
   LIBRARY_REQUIRES(""),
 
-  REALM_MAIN_JAVAC_ARGS(String.join("|", "-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint")),
-  REALM_TEST_JAVAC_ARGS(String.join("|", "-encoding", "UTF-8", "-parameters", "-Werror", "-Xlint:-preview")),
+  REALM_MAIN_JAVAC_ARGS("-encoding|UTF-8|-parameters|-Werror|-Xlint"),
+  REALM_MAIN_JAVADOC_ARGS("-encoding|UTF-8|-locale|en|-Xdoclint:-missing"),
+
+  REALM_TEST_JAVAC_ARGS("-encoding|UTF-8|-parameters|-Werror|-Xlint:-preview"),
+
+  JAVADOC_MODULES(Realm.ALL_MODULES),
 
   DEPLOYMENT_REPOSITORY_ID(null),
   DEPLOYMENT_URL(null);
