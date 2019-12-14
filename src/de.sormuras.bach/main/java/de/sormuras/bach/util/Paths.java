@@ -18,14 +18,18 @@
 package de.sormuras.bach.util;
 
 import java.io.File;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -36,6 +40,49 @@ public class Paths {
 
   /** Convenient short-cut to {@code "user.home"} as a path. */
   public static final Path USER_HOME = Path.of(System.getProperty("user.home"));
+
+  /** Copy all files and directories from source to target directory. */
+  public static void copy(Path source, Path target) throws Exception {
+    copy(source, target, __ -> true);
+  }
+
+  /** Copy selected files and directories from source to target directory. */
+  public static Set<Path> copy(Path source, Path target, Predicate<Path> filter) throws Exception {
+    // debug("copy(source:`%s`, target:`%s`)%n", source, target);
+    if (!Files.exists(source)) {
+      throw new IllegalArgumentException("source must exist: " + source);
+    }
+    if (!Files.isDirectory(source)) {
+      throw new IllegalArgumentException("source must be a directory: " + source);
+    }
+    if (Files.exists(target)) {
+      if (!Files.isDirectory(target)) {
+        throw new IllegalArgumentException("target must be a directory: " + target);
+      }
+      if (target.equals(source)) {
+        return Set.of();
+      }
+      if (target.startsWith(source)) {
+        // copy "a/" to "a/b/"...
+        throw new IllegalArgumentException("target must not a child of source");
+      }
+    }
+    var paths = new TreeSet<Path>();
+    try (var stream = Files.walk(source).sorted()) {
+      for (var path : stream.collect(Collectors.toList())) {
+        var destination = target.resolve(source.relativize(path));
+        if (Files.isDirectory(path)) {
+          Files.createDirectories(destination);
+          continue;
+        }
+        if (filter.test(path)) {
+          Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
+          paths.add(destination);
+        }
+      }
+    }
+    return paths;
+  }
 
   public static Path createDirectories(Path directory) {
     try {
@@ -48,8 +95,26 @@ public class Paths {
 
   public static Path deleteIfExists(Path directory) {
     if (Files.notExists(directory)) return directory;
+    return delete(directory, __ -> true);
+  }
+
+  public static Path delete(Path directory) {
+    return delete(directory, __ -> true);
+  }
+
+  public static Path delete(Path directory, Predicate<Path> filter) {
+    // trivial case: delete existing empty directory or single file
+    try {
+      Files.deleteIfExists(directory);
+      return directory;
+    } catch (DirectoryNotEmptyException ignored) {
+      // fall-through
+    } catch (Exception e) {
+      throw new RuntimeException("Delete directory failed: " + directory, e);
+    }
+    // default case: walk the tree...
     try (var stream = Files.walk(directory)) {
-      var selected = stream.sorted((p, q) -> -p.compareTo(q));
+      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
       for (var path : selected.collect(Collectors.toList())) {
         Files.deleteIfExists(path);
       }
@@ -164,5 +229,19 @@ public class Paths {
       }
     }
     return String.join(File.separator, strings);
+  }
+
+  /** Walk directory tree structure. */
+  public static void walk(Path root, Consumer<String> out) {
+    try (var stream = Files.walk(root)) {
+      stream
+          .map(root::relativize)
+          .map(path -> path.toString().replace('\\', '/'))
+          .sorted()
+          .filter(Predicate.not(String::isEmpty))
+          .forEach(out);
+    } catch (Exception e) {
+      throw new RuntimeException("Walking tree failed: " + root, e);
+    }
   }
 }
