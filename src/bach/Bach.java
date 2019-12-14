@@ -68,6 +68,7 @@ public class Bach {
 
     var java = new ArrayList<String>();
     java.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
+    if (DEBUG) java.add("-Debug");
     java.add("-D" + "user.language=en");
     java.add("--module-path=" + LIB);
     java.add("--add-modules=" + "ALL-SYSTEM");
