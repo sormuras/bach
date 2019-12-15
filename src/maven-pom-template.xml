@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.sormuras.bach</groupId>
-    <artifactId>de.sormuras.bach</artifactId>
-    <version>2.0-ea</version>
+    <artifactId>${MODULE}</artifactId>
+    <version>${VERSION}</version>
 
     <name>Bach.java</name>
     <description>♪ Java Shell Builder - Use jshell/java to build your modular Java project</description>
@@ -30,5 +30,9 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <dependencies>
+        <!--${DEPENDENCIES}-->
+    </dependencies>
 
 </project>
