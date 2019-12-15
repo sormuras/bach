@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import java.io.File;
 import java.nio.file.Path;
 
 public /*record*/ class Folder {
@@ -46,11 +45,15 @@ public /*record*/ class Folder {
 
   static Path resolve(Path path, String... more) {
     if (more.length == 0) return path;
-    return path.resolve(String.join(File.separator, more));
+    return path.resolve(String.join("/", more));
   }
 
   public Path base() {
     return base;
+  }
+
+  public Path base(String... more) {
+    return resolve(base, more);
   }
 
   public Path out() {
