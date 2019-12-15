@@ -28,7 +28,7 @@ public /*record*/ class Project {
   private final String name;
   private final Version version;
   private final Structure structure;
-  private final Deployment deployment; // null-able
+  private final Deployment deployment;
 
   public Project(String name, Version version, Structure structure, Deployment deployment) {
     this.name = name;
@@ -53,8 +53,8 @@ public /*record*/ class Project {
     return structure;
   }
 
-  public Optional<Deployment> deployment() {
-    return Optional.ofNullable(deployment);
+  public Deployment deployment() {
+    return deployment;
   }
 
   public Optional<Unit> unit(String realmName, String unitName) {

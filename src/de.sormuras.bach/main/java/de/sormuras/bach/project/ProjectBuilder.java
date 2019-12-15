@@ -56,7 +56,7 @@ public class ProjectBuilder {
     var version = Property.VERSION.get(properties);
     var library = Library.of(properties);
     var structure = structure(folder, library, properties);
-    var deployment = deployment(properties);
+    var deployment = deployment(folder, properties);
     return new Project(name, Version.parse(version), structure, deployment);
   }
 
@@ -66,10 +66,11 @@ public class ProjectBuilder {
     return Paths.load(new Properties(), folder.base().resolve(file));
   }
 
-  public Deployment deployment(Properties properties) {
+  public Deployment deployment(Folder folder, Properties properties) {
+    var pom = Property.DEPLOYMENT_POM_TEMPLATE.get(properties);
     var id = Property.DEPLOYMENT_REPOSITORY_ID.get(properties);
     var uri = Property.DEPLOYMENT_URL.get(properties);
-    return (id == null || uri == null) ? null : new Deployment(id, URI.create(uri));
+    return new Deployment(folder.base(pom), id, uri == null ? null : URI.create(uri));
   }
 
   public Structure structure(Folder folder, Library library, Properties properties) {

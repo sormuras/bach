@@ -38,6 +38,7 @@ public enum Property {
 
   JAVADOC_MODULES(Realm.ALL_MODULES),
 
+  DEPLOYMENT_POM_TEMPLATE("src/maven-pom-template.xml"),
   DEPLOYMENT_REPOSITORY_ID(null),
   DEPLOYMENT_URL(null);
 

@@ -38,7 +38,7 @@ public class Build {
     var version = properties.getProperty("version");
     var library = Library.of(properties);
     var structure = builder.structure(folder, library, properties);
-    var deployment = builder.deployment(properties);
+    var deployment = builder.deployment(folder, properties);
 
     var project = new Project(name, Version.parse(version), structure, deployment);
     Bach.build(log, project);
