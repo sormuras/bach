@@ -26,7 +26,7 @@ import java.nio.file.Files;
 public class CompileTask implements Task {
 
   @Override
-  public void execute(Bach bach) {
+  public void execute(Bach bach) throws Exception {
     var log = bach.getLog();
     var project = bach.getProject();
     var lib = project.folder().lib();
@@ -40,9 +40,11 @@ public class CompileTask implements Task {
       log.debug("Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
       new Hydra(bach, realm).compile(units);
       new Jigsaw(bach, realm).compile(units);
-      var scribe = new Maven.Scribe(project);
+      if (!realm.isDeployRealm()) continue;
+      var scribe = new Maven.Scribe(bach);
+      scribe.generateMavenPoms(units);
       scribe.generateMavenInstallScript(units);
-      if (realm.isDeployRealm()) scribe.generateMavenDeployScript(units);
+      scribe.generateMavenDeployScript(units);
     }
   }
 }

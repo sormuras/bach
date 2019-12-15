@@ -17,30 +17,59 @@
 
 package de.sormuras.bach.project;
 
-import java.lang.module.ModuleDescriptor.Version;
 import java.util.Locale;
+import java.util.Map;
 
 /** String-based template constants and evaluation support. */
-public enum Template {
-  JAVAFX_PLATFORM,
-  VERSION;
+public class Template {
 
-  private final String placeholder;
+  /** Well-known placeholders. */
+  public enum Placeholder {
+    /** Example: {@code "${JAVAFX-PLATFORM}"} replaced by one of {@code "linux"|"mac"|"win"}. */
+    JAVAFX_PLATFORM {
+      @Override
+      public String getDefault() {
+        var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+        return os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
+      }
+    },
 
-  Template() {
-    this.placeholder = "${" + name().replace('_', '-') + "}";
+    /** Example: {@code "${GROUP}"} replaced by {@code "de.sormuras"}. */
+    GROUP,
+    /** Example: {@code "${MODULE}"} replaced by {@code "de.sormuras.bach"}. */
+    MODULE,
+    /** Example: {@code "${VERSION}"} replaced by {@code "1.2.3"}. */
+    VERSION;
+
+    private final String target;
+
+    Placeholder() {
+      this.target = "${" + name().replace('_', '-') + "}";
+    }
+
+    /** String to be replaced, like: {@code VERSION}. */
+    public String getTarget() {
+      return target;
+    }
+
+    /** Compute default value from runtime information. */
+    public String getDefault() {
+      throw new UnsupportedOperationException(name() + " has no default replacement");
+    }
   }
 
-  public String getPlaceholder() {
-    return placeholder;
-  }
-
-  public static String replace(String template, Version version) {
+  public static String replace(String template, Map<Placeholder, String> replacements) {
     if (template.indexOf('$') < 0) return template;
-    var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-    var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
-    return template
-        .replace(VERSION.placeholder, version.toString())
-        .replace(JAVAFX_PLATFORM.placeholder, javafxPlatform);
+    var replaced = template;
+    for (var entry : replacements.entrySet()) {
+      var target = entry.getKey().getTarget();
+      var replacement = entry.getValue();
+      replaced = replaced.replace(target, replacement);
+    }
+    return replaced;
+  }
+
+  private Template() {
+    throw new UnsupportedOperationException();
   }
 }

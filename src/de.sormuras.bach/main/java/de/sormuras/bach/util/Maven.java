@@ -17,9 +17,12 @@
 
 package de.sormuras.bach.util;
 
+import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.Deployment;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.Template;
+import de.sormuras.bach.project.Template.Placeholder;
 import de.sormuras.bach.project.Unit;
 import java.net.URI;
 import java.nio.file.Files;
@@ -99,10 +102,65 @@ public class Maven {
       }
     }
 
+    final Bach bach;
     final Project project;
 
-    public Scribe(Project project) {
-      this.project = project;
+    public Scribe(Bach bach) {
+      this.bach = bach;
+      this.project = bach.getProject();
+    }
+
+    public void generateMavenPoms(Iterable<Unit> units) throws Exception {
+      var projectPom = project.deployment().mavenPomTemplate();
+      for (var unit : units) {
+        var path = unit.mavenPom().orElse(projectPom);
+        if (!Files.isRegularFile(path)) continue;
+        var template = Paths.readString(path);
+        var group = group(template);
+        var binding =
+            Map.of(
+                Placeholder.GROUP, group,
+                Placeholder.MODULE, unit.name(),
+                Placeholder.VERSION, project.version(unit).toString());
+        var lines = new ArrayList<String>();
+        for (var line : template.lines().collect(Collectors.toList())) {
+          var DEPENDENCIES = "<!--${DEPENDENCIES}-->";
+          if (DEPENDENCIES.equals(line.strip())) {
+            var indent = line.substring(0, line.indexOf(DEPENDENCIES));
+            for (var requires : unit.descriptor().requires()) {
+              var dependency = project.unit(unit.realm().name(), requires.name()).orElse(null);
+              if (dependency == null) continue;
+              lines.add(indent + "<dependency>");
+              lines.add(indent + "  <groupId>" + group + "</groupId>");
+              lines.add(indent + "  <artifactId>" + dependency.name() + "</artifactId>");
+              lines.add(indent + "  <version>" + project.version(dependency) + "</version>");
+              lines.add(indent + "</dependency>");
+            }
+            continue;
+          }
+          lines.add(Template.replace(line, binding));
+        }
+        var pom = pom(unit);
+        Files.createDirectories(pom.getParent());
+        Files.write(pom, lines);
+        bach.getLog().debug("Generated pom: %s", pom);
+      }
+    }
+
+    String group(String template) {
+      var projectGroup = project.deployment().mavenGroup();
+      if (projectGroup != null) return projectGroup;
+      try {
+        projectGroup = substring(template, "<groupId>", "<");
+        return projectGroup;
+      } catch (Exception e) {
+        bach.getLog().warning("Guessing Maven Group Id failed: %s", e);
+      }
+      throw new AssertionError("Maven GroupId not defined!");
+    }
+
+    Path pom(Unit unit) {
+      return project.folder().realm(unit.realm().name(), "maven", unit.name(), "pom.xml");
     }
 
     public void generateMavenInstallScript(Iterable<Unit> units) {
@@ -116,7 +174,7 @@ public class Maven {
       var maven = String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", plugin);
       var lines = new ArrayList<String>();
       for (var unit : units) {
-        if (unit.mavenPom().isPresent()) {
+        if (Files.isRegularFile(pom(unit))) {
           lines.add(String.join(" ", maven, generateMavenArtifactLine(unit, type)));
         }
       }
@@ -134,12 +192,12 @@ public class Maven {
 
     public void generateMavenDeployScript(Iterable<Unit> units) {
       var deployment = project.deployment();
-      if (deployment.isEmpty()) {
+      if (deployment.mavenRepositoryId() == null || deployment.mavenUri() == null) {
         // log("No Maven deployment record available.");
         return;
       }
       for (var type : ScriptType.values()) {
-        generateMavenDeployScript(type, deployment.get(), units);
+        generateMavenDeployScript(type, deployment, units);
       }
     }
 
@@ -167,7 +225,7 @@ public class Maven {
     }
 
     String generateMavenArtifactLine(Unit unit, ScriptType type) {
-      var pom = "pomFile=" + type.quote(unit.mavenPom().orElseThrow());
+      var pom = "pomFile=" + type.quote(pom(unit));
       var file = "file=" + type.quote(project.modularJar(unit));
       var sources = "sources=" + type.quote(project.sourcesJar(unit));
       var javadoc = "javadoc=" + type.quote(project.javadocJar(unit.realm()));
@@ -182,5 +240,12 @@ public class Maven {
       map.put(name, properties.getProperty(name));
     }
     return Map.copyOf(map);
+  }
+
+  /** Extract substring between begin and end tags. */
+  private static String substring(String string, String beginTag, String endTag) {
+    int beginIndex = string.indexOf(beginTag) + beginTag.length();
+    int endIndex = string.indexOf(endTag, beginIndex);
+    return string.substring(beginIndex, endIndex).trim();
   }
 }

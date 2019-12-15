@@ -67,10 +67,11 @@ public class ProjectBuilder {
   }
 
   public Deployment deployment(Folder folder, Properties properties) {
+    var group = Property.DEPLOYMENT_GROUP.get(properties);
     var pom = Property.DEPLOYMENT_POM_TEMPLATE.get(properties);
     var id = Property.DEPLOYMENT_REPOSITORY_ID.get(properties);
     var uri = Property.DEPLOYMENT_URL.get(properties);
-    return new Deployment(folder.base(pom), id, uri == null ? null : URI.create(uri));
+    return new Deployment(group, folder.base(pom), id, uri == null ? null : URI.create(uri));
   }
 
   public Structure structure(Folder folder, Library library, Properties properties) {

@@ -35,7 +35,7 @@ public /*record*/ class Library {
 
     public static Link of(
         String repository, String group, String artifact, String version, String classifier) {
-      var VERSION = Template.VERSION.getPlaceholder();
+      var VERSION = Template.Placeholder.VERSION.getTarget();
       var versionAndClassifier = classifier.isBlank() ? VERSION : VERSION + '-' + classifier;
       var type = "jar";
       var file = artifact + '-' + versionAndClassifier + '.' + type;
@@ -120,7 +120,7 @@ public /*record*/ class Library {
 
     private void putJavaFX(String version, String... names) {
       for (var name : names) {
-        var classifier = Template.JAVAFX_PLATFORM.getPlaceholder();
+        var classifier = Template.Placeholder.JAVAFX_PLATFORM.getTarget();
         var link = Link.central("org.openjfx", "javafx-" + name, version, classifier);
         put("javafx." + name, link);
       }

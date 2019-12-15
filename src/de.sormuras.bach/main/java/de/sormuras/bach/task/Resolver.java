@@ -20,6 +20,7 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Template;
+import de.sormuras.bach.project.Template.Placeholder;
 import de.sormuras.bach.util.Maven;
 import de.sormuras.bach.util.Uris;
 import java.lang.module.ModuleDescriptor.Version;
@@ -92,7 +93,11 @@ class Resolver {
   static Library.Link replace(Library.Link link, Version version) {
     var reference = link.reference();
     if (reference.indexOf('$') < 0) return link;
-    return new Library.Link(Template.replace(reference, version), version);
+    var binding =
+        Map.of(
+            Placeholder.JAVAFX_PLATFORM, Placeholder.JAVAFX_PLATFORM.getDefault(),
+            Placeholder.VERSION, version.toString());
+    return new Library.Link(Template.replace(reference, binding), version);
   }
 
   private static <T> Optional<T> singleton(Collection<T> collection) {
