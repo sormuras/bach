@@ -25,9 +25,6 @@ public /*record*/ class Library {
   /** Link a module name to resource and a default version. */
   public static /*record*/ class Link {
 
-    public static final String VERSION = "${VERSION}";
-    public static final String JAVAFX_PLATFORM = "${JAVAFX-PLATFORM}";
-
     public static Link central(String group, String artifact, String version) {
       return central(group, artifact, version, "");
     }
@@ -38,6 +35,7 @@ public /*record*/ class Library {
 
     public static Link of(
         String repository, String group, String artifact, String version, String classifier) {
+      var VERSION = Template.VERSION.getPlaceholder();
       var versionAndClassifier = classifier.isBlank() ? VERSION : VERSION + '-' + classifier;
       var type = "jar";
       var file = artifact + '-' + versionAndClassifier + '.' + type;
@@ -122,7 +120,8 @@ public /*record*/ class Library {
 
     private void putJavaFX(String version, String... names) {
       for (var name : names) {
-        var link = Link.central("org.openjfx", "javafx-" + name, version, Link.JAVAFX_PLATFORM);
+        var classifier = Template.JAVAFX_PLATFORM.getPlaceholder();
+        var link = Link.central("org.openjfx", "javafx-" + name, version, classifier);
         put("javafx." + name, link);
       }
     }

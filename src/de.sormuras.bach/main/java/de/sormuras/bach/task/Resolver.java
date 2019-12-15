@@ -19,6 +19,7 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Template;
 import de.sormuras.bach.util.Maven;
 import de.sormuras.bach.util.Uris;
 import java.lang.module.ModuleDescriptor.Version;
@@ -26,7 +27,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -92,13 +92,7 @@ class Resolver {
   static Library.Link replace(Library.Link link, Version version) {
     var reference = link.reference();
     if (reference.indexOf('$') < 0) return link;
-    var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-    var javafxPlatform = os.contains("win") ? "win" : os.contains("mac") ? "mac" : "linux";
-    var replaced =
-        reference
-            .replace(Library.Link.VERSION, version.toString())
-            .replace(Library.Link.JAVAFX_PLATFORM, javafxPlatform);
-    return new Library.Link(replaced, version);
+    return new Library.Link(Template.replace(reference, version), version);
   }
 
   private static <T> Optional<T> singleton(Collection<T> collection) {
