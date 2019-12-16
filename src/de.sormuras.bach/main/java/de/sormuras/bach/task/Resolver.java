@@ -96,6 +96,7 @@ class Resolver {
     var binding =
         Map.of(
             Placeholder.JAVAFX_PLATFORM, Placeholder.JAVAFX_PLATFORM.getDefault(),
+            Placeholder.LWJGL_NATIVES, Placeholder.LWJGL_NATIVES.getDefault(),
             Placeholder.VERSION, version.toString());
     return new Library.Link(Template.replace(reference, binding), version);
   }

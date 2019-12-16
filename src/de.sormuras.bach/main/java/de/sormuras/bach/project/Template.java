@@ -34,6 +34,17 @@ public class Template {
       }
     },
 
+    /** Example: {@code "${LWJGL-NATIVES}"} replaced by one of {@code "linux"|"macos"|"windows"}. */
+    LWJGL_NATIVES {
+      @Override
+      public String getDefault() {
+        var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+        // TODO missing lwjgl natives: linux-arm32, linux-arm64, windows-x86
+        var natives = os.contains("win") ? "windows" : os.contains("mac") ? "macos" : "linux";
+        return "natives-" + natives;
+      }
+    },
+
     /** Example: {@code "${GROUP}"} replaced by {@code "de.sormuras"}. */
     GROUP,
     /** Example: {@code "${MODULE}"} replaced by {@code "de.sormuras.bach"}. */

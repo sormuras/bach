@@ -99,6 +99,46 @@ public /*record*/ class Library {
       put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
       put("org.opentest4j", Link.central("org.opentest4j", "opentest4j", "1.2.0"));
       putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
+      putJLWGL(
+          "3.2.3",
+          "",
+          "assimp",
+          "bgfx",
+          "cuda",
+          "egl",
+          "glfw",
+          "jawt",
+          "jemalloc",
+          "libdivide",
+          "llvm",
+          "lmdb",
+          "lz4",
+          "meow",
+          "nanovg",
+          "nfd",
+          "nuklear",
+          "odbc",
+          "openal",
+          "opencl",
+          "opengl",
+          "opengles",
+          "openvr",
+          "opus",
+          "ovr",
+          "par",
+          "remotery",
+          "rpmalloc",
+          "shaderc",
+          "sse",
+          "stb",
+          "tinyexr",
+          "tinyfd",
+          "tootle",
+          "vma",
+          "vulkan",
+          "xxhash",
+          "yoga",
+          "zstd");
       putJUnitJupiter("5.6.0-M1", "", "api", "engine", "params");
       putJUnitPlatform("1.6.0-M1", "commons", "console", "engine", "launcher", "reporting");
       putAll(properties);
@@ -123,6 +163,16 @@ public /*record*/ class Library {
         var classifier = Template.Placeholder.JAVAFX_PLATFORM.getTarget();
         var link = Link.central("org.openjfx", "javafx-" + name, version, classifier);
         put("javafx." + name, link);
+      }
+    }
+
+    private void putJLWGL(String version, String... names) {
+      for (var name : names) {
+        var artifact = "lwjgl" + (name.isEmpty() ? "" : '-' + name);
+        var classifier = Template.Placeholder.LWJGL_NATIVES.getTarget();
+        var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
+        put(module, Link.central("org.lwjgl", artifact, version));
+        put(module + ".natives", Link.central("org.lwjgl", artifact, version, classifier));
       }
     }
 
