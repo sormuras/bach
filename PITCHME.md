@@ -7,7 +7,7 @@
 
 ---
 @snap[north span-90]
-## Overview
+## Motivation
 @snapend
 @snap[midpoint span-90]
 - 👉 **Motivation**
@@ -19,11 +19,11 @@
 
 +++
 @snap[north span-90]
-## Motivation
+### Why...
 @snapend
 @snap[midpoint span-90]
-- Why doesn't the JDK provide a build tool?
-- Why another build tool?
+- ... doesn't the JDK provide a build tool?
+- ... another build tool?
 @snapend
 @snap[south span-100 text-07]
 Motivation
@@ -32,7 +32,7 @@ Motivation
 ---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
 @title[JDK and Build Tools]
 @snap[north span-90]
-## JDK and Build Tools
+### JDK and Build Tools
 @snapend
 @snap[south span-100 text-07]
 Motivation
@@ -41,7 +41,7 @@ Motivation
 +++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
 @title[JDK, Bach.java, Tools]
 @snap[north span-90]
-## JDK and Build Tools
+### JDK and Build Tools
 @snapend
 @snap[south span-100 text-07]
 Motivation
@@ -49,7 +49,7 @@ Motivation
 
 +++
 @snap[north span-90]
-## JDK Tools 2019
+### JDK Tools 2019
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
@@ -83,7 +83,7 @@ Motivation
 
 +++
 @snap[north span-90]
-## Screenplays
+### Live or GIF
 @snapend
 @snap[midpoint span-90]
 - from `build.bat`
@@ -101,7 +101,7 @@ Note:
 
 +++?image=doc/screenplay/demo-1-build.gif&size=auto 90%
 @snap[north-east]
-## Demo 1
+### Demo 1
 @snapend
 @snap[east]
 @ol[text-08]
@@ -123,7 +123,7 @@ Note:
 
 +++?image=doc/screenplay/demo-2-jshell.gif&size=auto 90%
 @snap[north-east]
-## Demo 2
+### Demo 2
 @snapend
 @snap[east]
 @ol[text-08]
@@ -145,7 +145,7 @@ Note:
 
 +++?image=doc/screenplay/demo-3-bach.gif&size=auto 90%
 @snap[north-east]
-## Demo 3
+### Demo 3
 @snapend
 @snap[east]
 @ol[text-08]
@@ -167,11 +167,11 @@ Note:
 
 ---
 @snap[north span-90]
-## Overview
+## Features
 @snapend
 @snap[midpoint span-90]
 - Motivation
-- Demos**
+- Demos
 - 👉 **Features**
 - Project Model
 - Outlook
@@ -179,7 +179,7 @@ Note:
 
 +++
 @snap[north span-90]
-## Key Features
+### Concepts
 @snapend
 @snap[midpoint span-90]
 - Lightweight
@@ -192,19 +192,19 @@ Features
 
 +++
 @snap[north span-90]
-## Uniques
+### Uniques
 @snapend
 @snap[midpoint span-90 text-06]
-- [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
-- [x] [zero configuration](#zero-configuration) required (conventions and information gathered from `module-info.java` files)
-- [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
-- [x] [b-y-o-b](#bring-your-own-build) program using plain old Java (`src/bach/Build.java`)
-- [x] [3rd-party modules](#3rd-party-modules) in plain sight (single `lib/` directory)
-- [x] [compilation](#compilation--compile--package) is compile (`javac`) and package (`jar`) as an atomic step
-- [x] [multi-module](#multi-module) compilation in a single pass (`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`)
-- [x] [multi-release](#multi-release) modules are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
-- [x] [automated checks](#automated-checks) (aka testing) built-in (`test(${MODULE})`,`junit`)
-- [x] [deployment](#deployment) support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
+- **zero installation** required (besides JDK 11+, using `jshell`)
+- **zero configuration** required (conventions and information gathered from `module-info.java` files)
+- **customize with properties** to override auto-configured values (`.bach/project.properties`)
+- **b-y-o-b** program using plain old Java (`src/bach/Build.java`)
+- **3rd-party modules** in plain sight (single `lib/` directory)
+- **compilation** is compile (`javac`) and package (`jar`) as an atomic step
+- **multi-module** compilation in a single pass (`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`)
+- **multi-release** modules are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
+- **automated checks** (aka testing) built-in (`test(${MODULE})`,`junit`)
+- **deployment** support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
 @snapend
 @snap[south span-100 text-07]
 Features
@@ -212,7 +212,7 @@ Features
 
 ---
 @snap[north span-90]
-## Overview
+## Project Model
 @snapend
 @snap[midpoint span-90]
 - Motivation
@@ -224,7 +224,7 @@ Features
 
 +++
 @snap[north span-90]
-## Project Model Types
+### Types
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
@@ -247,7 +247,7 @@ Project Model
 
 ---
 @snap[north span-90]
-## Overview
+## Outlook
 @snapend
 @snap[midpoint span-90]
 - Motivation
@@ -257,9 +257,9 @@ Project Model
 - 👉 **Outlook**
 @snapend
 
----
++++
 @snap[north span-90]
-## JEP
+### JEP
 @snapend
 @snap[midpoint span-90]
 @ul
@@ -287,3 +287,26 @@ Outlook
 😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
 @snapend
 
+---
+@snap[north span-90]
+# Backup
+@snapend
+@snap[midpoint span-90]
+- Motivation
+- Demo
+- Features
+- Project Model
+- Outlook
+- 👉 **Backup**
+@snapend
+
++++
+@snap[north span-90]
+## Demo: Bach + JavaFX
+@snapend
+@snap[midpoint span-90]
+- https://github.com/sormuras/bach-javafx
+@snapend
+@snap[south span-100 text-07]
+Backup
+@snapend
