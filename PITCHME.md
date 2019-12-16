@@ -1,11 +1,16 @@
+@snap[midpoint span-100]
 # Bach.java
+@snapend
+@snap[south span-100 text-07]
+😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
+@snapend
 
 ---
 @snap[north span-90]
 ## Overview
 @snapend
 @snap[midpoint span-90]
-- Motivation
+- 👉 **Motivation**
 - Usage
 - Features
 - Project Model
@@ -20,17 +25,26 @@
 - Why doesn't the JDK provide a build tool?
 - Why another build tool?
 @snapend
+@snap[south span-100 text-07]
+Motivation
+@snapend
 
 ---?image=doc/img/jdk-and-build-tools.svg&size=90% auto
 @title[JDK and Build Tools]
 @snap[north span-90]
 ## JDK and Build Tools
 @snapend
+@snap[south span-100 text-07]
+Motivation
+@snapend
 
 +++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
 @title[JDK, Bach.java, Tools]
 @snap[north span-90]
 ## JDK and Build Tools
+@snapend
+@snap[south span-100 text-07]
+Motivation
 @snapend
 
 +++
@@ -51,6 +65,21 @@
 - **14** `jpackage` Package self-contained Java applications
 @ulend
 @snapend
+@snap[south span-100 text-07]
+Motivation
+@snapend
+
+---
+@snap[north span-90]
+## Project Model
+@snapend
+@snap[midpoint span-90]
+- Motivation
+- 👉 **Usage**
+- Features
+- Project Model
+- Outlook
+@snapend
 
 ---
 @snap[north span-90]
@@ -60,6 +89,9 @@
 - from `build.bat`
 - over `build.jsh`
 - to `https://bit.ly/bach-jsh`
+@snapend
+@snap[south span-100 text-07]
+Usage
 @snapend
 
 Note:
@@ -81,6 +113,9 @@ Note:
 1. Describe module
 @olend
 @snapend
+@snap[south span-100 text-07]
+Usage
+@snapend
 
 Note:
 - From source to module in 6 steps
@@ -99,6 +134,9 @@ Note:
 1. Tree binaries
 1. Describe module
 @olend
+@snapend
+@snap[south span-100 text-07]
+Usage
 @snapend
 
 Note:
@@ -119,10 +157,22 @@ Note:
 1. Describe module
 @olend
 @snapend
+@snap[south span-100 text-07]
+Usage
+@snapend
 
 Note:
 - From source to module in 6 steps
 - Using no extra script file
+
+---
+@snap[north span-90]
+## Usage
+@snapend
+@snap[midpoint span-90]
+- `jshell ...`
+- `java -p ... -m de.sormuras.bach`
+@snapend
 
 ---
 @snap[north span-90]
@@ -133,10 +183,25 @@ Note:
 - Java
 - Modules
 @snapend
+@snap[south span-100 text-07]
+Features
+@snapend
 
 ---
 @snap[north span-90]
 ## Project Model
+@snapend
+@snap[midpoint span-90]
+- Motivation
+- Usage
+- Features
+- 👉 **Project Model**
+- Outlook
+@snapend
+
+---
+@snap[north span-90]
+## Project Model Types
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
@@ -153,14 +218,8 @@ Note:
 - `Deployment`
 @ulend
 @snapend
-
----
-@snap[north span-90]
-## Usage
-@snapend
-@snap[midpoint span-90]
-- `jshell ...`
-- `java -p ... -m de.sormuras.bach`
+@snap[south span-100 text-07]
+Project Model
 @snapend
 
 ---
@@ -168,9 +227,40 @@ Note:
 ## Outlook
 @snapend
 @snap[midpoint span-90]
+- Motivation
+- Usage
+- Features
+- Project Model
+- 👉 **Outlook**
+@snapend
+
+---
+@snap[north span-90]
+## JEP
+@snapend
+@snap[midpoint span-90]
 @ul
-- from `Bach.java` to `{JDK_HOME}/bin/jbuild[.exe]`?
-- to `jbach`, `jbuild`, `javab`, ...
-- create a JEP?
+- From `Bach.java`...
+- to `{JDK_HOME}/bin/jbuild[.exe]`?
+- Or `jbach`, `jbuild`, `javab`,...
+- Create a JEP?
 @ulend
 @snapend
+@snap[south span-100 text-07]
+Outlook
+@snapend
+
+---
+@snap[north span-90]
+# Thanks.
+#### Happy building!
+@snapend
+@snap[midpoint span-90]
+@ul
+
+@ulend
+@snapend
+@snap[south span-100 text-07]
+😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
+@snapend
+
