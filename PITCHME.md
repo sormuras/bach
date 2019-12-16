@@ -11,13 +11,13 @@
 @snapend
 @snap[midpoint span-90]
 - 👉 **Motivation**
-- Usage
+- Demo
 - Features
 - Project Model
 - Outlook
 @snapend
 
----
++++
 @snap[north span-90]
 ## Motivation
 @snapend
@@ -71,17 +71,17 @@ Motivation
 
 ---
 @snap[north span-90]
-## Project Model
+## Demos
 @snapend
 @snap[midpoint span-90]
 - Motivation
-- 👉 **Usage**
+- 👉 **Demos**
 - Features
 - Project Model
 - Outlook
 @snapend
 
----
++++
 @snap[north span-90]
 ## Screenplays
 @snapend
@@ -91,7 +91,7 @@ Motivation
 - to `https://bit.ly/bach-jsh`
 @snapend
 @snap[south span-100 text-07]
-Usage
+Demo
 @snapend
 
 Note:
@@ -114,7 +114,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07]
-Usage
+Demo
 @snapend
 
 Note:
@@ -136,7 +136,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07]
-Usage
+Demo
 @snapend
 
 Note:
@@ -158,7 +158,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07]
-Usage
+Demo
 @snapend
 
 Note:
@@ -167,16 +167,19 @@ Note:
 
 ---
 @snap[north span-90]
-## Usage
+## Overview
 @snapend
 @snap[midpoint span-90]
-- `jshell ...`
-- `java -p ... -m de.sormuras.bach`
+- Motivation
+- Demos**
+- 👉 **Features**
+- Project Model
+- Outlook
 @snapend
 
----
++++
 @snap[north span-90]
-## Features
+## Key Features
 @snapend
 @snap[midpoint span-90]
 - Lightweight
@@ -187,19 +190,39 @@ Note:
 Features
 @snapend
 
++++
+@snap[north span-90]
+## Uniques
+@snapend
+@snap[midpoint span-90 text-06]
+- [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
+- [x] [zero configuration](#zero-configuration) required (conventions and information gathered from `module-info.java` files)
+- [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
+- [x] [b-y-o-b](#bring-your-own-build) program using plain old Java (`src/bach/Build.java`)
+- [x] [3rd-party modules](#3rd-party-modules) in plain sight (single `lib/` directory)
+- [x] [compilation](#compilation--compile--package) is compile (`javac`) and package (`jar`) as an atomic step
+- [x] [multi-module](#multi-module) compilation in a single pass (`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`)
+- [x] [multi-release](#multi-release) modules are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
+- [x] [automated checks](#automated-checks) (aka testing) built-in (`test(${MODULE})`,`junit`)
+- [x] [deployment](#deployment) support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
+@snapend
+@snap[south span-100 text-07]
+Features
+@snapend
+
 ---
 @snap[north span-90]
-## Project Model
+## Overview
 @snapend
 @snap[midpoint span-90]
 - Motivation
-- Usage
+- Demo
 - Features
 - 👉 **Project Model**
 - Outlook
 @snapend
 
----
++++
 @snap[north span-90]
 ## Project Model Types
 @snapend
@@ -224,11 +247,11 @@ Project Model
 
 ---
 @snap[north span-90]
-## Outlook
+## Overview
 @snapend
 @snap[midpoint span-90]
 - Motivation
-- Usage
+- Demo
 - Features
 - Project Model
 - 👉 **Outlook**
