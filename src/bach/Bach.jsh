@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+/open https://github.com/sormuras/bach/raw/2.0-M8/src/bach/Bach.java
 
 System.setProperty("Bach.java/transferIO", "true")
 var code = 0
