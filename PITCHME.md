@@ -13,7 +13,7 @@
 - 👉 **Motivation**
 - Demo
 - Features
-- Project Model
+- Model
 - Outlook
 @snapend
 
@@ -29,7 +29,7 @@
 Motivation
 @snapend
 
----?image=doc/img/jdk-and-build-tools.svg&size=90% auto
++++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
 @title[JDK and Build Tools]
 @snap[north span-90]
 ### JDK and Build Tools
@@ -77,7 +77,7 @@ Motivation
 - Motivation
 - 👉 **Demos**
 - Features
-- Project Model
+- Model
 - Outlook
 @snapend
 
@@ -173,7 +173,7 @@ Note:
 - Motivation
 - Demos
 - 👉 **Features**
-- Project Model
+- Model
 - Outlook
 @snapend
 
@@ -212,13 +212,13 @@ Features
 
 ---
 @snap[north span-90]
-## Project Model
+## Model
 @snapend
 @snap[midpoint span-90]
 - Motivation
 - Demo
 - Features
-- 👉 **Project Model**
+- 👉 **Model**
 - Outlook
 @snapend
 
@@ -242,7 +242,7 @@ Features
 @ulend
 @snapend
 @snap[south span-100 text-07]
-Project Model
+Model
 @snapend
 
 ---
@@ -253,7 +253,7 @@ Project Model
 - Motivation
 - Demo
 - Features
-- Project Model
+- Model
 - 👉 **Outlook**
 @snapend
 
@@ -289,20 +289,20 @@ Outlook
 
 ---
 @snap[north span-90]
-# Backup
+## Backup
 @snapend
 @snap[midpoint span-90]
 - Motivation
 - Demo
 - Features
-- Project Model
+- Model
 - Outlook
 - 👉 **Backup**
 @snapend
 
 +++
 @snap[north span-90]
-## Demo: Bach + JavaFX
+### Demo: Bach + JavaFX
 @snapend
 @snap[midpoint span-90]
 - https://github.com/sormuras/bach-javafx
