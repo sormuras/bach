@@ -27,6 +27,6 @@ jobs:
         echo ::set-env name=JAVA_VERSION::$(cat .jdk/Dockerfile14 | sed -n 's/ENV JAVA_VERSION //p')
     - uses: actions/setup-java@v1
       with:
-        java-version: "${JAVA_VERSION}"
+        java-version: "${{ env.JAVA_VERSION }}"
         jdkFile: .jdk/jdk.tar.gz
     - run: java -version
