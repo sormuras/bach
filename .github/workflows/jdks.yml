@@ -26,12 +26,11 @@ jobs:
         wget https://github.com/docker-library/openjdk/raw/master/14/jdk/Dockerfile --output-document ${DOCKERFILE}
         JAVA_URL=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_URL //p')
         JAVA_VERSION=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_VERSION //p')
-        JDK_FILE=$(basename ${JAVA_URL})
         wget --directory-prefix ${HOME} ${JAVA_URL}
         echo ::set-env name=JAVA_VERSION::${JAVA_VERSION}
-        echo ::set-env name=JDK_FILE::${JDK_FILE}
+        echo ::set-env name=JDK_FILE::"${HOME}/$(basename ${JAVA_URL})"
     - uses: actions/setup-java@v1
       with:
         java-version: "${{ env.JAVA_VERSION }}"
-        jdkFile: "${{ env.HOME }}/${{ env.JDK_FILE }}"
+        jdkFile: "${{ env.JDK_FILE }}"
     - run: java -version
