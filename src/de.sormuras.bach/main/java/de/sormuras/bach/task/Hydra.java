@@ -132,10 +132,10 @@ public /*STATIC*/ class Hydra {
       if (source.isVersioned()) {
         // Place a sole module descriptor into the root of JAR file.
         // TODO Always place module descriptors in root overwriting existing ones?
-        var classes = Paths.list(released, "*.class");
-        if (!classes.equals(List.of(released.resolve("module-info.class")))) {
-          jar.add("--release", source.release());
-        }
+        // var classes = Paths.list(released, "*.class");
+        // if (!classes.equals(List.of(released.resolve("module-info.class")))) {
+        jar.add("--release", source.release());
+        // }
       }
       jar.add("-C", released);
       jar.add(".");
