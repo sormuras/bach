@@ -10,6 +10,7 @@ on:
 jobs:
   
   jdk-15:
+    if: 0 == 1
     runs-on: ubuntu-latest
     steps:
     - run: wget -q https://download.java.net/java/early_access/jdk15/1/GPL/openjdk-15-ea+1_linux-x64_bin.tar.gz --output-document jdk.tar.gz
@@ -24,11 +25,12 @@ jobs:
     steps:
     - run: |
         wget https://github.com/docker-library/openjdk/raw/master/14/jdk/Dockerfile --output-document jdk-dockerfile
-        wget $(cat jdk-dockerfile | sed -n 's/ENV JAVA_URL //p') --output-document jdk.tar.gz
+        echo 'wget $(cat jdk-dockerfile | sed -n 's/ENV JAVA_URL //p') --output-document jdk.tar.gz'
         echo ::set-env name=JAVA_VERSION::$(cat jdk-dockerfile | sed -n 's/ENV JAVA_VERSION //p')
+        rm jdk-dockerfile
     - uses: actions/setup-java@v1
       with:
-        java-version: ${JAVA_VERSION}
+        java-version: ${{ JAVA_VERSION }}
         jdkFile: jdk.tar.gz
     - run: java -version
       
