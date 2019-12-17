@@ -8,7 +8,7 @@ on:
     - 'install-jdk.sh'
 
 jobs:
-  
+
   jdk-15:
     if: 0 == 1
     runs-on: ubuntu-latest
@@ -19,7 +19,7 @@ jobs:
         java-version: '15-ea'
         jdkFile: jdk.tar.gz
     - run: java -version
-  
+
   jdk-14:
     runs-on: ubuntu-latest
     steps:
@@ -30,10 +30,10 @@ jobs:
         rm jdk-dockerfile
     - uses: actions/setup-java@v1
       with:
-        java-version: ${{ JAVA_VERSION }}
+        java-version: '14-ea'
         jdkFile: jdk.tar.gz
     - run: java -version
-      
+
   jdk-6:
     if: 0 == 1
     runs-on: ubuntu-latest
