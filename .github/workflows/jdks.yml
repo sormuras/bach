@@ -10,7 +10,7 @@ jobs:
   jdk-15-ea:
     runs-on: ubuntu-latest
     steps:
-    - run: wget -q https://download.java.net/java/early_access/jdk15/1/GPL/openjdk-15-ea+1_linux-x64_bin.tar.gz --output-document jdk.tar.gz
+    - run: wget https://download.java.net/java/early_access/jdk15/1/GPL/openjdk-15-ea+1_linux-x64_bin.tar.gz --output-document jdk.tar.gz
     - uses: actions/setup-java@v1
       with:
         java-version: '15-ea'
@@ -20,13 +20,18 @@ jobs:
   jdk-14-ea:
     runs-on: ubuntu-latest
     steps:
-    - run: |
-        mkdir .jdk
-        wget https://github.com/docker-library/openjdk/raw/master/14/jdk/Dockerfile --output-document .jdk/Dockerfile14
-        wget $(cat .jdk/Dockerfile14 | sed -n 's/ENV JAVA_URL //p') --output-document .jdk/jdk.tar.gz
-        echo ::set-env name=JAVA_VERSION::$(cat .jdk/Dockerfile14 | sed -n 's/ENV JAVA_VERSION //p')
+    - name: 'Download latest-and-greatest JDK 14-ea'
+      run: |
+        DOCKERFILE=${HOME}/jdk-14.dockerfile
+        wget https://github.com/docker-library/openjdk/raw/master/14/jdk/Dockerfile --output-document ${DOCKERFILE}
+        JAVA_URL=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_URL //p')
+        JAVA_VERSION=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_VERSION //p')
+        JDK_FILE=$(basename ${JAVA_URL})
+        wget --directory-prefix ${HOME} ${JAVA_URL}
+        echo ::set-env name=JAVA_VERSION::${JAVA_VERSION}
+        echo ::set-env name=JDK_FILE::${JDK_FILE}
     - uses: actions/setup-java@v1
       with:
         java-version: "${{ env.JAVA_VERSION }}"
-        jdkFile: .jdk/jdk.tar.gz
+        jdkFile: "${{ env.HOME }}/${{ env.JDK_FILE }}"
     - run: java -version
