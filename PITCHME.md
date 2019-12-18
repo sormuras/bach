@@ -69,6 +69,21 @@ Motivation
 Motivation
 @snapend
 
++++
+@snap[north span-90]
+### No tricks
+@snapend
+@snap[midpoint span-90]
+@ul[text-08](false)
+- No .xml, .yaml, ... .z??
+- No .groovy, .kts, ...
+- No daemons, no cache services, ...
+@ulend
+@snapend
+@snap[south span-100 text-07]
+Motivation
+@snapend
+
 ---
 @snap[north span-90]
 ## Demos
