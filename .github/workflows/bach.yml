@@ -29,6 +29,7 @@ jobs:
     - name: 'Echo version from environment variable'
       run: echo "Bach.java ${BACH_VERSION}"
   demo:
+    needs: build
     name: "Demo ${{ matrix.os }} + Java ${{ matrix.java }}"
     strategy:
       fail-fast: false
@@ -44,4 +45,5 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
     - name: 'Invoke Bach.java via JShell'
-      run: cd demo && jshell https://bit.ly/bach-jsh
+      working-directory: demo
+      run: jshell https://bit.ly/bach-jsh
