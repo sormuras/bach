@@ -153,7 +153,7 @@ class Jigsaw {
             .add(".")
             .forEach(resources, (cmd, path) -> cmd.add("-C", path).add(".")));
     if (bach.isVerbose()) {
-      bach.execute(new Call("jar").add("--describe-module").add("--file", file));
+      bach.execute("jar", "--describe-module", "--file", file);
     }
   }
 

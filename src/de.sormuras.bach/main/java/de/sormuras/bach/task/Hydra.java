@@ -149,7 +149,7 @@ public /*STATIC*/ class Hydra {
       bach.execute("jar", "--update", "--file", file, "-C", roots.get(0), "module-info.class");
     }
     if (bach.isVerbose()) {
-      bach.execute(new Call("jar", "--describe-module", "--file", file.toString()));
+      bach.execute("jar", "--describe-module", "--file", file);
     }
   }
 
