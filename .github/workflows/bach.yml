@@ -2,7 +2,7 @@ name: Bach.java
 on: push
 jobs:
   build:
-    name: "${{ matrix.os }} + Java ${{ matrix.java }}"
+    name: "Build ${{ matrix.os }} + JDK ${{ matrix.java }}"
     strategy:
       fail-fast: false
       matrix:
@@ -28,15 +28,20 @@ jobs:
       run: java src/bach/Bootstrap.java
     - name: 'Echo version from environment variable'
       run: echo "Bach.java ${BACH_VERSION}"
-  jshell:
-    name: 'jshell https://bit.ly/bach-jsh'
-    runs-on: ubuntu-latest
+  demo:
+    name: "Demo ${{ matrix.os }} + Java ${{ matrix.java }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        java: [11]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: 'Checkout'
       uses: actions/checkout@v1
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
-        java-version: 11
+        java-version: ${{ matrix.java }}
     - name: 'Invoke Bach.java via JShell'
       run: cd demo && jshell https://bit.ly/bach-jsh
