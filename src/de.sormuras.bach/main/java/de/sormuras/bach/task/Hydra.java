@@ -79,6 +79,7 @@ public /*STATIC*/ class Hydra {
       modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
       javac
           .forEach(realm.argumentsFor("javac"), Call::add)
+          .add("--class-path", "")
           .add("-d", destination.resolve(module))
           .add("--module-version", project.version(unit))
           .add("--module-path", Paths.filterExisting(modulePath));

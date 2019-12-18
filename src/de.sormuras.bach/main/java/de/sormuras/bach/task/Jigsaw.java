@@ -61,6 +61,7 @@ class Jigsaw {
       bach.execute(
           new Call("javac")
               .forEach(realm.argumentsFor("javac"), Call::add)
+              .add("--class-path", "")
               .add("-d", classesDirectory)
               .add("--module", normalNames)
               .add("--module-source-path", realm.moduleSourcePath())
