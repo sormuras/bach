@@ -33,7 +33,7 @@ class IntegrationTests {
 
   @Test
   void createShell() {
-    var expected = String.format("Shell(%d)", Runtime.version().feature());
+    var expected = String.format("Shell(11 on %d)", Runtime.version().feature());
     assertEquals(expected, new Shell().toString());
   }
 }
