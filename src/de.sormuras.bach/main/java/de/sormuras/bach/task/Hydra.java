@@ -118,30 +118,36 @@ public /*STATIC*/ class Hydra {
     var base = sources.pop().path().getFileName();
     var module = unit.name();
     var file = bach.getProject().modularJar(unit);
+    var root = classes.resolve(base).resolve(module);
     var jar =
         new Call("jar")
             .add("--create")
             .add("--file", file)
             .iff(bach.isVerbose(), c -> c.add("--verbose"))
-            .add("-C", classes.resolve(base).resolve(module))
+            .add("-C", root)
             .add(".")
             .forEach(unit.resources(), (cmd, path) -> cmd.add("-C", path).add("."));
+    var roots = new ArrayList<Path>();
+    roots.add(root);
     for (var source : sources) {
       var path = source.path().getFileName();
       var released = classes.resolve(path).resolve(module);
+      roots.add(released);
       if (source.isVersioned()) {
-        // Place a sole module descriptor into the root of JAR file.
-        // TODO Always place module descriptors in root overwriting existing ones?
-        // var classes = Paths.list(released, "*.class");
-        // if (!classes.equals(List.of(released.resolve("module-info.class")))) {
         jar.add("--release", source.release());
-        // }
       }
       jar.add("-C", released);
       jar.add(".");
     }
     Paths.createDirectories(folder.modules(unit.realm().name()));
     bach.execute(jar);
+    // Ensure root of MR-JAR contains a module descriptor.
+    roots.removeIf(path -> Files.notExists(path.resolve("module-info.class")));
+    if (roots.isEmpty()) throw new AssertionError("Not a single module-info.class available?");
+    if (Files.notExists(root.resolve("module-info.class"))) {
+      bach.getLog().debug("No root module descriptor found: %s", root);
+      bach.execute("jar", "--update", "--file", file, "-C", roots.get(0), "module-info.class");
+    }
     if (bach.isVerbose()) {
       bach.execute(new Call("jar", "--describe-module", "--file", file.toString()));
     }
