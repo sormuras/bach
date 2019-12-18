@@ -139,6 +139,13 @@ public class Bach {
     }
   }
 
+  /** Execute {@link Call} composed of given name and arguments converted to an array of strings. */
+  public void execute(String name, Object... arguments) {
+    var strings = new String[arguments.length];
+    for (int i = 0; i < arguments.length; i++) strings[i] = arguments[i].toString();
+    execute(new Call(name, strings));
+  }
+
   public void execute(Call... calls) {
     for (var call : calls) {
       var code = run(call);
