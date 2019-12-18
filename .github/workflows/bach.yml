@@ -2,7 +2,7 @@ name: Bach.java
 on: push
 jobs:
   build:
-    name: "Build ${{ matrix.os }} + JDK ${{ matrix.java }}"
+    name: "Build (JDK-${{ matrix.java }}, ${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
@@ -30,12 +30,12 @@ jobs:
       run: echo "Bach.java ${BACH_VERSION}"
   demo:
     needs: build
-    name: "Demo ${{ matrix.os }} + Java ${{ matrix.java }}"
+    name: "Demo (JDK-${{ matrix.java }}, ${{ matrix.os }})"
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        java: [11]
+        java: [11, 14.0.0-ea]
     runs-on: ${{ matrix.os }}
     steps:
     - name: 'Checkout'
