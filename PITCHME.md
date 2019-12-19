@@ -103,7 +103,7 @@ Motivation
 @snap[midpoint span-90]
 - from `build.bat`
 - over `build.jsh`
-- to `https://bit.ly/bach-jsh`
+- to `jshell https://bit.ly/bach-jsh`
 @snapend
 @snap[south span-100 text-07]
 Demo
