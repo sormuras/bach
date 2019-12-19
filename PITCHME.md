@@ -101,9 +101,9 @@ Motivation
 ### Live or GIF
 @snapend
 @snap[midpoint span-90]
-- from `build.bat`
-- over `build.jsh`
-- to `jshell https://bit.ly/bach-jsh`
+1. `build.bat`
+1. `build.jsh`
+1. `jshell https://bit.ly/bach-jsh`
 @snapend
 @snap[south span-100 text-07]
 Demo
