@@ -26,6 +26,30 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
   - Types can be merged to a single-file source-code `Bach.java` program via `Merge.java` to
     support a similar setup
 
+## Directory Layout
+
+### Simplistic
+
+`src/${MODULE}/module-info.java`
+
+- `--module-source-path src`
+
+### With Realms
+
+`src/${MODULE}/${REALM}/java/module-info.java`
+
+- `--module-source-path src/*/main/java`
+- `--module-source-path src/*/test/java`
+
+
+### With Groups And Realms
+
+`src/${GROUP}/${MODULE}/${REALM}/java/module-info.java`
+
+- `--module-source-path src/org.foo/*/main/java:src/org.bar/*/main/java:...`
+- `--module-source-path src/org.foo/*/test/java:src/org.bar/*/test/java:...`
+
+
 ## Library
 
 This section describes how directory `lib/` is populated by `${MODULE}-${VERSION}.jar` modules.
