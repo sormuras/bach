@@ -32,8 +32,16 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-/** Build modular Java project. */
+/** Modular Java project builder. */
 public class Bach {
+
+  /** Default values. */
+  public interface Default {
+    Path BASE = Path.of("");
+    Path SRC = Path.of("src");
+    Path LIB = Path.of("lib");
+    Path OUT = Path.of(".bach/out");
+  }
 
   /** Main entry-point. */
   public static void main(String... args) {

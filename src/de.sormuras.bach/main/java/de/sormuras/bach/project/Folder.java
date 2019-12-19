@@ -17,16 +17,21 @@
 
 package de.sormuras.bach.project;
 
+import static de.sormuras.bach.Bach.Default.BASE;
+import static de.sormuras.bach.Bach.Default.LIB;
+import static de.sormuras.bach.Bach.Default.OUT;
+import static de.sormuras.bach.Bach.Default.SRC;
+
 import java.nio.file.Path;
 
 public /*record*/ class Folder {
 
   public static Folder of() {
-    return of(Path.of(""));
+    return of(BASE);
   }
 
   public static Folder of(Path base) {
-    return new Folder(base, base.resolve("src"), base.resolve("lib"), base.resolve(".bach/out"));
+    return new Folder(base, base.resolve(SRC), base.resolve(LIB), base.resolve(OUT));
   }
 
   private final Path base;
@@ -89,6 +94,6 @@ public /*record*/ class Folder {
   }
 
   public Path modules(String realm, String... more) {
-    return resolve(realm(realm,"modules"), more);
+    return resolve(realm(realm, "modules"), more);
   }
 }
