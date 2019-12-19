@@ -36,7 +36,7 @@ import java.util.spi.ToolProvider;
 public class Bach {
 
   /** Default values. */
-  public interface Default {
+  public /*sealed*/ interface Default /*permits empty-set*/ {
     Path BASE = Path.of("");
     Path SRC = Path.of("src");
     Path LIB = Path.of("lib");
