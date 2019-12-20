@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Configuration;
 import de.sormuras.bach.project.Folder;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.ProjectBuilder;
@@ -25,28 +26,35 @@ import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import de.sormuras.bach.util.Tools;
 import java.io.IOException;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Objects;
 import java.util.spi.ToolProvider;
 
 /** Modular Java project builder. */
 public class Bach {
 
   /** Default values. */
-  public /*sealed*/ interface Default /*permits empty-set*/ {
+  public /*final*/ interface Default {
     Path BASE = Path.of("");
     Path SRC = Path.of("src");
     Path LIB = Path.of("lib");
     Path OUT = Path.of(".bach/out");
+
+    String PROJECT_NAME = "project";
+    Version PROJECT_VERSION = Version.parse("0");
+
+    String MAVEN_POM_TEMPLATE = /*{SRC}*/ "maven-pom-template.xml";
   }
 
   /** Main entry-point. */
   public static void main(String... args) {
     var log = Log.ofSystem();
-    var folder = Folder.of(Path.of(""));
+    var folder = Folder.of(Default.BASE);
     if (args.length == 0) {
       build(log, new ProjectBuilder(log).auto(folder));
       return;
@@ -64,7 +72,7 @@ public class Bach {
         System.out.println("F1 F1 F1");
         return;
       case "start":
-        new Bach(log, new ProjectBuilder(log).auto(folder)).execute(new StartTask(arguments));
+        build(log, new ProjectBuilder(log).auto(folder)).execute(new StartTask(arguments));
         return;
       default:
         throw new Error("Unsupported argument: " + argument + " // args = " + List.of(args));
@@ -72,9 +80,19 @@ public class Bach {
   }
 
   /** Build entry-point. */
-  public static void build(Log log, Project project) {
+  public static Bach build(String name, String version) {
+    return build(Log.ofSystem(), Configuration.of(name, version));
+  }
+
+  /** Build entry-point. */
+  public static Bach build(Log log, Configuration configuration) {
+    return build(log, new ProjectBuilder(log).auto(configuration));
+  }
+
+  /** Build entry-point. */
+  public static Bach build(Log log, Project project) {
     var bach = new Bach(log, project);
-    bach.execute(Task.build());
+    return bach.execute(Task.build());
   }
 
   private final Log log;
@@ -82,8 +100,8 @@ public class Bach {
   private final Tools tools;
 
   public Bach(Log log, Project project) {
-    this.log = log;
-    this.project = project;
+    this.log = Objects.requireNonNull(log);
+    this.project = Objects.requireNonNull(project);
     this.tools = new Tools();
     log.debug("Bach.java (%s) initialized.", Modules.origin(this));
     logRuntimeAndProjectInformation();

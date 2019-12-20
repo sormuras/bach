@@ -46,6 +46,15 @@ public class ProjectBuilder {
     this.log = log;
   }
 
+  public Project auto(Configuration configuration) {
+    var name = configuration.getName();
+    var version = configuration.getVersion();
+    var library = Library.of(new Properties());
+    var structure = structure(configuration.getFolder(), library, new Properties());
+    var deployment = deployment(configuration.getFolder(), new Properties());
+    return new Project(name, version, structure, deployment);
+  }
+
   public Project auto(Folder folder) {
     return auto(folder, properties(folder));
   }
