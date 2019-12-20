@@ -20,41 +20,45 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Properties;
+import java.util.regex.Pattern;
 
 /** Set various version values to the one of this program's first argument. */
 public class Version {
 
-  private static final Path PROPERTIES = Path.of("src/project-info.java.properties");
+  private static final Path BUILD = Path.of("src/bach/Build.java");
 
   public static void main(String... args) throws Exception {
+    var matcher = Pattern.compile("String VERSION = \"(.+)\";").matcher(Files.readString(BUILD));
+    if (!matcher.find()) {
+      throw new IllegalArgumentException("Version constant not found in: " + BUILD);
+    }
+    var current = matcher.group(1);
+    // Only print current version?
     if (args.length == 0) {
-      var properties = new Properties();
-      try (var reader = Files.newBufferedReader(PROPERTIES)) {
-        properties.load(reader);
-      }
-      var version = properties.getProperty("version");
-      if (version == null) throw new Error("Key 'version' not found in: " + PROPERTIES.toUri());
-      System.out.println(version);
+      System.out.println(current);
       return;
     }
-
+    // Set new version
     if (args.length > 1) {
       throw new Error("Exactly one argument, the new version, expected! args=" + List.of(args));
     }
     var version = args[0];
-    var readmeMd = Path.of("README.md");
+    if (version.equals(current)) {
+      System.out.println("Same version already set: " + current);
+      return;
+    }
     var bachJava = Path.of("src/bach/Bach.java");
     var bachJsh = Path.of("src/bach/Bach.jsh");
     // var mergedBach = Path.of("src/bach/MergedBach.java");
+    var readmeMd = Path.of("README.md");
 
-    sed(PROPERTIES, "version=.+", "version=" + version);
-    sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
+    sed(BUILD, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
     sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
     sed(bachJsh, "raw/.+/src", "raw/" + (version.endsWith("-ea") ? "master" : version) + "/src");
     // mergedBach.toFile().setWritable(true);
     // sed(mergedBach, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
     // mergedBach.toFile().setWritable(false);
+    sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
