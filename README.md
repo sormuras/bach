@@ -4,6 +4,7 @@
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 [![jitpack](https://jitpack.io/v/sormuras/bach.svg)](https://jitpack.io/#sormuras/bach)
+[![bintray](https://api.bintray.com/packages/sormuras/maven/bach/images/download.svg)](https://bintray.com/sormuras/maven/bach/_latestVersion)
 [![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
 [![slides](https://img.shields.io/badge/Slide-deck-lightgray.svg)](https://gitpitch.com/sormuras/bach)
 
