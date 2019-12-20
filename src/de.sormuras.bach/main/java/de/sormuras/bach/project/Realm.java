@@ -34,6 +34,21 @@ public /*record*/ class Realm {
     TEST
   }
 
+  public static Map<String, List<String>> defaultArgumentsFor(String realm) {
+    if (!"test".equals(realm)) {
+      return Map.of(
+          "javac",
+          List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-X" + "lint"),
+          "javadoc",
+          List.of("-encoding", "UTF-8", "-locale", "en", "-Xdoclint:-missing"),
+          Realm.JAVADOC_MODULES_OPTION,
+          List.of(ALL_MODULES));
+    }
+    return Map.of( // Test realm is special
+        "javac", List.of("-encoding", "UTF-8", "-parameters", "-Werror", "-X" + "lint:-preview"),
+        "junit", List.of());
+  }
+
   private final String name;
   private final Set<Modifier> modifiers;
   private final List<Path> sourcePaths;

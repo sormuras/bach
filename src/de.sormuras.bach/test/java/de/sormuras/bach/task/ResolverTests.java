@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Library;
 import java.lang.module.ModuleDescriptor.Version;
-import java.util.Properties;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ResolverTests {
@@ -39,12 +40,13 @@ class ResolverTests {
 
   @Test
   void resolveUserDefinedLibraryLinks() {
-    var properties = new Properties();
-    properties.setProperty("module/foo@1", "foo(${VERSION})");
-    properties.setProperty("module/bar@3", "bar(${VERSION})");
-    properties.setProperty("module/baz@5", "baz(5)"); // no placeholder
+    var custom =
+        Map.of(
+            "foo", new Library.Link("foo(${VERSION})", Version.parse("1")),
+            "bar", new Library.Link("bar(${VERSION})", Version.parse("3")),
+            "baz", new Library.Link("baz(5)", Version.parse("5")));  // no placeholder
 
-    var library = Library.of(properties);
+    var library = new Library(Set.of(), custom, Set.of());
     assertTrue(library.requires().isEmpty());
     assertEquals("Link{foo(${VERSION})@1}", library.links().get("foo").toString());
     assertEquals("Link{bar(${VERSION})@3}", library.links().get("bar").toString());

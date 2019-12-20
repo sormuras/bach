@@ -21,15 +21,11 @@ import de.sormuras.bach.Log;
 import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -37,53 +33,27 @@ import javax.lang.model.SourceVersion;
 
 public class ProjectBuilder {
 
-  /** Name of the project declaration "source unit". */
-  private static final String PROPERTIES = "project-info.java.properties";
-
   private final Log log;
 
   public ProjectBuilder(Log log) {
     this.log = log;
   }
 
+  public Project auto(Folder folder) {
+    return auto(new Configuration(folder));
+  }
+
   public Project auto(Configuration configuration) {
     var name = configuration.getName();
     var version = configuration.getVersion();
-    var library = Library.of(new Properties());
-    var structure = structure(configuration.getFolder(), library, new Properties());
-    var deployment = deployment(configuration.getFolder(), new Properties());
+    var library = configuration.getLibrary();
+    var structure = structure(configuration, library);
+    var deployment = configuration.getDeployment();
     return new Project(name, version, structure, deployment);
   }
 
-  public Project auto(Folder folder) {
-    return auto(folder, properties(folder));
-  }
-
-  public Project auto(Folder folder, Properties properties) {
-    var directory = Paths.name(folder.base(), Property.NAME.getDefaultValue());
-    var name = Property.NAME.get(properties, directory);
-    var version = Property.VERSION.get(properties);
-    var library = Library.of(properties);
-    var structure = structure(folder, library, properties);
-    var deployment = deployment(folder, properties);
-    return new Project(name, Version.parse(version), structure, deployment);
-  }
-
-  public Properties properties(Folder folder) {
-    var properties = folder.src(PROPERTIES);
-    var file = System.getProperty(PROPERTIES, properties.toString());
-    return Paths.load(new Properties(), folder.base().resolve(file));
-  }
-
-  public Deployment deployment(Folder folder, Properties properties) {
-    var group = Property.DEPLOYMENT_GROUP.get(properties);
-    var pom = Property.DEPLOYMENT_POM_TEMPLATE.get(properties);
-    var id = Property.DEPLOYMENT_REPOSITORY_ID.get(properties);
-    var uri = Property.DEPLOYMENT_URL.get(properties);
-    return new Deployment(group, folder.base(pom), id, uri == null ? null : URI.create(uri));
-  }
-
-  public Structure structure(Folder folder, Library library, Properties properties) {
+  public Structure structure(Configuration configuration, Library library) {
+    var folder = configuration.getFolder();
     if (!Files.isDirectory(folder.base())) {
       throw new IllegalArgumentException("Not a directory: " + folder.base());
     }
@@ -94,7 +64,7 @@ public class ProjectBuilder {
     // Simple single realm? All must match: "src/{MODULE}/module-info.java"
     if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
       var modifiers = Set.of(Realm.Modifier.DEPLOY);
-      var realm = new Realm("realm", modifiers, List.of(src), List.of(folder.lib()), Map.of());
+      var realm = new Realm("realm", modifiers, List.of(src), List.of(folder.lib()), Realm.defaultArgumentsFor("main"));
       var units = new ArrayList<Unit>();
       for (var root : Paths.list(src, Files::isDirectory)) {
         log.debug("root = %s", root);
@@ -119,21 +89,14 @@ public class ProjectBuilder {
             Set.of(Realm.Modifier.DEPLOY),
             List.of(folder.src("{MODULE}/main/java")),
             List.of(folder.lib()),
-            Map.of(
-                "javac",
-                Property.REALM_MAIN_JAVAC_ARGS.list(properties, "\\|"),
-                "javadoc",
-                Property.REALM_MAIN_JAVADOC_ARGS.list(properties, "\\|"),
-                Realm.JAVADOC_MODULES_OPTION,
-                Property.JAVADOC_MODULES.list(properties, ",") //
-                ));
+            Realm.defaultArgumentsFor("main"));
     var test =
         new Realm(
             "test",
             Set.of(Realm.Modifier.TEST),
             List.of(folder.src("{MODULE}/test/java"), folder.src("{MODULE}/test/module")),
             List.of(folder.modules("main"), folder.lib()),
-            Map.of("javac", Property.REALM_TEST_JAVAC_ARGS.list(properties, "\\|")));
+            Realm.defaultArgumentsFor("test"));
     var realms = List.of(main, test);
     log.debug("realms = %s", realms);
 

@@ -20,7 +20,8 @@ package de.sormuras.bach.project;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Properties;
+import java.lang.module.ModuleDescriptor.Version;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -132,12 +133,12 @@ class LibraryTests {
 
   @Test
   void customLibraryLinks() {
-    var properties = new Properties();
-    properties.setProperty("module/foo@1", "foo(${VERSION})");
-    properties.setProperty("module/bar@3", "bar(${VERSION})");
-    var library = Library.of(properties);
+    var custom =
+        Map.of(
+            "foo", new Library.Link("foo(${VERSION})", Version.parse("1")),
+            "bar", new Library.Link("bar(${VERSION})", Version.parse("3")));
+    var library = new Library(Set.of(), custom, Set.of());
     assertTrue(library.requires().isEmpty());
-    assertTrue(library.links().keySet().containsAll(DEFAULT_LINK_KEYS));
     assertEquals("Link{foo(${VERSION})@1}", library.links().get("foo").toString());
     assertEquals("Link{bar(${VERSION})@3}", library.links().get("bar").toString());
   }

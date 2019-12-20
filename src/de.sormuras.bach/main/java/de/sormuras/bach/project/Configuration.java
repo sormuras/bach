@@ -63,7 +63,7 @@ public class Configuration {
 
   private String name;
   private Version version;
-
+  private Library library;
   private Deployment deployment;
 
   public Configuration(Folder folder) {
@@ -71,7 +71,7 @@ public class Configuration {
 
     setName(Property.PROJECT_NAME.get(Paths.name(folder.base(), Default.PROJECT_NAME)));
     setVersion(Property.PROJECT_VERSION.ifPresent(Version::parse).orElse(Default.PROJECT_VERSION));
-
+    setLibrary(Library.of());
     setDeployment(
         Property.MAVEN_GROUP.get(getName()),
         Property.MAVEN_REPOSITORY_ID.get(),
@@ -97,6 +97,15 @@ public class Configuration {
 
   public Configuration setVersion(Version version) {
     this.version = version;
+    return this;
+  }
+
+  public Library getLibrary() {
+    return library;
+  }
+
+  public Configuration setLibrary(Library library) {
+    this.library = library;
     return this;
   }
 

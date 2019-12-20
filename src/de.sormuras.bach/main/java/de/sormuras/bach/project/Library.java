@@ -1,20 +1,15 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
 /** Manage external 3rd-party modules. */
 public /*record*/ class Library {
-
-  public static final String[] ALL_MODIFIER_NAMES =
-      Arrays.stream(Modifier.values()).map(Enum::name).toArray(String[]::new);
 
   public enum Modifier {
     RESOLVE_RECURSIVELY,
@@ -95,7 +90,7 @@ public /*record*/ class Library {
 
   @SuppressWarnings("serial")
   private static class DefaultLinks extends TreeMap<String, Link> {
-    private DefaultLinks(Properties properties) {
+    private DefaultLinks() {
       put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
       put("org.opentest4j", Link.central("org.opentest4j", "opentest4j", "1.2.0"));
       putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
@@ -141,21 +136,6 @@ public /*record*/ class Library {
           "zstd");
       putJUnitJupiter("5.6.0-M1", "", "api", "engine", "params");
       putJUnitPlatform("1.6.0-M1", "commons", "console", "engine", "launcher", "reporting");
-      putAll(properties);
-    }
-
-    private void putAll(Properties properties) {
-      var marker = "module/";
-      for (var name : properties.stringPropertyNames()) {
-        if (!name.startsWith(marker)) continue;
-        var moduleAndVersion = name.substring(marker.length());
-        int indexOfAt = moduleAndVersion.indexOf('@');
-        if (indexOfAt < 0) throw new IllegalArgumentException("Expected @ character in: " + name);
-        var module = moduleAndVersion.substring(0, indexOfAt);
-        var reference = properties.getProperty(name);
-        var defaultVersion = Version.parse(moduleAndVersion.substring(indexOfAt + 1));
-        put(module, new Link(reference, defaultVersion));
-      }
     }
 
     private void putJavaFX(String version, String... names) {
@@ -194,14 +174,11 @@ public /*record*/ class Library {
   }
 
   public static Library of() {
-    return of(new Properties());
+    return new Library(EnumSet.allOf(Modifier.class), defaultLinks(), Set.of());
   }
 
-  public static Library of(Properties properties) {
-    var modifiers = Property.LIBRARY_MODIFIERS.list(properties, ",", Modifier::valueOf);
-    var links = new DefaultLinks(properties);
-    var requires = Property.LIBRARY_REQUIRES.list(properties, ",", Requires::of);
-    return new Library(EnumSet.copyOf(modifiers), links, requires);
+  public static Map<String, Link> defaultLinks() {
+    return new DefaultLinks();
   }
 
   public static void addJUnitTestEngines(Map<String, Set<Version>> map) {
@@ -223,7 +200,7 @@ public /*record*/ class Library {
   private final Map<String, Link> links;
   private final Collection<Requires> requires;
 
-  Library(Set<Modifier> modifiers, Map<String, Link> links, Collection<Requires> requires) {
+  public Library(Set<Modifier> modifiers, Map<String, Link> links, Collection<Requires> requires) {
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.links = Map.copyOf(links);
     this.requires = requires;
