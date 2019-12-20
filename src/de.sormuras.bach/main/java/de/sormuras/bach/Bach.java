@@ -131,7 +131,7 @@ public class Bach {
     return log.verbose;
   }
 
-  public void execute(Task... tasks) {
+  public Bach execute(Task... tasks) {
     try {
       for (var task : tasks) {
         var name = task.getClass().getSimpleName();
@@ -145,22 +145,25 @@ public class Bach {
     } catch (Exception e) {
       throw new Error("Task failed to execute: " + e, e);
     }
+    return this;
   }
 
   /** Execute {@link Call} composed of given name and arguments converted to an array of strings. */
-  public void execute(String name, Object... arguments) {
+  public Bach execute(String name, Object... arguments) {
     var strings = new String[arguments.length];
     for (int i = 0; i < arguments.length; i++) strings[i] = arguments[i].toString();
-    execute(new Call(name, strings));
+    return execute(new Call(name, strings));
   }
 
-  public void execute(Call... calls) {
+  /** Execute all given calls, fail-fast style. */
+  public Bach execute(Call... calls) {
     for (var call : calls) {
       var code = run(call);
       if (code != 0) {
         throw new Error("Call exited with non-zero exit code: " + code + " <- " + call);
       }
     }
+    return this;
   }
 
   public int run(Call call) {
