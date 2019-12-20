@@ -19,28 +19,21 @@
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
-import de.sormuras.bach.project.Folder;
-import de.sormuras.bach.project.Library;
-import de.sormuras.bach.project.Project;
-import de.sormuras.bach.project.ProjectBuilder;
-import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Path;
+import de.sormuras.bach.project.Configuration;
 
-/** Program building module {@code de.sormuras.bach} itself. */
+/** Bach.java's build program, using module {@code de.sormuras.bach} itself. */
 public class Build {
+
+  private static final String VERSION = "2.0-ea";
+
   public static void main(String... args) {
-    var log = Log.ofSystem(true); // be verbose, ignoring system properties like "-Debug"
-    var builder = new ProjectBuilder(log);
-    var folder = Folder.of(Path.of(""));
-    var properties = builder.properties(folder);
-
-    var name = properties.getProperty("name");
-    var version = properties.getProperty("version");
-    var library = Library.of(properties);
-    var structure = builder.structure(folder, library, properties);
-    var deployment = builder.deployment(folder, properties);
-
-    var project = new Project(name, Version.parse(version), structure, deployment);
-    Bach.build(log, project);
+    System.out.println("Building Bach.java " + VERSION + "...");
+    Bach.build(
+        Log.ofSystem(true), // be verbose, ignoring system properties like "-Debug"
+        Configuration.of("Bach.java", VERSION)
+            .setDeployment(
+                "de.sormuras.bach",
+                "bintray-sormuras-maven",
+                "https://api.bintray.com/maven/sormuras/maven/bach/;publish=1"));
   }
 }
