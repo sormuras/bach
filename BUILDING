@@ -4,6 +4,10 @@ class Arguments {
     list.add(String.valueOf(o));
     return this;
   }
+  Arguments addAll(String... strings) {
+    for(var o : strings) add(o);
+    return this;
+  }
   Arguments addPath(Predicate<Path> predicate, String... roots) throws Exception {
     var paths = new ArrayList<String>();
     for (var root : roots) {
@@ -29,8 +33,17 @@ class Arguments {
 }
 
 int run(String tool, String... args) {
-    printCommandDetails("run", tool, args);
-    return java.util.spi.ToolProvider.findFirst(tool).get().run(System.out, System.err, args);
+  printCommandDetails("run", tool, args);
+  return java.util.spi.ToolProvider.findFirst(tool).get().run(System.out, System.err, args);
+}
+
+int cmd(String executable, String... args) throws Exception {
+  var os = System.getProperty("os.name").toLowerCase();
+  var arguments = new Arguments();
+  if (os.contains("win")) arguments.add("/C");
+  arguments.add(executable).addAll(args);
+  if (!os.contains("win")) return exe("sh", arguments.toArray());
+  return exe("cmd", arguments.toArray());
 }
 
 int exe(String executable, String... args) throws Exception {
