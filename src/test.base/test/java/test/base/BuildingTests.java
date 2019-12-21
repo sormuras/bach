@@ -20,22 +20,17 @@ package test.base;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class BuildingTests {
 
   @Test
   void callMavenVersionViaJShell() throws Exception {
+    // TODO Assumes Maven is installed... if not, install it?
     var os = System.getProperty("os.name").toLowerCase();
     if (os.contains("nux") | os.contains("nix") | os.contains("aix"))
       Files.createDirectories(Path.of(System.getProperty("user.home"), ".java", ".userPrefs"));
@@ -44,7 +39,7 @@ class BuildingTests {
     builder.command().add("-J-ea");
     builder.command().add("-"); // Standard input, without interactive I/O.
     var process = builder.start();
-    var source = List.of("/open BUILDING", "cmd(\"mvn\", \"--version\")", "/exit", "");
+    var source = List.of("/open BUILDING", "env(\"mvn\", \"--version\")", "/exit", "");
     process.getOutputStream().write(String.join("\n", source).getBytes());
     process.getOutputStream().write("/exit code\n".getBytes());
     process.getOutputStream().flush();
@@ -55,8 +50,8 @@ class BuildingTests {
 
   static void assertStreams(
       List<String> expectedLines, List<String> expectedErrors, Process process) {
-    var out = lines(process.getInputStream());
-    var err = lines(process.getErrorStream());
+    var out = Strings.lines(process.getInputStream());
+    var err = Strings.lines(process.getErrorStream());
     try {
       assertLinesMatch(expectedLines, out);
       assertLinesMatch(expectedErrors, err);
@@ -64,14 +59,6 @@ class BuildingTests {
       var msg = String.join("\n", err) + String.join("\n", out);
       System.out.println(msg);
       throw e;
-    }
-  }
-
-  static List<String> lines(InputStream stream) {
-    try (var reader = new BufferedReader(new InputStreamReader(stream))) {
-      return reader.lines().collect(Collectors.toList());
-    } catch (IOException e) {
-      throw new UncheckedIOException("Reading from stream failed!", e);
     }
   }
 }
