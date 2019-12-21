@@ -20,21 +20,14 @@ package test.base;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 class BuildingTests {
 
   @Test
-  @EnabledIfEnvironmentVariable(named = "M2_HOME", matches = ".+")
   void callMavenVersionViaJShell() throws Exception {
-    var os = System.getProperty("os.name").toLowerCase();
-    if (os.contains("nux") | os.contains("nix") | os.contains("aix"))
-      Files.createDirectories(Path.of(System.getProperty("user.home"), ".java", ".userPrefs"));
     var builder = new ProcessBuilder("jshell");
     builder.command().add("--execution=local");
     builder.command().add("-J-ea");
@@ -42,7 +35,6 @@ class BuildingTests {
     var process = builder.start();
     var source = List.of("/open BUILDING", "env(\"mvn\", \"--version\")", "/exit", "");
     process.getOutputStream().write(String.join("\n", source).getBytes());
-    process.getOutputStream().write("/exit code\n".getBytes());
     process.getOutputStream().flush();
     process.waitFor(19, TimeUnit.SECONDS);
     assertStreams(List.of(">> EXE >>", "Apache Maven .+", ">> INFO >>"), List.of(), process);
