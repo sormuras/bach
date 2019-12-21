@@ -25,12 +25,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 class BuildingTests {
 
   @Test
-  @EnabledIfSystemProperty(named = "M2_HOME", matches = ".+")
+  @EnabledIfEnvironmentVariable(named = "M2_HOME", matches = ".+")
   void callMavenVersionViaJShell() throws Exception {
     var os = System.getProperty("os.name").toLowerCase();
     if (os.contains("nux") | os.contains("nix") | os.contains("aix"))
