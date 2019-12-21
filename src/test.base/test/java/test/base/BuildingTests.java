@@ -25,12 +25,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 class BuildingTests {
 
   @Test
+  @EnabledIfSystemProperty(named = "M2_HOME", matches = ".+")
   void callMavenVersionViaJShell() throws Exception {
-    // TODO Assumes Maven is installed... if not, install it?
     var os = System.getProperty("os.name").toLowerCase();
     if (os.contains("nux") | os.contains("nix") | os.contains("aix"))
       Files.createDirectories(Path.of(System.getProperty("user.home"), ".java", ".userPrefs"));
