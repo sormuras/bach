@@ -18,7 +18,6 @@
 package de.sormuras.bach.util;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.project.Deployment;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Template;
@@ -30,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -75,32 +73,6 @@ public class Maven {
   }
 
   public static class Scribe {
-
-    enum ScriptType {
-      BASH(".sh", '\''),
-      WIN(".bat", '"') {
-        @Override
-        List<String> lines(List<String> lines) {
-          return lines.stream().map(line -> "call " + line).collect(Collectors.toList());
-        }
-      };
-
-      final String extension;
-      final char quote;
-
-      ScriptType(String extension, char quote) {
-        this.extension = extension;
-        this.quote = quote;
-      }
-
-      String quote(Object object) {
-        return quote + object.toString() + quote;
-      }
-
-      List<String> lines(List<String> lines) {
-        return lines;
-      }
-    }
 
     final Bach bach;
     final Project project;
@@ -164,27 +136,23 @@ public class Maven {
     }
 
     public void generateMavenInstallScript(Iterable<Unit> units) {
-      for (var type : ScriptType.values()) {
-        generateMavenInstallScript(type, units);
-      }
-    }
-
-    void generateMavenInstallScript(ScriptType type, Iterable<Unit> units) {
       var plugin = "install:install-file";
       var maven = String.join(" ", "mvn", "--batch-mode", "--no-transfer-progress", plugin);
       var lines = new ArrayList<String>();
       for (var unit : units) {
         if (Files.isRegularFile(pom(unit))) {
-          lines.add(String.join(" ", maven, generateMavenArtifactLine(unit, type)));
+          lines.add("exe(" + maven + ", " + generateMavenArtifactLine(unit) + ")");
         }
       }
       if (lines.isEmpty()) {
         // log("No maven-install script lines generated.");
         return;
       }
+      lines.add(0, "/open https://github.com/sormuras/bach/raw/master/BUILDING");
+      lines.add("/exit");
       try {
-        var script = project.folder().out("maven-install" + type.extension);
-        Files.write(script, type.lines(lines));
+        var script = project.folder().out("maven-install.jsh");
+        Files.write(script, lines);
       } catch (Exception e) {
         throw new RuntimeException("Generating install script failed: " + e.getMessage(), e);
       }
@@ -196,20 +164,15 @@ public class Maven {
         // log("No Maven deployment record available.");
         return;
       }
-      for (var type : ScriptType.values()) {
-        generateMavenDeployScript(type, deployment, units);
-      }
-    }
 
-    void generateMavenDeployScript(ScriptType type, Deployment deployment, Iterable<Unit> units) {
       var plugin = "org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file";
-      var repository = "repositoryId=" + type.quote(deployment.mavenRepositoryId());
-      var url = "url=" + type.quote(deployment.mavenUri());
+      var repository = quote("repositoryId=" + deployment.mavenRepositoryId());
+      var url = quote("url=" + deployment.mavenUri());
       var maven = String.join(" ", "mvn", "--batch-mode", plugin);
       var repoAndUrl = String.join(" ", "-D" + repository, "-D" + url);
       var lines = new ArrayList<String>();
       for (var unit : units) {
-        lines.add(String.join(" ", maven, repoAndUrl, generateMavenArtifactLine(unit, type)));
+        lines.add(String.join(", ", maven, repoAndUrl, generateMavenArtifactLine(unit)));
       }
       if (lines.isEmpty()) {
         // log("No maven-deploy script lines generated.");
@@ -217,20 +180,25 @@ public class Maven {
       }
       try {
         var name = "maven-deploy-" + deployment.mavenRepositoryId();
-        var script = project.folder().out(name + type.extension);
-        Files.write(script, type.lines(lines));
+        var script = project.folder().out(name + ".jsh");
+        Files.write(script, lines);
       } catch (Exception e) {
         throw new RuntimeException("Deploy failed: " + e.getMessage(), e);
       }
     }
 
-    String generateMavenArtifactLine(Unit unit, ScriptType type) {
-      var pom = "pomFile=" + type.quote(pom(unit));
-      var file = "file=" + type.quote(project.modularJar(unit));
-      var sources = "sources=" + type.quote(project.sourcesJar(unit));
-      var javadoc = "javadoc=" + type.quote(project.javadocJar(unit.realm()));
-      return String.join(" ", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
+    String generateMavenArtifactLine(Unit unit) {
+      var pom = quote("pomFile=" + pom(unit));
+      var file = quote("file=" + project.modularJar(unit));
+      var sources = quote("sources=" + project.sourcesJar(unit));
+      var javadoc = quote("javadoc=" + project.javadocJar(unit.realm()));
+      var joined = String.join("\", \"", "-D" + pom, "-D" + file, "-D" + sources, "-D" + javadoc);
+      return quote(joined);
     }
+  }
+
+  private static String quote(Object object) {
+    return "\"" + object  + "\"";
   }
 
   /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */
