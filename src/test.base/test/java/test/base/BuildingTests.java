@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -34,17 +36,15 @@ class BuildingTests {
 
   @Test
   void callMavenVersionViaJShell() throws Exception {
+    var os = System.getProperty("os.name").toLowerCase();
+    if (os.contains("nux") | os.contains("nix") | os.contains("aix"))
+      Files.createDirectories(Path.of(System.getProperty("user.home"), ".java", ".userPrefs"));
     var builder = new ProcessBuilder("jshell");
     builder.command().add("--execution=local");
     builder.command().add("-J-ea");
     builder.command().add("-"); // Standard input, without interactive I/O.
     var process = builder.start();
-    var source =
-        List.of(
-            "/open BUILDING",
-            "cmd(\"mvn\", \"--version\")",
-            "/exit",
-            "");
+    var source = List.of("/open BUILDING", "cmd(\"mvn\", \"--version\")", "/exit", "");
     process.getOutputStream().write(String.join("\n", source).getBytes());
     process.getOutputStream().write("/exit code\n".getBytes());
     process.getOutputStream().flush();
@@ -53,7 +53,8 @@ class BuildingTests {
     assertEquals(0, process.exitValue(), process.toString());
   }
 
-  static void assertStreams(List<String> expectedLines, List<String> expectedErrors, Process process) {
+  static void assertStreams(
+      List<String> expectedLines, List<String> expectedErrors, Process process) {
     var out = lines(process.getInputStream());
     var err = lines(process.getErrorStream());
     try {
