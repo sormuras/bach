@@ -22,14 +22,10 @@ jobs:
         path: ~/.m2/repository
         key: ${{ runner.os }}-${{ matrix.java }}-maven-${{ hashFiles('**/*pom*.xml') }}
         restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
-    - name: 'Store current version in environment variable'
-      run: echo ::set-env name=BACH_VERSION::$(java src/bach/Version.java)
-    - name: 'Print JShell version (triggers creation of user preference directory)'
+    - name: 'Print JShell version (triggers creation of user preferences directory)'
       run: jshell --version
     - name: 'Build with Bootstrap.java'
       run: java src/bach/Bootstrap.java
-    - name: 'Echo version from environment variable'
-      run: echo "Bach.java ${BACH_VERSION}"
   demo:
     needs: build
     name: "Demo (JDK-${{ matrix.java }}, ${{ matrix.os }})"
