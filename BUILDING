@@ -39,8 +39,8 @@ int run(String tool, String... args) {
 
 int cmd(String executable, String... args) throws Exception {
   var win = System.getProperty("os.name").toLowerCase().contains("win");
-  var arguments = new Arguments().add(win ? "/C" : "-c").add(executable).addAll(args);
-  return exe(win ? "cmd" : "/bin/bash", arguments.toArray());
+  if (win) return exe("cmd", new Arguments().add("/C").add(executable).addAll(args));
+  return exe("/usr/bin/env", new Arguments().add("--").add(executable).addAll(args));
 }
 
 int exe(String executable, String... args) throws Exception {
