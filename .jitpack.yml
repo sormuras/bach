@@ -8,6 +8,6 @@ install:
   - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}-${GIT_COMMIT}; fi
   - java src/bach/Version.java
   - java src/bach/Bootstrap.java
-  - BACH=java --module-path .bach/out/main/modules --module de.sormuras.bach
-  - INSTALL=--batch-mode --no-transfer-progress install:install-file
+  - BACH="java --module-path .bach/out/main/modules --module de.sormuras.bach"
+  - INSTALL="--batch-mode --no-transfer-progress install:install-file"
   - ${BACH} tool mvn ${INSTALL} @.bach/out/main/deploy/de.sormuras.bach/maven-cli-arguments.txt
