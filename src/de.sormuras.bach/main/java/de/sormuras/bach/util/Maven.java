@@ -124,7 +124,7 @@ public class Maven {
                 .add("-D" + "sources=" + project.sourcesJar(unit))
                 .add("-D" + "javadoc=" + project.javadocJar(unit.realm()));
         var cli = project.folder().deploy(unit, Bach.Default.MAVEN_CLI_ARGUMENTS);
-        Files.writeString(cli, String.join(" ", command.toList(false)));
+        Files.write(cli, command.toList(false));
       }
     }
 
