@@ -83,7 +83,7 @@ public class Bach {
         } catch (NoSuchElementException e) {
           // ignore
         }
-        var command = new Call("Tool Call");
+        var command = new Call("Tool Call", true);
         if (name.equals("mvn")) {
           command.iff(
               System.getProperty("os.name").toLowerCase().contains("win"),
@@ -92,6 +92,7 @@ public class Bach {
         }
         command.add(name);
         command.forEach(arguments, Call::add);
+        System.out.println(command);
         new ProcessBuilder(command.toList(false)).inheritIO().start().waitFor();
         return;
       default:
@@ -216,7 +217,7 @@ public class Bach {
   }
 
   public int run(Call call) {
-    return run(tools.get(call.name), call);
+    return run(tools.get(call.getName()), call);
   }
 
   public int run(ToolProvider tool, Call call) {

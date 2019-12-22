@@ -1,30 +1,56 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.util.Paths;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /** Tool call builder. */
 public class Call {
-  /*package-private*/ final String name;
-  /*package-private*/ final List<String> arguments;
+  private final boolean argumentFileSupport;
+  private final String name;
+  private final List<String> arguments;
 
   public Call(String name, String... args) {
+    this(name, false, args);
+  }
+
+  public Call(String name, boolean argumentFileSupport, String... args) {
     this.name = name;
-    this.arguments = new ArrayList<>(List.of(args));
+    this.argumentFileSupport = argumentFileSupport;
+    this.arguments = new ArrayList<>();
+    if (args.length > 0) Arrays.stream(args).forEach(this::add);
   }
 
   public Call(Call that) {
+    this.argumentFileSupport = that.argumentFileSupport;
     this.name = that.name;
     this.arguments = new ArrayList<>(that.arguments);
   }
 
+  public String getName() {
+    return name;
+  }
+
   public Call add(Object object) {
-    arguments.add(object.toString());
+    var argument = object.toString();
+    if (argument == null) throw new IllegalArgumentException();
+    if (argumentFileSupport && argument.charAt(0) == '@') {
+      var path = Path.of(argument.substring(1));
+      if (!Files.isRegularFile(path)) throw new Error("Could not open: " + path);
+      Paths.readAllLines(path).stream()
+          .filter(Predicate.not(line -> line.startsWith("#")))
+          .filter(Predicate.not(String::isEmpty))
+          .forEach(arguments::add);
+      return this;
+    }
+    arguments.add(argument);
     return this;
   }
 
@@ -48,7 +74,8 @@ public class Call {
   }
 
   public Call iff(boolean predicate, Consumer<Call> then, Consumer<Call> otherwise) {
-    if (predicate) then.accept(this); else otherwise.accept(this);
+    if (predicate) then.accept(this);
+    else otherwise.accept(this);
     return this;
   }
 

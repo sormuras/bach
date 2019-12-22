@@ -202,6 +202,13 @@ public class Paths {
     return name != null ? name.toString() : defaultName;
   }
 
+  public static List<String> readAllLines(Path path) {
+    try {
+      return Files.readAllLines(path);
+    } catch (Exception e) {
+      throw new RuntimeException("Read all lines from file failed: " + path, e);
+    }
+  }
   public static String readString(Path path) {
     try {
       return Files.readString(path);
