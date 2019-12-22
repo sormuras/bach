@@ -43,8 +43,6 @@ public class CompileTask implements Task {
       if (!realm.isDeployRealm()) continue;
       var scribe = new Maven.Scribe(bach);
       scribe.generateMavenPoms(units);
-      scribe.generateMavenInstallScript(units);
-      scribe.generateMavenDeployScript(units);
     }
   }
 }

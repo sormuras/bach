@@ -49,6 +49,7 @@ public class Bach {
     Version PROJECT_VERSION = Version.parse("0");
 
     String MAVEN_POM_TEMPLATE = /*{SRC}*/ "maven-pom-template.xml";
+    String MAVEN_CLI_ARGUMENTS = /*OUT*/ "maven-cli-arguments.txt";
   }
 
   /** Main entry-point. */

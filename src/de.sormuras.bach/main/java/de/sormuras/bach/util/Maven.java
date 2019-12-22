@@ -117,6 +117,14 @@ public class Maven {
         Files.createDirectories(pom.getParent());
         Files.write(pom, lines);
         bach.getLog().debug("Generated pom: %s", pom);
+        var command =
+            new Call("Maven Command Properties")
+                .add("-D" + "file=" + project.modularJar(unit))
+                .add("-D" + "pomFile=" + pom)
+                .add("-D" + "sources=" + project.sourcesJar(unit))
+                .add("-D" + "javadoc=" + project.javadocJar(unit.realm()));
+        var cli = project.folder().deploy(unit, Bach.Default.MAVEN_CLI_ARGUMENTS);
+        Files.write(cli, command.toList(false));
       }
     }
 
@@ -135,117 +143,6 @@ public class Maven {
     Path pom(Unit unit) {
       return project.folder().deploy(unit, "pom.xml");
     }
-
-    public Call generateInstallCall(Unit unit) {
-      return new Call("Maven Install Call")
-          .add("cmd", "/C") // "/usr/bin/env", "--"
-          .add("mvn")
-          .add("--batch-mode")
-          .add("--no-transfer-progress")
-          .add("install:install-file")
-          .add("-D" + "pomFile=" + pom(unit))
-          .add("-D" + "file=" + project.modularJar(unit))
-          .add("-D" + "sources=" + project.sourcesJar(unit))
-          .add("-D" + "javadoc=" + project.javadocJar(unit.realm()));
-    }
-
-    public void generateMavenInstallScript(Iterable<Unit> units) {
-      var plugin = $("install:install-file");
-      var maven =
-          String.join(", ", $("mvn"), $("--batch-mode"), $("--no-transfer-progress"), plugin);
-      var lines = new ArrayList<String>();
-      for (var unit : units) {
-        if (Files.isRegularFile(pom(unit))) {
-          lines.add("env(" + maven + ", " + generateArguments(unit) + ")");
-        }
-      }
-      if (lines.isEmpty()) {
-        // log("No maven-install script lines generated.");
-        return;
-      }
-      lines.add(0, "/open https://github.com/sormuras/bach/raw/master/BUILDING");
-      lines.add("/exit");
-      try {
-        var script = project.folder().out("maven-install.jsh");
-        Files.write(script, lines);
-      } catch (Exception e) {
-        throw new RuntimeException("Generating install script failed: " + e.getMessage(), e);
-      }
-    }
-
-    public void generateMavenDeployScript(Iterable<Unit> units) {
-      var deployment = project.deployment();
-      if (deployment.mavenRepositoryId() == null || deployment.mavenUri() == null) {
-        // log("No Maven deployment record available.");
-        return;
-      }
-
-      var plugin = $("org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file");
-      var repository = $("-D" + "repositoryId=" + deployment.mavenRepositoryId());
-      var url = $("-D" + "url=" + deployment.mavenUri());
-      var maven = String.join(", ", $("mvn"), $("--batch-mode"), plugin);
-      var repoAndUrl = String.join(", ", repository, url);
-      var lines = new ArrayList<String>();
-      for (var unit : units) {
-        lines.add("env(" + maven + ", " + repoAndUrl + ", " + generateArguments(unit) + ")");
-      }
-      if (lines.isEmpty()) {
-        // log("No maven-deploy script lines generated.");
-        return;
-      }
-      lines.add(0, "/open https://github.com/sormuras/bach/raw/master/BUILDING");
-      lines.add("/exit");
-      try {
-        var name = "maven-deploy-" + deployment.mavenRepositoryId();
-        var script = project.folder().out(name + ".jsh");
-        Files.write(script, lines);
-      } catch (Exception e) {
-        throw new RuntimeException("Deploy failed: " + e.getMessage(), e);
-      }
-    }
-
-    String generateArguments(Unit unit) {
-      var pom = $("-D" + "pomFile=") + " + Path.of(" + $(pom(unit)) + ")";
-      var file = $("-D" + "file=" + project.modularJar(unit));
-      var sources = $("-D" + "sources=" + project.sourcesJar(unit));
-      var javadoc = $("-D" + "javadoc=" + project.javadocJar(unit.realm()));
-      return String.join(", ", pom, file, sources, javadoc);
-    }
-  }
-
-  private static String $(Object object) {
-    var string = object.toString();
-    var escaped = new StringBuilder();
-    for (int i = 0; i < string.length(); i++) {
-      char c = string.charAt(i);
-      switch (c) {
-        case '\t':
-          escaped.append("\\t");
-          break;
-        case '\b':
-          escaped.append("\\b");
-          break;
-        case '\n':
-          escaped.append("\\n");
-          break;
-        case '\r':
-          escaped.append("\\r");
-          break;
-        case '\f':
-          escaped.append("\\f");
-          break;
-          // case '\'': escaped.append("\\'"); break; // "'" is okay
-        case '\"':
-          escaped.append("\\\"");
-          break;
-        case '\\':
-          escaped.append("\\\\");
-          break;
-        default:
-          escaped.append(c);
-      }
-    }
-    return '"' + escaped.toString() + '"';
   }
 
   /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */

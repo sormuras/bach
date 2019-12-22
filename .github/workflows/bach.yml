@@ -27,7 +27,7 @@ jobs:
     - name: 'Build with Bootstrap.java'
       run: java src/bach/Bootstrap.java
     - name: 'Install artifacts to local Maven repository'
-      run: jshell .bach/out/maven-install.jsh
+      run: mvn --batch-mode --no-transfer-progress install:install-file "$(< .bach/out/main/deploy/de.sormuras.bach/maven-cli-arguments.txt)"
   demo:
     needs: build
     name: "Demo (JDK-${{ matrix.java }}, ${{ matrix.os }})"
