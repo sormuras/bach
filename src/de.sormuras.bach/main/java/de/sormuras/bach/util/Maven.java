@@ -18,6 +18,7 @@
 package de.sormuras.bach.util;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Call;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.Template;
@@ -132,7 +133,20 @@ public class Maven {
     }
 
     Path pom(Unit unit) {
-      return project.folder().realm(unit.realm().name(), "maven", unit.name(), "pom.xml");
+      return project.folder().deploy(unit, "pom.xml");
+    }
+
+    public Call generateInstallCall(Unit unit) {
+      return new Call("Maven Install Call")
+          .add("cmd", "/C") // "/usr/bin/env", "--"
+          .add("mvn")
+          .add("--batch-mode")
+          .add("--no-transfer-progress")
+          .add("install:install-file")
+          .add("-D" + "pomFile=" + pom(unit))
+          .add("-D" + "file=" + project.modularJar(unit))
+          .add("-D" + "sources=" + project.sourcesJar(unit))
+          .add("-D" + "javadoc=" + project.javadocJar(unit.realm()));
     }
 
     public void generateMavenInstallScript(Iterable<Unit> units) {

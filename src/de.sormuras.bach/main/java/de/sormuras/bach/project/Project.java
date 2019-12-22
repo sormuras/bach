@@ -83,12 +83,12 @@ public /*record*/ class Project {
 
   public Path sourcesJar(Unit unit) {
     var jar = unit.name() + '-' + version(unit) + "-sources.jar";
-    return folder().realm(unit.realm().name(), jar);
+    return folder().deploy(unit, jar);
   }
 
   public Path javadocJar(Realm realm) {
     var jar = name + '-' + version + "-javadoc.jar";
-    return folder().realm(realm.name(), jar);
+    return folder().deploy(realm.name(), jar);
   }
 
   public Version version(Unit unit) {
