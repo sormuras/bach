@@ -55,6 +55,8 @@ class ProjectTests {
     assertEquals(base.resolve(".bach/out/realm"), folder.realm("realm"));
     assertEquals(base.resolve(".bach/out/realm/classes"), folder.realm("realm", "classes"));
     assertEquals(base.resolve(".bach/out/realm/modules"), folder.modules("realm"));
+    assertEquals(base.resolve(".bach/out/realm/deploy"), folder.deploy("realm"));
+    assertEquals(base.resolve(".bach/out/realm/deploy/unit"), folder.deploy(unit));
     assertEquals(base.resolve(".bach/out/realm/modules/m.jar"), folder.modules("realm", "m.jar"));
 
     assertEquals(base.resolve("lib"), folder.lib());

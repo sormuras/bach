@@ -96,4 +96,12 @@ public /*record*/ class Folder {
   public Path modules(String realm, String... more) {
     return resolve(realm(realm, "modules"), more);
   }
+
+  public Path deploy(String realm, String... more) {
+    return resolve(realm(realm, "deploy"), more);
+  }
+
+  public Path deploy(Unit unit, String... more) {
+    return resolve(deploy(unit.realm().name(), unit.name()), more);
+  }
 }
