@@ -18,6 +18,7 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.Bach.Default;
+import de.sormuras.bach.Log;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
@@ -61,6 +62,7 @@ public class Configuration {
 
   private final Folder folder;
 
+  private Log log;
   private String name;
   private Version version;
   private Library library;
@@ -69,6 +71,7 @@ public class Configuration {
   public Configuration(Folder folder) {
     this.folder = folder;
 
+    setLog(Log.ofSystem());
     setName(Property.PROJECT_NAME.get(Paths.name(folder.base(), Default.PROJECT_NAME)));
     setVersion(Property.PROJECT_VERSION.ifPresent(Version::parse).orElse(Default.PROJECT_VERSION));
     setLibrary(Library.of());
@@ -80,6 +83,15 @@ public class Configuration {
 
   public Folder getFolder() {
     return folder;
+  }
+
+  public Log getLog() {
+    return log;
+  }
+
+  public Configuration setLog(Log log) {
+    this.log = log;
+    return this;
   }
 
   public String getName() {

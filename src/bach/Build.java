@@ -29,8 +29,8 @@ public class Build {
   public static void main(String... args) {
     System.out.println("Building Bach.java " + VERSION + "...");
     Bach.build(
-        Log.ofSystem(true), // be verbose, ignoring system properties like "-Debug"
         Configuration.of("Bach.java", VERSION)
+            .setLog(Log.ofSystem(true))
             .setDeployment(
                 "de.sormuras.bach",
                 "bintray-sormuras-maven",
