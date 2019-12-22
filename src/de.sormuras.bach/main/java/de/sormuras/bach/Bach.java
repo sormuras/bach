@@ -53,46 +53,55 @@ public class Bach {
 
   /** Main entry-point. */
   public static void main(String... args) {
-    var log = Log.ofSystem();
-    var folder = Folder.of(Default.BASE);
     if (args.length == 0) {
-      build(log, new ProjectBuilder(log).auto(folder));
+      build(bach());
       return;
     }
     var arguments = new ArrayDeque<>(List.of(args));
     var argument = arguments.pop();
     switch (argument) {
       case "build":
-        build(log, new ProjectBuilder(log).auto(folder));
+        build(bach());
         return;
       case "clean":
-        Paths.deleteIfExists(folder.out());
+        Paths.deleteIfExists(Default.OUT);
         return;
       case "help":
         System.out.println("F1 F1 F1");
         return;
       case "start":
-        build(log, new ProjectBuilder(log).auto(folder)).execute(new StartTask(arguments));
+        bach().execute(new StartTask(arguments));
         return;
       default:
         throw new Error("Unsupported argument: " + argument + " // args = " + List.of(args));
     }
   }
 
+  /** Create and return new default instance of Bach. */
+  private static Bach bach() {
+    return bach(new Configuration(Folder.of(Default.BASE)));
+  }
+
+  /** Create and return new configured instance of Bach. */
+  public static Bach bach(Configuration configuration) {
+    var log = configuration.getLog();
+    var project = new ProjectBuilder(log).auto(configuration);
+    return new Bach(log, project);
+  }
+
+  /** Build entry-point. */
+  public static Bach build(Bach bach) {
+    return bach.execute(Task.build());
+  }
+
+  /** Build entry-point. */
+  public static Bach build(Configuration configuration) {
+    return build(bach(configuration));
+  }
+
   /** Build entry-point. */
   public static Bach build(String name, String version) {
-    return build(Log.ofSystem(), Configuration.of(name, version));
-  }
-
-  /** Build entry-point. */
-  public static Bach build(Log log, Configuration configuration) {
-    return build(log, new ProjectBuilder(log).auto(configuration));
-  }
-
-  /** Build entry-point. */
-  public static Bach build(Log log, Project project) {
-    var bach = new Bach(log, project);
-    return bach.execute(Task.build());
+    return build(bach(Configuration.of(name, version)));
   }
 
   private final Log log;

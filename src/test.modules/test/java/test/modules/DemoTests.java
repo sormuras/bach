@@ -59,7 +59,7 @@ class DemoTests {
     var folder = new Folder(base, base.resolve("src"), temp.resolve("lib"), temp);
     var project = new ProjectBuilder(log).auto(folder);
     assertDoesNotThrow(
-        () -> Bach.build(log, project),
+        () -> Bach.build(new Bach(log, project)),
         String.join("\n", log.lines()) + "\n" + String.join("\n", log.errors()));
 
     assertLinesMatch(
