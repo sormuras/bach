@@ -47,6 +47,11 @@ public class Call {
     return this;
   }
 
+  public Call iff(boolean predicate, Consumer<Call> then, Consumer<Call> otherwise) {
+    if (predicate) then.accept(this); else otherwise.accept(this);
+    return this;
+  }
+
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   public <T> Call iff(Optional<T> optional, BiConsumer<Call, T> visitor) {
     optional.ifPresent(value -> visitor.accept(this, value));
