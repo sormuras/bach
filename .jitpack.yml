@@ -7,4 +7,4 @@ install:
   - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}-${GIT_COMMIT}; fi
   - java src/bach/Version.java
   - java src/bach/Bootstrap.java
-  - source .bach/out/maven-install.sh
+  - jshell .bach/out/maven-install.jsh

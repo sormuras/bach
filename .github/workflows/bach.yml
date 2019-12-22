@@ -26,6 +26,8 @@ jobs:
       run: jshell --version
     - name: 'Build with Bootstrap.java'
       run: java src/bach/Bootstrap.java
+    - name: 'Install artifacts to local Maven repository'
+      run: jshell .bach/out/maven-install.jsh
   demo:
     needs: build
     name: "Demo (JDK-${{ matrix.java }}, ${{ matrix.os }})"

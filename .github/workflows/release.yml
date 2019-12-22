@@ -47,7 +47,7 @@ jobs:
       run: |
         mkdir --parents ~/.m2
         echo "<settings><servers><server><id>bintray-sormuras-maven</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
-        source .bach/out/maven-deploy-bintray-sormuras-maven.sh
+        jshell .bach/out/maven-deploy-bintray-sormuras-maven.jsh
     - name: 'Restore previous version from environment variable'
       run: |
         java src/bach/Version.java ${BACH_VERSION}
