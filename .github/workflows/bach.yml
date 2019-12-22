@@ -27,6 +27,7 @@ jobs:
     - name: 'Build with Bootstrap.java'
       run: java src/bach/Bootstrap.java
     - name: 'Install artifacts to local Maven repository'
+      shell: bash
       run: |
         BACH="java --module-path .bach/out/main/modules --module de.sormuras.bach"
         INSTALL="--batch-mode --no-transfer-progress install:install-file"
