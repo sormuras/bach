@@ -62,11 +62,11 @@ public class Bach {
     var arguments = new ArrayDeque<>(List.of(args));
     var argument = arguments.pop();
     switch (argument) {
-      case "clean":
-        Paths.deleteIfExists(folder.out());
-        return;
       case "build":
         build(log, new ProjectBuilder(log).auto(folder));
+        return;
+      case "clean":
+        Paths.deleteIfExists(folder.out());
         return;
       case "help":
         System.out.println("F1 F1 F1");
