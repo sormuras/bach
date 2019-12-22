@@ -99,10 +99,12 @@ class Jigsaw {
         }
       }
       bach.execute(javadoc);
+      var javadocJar = bach.getProject().javadocJar(realm);
+      Paths.createDirectories(javadocJar.getParent());
       bach.execute(
           new Call("jar")
               .add("--create")
-              .add("--file", bach.getProject().javadocJar(realm))
+              .add("--file", javadocJar)
               .iff(bach.isVerbose(), c -> c.add("--verbose"))
               .add("--no-manifest")
               .add("-C", javadocDirectory)
@@ -160,6 +162,7 @@ class Jigsaw {
 
   private void jarSources(Unit unit) {
     var file = bach.getProject().sourcesJar(unit); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
+    Paths.createDirectories(file.getParent());
     var sources = Paths.filterExisting(unit.sources(Source::path));
     var resources = Paths.filterExisting(unit.resources());
     bach.execute(

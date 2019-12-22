@@ -156,6 +156,7 @@ public /*STATIC*/ class Hydra {
 
   private void jarSources(Unit unit) {
     var file = bach.getProject().sourcesJar(unit); // "../{REALM}/{MODULE}-{VERSION}-sources.jar"
+    Paths.createDirectories(file.getParent());
     var sources = new ArrayDeque<>(unit.sources());
     var jar =
         new Call("jar")
