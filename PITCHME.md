@@ -6,7 +6,7 @@
 😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
 @snapend
 
-+++?image=https://avatars1.githubusercontent.com/u/2319838?s=460&v=4
++++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg
 @snap[north span-90]
 ## About me
 @snapend
