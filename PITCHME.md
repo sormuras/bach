@@ -88,12 +88,12 @@ Bach.java - Motivation
 
 ---
 @snap[north span-90]
-## Demos
+## Demo
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
 - Motivation ✔
-- **Demos**
+- **Demo**
 - Features
 - Model
 - Outlook
@@ -191,7 +191,7 @@ Note:
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
 - Motivation ✔
-- Demos ✔
+- Demo ✔
 - **Features**
 - Model
 - Outlook
