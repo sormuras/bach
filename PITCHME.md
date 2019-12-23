@@ -212,7 +212,6 @@ Features
 @snap[midpoint span-90 text-06]
 - **zero installation** required (besides JDK 11+, using `jshell`)
 - **zero configuration** required (conventions and information gathered from `module-info.java` files)
-- **customize with properties** to override auto-configured values (`.bach/project.properties`)
 - **b-y-o-b** program using plain old Java (`src/bach/Build.java`)
 - **3rd-party modules** in plain sight (single `lib/` directory)
 - **compilation** is compile (`javac`) and package (`jar`) as an atomic step

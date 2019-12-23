@@ -31,7 +31,6 @@ Call `load(URI)` to load 3rd-party modules, `run(String tool, String... args)` t
 
 - [x] [zero installation](#zero-installation) required (besides JDK 11+, using `jshell`)
 - [x] [zero configuration](#zero-configuration) required (conventions and information gathered from `module-info.java` files)
-- [x] [customize with properties](#customize-via-properties) to override auto-configured values (`.bach/project.properties`)
 - [x] [b-y-o-b](#bring-your-own-build) program using plain old Java (`src/bach/Build.java`)
 - [x] [3rd-party modules](#3rd-party-modules) in plain sight (single `lib/` directory)
 - [x] [compilation](#compilation--compile--package) is compile (`javac`) and package (`jar`) as an atomic step
@@ -61,12 +60,6 @@ Also, the following attributes are extracted from comments (soon annotations?) f
 
 - Module version `--module-version ...`
 - Module entry-point `--main-class ...`
-
-## Customize Via Properties
-
-The default [ProjectBuilder](https://github.com/sormuras/bach/blob/master/src/de.sormuras.bach/main/java/de/sormuras/bach/project/ProjectBuilder.java)
-implementation loads some properties from a `.bach/project.properties` file.
-Here, you may set different values for project properties like `name`, `version`, etc.
 
 ## Bring Your Own Build
 
