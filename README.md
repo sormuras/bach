@@ -2,11 +2,12 @@
  
 [![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
-[![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
-[![jitpack](https://jitpack.io/v/sormuras/bach.svg)](https://jitpack.io/#sormuras/bach)
-[![bintray](https://api.bintray.com/packages/sormuras/maven/bach/images/download.svg)](https://bintray.com/sormuras/maven/bach/_latestVersion)
-[![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
 [![slides](https://img.shields.io/badge/Slide-deck-lightgray.svg)](https://gitpitch.com/sormuras/bach)
+
+[![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
+[![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
+[![bintray](https://img.shields.io/bintray/v/sormuras/maven/bach)](https://bintray.com/sormuras/maven/bach/_latestVersion)
+[![jitpack](https://img.shields.io/jitpack/v/github/sormuras/bach)](https://jitpack.io/#sormuras/bach)
 
 :scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
 
