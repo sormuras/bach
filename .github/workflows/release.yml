@@ -12,6 +12,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: 'Print JShell version (triggers creation of user preferences directory)'
+      run: jshell --version
     - name: 'Checkout project'
       uses: actions/checkout@v1
     - name: 'Attach git to origin with write access'
