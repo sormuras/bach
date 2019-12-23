@@ -1,7 +1,7 @@
 @snap[midpoint span-100]
 # Bach.java
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
 @snapend
 
@@ -25,7 +25,7 @@
 - ... doesn't the JDK provide a build tool?
 - ... another build tool?
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Motivation
 @snapend
 
@@ -34,7 +34,7 @@ Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Motivation
 @snapend
 
@@ -43,7 +43,7 @@ Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Motivation
 @snapend
 
@@ -65,7 +65,7 @@ Motivation
 - **14** `jpackage` Package self-contained Java applications
 @ulend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Motivation
 @snapend
 
@@ -80,7 +80,7 @@ Motivation
 - No daemons, no cache services, ...
 @ulend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Motivation
 @snapend
 
@@ -105,7 +105,7 @@ Motivation
 1. `build.jsh`
 1. `jshell https://bit.ly/bach-jsh`
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Demo
 @snapend
 
@@ -128,7 +128,7 @@ Note:
 1. Describe module
 @olend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Demo
 @snapend
 
@@ -150,7 +150,7 @@ Note:
 1. Describe module
 @olend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Demo
 @snapend
 
@@ -172,7 +172,7 @@ Note:
 1. Describe module
 @olend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Demo
 @snapend
 
@@ -201,7 +201,7 @@ Note:
 - Java
 - Modules
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Features
 @snapend
 
@@ -220,7 +220,7 @@ Features
 - **automated checks** (aka testing) built-in (`test(${MODULE})`,`junit`)
 - **deployment** support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Features
 @snapend
 
@@ -255,7 +255,7 @@ Features
 - `Deployment`
 @ulend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Model
 @snapend
 
@@ -283,7 +283,7 @@ Model
 - Create a JEP?
 @ulend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Outlook
 @snapend
 
@@ -297,7 +297,7 @@ Outlook
 
 @ulend
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
 @snapend
 
@@ -321,6 +321,6 @@ Outlook
 @snap[midpoint span-90]
 - https://github.com/sormuras/bach-javafx
 @snapend
-@snap[south span-100 text-07]
+@snap[south span-100 text-07 text-blue]
 Backup
 @snapend
