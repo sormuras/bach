@@ -66,10 +66,7 @@ class BachTests {
       }
     }
 
-    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", Version.parse("0"), structure, null);
-    var log = new Log();
-    var bach = new Bach(log, project);
+    var bach = new Bach(new Log(), zero());
 
     var error = assertThrows(Error.class, () -> bach.execute(new RuntimeExceptionThrowingTask()));
     assertSame(exception, error.getCause());
@@ -78,10 +75,8 @@ class BachTests {
 
   @Test
   void executeNonZeroToolProviderIsReportedAsAnError() {
-    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
-    var project = new Project("zero", Version.parse("0"), structure, null);
     var log = new Log();
-    var bach = new Bach(log, project);
+    var bach = new Bach(log, zero());
 
     var error = assertThrows(Error.class, () -> bach.execute(new Call("javac", "*")));
     assertEquals(
@@ -102,7 +97,7 @@ class BachTests {
     var main = new Realm("main", Set.of(), List.of(), List.of(), Map.of());
     var unit = unit(main, "unit", 0);
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
-    var project = new Project("empty", Version.parse("0"), structure, null);
+    var project = new Project("empty", "group", Version.parse("0"), structure);
     var log = new Log();
     var bach = new Bach(log, project);
 
@@ -118,5 +113,10 @@ class BachTests {
 
   static ModuleDescriptor descriptor(String name, int version) {
     return ModuleDescriptor.newModule(name).version("" + version).build();
+  }
+
+  static Project zero() {
+    var structure = new Structure(Folder.of(), Library.of(), List.of(), List.of());
+    return new Project("zero", null, Version.parse("0"), structure);
   }
 }

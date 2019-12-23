@@ -26,23 +26,23 @@ import java.util.stream.Collectors;
 public /*record*/ class Project {
 
   private final String name;
+  private final String group;
   private final Version version;
   private final Structure structure;
-  private final Deployment deployment;
 
-  public Project(String name, Version version, Structure structure, Deployment deployment) {
+  public Project(String name, String group, Version version, Structure structure) {
     this.name = name;
+    this.group = group;
     this.version = version;
     this.structure = structure;
-    this.deployment = deployment;
-  }
-
-  public Folder folder() {
-    return structure.folder();
   }
 
   public String name() {
     return name;
+  }
+
+  public String group() {
+    return group;
   }
 
   public Version version() {
@@ -53,8 +53,8 @@ public /*record*/ class Project {
     return structure;
   }
 
-  public Deployment deployment() {
-    return deployment;
+  public Folder folder() {
+    return structure.folder();
   }
 
   public Optional<Unit> unit(String realmName, String unitName) {

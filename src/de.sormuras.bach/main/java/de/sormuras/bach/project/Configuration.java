@@ -21,7 +21,6 @@ import de.sormuras.bach.Bach.Default;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -33,17 +32,18 @@ public class Configuration {
   }
 
   public static Configuration of(String name, String version) {
-    return of().setName(name).setVersion(Version.parse(version));
+    return of(name, name, version);
+  }
+
+  public static Configuration of(String name, String group, String version) {
+    return of().setName(name).setGroup(group).setVersion(Version.parse(version));
   }
 
   /** Property enumeration backed by {@linkplain System#getProperties()} values. */
   enum Property {
     PROJECT_NAME,
-    PROJECT_VERSION,
-
-    MAVEN_GROUP,
-    MAVEN_REPOSITORY_ID,
-    MAVEN_REPOSITORY_URL;
+    PROJECT_GROUP,
+    PROJECT_VERSION;
 
     private final String key = name().toLowerCase().replace('_', '.');
 
@@ -64,21 +64,18 @@ public class Configuration {
 
   private Log log;
   private String name;
+  private String group;
   private Version version;
   private Library library;
-  private Deployment deployment;
 
   public Configuration(Folder folder) {
     this.folder = folder;
 
     setLog(Log.ofSystem());
     setName(Property.PROJECT_NAME.get(Paths.name(folder.base(), Default.PROJECT_NAME)));
+    setGroup(Property.PROJECT_GROUP.get(getName()));
     setVersion(Property.PROJECT_VERSION.ifPresent(Version::parse).orElse(Default.PROJECT_VERSION));
     setLibrary(Library.of());
-    setDeployment(
-        Property.MAVEN_GROUP.get(getName()),
-        Property.MAVEN_REPOSITORY_ID.get(),
-        Property.MAVEN_REPOSITORY_URL.get());
   }
 
   public Folder getFolder() {
@@ -103,6 +100,15 @@ public class Configuration {
     return this;
   }
 
+  public String getGroup() {
+    return group;
+  }
+
+  public Configuration setGroup(String group) {
+    this.group = group;
+    return this;
+  }
+
   public Version getVersion() {
     return version;
   }
@@ -119,20 +125,5 @@ public class Configuration {
   public Configuration setLibrary(Library library) {
     this.library = library;
     return this;
-  }
-
-  public Deployment getDeployment() {
-    return deployment;
-  }
-
-  public Configuration setDeployment(Deployment deployment) {
-    this.deployment = deployment;
-    return this;
-  }
-
-  public Configuration setDeployment(String group, String repository, String url) {
-    var mavenPom = folder.src(Default.MAVEN_POM_TEMPLATE);
-    var mavenUri = url != null ? URI.create(url) : null;
-    return setDeployment(new Deployment(group, mavenPom, repository, mavenUri));
   }
 }

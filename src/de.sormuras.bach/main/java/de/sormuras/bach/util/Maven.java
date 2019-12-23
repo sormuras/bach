@@ -84,7 +84,7 @@ public class Maven {
     }
 
     public void generateMavenPoms(Iterable<Unit> units) throws Exception {
-      var projectPom = project.deployment().mavenPomTemplate();
+      var projectPom = project.folder().src(Bach.Default.MAVEN_POM_TEMPLATE);
       for (var unit : units) {
         var path = unit.mavenPom().orElse(projectPom);
         if (!Files.isRegularFile(path)) continue;
@@ -129,11 +129,10 @@ public class Maven {
     }
 
     String group(String template) {
-      var projectGroup = project.deployment().mavenGroup();
+      var projectGroup = project.group();
       if (projectGroup != null) return projectGroup;
       try {
-        projectGroup = substring(template, "<groupId>", "<");
-        return projectGroup;
+        return substring(template, "<groupId>", "<");
       } catch (Exception e) {
         bach.getLog().warning("Guessing Maven Group Id failed: %s", e);
       }

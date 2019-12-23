@@ -43,8 +43,9 @@ class ProjectTests {
     var realm = new Realm("realm", Set.of(), List.of(), List.of(), Map.of());
     var unit = unit(realm, "unit", 1);
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
-    var project = new Project("simple", Version.parse("0"), structure, null);
+    var project = new Project("simple", "group", Version.parse("0"), structure);
     assertEquals("simple", project.name());
+    assertEquals("group", project.group());
     assertEquals("0", project.version().toString());
     var folder = project.folder();
     assertEquals(base, folder.base());

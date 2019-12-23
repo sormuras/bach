@@ -31,9 +31,6 @@ public class Build {
     Bach.build(
         Configuration.of("Bach.java", VERSION)
             .setLog(Log.ofSystem(true))
-            .setDeployment(
-                "de.sormuras.bach",
-                "bintray-sormuras-maven",
-                "https://api.bintray.com/maven/sormuras/maven/bach/;publish=1"));
+            .setGroup("de.sormuras.bach"));
   }
 }

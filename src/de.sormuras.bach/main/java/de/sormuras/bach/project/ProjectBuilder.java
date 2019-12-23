@@ -45,11 +45,11 @@ public class ProjectBuilder {
 
   public Project auto(Configuration configuration) {
     var name = configuration.getName();
+    var group = configuration.getGroup();
     var version = configuration.getVersion();
     var library = configuration.getLibrary();
     var structure = structure(configuration, library);
-    var deployment = configuration.getDeployment();
-    return new Project(name, version, structure, deployment);
+    return new Project(name, group, version, structure);
   }
 
   public Structure structure(Configuration configuration, Library library) {
