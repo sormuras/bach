@@ -32,7 +32,8 @@ jobs:
         git commit --all --message "Release ${{ github.event.milestone.title }}"
         git tag ${{ github.event.milestone.title }}
         git push origin master --tags
-    - name: 'Create release'
+    - name: 'Create release (github)'
+      id: release
       uses: actions/create-release@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,6 +42,15 @@ jobs:
         release_name: Release ${{ github.event.milestone.title }}
         draft: false
         prerelease: false
+    - name: 'Upload module to release (github)'
+      uses: actions/upload-release-asset@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: .bach/out/main/modules/de.sormuras.bach-${{ github.event.milestone.title }}.jar
+        asset_name: de.sormuras.bach-${{ github.event.milestone.title }}.jar
+        asset_content_type: application/java-archive
     - name: 'Deploy (bintray)'
       env:
         BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
