@@ -11,7 +11,7 @@
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- ✔ **Motivation**
+- **Motivation**
 - Demo
 - Features
 - Model
@@ -28,7 +28,7 @@
 - ... another build tool?
 @snapend
 @snap[south span-100 text-07 text-blue]
-Motivation
+Bach.java - Motivation
 @snapend
 
 +++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
@@ -46,7 +46,7 @@ Motivation
 ### JDK and Build Tools
 @snapend
 @snap[south span-100 text-07 text-blue]
-Motivation
+Bach.java - Motivation
 @snapend
 
 +++
@@ -68,7 +68,7 @@ Motivation
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Motivation
+Bach.java - Motivation
 @snapend
 
 +++
@@ -83,7 +83,7 @@ Motivation
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Motivation
+Bach.java - Motivation
 @snapend
 
 ---
@@ -92,8 +92,8 @@ Motivation
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation
-- ✔ **Demos**
+- Motivation ✔
+- **Demos**
 - Features
 - Model
 - Outlook
@@ -110,7 +110,7 @@ Motivation
 1. `jshell https://bit.ly/bach-jsh`
 @snapend
 @snap[south span-100 text-07 text-blue]
-Demo
+Bach.java - Demo
 @snapend
 
 Note:
@@ -133,7 +133,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Demo
+Bach.java - Demo 1 - build.bat
 @snapend
 
 Note:
@@ -155,7 +155,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Demo
+Bach.java - Demo 2 - jshell build.jsh
 @snapend
 
 Note:
@@ -177,7 +177,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Demo
+Bach.java - Demo 3 - jshell https://bit.ly/bach-jsh
 @snapend
 
 Note:
@@ -190,9 +190,9 @@ Note:
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation
-- Demos
-- ✔ **Features**
+- Motivation ✔
+- Demos ✔
+- **Features**
 - Model
 - Outlook
 @ulend
@@ -227,7 +227,7 @@ Features
 - **deployment** support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
 @snapend
 @snap[south span-100 text-07 text-blue]
-Features
+Bach.java - Features
 @snapend
 
 ---
@@ -236,10 +236,10 @@ Features
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation
-- Demo
-- Features
-- ✔ **Model**
+- Motivation ✔
+- Demo ✔
+- Features ✔
+- **Model**
 - Outlook
 @ulend
 @snapend
@@ -260,11 +260,10 @@ Features
   - `Unit`
     - `Source`
   - `Library`
-- `Deployment`
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Model
+Bach.java - Model
 @snapend
 
 ---
@@ -273,11 +272,11 @@ Model
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation
-- Demo
-- Features
-- Model
-- ✔ **Outlook**
+- Motivation ✔
+- Demo ✔
+- Features ✔
+- Model ✔
+- **Outlook**
 @ulend
 @snapend
 
@@ -294,7 +293,7 @@ Model
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Outlook
+Bach.java - Outlook
 @snapend
 
 ---
@@ -317,12 +316,12 @@ Outlook
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation
-- Demo
-- Features
-- Model
-- Outlook
-- ✔ **Backup**
+- Motivation ✔
+- Demo ✔
+- Features ✔
+- Model ✔
+- Outlook ✔
+- **Backup**
 @ulend
 @snapend
 
@@ -334,5 +333,5 @@ Outlook
 - https://github.com/sormuras/bach-javafx
 @snapend
 @snap[south span-100 text-07 text-blue]
-Backup
+Bach.java - Backup
 @snapend
