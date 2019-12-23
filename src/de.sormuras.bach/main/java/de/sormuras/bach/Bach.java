@@ -32,7 +32,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.spi.ToolProvider;
 
@@ -54,7 +53,7 @@ public class Bach {
   }
 
   /** Main entry-point. */
-  public static void main(String... args) throws Exception {
+  public static void main(String... args) {
     if (args.length == 0) {
       build(bach());
       return;
@@ -76,24 +75,8 @@ public class Bach {
         return;
       case "tool":
         var name = arguments.pop();
-        try {
-          var tool = new Tools().get(name);
-          tool.run(System.out, System.err, arguments.toArray(String[]::new));
-          return;
-        } catch (NoSuchElementException e) {
-          // ignore
-        }
-        var command = new Call("Tool Call", true);
-        if (name.equals("mvn")) {
-          command.iff(
-              System.getProperty("os.name").toLowerCase().contains("win"),
-              c -> c.add("cmd", "/C"),
-              c -> c.add("/usr/bin/env", "--"));
-        }
-        command.add(name);
-        command.forEach(arguments, Call::add);
-        System.out.println(command);
-        new ProcessBuilder(command.toList(false)).inheritIO().start().waitFor();
+        var code = new Tools().launch(name, arguments);
+        if (code != 0) throw new Error("Non-zero exit code! // args = " + List.of(args));
         return;
       default:
         throw new Error("Unsupported argument: " + argument + " // args = " + List.of(args));

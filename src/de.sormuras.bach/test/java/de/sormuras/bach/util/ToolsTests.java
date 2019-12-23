@@ -18,16 +18,20 @@
 package de.sormuras.bach.util;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import test.base.SwallowSystem;
 
 class ToolsTests {
   @Test
@@ -52,5 +56,13 @@ class ToolsTests {
     var names = new ArrayList<String>();
     new Tools().forEach(tool -> names.add(tool.name()));
     return names.stream().map(name -> dynamicTest(name, () -> assertNotNull(name)));
+  }
+
+  @Test
+  @SwallowSystem
+  void launchJavaVersion(SwallowSystem.Streams streams) {
+    new Tools().launch("java", List.of("--version"), false);
+    assertFalse(streams.lines().isEmpty(), "lines() is empty?");
+    assertTrue(streams.errors().isEmpty(), "errors() not empty: " + streams.errors());
   }
 }
