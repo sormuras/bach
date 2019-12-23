@@ -5,7 +5,7 @@ install:
   - unset JAVA_TOOL_OPTIONS
   - jshell --version
   - VERSION=$(java src/bach/Version.java)
-  - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}-${GIT_COMMIT}; fi
+  - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}+${GIT_COMMIT}; fi
   - java src/bach/Version.java
   - java src/bach/Bootstrap.java
   - BACH="java --module-path .bach/out/main/modules --module de.sormuras.bach"
