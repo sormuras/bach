@@ -1,8 +1,21 @@
 @snap[midpoint span-100]
 # Bach.java
+[github.com/sormuras/bach](https://github.com/sormuras/bach)
 @snapend
 @snap[south span-100 text-07 text-blue]
 😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
+@snapend
+
++++?image=https://avatars1.githubusercontent.com/u/2319838?s=460&v=4
+@snap[north span-90]
+## About me
+@snapend
+@snap[midpoint span-90]
+<a href="https://www.micromata.de"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/micromata-logo-horizontal.png" height="120" /></a>
+</br>
+<a href="https://junit.org/junit5"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/junit5-logo.png" height="60" /></a>
+&nbsp;
+<a href="https://maven.apache.org"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/maven-logo-black-on-white.png" height="60" /></a>
 @snapend
 
 ---
@@ -12,10 +25,10 @@
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
 - **Motivation**
-- Demo
-- Features
-- Model
-- Outlook
+- @css[text-gray](Demo)
+- @css[text-gray](Features)
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
 @ulend
 @snapend
 
@@ -37,7 +50,7 @@ Bach.java - Motivation
 ### JDK and Build Tools
 @snapend
 @snap[south span-100 text-07 text-blue]
-Motivation
+Bach.java - Motivation
 @snapend
 
 +++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
@@ -94,9 +107,9 @@ Bach.java - Motivation
 @ul[list-no-bullets](false)
 - Motivation ✔
 - **Demo**
-- Features
-- Model
-- Outlook
+- @css[text-gray](Features)
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
 @ulend
 @snapend
 
@@ -193,8 +206,8 @@ Note:
 - Motivation ✔
 - Demo ✔
 - **Features**
-- Model
-- Outlook
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
 @ulend
 @snapend
 
@@ -208,7 +221,7 @@ Note:
 - Modules
 @snapend
 @snap[south span-100 text-07 text-blue]
-Features
+Bach.java - Features
 @snapend
 
 +++
@@ -240,7 +253,7 @@ Bach.java - Features
 - Demo ✔
 - Features ✔
 - **Model**
-- Outlook
+- @css[text-gray](Outlook)
 @ulend
 @snapend
 
