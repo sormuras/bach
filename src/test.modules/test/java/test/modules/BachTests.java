@@ -49,6 +49,7 @@ class BachTests {
   void moduleDescriptorParsesVersion() {
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss").withZone(ZoneId.of("UTC"));
     assertDoesNotThrow(() -> Version.parse(pattern.format(Instant.now())));
+    assertDoesNotThrow(() -> Version.parse("1.2.3-ea+2a865326f390f22d6079878a0b6188aca97f4b06"));
     assertThrows(IllegalArgumentException.class, () -> Version.parse(""));
     assertThrows(IllegalArgumentException.class, () -> Version.parse("-"));
     assertThrows(IllegalArgumentException.class, () -> Version.parse("master"));
