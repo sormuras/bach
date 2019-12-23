@@ -10,11 +10,13 @@
 ## Motivation
 @snapend
 @snap[midpoint span-90]
-- 👉 **Motivation**
+@ul[list-no-bullets](false)
+- ✔ **Motivation**
 - Demo
 - Features
 - Model
 - Outlook
+@ulend
 @snapend
 
 +++
@@ -89,11 +91,13 @@ Motivation
 ## Demos
 @snapend
 @snap[midpoint span-90]
+@ul[list-no-bullets](false)
 - Motivation
-- 👉 **Demos**
+- ✔ **Demos**
 - Features
 - Model
 - Outlook
+@ulend
 @snapend
 
 +++
@@ -185,11 +189,13 @@ Note:
 ## Features
 @snapend
 @snap[midpoint span-90]
+@ul[list-no-bullets](false)
 - Motivation
 - Demos
-- 👉 **Features**
+- ✔ **Features**
 - Model
 - Outlook
+@ulend
 @snapend
 
 +++
@@ -229,11 +235,13 @@ Features
 ## Model
 @snapend
 @snap[midpoint span-90]
+@ul[list-no-bullets](false)
 - Motivation
 - Demo
 - Features
-- 👉 **Model**
+- ✔ **Model**
 - Outlook
+@ulend
 @snapend
 
 +++
@@ -264,11 +272,13 @@ Model
 ## Outlook
 @snapend
 @snap[midpoint span-90]
+@ul[list-no-bullets](false)
 - Motivation
 - Demo
 - Features
 - Model
-- 👉 **Outlook**
+- ✔ **Outlook**
+@ulend
 @snapend
 
 +++
@@ -306,12 +316,14 @@ Outlook
 ## Backup
 @snapend
 @snap[midpoint span-90]
+@ul[list-no-bullets](false)
 - Motivation
 - Demo
 - Features
 - Model
 - Outlook
-- 👉 **Backup**
+- ✔ **Backup**
+@ulend
 @snapend
 
 +++
