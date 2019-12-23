@@ -30,7 +30,7 @@ import java.util.List;
 public class Bach {
 
   /** The {@code Bach.java} version constant. */
-  static final String VERSION = "2.0-RC1";
+  static final String VERSION = "2.0-ea";
 
   /** Debug flag. */
   static final boolean DEBUG = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
