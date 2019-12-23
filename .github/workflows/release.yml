@@ -47,7 +47,10 @@ jobs:
       run: |
         mkdir --parents ~/.m2
         echo "<settings><servers><server><id>bintray-sormuras-maven</id><username>sormuras</username><password>${BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
-        jshell .bach/out/maven-deploy-bintray-sormuras-maven.jsh
+        BACH="java --module-path .bach/out/main/modules --module de.sormuras.bach"
+        DEPLOY="--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file"
+        REPO="-DrepositoryId=bintray-sormuras-maven -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=1"
+        ${BACH} tool mvn ${DEPLOY} ${REPO} @.bach/out/main/deploy/de.sormuras.bach/maven-cli-arguments.txt
     - name: 'Restore previous version from environment variable'
       run: |
         java src/bach/Version.java ${BACH_VERSION}
