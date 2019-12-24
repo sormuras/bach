@@ -1,5 +1,5 @@
 @snap[midpoint span-100]
-# Bach.java
+# Bach@color[black](.java)
 [github.com/sormuras/bach](https://github.com/sormuras/bach)
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -18,13 +18,6 @@
 - [OpenJDK](https://openjdk.java.net/census#cstein) @note[JDK Project – Author]
 - [JUnit 5](https://junit.org/junit5)               @note[Team member since 2018]
 - [Apache Maven](https://maven.apache.org)          @note[Plugin: compiler, surefire]
-- **Projects**
-- [bach](https://github.com/sormuras/bach)          @note[Use jshell/java to build your modular Java project]
-- [modules](https://github.com/sormuras/modules)    @note[Java modules published at Maven Central]
-- [junit-platform-maven-plugin](https://github.com/sormuras/junit-platform-maven-plugin) @note[Maven Plugin launching the JUnit Platform]
-- [mainrunner](https://github.com/sormuras/mainrunner) @note[JUnit Platform Test Engine launching Java programs]
-- [install-jdk.sh](https://github.com/sormuras/bach#install-jdksh) @note[Install the latest-and-greatest OpenJDK releases, used by Travis CI]
-- [download-jdk](https://github.com/sormuras/download-jdk) @note[GitHub Action]
 @ulend
 @snapend
 
@@ -333,8 +326,9 @@ Bach.java - Outlook
 #### Happy building!
 @snapend
 @snap[midpoint span-90]
-@ul
-
+@ul[list-no-bullets](false)
+- Bach.java
+- Lightweight Java Build Tool
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -362,6 +356,24 @@ Bach.java - Outlook
 @snapend
 @snap[midpoint span-90]
 - https://github.com/sormuras/bach-javafx
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Backup
+@snapend
+
++++
+@snap[north span-90]
+### Projects
+@snapend
+@snap[midpoint span-90]
+@ul[list-no-bullets](false)
+- [bach](https://github.com/sormuras/bach) @note[Use jshell/java to build your modular Java project]
+- [modules](https://github.com/sormuras/modules) @note[Java modules published at Maven Central]
+- [junit-platform-maven-plugin](https://github.com/sormuras/junit-platform-maven-plugin) @note[Maven Plugin launching the JUnit Platform]
+- [mainrunner](https://github.com/sormuras/mainrunner) @note[JUnit Platform Test Engine launching Java programs]
+- [install-jdk.sh](https://github.com/sormuras/bach#install-jdksh) @note[Install the latest-and-greatest OpenJDK releases, used by Travis CI]
+- [download-jdk](https://github.com/sormuras/download-jdk) @note[GitHub Action]
+@ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Backup
