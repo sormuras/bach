@@ -1,5 +1,7 @@
+@title[Bach.java]
 @snap[midpoint span-100]
-# Bach@color[black](.java)
+# Bach@color[gray](.java)
+#### Java Build Tool
 [github.com/sormuras/bach](https://github.com/sormuras/bach)
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -51,7 +53,7 @@
 - ... doesn't the JDK provide a build tool?
 - ... another build tool?
 @snapend
-@snap[south span-100 text-07 text-blue]
+@snap[south span-100 text-07 text-blue bg-gray]
 Bach.java - Motivation
 @snapend
 
@@ -60,7 +62,7 @@ Bach.java - Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07 text-blue]
+@snap[south span-100 text-07 text-blue bg-gold]
 Bach.java - Motivation
 @snapend
 
@@ -69,7 +71,7 @@ Bach.java - Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07 text-blue]
+@snap[south span-100 text-07 text-blue bg-yellow]
 Bach.java - Motivation
 @snapend
 
