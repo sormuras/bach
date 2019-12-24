@@ -2,17 +2,15 @@
 @snap[midpoint span-100]
 # Bach@color[gray](.java)
 #### Java Build Tool
-[github.com/sormuras/bach](https://github.com/sormuras/bach)
 @snapend
 @snap[south span-100 text-07 text-blue]
-😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
+😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://github.com/sormuras/bach) &nbsp; 📰[sormuras.de](http://sormuras.de)
 @snapend
 
 +++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg&size=cover&opacity=23
 @snap[north span-90]
 ## .about
 @snapend
-
 @snap[west span-40 text-center]
 @ul[list-no-bullets](false)
 - **Christian Stein**
@@ -20,9 +18,10 @@
 - [OpenJDK](https://openjdk.java.net/census#cstein) @note[JDK Project – Author]
 - [JUnit 5](https://junit.org/junit5)               @note[Team member since 2018]
 - [Apache Maven](https://maven.apache.org)          @note[Plugin: compiler, surefire]
+- [@sormuras](https://twitter.com/sormuras) 🐦      @note[Twitter]
+- [/sormuras](https://github.com/sormuras)          @note[GitHub]
 @ulend
 @snapend
-
 @snap[east span-40 text-center]
 <a href="https://www.micromata.de"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/micromata-logo-horizontal.png" height="120" /></a>
 <br>
@@ -33,11 +32,11 @@
 
 ---
 @snap[north span-90]
-## Motivation
+## Intro
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- **Motivation**
+- **Intro**
 - @css[text-gray](Demo)
 - @css[text-gray](Features)
 - @css[text-gray](Model)
@@ -53,8 +52,8 @@
 - ... doesn't the JDK provide a build tool?
 - ... another build tool?
 @snapend
-@snap[south span-100 text-07 text-blue bg-gray]
-Bach.java - Motivation
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
 @snapend
 
 +++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
@@ -62,8 +61,8 @@ Bach.java - Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07 text-blue bg-gold]
-Bach.java - Motivation
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
 @snapend
 
 +++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
@@ -71,8 +70,8 @@ Bach.java - Motivation
 @snap[north span-90]
 ### JDK and Build Tools
 @snapend
-@snap[south span-100 text-07 text-blue bg-yellow]
-Bach.java - Motivation
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
 @snapend
 
 +++
@@ -94,7 +93,7 @@ Bach.java - Motivation
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Bach.java - Motivation
+Bach.java - Intro
 @snapend
 
 +++
@@ -109,7 +108,7 @@ Bach.java - Motivation
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Bach.java - Motivation
+Bach.java - Intro
 @snapend
 
 ---
@@ -118,7 +117,7 @@ Bach.java - Motivation
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation ✔
+- Intro ✔
 - **Demo**
 - @css[text-gray](Features)
 - @css[text-gray](Model)
@@ -216,7 +215,7 @@ Note:
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation ✔
+- Intro ✔
 - Demo ✔
 - **Features**
 - @css[text-gray](Model)
@@ -262,7 +261,7 @@ Bach.java - Features
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation ✔
+- Intro ✔
 - Demo ✔
 - Features ✔
 - **Model**
@@ -298,7 +297,7 @@ Bach.java - Model
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation ✔
+- Intro ✔
 - Demo ✔
 - Features ✔
 - Model ✔
@@ -308,13 +307,30 @@ Bach.java - Model
 
 +++
 @snap[north span-90]
-### JEP
+### Plan for 2.1-ea
+@snapend
+@snap[midpoint span-90]
+@ul[list-no-bullets](false)
+- Support `jpackage`
+- External tools
+  - Google-Java-Format
+  - Error-Prone
+  - Code Coverage
+@ulend
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Outlook
+@snapend
+
++++
+@snap[north span-90]
+### Plan for 3-ea
 @snapend
 @snap[midpoint span-90]
 @ul
-- From `Bach.java`...
-- to `{JDK_HOME}/bin/jbuild[.exe]`?
-- Or `jbach`, `jbuild`, `javab`,...
+- From `Bach.java` ...
+- to `{JDK_HOME}/bin/jbach[.exe]`?
+- 😉 `jbach`, `jbuild`, `javab`
 - Create a JEP?
 @ulend
 @snapend
@@ -327,10 +343,11 @@ Bach.java - Outlook
 # Thanks.
 #### Happy building!
 @snapend
-@snap[midpoint span-90]
+@snap[midpoint span-90 text-center]
 @ul[list-no-bullets](false)
-- Bach.java
+- Bach.java [github.com/sormuras/bach](https://github.com/sormuras/bach)
 - Lightweight Java Build Tool
+- `jshell https://bit.ly/bach-jsh`
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -343,7 +360,7 @@ Bach.java - Outlook
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Motivation ✔
+- Intro ✔
 - Demo ✔
 - Features ✔
 - Model ✔
