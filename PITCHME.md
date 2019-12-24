@@ -8,11 +8,29 @@
 
 +++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg&size=cover&opacity=23
 @snap[north span-90]
-## About me
+## .about
 @snapend
-@snap[midpoint span-90]
+
+@snap[west span-40 text-center]
+@ul[list-no-bullets](false)
+- **Christian Stein**
+- [@micromata](https://www.micromata.de)            @note[Customised software solutions]
+- [OpenJDK](https://openjdk.java.net/census#cstein) @note[JDK Project – Author]
+- [JUnit 5](https://junit.org/junit5)               @note[Team member since 2018]
+- [Apache Maven](https://maven.apache.org)          @note[Plugin: compiler, surefire]
+- **Projects**
+- [bach](https://github.com/sormuras/bach)          @note[Use jshell/java to build your modular Java project]
+- [modules](https://github.com/sormuras/modules)    @note[Java modules published at Maven Central]
+- [junit-platform-maven-plugin](https://github.com/sormuras/junit-platform-maven-plugin) @note[Maven Plugin launching the JUnit Platform]
+- [mainrunner](https://github.com/sormuras/mainrunner) @note[JUnit Platform Test Engine launching Java programs]
+- [install-jdk.sh](https://github.com/sormuras/bach#install-jdksh) @note[Install the latest-and-greatest OpenJDK releases, used by Travis CI]
+- [download-jdk](https://github.com/sormuras/download-jdk) @note[GitHub Action]
+@ulend
+@snapend
+
+@snap[east span-40 text-center]
 <a href="https://www.micromata.de"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/micromata-logo-horizontal.png" height="120" /></a>
-</br>
+<br>
 <a href="https://junit.org/junit5"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/junit5-logo.png" height="60" /></a>
 &nbsp;
 <a href="https://maven.apache.org"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/maven-logo-black-on-white.png" height="60" /></a>
