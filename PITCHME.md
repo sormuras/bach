@@ -9,8 +9,8 @@
 Note:
 - Hello.
 - My name is...
-- Your build tools are overkill.
-- Prepare to yet another one.
+- Your build tools are "overkill".
+- Prepare to (die) yet another one.
 
 +++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg&size=cover&opacity=23
 @snap[north span-90]
@@ -19,7 +19,7 @@ Note:
 @snap[west span-40]
 @ul[list-no-bullets](false)
 - **Christian Stein**
-- [Micromata](https://www.micromata.de) @note[Customised software solutions]
+- [Micromata](https://www.micromata.de) @note[Customised software solutions.]
 - [OpenJDK](https://openjdk.java.net/census#cstein) @note[JDK Project – Author]
 - [JUnit 5](https://junit.org/junit5) @note[Team member since 2018]
 - [Apache Maven](https://maven.apache.org) @note[Maven plugin: compiler, surefire]
@@ -35,6 +35,11 @@ Note:
 @snap[south span-100 text-07 text-blue]
 🐦 [@sormuras](https://twitter.com/sormuras) &nbsp; 📰 [sormuras.de](http://sormuras.de)
 @snapend
+Note:
+- I work for Micromata, crafting customised software solutions.
+- Found a P2 bug in `java.exe` https://bugs.openjdk.java.net/browse/JDK-8234076
+- Team member of JUnit 5
+- Also an Apache Maven Committer
 
 ---
 @snap[north span-90]
@@ -49,18 +54,25 @@ Note:
 - @css[text-gray](Outlook)
 @ulend
 @snapend
+Note:
+- Overview, Agenda, Plan for this talk
 
 +++
 @snap[north span-90]
-### Why...
+### Status Quo
 @snapend
 @snap[midpoint span-90]
-- ... doesn't the JDK provide a build tool?
-- ... another build tool?
+@ul[list-no-bullets]
+- Many build tools in the wild
+- JDK does **not** provide a build tool
+@ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Intro
 @snapend
+Note:
+- Show of hands: shell scripts, make, Ant, Maven, Gradle, Bazel, Buck, ...
+- Why doesn't the JDK a build tool out of the box?
 
 +++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
 @title[JDK and Build Tools]
