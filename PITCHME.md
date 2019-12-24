@@ -6,6 +6,11 @@
 @snap[south span-100 text-07 text-blue]
 😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://sormuras.github.io/bach) &nbsp; 📰 [sormuras.de](http://sormuras.de)
 @snapend
+Note:
+- Hello.
+- My name is...
+- Your build tools are overkill.
+- Prepare to yet another one.
 
 +++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg&size=cover&opacity=23
 @snap[north span-90]
