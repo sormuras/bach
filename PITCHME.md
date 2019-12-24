@@ -1,25 +1,23 @@
 @title[Bach.java]
 @snap[midpoint span-100]
 # Bach@color[gray](.java)
-#### Java Build Tool
+#### Lightweight Java Build Tool for modular projects
 @snapend
 @snap[south span-100 text-07 text-blue]
-😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://github.com/sormuras/bach) &nbsp; 📰[sormuras.de](http://sormuras.de)
+😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://sormuras.github.io/bach) &nbsp; 📰 [sormuras.de](http://sormuras.de)
 @snapend
 
 +++?image=https://raw.githubusercontent.com/sormuras/sormuras.github.io/master/asset/img/avatar-sormuras-1000-1000.jpg&size=cover&opacity=23
 @snap[north span-90]
 ## .about
 @snapend
-@snap[west span-40 text-center]
+@snap[west span-40]
 @ul[list-no-bullets](false)
 - **Christian Stein**
-- [@micromata](https://www.micromata.de)            @note[Customised software solutions]
+- [Micromata](https://www.micromata.de) @note[Customised software solutions]
 - [OpenJDK](https://openjdk.java.net/census#cstein) @note[JDK Project – Author]
-- [JUnit 5](https://junit.org/junit5)               @note[Team member since 2018]
-- [Apache Maven](https://maven.apache.org)          @note[Plugin: compiler, surefire]
-- [@sormuras](https://twitter.com/sormuras) 🐦      @note[Twitter]
-- [/sormuras](https://github.com/sormuras)          @note[GitHub]
+- [JUnit 5](https://junit.org/junit5) @note[Team member since 2018]
+- [Apache Maven](https://maven.apache.org) @note[Maven plugin: compiler, surefire]
 @ulend
 @snapend
 @snap[east span-40 text-center]
@@ -28,6 +26,9 @@
 <a href="https://junit.org/junit5"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/junit5-logo.png" height="60" /></a>
 &nbsp;
 <a href="https://maven.apache.org"><img src="https://github.com/sormuras/testing-in-the-modular-world/raw/master/img/maven-logo-black-on-white.png" height="60" /></a>
+@snapend
+@snap[south span-100 text-07 text-blue]
+🐦 [@sormuras](https://twitter.com/sormuras) &nbsp; 📰 [sormuras.de](http://sormuras.de)
 @snapend
 
 ---
@@ -311,6 +312,7 @@ Bach.java - Model
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
+- Scaffolding
 - Support `jpackage`
 - External tools
   - Google-Java-Format
@@ -343,15 +345,15 @@ Bach.java - Outlook
 # Thanks.
 #### Happy building!
 @snapend
-@snap[midpoint span-90 text-center]
+@snap[midpoint span-90 text-08 text-center]
 @ul[list-no-bullets](false)
-- Bach.java [github.com/sormuras/bach](https://github.com/sormuras/bach)
-- Lightweight Java Build Tool
+- Bach.java
+- **Java** Build Tool
 - `jshell https://bit.ly/bach-jsh`
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
-😉 Christian Stein &nbsp; 🐦[@sormuras](https://twitter.com/sormuras) &nbsp; 📰[sormuras.github.io](https://sormuras.github.io)
+😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://sormuras.github.io/bach) &nbsp; 🐦 [@sormuras](https://twitter.com/sormuras)
 @snapend
 
 ---
