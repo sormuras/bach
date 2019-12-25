@@ -39,7 +39,7 @@ public class Bach {
   static final String BACH_VERSION = System.getProperty("Bach.java/version", VERSION);
 
   /** Directory to store module {@code de.sormuras.bach-{VERSION}.jar} to. */
-  static final Path LIB = Path.of(System.getProperty("Bach.java/lib", ".bach/build/lib"));
+  static final Path LIB = Path.of(System.getProperty("Bach.java/lib", "lib"));
 
   /** Transfer output stream of started process to this {@code System.out} stream. */
   static final boolean TRANSFER_IO = Boolean.getBoolean("Bach.java/transferIO");
@@ -64,7 +64,7 @@ public class Bach {
     debug("|");
 
     var uri = "https://jitpack.io/com/github/sormuras/bach/{VERSION}/bach-{VERSION}.jar";
-    load("de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
+    load(LIB, "de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
 
     var java = new ArrayList<String>();
     java.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
@@ -97,12 +97,12 @@ public class Bach {
     if (DEBUG) System.out.println(message);
   }
 
-  static void load(String module, String version, URI uri) throws Exception {
-    debug(String.format("| Loading module de.sormuras.bach %s to %s...%n", version, LIB.toUri()));
-    var jar = LIB.resolve(module + '-' + version + ".jar");
+  static void load(Path lib, String module, String version, URI uri) throws Exception {
+    debug(String.format("| Loading module de.sormuras.bach %s to %s...%n", version, lib.toUri()));
+    var jar = lib.resolve(module + '-' + version + ".jar");
     if (isRegularFile(jar) && !version.endsWith("SNAPSHOT")) return;
     debug(String.format("|   %s <- %s%n", jar, uri));
-    createDirectories(LIB);
+    createDirectories(lib);
     try (var source = uri.toURL().openStream();
         var target = newOutputStream(jar)) {
       source.transferTo(target);
