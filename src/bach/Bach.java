@@ -38,14 +38,14 @@ public class Bach {
   /** The version of module {@code de.sormuras.bach} to load and use. */
   static final String BACH_VERSION = System.getProperty("Bach.java/version", VERSION);
 
+  /** This program is launched via JEP 330, if it exists. */
+  static final Path BUILD = Path.of(System.getProperty("Bach.java/build", "src/bach/Build.java"));
+
   /** Directory to store module {@code de.sormuras.bach-{VERSION}.jar} to. */
   static final Path LIB = Path.of(System.getProperty("Bach.java/lib", "lib"));
 
   /** Transfer output stream of started process to this {@code System.out} stream. */
   static final boolean TRANSFER_IO = Boolean.getBoolean("Bach.java/transferIO");
-
-  /** This program is launched via JEP 330, if no argument is passed to the main method. */
-  static final Path DEFAULT_BUILD_PROGRAM = Path.of("src/bach/Build.java");
 
   public static void main(String... args) throws Exception {
     var version = BACH_VERSION.endsWith("-ea") ? "master-SNAPSHOT" : BACH_VERSION;
@@ -56,9 +56,9 @@ public class Bach {
     debug("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
     debug("|   -DBach.java/lib=" + LIB);
     debug("|   -DBach.java/transferIO=" + TRANSFER_IO);
-    debug("| Default build program");
-    debug("|   path: " + DEFAULT_BUILD_PROGRAM);
-    debug("|   exists: " + isRegularFile(DEFAULT_BUILD_PROGRAM));
+    debug("| Build program");
+    debug("|   path: " + BUILD);
+    debug("|   exists: " + isRegularFile(BUILD));
     debug("| Arguments");
     debug("|   args: " + List.of(args));
     debug("|");
@@ -72,19 +72,14 @@ public class Bach {
     java.add("-D" + "user.language=en");
     java.add("--module-path=" + LIB);
     java.add("--add-modules=" + "ALL-SYSTEM");
-    if (args.length == 0) {
-      if (isRegularFile(DEFAULT_BUILD_PROGRAM)) {
-        java.add("--add-modules=de.sormuras.bach");
-        java.add(DEFAULT_BUILD_PROGRAM.toString());
-      } else {
-        java.add("--module");
-        java.add("de.sormuras.bach");
-      }
-    }
-    if (args.length == 1) {
+    if (isRegularFile(BUILD)) {
       java.add("--add-modules=de.sormuras.bach");
-      java.add(Path.of(args[0]).toString()); // "etc/CustomBuild.java"
+      java.add(BUILD.toString());
+    } else {
+      java.add("--module");
+      java.add("de.sormuras.bach");
     }
+    java.addAll(List.of(args));
     start(java);
     debug("|");
     debug("' END.");
