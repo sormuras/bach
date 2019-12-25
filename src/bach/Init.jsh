@@ -68,8 +68,26 @@ println("     -> bach")
 Files.write(Path.of("bach"), List.of("//usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
 println("     -> bach.bat")
 Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", java + " %*"))
-// println("     -> bach.properties")
-// Files.write(Path.of("bach.properties"), List.of("bach.log.level=WARNING"))
+
+/*
+ * Scaffold
+ */
+var src = Path.of("src")
+if (!Files.isDirectory(src)) {
+  var scanner = new Scanner(System.in);
+  println("No src/ directory exits.");
+  println("  0 -> No.");
+  println("  1 -> Create `module-info.java`-only project");
+  println("Scaffold a project?");
+  switch(scanner.nextInt()) {
+    case 0: break;
+    case 1: {
+      var demo = Files.createDirectories(src.resolve("demo"));
+      Files.write(demo.resolve("module-info.java"), List.of("module demo {}", ""));
+      break;
+    }
+  }
+}
 
 /*
  * Print some help and wave goodbye.
