@@ -75,10 +75,11 @@ Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", java + " %*"))
 var src = Path.of("src")
 if (!Files.isDirectory(src)) {
   var scanner = new Scanner(System.in);
-  println("No src/ directory exits.");
+  println();
+  println("No src/ directory exits. Scaffold a project?");
   println("  0 -> No.");
   println("  1 -> Create `module-info.java`-only project");
-  println("Scaffold a project?");
+  print("Your choice: ");
   switch(scanner.nextInt()) {
     case 0: break;
     case 1: {
