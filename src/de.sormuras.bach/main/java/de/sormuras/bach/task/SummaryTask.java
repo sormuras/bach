@@ -23,6 +23,7 @@ public class SummaryTask implements Task {
       log.warning("No realm configured in project: %s", project);
     }
     log.info("Tool runs");
+    log.info("Duration Tool");
     for (var run : log.getRuns()) {
       var args = run.args().length == 0 ? "" : ' ' + String.join(" ", run.args());
       var trim = args.length() <= 111 ? args : args.substring(0, 111 - 3) + "...";
