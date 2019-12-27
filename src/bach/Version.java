@@ -48,7 +48,7 @@ public class Version {
       return;
     }
     var bachJava = Path.of("src/bach/Bach.java");
-    var bachJsh = Path.of("src/bach/Bach.jsh");
+    var bachJsh = Path.of("src/bach/build.jsh");
     // var mergedBach = Path.of("src/bach/MergedBach.java");
     var readmeMd = Path.of("README.md");
 

@@ -150,7 +150,7 @@ Bach.java - Intro
 @snap[midpoint span-90]
 1. `build.bat`
 1. `build.jsh`
-1. `jshell https://bit.ly/bach-jsh`
+1. `jshell https://bit.ly/bach-build`
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Demo
@@ -220,7 +220,7 @@ Note:
 @olend
 @snapend
 @snap[south span-100 text-07 text-blue]
-Bach.java - Demo 3 - jshell https://bit.ly/bach-jsh
+Bach.java - Demo 3 - jshell https://bit.ly/bach-build
 @snapend
 
 Note:
@@ -366,7 +366,7 @@ Bach.java - Outlook
 @ul[list-no-bullets](false)
 - Bach.java
 - **Java** Build Tool
-- `jshell https://bit.ly/bach-jsh`
+- `jshell https://bit.ly/bach-build`
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]

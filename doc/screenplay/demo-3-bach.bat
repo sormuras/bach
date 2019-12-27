@@ -34,7 +34,7 @@ echo ______
 echo Step 4: Build
 pause > nul
 @echo on
-jshell --show-version --execution local https://bit.ly/bach-jsh
+jshell --show-version --execution local https://bit.ly/bach-build
 @echo off
 pause > nul
 

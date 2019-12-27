@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+ /*
+  * Zero-installation "bach build" script.
+  */
+
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
 System.setProperty("Bach.java/transferIO", "true")

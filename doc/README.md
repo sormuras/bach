@@ -15,8 +15,8 @@
 
 ![demo-2-jshell](screenplay/demo-2-jshell.gif)
 
-### Demo 3 `jshell https://bit.ly/bach-jsh`
+### Demo 3 `jshell https://bit.ly/bach-build`
 
-> Note: `https://bit.ly/bach-jsh` expands to `https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh`
+> Note: `https://bit.ly/bach-build` expands to `https://raw.githubusercontent.com/sormuras/bach/master/src/bach/build.jsh`
 
 ![demo-3-bach](screenplay/demo-3-bach.gif)

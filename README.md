@@ -24,7 +24,7 @@ Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to mult
 Call `load(URI)` to load 3rd-party modules, `run(String tool, String... args)` to run provided tools, and `start(String... command)` to execute commands on the command-line.
 
 **Lightweight** Let module `de.sormuras.bach` automatically order the right calls to [JDK Foundation Tools] based on your `module-info.java` declarations.
-- Installation-free via `jshell https://bit.ly/bach-jsh`.
+- Installation-free via `jshell https://bit.ly/bach-build`.
 - [Download](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach) module `de.sormuras.bach` to your `lib/` directory and use it directly.
 
 ## Uniques
@@ -41,11 +41,11 @@ Call `load(URI)` to load 3rd-party modules, `run(String tool, String... args)` t
 
 ## Zero Installation
 
-Enter the base directory of your Java project, open a shell, and execute one of the following commands:
+Enter the base directory of your Java project, open a shell, and execute one of the following [bach-build] commands:
 
-- Long: `jshell https://raw.githubusercontent.com/sormuras/bach/master/src/bach/Bach.jsh`
-- Shorter: `jshell https://github.com/sormuras/bach/raw/master/src/bach/Bach.jsh`
-- Shortened: `jshell https://bit.ly/bach-jsh`
+- Long: `jshell https://raw.githubusercontent.com/sormuras/bach/master/src/bach/build.jsh`
+- Shorter: `jshell https://github.com/sormuras/bach/raw/master/src/bach/build.jsh`
+- Shortened: `jshell https://bit.ly/bach-build`
 
 That's it.
 
@@ -228,7 +228,7 @@ Find a Travis CI matrix configuration at [sormuras.github.io/.travis.yml](https:
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [Apache Ant]: https://ant.apache.org
-[bach.jsh]: https://github.com/sormuras/bach/blob/master/bach.jsh
+[bach-build]: https://github.com/sormuras/bach/blob/master/build.jsh
 [install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
 [JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
 [jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
