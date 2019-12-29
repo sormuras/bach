@@ -308,6 +308,57 @@ Bach.java - Features - Zero Configuration
 Bach.java - Features - Bring Your Own Build
 @snapend
 
++++
+@snap[north span-90]
+### 3rd-party modules
+@snapend
+@snap[midpoint span-90 text-06]
+All 3rd-party modules are stored in plain sight: `lib/`
+
+How do you provide 3rd-party modules? Load and drop modular JAR files into the `lib/` directory.
+Missing 3rd-party modules are being resolved in a best-effort manner using [sormuras/modules](https://github.com/sormuras/modules) database.
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - 3rd-party modules
+@snapend
+Note: 3rd-party modules are all modules that are not declared in your project and that are not modules provided by the _system_, i.e. the current Java runtime.
+
++++
+@snap[north span-90]
+### Compilation, Multi-Module, Multi-Release
+@snapend
+@snap[midpoint span-90 text-06]
+- `javac` + `jar`
+
+Exploded class files are only a intermediate state.
+This ensures, that at test runtime, you're checking your modules as if they are already published.
+Including loading services and resources.
+
+Using the `--module-source-path` option from `javac` all modules are compiled in a single pass.
+With the exception multi-release modules - they are build before any other module.
+
+Organize your Java sources in targeted directories to create a multi-release JAR.
+
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - Compilation, Multi-Module, Multi-Release
+@snapend
+
++++
+@snap[north span-90]
+### Automated Checks
+@snapend
+@snap[midpoint span-90 text-06]
+Two kinds of automated checks per module are supported:
+
+- Provided tool named `test(${MODULE})`
+- JUnit Platform with selecting the current module under test
+
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - Automated Checks
+@snapend
+
 ---
 @snap[north span-90]
 ## Model
