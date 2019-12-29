@@ -59,8 +59,14 @@ class ModuleSystemTests {
         // .provides(ToolProvider.class.getName(), List.of("de.sormuras.bach.BachToolProvider"))
         ;
     // requires may contain compiled version
-    if (Runtime.version().feature() <= 11) {
-      var version = Object.class.getModule().getDescriptor().version().orElseThrow();
+    var requiresWithVersion =
+        actual.requires().stream()
+            .filter(requires -> requires.name().equals("java.base"))
+            .findFirst()
+            .orElseThrow()
+            .compiledVersion();
+    if (requiresWithVersion.isPresent()) {
+      var version = requiresWithVersion.orElseThrow();
       expected
           .requires(Set.of(MANDATED), "java.base", version)
           .requires(Set.of(), "java.compiler", version)
