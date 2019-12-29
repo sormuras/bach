@@ -243,19 +243,6 @@ Note:
 
 +++
 @snap[north span-90]
-### Concepts
-@snapend
-@snap[midpoint span-90]
-- Lightweight
-- Java
-- Modules
-@snapend
-@snap[south span-100 text-07 text-blue]
-Bach.java - Features
-@snapend
-
-+++
-@snap[north span-90]
 ### Uniques
 @snapend
 @snap[midpoint span-90 text-06]
@@ -271,6 +258,54 @@ Bach.java - Features
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features
+@snapend
+
++++
+@snap[north span-90]
+### Zero Installation
+@snapend
+@snap[midpoint span-90 text-06]
+- `jshell https://bit.ly/`**bach-build**
+  Downloads Bach.java on-the-fly and builds project in the current user directory.
+- `jshell https://bit.ly/`**bach-init**
+  Downloads Bach.java, creates launch scripts (`bach[.bat]`) and prints project information.
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - Zero Installation
+@snapend
+Note:
+- Enter the base directory of your Java project, open a shell, and execute the [bach-build] command:
+- Long `jshell https://raw.githubusercontent.com/sormuras/bach/master/src/bach/build.jsh`
+- That's it.
+
++++
+@snap[north span-90]
+### Zero Configuration
+@snapend
+@snap[midpoint span-90 text-06]
+Almost all required information to build a modular Java project is either deduced from conventions or gathered from
+module declarations, i.e. `module-info.java` files.
+
+- Required modules' versions via https://github.com/sormuras/modules
+
+Also, the following attributes are extracted from comments (soon annotations?) found in module declarations: 
+
+- Module version `--module-version ...`
+- Module entry-point `--main-class ...`
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - Zero Configuration
+@snapend
+
++++
+@snap[north span-90]
+### Bring Your Own Build
+@snapend
+@snap[midpoint span-90 text-06]
+`src/bach/Build.java` -- write program using plain old Java
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Features - Bring Your Own Build
 @snapend
 
 ---
