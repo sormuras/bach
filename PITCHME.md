@@ -324,20 +324,19 @@ Bach.java - Features - Bring Your Own Build
 
 +++
 @snap[north span-90]
-### Types
+### Module, Packages, and Types
 @snapend
 @snap[midpoint span-90]
-@ul[text-08](false)
+@ul[text-07](false)
+- Module `de.sormuras.bach`
 - Package `de.sormuras.bach.project`
-- `Project`
-  - `Name`
-  - `Version`
-- `Structure`
+- `Project` with basic properties
+- `Structure` describes directory layout
   - `Folder`
-  - `Realm`
+  - `Realm` like main, test, ...
   - `Unit`
     - `Source`
-  - `Library`
+  - `Library` manages 3rd-party modules
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
