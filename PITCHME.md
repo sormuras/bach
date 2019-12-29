@@ -1,4 +1,4 @@
----?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=23
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @title[Bach.java]
 @snap[midpoint span-100]
 # Bach@color[gray](.java)
@@ -42,7 +42,7 @@ Note:
 - Team member of JUnit 5
 - Also an Apache Maven Committer
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Intro
 @snapend
@@ -130,7 +130,7 @@ Bach.java - Intro
 Bach.java - Intro
 @snapend
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Demo
 @snapend
@@ -228,7 +228,7 @@ Note:
 - From source to module in 6 steps
 - Using no extra script file
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Features
 @snapend
@@ -360,7 +360,7 @@ Two kinds of automated checks per module are supported:
 Bach.java - Features - Automated Checks
 @snapend
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Model
 @snapend
@@ -395,7 +395,7 @@ Bach.java - Features - Automated Checks
 Bach.java - Model
 @snapend
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Outlook
 @snapend
@@ -459,7 +459,7 @@ Bach.java - Outlook
 😉 Christian Stein &nbsp; 🎼 [github.com/sormuras/bach](https://sormuras.github.io/bach) &nbsp; 🐦 [@sormuras](https://twitter.com/sormuras)
 @snapend
 
----
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=13
 @snap[north span-90]
 ## Backup
 @snapend
