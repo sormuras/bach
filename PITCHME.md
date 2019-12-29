@@ -1,3 +1,4 @@
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=23
 @title[Bach.java]
 @snap[midpoint span-100]
 # Bach@color[gray](.java)
