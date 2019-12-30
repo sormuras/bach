@@ -146,6 +146,20 @@ Bach.java - Intro
 
 +++
 @snap[north span-90]
+### Demo Project
+@snapend
+@snap[midpoint span-90]
+`src/demo/module-info.java`
+```
+module demo {}
+```
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Demo
+@snapend
+
++++
+@snap[north span-90]
 ### Live or GIF
 @snapend
 @snap[midpoint span-90]
