@@ -149,8 +149,8 @@ Bach.java - Intro
 ### Demo Project
 @snapend
 @snap[midpoint span-90]
-`src/demo/module-info.java`
 ```
+// src/demo/module-info.java 
 module demo {}
 ```
 @snapend
