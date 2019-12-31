@@ -347,15 +347,6 @@ Bach.java - Features - Zero Configuration
 @snap[midpoint span-90 text-06]
 - `src/bach/Build.java`
 - Write build program using plain old Java
-```
-public static void main(String... args) {
-  System.out.println("Building my own project...");
-  Bach.build(
-    Configuration.of("project", Version.parse("1.2.3"))
-        .setLog(Log.ofSystem(true))
-        .setGroup("my.own.project"));
-}
-```
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Bring Your Own Build
