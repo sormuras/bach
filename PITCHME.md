@@ -283,16 +283,21 @@ Note:
 @snap[north span-90]
 ### Uniques
 @snapend
-@snap[midpoint span-90 text-06]
-- **zero installation** required (besides JDK 11+, using `jshell`)
-- **zero configuration** required (conventions and information gathered from `module-info.java` files)
-- **b-y-o-b** program using plain old Java (`src/bach/Build.java`)
-- **3rd-party modules** in plain sight (single `lib/` directory)
-- **compilation** is compile (`javac`) and package (`jar`) as an atomic step
-- **multi-module** compilation in a single pass (`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`)
-- **multi-release** modules are supported (`java-7`, `java-8`, ..., `java-11`, ..., `java-N`)
-- **automated checks** (aka testing) built-in (`test(${MODULE})`,`junit`)
-- **deployment** support (via `${MODULE}-sources.jar` and consumer `pom.xml` per module)
+@snap[west span-40]
+@ul[list-no-bullets](false)
+- **zero installation** required @note[besides JDK 11+, using `jshell`]
+- **zero configuration** required @note[conventions and information gathered from `module-info.java` files]
+- **b-y-o-b** program using plain old Java @note[`src/bach/Build.java`]
+- **3rd-party modules** in plain sight @note[single `lib/` directory]
+@ulend
+@snapend
+@snap[east span-40]
+@ul[list-no-bullets](false)
+- **compilation** = `javac` + `jar` @note[compile and package as an atomic step]
+- **multi-module** compilation in a single pass @note[`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`]
+- **multi-release** modules are supported @note[`java-7`, `java-8`, ..., `java-11`, ..., `java-N`]
+- **automated checks** (aka testing) built-in @note[`test(${MODULE})`,`junit`]
+@ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features
