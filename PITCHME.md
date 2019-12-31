@@ -284,24 +284,33 @@ Note:
 ### Features
 @snapend
 @snap[west span-40]
-@ul[list-no-bullets]
-- **zero installation** @note[besides JDK 11+, using `jshell`]
-- **zero configuration** @note[conventions and information gathered from `module-info.java` files]
-- **b-y-o-b** program @note[using plain old Java -- `src/bach/Build.java`]
-- **3rd-party modules** in plain sight @note[single `lib/` directory]
+@ul[list-no-bullets](false)
+- **zero installation**
+- **zero configuration**
+- **b-y-o-b** program
+- **3rd-party modules** in plain sight
 @ulend
 @snapend
 @snap[east span-40]
-@ul[list-no-bullets]
-- **compilation** = `javac` + `jar` @note[compile and package as an atomic step]
-- **multi-module** single pass @note[`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`]
-- **multi-release** modules @note[`java-7`, `java-8`, ..., `java-11`, ..., `java-N`]
-- **automated checks** built-in @note[`test(${MODULE})`,`junit`]
+@ul[list-no-bullets](false)
+- **compilation** = `javac` + `jar`
+- **multi-module** single pass
+- **multi-release** modules
+- **automated checks** built-in
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features
 @snapend
+Note:
+- besides JDK 11+, using `jshell`
+- conventions and information gathered from `module-info.java` files
+- using plain old Java -- `src/bach/Build.java`
+- single `lib/` directory
+- compile and package as an atomic step
+- `--module-source-path`, `${PROJECT.NAME}-javadoc.jar`
+- `java-7`, `java-8`, ..., `java-11`, ..., `java-N`
+- `test(${MODULE})`,`junit`
 
 +++
 @snap[north span-90]
