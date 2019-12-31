@@ -66,6 +66,8 @@ Note:
 @ul[list-no-bullets]
 - Many build tools in the wild
 - JDK does **not** provide a build tool
+- ...or What is a build tool?
+- Which tools does the JDK offer?
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -73,25 +75,10 @@ Bach.java - Intro
 @snapend
 Note:
 - Show of hands: shell scripts, make, Ant, Maven, Gradle, Bazel, Buck, ...
-- Why doesn't the JDK a build tool out of the box?
-
-+++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
-@title[JDK and Build Tools]
-@snap[north span-90]
-### JDK and Build Tools
-@snapend
-@snap[south span-100 text-07 text-blue]
-Bach.java - Intro
-@snapend
-
-+++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
-@title[JDK, Bach.java, Tools]
-@snap[north span-90]
-### JDK and Build Tools
-@snapend
-@snap[south span-100 text-07 text-blue]
-Bach.java - Intro
-@snapend
+- Why doesn't the JDK provide a build tool out of the box?
+- A build tool in the scope of this talk is a program that "shuffles" the
+  tools offered by the JDK in the right order, passing the right options,
+  to produce a compiled and consumable project.
 
 +++
 @snap[north span-90]
@@ -114,14 +101,50 @@ Bach.java - Intro
 @snap[south span-100 text-07 text-blue]
 Bach.java - Intro
 @snapend
+Note:
+- Here are the main or foundation tools shipping with JDK
+
++++?image=doc/img/jdk-and-build-tools.svg&size=90% auto
+@title[JDK and Build Tools]
+@snap[north span-90]
+### JDK and Build Tools
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
+@snapend
+
++++?image=doc/img/jdk-and-build-tools-with-bach.svg&size=90% auto
+@title[JDK, Bach.java, Tools]
+@snap[north span-90]
+### JDK and Build Tools
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
+@snapend
 
 +++
 @snap[north span-90]
-### No tricks
+### Just Java
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
-- No .xml, .yaml, ... .z??
+- Lightweight wrapper
+- Only `.java` as sources
+- Perhaps `.properties`
+- That's it.
+@ulend
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Intro
+@snapend
+
++++
+@snap[north span-90]
+### No other tricks
+@snapend
+@snap[midpoint span-90]
+@ul[text-08](false)
+- No .xml, .yaml, ... .z?!
 - No .groovy, .kts, ...
 - No daemons, no cache services, ...
 @ulend
@@ -149,10 +172,10 @@ Bach.java - Intro
 ### Demo Project
 @snapend
 @snap[midpoint span-90]
-```
-// src/demo/module-info.java 
-module demo {}
-```
+@ul[list-no-bullets](false)
+- `src/demo/module-info.java`
+- `module demo {}`
+@ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Demo
