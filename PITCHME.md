@@ -281,22 +281,22 @@ Note:
 
 +++
 @snap[north span-90]
-### Uniques
+### Features
 @snapend
 @snap[west span-40]
-@ul[list-no-bullets](false)
-- **zero installation** required @note[besides JDK 11+, using `jshell`]
-- **zero configuration** required @note[conventions and information gathered from `module-info.java` files]
-- **b-y-o-b** program using plain old Java @note[`src/bach/Build.java`]
+@ul[list-no-bullets]
+- **zero installation** @note[besides JDK 11+, using `jshell`]
+- **zero configuration** @note[conventions and information gathered from `module-info.java` files]
+- **b-y-o-b** program @note[using plain old Java: `src/bach/Build.java`]
 - **3rd-party modules** in plain sight @note[single `lib/` directory]
 @ulend
 @snapend
 @snap[east span-40]
-@ul[list-no-bullets](false)
+@ul[list-no-bullets]
 - **compilation** = `javac` + `jar` @note[compile and package as an atomic step]
-- **multi-module** compilation in a single pass @note[`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`]
-- **multi-release** modules are supported @note[`java-7`, `java-8`, ..., `java-11`, ..., `java-N`]
-- **automated checks** (aka testing) built-in @note[`test(${MODULE})`,`junit`]
+- **multi-module** single pass @note[`--module-source-path`, `${PROJECT.NAME}-javadoc.jar`]
+- **multi-release** modules @note[`java-7`, `java-8`, ..., `java-11`, ..., `java-N`]
+- **automated checks** built-in @note[`test(${MODULE})`,`junit`]
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -309,9 +309,9 @@ Bach.java - Features
 @snapend
 @snap[midpoint span-90 text-06]
 - `jshell https://bit.ly/`**bach-build**
-  Downloads Bach.java on-the-fly and builds project in the current user directory.
+  Downloads Bach.java, and builds project in the current user directory.
 - `jshell https://bit.ly/`**bach-init**
-  Downloads Bach.java, creates launch scripts (`bach[.bat]`) and prints project information.
+  Downloads Bach.java, creates launch scripts and prints project information.
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Zero Installation
@@ -345,7 +345,17 @@ Bach.java - Features - Zero Configuration
 ### Bring Your Own Build
 @snapend
 @snap[midpoint span-90 text-06]
-`src/bach/Build.java` -- write program using plain old Java
+- `src/bach/Build.java`
+- Write build program using plain old Java
+```
+public static void main(String... args) {
+  System.out.println("Building my own project...");
+  Bach.build(
+    Configuration.of("project", Version.parse("1.2.3"))
+        .setLog(Log.ofSystem(true))
+        .setGroup("my.own.project"));
+}
+```
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Bring Your Own Build
