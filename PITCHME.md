@@ -285,16 +285,16 @@ Note:
 @snapend
 @snap[west span-40]
 @ul[list-no-bullets](false)
-- **zero installation**
-- **zero configuration**
-- **b-y-o-b** program
-- **3rd-party modules** in plain sight
+- **zero installation** besides&nbsp;JDK
+- **zero configuration** conventions
+- **b-y-o-b** Java&nbsp;program
+- **3rd-party modules** in&nbsp;plain&nbsp;sight
 @ulend
 @snapend
 @snap[east span-40]
 @ul[list-no-bullets](false)
-- **compilation** = `javac` + `jar`
-- **multi-module** single pass
+- **compilation** `javac`&nbsp;+&nbsp;`jar`
+- **multi-module** single&nbsp;pass
 - **multi-release** modules
 - **automated checks** built-in
 @ulend
@@ -356,6 +356,16 @@ Bach.java - Features - Zero Configuration
 @snap[midpoint span-90 text-06]
 - `src/bach/Build.java`
 - Write build program using plain old Java
+
+```
+public static void main(String... args) {
+  System.out.println("Building my own project...");
+  Bach.build(
+    Configuration.of("project", Version.parse("1.2.3"))
+        .setLog(Log.ofSystem(true))
+        .setGroup("my.own.project"));
+}
+```
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Bring Your Own Build
