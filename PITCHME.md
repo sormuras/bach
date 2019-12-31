@@ -287,7 +287,7 @@ Note:
 @ul[list-no-bullets]
 - **zero installation** @note[besides JDK 11+, using `jshell`]
 - **zero configuration** @note[conventions and information gathered from `module-info.java` files]
-- **b-y-o-b** program @note[using plain old Java: `src/bach/Build.java`]
+- **b-y-o-b** program @note[using plain old Java -- `src/bach/Build.java`]
 - **3rd-party modules** in plain sight @note[single `lib/` directory]
 @ulend
 @snapend
