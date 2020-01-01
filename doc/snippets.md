@@ -49,7 +49,6 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 - `--module-source-path src/org.foo/*/main/java:src/org.bar/*/main/java:...`
 - `--module-source-path src/org.foo/*/test/java:src/org.bar/*/test/java:...`
 
-
 ## Library
 
 This section describes how directory `lib/` is populated by `${MODULE}-${VERSION}.jar` modules.
