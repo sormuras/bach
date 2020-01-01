@@ -1,0 +1,41 @@
+# Story of Bach.java
+
+> Hello.
+My name is Christian Stein.
+Your build tools are overkill.
+Prepare to yet another one.
+
+## Intro
+
+I'll briefly refer to the "as-is" state of build tools
+and my motivation to write a lightweight Java build tool for modular Java projects.
+
+### Status Quo
+
+There are many build tools available in the wild.
+
+> Who uses shell scripts, Make, Ant, Maven, ...?
+
+The JDK does not provide a build tool out of the box.
+
+> Why is there no `jbuild`?
+
+The JDK provides foundation tools like `javac`, `jar`, and soon `jpackage`.
+
+> What's a minimal **Java** "build tool"?
+
+- Shuffling the JDK foundation tools in the right order.
+- Passing the right arguments to those calls.
+- Based on a modular project model.
+
+> Why didn't build tools embrace Java modules as their basic building blocks of the project models in 2017?
+> Why are there still build tools in 2020 that actively deny supporting Java modules out of the box?
+
+I guess, we must be glad that `package`s were already introduced in the early days of Java.
+Otherwise, the unnamed package would be our sole container of types.
+
+### Enter Bach.java
+
+- Bach.java and other build tools image(s)
+- Bach.java Demo
+- Bach.java's project model
