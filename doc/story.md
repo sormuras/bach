@@ -24,7 +24,7 @@ The JDK provides foundation tools like `javac`, `jar`, and soon `jpackage`.
 
 > What's a minimal **Java** "build tool"?
 
-- Shuffling the JDK foundation tools in the right order.
+- Shuffling the [JDK Foundation Tools] in the right order.
 - Passing the right arguments to those calls.
 - Based on a modular project model.
 
@@ -36,6 +36,14 @@ Otherwise, the unnamed package would be our sole container of types.
 
 ### Enter Bach.java
 
-- Bach.java and other build tools image(s)
+Ranging from [JDK Foundation Tools], over shell scripts and Apache Ant to multi-language, multi-purpose build tools...
+
+![jdk-and-build-tools-with-bach](img/jdk-and-build-tools-with-bach.svg)
+
+...`Bach.java`'s target is close to platform-specific shell scripts.
+For small to mid-size projects it offers build support in platform-agnostic manner.
+
 - Bach.java Demo
 - Bach.java's project model
+
+[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
