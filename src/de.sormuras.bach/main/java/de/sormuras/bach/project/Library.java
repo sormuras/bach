@@ -186,7 +186,7 @@ public /*record*/ class Library {
       map.putIfAbsent("org.junit.jupiter.engine", Set.of());
     }
     if (map.containsKey("junit")) {
-      map.putIfAbsent("org.junit.vintage", Set.of());
+      map.putIfAbsent("org.junit.vintage.engine", Set.of());
     }
   }
 
