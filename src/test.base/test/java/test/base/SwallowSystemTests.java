@@ -34,6 +34,13 @@ class SwallowSystemTests {
 
   @Test
   @SwallowSystem
+  void normalAndErrorOutput() {
+    System.out.println("out");
+    System.err.println("err");
+  }
+
+  @Test
+  @SwallowSystem
   void normalAndErrorOutput(SwallowSystem.Streams streams) {
     System.out.println("out");
     System.err.println("err");
