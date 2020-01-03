@@ -125,13 +125,15 @@ class Jigsaw {
           new Call("jdeps")
               .add("--module-path", Paths.filterExisting(modulePath))
               .add("--multi-release", "BASE");
-      bach.execute(
-          jdeps
-              .clone()
-              .add("-summary")
-              .add("--dot-output", folder.realm(realm.name(), "dot"))
-              .add("--add-modules", allModuleNames));
-      if (bach.isVerbose()) {
+      var jdepsExitCode =
+          bach.run(
+              jdeps
+                  .clone()
+                  .add("-summary")
+                  .add("--dot-output", folder.realm(realm.name(), "dot"))
+                  .add("--add-modules", allModuleNames));
+      if (jdepsExitCode != 0) bach.getLog().warning("jdeps reported: " + jdepsExitCode);
+      if (jdepsExitCode == 0 && bach.isVerbose()) {
         bach.execute(jdeps.clone().add("--check", javadocModules));
       }
     }
