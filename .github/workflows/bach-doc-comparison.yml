@@ -26,4 +26,4 @@ jobs:
         java-version: 11
     - name: 'Let Maven build the project'
       working-directory: doc/comparison/minimal/maven
-      run: maven verify
+      run: mvn verify
