@@ -7,8 +7,11 @@
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="de.sormuras.bach" scope="TEST" />
-    <orderEntry type="library" name="JUnit Jupiter" level="project" />
-    <orderEntry type="inheritedJdk" />
     <orderEntry type="module" module-name="test.base" scope="TEST" />
+    <orderEntry type="library" name="JUnit Jupiter" level="project" />
+    <orderEntry type="library" name="JUnit Vintage" level="project" />
+    <orderEntry type="library" name="JUnit 4.13" level="project" />
+    <orderEntry type="library" name="Hamcrest 2.2" level="project" />
+    <orderEntry type="inheritedJdk" />
   </component>
 </module>

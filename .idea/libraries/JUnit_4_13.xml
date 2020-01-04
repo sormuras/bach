@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="JUnit 4.13" type="repository">
+    <properties include-transitive-deps="false" maven-id="junit:junit:4.13" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.idea/lib/junit-4.13.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
