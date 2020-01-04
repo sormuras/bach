@@ -1,0 +1,29 @@
+name: bach-doc-comparison
+on: push
+jobs:
+  bach:
+    name: "Bach.java"
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v1
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: 'Let Bach.java build the project'
+      working-directory: doc/comparison/minimal/bach
+      run: jshell https://bit.ly/bach-build
+  maven:
+    name: "Maven"
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v1
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: 'Let Maven build the project'
+      working-directory: doc/comparison/minimal/maven
+      run: maven verify
