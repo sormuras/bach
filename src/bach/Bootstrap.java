@@ -28,14 +28,14 @@ import java.util.stream.Collectors;
 
 public class Bootstrap {
   public static void main(String... args) throws Exception {
-    var destination = Path.of(".bach", "bootstrap").toString();
+    var destination = Path.of(".bach", "bootstrap");
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmmss").withZone(ZoneId.of("UTC"));
     var version = ModuleDescriptor.Version.parse(pattern.format(Instant.now()));
 
     run(
         "javac",
         "-d",
-        destination,
+        destination.toString(),
         "--module=de.sormuras.bach",
         "--module-source-path=src/*/main/java",
         "--module-version=" + version + "-BOOTSTRAP",
@@ -47,12 +47,10 @@ public class Bootstrap {
     start(
         ProcessHandle.current().info().command().orElse("java"),
         "-D" + "user.language=en",
-        "--module-path",
-        destination,
+        "--class-path", // using "--module-path" conflicts with "junit", see #111
+        destination.resolve("de.sormuras.bach").toString(),
         "--add-modules",
         "ALL-SYSTEM",
-        "--add-modules",
-        "de.sormuras.bach",
         "src/bach/Build.java");
   }
 
