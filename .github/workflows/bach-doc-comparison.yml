@@ -30,6 +30,25 @@ jobs:
     - name: 'Size of Maven'
       run: |
         find $M2_HOME -type f | wc -l
-        du -hs $M2_HOME        
+        du -hs $M2_HOME
         find ~/.m2 -type f | wc -l
         du -hs ~/.m2
+  gradle:
+    name: "Gradle"
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v1
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: 'Let Gradle build the project'
+      working-directory: doc/comparison/minimal/gradle
+      run: echo "gradle build"
+    - name: 'Size of Gradle'
+      run: |
+        find $GRADLE_HOME -type f | wc -l
+        du -hs $GRADLE_HOME
+        find ~/.gradle -type f | wc -l
+        du -hs ~/.gradle
