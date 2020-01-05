@@ -27,3 +27,8 @@ jobs:
     - name: 'Let Maven build the project'
       working-directory: doc/comparison/minimal/maven
       run: mvn verify
+    - name: 'Size of Maven'
+      run: |
+        printenv
+        du -h $MAVEN_HOME
+        du -h ~/.m2
