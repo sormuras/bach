@@ -45,10 +45,10 @@ jobs:
         java-version: 11
     - name: 'Let Gradle build the project'
       working-directory: doc/comparison/minimal
-      run: echo "gradle build"
+      run: whereis gradle
     - name: 'Size of Gradle'
       run: |
-        find $GRADLE_HOME -type f | wc -l
-        du -hs $GRADLE_HOME
+        echo "find $GRADLE_HOME -type f | wc -l"
+        echo "du -hs $GRADLE_HOME"
         find ~/.gradle -type f | wc -l
         du -hs ~/.gradle
