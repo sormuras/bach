@@ -29,6 +29,5 @@ jobs:
       run: mvn verify
     - name: 'Size of Maven'
       run: |
-        printenv
-        du -h $MAVEN_HOME
-        du -h ~/.m2
+        du -hs $M2_HOME
+        du -hs ~/.m2
