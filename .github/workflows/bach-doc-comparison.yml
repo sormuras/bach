@@ -45,7 +45,7 @@ jobs:
         java-version: 11
     - name: 'Let Gradle build the project'
       working-directory: doc/comparison/minimal/gradle
-      run: gradlew build
+      run: ./gradlew build
     - name: 'Size of Gradle'
       run: |
         find ~/.gradle -type f | wc -l
