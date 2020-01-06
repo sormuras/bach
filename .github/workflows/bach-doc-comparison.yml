@@ -50,5 +50,5 @@ jobs:
       run: |
         find ~/.gradle -type f | wc -l
         du -hs ~/.gradle
-        find .gradle -type f | wc -l
-        du -hs .gradle
+        find ./.gradle -type f | wc -l
+        du -hs ./.gradle
