@@ -32,7 +32,7 @@ The JDK provides foundation tools like `javac`, `jar`, and soon `jpackage`.
 > Why are there still build tools in 2020 that actively deny supporting Java modules out of the box?
 
 I guess, we must be glad that `package`s were already introduced in the early days of Java.
-Otherwise, the unnamed package would be our sole container of types.
+Otherwise, the unnamed package would be our sole container of all types.
 
 ### Enter Bach.java
 
@@ -183,6 +183,23 @@ Let's have a look at the file tree:
 ```
 
 Almost ready to deploy...
+
+### Other Build Tools
+
+How do other build tools cope with such a minimal project?
+
+| Tool           | Project Files | Raw Build Time | Total Time | Tool Files | Tool Size in MB |
+|----------------| ------------- | -------------- | ---------- | ---------- | --------------- |
+| Bach.java 2.0  |             1 |             2  |         11 |          1 |             0.1 |
+| Maven 3.6.3    |             6 |            14  |         18 |       1394 |            44   |
+| Gradle 6.0.1   |             7 |            43  |         44 |        447 |           330   |
+
+How many files do you have to create and maintain?
+How many files are required to install the tool on your machine?
+What's the size of the tool installation? Caches?
+Per machine? Per version? Per project?
+
+Find more details in the [comparison](comparison/README.md) of Bach.java, Maven, and Gradle.
 
 ## Features
 
