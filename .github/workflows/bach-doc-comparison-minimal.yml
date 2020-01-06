@@ -33,12 +33,10 @@ jobs:
       run: |
         find . -type f | wc -l
         du -bs .
-        mvn verify
+        ./mvnw verify
         du -bs .
-    - name: 'Size of Maven and ~/.m2'
+    - name: 'Size of ~/.m2'
       run: |
-        find $M2_HOME -type f | wc -l
-        du -bs $M2_HOME
         find ~/.m2 -type f | wc -l
         du -bs ~/.m2
   gradle:
