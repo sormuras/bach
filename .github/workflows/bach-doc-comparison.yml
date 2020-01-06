@@ -13,7 +13,11 @@ jobs:
         java-version: 11
     - name: 'Let Bach.java build the project'
       working-directory: doc/comparison/minimal/bach
-      run: jshell https://bit.ly/bach-build
+      run: |
+        find . -type f | wc -l
+        du -hs .
+        jshell https://bit.ly/bach-build
+        du -hs .
   maven:
     name: "Maven"
     runs-on: ubuntu-latest
@@ -26,8 +30,12 @@ jobs:
         java-version: 11
     - name: 'Let Maven build the project'
       working-directory: doc/comparison/minimal/maven
-      run: mvn verify
-    - name: 'Size of Maven'
+      run: |
+        find . -type f | wc -l
+        du -hs .
+        mvn verify
+        du -hs .
+    - name: 'Size of Maven and ~/.m2'
       run: |
         find $M2_HOME -type f | wc -l
         du -hs $M2_HOME
@@ -45,10 +53,12 @@ jobs:
         java-version: 11
     - name: 'Let Gradle build the project'
       working-directory: doc/comparison/minimal/gradle
-      run: ./gradlew build
-    - name: 'Size of Gradle'
+      run: |
+        find . -type f | wc -l
+        du -hs .
+        ./gradlew build
+        du -hs .
+    - name: 'Size of ~/.gradle'
       run: |
         find ~/.gradle -type f | wc -l
         du -hs ~/.gradle
-        find ./.gradle -type f | wc -l
-        du -hs ./.gradle
