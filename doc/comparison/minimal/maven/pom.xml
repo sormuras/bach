@@ -36,8 +36,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <force>true</force>
-                    <failOnError>false</failOnError>
+                    <additionalOptions>
+                        <additionalOption>
+                            --module de.sormuras.bach.doc.minimal
+                        </additionalOption>
+                    </additionalOptions>
                 </configuration>
             </plugin>
         </plugins>
