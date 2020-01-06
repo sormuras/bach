@@ -1,4 +1,4 @@
-name: bach-doc-comparison
+name: Minimal
 on: push
 jobs:
   bach:
@@ -15,9 +15,9 @@ jobs:
       working-directory: doc/comparison/minimal/bach
       run: |
         find . -type f | wc -l
-        du -hs .
+        du -bs .
         jshell https://bit.ly/bach-build
-        du -hs .
+        du -bs .
   maven:
     name: "Maven"
     runs-on: ubuntu-latest
@@ -32,15 +32,15 @@ jobs:
       working-directory: doc/comparison/minimal/maven
       run: |
         find . -type f | wc -l
-        du -hs .
+        du -bs .
         mvn verify
-        du -hs .
+        du -bs .
     - name: 'Size of Maven and ~/.m2'
       run: |
         find $M2_HOME -type f | wc -l
-        du -hs $M2_HOME
+        du -bs $M2_HOME
         find ~/.m2 -type f | wc -l
-        du -hs ~/.m2
+        du -bs ~/.m2
   gradle:
     name: "Gradle"
     runs-on: ubuntu-latest
@@ -55,10 +55,10 @@ jobs:
       working-directory: doc/comparison/minimal/gradle
       run: |
         find . -type f | wc -l
-        du -hs .
+        du -bs .
         ./gradlew build
-        du -hs .
+        du -bs .
     - name: 'Size of ~/.gradle'
       run: |
         find ~/.gradle -type f | wc -l
-        du -hs ~/.gradle
+        du -bs ~/.gradle
