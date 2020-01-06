@@ -12,9 +12,8 @@ version = "0"
 tasks {
 
     javadoc {
-        isFailOnError = false
-        (options as StandardJavadocDocletOptions).addStringOption("-module-source-path", "src/main/java")
         (options as StandardJavadocDocletOptions).addStringOption("-module", "de.sormuras.bach.doc.minimal")
+        (options as StandardJavadocDocletOptions).addStringOption("-patch-module", "de.sormuras.bach.doc.minimal=src/main/java")
     }
 
     val sourcesJar by creating(Jar::class) {
