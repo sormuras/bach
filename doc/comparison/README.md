@@ -15,14 +15,14 @@ The goal of each build tool, is to generate 3 JAR files:
 - `-javadoc.jar`
 
 All build tools are able to generate those 3 required JAR files.
-See https://github.com/sormuras/bach/runs/375591532 for details and their build logs.
+See https://github.com/sormuras/bach/runs/375630551 for details and their build logs.
 
 Here's a summary of the most interesting numbers.
 
 | Tool           | Project Files | Raw Build Time | Total Time | Tool Files | Tool Size in MB |
 |----------------| ------------- | -------------- | ---------- | ---------- | --------------- |
-| Bach.java 2.0  |             1 |             2  |         14 |          1 |             0.1 |
-| Maven 3.6.3    |             6 |            13  |         18 |       1394 |           244   |
+| Bach.java 2.0  |             1 |             2  |         11 |          1 |             0.1 |
+| Maven 3.6.3    |             6 |            14  |         18 |       1394 |            44   |
 | Gradle 6.0.1   |             7 |            43  |         44 |        447 |           330   |
 
 
@@ -38,7 +38,7 @@ Here's a summary of the most interesting numbers.
 
 `jshell https://bit.ly/bach-build`
 
-14 seconds later (including 1.5 s build time), the directory contains 1,936,296 bytes.
+14 seconds later (including 1.5 s raw build time), the directory contains 1,936,297 bytes.
 
 ### Maven
 
@@ -59,14 +59,14 @@ Here's a summary of the most interesting numbers.
 
 ```
 
-6 files, the module compilation unit, the [`pom.xml`](minimal/maven/pom.xml) file and assets of the Maven Wrapper.
-All of them weighing in 18,729 bytes before build.
+6 files, the module compilation unit, the [pom.xml](minimal/maven/pom.xml) file and assets of the Maven Wrapper.
+All of them weighing in 48,756 bytes before build.
 
 `mvn verify`
 
-18 seconds later (including 17.7 s build time), the directory contains 1,825,166 bytes.
+18 seconds later (including 13.9 s raw build time), the directory contains 1,905,905 bytes.
 
-In addition, `~/.m2` was created. That directory contains 1394 files with 244,353,411 bytes.
+In addition, `~/.m2` was created. That directory contains 1394 files with 44,353,411 bytes.
 
 ### Gradle
 
@@ -87,12 +87,13 @@ In addition, `~/.m2` was created. That directory contains 1394 files with 244,35
                 module-info.java
 ```
 
-7 files weighing in 92,583 bytes before build.
+7 files weighing in 92,583 bytes before build, including the main build file: [build.gradle.kts](minimal/gradle/build.gradle.kts)
 
 `./gradlew build`
 
-46 seconds later (44 s build time), the directory contains 2,056,204 bytes.
+47 seconds later (45 s raw (?!) build time), the directory contains 2,056,204 bytes.
 
-In addition, `~/.gradle` was created. That directory contains 444 files with 330,224,029 bytes.
+In addition, `~/.gradle` was created. That directory contains 444 files with 330,224,076 bytes.
 
 Local `.gradle` directory containing hashes, caches, properties, etc, ...  was ignored.
+Same for the `~/.tooling/gradle` directory.
