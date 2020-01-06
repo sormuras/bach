@@ -5,31 +5,15 @@ plugins {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withSourcesJar()
+    withJavadocJar()
 }
 
 version = "0"
 
-tasks {
-
-    javadoc {
-        (options as StandardJavadocDocletOptions).addStringOption("-module", "de.sormuras.bach.doc.minimal")
-        (options as StandardJavadocDocletOptions).addStringOption("-patch-module", "de.sormuras.bach.doc.minimal=src/main/java")
-    }
-
-    val sourcesJar by creating(Jar::class) {
-        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        classifier = "sources"
-        from(sourceSets["main"].allJava)
-    }
-
-    val javadocJar by creating(Jar::class) {
-        dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
-        classifier = "javadoc"
-        from(javadoc)
-    }
-
-    artifacts {
-        add("archives", sourcesJar)
-        add("archives", javadocJar)
+tasks.javadoc {
+    (options as StandardJavadocDocletOptions).apply {
+        addStringOption("-module", "de.sormuras.bach.doc.minimal")
+        addStringOption("-patch-module", "de.sormuras.bach.doc.minimal=src/main/java")
     }
 }
