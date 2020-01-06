@@ -45,7 +45,7 @@ jobs:
         java-version: 11
     - name: 'Let Gradle build the project'
       working-directory: doc/comparison/minimal/gradle
-      run: gradle build
+      run: gradle --debug build
     - name: 'Size of Gradle'
       run: |
         echo "find $GRADLE_HOME -type f | wc -l"
