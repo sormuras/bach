@@ -36,7 +36,9 @@ class LibraryTests {
           "javafx.media",
           "javafx.swing",
           "javafx.web",
+          "junit",
           "org.apiguardian.api",
+          "org.hamcrest",
           "org.junit.platform.commons",
           "org.junit.platform.console",
           "org.junit.platform.engine",
@@ -46,6 +48,7 @@ class LibraryTests {
           "org.junit.jupiter.api",
           "org.junit.jupiter.engine",
           "org.junit.jupiter.params",
+          "org.junit.vintage.engine",
           "org.opentest4j",
           "org.lwjgl",
           "org.lwjgl.assimp",
@@ -126,9 +129,7 @@ class LibraryTests {
 
   @Test
   void defaultLibraryLinks() {
-    var library = Library.of();
-    assertTrue(library.requires().isEmpty());
-    assertEquals(DEFAULT_LINK_KEYS, library.links().keySet());
+    assertEquals(DEFAULT_LINK_KEYS, Library.defaultLinks().keySet());
   }
 
   @Test

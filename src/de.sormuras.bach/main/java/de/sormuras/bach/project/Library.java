@@ -93,6 +93,11 @@ public /*record*/ class Library {
     private DefaultLinks() {
       put("org.apiguardian.api", Link.central("org.apiguardian", "apiguardian-api", "1.1.0"));
       put("org.opentest4j", Link.central("org.opentest4j", "opentest4j", "1.2.0"));
+      putJUnitPlatform("1.6.0-RC1", "commons", "console", "engine", "launcher", "reporting");
+      putJUnitJupiter("5.6.0-RC1", "", "api", "engine", "params");
+      put("org.junit.vintage.engine", Link.central("org.junit.vintage", "junit-vintage-engine", "5.6.0-RC1"));
+      put("junit", Link.central("junit", "junit", "4.13"));
+      put("org.hamcrest", Link.central("org.hamcrest", "hamcrest", "2.2"));
       putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
       putJLWGL(
           "3.2.3",
@@ -134,8 +139,6 @@ public /*record*/ class Library {
           "xxhash",
           "yoga",
           "zstd");
-      putJUnitJupiter("5.6.0-M1", "", "api", "engine", "params");
-      putJUnitPlatform("1.6.0-M1", "commons", "console", "engine", "launcher", "reporting");
     }
 
     private void putJavaFX(String version, String... names) {
