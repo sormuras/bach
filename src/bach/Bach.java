@@ -112,7 +112,8 @@ public class Bach {
     System.out.println();
     System.out.println("Scaffold a modular Java project?");
     System.out.println("  0 -> No.");
-    System.out.println("  1 -> Create `module-info.java`-only minimal project.");
+    System.out.println("  1 -> Create minimal `module-info.java`-only project.");
+    System.out.println();
     System.out.print("Your choice: ");
     switch (scanner.nextInt()) {
       case 0:
@@ -123,10 +124,18 @@ public class Bach {
         var module = name != null ? name.toString() : "demo";
         var folder = Files.createDirectories(src.resolve(module));
         Files.write(folder.resolve("module-info.java"), List.of("module " + module + " {}", ""));
-        return;
+        break;
       default:
         System.err.println("Your choice is not supported: no file created.");
+        return;
     }
+    System.out.println();
+    System.out.println("Created the following directories and files:");
+    try (var stream = Files.walk(src)) {
+      stream.sorted().forEach(System.out::println);
+    }
+    System.out.println();
+    System.out.println("Run 'bach build' to build the project.");
   }
 
   static void load(Path lib, String module, String version, URI uri) throws Exception {
