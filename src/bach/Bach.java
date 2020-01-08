@@ -22,11 +22,17 @@ import static java.nio.file.Files.isRegularFile;
 import static java.nio.file.Files.newOutputStream;
 
 import java.net.URI;
+import java.nio.file.CopyOption;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /** Build modular Java project. */
 public class Bach {
@@ -103,10 +109,12 @@ public class Bach {
   }
 
   static void scaffold() throws Exception {
-    var src = Path.of("src");
-    if (Files.isDirectory(src)) {
-      System.out.println("Scaffolding not possible: directory 'src/' already exists.");
-      return;
+    var base = Path.of("");
+    try (var stream = Files.newDirectoryStream(base)) {
+      if (stream.iterator().hasNext()) {
+        System.out.println("Scaffolding not possible: current directory is not empty");
+        return;
+      }
     }
     var scanner = new Scanner(System.in);
     System.out.println();
@@ -114,6 +122,10 @@ public class Bach {
     System.out.println("  0 -> No.");
     System.out.println("  1 -> Create minimal `module-info.java`-only project.");
     System.out.println("  2 -> Single module project with main and test realm.");
+    System.out.println("  3 -> https://github.com/sormuras/bach-air");
+    System.out.println("  4 -> https://github.com/sormuras/bach-javafx");
+    System.out.println("  5 -> https://github.com/sormuras/bach-hansolos-spacefx");
+    System.out.println("  6 -> https://github.com/sormuras/bach-lwjgl");
     System.out.println();
     System.out.print("Your choice: ");
     switch (scanner.nextInt()) {
@@ -122,16 +134,15 @@ public class Bach {
         return;
       case 1:
         {
-          var folder = Files.createDirectories(src.resolve("minimal"));
+          var folder = Files.createDirectories(base.resolve("src/minimal"));
           Files.write(folder.resolve("module-info.java"), List.of("module minimal {}", ""));
         }
         break;
       case 2:
         {
-          scanner.next();
-          var main = Files.createDirectories(src.resolve("demo/main/java"));
+          var main = Files.createDirectories(base.resolve("src/demo/main/java"));
           Files.write(main.resolve("module-info.java"), List.of("module demo {}", ""));
-          var test = Files.createDirectories(src.resolve("demo/test/java"));
+          var test = Files.createDirectories(base.resolve("src/demo/test/java"));
           Files.write(
               test.resolve("module-info.java"),
               List.of(
@@ -139,7 +150,7 @@ public class Bach {
                   "  requires org.junit.jupiter;",
                   "}",
                   ""));
-          var it = Files.createDirectories(src.resolve("it/test/java"));
+          var it = Files.createDirectories(base.resolve("src/it/test/java"));
           Files.write(
               it.resolve("module-info.java"),
               List.of(
@@ -150,27 +161,105 @@ public class Bach {
                   ""));
         }
         break;
+      case 3:
+        {
+          var zip = Path.of("bach-air.zip");
+          load(zip, URI.create("https://github.com/sormuras/bach-air/archive/master.zip"));
+          unzip(zip, base, "bach-air-master");
+          Files.delete(zip);
+        }
+        break;
+      case 4:
+        {
+          var zip = Path.of("bach-javafx.zip");
+          load(zip, URI.create("https://github.com/sormuras/bach-javafx/archive/master.zip"));
+          unzip(zip, base, "bach-javafx-master");
+          Files.delete(zip);
+        }
+        break;
+      case 5:
+        {
+          var zip = Path.of("bach-hansolos-spacefx.zip");
+          load(
+              zip,
+              URI.create("https://github.com/sormuras/bach-hansolos-spacefx/archive/master.zip"));
+          unzip(zip, base, "bach-hansolos-spacefx-master");
+          Files.delete(zip);
+        }
+        break;
+      case 6:
+        {
+          var zip = Path.of("bach-lwjgl.zip");
+          load(zip, URI.create("https://github.com/sormuras/bach-lwjgl/archive/master.zip"));
+          unzip(zip, base, "bach-lwjgl-master");
+          Files.delete(zip);
+        }
+        break;
       default:
         System.err.println("Your choice is not supported: no file created.");
         return;
     }
     System.out.println();
     System.out.println("Created the following directories and files:");
-    try (var stream = Files.walk(src)) {
+    try (var stream = Files.walk(Path.of(""))) {
       stream.sorted().forEach(System.out::println);
     }
     System.out.println();
     System.out.println("Run 'bach build' to build the project.");
   }
 
+  /** Copy selected files and directories from source to target directory. */
+  static void copy(Path source, Path target, Predicate<Path> filter) {
+    if (!Files.exists(source)) {
+      throw new IllegalArgumentException("source must exist: " + source);
+    }
+    if (!Files.isDirectory(source)) {
+      throw new IllegalArgumentException("source must be a directory: " + source);
+    }
+    if (Files.exists(target)) {
+      if (target.equals(source)) return;
+      if (!Files.isDirectory(target)) {
+        throw new IllegalArgumentException("target must be a directory: " + target);
+      }
+      if (target.startsWith(source)) { // copy "a/" to "a/b/"...
+        throw new IllegalArgumentException("target must not a child of source");
+      }
+    }
+    var options = Set.of(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+    try (var stream = Files.walk(source).sorted()) {
+      var paths = stream.filter(filter).collect(Collectors.toList());
+      for (var path : paths) {
+        var destination = target.resolve(source.relativize(path).toString());
+        var lastModified = Files.getLastModifiedTime(path);
+        if (Files.isDirectory(path)) {
+          Files.createDirectories(destination);
+          Files.setLastModifiedTime(destination, lastModified);
+          continue;
+        }
+        if (Files.exists(destination)) {
+          if (lastModified.equals(Files.getLastModifiedTime(destination))) {
+            continue;
+          }
+        }
+        Files.copy(path, destination, options.toArray(CopyOption[]::new));
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("copy failed: " + source + " -> " + target, e);
+    }
+  }
+
   static void load(Path lib, String module, String version, URI uri) throws Exception {
     debug(String.format("| Loading module de.sormuras.bach %s to %s...%n", version, lib.toUri()));
     var jar = lib.resolve(module + '-' + version + ".jar");
     if (isRegularFile(jar) && !version.endsWith("SNAPSHOT")) return;
-    debug(String.format("|   %s <- %s%n", jar, uri));
-    createDirectories(lib);
+    load(jar, uri);
+  }
+
+  static void load(Path file, URI uri) throws Exception {
+    debug(String.format("|   %s <- %s%n", file, uri));
+    createDirectories(file.toAbsolutePath().getParent());
     try (var source = uri.toURL().openStream();
-        var target = newOutputStream(jar)) {
+        var target = newOutputStream(file)) {
       source.transferTo(target);
     }
   }
@@ -185,5 +274,15 @@ public class Bach {
     int code = process.waitFor();
     debug("|");
     if (code != 0) throw new Error("Non-zero exit code: " + code);
+  }
+
+  /** Unzip file to specified destination directory. */
+  static Path unzip(Path zip, Path destination, String... more) throws Exception {
+    var loader = Bach.class.getClassLoader();
+    try (var zipFileSystem = FileSystems.newFileSystem(zip, loader)) {
+      var root = zipFileSystem.getPath(zipFileSystem.getSeparator(), more);
+      copy(root, destination, __ -> true);
+    }
+    return destination;
   }
 }
