@@ -25,12 +25,16 @@ import java.util.regex.Pattern;
 /** Set various version values to the one of this program's first argument. */
 public class Version {
 
-  private static final Path BUILD = Path.of("src/bach/Build.java");
-
   public static void main(String... args) throws Exception {
-    var matcher = Pattern.compile("String VERSION = \"(.+)\";").matcher(Files.readString(BUILD));
+    var readmeMd = Path.of("README.md");
+    var bachJava = Path.of("src/bach/Bach.java");
+    var buildJava = Path.of("src/bach/Build.java");
+    var bachInitJsh = Path.of("src/bach/Init.jsh");
+    var bachBuildJsh = Path.of("src/bach/build.jsh");
+
+    var matcher = Pattern.compile("String VERSION = \"(.+)\";").matcher(Files.readString(buildJava));
     if (!matcher.find()) {
-      throw new IllegalArgumentException("Version constant not found in: " + BUILD);
+      throw new Error("Version constant not found in: " + buildJava);
     }
     var current = matcher.group(1);
     // Only print current version?
@@ -47,18 +51,13 @@ public class Version {
       System.out.println("Same version already set: " + current);
       return;
     }
-    var bachJava = Path.of("src/bach/Bach.java");
-    var bachJsh = Path.of("src/bach/build.jsh");
-    // var mergedBach = Path.of("src/bach/MergedBach.java");
-    var readmeMd = Path.of("README.md");
+    var masterOrVersion = version.endsWith("-ea") ? "master" : version;
 
-    sed(BUILD, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
-    sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
-    sed(bachJsh, "raw/.+/src", "raw/" + (version.endsWith("-ea") ? "master" : version) + "/src");
-    // mergedBach.toFile().setWritable(true);
-    // sed(mergedBach, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
-    // mergedBach.toFile().setWritable(false);
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
+    sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
+    sed(buildJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
+    sed(bachInitJsh, "String VERSION = \".+\"", "String VERSION = \"" + masterOrVersion + '"');
+    sed(bachBuildJsh, "raw/.+/src", "raw/" + masterOrVersion + "/src");
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
