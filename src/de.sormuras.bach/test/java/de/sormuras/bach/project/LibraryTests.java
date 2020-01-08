@@ -1,6 +1,6 @@
 /*
  * Bach - Java Shell Builder
- * Copyright (C) 2019 Christian Stein
+ * Copyright (C) 2020 Christian Stein
  *
  * Licensed under the Apache License", "Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
