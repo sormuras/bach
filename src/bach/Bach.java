@@ -22,9 +22,11 @@ import static java.nio.file.Files.isRegularFile;
 import static java.nio.file.Files.newOutputStream;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 /** Build modular Java project. */
 public class Bach {
@@ -63,6 +65,14 @@ public class Bach {
     debug("|   args: " + List.of(args));
     debug("|");
 
+    /*
+     * Scaffold only?
+     */
+    if (args.length == 1 && args[0].equalsIgnoreCase("scaffold")) {
+      scaffold();
+      return;
+    }
+
     var uri = "https://jitpack.io/com/github/sormuras/bach/{VERSION}/bach-{VERSION}.jar";
     load(LIB, "de.sormuras.bach", version, URI.create(uri.replace("{VERSION}", version)));
 
@@ -90,6 +100,33 @@ public class Bach {
 
   static void debug(String message) {
     if (DEBUG) System.out.println(message);
+  }
+
+  static void scaffold() throws Exception {
+    var src = Path.of("src");
+    if (Files.isDirectory(src)) {
+      System.out.println("Scaffolding not possible: directory 'src/' already exists.");
+      return;
+    }
+    var scanner = new Scanner(System.in);
+    System.out.println();
+    System.out.println("Scaffold a modular Java project?");
+    System.out.println("  0 -> No.");
+    System.out.println("  1 -> Create `module-info.java`-only minimal project.");
+    System.out.print("Your choice: ");
+    switch (scanner.nextInt()) {
+      case 0:
+        System.out.println("No file created.");
+        return;
+      case 1:
+        var name = Path.of("").toAbsolutePath().getFileName();
+        var module = name != null ? name.toString() : "demo";
+        var folder = Files.createDirectories(src.resolve(module));
+        Files.write(folder.resolve("module-info.java"), List.of("module " + module + " {}", ""));
+        return;
+      default:
+        System.err.println("Your choice is not supported: no file created.");
+    }
   }
 
   static void load(Path lib, String module, String version, URI uri) throws Exception {
