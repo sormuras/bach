@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
- /*
-  * Zero-installation "bach build" script.
-  */
+/*
+ * Zero-installation "bach build" script.
+ */
+
+// The "/open" directive below this comment requires a constant String literal as its argument.
+// Due to this restriction, the URL points to the "master" version.
 
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
