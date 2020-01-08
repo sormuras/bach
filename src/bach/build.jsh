@@ -24,7 +24,7 @@
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points to the "master" version.
 
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+/open https://github.com/sormuras/bach/raw/2.0-RC2/src/bach/Bach.java
 
 System.setProperty("Bach.java/transferIO", "true")
 var code = 0
