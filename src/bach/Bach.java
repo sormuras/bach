@@ -113,6 +113,7 @@ public class Bach {
     System.out.println("Scaffold a modular Java project?");
     System.out.println("  0 -> No.");
     System.out.println("  1 -> Create minimal `module-info.java`-only project.");
+    System.out.println("  2 -> Single module project with main and test realm.");
     System.out.println();
     System.out.print("Your choice: ");
     switch (scanner.nextInt()) {
@@ -120,10 +121,34 @@ public class Bach {
         System.out.println("No file created.");
         return;
       case 1:
-        var name = Path.of("").toAbsolutePath().getFileName();
-        var module = name != null ? name.toString() : "demo";
-        var folder = Files.createDirectories(src.resolve(module));
-        Files.write(folder.resolve("module-info.java"), List.of("module " + module + " {}", ""));
+        {
+          var folder = Files.createDirectories(src.resolve("minimal"));
+          Files.write(folder.resolve("module-info.java"), List.of("module minimal {}", ""));
+        }
+        break;
+      case 2:
+        {
+          scanner.next();
+          var main = Files.createDirectories(src.resolve("demo/main/java"));
+          Files.write(main.resolve("module-info.java"), List.of("module demo {}", ""));
+          var test = Files.createDirectories(src.resolve("demo/test/java"));
+          Files.write(
+              test.resolve("module-info.java"),
+              List.of(
+                  "open /*test*/ module demo /*extends main module*/ {",
+                  "  requires org.junit.jupiter;",
+                  "}",
+                  ""));
+          var it = Files.createDirectories(src.resolve("it/test/java"));
+          Files.write(
+              it.resolve("module-info.java"),
+              List.of(
+                  "open /*test*/ module it {",
+                  "  requires demo;",
+                  "  requires org.junit.jupiter;",
+                  "}",
+                  ""));
+        }
         break;
       default:
         System.err.println("Your choice is not supported: no file created.");
