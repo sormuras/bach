@@ -110,6 +110,10 @@ public class Bach {
 
   static void scaffold() throws Exception {
     var base = Path.of("");
+    if (Files.isDirectory(base.resolve("src"))) {
+      System.out.println("Scaffolding not possible: directory src already exists");
+      return;
+    }
     var scanner = new Scanner(System.in);
     System.out.println();
     System.out.println("Scaffold a modular Java project?");
