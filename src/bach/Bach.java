@@ -110,12 +110,6 @@ public class Bach {
 
   static void scaffold() throws Exception {
     var base = Path.of("");
-    try (var stream = Files.newDirectoryStream(base)) {
-      if (stream.iterator().hasNext()) {
-        System.out.println("Scaffolding not possible: current directory is not empty");
-        return;
-      }
-    }
     var scanner = new Scanner(System.in);
     System.out.println();
     System.out.println("Scaffold a modular Java project?");
