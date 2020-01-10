@@ -121,7 +121,7 @@ class Jigsaw {
       }
     }
 
-    /*if (realm.isDeployRealm())*/ {
+    if (bach.isVerbose()) {
       var jdeps =
           new Call("jdeps")
               .add("--module-path", Paths.filterExisting(modulePath))
@@ -134,7 +134,7 @@ class Jigsaw {
                   .add("--dot-output", folder.realm(realm.name(), "dot"))
                   .add("--add-modules", allModuleNames));
       if (jdepsExitCode != 0) bach.getLog().warning("jdeps reported: " + jdepsExitCode);
-      else if (bach.isVerbose()) bach.execute(jdeps.clone().add("--check", javadocModules));
+      else bach.execute(jdeps.clone().add("--check", javadocModules));
     }
   }
 
