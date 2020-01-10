@@ -63,7 +63,7 @@ class Tester {
     var layer = layer(modulePath, unit.name());
 
     var errors = new StringBuilder();
-    errors.append(run(layer, "test(" + unit.name() + ")"));
+    errors.append(runAll(layer, "test(" + unit.name() + ")"));
     errors.append(
         run(
             layer,
@@ -103,6 +103,16 @@ class Tester {
   }
 
   private int run(ModuleLayer layer, String name, String... args) {
+    var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+    var toolProvider =
+        StreamSupport.stream(serviceLoader.spliterator(), false)
+            .filter(provider -> provider.name().equals(name))
+            .findFirst();
+    if (toolProvider.isEmpty()) return 1;
+    return run(toolProvider.get(), args);
+  }
+
+  private int runAll(ModuleLayer layer, String name, String... args) {
     var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
     return StreamSupport.stream(serviceLoader.spliterator(), false)
         .filter(provider -> provider.name().equals(name))
