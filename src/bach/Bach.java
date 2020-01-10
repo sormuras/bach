@@ -196,10 +196,10 @@ public class Bach {
         break;
       case 9:
         {
-          int max = 9;
+          int balloons = 99;
           var m0i = Files.createDirectories(base.resolve("src/m0i"));
           Files.write(m0i.resolve("module-info.java"), List.of("module m0i {}", ""));
-          for (int i = 1; i <= max; i++) {
+          for (int i = 1; i <= balloons; i++) {
             var name = "m" + i + "i";
             var folder = Files.createDirectories(base.resolve("src/" + name));
             var lines = new ArrayList<String>();
