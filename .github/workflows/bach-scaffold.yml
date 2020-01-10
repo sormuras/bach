@@ -1,14 +1,19 @@
 name: Scaffold
 on: push
 jobs:
-  ninetynine:
-    name: "99"
-    runs-on: ubuntu-latest
+  scaffold:
+    name: "Scaffold (JDK-${{ matrix.java }}, ${{ matrix.os }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        java: [11]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
-        java-version: 11
+        java-version: ${{ matrix.java }}
     - name: 'Let Bach.java scaffold and build project "99 Luftballons"'
       run: |
         mkdir ninetynine
