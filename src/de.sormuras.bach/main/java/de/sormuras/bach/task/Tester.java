@@ -71,7 +71,7 @@ class Tester {
             "--select-module",
             unit.name(),
             "--reports-dir",
-            folder.realm(realm.name(), "junit-reports").toString()));
+            folder.realm(realm.name(), "junit-reports", unit.name()).toString()));
     if (errors.toString().replace('0', ' ').isBlank()) {
       return;
     }
