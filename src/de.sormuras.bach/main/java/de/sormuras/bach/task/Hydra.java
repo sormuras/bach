@@ -78,16 +78,13 @@ public /*STATIC*/ class Hydra {
       modulePath.add(modules); // current realm first, like "main/modules"...
       modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
       javac
-          .forEach(realm.argumentsFor("javac"), Call::add)
-          .add("--class-path", "")
           .add("-d", destination.resolve(module))
           .add("--module-version", project.version(unit))
           .add("--module-path", Paths.filterExisting(modulePath));
-      //          .add("--module-source-path", source.path().toString().replace(module, "*"));
       if (base != source) {
         javac.add("--patch-module", module + '=' + baseClasses);
       }
-      //      javac.add("--module", module);
+      javac.forEach(realm.argumentsFor("javac"), Call::add).add("--class-path", "");
     } else {
       javac.forEach(realm.argumentsFor("javac"), Call::add).add("-d", destination.resolve(module));
       var classPath = new ArrayList<Path>();

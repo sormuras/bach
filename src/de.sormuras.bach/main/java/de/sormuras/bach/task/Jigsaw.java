@@ -60,14 +60,15 @@ class Jigsaw {
     if (!normalNames.isBlank()) {
       bach.execute(
           new Call("javac")
-              .forEach(realm.argumentsFor("javac"), Call::add)
-              .add("--class-path", "")
               .add("-d", classesDirectory)
               .add("--module", normalNames)
               .add("--module-source-path", realm.moduleSourcePath())
               .forEach(units, this::patchModule)
               .add("--module-path", Paths.filterExisting(modulePath))
-              .add("--module-version", bach.getProject().version()));
+              .add("--module-version", bach.getProject().version())
+              .forEach(realm.argumentsFor("javac"), Call::add)
+              .add("--class-path", "")
+      );
     }
 
     var javadocModulesOption = realm.argumentsFor(Realm.JAVADOC_MODULES_OPTION);
