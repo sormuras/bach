@@ -138,7 +138,7 @@ Bach.java - Intro
 Bach.java - Intro
 @snapend
 
-+++
++++?image=doc/img/twitter-bruno-pick-your-markup.png&size=cover&opacity=10
 @snap[north span-90]
 ### No other tricks
 @snapend
