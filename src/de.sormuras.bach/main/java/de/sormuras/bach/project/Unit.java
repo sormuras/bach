@@ -103,7 +103,7 @@ public /*record*/ class Unit {
   }
 
   public boolean isMainRealm() {
-    return realm.isDeployRealm();
+    return realm.isMainRealm();
   }
 
   public boolean isLinkable() {

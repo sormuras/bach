@@ -63,8 +63,8 @@ public class ProjectBuilder {
 
     // Simple single realm? All must match: "src/{MODULE}/module-info.java"
     if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
-      var modifiers = Set.of(Realm.Modifier.DEPLOY);
-      var realm = new Realm("realm", modifiers, List.of(src), List.of(folder.lib()), Realm.defaultArgumentsFor("main"));
+      var modifiers = Set.of(Realm.Modifier.MAIN);
+      var realm = new Realm("main", modifiers, List.of(src), List.of(folder.lib()), Realm.defaultArgumentsFor("main"));
       var units = new ArrayList<Unit>();
       for (var root : Paths.list(src, Files::isDirectory)) {
         log.debug("root = %s", root);
@@ -86,7 +86,7 @@ public class ProjectBuilder {
     var main =
         new Realm(
             "main",
-            Set.of(Realm.Modifier.DEPLOY),
+            Set.of(Realm.Modifier.MAIN),
             List.of(folder.src("{MODULE}/main/java")),
             List.of(folder.lib()),
             Realm.defaultArgumentsFor("main"));

@@ -30,7 +30,7 @@ public /*record*/ class Realm {
   public static final String JAVADOC_MODULES_OPTION = "javadoc --module";
 
   public enum Modifier {
-    DEPLOY,
+    MAIN,
     TEST
   }
 
@@ -76,8 +76,8 @@ public /*record*/ class Realm {
     return modifiers;
   }
 
-  public boolean isDeployRealm() {
-    return modifiers.contains(Modifier.DEPLOY);
+  public boolean isMainRealm() {
+    return modifiers.contains(Modifier.MAIN);
   }
 
   public boolean isTestRealm() {

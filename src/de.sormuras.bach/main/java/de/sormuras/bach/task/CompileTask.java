@@ -40,7 +40,7 @@ public class CompileTask implements Task {
       log.debug("Compiling %d %s unit(s): %s", units.size(), realm.name(), units);
       new Hydra(bach, realm).compile(units);
       new Jigsaw(bach, realm).compile(units);
-      if (!realm.isDeployRealm()) continue;
+      if (!realm.isMainRealm()) continue;
       var scribe = new Maven.Scribe(bach);
       scribe.generateMavenPoms(units);
     }

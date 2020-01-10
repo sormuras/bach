@@ -75,7 +75,7 @@ class Jigsaw {
         javadocModulesOption.isEmpty() || javadocModulesOption.equals(List.of(Realm.ALL_MODULES))
             ? allModuleNames
             : String.join(",", javadocModulesOption);
-    if (realm.isDeployRealm()) {
+    if (realm.isMainRealm()) {
       var allModuleSourcePaths =
           units.stream()
               .map(unit -> Paths.star(unit.info(), unit.name()))
@@ -115,7 +115,7 @@ class Jigsaw {
     for (var unit : units) {
       if (unit.isMultiRelease()) continue;
       jarModule(unit);
-      if (realm.isDeployRealm()) {
+      if (realm.isMainRealm()) {
         jarSources(unit);
       }
     }
