@@ -57,8 +57,7 @@ public class Bach {
 
   public static void main(String... args) throws Exception {
     var version = BACH_VERSION.endsWith("-ea") ? "master-SNAPSHOT" : BACH_VERSION;
-    System.out.println();
-    System.out.println("Bach.java // https://github.com/sormuras/bach");
+    System.out.println("Bach.java " + VERSION + " on Java " + Runtime.version());
     System.out.println();
     debug(". BEGIN");
     debug("|   -DBach.java/version=" + BACH_VERSION + " -> " + version);
@@ -74,8 +73,8 @@ public class Bach {
     /*
      * Scaffold only?
      */
-    if (args.length == 1 && args[0].equalsIgnoreCase("scaffold")) {
-      scaffold();
+    if (args.length > 0 && args[0].equalsIgnoreCase("scaffold")) {
+      scaffold(args);
       return;
     }
 
@@ -108,13 +107,12 @@ public class Bach {
     if (DEBUG) System.out.println(message);
   }
 
-  static void scaffold() throws Exception {
+  static void scaffold(String... args) throws Exception {
     var base = Path.of("");
     if (Files.isDirectory(base.resolve("src"))) {
       System.out.println("Scaffolding not possible: directory src already exists");
       return;
     }
-    var scanner = new Scanner(System.in);
     System.out.println();
     System.out.println("Scaffold a modular Java project?");
     System.out.println("  0 -> No.");
@@ -127,7 +125,9 @@ public class Bach {
     System.out.println("  9 -> 99 Luftballons");
     System.out.println();
     System.out.print("Your choice: ");
-    switch (scanner.nextInt()) {
+    int choice = args.length == 2 ? Integer.parseInt(args[1]) : new Scanner(System.in).nextInt();
+    if (args.length == 2) System.out.println(choice);
+    switch (choice) {
       case 0:
         System.out.println("No file created.");
         return;
