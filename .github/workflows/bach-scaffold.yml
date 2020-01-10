@@ -5,14 +5,14 @@ jobs:
     name: "99"
     runs-on: ubuntu-latest
     steps:
-    - name: 'Checkout'
-      uses: actions/checkout@v1
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
         java-version: 11
     - name: 'Let Bach.java scaffold and build project "99 Luftballons"'
       run: |
+        mkdir ninetynine
+        cd ninetynine
         jshell https://bit.ly/bach-init
         ./bach scaffold 9
         ./bach build
