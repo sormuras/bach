@@ -31,4 +31,4 @@ jobs:
       working-directory: doc/comparison/ninetynine/maven
       run: |
         java Generate.java
-        ./mvnw verify
+        mvn verify
