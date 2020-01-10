@@ -124,6 +124,7 @@ public class Bach {
     System.out.println("  4 -> https://github.com/sormuras/bach-javafx");
     System.out.println("  5 -> https://github.com/sormuras/bach-hansolos-spacefx");
     System.out.println("  6 -> https://github.com/sormuras/bach-lwjgl");
+    System.out.println("  9 -> 99 Luftballons");
     System.out.println();
     System.out.print("Your choice: ");
     switch (scanner.nextInt()) {
@@ -191,6 +192,25 @@ public class Bach {
           load(zip, URI.create("https://github.com/sormuras/bach-lwjgl/archive/master.zip"));
           unzip(zip, base, "bach-lwjgl-master");
           Files.delete(zip);
+        }
+        break;
+      case 9:
+        {
+          int max = 9;
+          var m0i = Files.createDirectories(base.resolve("src/m0i"));
+          Files.write(m0i.resolve("module-info.java"), List.of("module m0i {}", ""));
+          for (int i = 1; i <= max; i++) {
+            var name = "m" + i + "i";
+            var folder = Files.createDirectories(base.resolve("src/" + name));
+            var lines = new ArrayList<String>();
+            lines.add("module " + name + " {");
+            for (int j = 0; j < i; j++) {
+              lines.add("  requires m" + j + "i;");
+            }
+            lines.add("}");
+            lines.add("");
+            Files.write(folder.resolve("module-info.java"), lines);
+          }
         }
         break;
       default:
