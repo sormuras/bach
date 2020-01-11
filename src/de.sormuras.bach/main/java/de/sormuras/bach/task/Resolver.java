@@ -46,7 +46,7 @@ class Resolver {
     this.uris = Uris.of(log);
   }
 
-  public void resolveRequires(Path lib) throws Exception {
+  public void resolveLibraryRequires(Path lib) throws Exception {
     for (var required : library.requires()) {
       resolve(lib, required.name(), required.version());
     }

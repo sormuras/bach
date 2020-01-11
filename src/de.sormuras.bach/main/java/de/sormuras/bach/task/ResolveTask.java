@@ -41,10 +41,8 @@ public class ResolveTask implements Task {
     var library = project.structure().library();
     var resolver = new Resolver(log, library);
 
-    var requires = library.requires();
-    if (!requires.isEmpty()) {
-      resolver.resolveRequires(lib);
-    }
+    // always resolve user-configured mandatory requires
+    resolver.resolveLibraryRequires(lib);
 
     var systemModulesSurvey = Modules.Survey.of(ModuleFinder.ofSystem());
     var missing = findMissingModules(bach, systemModulesSurvey);
@@ -69,7 +67,7 @@ public class ResolveTask implements Task {
       if (!intersection.isEmpty())
         throw new IllegalStateException("Unresolved module(s): " + intersection);
     } while (repeat && !missing.isEmpty());
-    log.info("Loaded %d 3rd-party module(s): %s", loaded.size(), lib);
+    log.info("Resolved %d missing module(s): %s", loaded.size(), loaded);
   }
 
   Map<String, Set<Version>> findMissingModules(Bach bach, Modules.Survey systemModulesSurvey) {
