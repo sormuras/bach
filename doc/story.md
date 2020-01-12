@@ -29,10 +29,33 @@ The JDK provides foundation tools like `javac`, `jar`, and soon `jpackage`.
 - Based on a modular project model.
 
 > Why didn't build tools embrace Java modules as their basic building blocks of the project models in 2017?
+
+- You program state and logic in a "member".
+- You store "members" in a type.
+- You organize types in a package.
+- You collect packages in a module.
+- You bundle modules in an image, or soon in an installer.
+
+> Why even try to [generate](https://www.sitepoint.com/maven-cannot-generate-module-declaration) Java modules?
+
+It feels to me like hoping that a build tool will generate the "right packages" for me as well.
+Or even better, also fill those generated packages with the "right types".
+Why stop here?
+Let build tools also organize and generate members of my types.
+
+> **Conclusion**
+If there was a module declaration generator, it still required quite a lot of
+configuration to get the resulting file just right. This would not be less work
+than just writing the file directly. All together, writing and maintaining the
+module declaration yourself gives the guarantee that it will always be as **you**
+would expect. [Robert Scholte]
+
+Ha! We're in control.
+
 > Why are there still build tools in 2020 that actively [deny](https://guides.gradle.org/building-java-9-modules) supporting Java modules out of the box?
 
 I guess, we must be glad that `package`s were already introduced in the early days of Java.
-Otherwise, the unnamed package would be our sole container of all types.
+Otherwise, the **unnamed package** would be our sole container of all types.
 
 ### Enter Bach.java
 
@@ -47,7 +70,8 @@ For small to mid-size projects, it offers build support in a platform-agnostic m
 
 Let's start with the simplest possible modular Java project: a single module named `demo`.
 
-The file `src/demo/module-info.java` contains `module demo {}`.
+The file `module-info.java` only contains `module demo {}`.
+It is store in a directory named `src/demo`.
 Yes, this demo can't even print "Hello World".
 The goal is to create a modular JAR named `demo.jar`.
 When that modular JAR is passed to `jar --describe-module --file ${JAR}` the output should read like:
