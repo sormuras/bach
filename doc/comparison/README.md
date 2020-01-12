@@ -97,3 +97,31 @@ In addition, `~/.gradle` was created. That directory contains 444 files with 330
 
 Local `.gradle` directory containing hashes, caches, properties, etc, ...  was ignored.
 Same for the `~/.tooling/gradle` directory.
+
+## Ninetynine
+
+Ninetynine is multi-module project with roughly 99 simple modules.
+Simple as in all modules only constist of a single module declaration.
+
+The module `m00i` is the declared as: `module m00i {}`
+
+Each module may depend on a set of previously declared modules.
+For example, the last module `m99i` could read like:
+
+```java
+module m99i {
+  requires m00i;
+  // ...
+  requires m98i;
+}
+```
+
+See https://github.com/sormuras/bach/runs/385410255 for details.
+Here's a summary of the most interesting numbers.
+
+| Tool           | Project Files | Raw Build Time | Total Time |
+|----------------| ------------- | -------------- | ---------- |
+| Bach.java 2.0  |           100 |             3  |         23 |
+| Maven 3.6.3    | 6 + 100 + 100 |            27  |         32 |
+| Gradle         | 7 +  ?  + 100 |             ?  |          ? |
+
