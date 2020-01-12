@@ -29,7 +29,7 @@ The JDK provides foundation tools like `javac`, `jar`, and soon `jpackage`.
 - Based on a modular project model.
 
 > Why didn't build tools embrace Java modules as their basic building blocks of the project models in 2017?
-> Why are there still build tools in 2020 that actively deny supporting Java modules out of the box?
+> Why are there still build tools in 2020 that actively [deny](https://guides.gradle.org/building-java-9-modules) supporting Java modules out of the box?
 
 I guess, we must be glad that `package`s were already introduced in the early days of Java.
 Otherwise, the unnamed package would be our sole container of all types.
