@@ -85,17 +85,17 @@ Note:
 ### JDK Tools 2019
 @snapend
 @snap[midpoint span-90]
-@ul[text-08](false)
-- **1** `javac` Compiler for the Java programming language
-- **1** `javap` Class file disassembler
-- **1** `javadoc` API documentation generator
-- **1** `java` Launcher for Java applications
-- **1** `jar` Java Archive (JAR) file manager
-- **8** `jdeps` Class dependency analyzer
-- **8** `jdeprscan` Deprecated API use finder
-- **9** `jlink` Custom runtime image assembler
-- **9** `jmod` JMOD file manager
-- **14** `jpackage` Package self-contained Java applications
+@ul[list-no-bullets text-08](false)
+- **1**: `javac` Compiler for the Java programming language
+- **1**: `javap` Class file disassembler
+- **1**: `javadoc` API documentation generator
+- **1**: `java` Launcher for Java applications
+- **1**: `jar` Java Archive (JAR) file manager
+- **8**: `jdeps` Class dependency analyzer
+- **8**: `jdeprscan` Deprecated API use finder
+- **9**: `jlink` Custom runtime image assembler
+- **9**: `jmod` JMOD file manager
+- **14**: `jpackage` Package self-contained Java applications
 @ulend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -368,11 +368,12 @@ Bach.java - Model
 
 +++
 @snap[north span-90]
-### Plan for 2.1-ea
+### Plan for Bach.java 2.1
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
 - Revise Model
+- Support Annotation Processors
 - Support `jpackage`
 - External tools
   - Google-Java-Format
@@ -386,7 +387,7 @@ Bach.java - Outlook
 
 +++
 @snap[north span-90]
-### Plan for 3-ea
+### Plan for Bach.java X, ...
 @snapend
 @snap[midpoint span-90]
 @ul
