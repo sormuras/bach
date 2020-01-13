@@ -175,7 +175,7 @@ Let's have a look at the file tree:
 │       ├───log
 │       │       summary-2020-01-02T05-37-06.600098400Z.log
 │       │
-│       └───realm
+│       └───main
 │           ├───classes
 │           │   └───jigsaw
 │           │       └───demo
@@ -214,14 +214,22 @@ How do other build tools cope with such a minimal project?
 
 | Tool           | Project Files | Raw Build Time | Total Time | Tool Files | Tool Size in MB |
 |----------------| ------------- | -------------- | ---------- | ---------- | --------------- |
-| Bach.java 2.0  |             1 |             2  |         11 |          1 |             0.1 |
-| Maven 3.6.3    |             6 |            14  |         18 |       1394 |            44   |
-| Gradle 6.0.1   |             7 |            43  |         44 |        447 |           330   |
+| Bach.java 2.0  |             1 |         **2**  |         11 |          1 |         **0.1** |
+| Maven 3.6.3    |             6 |            14  |         18 |   **1394** |            44   |
+| Gradle 6.0.1   |             7 |            43  |         44 |        447 |         **330** |
 
-How many files do you have to create and maintain?
+How many files do you have to created and maintained?
 How many files are required to install the tool on your machine?
 What's the size of the tool installation? Caches?
 Per machine? Per version? Per project?
+
+Here are the numbers for a multi-module project.
+
+| Tool           | Project Files | Raw Build Time | Total Time | Comment |
+|----------------| ------------- | -------------- | ---------- | ------- |
+| Bach.java 2.0  |           100 |             3  |         23 | 100x JAR, 100x -sources, 1x -javadoc |
+| Maven 3.6.3    | 6 + 100 + 100 |            27  |         32 | No javadoc generated |
+| Gradle         | 7 +  ?  + 100 |             ?  |          ? | ? |
 
 Find more details in the [comparison](comparison/README.md) of Bach.java, Maven, and Gradle.
 
