@@ -49,16 +49,18 @@ class Jigsaw {
 
   void compile(List<Unit> units) {
     var allModuleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
+    var normalUnits = new ArrayList<Unit>();
     var normalNames =
         units.stream()
             .filter(Predicate.not(Unit::isMultiRelease))
+            .peek(normalUnits::add)
             .map(Unit::name)
             .collect(Collectors.joining(","));
     var modulePath = new ArrayList<Path>();
     modulePath.add(folder.modules(realm.name())); // current realm first, like "main/modules"...
     modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
     if (!normalNames.isBlank()) {
-      bach.getLog().info("Compiling %d module(s)...", normalNames.length());
+      bach.getLog().info("Compiling %d module(s)...", normalUnits.size());
       bach.execute(
           new Call("javac")
               .add("-d", classesDirectory)
