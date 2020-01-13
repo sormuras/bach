@@ -1,12 +1,29 @@
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
+@snap[north span-90]
+## Features
+@snapend
+@snap[midpoint span-90]
+@ul[list-no-bullets](false)
+- Intro ✔
+- Demo ✔
+- **Features**
+  - **Library**
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
+@ulend
+@snapend
+
++++
+
 ## Library
 
-This section describes how directory `lib/` is populated by `${MODULE}-${VERSION}.jar` modules.
+This section describes how directory `lib/` is populated with `${MODULE}-${VERSION}.jar` modules.
 
 +++
 
 ### Resolve recursively
 
-Or what is flood-fill?
+Outline
 
 1. Populate `lib/` directory manually.
 1. Resolve modules declared via `library.requires` feature.

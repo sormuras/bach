@@ -405,7 +405,7 @@ Bach.java - Features - 3rd-party modules
 @snapend
 Note: 3rd-party modules are all modules that are not declared in your project and that are not modules provided by the _system_, i.e. the current Java runtime.
 
-+++?include=doc/topic/feature/library/PITCHME.md
+---?include=doc/topic/feature/library/PITCHME.md
 
 +++
 @snap[north span-90]
