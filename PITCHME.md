@@ -270,12 +270,9 @@ Note:
 @snapend
 @snap[midpoint span-90]
 @ol
-1. Init Bach.java
 1. `jshell https://bit.ly/bach-init`
 1. `bach scaffold`
 1. Build!
-1. Tree binaries
-1. Describe modules
 @olend
 @snapend
 @snap[south span-100 text-07 text-blue]
@@ -284,7 +281,8 @@ Bach.java - Demo 99 - jshell https://bit.ly/bach-init
 
 Note:
 - Show scaffolding
-- Using no extra script files
+- `bach[.bat]` as short-cuts to `.bach/src/Bach.java`
+- `Bach.java` loads module `de.sormuras.bach` via JitPack
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]

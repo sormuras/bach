@@ -125,8 +125,9 @@ public class Bach {
     System.out.println("  9 -> 99 Luftballons");
     System.out.println();
     System.out.print("Your choice: ");
-    int choice = args.length == 2 ? Integer.parseInt(args[1]) : new Scanner(System.in).nextInt();
-    if (args.length == 2) System.out.println(choice);
+    var chosen = args.length == 2;
+    int choice = chosen ? Integer.parseInt(args[1]) : new Scanner(System.in).nextInt();
+    if (chosen) System.out.println(choice);
     switch (choice) {
       case 0:
         System.out.println("No file created.");
@@ -197,18 +198,17 @@ public class Bach {
       case 9:
         {
           int balloons = 99;
-          var m0i = Files.createDirectories(base.resolve("src/m0i"));
-          Files.write(m0i.resolve("module-info.java"), List.of("module m0i {}", ""));
+          var m0i = Files.createDirectories(base.resolve("src/m00i"));
+          Files.write(m0i.resolve("module-info.java"), List.of("module m00i {}", ""));
           for (int i = 1; i <= balloons; i++) {
-            var name = "m" + i + "i";
+            var name = String.format("m%02di", i);
             var folder = Files.createDirectories(base.resolve("src/" + name));
             var lines = new ArrayList<String>();
             lines.add("module " + name + " {");
             for (int j = 0; j < i; j++) {
-              lines.add("  requires m" + j + "i;");
+              lines.add(String.format("  requires m%02di;", j));
             }
             lines.add("}");
-            lines.add("");
             Files.write(folder.resolve("module-info.java"), lines);
           }
         }
