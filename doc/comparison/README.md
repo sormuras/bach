@@ -98,10 +98,10 @@ In addition, `~/.gradle` was created. That directory contains 444 files with 330
 Local `.gradle` directory containing hashes, caches, properties, etc, ...  was ignored.
 Same for the `~/.tooling/gradle` directory.
 
-## Ninetynine
+## Ninety Nine
 
-Ninetynine is multi-module project with roughly 99 simple modules.
-Simple as in all modules only constist of a single module declaration.
+Ninety nine is multi-module project with roughly 99 simple modules.
+Simple as in all modules only consist of a single module declaration.
 
 The module `m00i` is the declared as: `module m00i {}`
 
