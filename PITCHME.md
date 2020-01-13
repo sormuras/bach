@@ -128,9 +128,8 @@ Bach.java - Intro
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
-- Lightweight wrapper
+- Lightweight JDK wrapper
 - Only `.java` as sources
-- Perhaps `.properties`
 - That's it.
 @ulend
 @snapend
@@ -140,7 +139,7 @@ Bach.java - Intro
 
 +++
 @snap[north span-90]
-### No other tricks
+### No tricks
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
@@ -264,6 +263,28 @@ Bach.java - Demo 3 - jshell https://bit.ly/bach-build
 Note:
 - From source to module in 6 steps
 - Using no extra script file
+
++++
+@snap[north]
+### Demo 99
+@snapend
+@snap[midpoint span-90]
+@ol
+1. Init Bach.java
+1. `jshell https://bit.ly/bach-init`
+1. `bach scaffold`
+1. Build!
+1. Tree binaries
+1. Describe modules
+@olend
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Demo 99 - jshell https://bit.ly/bach-init
+@snapend
+
+Note:
+- Show scaffolding
+- Using no extra script files
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
@@ -477,7 +498,7 @@ Bach.java - Model
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets](false)
-- Scaffolding
+- Revise Model
 - Support `jpackage`
 - External tools
   - Google-Java-Format
