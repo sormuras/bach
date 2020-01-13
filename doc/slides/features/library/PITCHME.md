@@ -1,27 +1,12 @@
----?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
-## Features
+### Library
 @snapend
-@snap[midpoint span-90]
-@ul[list-no-bullets](false)
-- Intro ✔
-- Demo ✔
-- **Features**
-  - **Library**
-- @css[text-gray](Model)
-- @css[text-gray](Outlook)
-@ulend
-@snapend
-
-+++
-
-## Library
 
 This section describes how directory `lib/` is populated with `${MODULE}-${VERSION}.jar` modules.
 
 +++
 
-### Resolve recursively
+#### Resolve recursively
 
 Outline
 
@@ -33,13 +18,13 @@ Outline
 
 +++
 
-#### Manual modules
+##### Manual modules
 
 Download any modular JAR file and drop it into the `lib/` directory of the project.
 
 +++
 
-#### Library requires
+##### Library requires
 
 Programmatically via: `new Library(List.of("org.junit.jupiter[@5.6.0]"[, ...]), ...)`
 
@@ -47,7 +32,7 @@ Via configuring a comma-separated list of module names: `library.requires=org.ju
 
 +++
 
-### Resolve single `requires ${MODULE}`
+#### Resolve single `requires ${MODULE}`
 
 Optional dependence, i.e. `requires static ${MODULE}` are not resolved. Use
 

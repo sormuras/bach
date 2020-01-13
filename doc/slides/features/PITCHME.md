@@ -1,18 +1,3 @@
----?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
-@snap[north span-90]
-## Features
-@snapend
-@snap[midpoint span-90]
-@ul[list-no-bullets](false)
-- Intro ✔
-- Demo ✔
-- **Features**
-- @css[text-gray](Model)
-- @css[text-gray](Outlook)
-@ulend
-@snapend
-
-+++
 @snap[north span-90]
 ### Features
 @snapend

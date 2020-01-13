@@ -284,8 +284,38 @@ Note:
 - `bach[.bat]` as short-cuts to `.bach/src/Bach.java`
 - `Bach.java` loads module `de.sormuras.bach` via JitPack
 
----?include=doc/slides/features/PITCHME.md
----?include=doc/slides/features/library/PITCHME.md
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
+@snap[north span-90]
+## Features
+@snapend
+@snap[midpoint span-90]
+@ul[list-no-bullets](false)
+- Intro ✔
+- Demo ✔
+- **Features**
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
+@ulend
+@snapend
+
++++?include=doc/slides/features/PITCHME.md
+
+---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
+@snap[north span-90]
+## Features
+@snapend
+@snap[midpoint span-90]
+@ul[list-no-bullets](false)
+- Intro ✔
+- Demo ✔
+- **Features**
+  - **Library**
+- @css[text-gray](Model)
+- @css[text-gray](Outlook)
+@ulend
+@snapend
+
++++?include=doc/slides/features/library/PITCHME.md
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
