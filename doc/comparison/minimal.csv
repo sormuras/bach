@@ -1,4 +1,4 @@
 Tool,Project Files,Raw Build Time,Total Time,Tool Files,Tool Size in MB
-Bach.java 2.0,1,**2**,11,1,**0.1**
-Maven 3.6.3,6,14,18,**1394**,44
-Gradle 6.0.1,7,43,44,447,**330**
+Bach.java 2.0,1,**2**,11,1,**0.1** @emoji[em-white_check_mark]
+Maven 3.6.3,6,14,18,**1394** @emoji[emoji-scream],44
+Gradle 6.0.1,7,43,44,447,**330** @emoji[emoji-scream]

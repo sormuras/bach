@@ -288,7 +288,7 @@ Note:
 ### Comparison Minimal
 @snapend
 @snap[midpoint span-90]
-@table[table-header table-fragment text-05](doc/comparison/minimal.csv)
+@table[table-header table-fragment text-06](doc/comparison/minimal.csv)
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Demo - Comparison Minimal
