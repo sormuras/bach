@@ -20,7 +20,7 @@
 /*
  * Declare constants and helper methods.
  */
-String VERSION = "2.0-RC3"
+String VERSION = "master"
 var version = System.getProperty("Bach.java/version", VERSION)
 var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/bach/")
 var target = Path.of(".bach/src")
