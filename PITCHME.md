@@ -323,23 +323,6 @@ Bach.java - Demo - Comparison 99
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
-## Features
-@snapend
-@snap[midpoint span-90]
-@ul[list-no-bullets](false)
-- Intro ✔
-- Demo ✔
-- **Features**
-  - **Library**
-- @css[text-gray](Model)
-- @css[text-gray](Outlook)
-@ulend
-@snapend
-
-+++?include=doc/slides/features/library/PITCHME.md
-
----?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
-@snap[north span-90]
 ## Model
 @snapend
 @snap[midpoint span-90]
@@ -429,8 +412,7 @@ Bach.java - Outlook
 @snapend
 @snap[midpoint span-90 text-08 text-center]
 @ul[list-no-bullets](false)
-- Bach.java
-- **Java** Build Tool
+- `Bach.java` is **Java** Build Tool
 - `jshell https://bit.ly/bach-build`
 @ulend
 @snapend

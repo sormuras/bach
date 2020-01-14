@@ -2,13 +2,12 @@
 ### Library
 @snapend
 
-This section describes how directory `lib/` is populated with `${MODULE}-${VERSION}.jar` modules.
+- Or how is the `lib/` directory
+- populated with `${MODULE}-${VERSION}.jar` modules?
 
 +++
 
 #### Resolve recursively
-
-Outline
 
 1. Populate `lib/` directory manually.
 1. Resolve modules declared via `library.requires` feature.
@@ -18,17 +17,11 @@ Outline
 
 +++
 
-##### Manual modules
-
-Download any modular JAR file and drop it into the `lib/` directory of the project.
-
-+++
-
 ##### Library requires
 
-Programmatically via: `new Library(List.of("org.junit.jupiter[@5.6.0]"[, ...]), ...)`
-
-Via configuring a comma-separated list of module names: `library.requires=org.junit.jupiter[@5.6.0][, ...]`
+- Programmatically via
+- `new Library(List.of("org.junit.jupiter[@5.6.0]"[, ...]), ...)`
+- Via configuring a comma-separated list of module names: `library.requires=org.junit.jupiter[@5.6.0][, ...]`
 
 +++
 
