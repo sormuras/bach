@@ -38,9 +38,9 @@ Note:
 @snapend
 Note:
 - I work for Micromata, crafting customised software solutions.
-- Found a P2 bug in `java.exe` https://bugs.openjdk.java.net/browse/JDK-8234076
-- Team member of JUnit 5
-- Also an Apache Maven Committer
+- Found a P2 bug in `java.exe` [JDK-8234076](https://bugs.openjdk.java.net/browse/JDK-8234076)
+- JUnit Team member since 2017
+- Also an Apache Maven Committer [maven-compiler-plugin](https://github.com/apache/maven-compiler-plugin/pull/4)
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
@@ -77,7 +77,7 @@ Note:
 - Why doesn't the JDK provide a build tool out of the box?
 - A build tool in the scope of this talk is a program that "shuffles" the
   tools offered by the JDK in the right order, passing the right options,
-  to produce a compiled and consumable project.
+  to produce consumable ... Java modules.
 
 +++
 @snap[north span-90]
@@ -282,6 +282,17 @@ Note:
 - Show scaffolding
 - `bach[.bat]` as short-cuts to `.bach/src/Bach.java`
 - `Bach.java` loads module `de.sormuras.bach` via JitPack
+
++++
+@snap[north]
+### Comparison Minimal
+@snapend
+@snap[midpoint span-90]
+@table[table-header](doc/comparison/minimal.csv)
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Demo - Comparison Minimal
+@snapend
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
 @snap[north span-90]
