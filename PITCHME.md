@@ -66,7 +66,6 @@ Note:
 @ul[list-no-bullets]
 - Many build tools in the wild
 - JDK does **not** provide a build tool
-- ...or What is a build tool?
 - Which tools does the JDK offer?
 @ulend
 @snapend
@@ -82,7 +81,7 @@ Note:
 
 +++
 @snap[north span-90]
-### JDK Tools 2019
+### JDK Tools in 2020
 @snapend
 @snap[midpoint span-90]
 @ul[list-no-bullets text-08](false)
@@ -128,8 +127,8 @@ Bach.java - Intro
 @snapend
 @snap[midpoint span-90]
 @ul[text-08](false)
-- Lightweight JDK wrapper
-- Only `.java` as sources
+- Lightweight JDK tool juggler
+- Only `.java` files as sources
 - That's it.
 @ulend
 @snapend
