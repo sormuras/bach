@@ -285,13 +285,24 @@ Note:
 
 +++
 @snap[north]
-### Comparison Minimal
+### Other Tools
 @snapend
 @snap[midpoint span-90]
 @table[table-header table-fragment text-06](doc/comparison/minimal.csv)
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Demo - Comparison Minimal
+@snapend
+
++++
+@snap[north]
+### Project 99
+@snapend
+@snap[midpoint span-90]
+@table[table-header table-fragment text-06](doc/comparison/ninetynine.csv)
+@snapend
+@snap[south span-100 text-07 text-blue]
+Bach.java - Demo - Comparison 99
 @snapend
 
 ---?image=https://upload.wikimedia.org/wikipedia/commons/0/0e/Bach_Seal.svg&size=cover&opacity=5
