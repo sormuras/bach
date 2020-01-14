@@ -49,7 +49,7 @@ echo ______
 echo Step 6: Describe demo module
 pause > nul
 echo.
-jar --describe-module --file .bach\out\realm\modules\demo-0.jar
+jar --describe-module --file .bach\out\main\modules\demo-0.jar
 pause > nul
 
 cd ..
