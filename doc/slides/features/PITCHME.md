@@ -11,7 +11,7 @@
 @snapend
 @snap[east span-40]
 @ul[list-no-bullets](false)
-- **compilation** `javac + jar`
+- **atomic compilation** `javac & jar`
 - **multi-module** single&nbsp;pass
 - **multi-release** modules
 - **automated checks** built-in
@@ -74,16 +74,7 @@ Bach.java - Features - Zero Configuration
 @snap[midpoint span-90 text-06]
 - `src/bach/Build.java`
 - Write build program using plain old Java
-
-```
-public static void main(String... args) {
-  System.out.println("Building my own project...");
-  Bach.build(
-    Configuration.of("project", Version.parse("1.2.3"))
-        .setLog(Log.ofSystem(true))
-        .setGroup("my.own.project"));
-}
-```
+- Extend Demo 3 with a custom version
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Bring Your Own Build
@@ -94,10 +85,12 @@ Bach.java - Features - Bring Your Own Build
 ### 3rd-party modules
 @snapend
 @snap[midpoint span-90 text-06]
-All 3rd-party modules are stored in plain sight: `lib/`
-
-How do you provide 3rd-party modules? Load and drop modular JAR files into the `lib/` directory.
-Missing 3rd-party modules are being resolved in a best-effort manner using [sormuras/modules](https://github.com/sormuras/modules) database.
+- 3rd-party modules modules in plain sight: `lib/`
+- How do you provide 3rd-party modules?
+- Load and drop modular JAR files into the `lib/` directory!
+- Create custom Library Links
+  - Module Name to Maven Coordinates
+  - Module Name to URL
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - 3rd-party modules
@@ -110,20 +103,19 @@ Note: 3rd-party modules are all modules that are not declared in your project an
 @snapend
 @snap[midpoint span-90 text-06]
 - `javac` + `jar`
-
-Exploded class files are only a intermediate state.
-This ensures, that at test runtime, you're checking your modules as if they are already published.
-Including loading services and resources.
-
-Using the `--module-source-path` option from `javac` all modules are compiled in a single pass.
-With the exception multi-release modules - they are build before any other module.
-
-Organize your Java sources in targeted directories to create a multi-release JAR.
+- Exploded class files are only a intermediate state
+- Testing real modules as if they are already published
+- Including services and resources
+- All modules are compiled in a single pass
+- Multi-release JAR via `java-9`, `java-10`...
 
 @snapend
 @snap[south span-100 text-07 text-blue]
 Bach.java - Features - Compilation, Multi-Module, Multi-Release
 @snapend
+Note: This ensures, that at test runtime, you're checking your modules as if they are already published.
+Including loading services and resources.
+
 
 +++
 @snap[north span-90]
@@ -131,9 +123,9 @@ Bach.java - Features - Compilation, Multi-Module, Multi-Release
 @snapend
 @snap[midpoint span-90 text-06]
 Two kinds of automated checks per module are supported:
-
 - Provided tool named `test(${MODULE})`
 - JUnit Platform with selecting the current module under test
+- Extend Demo 3 with Jupiter-based tests
 
 @snapend
 @snap[south span-100 text-07 text-blue]
