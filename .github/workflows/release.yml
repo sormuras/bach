@@ -6,12 +6,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest   
+    runs-on: ubuntu-latest
     steps:
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
-        java-version: 11
+        java-version: 13
     - name: 'Print JShell version (triggers creation of user preferences directory)'
       run: jshell --version
     - name: 'Checkout project'
