@@ -23,7 +23,7 @@ public class SummaryTask implements Task {
       log.warning("No realm configured in project: %s", project);
     }
     log.info("Tool runs");
-    log.info("Duration Tool");
+    log.info("Duration Tool (ms)");
     for (var run : log.getRuns()) {
       var args = run.args().length == 0 ? "" : ' ' + String.join(" ", run.args());
       var trim = args.length() <= 111 ? args : args.substring(0, 111 - 3) + "...";
@@ -46,7 +46,7 @@ public class SummaryTask implements Task {
     }
 
     var duration = Duration.between(log.getInstant(), Instant.now());
-    log.info("Build %d took millis.", duration.toMillis());
+    log.info("Build %d took milliseconds.", duration.toMillis());
 
     writeSummaryLog(log, project.folder());
     writeSummaryMarkdown(log, project.folder());
@@ -71,7 +71,7 @@ public class SummaryTask implements Task {
     lines.add("");
     lines.add("## Tools");
     lines.add("");
-    lines.add("| Task | Duration (millis) | Exit Code | Tool Name | Arguments |");
+    lines.add("| Task | Duration (ms) | Exit Code | Tool Name | Arguments |");
     lines.add("| ---: | ----------------: | --------: | :-------- | --------- |");
     for (var run : log.getRuns()) {
       var task = run.task();
