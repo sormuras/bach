@@ -41,6 +41,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -84,17 +85,16 @@ class BachTests {
         error.getMessage());
     assertLinesMatch(
         List.of("Bach.java (.+) initialized.", ">>>>", "Running tool: javac *"), log.lines());
-    assertLinesMatch(
-        List.of(
-            "error: invalid flag: *",
-            "Usage: javac <options> <source files>",
-            "use --help for a list of possible options"),
+    assertLinesMatch("""
+            error: invalid flag: *
+            Usage: javac <options> <source files>
+            use --help for a list of possible options""".lines().collect(Collectors.toList()),
         log.errors());
   }
 
   @Test
   void buildProjectInEmptyDirectoryThrowsError(@TempDir Path temp) {
-    var main = new Realm("main", Set.of(), List.of(), List.of(), Map.of());
+    var main = new Realm("main", Set.of(), 0, List.of(), List.of(), Map.of());
     var unit = unit(main, "unit", 0);
     var structure = new Structure(Folder.of(temp), Library.of(), List.of(main), List.of(unit));
     var project = new Project("empty", "group", Version.parse("0"), structure);
