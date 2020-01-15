@@ -62,46 +62,48 @@ class DemoTests {
         () -> Bach.build(new Bach(log, project)),
         String.join("\n", log.lines()) + "\n" + String.join("\n", log.errors()));
 
-    assertLinesMatch(
-        List.of(
-            ">> AUTO CONFIGURE DEMO PROJECT >>",
-            "Bach.java (.+) initialized.",
-            "Runtime information",
-            ">> SYSTEM PROPERTIES >>",
-            "Tools of the trade",
-            ">> TOOLS >>",
-            "Project demo 0",
-            ">> REALMS, UNITS >>",
-            "Executing task: BuildTask",
-            "Executing task: SanityTask",
-            "SanityTask took \\d+ millis.",
-            "Executing task: ResolveTask",
-            ">> MODULE SURVEYS, DOWNLOADS, ... >>",
-            "Executing task: CompileTask",
-            "Library .+ contains",
-            ">> MODULES >>",
-            "Compiling 3 main unit(s): [demo.core, demo.shell, demo.mantle]",
-            ">> JAVAC, JAR, ... >>",
-            "Compiling 2 test unit(s): [demo.mantle, it]",
-            ">> JAVAC, JAR, ... >>",
-            "Executing task: TestTask",
-            "Testing 2 test unit(s): [demo.mantle, it]",
-            ">> TEST(MODULE), JUNIT(MODULE), ... >>",
-            "Executing task: SummaryTask",
-            "Tool runs",
-            ">> TOOLS RUNS: javac, jar, javadoc, junit... >>",
-            "Modules of main realm",
-            "3 jar(s) found in: " + folder.modules("main").toUri(),
-            ".+\\Q demo.core-0.jar\\E",
-            ".+\\Q demo.mantle-0.jar\\E",
-            ".+\\Q demo.shell-0.jar\\E",
-            "Modules of test realm",
-            "2 jar(s) found in: " + folder.modules("test").toUri(),
-            ".+\\Q demo.mantle-0.jar\\E",
-            ".+\\Q it-0.jar\\E",
-            "Build took \\d+ milliseconds.",
-            "SummaryTask took \\d+ millis.",
-            "BuildTask took \\d+ millis."),
+    assertLinesMatch(String.format("""
+            >> AUTO CONFIGURE DEMO PROJECT >>
+            Bach.java (.+) initialized.
+            Runtime information
+            >> SYSTEM PROPERTIES >>
+            Tools of the trade
+            >> TOOLS >>
+            Project demo 0
+            >> REALMS, UNITS >>
+            Executing task: BuildTask
+            Executing task: SanityTask
+            SanityTask took \\d+ millis.
+            Executing task: ResolveTask
+            >> MODULE SURVEYS, DOWNLOADS, ... >>
+            Executing task: CompileTask
+            Library .+ contains
+            >> MODULES >>
+            Compiling 3 main unit(s): [demo.core, demo.shell, demo.mantle]
+            >> JAVAC, JAR, ... >>
+            Compiling 2 test unit(s): [demo.mantle, it]
+            >> JAVAC, JAR, ... >>
+            Executing task: TestTask
+            Testing 2 test unit(s): [demo.mantle, it]
+            >> TEST(MODULE), JUNIT(MODULE), ... >>
+            Executing task: SummaryTask
+            Tool runs
+            >> TOOLS RUNS: javac, jar, javadoc, junit... >>
+            Modules of main realm
+            3 jar(s) found in: %s
+            .+\\Q demo.core-0.jar\\E
+            .+\\Q demo.mantle-0.jar\\E
+            .+\\Q demo.shell-0.jar\\E
+            Modules of test realm
+            2 jar(s) found in: %s
+            .+\\Q demo.mantle-0.jar\\E
+            .+\\Q it-0.jar\\E
+            Build took \\d+ milliseconds.
+            SummaryTask took \\d+ millis.
+            BuildTask took \\d+ millis.
+            """,
+            folder.modules("main").toUri(),
+            folder.modules("test").toUri()).lines().collect(Collectors.toList()),
         log.lines(),
         "Log lines don't match expectations:\n" + Files.readString(folder.out("summary.log")));
 
