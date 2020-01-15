@@ -24,7 +24,7 @@ import de.sormuras.bach.project.Configuration;
 /** Bach.java's build program, using module {@code de.sormuras.bach} itself. */
 public class Build {
 
-  private static final String VERSION = "2.1-M1";
+  private static final String VERSION = "2.1-ea";
 
   public static void main(String... args) {
     System.out.println("Building Bach.java " + VERSION + "...");
