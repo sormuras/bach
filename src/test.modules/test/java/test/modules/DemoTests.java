@@ -99,7 +99,7 @@ class DemoTests {
             "2 jar(s) found in: " + folder.modules("test").toUri(),
             ".+\\Q demo.mantle-0.jar\\E",
             ".+\\Q it-0.jar\\E",
-            "Build \\d+ took millis.",
+            "Build took \\d+ milliseconds.",
             "SummaryTask took \\d+ millis.",
             "BuildTask took \\d+ millis."),
         log.lines(),

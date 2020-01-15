@@ -24,6 +24,7 @@ public class SummaryTask implements Task {
     }
     log.info("Tool runs");
     log.info("Duration Tool (ms)");
+    log.info("    (ms) name arguments...");
     for (var run : log.getRuns()) {
       var args = run.args().length == 0 ? "" : ' ' + String.join(" ", run.args());
       var trim = args.length() <= 111 ? args : args.substring(0, 111 - 3) + "...";
@@ -46,7 +47,7 @@ public class SummaryTask implements Task {
     }
 
     var duration = Duration.between(log.getInstant(), Instant.now());
-    log.info("Build %d took milliseconds.", duration.toMillis());
+    log.info("Build took %d milliseconds.", duration.toMillis());
 
     writeSummaryLog(log, project.folder());
     writeSummaryMarkdown(log, project.folder());
