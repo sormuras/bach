@@ -49,6 +49,9 @@ public class Bootstrap {
         "-D" + "user.language=en",
         "--class-path", // using "--module-path" conflicts with "junit", see #111
         destination.resolve("de.sormuras.bach").toString(),
+        "--enable-preview",
+        "--source",
+        "" + Runtime.version().feature(),
         "--add-modules",
         "ALL-SYSTEM",
         "src/bach/Build.java");
