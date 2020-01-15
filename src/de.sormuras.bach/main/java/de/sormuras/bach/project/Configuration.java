@@ -68,6 +68,11 @@ public class Configuration {
   private Version version;
   private Library library;
 
+  private int mainRelease;
+  private int testRelease;
+  private boolean mainPreview;
+  private boolean testPreview;
+
   public Configuration(Folder folder) {
     this.folder = folder;
 
@@ -76,6 +81,11 @@ public class Configuration {
     setGroup(Property.PROJECT_GROUP.get(getName()));
     setVersion(Property.PROJECT_VERSION.ifPresent(Version::parse).orElse(Default.PROJECT_VERSION));
     setLibrary(Library.of());
+
+    setMainRelease(0);
+    setMainPreview(false);
+    setTestRelease(Runtime.version().feature());
+    setTestPreview(true);
   }
 
   public Folder getFolder() {
@@ -124,6 +134,42 @@ public class Configuration {
 
   public Configuration setLibrary(Library library) {
     this.library = library;
+    return this;
+  }
+
+  public int getMainRelease() {
+    return mainRelease;
+  }
+
+  public Configuration setMainRelease(int mainRelease) {
+    this.mainRelease = mainRelease;
+    return this;
+  }
+
+  public int getTestRelease() {
+    return testRelease;
+  }
+
+  public Configuration setTestRelease(int testRelease) {
+    this.testRelease = testRelease;
+    return this;
+  }
+
+  public boolean isMainPreview() {
+    return mainPreview;
+  }
+
+  public Configuration setMainPreview(boolean mainPreview) {
+    this.mainPreview = mainPreview;
+    return this;
+  }
+
+  public boolean isTestPreview() {
+    return testPreview;
+  }
+
+  public Configuration setTestPreview(boolean testPreview) {
+    this.testPreview = testPreview;
     return this;
   }
 }

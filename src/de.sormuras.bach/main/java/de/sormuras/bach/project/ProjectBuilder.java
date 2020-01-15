@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -63,8 +64,16 @@ public class ProjectBuilder {
 
     // Simple single realm? All must match: "src/{MODULE}/module-info.java"
     if (moduleFilesInSrc.stream().allMatch(path -> path.getNameCount() == 3)) {
-      var modifiers = Set.of(Realm.Modifier.MAIN);
-      var realm = new Realm("main", modifiers, List.of(src), List.of(folder.lib()), Realm.defaultArgumentsFor("main"));
+      var modifiers = EnumSet.of(Realm.Modifier.MAIN);
+      if (configuration.isMainPreview()) modifiers.add(Realm.Modifier.PREVIEW);
+      var realm =
+          new Realm(
+              "main",
+              modifiers,
+              configuration.getMainRelease(),
+              List.of(src),
+              List.of(folder.lib()),
+              Realm.defaultArgumentsFor("main"));
       var units = new ArrayList<Unit>();
       for (var root : Paths.list(src, Files::isDirectory)) {
         log.debug("root = %s", root);
@@ -86,14 +95,20 @@ public class ProjectBuilder {
     var main =
         new Realm(
             "main",
-            Set.of(Realm.Modifier.MAIN),
+            configuration.isMainPreview()
+                ? Set.of(Realm.Modifier.MAIN, Realm.Modifier.PREVIEW)
+                : Set.of(Realm.Modifier.MAIN),
+            configuration.getMainRelease(),
             List.of(folder.src("{MODULE}/main/java")),
             List.of(folder.lib()),
             Realm.defaultArgumentsFor("main"));
     var test =
         new Realm(
             "test",
-            Set.of(Realm.Modifier.TEST),
+            configuration.isTestPreview()
+                ? Set.of(Realm.Modifier.TEST, Realm.Modifier.PREVIEW)
+                : Set.of(Realm.Modifier.TEST),
+            configuration.getTestRelease(),
             List.of(folder.src("{MODULE}/test/java"), folder.src("{MODULE}/test/module")),
             List.of(folder.modules("main"), folder.lib()),
             Realm.defaultArgumentsFor("test"));

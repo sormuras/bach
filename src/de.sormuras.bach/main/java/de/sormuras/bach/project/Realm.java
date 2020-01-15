@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public /*record*/ class Realm {
@@ -31,7 +32,8 @@ public /*record*/ class Realm {
 
   public enum Modifier {
     MAIN,
-    TEST
+    TEST,
+    PREVIEW
   }
 
   public static Map<String, List<String>> defaultArgumentsFor(String realm) {
@@ -51,6 +53,7 @@ public /*record*/ class Realm {
 
   private final String name;
   private final Set<Modifier> modifiers;
+  private final int release;
   private final List<Path> sourcePaths;
   private final List<Path> modulePaths;
   private final Map<String, List<String>> argumentsFor;
@@ -58,11 +61,13 @@ public /*record*/ class Realm {
   public Realm(
       String name,
       Set<Modifier> modifiers,
+      int release,
       List<Path> sourcePaths,
       List<Path> modulePaths,
       Map<String, List<String>> argumentsFor) {
     this.name = name;
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+    this.release = release;
     this.sourcePaths = List.copyOf(sourcePaths);
     this.modulePaths = List.copyOf(modulePaths);
     this.argumentsFor = Map.copyOf(argumentsFor);
@@ -76,12 +81,20 @@ public /*record*/ class Realm {
     return modifiers;
   }
 
+  public Optional<Integer> release() {
+    return release == 0 ? Optional.empty() : Optional.of(release);
+  }
+
   public boolean isMainRealm() {
     return modifiers.contains(Modifier.MAIN);
   }
 
   public boolean isTestRealm() {
     return modifiers.contains(Modifier.TEST);
+  }
+
+  public boolean isPreviewRealm() {
+    return modifiers.contains(Modifier.PREVIEW);
   }
 
   public List<Path> sourcePaths() {

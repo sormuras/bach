@@ -20,6 +20,7 @@ package test.modules.bach.project;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.project.Folder;
@@ -40,7 +41,7 @@ class ProjectTests {
   @Test
   void createSimpleProjectAndVerifyItsComponents() {
     var base = Path.of("simple");
-    var realm = new Realm("realm", Set.of(), List.of(), List.of(), Map.of());
+    var realm = new Realm("realm", Set.of(), 0, List.of(), List.of(), Map.of());
     var unit = unit(realm, "unit", 1);
     var structure = new Structure(Folder.of(base), Library.of(), List.of(realm), List.of(unit));
     var project = new Project("simple", "group", Version.parse("0"), structure);
@@ -63,7 +64,10 @@ class ProjectTests {
     assertEquals(base.resolve("lib"), folder.lib());
     assertSame(structure, project.structure());
     assertTrue(realm.modifiers().isEmpty());
+    assertFalse(realm.isMainRealm());
     assertFalse(realm.isTestRealm());
+    assertFalse(realm.isPreviewRealm());
+    assertFalse(realm.release().isPresent());
     assertSame(unit, project.unit("realm", "unit").orElseThrow());
     assertEquals("1", project.version(unit).toString());
     assertEquals(base.resolve(".bach/out/realm/modules/unit-1.jar"), project.modularJar(unit));
