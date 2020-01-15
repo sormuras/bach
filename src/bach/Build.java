@@ -31,6 +31,7 @@ public class Build {
     Bach.build(
         Configuration.of("Bach.java", VERSION)
             .setLog(Log.ofSystem(true))
+            .setMainRelease(11)
             .setGroup("de.sormuras.bach"));
   }
 }
