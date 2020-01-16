@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -54,7 +53,6 @@ class DemoTests {
   }
 
   @Test
-  @Disabled("Get JitPack build running again...")
   void build(@TempDir Path temp) throws Exception {
     var log = new Log();
     var base = Path.of("demo");

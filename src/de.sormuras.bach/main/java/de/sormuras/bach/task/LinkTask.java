@@ -34,7 +34,6 @@ public class LinkTask implements Task {
             .add("--module-path", modulePath)
             .add("--compress", "2")
             .add("--no-header-files")
-            .add("--strip-debug")
             .iff(bach.isVerbose(), c -> c.add("--verbose"));
     bach.execute(jlink);
   }
