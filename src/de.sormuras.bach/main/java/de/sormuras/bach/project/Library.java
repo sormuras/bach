@@ -98,7 +98,7 @@ public /*record*/ class Library {
       put("org.junit.vintage.engine", Link.central("org.junit.vintage", "junit-vintage-engine", "5.6.0-RC1"));
       put("junit", Link.central("junit", "junit", "4.13"));
       put("org.hamcrest", Link.central("org.hamcrest", "hamcrest", "2.2"));
-      putJavaFX("13.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
+      putJavaFX("13.0.2", "base", "controls", "fxml", "graphics", "media", "swing", "web");
       putJLWGL(
           "3.2.3",
           "",
