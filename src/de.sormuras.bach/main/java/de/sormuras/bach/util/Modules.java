@@ -165,6 +165,10 @@ public class Modules {
 
   /** Module descriptor parser. */
   public static ModuleDescriptor describe(String source) {
+    return newModule(source).build();
+  }
+
+  public static ModuleDescriptor.Builder newModule(String source) {
     // "module name {"
     var nameMatcher = Patterns.NAME.matcher(source);
     if (!nameMatcher.find()) {
@@ -194,7 +198,7 @@ public class Modules {
       var providesTypes = providesMatcher.group(2);
       builder.provides(providesService, List.of(providesTypes.trim().split("\\s*,\\s*")));
     }
-    return builder.build();
+    return builder;
   }
 
   public static String origin(Object object) {

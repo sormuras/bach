@@ -20,6 +20,8 @@
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Log;
 import de.sormuras.bach.project.Configuration;
+import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 
 /** Bach.java's build program, using module {@code de.sormuras.bach} itself. */
 public class Build {
@@ -32,6 +34,23 @@ public class Build {
         Configuration.of("Bach.java", VERSION)
             .setLog(Log.ofSystem(true))
             .setMainRelease(11)
+            .setModuleDescriber(Build::describeModule)
+            // .setModuleLinker(Build::linkModule)
             .setGroup("de.sormuras.bach"));
   }
+
+  static ModuleDescriptor describeModule(Path info) {
+    var builder = Configuration.newModule(info);
+    var module = builder.build();
+    if (module.name().equals("de.sormuras.bach")) builder.mainClass(Bach.class.getName());
+    return builder.build();
+  }
+
+  //  static Library.Link linkModule(String module) {
+  //    switch (module) {
+  //      case "junit":
+  //        return Library.Link.central("junit", "junit", "4.13");
+  //    }
+  //    return Library.defaultLinks().get(module);
+  //  }
 }

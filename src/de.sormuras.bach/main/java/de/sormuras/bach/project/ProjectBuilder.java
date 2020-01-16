@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.Log;
-import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
@@ -81,7 +80,7 @@ public class ProjectBuilder {
         if (!SourceVersion.isName(module.replace(".", ""))) continue;
         if (Paths.isModuleFile(root.resolve("module-info.java"))) {
           var info = root.resolve("module-info.java");
-          var descriptor = Modules.describe(Paths.readString(info));
+          var descriptor = configuration.getModuleDescriber().apply(info);
           var pom = root.resolve("pom.xml");
           var sources = List.of(Source.of(root));
           var unit = new Unit(realm, descriptor, info, pom, sources, List.of(), List.of());
@@ -128,7 +127,7 @@ public class ProjectBuilder {
       int mark = units.size();
       if (Files.isDirectory(root.resolve("main"))) {
         var resources = Paths.filterExisting(List.of(root.resolve("main/resources")));
-        var unit = unit(root, main, resources, List.of());
+        var unit = unit(configuration, root, main, resources, List.of());
         registry.get("main").add(module);
         units.add(unit);
       }
@@ -140,7 +139,7 @@ public class ProjectBuilder {
         if (registry.get("main").contains(module)) {
           patches.add(root.resolve("main/java"));
         }
-        var unit = unit(root, test, resources, patches);
+        var unit = unit(configuration, root, test, resources, patches);
         registry.get("test").add(module);
         units.add(unit);
       }
@@ -169,7 +168,12 @@ public class ProjectBuilder {
     throw new IllegalArgumentException("Couldn't find module-info.java file in: " + path);
   }
 
-  private Unit unit(Path root, Realm realm, List<Path> resources, List<Path> patches) {
+  private Unit unit(
+      Configuration configuration,
+      Path root,
+      Realm realm,
+      List<Path> resources,
+      List<Path> patches) {
     var module = root.getFileName().toString();
     var relative = root.resolve(realm.name()); // realm-relative
     var pom = relative.resolve("maven/pom.xml");
@@ -179,7 +183,7 @@ public class ProjectBuilder {
     // jigsaw
     if (Files.isDirectory(relative.resolve("java"))) { // no trailing "...-${N}"
       var info = info(relative);
-      var descriptor = Modules.describe(Paths.readString(info));
+      var descriptor = configuration.getModuleDescriber().apply(info);
       var sources = List.of(Source.of(relative.resolve("java")));
       log.debug("info = %s", info);
       log.debug("descriptor = %s", descriptor);
@@ -199,7 +203,7 @@ public class ProjectBuilder {
         var infoPath = sourced.resolve("module-info.java");
         if (info == null && Paths.isJavaFile(infoPath)) { // select first
           info = infoPath;
-          descriptor = Modules.describe(Paths.readString(info));
+          descriptor = configuration.getModuleDescriber().apply(info);
         }
       }
       log.debug("info = %s", info);

@@ -19,8 +19,11 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.Bach.Default;
 import de.sormuras.bach.Log;
+import de.sormuras.bach.util.Modules;
 import de.sormuras.bach.util.Paths;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -37,6 +40,11 @@ public class Configuration {
 
   public static Configuration of(String name, String group, String version) {
     return of().setName(name).setGroup(group).setVersion(Version.parse(version));
+  }
+
+  /** @see ModuleDescriptor#newModule(String) */
+  public static ModuleDescriptor.Builder newModule(Path info) {
+    return Modules.newModule(Paths.readString(info));
   }
 
   /** Property enumeration backed by {@linkplain System#getProperties()} values. */
@@ -73,6 +81,8 @@ public class Configuration {
   private boolean mainPreview;
   private boolean testPreview;
 
+  private Function<Path, ModuleDescriptor> moduleDescriber;
+
   public Configuration(Folder folder) {
     this.folder = folder;
 
@@ -86,6 +96,8 @@ public class Configuration {
     setMainPreview(false);
     setTestRelease(Runtime.version().feature());
     setTestPreview(true);
+
+    setModuleDescriber(info -> newModule(info).build());
   }
 
   public Folder getFolder() {
@@ -170,6 +182,15 @@ public class Configuration {
 
   public Configuration setTestPreview(boolean testPreview) {
     this.testPreview = testPreview;
+    return this;
+  }
+
+  public Function<Path, ModuleDescriptor> getModuleDescriber() {
+    return moduleDescriber;
+  }
+
+  public Configuration setModuleDescriber(Function<Path, ModuleDescriptor> moduleDescriber) {
+    this.moduleDescriber = moduleDescriber;
     return this;
   }
 }
