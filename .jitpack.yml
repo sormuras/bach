@@ -1,4 +1,5 @@
 before_install:
+  - apt install -y binutils
   - source install-jdk.sh --feature 13
 
 install:
