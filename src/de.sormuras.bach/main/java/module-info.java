@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-// --main-class de.sormuras.bach.Bach
+/**
+ * Defines the Java Shell Builder API.
+ */
 module de.sormuras.bach {
   requires java.compiler;
   requires java.net.http;
