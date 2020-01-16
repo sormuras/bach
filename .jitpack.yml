@@ -1,5 +1,5 @@
-jdk:
-  - openjdk13
+before_install:
+  - source install-jdk.sh --feature 13
 
 install:
   - unset JAVA_TOOL_OPTIONS
