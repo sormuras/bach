@@ -60,7 +60,7 @@ class Jigsaw {
     modulePath.add(folder.modules(realm.name())); // current realm first, like "main/modules"...
     modulePath.addAll(realm.modulePaths()); // dependencies last, like "lib"...
     if (!normalNames.isBlank()) {
-      bach.getLog().info("Compiling %d module(s)...", normalUnits.size());
+      bach.getLog().info("Compiling %d %s module(s)...", normalUnits.size(), realm.name());
       bach.execute(
           new Call("javac")
               .add("-d", classesDirectory)
