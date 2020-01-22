@@ -63,6 +63,7 @@ public class Bach11 {
     var project = bach.newProjectBuilder(Path.of("")).build();
     switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
       case BUILD:
+        System.out.println(project);
         throw new UnsupportedOperationException("Build is being implemented, soon.");
       case DRY_RUN:
         System.out.println(project);
