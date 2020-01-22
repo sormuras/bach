@@ -124,7 +124,7 @@ public class Bach11 {
 
     @Override
     public String toString() {
-      return "Project {name=" + name() + ", version=" + version() + "}";
+      return "Project {name='" + name() + "', version=" + version() + "}";
     }
 
     /** Project model builder. */
@@ -172,15 +172,12 @@ public class Bach11 {
       return logger;
     }
 
-    private String log(String key, String value) {
-      logger.log(LEVEL, "Got {0} from system properties: {1}", key, value);
-      return value;
-    }
-
     /** Lookup a property value by its key name. */
     public Optional<String> getProperty(String name) {
       var key = "project." + name;
-      return Optional.ofNullable(System.getProperty(key)).map(value -> log(key, value));
+      var property = Optional.ofNullable(System.getProperty(key));
+      property.ifPresent(value -> logger.log(LEVEL, "Got system property {0}={1}", key, value));
+      return property;
     }
 
     /** Scan for name property. */
