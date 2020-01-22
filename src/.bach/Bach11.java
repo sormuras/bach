@@ -179,8 +179,8 @@ public class Bach11 {
 
     /** Lookup a property value by its key name. */
     public Optional<String> getProperty(String name) {
-      var key = System.getProperty("project." + name);
-      return Optional.ofNullable(key).map(value -> log(key, value));
+      var key = "project." + name;
+      return Optional.ofNullable(System.getProperty(key)).map(value -> log(key, value));
     }
 
     /** Scan for name property. */
