@@ -20,11 +20,13 @@
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
 
 /**
  * Java Shell Builder.
@@ -60,13 +62,14 @@ public class Bach11 {
   public static void main(String... args) {
     var arguments = new ArrayDeque<>(List.of(args));
     var bach = new Bach11();
-    var project = bach.newProjectBuilder(Path.of("")).build();
+    var project = bach.newProject();
+    var plan = bach.newPlan(project);
+    plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
     switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
       case BUILD:
-        System.out.println(project);
         throw new UnsupportedOperationException("Build is being implemented, soon.");
       case DRY_RUN:
-        System.out.println(project);
+        break;
     }
     System.out.println();
     System.out.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
@@ -95,6 +98,17 @@ public class Bach11 {
     }
   }
 
+  /** Create project for the current working directory. */
+  public Project newProject() {
+    return newProjectBuilder(Path.of("")).build();
+  }
+
+  /** Create call plan for the given project. */
+  public Plan newPlan(Project project) {
+    return new Planner(project).call();
+  }
+
+  /** Return {@code "Bach11 " + }{@link #VERSION}. */
   @Override
   public String toString() {
     return "Bach11 " + VERSION;
@@ -213,6 +227,183 @@ public class Bach11 {
       scanName().ifPresent(builder::setName);
       scanVersion().ifPresent(builder::setVersion);
       return builder;
+    }
+  }
+
+  /** A task representation, usually calling a tool by its name and passing arguments. */
+  public interface Call {
+
+    String name();
+
+    List<String> args();
+
+    default String toMarkdown() {
+      return '`' + toString() + '`';
+    }
+
+    static Call of(String name, String... args) {
+      class Tool implements Call {
+        @Override
+        public String name() {
+          return name;
+        }
+
+        @Override
+        public List<String> args() {
+          return List.of(args);
+        }
+
+        @Override
+        public String toString() {
+          return name + (args().isEmpty() ? "" : " " + String.join(" ", args()));
+        }
+      }
+      return new Tool();
+    }
+
+    static Call of(String name, Callable<?> callable, String... code) {
+      class Lambda implements Call, Callable<Object> {
+        @Override
+        public String name() {
+          return name;
+        }
+
+        @Override
+        public List<String> args() {
+          return List.of(code);
+        }
+
+        @Override
+        public Object call() throws Exception {
+          return callable.call();
+        }
+
+        @Override
+        public String toString() {
+          return String.join(" ", args());
+        }
+      }
+      return new Lambda();
+    }
+  }
+
+  /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
+  public interface Plan extends Call {
+
+    List<Call> calls();
+
+    Level level();
+
+    boolean parallel();
+
+    default int walk(BiConsumer<String, Call> consumer) {
+      return walk(this, consumer);
+    }
+
+    static Plan of(String name, Level level, boolean parallel, Call... calls) {
+      class Record implements Plan {
+        @Override
+        public String name() {
+          return name;
+        }
+
+        @Override
+        public List<String> args() {
+          return List.of();
+        }
+
+        @Override
+        public Level level() {
+          return level;
+        }
+
+        @Override
+        public boolean parallel() {
+          return parallel;
+        }
+
+        @Override
+        public List<Call> calls() {
+          return List.of(calls);
+        }
+
+        @Override
+        public String toMarkdown() {
+          return String.format(
+              "%s _(size=%d, level=%s, parallel=%s)_", name(), calls().size(), level(), parallel());
+        }
+      }
+      return new Record();
+    }
+
+    static int walk(Call call, BiConsumer<String, Call> consumer) {
+      return walk(call, "", "  ", consumer);
+    }
+
+    static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
+      consumer.accept(indent, call);
+      if (call instanceof Plan) {
+        var plan = ((Plan) call);
+        var count = 0;
+        for (var child : plan.calls()) count += walk(child, indent + inc, inc, consumer);
+        return count;
+      }
+      return 1;
+    }
+  }
+
+  /** Build plan builder. */
+  public class Planner implements Callable<Plan> {
+
+    private final Project project;
+
+    public Planner(Project project) {
+      this.project = project;
+    }
+
+    @Override
+    public Plan call() {
+      logger.log(LEVEL, "Computing build plan for {0}", project);
+      return Plan.of(
+          "Build " + project.name() + " " + project.version(),
+          Level.ALL,
+          false,
+          showSystemInformation(),
+          createOutputDirectory());
+    }
+
+    public Call showSystemInformation() {
+      return Plan.of(
+          "Show System Information",
+          Level.DEBUG,
+          true,
+          Call.of("javac", "--version"),
+          Call.of("javadoc", "--version"),
+          Call.of("jar", "--version"),
+          Call.of("jdeps", "--version"));
+    }
+
+    public Call createOutputDirectory() {
+      var path = Path.of(".123");
+      return Call.of(
+          "Create output directory",
+          () -> Files.createDirectories(path),
+          "Files.createDirectories(" + Code.pathOf(path) + ")");
+    }
+  }
+
+  /** Java source code related helpers. */
+  public static class Code {
+    private Code() {}
+
+    /** Convert the string representation of the given object into a Java source snippet. */
+    public static String $(Object object) {
+      return "\"" + object.toString() + "\"";
+    }
+
+    /** Create {@code Path.of("some/path/...")} snippet. */
+    public static String pathOf(Path path) {
+      return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
     }
   }
 }
