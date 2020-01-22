@@ -171,9 +171,22 @@ public class Bach11 {
       return logger;
     }
 
+    private String log(String key, String value) {
+      logger.log(LEVEL, "Got {0} from system properties: {1}", key, value);
+      return value;
+    }
+
+    /** Lookup a property value by its key name. */
+    public Optional<String> getProperty(String name) {
+      var key = System.getProperty("project." + name);
+      return Optional.ofNullable(key).map(value -> log(key, value));
+    }
+
     /** Scan for name property. */
     @SuppressWarnings("RedundantThrows")
     public Optional<String> scanName() throws Exception {
+      var name = getProperty("name");
+      if (name.isPresent()) return name;
       return Optional.ofNullable(base().toAbsolutePath().getFileName()).map(Path::toString);
     }
 
@@ -192,7 +205,7 @@ public class Bach11 {
      */
     @SuppressWarnings("RedundantThrows")
     public Optional<Version> scanVersion() throws Exception {
-      return Optional.empty();
+      return getProperty("version").map(Version::parse);
     }
 
     @Override
