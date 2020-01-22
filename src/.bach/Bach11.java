@@ -21,6 +21,8 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -40,9 +42,33 @@ public class Bach11 {
   /** Default log level. */
   static final Level LEVEL = DEBUG ? Level.INFO : Level.DEBUG;
 
+  /** Supported operations by the default build program. */
+  private enum Operation {
+    /** Build the project in the current working directory. */
+    BUILD,
+    /** Generate, validate, and print project information. */
+    DRY_RUN;
+
+    /** Return the operation for the specified argument. */
+    static Operation of(String argument, Operation defaultOperation) {
+      if (argument == null) return defaultOperation;
+      return valueOf(argument.toUpperCase().replace('-', '_'));
+    }
+  }
+
   /** Default build program. */
   public static void main(String... args) {
-    System.out.println(new Bach11().newProjectBuilder(Path.of("")).build());
+    var arguments = new ArrayDeque<>(List.of(args));
+    var bach = new Bach11();
+    var project = bach.newProjectBuilder(Path.of("")).build();
+    switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
+      case BUILD:
+        throw new UnsupportedOperationException("Build is being implemented, soon.");
+      case DRY_RUN:
+        System.out.println(project);
+    }
+    System.out.println();
+    System.out.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
   }
 
   /** Logger instance. */
