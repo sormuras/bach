@@ -17,16 +17,23 @@
 
 // default package
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
+import java.util.spi.ToolProvider;
 
 /**
  * Java Shell Builder.
@@ -64,21 +71,27 @@ public class Bach11 {
     var bach = new Bach11();
     var project = bach.newProject();
     var plan = bach.newPlan(project);
-    plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
+    plan.walk((indent, call) -> System.err.println(indent + "- " + call.toMarkdown()));
     switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
       case BUILD:
-        throw new UnsupportedOperationException("Build is being implemented, soon.");
+        var configuration = new Configuration(project, plan, Level.ALL, true);
+        var summary = bach.execute(configuration);
+        System.err.println(summary.calls().size() + " calls executed:");
+        summary.calls().forEach(call -> System.err.println(call.toMarkdown()));
+        break;
       case DRY_RUN:
+        System.err.println();
+        System.err.println("Dry-run successful.");
         break;
     }
-    System.out.println();
-    System.out.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+    System.err.println();
+    System.err.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
   }
 
   /** Logger instance. */
   private final Logger logger;
 
-  /** Initialize Java Shell Builder instance with default values. */
+  /** Initialize Java Shell Builder instance with default components. */
   public Bach11() {
     this(System.getLogger("Bach"));
   }
@@ -89,13 +102,9 @@ public class Bach11 {
     logger.log(LEVEL, "Initialized {0}", this);
   }
 
-  /** Create project builder instance using {@link ProjectScanner}. */
+  /** Create project builder instance using {@link Scanner}. */
   public Project.Builder newProjectBuilder(Path base) {
-    try {
-      return new ProjectScanner(base).call();
-    } catch (Exception e) {
-      throw new Error(e);
-    }
+    return new Scanner(base).call();
   }
 
   /** Create project for the current working directory. */
@@ -106,6 +115,11 @@ public class Bach11 {
   /** Create call plan for the given project. */
   public Plan newPlan(Project project) {
     return new Planner(project).call();
+  }
+
+  /** Execute the given plan. */
+  public Summary execute(Configuration configuration) {
+    return new Executor(configuration).call();
   }
 
   /** Return {@code "Bach11 " + }{@link #VERSION}. */
@@ -166,12 +180,12 @@ public class Bach11 {
   }
 
   /** Directory-based project model scanner. */
-  public class ProjectScanner implements Callable<Project.Builder> {
+  public class Scanner implements Callable<Project.Builder> {
 
     private final Path base;
 
     /** Initialize this scanner instance with a directory to scan. */
-    public ProjectScanner(Path base) {
+    public Scanner(Path base) {
       this.base = base;
       logger.log(LEVEL, "Initialized {0}", this);
     }
@@ -221,11 +235,15 @@ public class Bach11 {
     }
 
     @Override
-    public Project.Builder call() throws Exception {
+    public Project.Builder call() {
       logger.log(LEVEL, "Build project for directory: {0}", base().toAbsolutePath());
       var builder = new Project.Builder();
-      scanName().ifPresent(builder::setName);
-      scanVersion().ifPresent(builder::setVersion);
+      try {
+        scanName().ifPresent(builder::setName);
+        scanVersion().ifPresent(builder::setVersion);
+      } catch (Exception e) {
+        throw new RuntimeException("Scanning for project properties failed: " + e.getMessage(), e);
+      }
       return builder;
     }
   }
@@ -238,7 +256,7 @@ public class Bach11 {
     List<String> args();
 
     default String toMarkdown() {
-      return '`' + toString() + '`';
+      return "· `" + toString() + "`";
     }
 
     static Call of(String name, String... args) {
@@ -330,7 +348,8 @@ public class Bach11 {
         @Override
         public String toMarkdown() {
           return String.format(
-              "%s _(size=%d, level=%s, parallel=%s)_", name(), calls().size(), level(), parallel());
+              "» %s _(size=%d, level=%s, parallel=%s)_",
+              name(), calls().size(), level(), parallel());
         }
       }
       return new Record();
@@ -384,7 +403,7 @@ public class Bach11 {
     }
 
     public Call createOutputDirectory() {
-      var path = Path.of(".123");
+      var path = Path.of(".bach");
       return Call.of(
           "Create output directory",
           () -> Files.createDirectories(path),
@@ -404,6 +423,125 @@ public class Bach11 {
     /** Create {@code Path.of("some/path/...")} snippet. */
     public static String pathOf(Path path) {
       return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+    }
+  }
+
+  public static final class Configuration {
+    private final Project project;
+    private final Plan plan;
+    private final Level verbosity;
+    private final boolean parallel;
+
+    public Configuration(Project project, Plan plan, Level verbosity, boolean parallel) {
+      this.project = project;
+      this.plan = plan;
+      this.verbosity = verbosity;
+      this.parallel = parallel;
+    }
+
+    public Project project() {
+      return project;
+    }
+
+    public Plan plan() {
+      return plan;
+    }
+
+    public Level verbosity() {
+      return verbosity;
+    }
+
+    public boolean parallel() {
+      return parallel;
+    }
+  }
+
+  /** Default plan executor. */
+  public class Executor implements Callable<Summary> {
+
+    private final Configuration configuration;
+    private final Summary summary;
+
+    public Executor(Configuration configuration) {
+      this.configuration = configuration;
+      this.summary = new Summary(configuration.project());
+    }
+
+    @Override
+    public Summary call() {
+      walkAndExecute(configuration.plan());
+      return summary;
+    }
+
+    private void walkAndExecute(Call call) {
+      if (call instanceof Plan) {
+        var plan = (Plan) call;
+        var calls = plan.calls();
+        if (calls.isEmpty()) return;
+        // TODO if (plan.level().getSeverity() > configuration.verbosity().getSeverity()) return;
+        var stream =
+            configuration.parallel() && plan.parallel()
+                ? calls.stream().parallel()
+                : calls.stream();
+        var start = Instant.now();
+        stream.forEach(this::walkAndExecute);
+        var duration = Duration.between(start, Instant.now()).toMillis();
+        logger.log(LEVEL, "{0} took {1} ms", plan.name(), duration);
+        return;
+      }
+      try {
+        var result = execute(call);
+        if (result == null) return;
+        logger.log(Level.TRACE, "Discarding result of {0}: {1}", call.name(), result);
+      } catch (Exception e) {
+        var message = "Computation failed: " + call;
+        logger.log(Level.ERROR, message, e);
+        throw new Error(message, e);
+      }
+    }
+
+    private Object execute(Call call) throws Exception {
+      logger.log(LEVEL, "· {0}", call);
+      summary.calls.add(call);
+      if (call instanceof Plan) throw new AssertionError("No plan expected here!");
+      if (call instanceof Callable) return ((Callable<?>) call).call();
+      var name = call.name();
+      var tool = ToolProvider.findFirst(name);
+      if (tool.isPresent()) {
+        var out = new StringWriter();
+        var err = new StringWriter();
+        var array = call.args().toArray(String[]::new);
+        var code = tool.get().run(new PrintWriter(out), new PrintWriter(err), array);
+        out.toString().lines().forEach(line -> logger.log(LEVEL, "{0}", line));
+        err.toString().lines().forEach(line -> logger.log(Level.WARNING, "{0}", line));
+        if (code != 0) {
+          var message = name + " exited with code: " + code;
+          logger.log(Level.ERROR, message);
+          throw new Error(message, new RuntimeException(err.toString()));
+        }
+        return null;
+      }
+      throw new UnsupportedOperationException(name + " is not supported");
+    }
+  }
+
+  /** Execution summary. */
+  public static class Summary {
+    private final Project project;
+    private final Collection<Call> calls;
+
+    public Summary(Project project) {
+      this.project = project;
+      this.calls = new ConcurrentLinkedQueue<>();
+    }
+
+    public List<Call> calls() {
+      return List.copyOf(calls);
+    }
+
+    @Override
+    public String toString() {
+      return "Summary for " + project.name() + " -> " + calls.size() + " calls executed";
     }
   }
 }

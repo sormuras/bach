@@ -11,5 +11,9 @@ class Build11 {
     System.out.println(project);
     var count = plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
     System.out.printf("The generated call plan contains %d tool calls.%n", count);
+    var configuration = new Bach11.Configuration(project, plan, System.Logger.Level.DEBUG, true);
+    var summary = bach.execute(configuration);
+    System.out.println(summary.calls().size() + " calls executed:");
+    summary.calls().forEach(call -> System.out.println(call.toMarkdown()));
   }
 }
