@@ -91,9 +91,9 @@ public class Bach11 {
   }
 
   /** Initialize Java Shell Builder instance canonically. */
-  public Bach11(Logger logger) {
+  Bach11(Logger logger) {
     this.logger = logger;
-    logger.log(Level.DEBUG, "Initialized {0}", this);
+    logger.log(Level.TRACE, "Initialized {0}", this);
   }
 
   /** Create project builder instance using {@link Scanner}. */
@@ -181,7 +181,7 @@ public class Bach11 {
     /** Initialize this scanner instance with a directory to scan. */
     public Scanner(Path base) {
       this.base = base;
-      logger.log(Level.DEBUG, "Initialized {0}", this);
+      logger.log(Level.TRACE, "Initialized {0}", this);
     }
 
     /** Get base directory to be scanned for project properties. */
@@ -189,16 +189,12 @@ public class Bach11 {
       return base;
     }
 
-    /** Get Bach's logger instance. */
-    public final Logger logger() {
-      return logger;
-    }
-
     /** Lookup a property value by its key name. */
     public Optional<String> getProperty(String name) {
       var key = "project." + name;
       var property = Optional.ofNullable(System.getProperty(key));
-      property.ifPresent(v -> logger.log(Level.DEBUG, "System.getProperty(\"{0}\") -> \"{1}\"", key, v));
+      property.ifPresent(
+          value -> logger.log(Level.DEBUG, "System.getProperty(\"{0}\") -> \"{1}\"", key, value));
       return property;
     }
 
@@ -230,13 +226,13 @@ public class Bach11 {
 
     @Override
     public Project.Builder call() {
-      logger.log(Level.DEBUG, "Build project for directory: {0}", base().toAbsolutePath());
+      logger.log(Level.DEBUG, "Scanning directory: {0}", base().toAbsolutePath());
       var builder = new Project.Builder();
       try {
         scanName().ifPresent(builder::setName);
         scanVersion().ifPresent(builder::setVersion);
       } catch (Exception e) {
-        throw new RuntimeException("Scanning for project properties failed: " + e.getMessage(), e);
+        throw new RuntimeException("Scan failed: " + e.getMessage(), e);
       }
       return builder;
     }
@@ -484,6 +480,7 @@ public class Bach11 {
         return;
       }
       try {
+        summary.calls.add(call);
         var result = execute(call);
         if (result == null) return;
         logger.log(Level.TRACE, "Discarding result of {0}: {1}", call.name(), result);
@@ -495,9 +492,8 @@ public class Bach11 {
     }
 
     private Object execute(Call call) throws Exception {
-      logger.log(Level.DEBUG, "· {0}", call);
-      summary.calls.add(call);
       if (call instanceof Plan) throw new AssertionError("No plan expected here!");
+      logger.log(Level.DEBUG, "· {0}", call);
       if (call instanceof Callable) return ((Callable<?>) call).call();
       var name = call.name();
       var tool = ToolProvider.findFirst(name);
