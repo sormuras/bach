@@ -171,7 +171,7 @@ public class Bach11 {
 
     @Override
     public String toString() {
-      return "Project {base='" + base() + "' name=\"" + name() + "\", version=" + version() + "}";
+      return "Project {base='" + base() + "', name=\"" + name() + "\", version=" + version() + "}";
     }
 
     /** Project model builder. */
@@ -412,16 +412,29 @@ public class Bach11 {
 
   /** Folder configuration record. */
   /*record*/ public static final class Folder {
-    private final Path lib;
     private final Path out;
+    private final Path lib;
 
     public Folder(Path base) {
-      this(base.resolve("lib"), base.resolve(".bach"));
+      this(base.resolve(".bach"), base.resolve("lib"));
     }
 
-    public Folder(Path lib, Path out) {
-      this.lib = lib;
+    public Folder(Path out, Path lib) {
       this.out = out;
+      this.lib = lib;
+    }
+
+    public Path out() {
+      return out;
+    }
+
+    public Path lib() {
+      return lib;
+    }
+
+    @Override
+    public String toString() {
+      return "Folder{out=" + out + ", lib=" + lib + "}";
     }
   }
 
@@ -447,6 +460,7 @@ public class Bach11 {
     @Override
     public Plan call() {
       logger.log(Level.DEBUG, "Computing build plan for {0}", project);
+      logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
       return Plan.of(
           "Build " + project.name() + " " + project.version(),
           Level.ALL,
