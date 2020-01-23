@@ -45,12 +45,6 @@ public class Bach11 {
   /** Version of the Java Shell Builder. */
   static final Version VERSION = Version.parse("1-ea");
 
-  /** Debug flag. */
-  static final boolean DEBUG = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
-
-  /** Default log level. */
-  static final Level LEVEL = DEBUG ? Level.INFO : Level.DEBUG;
-
   /** Supported operations by the default build program. */
   private enum Operation {
     /** Build the project in the current working directory. */
@@ -99,7 +93,7 @@ public class Bach11 {
   /** Initialize Java Shell Builder instance canonically. */
   public Bach11(Logger logger) {
     this.logger = logger;
-    logger.log(LEVEL, "Initialized {0}", this);
+    logger.log(Level.DEBUG, "Initialized {0}", this);
   }
 
   /** Create project builder instance using {@link Scanner}. */
@@ -187,7 +181,7 @@ public class Bach11 {
     /** Initialize this scanner instance with a directory to scan. */
     public Scanner(Path base) {
       this.base = base;
-      logger.log(LEVEL, "Initialized {0}", this);
+      logger.log(Level.DEBUG, "Initialized {0}", this);
     }
 
     /** Get base directory to be scanned for project properties. */
@@ -204,7 +198,7 @@ public class Bach11 {
     public Optional<String> getProperty(String name) {
       var key = "project." + name;
       var property = Optional.ofNullable(System.getProperty(key));
-      property.ifPresent(v -> logger.log(LEVEL, "System.getProperty(\"{0}\") -> \"{1}\"", key, v));
+      property.ifPresent(v -> logger.log(Level.DEBUG, "System.getProperty(\"{0}\") -> \"{1}\"", key, v));
       return property;
     }
 
@@ -236,7 +230,7 @@ public class Bach11 {
 
     @Override
     public Project.Builder call() {
-      logger.log(LEVEL, "Build project for directory: {0}", base().toAbsolutePath());
+      logger.log(Level.DEBUG, "Build project for directory: {0}", base().toAbsolutePath());
       var builder = new Project.Builder();
       try {
         scanName().ifPresent(builder::setName);
@@ -382,7 +376,7 @@ public class Bach11 {
 
     @Override
     public Plan call() {
-      logger.log(LEVEL, "Computing build plan for {0}", project);
+      logger.log(Level.DEBUG, "Computing build plan for {0}", project);
       return Plan.of(
           "Build " + project.name() + " " + project.version(),
           Level.ALL,
@@ -486,7 +480,7 @@ public class Bach11 {
         var start = Instant.now();
         stream.forEach(this::walkAndExecute);
         var duration = Duration.between(start, Instant.now()).toMillis();
-        logger.log(LEVEL, "{0} took {1} ms", plan.name(), duration);
+        logger.log(Level.DEBUG, "{0} took {1} ms", plan.name(), duration);
         return;
       }
       try {
@@ -501,7 +495,7 @@ public class Bach11 {
     }
 
     private Object execute(Call call) throws Exception {
-      logger.log(LEVEL, "· {0}", call);
+      logger.log(Level.DEBUG, "· {0}", call);
       summary.calls.add(call);
       if (call instanceof Plan) throw new AssertionError("No plan expected here!");
       if (call instanceof Callable) return ((Callable<?>) call).call();
@@ -512,7 +506,7 @@ public class Bach11 {
         var err = new StringWriter();
         var array = call.args().toArray(String[]::new);
         var code = tool.get().run(new PrintWriter(out), new PrintWriter(err), array);
-        out.toString().lines().forEach(line -> logger.log(LEVEL, "{0}", line));
+        out.toString().lines().forEach(line -> logger.log(Level.DEBUG, "{0}", line));
         err.toString().lines().forEach(line -> logger.log(Level.WARNING, "{0}", line));
         if (code != 0) {
           var message = name + " exited with code: " + code;
