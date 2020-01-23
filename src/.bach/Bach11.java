@@ -410,14 +410,36 @@ public class Bach11 {
     }
   }
 
+  /** Folder configuration record. */
+  /*record*/ public static final class Folder {
+    private final Path lib;
+    private final Path out;
+
+    public Folder(Path base) {
+      this(base.resolve("lib"), base.resolve(".bach"));
+    }
+
+    public Folder(Path lib, Path out) {
+      this.lib = lib;
+      this.out = out;
+    }
+  }
+
   /** Project build plan computer. */
   public class Planner implements Callable<Plan> {
 
     private final Project project;
+    private final Folder folder;
 
     /** Initialize this planner instance. */
     public Planner(Project project) {
+      this(project, new Folder(project.base()));
+    }
+
+    /** Initialize this planner instance. */
+    public Planner(Project project, Folder folder) {
       this.project = project;
+      this.folder = folder;
       logger.log(Level.TRACE, "Initialized {0}", this);
     }
 
@@ -447,11 +469,10 @@ public class Bach11 {
 
     /** Create output directory. */
     public Call createOutputDirectory() {
-      var path = Path.of(".bach");
       return Call.of(
           "Create output directory",
-          () -> Files.createDirectories(path),
-          "Files.createDirectories(" + Code.pathOf(path) + ")");
+          () -> Files.createDirectories(folder.out),
+          "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
     }
   }
 
