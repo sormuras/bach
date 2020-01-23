@@ -51,6 +51,8 @@ public class Bach11 {
   private enum Operation {
     /** Build the project in the current working directory. */
     BUILD,
+    /** Create and execute a single (tool) call on-the-fly. */
+    CALL,
     /** Generate, validate, and print project information. */
     DRY_RUN,
     /** Emit version on the standard output stream and exit. */
@@ -70,6 +72,13 @@ public class Bach11 {
 
     if (operation == Operation.VERSION) {
       System.out.println(VERSION);
+      return;
+    }
+
+    if (operation == Operation.CALL) {
+      var name = arguments.removeFirst(); // or fail with "cryptic" error message
+      var call = Call.of(name, arguments.toArray(String[]::new));
+      call.executeNow(new Call.ExecutionContext());
       return;
     }
 
