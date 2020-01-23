@@ -28,8 +28,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
@@ -68,7 +70,7 @@ public class Bach11 {
     plan.walk((indent, call) -> System.err.println(indent + "- " + call.toMarkdown()));
     switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
       case BUILD:
-        var configuration = new Configuration(project, plan, Level.ALL, true);
+        var configuration = new Configuration(project, plan);
         var summary = bach.execute(configuration);
         System.err.println(summary.calls().size() + " calls executed:");
         summary.calls().forEach(call -> System.err.println(call.toMarkdown()));
@@ -245,6 +247,11 @@ public class Bach11 {
 
     List<String> args();
 
+    /** Associated execution level. */
+    default Level level() {
+      return Level.ALL;
+    }
+
     default String toMarkdown() {
       return "· `" + toString() + "`";
     }
@@ -419,13 +426,17 @@ public class Bach11 {
   public static final class Configuration {
     private final Project project;
     private final Plan plan;
-    private final Level verbosity;
+    private final Set<Level> levels;
     private final boolean parallel;
 
-    public Configuration(Project project, Plan plan, Level verbosity, boolean parallel) {
+    public Configuration(Project project, Plan plan) {
+      this(project, plan, EnumSet.allOf(Level.class), true);
+    }
+
+    public Configuration(Project project, Plan plan, Set<Level> levels, boolean parallel) {
       this.project = project;
       this.plan = plan;
-      this.verbosity = verbosity;
+      this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
       this.parallel = parallel;
     }
 
@@ -437,8 +448,8 @@ public class Bach11 {
       return plan;
     }
 
-    public Level verbosity() {
-      return verbosity;
+    public Set<Level> levels() {
+      return levels;
     }
 
     public boolean parallel() {
@@ -463,12 +474,18 @@ public class Bach11 {
       return summary;
     }
 
-    private void walkAndExecute(Call call) {
+    protected boolean enabled(Call call) {
+      if (call.level() == Level.ALL) return true; // ALL as in "always active"
+      if (call.level() == Level.OFF) return false; // OFF as in "always off"
+      return configuration.levels().contains(call.level());
+    }
+
+    protected void walkAndExecute(Call call) {
+      if (!enabled(call)) return; // Skip disabled calls and plans
       if (call instanceof Plan) {
         var plan = (Plan) call;
         var calls = plan.calls();
-        if (calls.isEmpty()) return;
-        // TODO if (plan.level().getSeverity() > configuration.verbosity().getSeverity()) return;
+        // Skip empty plans silently? -> if (calls.isEmpty()) return;
         var stream =
             configuration.parallel() && plan.parallel()
                 ? calls.stream().parallel()
@@ -491,7 +508,7 @@ public class Bach11 {
       }
     }
 
-    private Object execute(Call call) throws Exception {
+    protected Object execute(Call call) throws Exception {
       if (call instanceof Plan) throw new AssertionError("No plan expected here!");
       logger.log(Level.DEBUG, "· {0}", call);
       if (call instanceof Callable) return ((Callable<?>) call).call();
