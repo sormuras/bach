@@ -77,16 +77,17 @@ public class Bach11 {
 
     var bach = new Bach11();
     var project = bach.newProject();
-    System.out.println("Project:");
+    System.out.println();
     System.out.println(project);
     var plan = bach.newPlan(project);
-    System.out.println("Build plan:");
+    System.out.println();
     plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
     switch (operation) {
       case BUILD:
-        var configuration = new Configuration(project, plan);
+        var context = new Call.ExecutionContext();
+        var configuration = new Configuration(context, project, plan);
         var summary = bach.execute(configuration);
-        System.out.println(summary.calls().size() + " calls executed:");
+        System.out.println();
         summary.calls().forEach(call -> System.out.println(call.toMarkdown()));
         System.out.println();
         System.out.println("Build took " + summary.duration().toMillis() + " milliseconds.");
@@ -105,7 +106,7 @@ public class Bach11 {
 
   /** Initialize Java Shell Builder instance with default components. */
   public Bach11() {
-    this(System.getLogger("Bach"));
+    this(System.getLogger("Bach.java"));
   }
 
   /** Initialize Java Shell Builder instance canonically. */
@@ -271,14 +272,91 @@ public class Bach11 {
     }
   }
 
-  /** A task representation, usually calling a tool by its name and passing arguments. */
+  /** A single tool command. */
   public interface Call {
 
-    /** The name of the call. */
-    String name();
+    /** Execution context. */
+    class ExecutionContext {
+      private final BiConsumer<Level, String> printer;
+      private final Set<Level> levels;
+      private final boolean parallel;
 
-    /** Arguments of the call. */
-    List<String> args();
+      public ExecutionContext() {
+        this(Call::printer, EnumSet.allOf(Level.class), true);
+      }
+
+      public ExecutionContext(
+          BiConsumer<Level, String> printer, Set<Level> levels, boolean parallel) {
+        this.printer = printer;
+        this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
+        this.parallel = parallel;
+      }
+
+      public BiConsumer<Level, String> printer() {
+        return printer;
+      }
+
+      public Set<Level> levels() {
+        return levels;
+      }
+
+      public boolean parallel() {
+        return parallel;
+      }
+
+      /** Return true iff the passed call is to be executed. */
+      boolean enabled(Call call) {
+        if (call.level() == Level.ALL) return true; // ALL as in "always active"
+        if (call.level() == Level.OFF) return false; // OFF as in "always skip"
+        return levels().contains(call.level());
+      }
+
+      /** Return true iff the passed call is to be skipped from execution. */
+      final boolean disabled(Call call) {
+        return !enabled(call);
+      }
+    }
+
+    /** Execution event promoter. */
+    interface ExecutionListener {
+      /** Call execution is about to begin callback. */
+      default void executionBegin(Call call) {}
+
+      /** Call execution is skipped callback. */
+      default void executionDisabled(Call call) {}
+
+      /** Call execution ended callback. */
+      default void executionEnd(Call call, Duration duration) {}
+    }
+
+    /** The caption (title, description, purpose, ...) of the call. */
+    default String caption() {
+      return getClass().getSimpleName();
+    }
+
+    /** Execute this instance. */
+    default void execute(ExecutionContext context, ExecutionListener listener) {
+      if (context.disabled(this)) {
+        listener.executionDisabled(this);
+        return;
+      }
+      listener.executionBegin(this);
+      var start = Instant.now();
+      try {
+        executeNow(context, listener);
+      } finally {
+        var duration = Duration.between(Instant.now(), start);
+        listener.executionEnd(this, duration);
+      }
+    }
+
+    /** Execute this instance. */
+    default void executeNow(ExecutionContext context, ExecutionListener listener) {
+      executeNow(context);
+    }
+
+    /** Execute this instance. */
+    void executeNow(ExecutionContext context);
 
     /** Associated execution level. */
     default Level level() {
@@ -289,48 +367,61 @@ public class Bach11 {
       return "· `" + toString() + "`";
     }
 
+    static void printer(Level level, String line) {
+      var stream = level.getSeverity() <= Level.INFO.getSeverity() ? System.out : System.err;
+      stream.println(line);
+    }
+
     /** Create a named tool call. */
     static Call of(String name, String... args) {
+      var tool = ToolProvider.findFirst(name).orElseThrow();
       class Tool implements Call {
         @Override
-        public String name() {
-          return name;
+        public String caption() {
+          return null;
         }
 
         @Override
-        public List<String> args() {
-          return List.of(args);
+        public void executeNow(ExecutionContext context) {
+          var out = new StringWriter();
+          var err = new StringWriter();
+          var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+          out.toString().lines().forEach(line -> context.printer().accept(Level.INFO, line));
+          err.toString().lines().forEach(line -> context.printer().accept(Level.ERROR, line));
+          if (code != 0) {
+            var cause = new RuntimeException(err.toString());
+            throw new Error(name + " exited with code: " + code, cause);
+          }
         }
 
         @Override
         public String toString() {
-          return name + (args().isEmpty() ? "" : " " + String.join(" ", args()));
+          return name + (args.length == 0 ? "" : " " + String.join(" ", args));
         }
       }
       return new Tool();
     }
 
     /** Create an active call providing an callable instance. */
-    static Call of(String name, Callable<?> callable, String... code) {
-      class Lambda implements Call, Callable<Object> {
+    static Call of(String caption, Callable<?> callable, String... code) {
+      class Lambda implements Call {
         @Override
-        public String name() {
-          return name;
+        public String caption() {
+          return caption;
         }
 
         @Override
-        public List<String> args() {
-          return List.of(code);
-        }
-
-        @Override
-        public Object call() throws Exception {
-          return callable.call();
+        public void executeNow(ExecutionContext context) {
+          try {
+            callable.call();
+          } catch (Exception e) {
+            throw new RuntimeException("Execution failed: " + e.getMessage(), e);
+          }
         }
 
         @Override
         public String toString() {
-          return String.join(" ", args());
+          return code.length == 0 ? "// " + caption : String.join(" ", code);
         }
       }
       return new Lambda();
@@ -349,22 +440,27 @@ public class Bach11 {
     /** Indicates that all nested calls are independent of each other. */
     boolean parallel();
 
+    @Override
+    default void executeNow(ExecutionContext context, ExecutionListener listener) {
+      var parallel = context.parallel() && parallel();
+      var stream = parallel ? calls().stream().parallel() : calls().stream();
+      stream.forEach(call -> call.execute(context, listener));
+    }
+
+    @Override
+    default void executeNow(ExecutionContext context) {}
+
     /** Walk a tree of calls starting with this plan instance. */
     default int walk(BiConsumer<String, Call> consumer) {
       return walk(this, consumer);
     }
 
-    /** Create named plan with an array of calls. */
-    static Plan of(String name, Level level, boolean parallel, Call... calls) {
+    /** Create plan with an array of calls. */
+    static Plan of(String caption, Level level, boolean parallel, Call... calls) {
       class Record implements Plan {
         @Override
-        public String name() {
-          return name;
-        }
-
-        @Override
-        public List<String> args() {
-          return List.of();
+        public String caption() {
+          return caption;
         }
 
         @Override
@@ -386,7 +482,7 @@ public class Bach11 {
         public String toMarkdown() {
           return String.format(
               "» %s _(size=%d, level=%s, parallel=%s)_",
-              name(), calls().size(), level(), parallel());
+              caption(), calls().size(), level(), parallel());
         }
       }
       return new Record();
@@ -507,20 +603,18 @@ public class Bach11 {
 
   /** Execution configuration record. */
   /*record*/ public static final class Configuration {
+    private final Call.ExecutionContext context;
     private final Project project;
     private final Plan plan;
-    private final Set<Level> levels;
-    private final boolean parallel;
 
-    public Configuration(Project project, Plan plan) {
-      this(project, plan, EnumSet.allOf(Level.class), true);
-    }
-
-    public Configuration(Project project, Plan plan, Set<Level> levels, boolean parallel) {
+    public Configuration(Call.ExecutionContext context, Project project, Plan plan) {
+      this.context = context;
       this.project = project;
       this.plan = plan;
-      this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
-      this.parallel = parallel;
+    }
+
+    public Call.ExecutionContext context() {
+      return context;
     }
 
     public Project project() {
@@ -530,18 +624,10 @@ public class Bach11 {
     public Plan plan() {
       return plan;
     }
-
-    public Set<Level> levels() {
-      return levels;
-    }
-
-    public boolean parallel() {
-      return parallel;
-    }
   }
 
   /** Plan executor. */
-  public class Executor implements Callable<Summary> {
+  public static class Executor implements Callable<Summary> {
 
     private final Configuration configuration;
     private final Summary summary;
@@ -555,77 +641,14 @@ public class Bach11 {
     @Override
     public Summary call() {
       var start = Instant.now();
-      walkAndExecute(configuration.plan());
+      configuration.plan().execute(configuration.context(), summary);
       summary.duration = Duration.between(start, Instant.now());
       return summary;
-    }
-
-    /** Return true iff the passed call is to be executed. */
-    protected boolean enabled(Call call) {
-      if (call.level() == Level.ALL) return true; // ALL as in "always active"
-      if (call.level() == Level.OFF) return false; // OFF as in "always off"
-      return configuration.levels().contains(call.level());
-    }
-
-    /** Walk the call: either descend or execute it. */
-    protected void walkAndExecute(Call call) {
-      if (!enabled(call)) return;
-
-      if (call instanceof Plan) {
-        var plan = (Plan) call;
-        var calls = plan.calls();
-        var stream =
-            configuration.parallel() && plan.parallel()
-                ? calls.stream().parallel()
-                : calls.stream();
-        var start = Instant.now();
-        stream.forEach(this::walkAndExecute);
-        var duration = Duration.between(start, Instant.now()).toMillis();
-        logger.log(Level.DEBUG, "{0} took {1} ms", plan.name(), duration);
-        return;
-      }
-
-      try {
-        logger.log(Level.DEBUG, "· {0}", call);
-        summary.calls.add(call);
-        var result = execute(call);
-        if (result == null) return;
-        logger.log(Level.TRACE, "Discarding result of {0}: {1}", call.name(), result);
-      } catch (Exception e) {
-        var message = "Computation failed: " + call;
-        logger.log(Level.ERROR, message, e);
-        throw new Error(message, e);
-      }
-    }
-
-    /** Execute the given call (not a plan here). */
-    protected Object execute(Call call) throws Exception {
-      if (call instanceof Plan) throw new AssertionError("No plan expected here!");
-
-      if (call instanceof Callable) return ((Callable<?>) call).call();
-
-      var name = call.name();
-      var tool = ToolProvider.findFirst(name);
-      if (tool.isPresent()) {
-        var out = new StringWriter();
-        var err = new StringWriter();
-        var array = call.args().toArray(String[]::new);
-        var code = tool.get().run(new PrintWriter(out), new PrintWriter(err), array);
-        out.toString().lines().forEach(line -> logger.log(Level.DEBUG, "{0}", line));
-        err.toString().lines().forEach(line -> logger.log(Level.WARNING, "{0}", line));
-        if (code != 0) {
-          var message = name + " exited with code: " + code;
-          logger.log(Level.ERROR, message);
-          throw new Error(message, new RuntimeException(err.toString()));
-        }
-        return null;
-      }
-      throw new UnsupportedOperationException(name + " is not supported");
     }
   }
 
   /** Execution summary. */
-  public static class Summary {
+  public static class Summary implements Call.ExecutionListener {
     private final Project project;
     private final Collection<Call> calls;
     private Duration duration;
@@ -642,6 +665,17 @@ public class Bach11 {
     public Duration duration() {
       return duration;
     }
+
+    @Override
+    public void executionBegin(Call call) {
+      if (!(call instanceof Plan)) calls.add(call);
+    }
+
+    @Override
+    public void executionDisabled(Call call) {}
+
+    @Override
+    public void executionEnd(Call call, Duration duration) {}
 
     @Override
     public String toString() {
