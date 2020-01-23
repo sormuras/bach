@@ -114,14 +114,14 @@ public class Bach11 {
     logger.log(Level.TRACE, "Initialized {0}", this);
   }
 
-  /** Create project builder instance using {@link Scanner}. */
-  public Project.Builder newProjectBuilder(Path base) {
-    return new Scanner(base).call();
+  /** Create project build for the current working directory. */
+  public Project.Builder newProjectBuilder() {
+    return new Scanner(Path.of("")).call();
   }
 
   /** Create project for the current working directory. */
   public Project newProject() {
-    return newProjectBuilder(Path.of("")).build();
+    return newProjectBuilder().build();
   }
 
   /** Create call plan for the given project. */
@@ -143,13 +143,20 @@ public class Bach11 {
   /** Project model API. */
   /*record*/ public static final class Project {
 
+    private final Path base;
     private final String name;
     private final Version version;
 
     /** Initialize this project instance. */
-    public Project(String name, Version version) {
+    public Project(Path base, String name, Version version) {
+      this.base = base;
       this.name = name;
       this.version = version;
+    }
+
+    /** Get base directory of this project. */
+    public Path base() {
+      return base;
     }
 
     /** Get name of this project. */
@@ -164,23 +171,35 @@ public class Bach11 {
 
     @Override
     public String toString() {
-      return "Project {name=\"" + name() + "\", version=" + version() + "}";
+      return "Project {base='" + base() + "' name=\"" + name() + "\", version=" + version() + "}";
     }
 
     /** Project model builder. */
     public static final class Builder {
+      private Path base = Path.of("");
       private String name = "project";
       private Version version = Version.parse("0");
 
       /** Create project instance using property values from this builder. */
       public Project build() {
-        return new Project(name, version);
+        return new Project(base, name, version);
+      }
+
+      /** Set project's base directory. */
+      public Builder setBase(Path base) {
+        this.base = base;
+        return this;
       }
 
       /** Set project's name. */
       public Builder setName(String name) {
         this.name = name;
         return this;
+      }
+
+      /** Set project's version. */
+      public Builder setVersion(String version) {
+        return setVersion(Version.parse(version));
       }
 
       /** Set project's version. */
@@ -245,6 +264,7 @@ public class Bach11 {
     public Project.Builder call() {
       logger.log(Level.DEBUG, "Scanning directory: {0}", base().toAbsolutePath());
       var builder = new Project.Builder();
+      builder.setBase(base());
       scanName().ifPresent(builder::setName);
       scanVersion().ifPresent(builder::setVersion);
       return builder;
