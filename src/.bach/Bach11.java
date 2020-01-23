@@ -52,7 +52,9 @@ public class Bach11 {
     /** Build the project in the current working directory. */
     BUILD,
     /** Generate, validate, and print project information. */
-    DRY_RUN;
+    DRY_RUN,
+    /** Emit version on the standard output stream and exit. */
+    VERSION;
 
     /** Return the operation for the specified argument. */
     static Operation of(String argument, Operation defaultOperation) {
@@ -64,24 +66,38 @@ public class Bach11 {
   /** Default build program. */
   public static void main(String... args) {
     var arguments = new ArrayDeque<>(List.of(args));
+    var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
+
+    if (operation == Operation.VERSION) {
+      System.out.println(VERSION);
+      return;
+    }
+
+    System.out.println("Bach.java " + VERSION);
+
     var bach = new Bach11();
     var project = bach.newProject();
+    System.out.println("Project:");
+    System.out.println(project);
     var plan = bach.newPlan(project);
-    plan.walk((indent, call) -> System.err.println(indent + "- " + call.toMarkdown()));
-    switch (Operation.of(arguments.pollFirst(), Operation.DRY_RUN)) {
+    System.out.println("Build plan:");
+    plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
+    switch (operation) {
       case BUILD:
         var configuration = new Configuration(project, plan);
         var summary = bach.execute(configuration);
-        System.err.println(summary.calls().size() + " calls executed:");
-        summary.calls().forEach(call -> System.err.println(call.toMarkdown()));
+        System.out.println(summary.calls().size() + " calls executed:");
+        summary.calls().forEach(call -> System.out.println(call.toMarkdown()));
+        System.out.println();
+        System.out.println("Build took " + summary.duration().toMillis() + " milliseconds.");
         break;
       case DRY_RUN:
-        System.err.println();
-        System.err.println("Dry-run successful.");
+        System.out.println();
+        System.out.println("Dry-run successful.");
         break;
     }
-    System.err.println();
-    System.err.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+    System.out.println();
+    System.out.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
   }
 
   /** Logger instance. */
@@ -483,7 +499,9 @@ public class Bach11 {
     /** Compute summary by executing the configuration. */
     @Override
     public Summary call() {
+      var start = Instant.now();
       walkAndExecute(configuration.plan());
+      summary.duration = Duration.between(start, Instant.now());
       return summary;
     }
 
@@ -555,6 +573,7 @@ public class Bach11 {
   public static class Summary {
     private final Project project;
     private final Collection<Call> calls;
+    private Duration duration;
 
     public Summary(Project project) {
       this.project = project;
@@ -563,6 +582,10 @@ public class Bach11 {
 
     public List<Call> calls() {
       return List.copyOf(calls);
+    }
+
+    public Duration duration() {
+      return duration;
     }
 
     @Override
