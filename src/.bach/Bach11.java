@@ -78,7 +78,7 @@ public class Bach11 {
     if (operation == Operation.CALL) {
       var name = arguments.removeFirst(); // or fail with "cryptic" error message
       var call = Call.of(name, arguments.toArray(String[]::new));
-      call.executeNow(new Call.ExecutionContext());
+      call.executeNow(new ExecutionContext());
       return;
     }
 
@@ -88,13 +88,13 @@ public class Bach11 {
     var project = bach.newProject();
     System.out.println();
     System.out.println(project);
-    var plan = bach.newPlan(project);
+    var container = bach.newPlan(project);
     System.out.println();
-    plan.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
+    container.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
     switch (operation) {
       case BUILD:
-        var context = new Call.ExecutionContext();
-        var configuration = new Configuration(context, project, plan);
+        var context = new ExecutionContext();
+        var configuration = new Composition(context, project, container);
         var summary = bach.execute(configuration);
         System.out.println();
         summary.calls().forEach(call -> System.out.println(call.toMarkdown()));
@@ -134,14 +134,14 @@ public class Bach11 {
     return newProjectBuilder().build();
   }
 
-  /** Create call plan for the given project. */
-  public Plan newPlan(Project project) {
+  /** Create call container for the given project. */
+  public Container newPlan(Project project) {
     return new Planner(project).call();
   }
 
-  /** Execute the given plan. */
-  public Summary execute(Configuration configuration) {
-    return new Executor(configuration).call();
+  /** Execute the given container. */
+  public Summary execute(Composition composition) {
+    return new Executor(composition).call();
   }
 
   /** Return {@code "Bach11 " + }{@link #VERSION}. */
@@ -281,62 +281,62 @@ public class Bach11 {
     }
   }
 
+  /** Execution context. */
+  /*private*/ public static final class ExecutionContext {
+    private final BiConsumer<Level, String> printer;
+    private final Set<Level> levels;
+    private final boolean parallel;
+
+    public ExecutionContext() {
+      this(Call::printer, EnumSet.allOf(Level.class), true);
+    }
+
+    public ExecutionContext(
+        BiConsumer<Level, String> printer, Set<Level> levels, boolean parallel) {
+      this.printer = printer;
+      this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
+      this.parallel = parallel;
+    }
+
+    public BiConsumer<Level, String> printer() {
+      return printer;
+    }
+
+    public Set<Level> levels() {
+      return levels;
+    }
+
+    public boolean parallel() {
+      return parallel;
+    }
+
+    /** Return true iff the passed call is to be executed. */
+    boolean enabled(Call call) {
+      if (call.level() == Level.ALL) return true; // ALL as in "always active"
+      if (call.level() == Level.OFF) return false; // OFF as in "always skip"
+      return levels().contains(call.level());
+    }
+
+    /** Return true iff the passed call is to be skipped from execution. */
+    final boolean disabled(Call call) {
+      return !enabled(call);
+    }
+  }
+
+  /** Execution event promoter. */
+  interface ExecutionListener {
+    /** Call execution is about to begin callback. */
+    default void executionBegin(Call call) {}
+
+    /** Call execution is skipped callback. */
+    default void executionDisabled(Call call) {}
+
+    /** Call execution ended callback. */
+    default void executionEnd(Call call, Duration duration) {}
+  }
+
   /** A single tool command. */
   public interface Call {
-
-    /** Execution context. */
-    class ExecutionContext {
-      private final BiConsumer<Level, String> printer;
-      private final Set<Level> levels;
-      private final boolean parallel;
-
-      public ExecutionContext() {
-        this(Call::printer, EnumSet.allOf(Level.class), true);
-      }
-
-      public ExecutionContext(
-          BiConsumer<Level, String> printer, Set<Level> levels, boolean parallel) {
-        this.printer = printer;
-        this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
-        this.parallel = parallel;
-      }
-
-      public BiConsumer<Level, String> printer() {
-        return printer;
-      }
-
-      public Set<Level> levels() {
-        return levels;
-      }
-
-      public boolean parallel() {
-        return parallel;
-      }
-
-      /** Return true iff the passed call is to be executed. */
-      boolean enabled(Call call) {
-        if (call.level() == Level.ALL) return true; // ALL as in "always active"
-        if (call.level() == Level.OFF) return false; // OFF as in "always skip"
-        return levels().contains(call.level());
-      }
-
-      /** Return true iff the passed call is to be skipped from execution. */
-      final boolean disabled(Call call) {
-        return !enabled(call);
-      }
-    }
-
-    /** Execution event promoter. */
-    interface ExecutionListener {
-      /** Call execution is about to begin callback. */
-      default void executionBegin(Call call) {}
-
-      /** Call execution is skipped callback. */
-      default void executionDisabled(Call call) {}
-
-      /** Call execution ended callback. */
-      default void executionEnd(Call call, Duration duration) {}
-    }
 
     /** The caption (title, description, purpose, ...) of the call. */
     default String caption() {
@@ -438,9 +438,9 @@ public class Bach11 {
   }
 
   /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
-  public interface Plan extends Call {
+  public interface Container extends Call {
 
-    /** Nested calls of this plan. */
+    /** Nested calls of this container. */
     List<Call> calls();
 
     /** Configuration level. */
@@ -459,14 +459,14 @@ public class Bach11 {
     @Override
     default void executeNow(ExecutionContext context) {}
 
-    /** Walk a tree of calls starting with this plan instance. */
+    /** Walk a tree of calls starting with this container instance. */
     default int walk(BiConsumer<String, Call> consumer) {
       return walk(this, consumer);
     }
 
-    /** Create plan with an array of calls. */
-    static Plan of(String caption, Level level, boolean parallel, Call... calls) {
-      class Record implements Plan {
+    /** Create container with an array of calls. */
+    static Container of(String caption, Level level, boolean parallel, Call... calls) {
+      class Record implements Container {
         @Override
         public String caption() {
           return caption;
@@ -505,10 +505,10 @@ public class Bach11 {
     /** Walk a tree of calls starting with the given call instance. */
     static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
       consumer.accept(indent, call);
-      if (call instanceof Plan) {
-        var plan = ((Plan) call);
+      if (call instanceof Container) {
+        var container = ((Container) call);
         var count = 0;
-        for (var child : plan.calls()) count += walk(child, indent + inc, inc, consumer);
+        for (var child : container.calls()) count += walk(child, indent + inc, inc, consumer);
         return count;
       }
       return 1;
@@ -543,8 +543,8 @@ public class Bach11 {
     }
   }
 
-  /** Project build plan computer. */
-  public class Planner implements Callable<Plan> {
+  /** Project build container computer. */
+  public class Planner implements Callable<Container> {
 
     private final Project project;
     private final Folder folder;
@@ -561,12 +561,12 @@ public class Bach11 {
       logger.log(Level.TRACE, "Initialized {0}", this);
     }
 
-    /** Compute project build plan. */
+    /** Compute project build container. */
     @Override
-    public Plan call() {
-      logger.log(Level.DEBUG, "Computing build plan for {0}", project);
+    public Container call() {
+      logger.log(Level.DEBUG, "Computing build container for {0}", project);
       logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
-      return Plan.of(
+      return Container.of(
           "Build " + project.name() + " " + project.version(),
           Level.ALL,
           false,
@@ -576,7 +576,7 @@ public class Bach11 {
 
     /** Print system information. */
     public Call showSystemInformation() {
-      return Plan.of(
+      return Container.of(
           "Show System Information",
           Level.INFO,
           true,
@@ -611,18 +611,18 @@ public class Bach11 {
   }
 
   /** Execution configuration record. */
-  /*record*/ public static final class Configuration {
-    private final Call.ExecutionContext context;
+  /*record*/ public static final class Composition {
+    private final ExecutionContext context;
     private final Project project;
-    private final Plan plan;
+    private final Container container;
 
-    public Configuration(Call.ExecutionContext context, Project project, Plan plan) {
+    public Composition(ExecutionContext context, Project project, Container container) {
       this.context = context;
       this.project = project;
-      this.plan = plan;
+      this.container = container;
     }
 
-    public Call.ExecutionContext context() {
+    public ExecutionContext context() {
       return context;
     }
 
@@ -630,34 +630,34 @@ public class Bach11 {
       return project;
     }
 
-    public Plan plan() {
-      return plan;
+    public Container container() {
+      return container;
     }
   }
 
-  /** Plan executor. */
+  /** Composition executor. */
   public static class Executor implements Callable<Summary> {
 
-    private final Configuration configuration;
+    private final Composition composition;
     private final Summary summary;
 
-    public Executor(Configuration configuration) {
-      this.configuration = configuration;
-      this.summary = new Summary(configuration.project());
+    public Executor(Composition composition) {
+      this.composition = composition;
+      this.summary = new Summary(composition.project());
     }
 
     /** Compute summary by executing the configuration. */
     @Override
     public Summary call() {
       var start = Instant.now();
-      configuration.plan().execute(configuration.context(), summary);
+      composition.container().execute(composition.context(), summary);
       summary.duration = Duration.between(start, Instant.now());
       return summary;
     }
   }
 
   /** Execution summary. */
-  public static class Summary implements Call.ExecutionListener {
+  public static class Summary implements ExecutionListener {
     private final Project project;
     private final Collection<Call> calls;
     private Duration duration;
@@ -677,7 +677,7 @@ public class Bach11 {
 
     @Override
     public void executionBegin(Call call) {
-      if (!(call instanceof Plan)) calls.add(call);
+      if (!(call instanceof Container)) calls.add(call);
     }
 
     @Override
