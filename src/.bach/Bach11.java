@@ -47,7 +47,7 @@ public class Bach11 {
   /** Version of the Java Shell Builder. */
   static final Version VERSION = Version.parse("1-ea");
 
-  /** Supported operations by the default build program. */
+  /** Supported operation modes by the default build program. */
   private enum Operation {
     /** Build the project in the current working directory. */
     BUILD,
@@ -175,7 +175,7 @@ public class Bach11 {
     }
   }
 
-  /** Directory-based project model scanner. */
+  /** Directory-based project model builder computer. */
   public class Scanner implements Callable<Project.Builder> {
 
     private final Path base;
@@ -201,8 +201,7 @@ public class Bach11 {
     }
 
     /** Scan for name property. */
-    @SuppressWarnings("RedundantThrows")
-    public Optional<String> scanName() throws Exception {
+    public Optional<String> scanName() {
       var name = getProperty("name");
       if (name.isPresent()) return name;
       return Optional.ofNullable(base().toAbsolutePath().getFileName()).map(Path::toString);
@@ -221,21 +220,17 @@ public class Bach11 {
      *    }
      * </code></pre>
      */
-    @SuppressWarnings("RedundantThrows")
-    public Optional<Version> scanVersion() throws Exception {
+    public Optional<Version> scanVersion() {
       return getProperty("version").map(Version::parse);
     }
 
+    /** Create default project builder instance and set available properties. */
     @Override
     public Project.Builder call() {
       logger.log(Level.DEBUG, "Scanning directory: {0}", base().toAbsolutePath());
       var builder = new Project.Builder();
-      try {
-        scanName().ifPresent(builder::setName);
-        scanVersion().ifPresent(builder::setVersion);
-      } catch (Exception e) {
-        throw new RuntimeException("Scan failed: " + e.getMessage(), e);
-      }
+      scanName().ifPresent(builder::setName);
+      scanVersion().ifPresent(builder::setVersion);
       return builder;
     }
   }
@@ -243,8 +238,10 @@ public class Bach11 {
   /** A task representation, usually calling a tool by its name and passing arguments. */
   public interface Call {
 
+    /** The name of the call. */
     String name();
 
+    /** Arguments of the call. */
     List<String> args();
 
     /** Associated execution level. */
@@ -256,6 +253,7 @@ public class Bach11 {
       return "· `" + toString() + "`";
     }
 
+    /** Create a named tool call. */
     static Call of(String name, String... args) {
       class Tool implements Call {
         @Override
@@ -276,6 +274,7 @@ public class Bach11 {
       return new Tool();
     }
 
+    /** Create an active call providing an callable instance. */
     static Call of(String name, Callable<?> callable, String... code) {
       class Lambda implements Call, Callable<Object> {
         @Override
@@ -305,16 +304,21 @@ public class Bach11 {
   /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
   public interface Plan extends Call {
 
+    /** Nested calls of this plan. */
     List<Call> calls();
 
+    /** Configuration level. */
     Level level();
 
+    /** Indicates that all nested calls are independent of each other. */
     boolean parallel();
 
+    /** Walk a tree of calls starting with this plan instance. */
     default int walk(BiConsumer<String, Call> consumer) {
       return walk(this, consumer);
     }
 
+    /** Create named plan with an array of calls. */
     static Plan of(String name, Level level, boolean parallel, Call... calls) {
       class Record implements Plan {
         @Override
@@ -352,10 +356,12 @@ public class Bach11 {
       return new Record();
     }
 
+    /** Walk a tree of calls starting with the given call instance. */
     static int walk(Call call, BiConsumer<String, Call> consumer) {
       return walk(call, "", "  ", consumer);
     }
 
+    /** Walk a tree of calls starting with the given call instance. */
     static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
       consumer.accept(indent, call);
       if (call instanceof Plan) {
@@ -368,15 +374,18 @@ public class Bach11 {
     }
   }
 
-  /** Build plan builder. */
+  /** Project build plan computer. */
   public class Planner implements Callable<Plan> {
 
     private final Project project;
 
+    /** Initialize this planner instance. */
     public Planner(Project project) {
       this.project = project;
+      logger.log(Level.TRACE, "Initialized {0}", this);
     }
 
+    /** Compute project build plan. */
     @Override
     public Plan call() {
       logger.log(Level.DEBUG, "Computing build plan for {0}", project);
@@ -388,10 +397,11 @@ public class Bach11 {
           createOutputDirectory());
     }
 
+    /** Print system information. */
     public Call showSystemInformation() {
       return Plan.of(
           "Show System Information",
-          Level.DEBUG,
+          Level.INFO,
           true,
           Call.of("javac", "--version"),
           Call.of("javadoc", "--version"),
@@ -399,6 +409,7 @@ public class Bach11 {
           Call.of("jdeps", "--version"));
     }
 
+    /** Create output directory. */
     public Call createOutputDirectory() {
       var path = Path.of(".bach");
       return Call.of(
@@ -423,7 +434,8 @@ public class Bach11 {
     }
   }
 
-  public static final class Configuration {
+  /** Execution configuration record. */
+  /*record*/ public static final class Configuration {
     private final Project project;
     private final Plan plan;
     private final Set<Level> levels;
@@ -457,7 +469,7 @@ public class Bach11 {
     }
   }
 
-  /** Default plan executor. */
+  /** Plan executor. */
   public class Executor implements Callable<Summary> {
 
     private final Configuration configuration;
@@ -468,24 +480,27 @@ public class Bach11 {
       this.summary = new Summary(configuration.project());
     }
 
+    /** Compute summary by executing the configuration. */
     @Override
     public Summary call() {
       walkAndExecute(configuration.plan());
       return summary;
     }
 
+    /** Return true iff the passed call is to be executed. */
     protected boolean enabled(Call call) {
       if (call.level() == Level.ALL) return true; // ALL as in "always active"
       if (call.level() == Level.OFF) return false; // OFF as in "always off"
       return configuration.levels().contains(call.level());
     }
 
+    /** Walk the call: either descend or execute it. */
     protected void walkAndExecute(Call call) {
-      if (!enabled(call)) return; // Skip disabled calls and plans
+      if (!enabled(call)) return;
+
       if (call instanceof Plan) {
         var plan = (Plan) call;
         var calls = plan.calls();
-        // Skip empty plans silently? -> if (calls.isEmpty()) return;
         var stream =
             configuration.parallel() && plan.parallel()
                 ? calls.stream().parallel()
@@ -496,7 +511,9 @@ public class Bach11 {
         logger.log(Level.DEBUG, "{0} took {1} ms", plan.name(), duration);
         return;
       }
+
       try {
+        logger.log(Level.DEBUG, "· {0}", call);
         summary.calls.add(call);
         var result = execute(call);
         if (result == null) return;
@@ -508,10 +525,12 @@ public class Bach11 {
       }
     }
 
+    /** Execute the given call (not a plan here). */
     protected Object execute(Call call) throws Exception {
       if (call instanceof Plan) throw new AssertionError("No plan expected here!");
-      logger.log(Level.DEBUG, "· {0}", call);
+
       if (call instanceof Callable) return ((Callable<?>) call).call();
+
       var name = call.name();
       var tool = ToolProvider.findFirst(name);
       if (tool.isPresent()) {
