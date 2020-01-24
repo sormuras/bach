@@ -70,22 +70,21 @@ public class Bach11 {
   public static void main(String... args) {
     var arguments = new ArrayDeque<>(List.of(args));
     var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
-
-    if (operation == Operation.VERSION) {
-      System.out.println(VERSION);
-      return;
+    switch (operation) {
+      case BUILD:
+      case DRY_RUN:
+        var bach = new Bach11();
+        var printer = Printer.ofSystem();
+        bach.build(bach.newProject(), printer, true, operation == Operation.DRY_RUN);
+        return;
+      case CALL:
+        var name = arguments.removeFirst(); // or fail with "cryptic" error message
+        var call = Call.of(name, arguments.toArray(String[]::new));
+        call.executeNow(new ExecutionContext());
+        return;
+      case VERSION:
+        System.out.println(VERSION);
     }
-
-    if (operation == Operation.CALL) {
-      var name = arguments.removeFirst(); // or fail with "cryptic" error message
-      var call = Call.of(name, arguments.toArray(String[]::new));
-      call.executeNow(new ExecutionContext());
-      return;
-    }
-
-    var bach = new Bach11();
-    var printer = Printer.ofSystem();
-    bach.build(bach.newProject(), printer, true, operation == Operation.DRY_RUN);
   }
 
   /** Logger instance. */
