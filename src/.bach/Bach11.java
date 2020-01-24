@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
 /**
@@ -278,6 +279,32 @@ public class Bach11 {
       scanName().ifPresent(builder::setName);
       scanVersion().ifPresent(builder::setVersion);
       return builder;
+    }
+  }
+
+  /** Level-aware printer. */
+  public static class Printer implements BiConsumer<Level, String> {
+
+    public static Printer ofSystem() {
+      return new Printer(System.out::println, System.err::println);
+    }
+
+    private final Consumer<String> out;
+    private final Consumer<String> err;
+
+    public Printer(Consumer<String> out, Consumer<String> err) {
+      this.out = out;
+      this.err = err;
+    }
+
+    @Override
+    public void accept(Level level, String line) {
+      (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
+    }
+
+    public String out(String line) {
+      out.accept(line);
+      return line;
     }
   }
 
