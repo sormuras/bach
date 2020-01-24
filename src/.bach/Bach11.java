@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 /**
  * Java Shell Builder.
@@ -82,8 +84,10 @@ public class Bach11 {
     /** Get version of this project. */
     Version version();
 
+    List<Realm> realms();
+
     /** Initialize this project instance. */
-    static Project of(Path base, String name, Version version) {
+    static Project of(Path base, String name, Version version, List<Realm> realms) {
       class LocalRecord implements Project {
 
         @Override
@@ -102,6 +106,11 @@ public class Bach11 {
         }
 
         @Override
+        public List<Realm> realms() {
+          return realms;
+        }
+
+        @Override
         public String toString() {
           return String.format("Project {base='%s', name=\"%s\", version=%s}", base, name, version);
         }
@@ -114,10 +123,11 @@ public class Bach11 {
       private Path base = Path.of("");
       private String name = "project";
       private Version version = Version.parse("0");
+      private List<Realm> realms = new ArrayList<>();
 
       /** Create project instance using property values from this builder. */
       public Project newProject() {
-        return Project.of(base, name, version);
+        return Project.of(base, name, version, realms);
       }
 
       /** Set project's base directory. */
@@ -140,6 +150,12 @@ public class Bach11 {
       /** Set project's version. */
       public Builder version(Version version) {
         this.version = version;
+        return this;
+      }
+
+      /** Set project's realms. */
+      public Builder realms(List<Realm> realms) {
+        this.realms = realms;
         return this;
       }
     }
@@ -203,6 +219,22 @@ public class Bach11 {
        */
       public Optional<Version> scanVersion() {
         return findProperty("version").map(Version::parse);
+      }
+    }
+
+    /** A realm of sources. */
+    interface Realm {
+
+      default Optional<String> name() {
+        return Optional.empty();
+      }
+
+      List<String> modules();
+
+      String moduleSourcePath();
+
+      default Optional<String> modulePath() {
+        return Optional.empty();
       }
     }
   }
@@ -632,7 +664,30 @@ public class Bach11 {
 
       /** Compile all realms. */
       public Call compileAllRealms() {
-        return Plan.of("Compile all realms", Level.ALL, false);
+        var calls =
+            project.realms().stream()
+                .map(this::compileRealm)
+                .collect(Collectors.toList())
+                .toArray(Call[]::new);
+        return Plan.of("Compile all realms", Level.ALL, false, calls);
+      }
+
+      /** Compile specified realm. */
+      public Call compileRealm(Project.Realm realm) {
+        var name = realm.name().orElse("default");
+        var classes = folder.out().resolve("classes").resolve(name).toString();
+        return Plan.of(
+            "Compile " + name + " realm",
+            Level.ALL,
+            false,
+            Call.of(
+                "javac",
+                "--module",
+                String.join(",", realm.modules()),
+                "--module-source-path",
+                realm.moduleSourcePath(),
+                "-d",
+                classes));
       }
     }
 
