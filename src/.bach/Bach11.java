@@ -74,13 +74,16 @@ public class Bach11 {
       case BUILD:
       case DRY_RUN:
         var bach = new Bach11();
-        var printer = Printer.ofSystem();
-        bach.build(bach.newProject(), printer, true, operation == Operation.DRY_RUN);
+        var project = bach.newProject();
+        var printer = Execution.Printer.ofSystem();
+        var banner = !arguments.contains("--hide-banner");
+        var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
+        bach.build(project, printer, banner, dryRun);
         return;
       case CALL:
         var name = arguments.removeFirst(); // or fail with "cryptic" error message
-        var call = Call.of(name, arguments.toArray(String[]::new));
-        call.executeNow(new ExecutionContext());
+        var call = Execution.Call.of(name, arguments.toArray(String[]::new));
+        call.executeNow(new Execution.Context());
         return;
       case VERSION:
         System.out.println(VERSION);
@@ -102,12 +105,13 @@ public class Bach11 {
   }
 
   /** Build the given project. */
-  public Summary build(Project project) {
-    return build(project, Printer.ofSystem(), true, false);
+  public Execution.Summary build(Project project) {
+    return build(project, Execution.Printer.ofSystem(), true, false);
   }
 
   /** Build the given project. */
-  public Summary build(Project project, Printer printer, boolean banner, boolean dryRun) {
+  public Execution.Summary build(
+      Project project, Execution.Printer printer, boolean banner, boolean dryRun) {
     var out = printer.out;
 
     if (banner) {
@@ -116,7 +120,7 @@ public class Bach11 {
     }
 
     out.accept(project.toString());
-    var plan = newPlan(project);
+    var plan = new Execution.Planner(logger, project).call();
 
     out.accept("");
     var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
@@ -125,14 +129,14 @@ public class Bach11 {
     if (dryRun) {
       out.accept("");
       out.accept("Dry-run successful.");
-      return new Summary(project);
+      return new Execution.Summary(project);
     }
 
     out.accept("");
     out.accept("Build...");
-    var context = new ExecutionContext(printer, EnumSet.allOf(Level.class), true);
-    var configuration = new Composition(context, project, plan);
-    var summary = execute(configuration);
+    var context = new Execution.Context(printer, EnumSet.allOf(Level.class), true);
+    var composition = new Execution.Composition(context, project, plan);
+    var summary = execute(composition);
 
     out.accept("");
     summary.calls().forEach(call -> out.accept(call.toMarkdown()));
@@ -156,14 +160,9 @@ public class Bach11 {
     return newProjectBuilder().build();
   }
 
-  /** Create call container for the given project. */
-  public Container newPlan(Project project) {
-    return new Planner(project).call();
-  }
-
   /** Execute the given container. */
-  public Summary execute(Composition composition) {
-    return new Executor(composition).call();
+  public Execution.Summary execute(Execution.Composition composition) {
+    return new Execution.Executor(composition).call();
   }
 
   /** Return {@code "Bach11 " + }{@link #VERSION}. */
@@ -303,435 +302,441 @@ public class Bach11 {
     }
   }
 
-  /** Level-aware printer. */
-  public static class Printer implements BiConsumer<Level, String> {
+  /** Namespace for execution-related types. */
+  interface Execution {
 
-    public static Printer ofSystem() {
-      return new Printer(System.out::println, System.err::println);
-    }
+    /** Level-aware printer. */
+    class Printer implements BiConsumer<Level, String> {
 
-    private final Consumer<String> out;
-    private final Consumer<String> err;
-
-    public Printer(Consumer<String> out, Consumer<String> err) {
-      this.out = out;
-      this.err = err;
-    }
-
-    @Override
-    public void accept(Level level, String line) {
-      (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
-    }
-
-    public String out(String line) {
-      out.accept(line);
-      return line;
-    }
-  }
-
-  /** Execution context. */
-  public static final class ExecutionContext {
-
-    private final Printer printer;
-    private final Set<Level> levels;
-    private final boolean parallel;
-
-    public ExecutionContext() {
-      this(Printer.ofSystem(), EnumSet.allOf(Level.class), true);
-    }
-
-    public ExecutionContext(Printer printer, Set<Level> levels, boolean parallel) {
-      this.printer = printer;
-      this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
-      this.parallel = parallel;
-    }
-
-    public BiConsumer<Level, String> printer() {
-      return printer;
-    }
-
-    public Set<Level> levels() {
-      return levels;
-    }
-
-    public boolean parallel() {
-      return parallel;
-    }
-
-    /** Return true iff the passed call is to be executed. */
-    boolean enabled(Call call) {
-      if (call.level() == Level.ALL) return true; // ALL as in "always active"
-      if (call.level() == Level.OFF) return false; // OFF as in "always skip"
-      return levels().contains(call.level());
-    }
-
-    /** Return true iff the passed call is to be skipped from execution. */
-    final boolean disabled(Call call) {
-      return !enabled(call);
-    }
-  }
-
-  /** Execution event promoter. */
-  interface ExecutionListener {
-    /** Call execution is about to begin callback. */
-    default void executionBegin(Call call) {}
-
-    /** Call execution is skipped callback. */
-    default void executionDisabled(Call call) {}
-
-    /** Call execution ended callback. */
-    default void executionEnd(Call call, Duration duration) {}
-  }
-
-  /** A single tool command. */
-  public interface Call {
-
-    /** The caption (title, description, purpose, ...) of the call. */
-    default String caption() {
-      return getClass().getSimpleName();
-    }
-
-    /** Execute this instance. */
-    default void execute(ExecutionContext context, ExecutionListener listener) {
-      if (context.disabled(this)) {
-        listener.executionDisabled(this);
-        return;
+      public static Printer ofSystem() {
+        return new Printer(System.out::println, System.err::println);
       }
-      listener.executionBegin(this);
-      var start = Instant.now();
-      try {
-        executeNow(context, listener);
-      } finally {
-        var duration = Duration.between(Instant.now(), start);
-        listener.executionEnd(this, duration);
+
+      private final Consumer<String> out;
+      private final Consumer<String> err;
+
+      public Printer(Consumer<String> out, Consumer<String> err) {
+        this.out = out;
+        this.err = err;
+      }
+
+      @Override
+      public void accept(Level level, String line) {
+        (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
+      }
+
+      public String out(String line) {
+        out.accept(line);
+        return line;
       }
     }
 
-    /** Execute this instance. */
-    default void executeNow(ExecutionContext context, ExecutionListener listener) {
-      executeNow(context);
+    /** Execution context. */
+    final class Context {
+
+      private final Printer printer;
+      private final Set<Level> levels;
+      private final boolean parallel;
+
+      public Context() {
+        this(Printer.ofSystem(), EnumSet.allOf(Level.class), true);
+      }
+
+      public Context(Printer printer, Set<Level> levels, boolean parallel) {
+        this.printer = printer;
+        this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
+        this.parallel = parallel;
+      }
+
+      public BiConsumer<Level, String> printer() {
+        return printer;
+      }
+
+      public Set<Level> levels() {
+        return levels;
+      }
+
+      public boolean parallel() {
+        return parallel;
+      }
+
+      /** Return true iff the passed call is to be executed. */
+      boolean enabled(Call call) {
+        if (call.level() == Level.ALL) return true; // ALL as in "always active"
+        if (call.level() == Level.OFF) return false; // OFF as in "always skip"
+        return levels().contains(call.level());
+      }
+
+      /** Return true iff the passed call is to be skipped from execution. */
+      final boolean disabled(Call call) {
+        return !enabled(call);
+      }
     }
 
-    /** Execute this instance. */
-    void executeNow(ExecutionContext context);
+    /** Execution event promoter. */
+    interface Listener {
+      /** Call execution is about to begin callback. */
+      default void executionBegin(Call call) {}
 
-    /** Associated execution level. */
-    default Level level() {
-      return Level.ALL;
+      /** Call execution is skipped callback. */
+      default void executionDisabled(Call call) {}
+
+      /** Call execution ended callback. */
+      default void executionEnd(Call call, Duration duration) {}
     }
 
-    default String toMarkdown() {
-      return "· `" + toString() + "`";
-    }
+    /** A single tool command. */
+    interface Call {
 
-    /** Create a named tool call. */
-    static Call of(String name, String... args) {
-      var tool = ToolProvider.findFirst(name).orElseThrow();
-      class Tool implements Call {
-        @Override
-        public String caption() {
-          return null;
+      /** The caption (title, description, purpose, ...) of the call. */
+      default String caption() {
+        return getClass().getSimpleName();
+      }
+
+      /** Execute this instance. */
+      default void execute(Context context, Listener listener) {
+        if (context.disabled(this)) {
+          listener.executionDisabled(this);
+          return;
         }
+        listener.executionBegin(this);
+        var start = Instant.now();
+        try {
+          executeNow(context, listener);
+        } finally {
+          var duration = Duration.between(Instant.now(), start);
+          listener.executionEnd(this, duration);
+        }
+      }
 
-        @Override
-        public void executeNow(ExecutionContext context) {
-          var out = new StringWriter();
-          var err = new StringWriter();
-          var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-          out.toString().lines().forEach(line -> context.printer().accept(Level.INFO, line));
-          err.toString().lines().forEach(line -> context.printer().accept(Level.ERROR, line));
-          if (code != 0) {
-            var cause = new RuntimeException(err.toString());
-            throw new Error(name + " exited with code: " + code, cause);
+      /** Execute this instance. */
+      default void executeNow(Context context, Listener listener) {
+        executeNow(context);
+      }
+
+      /** Execute this instance. */
+      void executeNow(Context context);
+
+      /** Associated execution level. */
+      default Level level() {
+        return Level.ALL;
+      }
+
+      default String toMarkdown() {
+        return "· `" + toString() + "`";
+      }
+
+      /** Create a named tool call. */
+      static Call of(String name, String... args) {
+        var tool = ToolProvider.findFirst(name).orElseThrow();
+        class Tool implements Call {
+          @Override
+          public String caption() {
+            return null;
+          }
+
+          @Override
+          public void executeNow(Context context) {
+            var out = new StringWriter();
+            var err = new StringWriter();
+            var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+            out.toString().lines().forEach(line -> context.printer().accept(Level.INFO, line));
+            err.toString().lines().forEach(line -> context.printer().accept(Level.ERROR, line));
+            if (code != 0) {
+              var cause = new RuntimeException(err.toString());
+              throw new Error(name + " exited with code: " + code, cause);
+            }
+          }
+
+          @Override
+          public String toString() {
+            return name + (args.length == 0 ? "" : " " + String.join(" ", args));
           }
         }
-
-        @Override
-        public String toString() {
-          return name + (args.length == 0 ? "" : " " + String.join(" ", args));
-        }
+        return new Tool();
       }
-      return new Tool();
-    }
 
-    /** Create an active call providing an callable instance. */
-    static Call of(String caption, Callable<?> callable, String... code) {
-      class Lambda implements Call {
-        @Override
-        public String caption() {
-          return caption;
-        }
+      /** Create an active call providing an callable instance. */
+      static Call of(String caption, Callable<?> callable, String... code) {
+        class Lambda implements Call {
+          @Override
+          public String caption() {
+            return caption;
+          }
 
-        @Override
-        public void executeNow(ExecutionContext context) {
-          try {
-            callable.call();
-          } catch (Exception e) {
-            throw new RuntimeException("Execution failed: " + e.getMessage(), e);
+          @Override
+          public void executeNow(Context context) {
+            try {
+              callable.call();
+            } catch (Exception e) {
+              throw new RuntimeException("Execution failed: " + e.getMessage(), e);
+            }
+          }
+
+          @Override
+          public String toString() {
+            return code.length == 0 ? "// " + caption : String.join(" ", code);
           }
         }
-
-        @Override
-        public String toString() {
-          return code.length == 0 ? "// " + caption : String.join(" ", code);
-        }
+        return new Lambda();
       }
-      return new Lambda();
-    }
-  }
-
-  /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
-  public interface Container extends Call {
-
-    /** Nested calls of this container. */
-    List<Call> calls();
-
-    /** Configuration level. */
-    Level level();
-
-    /** Indicates that all nested calls are independent of each other. */
-    boolean parallel();
-
-    @Override
-    default void executeNow(ExecutionContext context, ExecutionListener listener) {
-      var parallel = context.parallel() && parallel();
-      var stream = parallel ? calls().stream().parallel() : calls().stream();
-      stream.forEach(call -> call.execute(context, listener));
     }
 
-    @Override
-    default void executeNow(ExecutionContext context) {}
+    /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
+    interface Plan extends Call {
 
-    /** Walk a tree of calls starting with this container instance. */
-    default int walk(BiConsumer<String, Call> consumer) {
-      return walk(this, consumer);
-    }
+      /** Nested calls of this container. */
+      List<Call> calls();
 
-    /** Create container with an array of calls. */
-    static Container of(String caption, Level level, boolean parallel, Call... calls) {
-      class Record implements Container {
-        @Override
-        public String caption() {
-          return caption;
-        }
+      /** Configuration level. */
+      Level level();
 
-        @Override
-        public Level level() {
-          return level;
-        }
+      /** Indicates that all nested calls are independent of each other. */
+      boolean parallel();
 
-        @Override
-        public boolean parallel() {
-          return parallel;
-        }
-
-        @Override
-        public List<Call> calls() {
-          return List.of(calls);
-        }
-
-        @Override
-        public String toMarkdown() {
-          return String.format(
-              "» %s _(size=%d, level=%s, parallel=%s)_",
-              caption(), calls().size(), level(), parallel());
-        }
+      @Override
+      default void executeNow(Context context, Listener listener) {
+        var parallel = context.parallel() && parallel();
+        var stream = parallel ? calls().stream().parallel() : calls().stream();
+        stream.forEach(call -> call.execute(context, listener));
       }
-      return new Record();
-    }
 
-    /** Walk a tree of calls starting with the given call instance. */
-    static int walk(Call call, BiConsumer<String, Call> consumer) {
-      return walk(call, "", "  ", consumer);
-    }
+      @Override
+      default void executeNow(Context context) {}
 
-    /** Walk a tree of calls starting with the given call instance. */
-    static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
-      consumer.accept(indent, call);
-      if (call instanceof Container) {
-        var container = ((Container) call);
-        var count = 0;
-        for (var child : container.calls()) count += walk(child, indent + inc, inc, consumer);
-        return count;
+      /** Walk a tree of calls starting with this container instance. */
+      default int walk(BiConsumer<String, Call> consumer) {
+        return walk(this, consumer);
       }
-      return 1;
-    }
-  }
 
-  /** Folder configuration record. */
-  /*record*/ public static final class Folder {
-    private final Path out;
-    private final Path lib;
+      /** Create container with an array of calls. */
+      static Plan of(String caption, Level level, boolean parallel, Call... calls) {
+        class Record implements Plan {
+          @Override
+          public String caption() {
+            return caption;
+          }
 
-    public Folder(Path base) {
-      this(base.resolve(".bach"), base.resolve("lib"));
-    }
+          @Override
+          public Level level() {
+            return level;
+          }
 
-    public Folder(Path out, Path lib) {
-      this.out = out;
-      this.lib = lib;
-    }
+          @Override
+          public boolean parallel() {
+            return parallel;
+          }
 
-    public Path out() {
-      return out;
-    }
+          @Override
+          public List<Call> calls() {
+            return List.of(calls);
+          }
 
-    public Path lib() {
-      return lib;
-    }
+          @Override
+          public String toMarkdown() {
+            return String.format(
+                "» %s _(size=%d, level=%s, parallel=%s)_",
+                caption(), calls().size(), level(), parallel());
+          }
+        }
+        return new Record();
+      }
 
-    @Override
-    public String toString() {
-      return "Folder{out=" + out + ", lib=" + lib + "}";
-    }
-  }
+      /** Walk a tree of calls starting with the given call instance. */
+      static int walk(Call call, BiConsumer<String, Call> consumer) {
+        return walk(call, "", "  ", consumer);
+      }
 
-  /** Project build container computer. */
-  public class Planner implements Callable<Container> {
-
-    private final Project project;
-    private final Folder folder;
-
-    /** Initialize this planner instance. */
-    public Planner(Project project) {
-      this(project, new Folder(project.base()));
-    }
-
-    /** Initialize this planner instance. */
-    public Planner(Project project, Folder folder) {
-      this.project = project;
-      this.folder = folder;
-      logger.log(Level.TRACE, "Initialized {0}", this);
-    }
-
-    /** Compute project build container. */
-    @Override
-    public Container call() {
-      logger.log(Level.DEBUG, "Computing build container for {0}", project);
-      logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
-      return Container.of(
-          "Build " + project.name() + " " + project.version(),
-          Level.ALL,
-          false,
-          showSystemInformation(),
-          createOutputDirectory());
+      /** Walk a tree of calls starting with the given call instance. */
+      static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
+        consumer.accept(indent, call);
+        if (call instanceof Plan) {
+          var container = ((Plan) call);
+          var count = 0;
+          for (var child : container.calls()) count += walk(child, indent + inc, inc, consumer);
+          return count;
+        }
+        return 1;
+      }
     }
 
-    /** Print system information. */
-    public Call showSystemInformation() {
-      return Container.of(
-          "Show System Information",
-          Level.INFO,
-          true,
-          Call.of("javac", "--version"),
-          Call.of("javadoc", "--version"),
-          Call.of("jar", "--version"),
-          Call.of("jdeps", "--version"));
+    /** Folder configuration record. */
+    /*record*/ final class Folder {
+      private final Path out;
+      private final Path lib;
+
+      public Folder(Path base) {
+        this(base.resolve(".bach"), base.resolve("lib"));
+      }
+
+      public Folder(Path out, Path lib) {
+        this.out = out;
+        this.lib = lib;
+      }
+
+      public Path out() {
+        return out;
+      }
+
+      public Path lib() {
+        return lib;
+      }
+
+      @Override
+      public String toString() {
+        return "Folder{out=" + out + ", lib=" + lib + "}";
+      }
     }
 
-    /** Create output directory. */
-    public Call createOutputDirectory() {
-      return Call.of(
-          "Create output directory",
-          () -> Files.createDirectories(folder.out),
-          "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
-    }
-  }
+    /** Project build container computer. */
+    class Planner implements Callable<Plan> {
 
-  /** Java source code related helpers. */
-  public static class Code {
-    private Code() {}
+      private final Logger logger;
+      private final Project project;
+      private final Folder folder;
 
-    /** Convert the string representation of the given object into a Java source snippet. */
-    public static String $(Object object) {
-      return "\"" + object.toString() + "\"";
-    }
+      /** Initialize this planner instance. */
+      public Planner(Logger logger, Project project) {
+        this(logger, project, new Folder(project.base()));
+      }
 
-    /** Create {@code Path.of("some/path/...")} snippet. */
-    public static String pathOf(Path path) {
-      return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
-    }
-  }
+      /** Initialize this planner instance. */
+      public Planner(Logger logger, Project project, Folder folder) {
+        this.logger = logger;
+        this.project = project;
+        this.folder = folder;
+        logger.log(Level.TRACE, "Initialized {0}", this);
+      }
 
-  /** Execution configuration record. */
-  /*record*/ public static final class Composition {
-    private final ExecutionContext context;
-    private final Project project;
-    private final Container container;
+      /** Compute project build container. */
+      @Override
+      public Plan call() {
+        logger.log(Level.DEBUG, "Computing build container for {0}", project);
+        logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
+        return Plan.of(
+            "Build " + project.name() + " " + project.version(),
+            Level.ALL,
+            false,
+            showSystemInformation(),
+            createOutputDirectory());
+      }
 
-    public Composition(ExecutionContext context, Project project, Container container) {
-      this.context = context;
-      this.project = project;
-      this.container = container;
-    }
+      /** Print system information. */
+      public Call showSystemInformation() {
+        return Plan.of(
+            "Show System Information",
+            Level.INFO,
+            true,
+            Call.of("javac", "--version"),
+            Call.of("javadoc", "--version"),
+            Call.of("jar", "--version"),
+            Call.of("jdeps", "--version"));
+      }
 
-    public ExecutionContext context() {
-      return context;
-    }
-
-    public Project project() {
-      return project;
-    }
-
-    public Container container() {
-      return container;
-    }
-  }
-
-  /** Composition executor. */
-  public static class Executor implements Callable<Summary> {
-
-    private final Composition composition;
-    private final Summary summary;
-
-    public Executor(Composition composition) {
-      this.composition = composition;
-      this.summary = new Summary(composition.project());
+      /** Create output directory. */
+      public Call createOutputDirectory() {
+        return Call.of(
+            "Create output directory",
+            () -> Files.createDirectories(folder.out),
+            "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
+      }
     }
 
-    /** Compute summary by executing the configuration. */
-    @Override
-    public Summary call() {
-      var start = Instant.now();
-      composition.container().execute(composition.context(), summary);
-      summary.duration = Duration.between(start, Instant.now());
-      return summary;
-    }
-  }
+    /** Java source code related helpers. */
+    class Code {
+      private Code() {}
 
-  /** Execution summary. */
-  public static class Summary implements ExecutionListener {
-    private final Project project;
-    private final Collection<Call> calls;
-    private Duration duration;
+      /** Convert the string representation of the given object into a Java source snippet. */
+      public static String $(Object object) {
+        return "\"" + object.toString() + "\"";
+      }
 
-    public Summary(Project project) {
-      this.project = project;
-      this.calls = new ConcurrentLinkedQueue<>();
+      /** Create {@code Path.of("some/path/...")} snippet. */
+      public static String pathOf(Path path) {
+        return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+      }
     }
 
-    public List<Call> calls() {
-      return List.copyOf(calls);
+    /** Execution configuration record. */
+    /*record*/ final class Composition {
+      private final Context context;
+      private final Project project;
+      private final Plan plan;
+
+      public Composition(Context context, Project project, Plan plan) {
+        this.context = context;
+        this.project = project;
+        this.plan = plan;
+      }
+
+      public Context context() {
+        return context;
+      }
+
+      public Project project() {
+        return project;
+      }
+
+      public Plan container() {
+        return plan;
+      }
     }
 
-    public Duration duration() {
-      return duration;
+    /** Composition executor. */
+    class Executor implements Callable<Summary> {
+
+      private final Composition composition;
+      private final Summary summary;
+
+      public Executor(Composition composition) {
+        this.composition = composition;
+        this.summary = new Summary(composition.project());
+      }
+
+      /** Compute summary by executing the configuration. */
+      @Override
+      public Summary call() {
+        var start = Instant.now();
+        composition.container().execute(composition.context(), summary);
+        summary.duration = Duration.between(start, Instant.now());
+        return summary;
+      }
     }
 
-    @Override
-    public void executionBegin(Call call) {
-      if (!(call instanceof Container)) calls.add(call);
-    }
+    /** Execution summary. */
+    class Summary implements Listener {
+      private final Project project;
+      private final Collection<Call> calls;
+      private Duration duration;
 
-    @Override
-    public void executionDisabled(Call call) {}
+      public Summary(Project project) {
+        this.project = project;
+        this.calls = new ConcurrentLinkedQueue<>();
+      }
 
-    @Override
-    public void executionEnd(Call call, Duration duration) {}
+      public List<Call> calls() {
+        return List.copyOf(calls);
+      }
 
-    @Override
-    public String toString() {
-      return "Summary for " + project.name() + " -> " + calls.size() + " calls executed";
+      public Duration duration() {
+        return duration;
+      }
+
+      @Override
+      public void executionBegin(Call call) {
+        if (!(call instanceof Plan)) calls.add(call);
+      }
+
+      @Override
+      public void executionDisabled(Call call) {}
+
+      @Override
+      public void executionEnd(Call call, Duration duration) {}
+
+      @Override
+      public String toString() {
+        return "Summary for " + project.name() + " -> " + calls.size() + " calls executed";
+      }
     }
   }
 }
