@@ -83,32 +83,9 @@ public class Bach11 {
       return;
     }
 
-    System.out.println("Bach.java " + VERSION);
-
     var bach = new Bach11();
-    var project = bach.newProject();
-    System.out.println();
-    System.out.println(project);
-    var container = bach.newPlan(project);
-    System.out.println();
-    container.walk((indent, call) -> System.out.println(indent + "- " + call.toMarkdown()));
-    switch (operation) {
-      case BUILD:
-        var context = new ExecutionContext();
-        var configuration = new Composition(context, project, container);
-        var summary = bach.execute(configuration);
-        System.out.println();
-        summary.calls().forEach(call -> System.out.println(call.toMarkdown()));
-        System.out.println();
-        System.out.println("Build took " + summary.duration().toMillis() + " milliseconds.");
-        break;
-      case DRY_RUN:
-        System.out.println();
-        System.out.println("Dry-run successful.");
-        break;
-    }
-    System.out.println();
-    System.out.println("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+    var printer = Printer.ofSystem();
+    bach.build(bach.newProject(), printer, true, operation == Operation.DRY_RUN);
   }
 
   /** Logger instance. */
@@ -123,6 +100,51 @@ public class Bach11 {
   Bach11(Logger logger) {
     this.logger = logger;
     logger.log(Level.TRACE, "Initialized {0}", this);
+  }
+
+  /** Build the given project. */
+  public Summary build(Project project) {
+    return build(project, Printer.ofSystem(), true, false);
+  }
+
+  /** Build the given project. */
+  public Summary build(Project project, Printer printer, boolean banner, boolean dryRun) {
+    var out = printer.out;
+
+    if (banner) {
+      out.accept("Bach.java " + VERSION);
+      out.accept("");
+    }
+
+    out.accept(project.toString());
+    var plan = newPlan(project);
+
+    out.accept("");
+    var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
+    out.accept("The generated call plan contains " + count + " plain calls (leaves).");
+
+    if (dryRun) {
+      out.accept("");
+      out.accept("Dry-run successful.");
+      return new Summary(project);
+    }
+
+    out.accept("");
+    out.accept("Build...");
+    var context = new ExecutionContext(printer, EnumSet.allOf(Level.class), true);
+    var configuration = new Composition(context, project, plan);
+    var summary = execute(configuration);
+
+    out.accept("");
+    summary.calls().forEach(call -> out.accept(call.toMarkdown()));
+    out.accept("");
+    out.accept("Build took " + summary.duration().toMillis() + " milliseconds.");
+
+    if (banner) {
+      out.accept("");
+      out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+    }
+    return summary;
   }
 
   /** Create project build for the current working directory. */
@@ -309,17 +331,17 @@ public class Bach11 {
   }
 
   /** Execution context. */
-  /*private*/ public static final class ExecutionContext {
-    private final BiConsumer<Level, String> printer;
+  public static final class ExecutionContext {
+
+    private final Printer printer;
     private final Set<Level> levels;
     private final boolean parallel;
 
     public ExecutionContext() {
-      this(Call::printer, EnumSet.allOf(Level.class), true);
+      this(Printer.ofSystem(), EnumSet.allOf(Level.class), true);
     }
 
-    public ExecutionContext(
-        BiConsumer<Level, String> printer, Set<Level> levels, boolean parallel) {
+    public ExecutionContext(Printer printer, Set<Level> levels, boolean parallel) {
       this.printer = printer;
       this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
       this.parallel = parallel;
@@ -401,11 +423,6 @@ public class Bach11 {
 
     default String toMarkdown() {
       return "· `" + toString() + "`";
-    }
-
-    static void printer(Level level, String line) {
-      var stream = level.getSeverity() <= Level.INFO.getSeverity() ? System.out : System.err;
-      stream.println(line);
     }
 
     /** Create a named tool call. */
