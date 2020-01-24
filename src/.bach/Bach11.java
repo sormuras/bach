@@ -264,7 +264,7 @@ public class Bach11 {
       }
 
       out.accept(project.toString());
-      var plan = new Planner(logger, project).call();
+      var plan = new Planner(logger, project).newPlan();
 
       out.accept("");
       var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
@@ -578,7 +578,7 @@ public class Bach11 {
     }
 
     /** Project build container computer. */
-    class Planner implements Callable<Plan> {
+    class Planner {
 
       private final Logger logger;
       private final Project project;
@@ -598,8 +598,7 @@ public class Bach11 {
       }
 
       /** Compute project build container. */
-      @Override
-      public Plan call() {
+      public Plan newPlan() {
         logger.log(Level.DEBUG, "Computing build container for {0}", project);
         logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
         return Plan.of(
@@ -607,7 +606,8 @@ public class Bach11 {
             Level.ALL,
             false,
             showSystemInformation(),
-            createOutputDirectory());
+            createOutputDirectory(),
+            compileAllRealms());
       }
 
       /** Print system information. */
@@ -628,6 +628,11 @@ public class Bach11 {
             "Create output directory",
             () -> Files.createDirectories(folder.out),
             "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
+      }
+
+      /** Compile all realms. */
+      public Call compileAllRealms() {
+        return Plan.of("Compile all realms", Level.ALL, false);
       }
     }
 
