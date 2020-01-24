@@ -28,9 +28,10 @@
 
 /open https://github.com/sormuras/bach/raw/master/src/.bach/Bach11.java
 
+var args = System.getProperty("Bach.main(args)", "build").split(" ")
 var code = 0
 try {
-  Bach11.main("build");
+  Bach11.main(args);
 } catch (Throwable throwable) {
   System.err.println(throwable.getMessage());
   code = 1;
