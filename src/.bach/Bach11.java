@@ -58,7 +58,7 @@ public class Bach11 {
 
   /** Build the given project. */
   public static Build.Summary build(Consumer<Project.Builder> consumer) {
-    var builder = new Project.Scanner(LOGGER, Path.of("")).newProjectBuilder();
+    var builder = new Project.BuilderFactory(LOGGER, Path.of("")).newProjectBuilder();
     consumer.accept(builder); // side-effects are expected
     var project = builder.newProject();
     return build(project);
@@ -145,13 +145,13 @@ public class Bach11 {
     }
 
     /** Directory-based project model builder computer. */
-    class Scanner {
+    class BuilderFactory {
 
       private final Logger logger;
       private final Path base;
 
       /** Initialize this scanner instance with a directory to scan. */
-      public Scanner(Logger logger, Path base) {
+      public BuilderFactory(Logger logger, Path base) {
         this.base = base;
         this.logger = logger;
         logger.log(Level.TRACE, "Initialized {0}", this);
@@ -235,8 +235,8 @@ public class Bach11 {
       switch (operation) {
         case BUILD:
         case DRY_RUN:
-          var scanner = new Project.Scanner(LOGGER, Path.of(""));
-          var builder = scanner.newProjectBuilder();
+          var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
+          var builder = factory.newProjectBuilder();
           var project = builder.newProject();
           var printer = Build.Printer.ofSystem();
           var banner = !arguments.contains("--hide-banner");
