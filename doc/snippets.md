@@ -96,3 +96,7 @@ Algorithm outline:
     1. User-defined "module group:artifact" over `module-maven.properties`
 
 1. Throw `UnmappedModuleException`
+
+## Wish list
+
+- Support ZIP files as sources of `Project.BuilderFactory`
