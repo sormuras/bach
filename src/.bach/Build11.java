@@ -4,8 +4,6 @@
 class Build11 {
 
   public static void main(String... args) {
-    var bach = new Bach11();
-    var project = bach.newProjectBuilder().setVersion("2.3.1").build();
-    bach.build(project);
+    Bach11.build(project -> project.version("47.11"));
   }
 }

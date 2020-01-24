@@ -48,262 +48,251 @@ public class Bach11 {
   /** Version of the Java Shell Builder. */
   static final Version VERSION = Version.parse("1-ea");
 
-  /** Supported operation modes by the default build program. */
-  private enum Operation {
-    /** Build the project in the current working directory. */
-    BUILD,
-    /** Create and execute a single (tool) call on-the-fly. */
-    CALL,
-    /** Generate, validate, and print project information. */
-    DRY_RUN,
-    /** Emit version on the standard output stream and exit. */
-    VERSION;
+  /** Default logger instance. */
+  private static final Logger LOGGER = System.getLogger("Bach.java");
 
-    /** Return the operation for the specified argument. */
-    static Operation of(String argument, Operation defaultOperation) {
-      if (argument == null) return defaultOperation;
-      return valueOf(argument.toUpperCase().replace('-', '_'));
-    }
-  }
-
-  /** Default build program. */
+  /** Entry-point. */
   public static void main(String... args) {
-    var arguments = new ArrayDeque<>(List.of(args));
-    var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
-    switch (operation) {
-      case BUILD:
-      case DRY_RUN:
-        var bach = new Bach11();
-        var project = bach.newProject();
-        var printer = Execution.Printer.ofSystem();
-        var banner = !arguments.contains("--hide-banner");
-        var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
-        bach.build(project, printer, banner, dryRun);
-        return;
-      case CALL:
-        var name = arguments.removeFirst(); // or fail with "cryptic" error message
-        var call = Execution.Call.of(name, arguments.toArray(String[]::new));
-        call.executeNow(new Execution.Context());
-        return;
-      case VERSION:
-        System.out.println(VERSION);
-    }
-  }
-
-  /** Logger instance. */
-  private final Logger logger;
-
-  /** Initialize Java Shell Builder instance with default components. */
-  public Bach11() {
-    this(System.getLogger("Bach.java"));
-  }
-
-  /** Initialize Java Shell Builder instance canonically. */
-  Bach11(Logger logger) {
-    this.logger = logger;
-    logger.log(Level.TRACE, "Initialized {0}", this);
+    Build.build(args);
   }
 
   /** Build the given project. */
-  public Execution.Summary build(Project project) {
-    return build(project, Execution.Printer.ofSystem(), true, false);
+  public static Build.Summary build(Consumer<Project.Builder> consumer) {
+    var builder = new Project.Scanner(LOGGER, Path.of("")).newProjectBuilder();
+    consumer.accept(builder); // side-effects are expected
+    var project = builder.newProject();
+    return build(project);
   }
 
   /** Build the given project. */
-  public Execution.Summary build(
-      Project project, Execution.Printer printer, boolean banner, boolean dryRun) {
-    var out = printer.out;
-
-    if (banner) {
-      out.accept("Bach.java " + VERSION);
-      out.accept("");
-    }
-
-    out.accept(project.toString());
-    var plan = new Execution.Planner(logger, project).call();
-
-    out.accept("");
-    var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
-    out.accept("The generated call plan contains " + count + " plain calls (leaves).");
-
-    if (dryRun) {
-      out.accept("");
-      out.accept("Dry-run successful.");
-      return new Execution.Summary(project);
-    }
-
-    out.accept("");
-    out.accept("Build...");
-    var context = new Execution.Context(printer, EnumSet.allOf(Level.class), true);
-    var composition = new Execution.Composition(context, project, plan);
-    var summary = execute(composition);
-
-    out.accept("");
-    summary.calls().forEach(call -> out.accept(call.toMarkdown()));
-    out.accept("");
-    out.accept("Build took " + summary.duration().toMillis() + " milliseconds.");
-
-    if (banner) {
-      out.accept("");
-      out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
-    }
-    return summary;
-  }
-
-  /** Create project build for the current working directory. */
-  public Project.Builder newProjectBuilder() {
-    return new Scanner(Path.of("")).call();
-  }
-
-  /** Create project for the current working directory. */
-  public Project newProject() {
-    return newProjectBuilder().build();
-  }
-
-  /** Execute the given container. */
-  public Execution.Summary execute(Execution.Composition composition) {
-    return new Execution.Executor(composition).call();
-  }
-
-  /** Return {@code "Bach11 " + }{@link #VERSION}. */
-  @Override
-  public String toString() {
-    return "Bach11 " + VERSION;
+  public static Build.Summary build(Project project) {
+    var printer = Build.Printer.ofSystem();
+    return Build.build(project, LOGGER, printer, true, false);
   }
 
   /** Project model API. */
-  /*record*/ public static final class Project {
-
-    private final Path base;
-    private final String name;
-    private final Version version;
-
-    /** Initialize this project instance. */
-    public Project(Path base, String name, Version version) {
-      this.base = base;
-      this.name = name;
-      this.version = version;
-    }
+  public interface Project {
 
     /** Get base directory of this project. */
-    public Path base() {
-      return base;
-    }
+    Path base();
 
     /** Get name of this project. */
-    public String name() {
-      return name;
-    }
+    String name();
 
     /** Get version of this project. */
-    public Version version() {
-      return version;
-    }
+    Version version();
 
-    @Override
-    public String toString() {
-      return "Project {base='" + base() + "', name=\"" + name() + "\", version=" + version() + "}";
+    /** Initialize this project instance. */
+    static Project of(Path base, String name, Version version) {
+      class LocalRecord implements Project {
+
+        @Override
+        public Path base() {
+          return base;
+        }
+
+        @Override
+        public String name() {
+          return name;
+        }
+
+        @Override
+        public Version version() {
+          return version;
+        }
+
+        @Override
+        public String toString() {
+          return String.format("Project {base='%s', name=\"%s\", version=%s}", base, name, version);
+        }
+      }
+      return new LocalRecord();
     }
 
     /** Project model builder. */
-    public static final class Builder {
+    class Builder {
       private Path base = Path.of("");
       private String name = "project";
       private Version version = Version.parse("0");
 
       /** Create project instance using property values from this builder. */
-      public Project build() {
-        return new Project(base, name, version);
+      public Project newProject() {
+        return Project.of(base, name, version);
       }
 
       /** Set project's base directory. */
-      public Builder setBase(Path base) {
+      public Builder base(Path base) {
         this.base = base;
         return this;
       }
 
       /** Set project's name. */
-      public Builder setName(String name) {
+      public Builder name(String name) {
         this.name = name;
         return this;
       }
 
       /** Set project's version. */
-      public Builder setVersion(String version) {
-        return setVersion(Version.parse(version));
+      public Builder version(String version) {
+        return version(Version.parse(version));
       }
 
       /** Set project's version. */
-      public Builder setVersion(Version version) {
+      public Builder version(Version version) {
         this.version = version;
         return this;
       }
     }
-  }
 
-  /** Directory-based project model builder computer. */
-  public class Scanner implements Callable<Project.Builder> {
+    /** Directory-based project model builder computer. */
+    class Scanner {
 
-    private final Path base;
+      private final Logger logger;
+      private final Path base;
 
-    /** Initialize this scanner instance with a directory to scan. */
-    public Scanner(Path base) {
-      this.base = base;
-      logger.log(Level.TRACE, "Initialized {0}", this);
-    }
+      /** Initialize this scanner instance with a directory to scan. */
+      public Scanner(Logger logger, Path base) {
+        this.base = base;
+        this.logger = logger;
+        logger.log(Level.TRACE, "Initialized {0}", this);
+      }
 
-    /** Get base directory to be scanned for project properties. */
-    public final Path base() {
-      return base;
-    }
+      /** Get base directory to be scanned for project properties. */
+      public final Path base() {
+        return base;
+      }
 
-    /** Lookup a property value by its key name. */
-    public Optional<String> getProperty(String name) {
-      var key = "project." + name;
-      var property = Optional.ofNullable(System.getProperty(key));
-      property.ifPresent(
-          value -> logger.log(Level.DEBUG, "System.getProperty(\"{0}\") -> \"{1}\"", key, value));
-      return property;
-    }
+      /** Create default project builder instance and set available properties. */
+      public Builder newProjectBuilder() {
+        logger.log(Level.DEBUG, "Scanning directory: {0}", base().toAbsolutePath());
+        var builder = new Builder();
+        builder.base(base());
+        scanName().ifPresent(builder::name);
+        scanVersion().ifPresent(builder::version);
+        return builder;
+      }
 
-    /** Scan for name property. */
-    public Optional<String> scanName() {
-      var name = getProperty("name");
-      if (name.isPresent()) return name;
-      return Optional.ofNullable(base().toAbsolutePath().getFileName()).map(Path::toString);
-    }
+      /** Lookup a property value by its key name. */
+      public Optional<String> findProperty(String name) {
+        var key = "project." + name;
+        var property = Optional.ofNullable(System.getProperty(key));
+        property.ifPresent(
+            value -> logger.log(Level.DEBUG, "System.getProperty(\"{0}\") -> \"{1}\"", key, value));
+        return property;
+      }
 
-    /**
-     * Scan for version property.
-     *
-     * <p>Example implementation reading and parsing a version from a {@code .version} file:
-     *
-     * <pre><code>
-     *    public Optional&lt;Version&gt; scanVersion() throws Exception {
-     *      var version = base().resolve(".version");
-     *      if (Files.notExists(version)) return Optional.empty();
-     *      return Optional.of(Version.parse(Files.readString(version)));
-     *    }
-     * </code></pre>
-     */
-    public Optional<Version> scanVersion() {
-      return getProperty("version").map(Version::parse);
-    }
+      /** Scan for name property. */
+      public Optional<String> scanName() {
+        var name = findProperty("name");
+        if (name.isPresent()) return name;
+        return Optional.ofNullable(base().toAbsolutePath().getFileName()).map(Path::toString);
+      }
 
-    /** Create default project builder instance and set available properties. */
-    @Override
-    public Project.Builder call() {
-      logger.log(Level.DEBUG, "Scanning directory: {0}", base().toAbsolutePath());
-      var builder = new Project.Builder();
-      builder.setBase(base());
-      scanName().ifPresent(builder::setName);
-      scanVersion().ifPresent(builder::setVersion);
-      return builder;
+      /**
+       * Scan for version property.
+       *
+       * <p>Example implementation reading and parsing a version from a {@code .version} file:
+       *
+       * <pre><code>
+       *    public Optional&lt;Version&gt; scanVersion() throws Exception {
+       *      var version = base().resolve(".version");
+       *      if (Files.notExists(version)) return Optional.empty();
+       *      return Optional.of(Version.parse(Files.readString(version)));
+       *    }
+       * </code></pre>
+       */
+      public Optional<Version> scanVersion() {
+        return findProperty("version").map(Version::parse);
+      }
     }
   }
 
   /** Namespace for execution-related types. */
-  interface Execution {
+  public interface Build {
+
+    /** Supported operation modes by the default build program. */
+    enum Operation {
+      /** Build the project in the current working directory. */
+      BUILD,
+      /** Create and execute a single (tool) call on-the-fly. */
+      CALL,
+      /** Generate, validate, and print project information. */
+      DRY_RUN,
+      /** Emit version on the standard output stream and exit. */
+      VERSION;
+
+      /** Return the operation for the specified argument. */
+      static Operation of(String argument, Operation defaultOperation) {
+        if (argument == null) return defaultOperation;
+        return valueOf(argument.toUpperCase().replace('-', '_'));
+      }
+    }
+
+    /** Default build program. */
+    static void build(String... args) {
+      var arguments = new ArrayDeque<>(List.of(args));
+      var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
+      switch (operation) {
+        case BUILD:
+        case DRY_RUN:
+          var scanner = new Project.Scanner(LOGGER, Path.of(""));
+          var builder = scanner.newProjectBuilder();
+          var project = builder.newProject();
+          var printer = Build.Printer.ofSystem();
+          var banner = !arguments.contains("--hide-banner");
+          var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
+          build(project, LOGGER, printer, banner, dryRun);
+          return;
+        case CALL:
+          var name = arguments.removeFirst(); // or fail with "cryptic" error message
+          var call = Build.Call.of(name, arguments.toArray(String[]::new));
+          call.executeNow(new Build.Context());
+          return;
+        case VERSION:
+          System.out.println(VERSION);
+      }
+    }
+
+    /** Build the given project. */
+    static Summary build(
+        Project project, Logger logger, Printer printer, boolean banner, boolean dryRun) {
+      var out = printer.out;
+
+      if (banner) {
+        out.accept("Bach.java " + VERSION);
+        out.accept("");
+      }
+
+      out.accept(project.toString());
+      var plan = new Planner(logger, project).call();
+
+      out.accept("");
+      var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
+      out.accept("The generated call plan contains " + count + " plain calls (leaves).");
+
+      if (dryRun) {
+        out.accept("");
+        out.accept("Dry-run successful.");
+        return new Summary(project);
+      }
+
+      out.accept("");
+      out.accept("Build...");
+      var context = new Context(printer, EnumSet.allOf(Level.class), true);
+      var composition = new Composition(context, project, plan);
+      var summary = new Executor(composition).call();
+
+      out.accept("");
+      summary.calls().forEach(call -> out.accept(call.toMarkdown()));
+      out.accept("");
+      out.accept("Build took " + summary.duration().toMillis() + " milliseconds.");
+
+      if (banner) {
+        out.accept("");
+        out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+      }
+      return summary;
+    }
 
     /** Level-aware printer. */
     class Printer implements BiConsumer<Level, String> {
@@ -739,4 +728,7 @@ public class Bach11 {
       }
     }
   }
+
+  /** Hidden default constructor. */
+  private Bach11() {}
 }
