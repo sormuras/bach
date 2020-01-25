@@ -78,7 +78,7 @@ println("Generating local launchers and initial configuration...")
 println("  -> " + Files.write(Path.of("bach11"), List.of("/usr/bin/env " + javac11, "/usr/bin/env " + java11 + " \"$@\"")).toFile().setExecutable(true))
 println("  -> " + Files.write(Path.of("bach11.bat"), List.of("@ECHO OFF", javac11, java11 + " %*")))
 println("  -> " + Files.write(Path.of("bach14"), List.of("/usr/bin/env " + javac14, "/usr/bin/env " + java14 + " \"$@\"")).toFile().setExecutable(true))
-println("  -> " + Files.write(Path.of("bach14.bat"), List.of("@ECHO OFF", javac14, java11 + " %*")))
+println("  -> " + Files.write(Path.of("bach14.bat"), List.of("@ECHO OFF", javac14, java14 + " %*")))
 
 /*
  * Print some help and wave goodbye.
