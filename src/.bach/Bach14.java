@@ -258,7 +258,7 @@ public class Bach14 {
 
       out.accept("");
       out.accept("Build...");
-      var context = new Context(printer, EnumSet.allOf(Level.class), true);
+      var context = new Context(printer, Context.DEFAULT_LEVELS, true);
 
       out.accept(context.toString());
       var build = new Build(context, project, plan);
@@ -300,8 +300,10 @@ public class Bach14 {
     /** Execution context. */
     record Context(Printer printer, Set<Level> levels, boolean parallel) {
 
+      public static final Set<Level> DEFAULT_LEVELS = EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
+
       public Context() {
-        this(Printer.ofSystem(), EnumSet.allOf(Level.class), true);
+        this(Printer.ofSystem(), DEFAULT_LEVELS, true);
       }
 
       public Context {
