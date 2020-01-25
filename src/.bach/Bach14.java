@@ -259,6 +259,8 @@ public class Bach14 {
       out.accept("");
       out.accept("Build...");
       var context = new Context(printer, EnumSet.allOf(Level.class), true);
+
+      out.accept(context.toString());
       var build = new Build(context, project, plan);
       var summary = new Executor(build).call();
 
