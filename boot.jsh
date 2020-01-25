@@ -53,7 +53,7 @@ println()
 println()
 println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
-for (var asset : Set.of(bach11, bach14)) {
+for (var asset : Set.of(bach11, build11, bach14, build14)) {
   if (Files.exists(asset)) {
     println("  skip download -- using existing file: " + asset);
   } else {
