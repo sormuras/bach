@@ -45,8 +45,7 @@ import java.util.stream.Collectors;
  *
  * <p>Requires JDK 14 with "--enable-preview".
  */
-@SuppressWarnings({"UnusedReturnValue", "DeprecatedIsStillUsed"})
-@Deprecated(forRemoval = true)
+@SuppressWarnings({"UnusedReturnValue"})
 public class Bach14 {
 
   /** Version of the Java Shell Builder. */
@@ -294,16 +293,6 @@ public class Bach14 {
       public void accept(Level level, String line) {
         (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
       }
-
-      public String out(String line) {
-        out.accept(line);
-        return line;
-      }
-
-      public String err(String line) {
-        err.accept(line);
-        return line;
-      }
     }
 
     /** Execution context. */
@@ -386,12 +375,22 @@ public class Bach14 {
             var out = new StringWriter();
             var err = new StringWriter();
             var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-            out.toString().lines().forEach(context.printer()::out);
-            err.toString().lines().forEach(context.printer()::err);
-            if (code != 0) {
-              var cause = new RuntimeException(err.toString());
-              throw new Error(tool.name() + " exited with code: " + code, cause);
+            synchronized (context.printer()) {
+              var printer = context.printer();
+              printer.accept(Level.DEBUG, this.toString());
+              print(out, printer, Level.INFO);
+              print(err, printer, Level.ERROR);
             }
+            if (code != 0) {
+              throw new RuntimeException(tool.name() + " exit code: " + code);
+            }
+          }
+
+          private void print(StringWriter source, Printer printer, Level level) {
+            var string = source.toString();
+            if (string.isEmpty()) return;
+            string.lines().forEach(line -> printer.accept(level,"    " + line));
+
           }
 
           @Override
@@ -411,8 +410,13 @@ public class Bach14 {
             try {
               callable.call();
             } catch (Exception e) {
-              throw new RuntimeException("Execution failed: " + e.getMessage(), e);
+              throw new RuntimeException(this + " failed: " + e.getMessage(), e);
             }
+          }
+
+          @Override
+          public String toString() {
+            return String.join(" ", code);
           }
         }
         return new Lambda(callable, code);
