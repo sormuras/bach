@@ -46,4 +46,4 @@ println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
 
-/exit code
+/exit
