@@ -67,16 +67,18 @@ for (var asset : Set.of(bach11, build11, bach14, build14)) {
 }
 
 /*
- * Generate local launchers.
+ * Generate local launchers for JDK 11 and 14.
  */
-var javac = "javac -d .bach/boot " + bach11 + " " + build11
-var java = "java  -cp .bach/boot Build11"
+var javac11 = "javac -d .bach/boot " + bach11 + " " + build11
+var javac14 = "javac -d .bach/boot --enable-preview --release 14 " + bach14 + " " + build14
+var java11 = "java -cp .bach/boot Build11"
+var java14 = "java -cp .bach/boot --enable-preview Build14"
 println()
 println("Generating local launchers and initial configuration...")
-println("  -> bach")
-Files.write(Path.of("bach"), List.of("/usr/bin/env " + javac, "/usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
-println("  -> bach.bat")
-Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", javac, java + " %*"))
+println("  -> " + Files.write(Path.of("bach11"), List.of("/usr/bin/env " + javac11, "/usr/bin/env " + java11 + " \"$@\"")).toFile().setExecutable(true))
+println("  -> " + Files.write(Path.of("bach11.bat"), List.of("@ECHO OFF", javac11, java11 + " %*")))
+println("  -> " + Files.write(Path.of("bach14"), List.of("/usr/bin/env " + javac14, "/usr/bin/env " + java14 + " \"$@\"")).toFile().setExecutable(true))
+println("  -> " + Files.write(Path.of("bach14.bat"), List.of("@ECHO OFF", javac14, java11 + " %*")))
 
 /*
  * Print some help and wave goodbye.
@@ -84,8 +86,8 @@ Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", javac, java + " %*"))
 println()
 println("Bach.java bootstrap finished. Use the following command to build your project:")
 println()
-println("    Linux: ./bach <args...>")
-println("  Windows: bach <args...>")
+println("    Linux: ./bach[11|14] <args...>")
+println("  Windows: bach[11|14] <args...>")
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
