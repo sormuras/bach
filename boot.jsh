@@ -16,7 +16,7 @@
  */
 
 /*
- * Declare constants and helper methods.
+ * Declare constants.
  */
 String VERSION = "master"
 var version = System.getProperty("Bach.java/version", VERSION)
@@ -24,7 +24,12 @@ var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/.
 var target = Path.of(".bach/src")
 var bach11 = target.resolve("Bach11.java")
 var bach14 = target.resolve("Bach14.java")
+var build11 = target.resolve("Build11.java")
+var build14 = target.resolve("Build14.java")
 
+/*
+ * Source printing-related methods into this JShell session.
+ */
 /open PRINTING
 
 /*
@@ -42,6 +47,45 @@ println("     Java Shell Builder - " + version)
 println("     https://github.com/sormuras/bach")
 println()
 
+/*
+ * Download build tool and other assets from GitHub to local directory.
+ */
+println()
+println("Download assets to " + target.toAbsolutePath() + "...")
+Files.createDirectories(target)
+for (var asset : Set.of(bach11, bach14)) {
+  if (Files.exists(asset)) {
+    println("  skip download -- using existing file: " + asset);
+  } else {
+    var remote = new URL(source, asset.getFileName().toString());
+    println("Load " + remote + "...");
+    try (var stream = remote.openStream()) {
+      Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
+    }
+    println("  -> " + asset);
+  }
+}
+
+/*
+ * Generate local launchers.
+ */
+var javac = "javac -d .bach/boot " + bach11 + " " + build11
+var java = "java  -cp .bach/boot Build11"
+println()
+println("Generating local launchers and initial configuration...")
+println("  -> bach")
+Files.write(Path.of("bach"), List.of("/usr/bin/env " + javac, "/usr/bin/env " + java + " \"$@\"")).toFile().setExecutable(true)
+println("  -> bach.bat")
+Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", javac, java + " %*"))
+
+/*
+ * Print some help and wave goodbye.
+ */
+println()
+println("Bach.java bootstrap finished. Use the following command to build your project:")
+println()
+println("    Linux: ./bach <args...>")
+println("  Windows: bach <args...>")
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
