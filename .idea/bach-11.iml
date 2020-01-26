@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_14_PREVIEW" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_11" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/.bach">
-      <sourceFolder url="file://$MODULE_DIR$/src/.bach" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/src/.bach-11">
+      <sourceFolder url="file://$MODULE_DIR$/src/.bach-11" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -24,14 +24,14 @@
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
 //   a) to the "master" tag/branch and
-//   b) to "Bach14.java", which requires JDK 14 + "--enable-preview".
+//   b) to "src/.bach-14/Bach.java", which requires JDK 14 + "--enable-preview".
 
-/open https://github.com/sormuras/bach/raw/master/src/.bach/Bach14.java
+/open https://github.com/sormuras/bach/raw/master/src/.bach-14/Bach.java
 
 var args = System.getProperty("Bach.main(args)", "build").split(" ")
 var code = 0
 try {
-  Bach14.main(args);
+  Bach.main(args);
 } catch (Throwable throwable) {
   System.err.println(throwable.getMessage());
   code = 1;

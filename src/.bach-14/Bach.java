@@ -43,9 +43,10 @@ import java.util.stream.Collectors;
 /**
  * Java Shell Builder.
  *
- * <p>Requires JDK 11 or later.
+ * <p>Requires JDK 14 with "--enable-preview".
  */
-public class Bach11 {
+@SuppressWarnings({"UnusedReturnValue"})
+public class Bach {
 
   /** Version of the Java Shell Builder. */
   static final Version VERSION = Version.parse("1-ea");
@@ -73,53 +74,10 @@ public class Bach11 {
   }
 
   /** Project model API. */
-  public interface Project {
-
-    /** Get base directory of this project. */
-    Path base();
-
-    /** Get name of this project. */
-    String name();
-
-    /** Get version of this project. */
-    Version version();
-
-    List<Realm> realms();
-
-    /** Initialize this project instance. */
-    static Project of(Path base, String name, Version version, List<Realm> realms) {
-      class LocalRecord implements Project {
-
-        @Override
-        public Path base() {
-          return base;
-        }
-
-        @Override
-        public String name() {
-          return name;
-        }
-
-        @Override
-        public Version version() {
-          return version;
-        }
-
-        @Override
-        public List<Realm> realms() {
-          return realms;
-        }
-
-        @Override
-        public String toString() {
-          return String.format("Project {base='%s', name=\"%s\", version=%s}", base, name, version);
-        }
-      }
-      return new LocalRecord();
-    }
+  public record Project(Path base, String name, Version version, List<Realm> realms) {
 
     /** Project model builder. */
-    class Builder {
+    static class Builder {
       private Path base = Path.of("");
       private String name = "project";
       private Version version = Version.parse("0");
@@ -127,7 +85,7 @@ public class Bach11 {
 
       /** Create project instance using property values from this builder. */
       public Project newProject() {
-        return Project.of(base, name, version, realms);
+        return new Project(base, name, version, realms);
       }
 
       /** Set project's base directory. */
@@ -161,7 +119,7 @@ public class Bach11 {
     }
 
     /** Directory-based project model builder computer. */
-    class BuilderFactory {
+    static class BuilderFactory {
 
       private final Logger logger;
       private final Path base;
@@ -185,6 +143,7 @@ public class Bach11 {
         builder.base(base());
         scanName().ifPresent(builder::name);
         scanVersion().ifPresent(builder::version);
+        builder.realms(List.of(new Realm("default", List.of("default"), base().resolve("src").toString(), null)));
         return builder;
       }
 
@@ -223,24 +182,15 @@ public class Bach11 {
     }
 
     /** A realm of sources. */
-    interface Realm {
-
-      default Optional<String> name() {
-        return Optional.empty();
-      }
-
-      List<String> modules();
-
-      String moduleSourcePath();
-
-      default Optional<String> modulePath() {
-        return Optional.empty();
+    record Realm(String name, List<String> modules, String moduleSourcePath, String modulePath) {
+      Path path() {
+        return Path.of(name.equals("default") ? "." : name);
       }
     }
   }
 
   /** Namespace for execution-related types. */
-  public interface Build {
+  public record Build(Context context, Project project, Plan plan) {
 
     /** Supported operation modes by the default build program. */
     enum Operation {
@@ -265,23 +215,21 @@ public class Bach11 {
       var arguments = new ArrayDeque<>(List.of(args));
       var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
       switch (operation) {
-        case BUILD:
-        case DRY_RUN:
+        case BUILD, DRY_RUN -> {
           var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
           var builder = factory.newProjectBuilder();
           var project = builder.newProject();
-          var printer = Build.Printer.ofSystem();
+          var printer = Printer.ofSystem();
           var banner = !arguments.contains("--hide-banner");
           var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
           build(project, LOGGER, printer, banner, dryRun);
-          return;
-        case CALL:
+        }
+        case CALL -> {
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
-          var call = Build.Call.of(name, arguments.toArray(String[]::new));
-          call.executeNow(new Build.Context());
-          return;
-        case VERSION:
-          System.out.println(VERSION);
+          var call = Call.of(name, arguments.toArray(String[]::new));
+          call.executeNow(new Context());
+        }
+        case VERSION -> System.out.println(VERSION);
       }
     }
 
@@ -291,7 +239,7 @@ public class Bach11 {
       var out = printer.out;
 
       if (banner) {
-        out.accept("Bach.java " + VERSION);
+        out.accept(Bach14.class.getSimpleName() + ' ' + VERSION);
         out.accept("");
       }
 
@@ -299,7 +247,7 @@ public class Bach11 {
       var plan = new Planner(logger, project).newPlan();
 
       out.accept("");
-      var count = plan.walk((indent, call) -> out.accept(indent + "- " + call.toMarkdown()));
+      var count = plan.walk(it -> out.accept(it.toMarkdown("  ")));
       out.accept("The generated call plan contains " + count + " plain calls (leaves).");
 
       if (dryRun) {
@@ -310,9 +258,11 @@ public class Bach11 {
 
       out.accept("");
       out.accept("Build...");
-      var context = new Context(printer, EnumSet.allOf(Level.class), true);
-      var composition = new Composition(context, project, plan);
-      var summary = new Executor(composition).call();
+      var context = new Context(printer, Context.DEFAULT_LEVELS, true);
+
+      out.accept(context.toString());
+      var build = new Build(context, project, plan);
+      var summary = new Executor(build).call();
 
       out.accept("");
       summary.calls().forEach(call -> out.accept(call.toMarkdown()));
@@ -327,7 +277,7 @@ public class Bach11 {
     }
 
     /** Level-aware printer. */
-    class Printer implements BiConsumer<Level, String> {
+    public static class Printer implements BiConsumer<Level, String> {
 
       public static Printer ofSystem() {
         return new Printer(System.out::println, System.err::println);
@@ -345,40 +295,19 @@ public class Bach11 {
       public void accept(Level level, String line) {
         (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
       }
-
-      public String out(String line) {
-        out.accept(line);
-        return line;
-      }
     }
 
     /** Execution context. */
-    final class Context {
+    record Context(Printer printer, Set<Level> levels, boolean parallel) {
 
-      private final Printer printer;
-      private final Set<Level> levels;
-      private final boolean parallel;
+      public static final Set<Level> DEFAULT_LEVELS = EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
 
       public Context() {
-        this(Printer.ofSystem(), EnumSet.allOf(Level.class), true);
+        this(Printer.ofSystem(), DEFAULT_LEVELS, true);
       }
 
-      public Context(Printer printer, Set<Level> levels, boolean parallel) {
-        this.printer = printer;
+      public Context {
         this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
-        this.parallel = parallel;
-      }
-
-      public BiConsumer<Level, String> printer() {
-        return printer;
-      }
-
-      public Set<Level> levels() {
-        return levels;
-      }
-
-      public boolean parallel() {
-        return parallel;
       }
 
       /** Return true iff the passed call is to be executed. */
@@ -408,11 +337,6 @@ public class Bach11 {
 
     /** A single tool command. */
     interface Call {
-
-      /** The caption (title, description, purpose, ...) of the call. */
-      default String caption() {
-        return getClass().getSimpleName();
-      }
 
       /** Execute this instance. */
       default void execute(Context context, Listener listener) {
@@ -449,168 +373,113 @@ public class Bach11 {
 
       /** Create a named tool call. */
       static Call of(String name, String... args) {
-        var tool = ToolProvider.findFirst(name).orElseThrow();
-        class Tool implements Call {
-          @Override
-          public String caption() {
-            return null;
-          }
-
+        record Tool(ToolProvider tool, String... args) implements Call {
           @Override
           public void executeNow(Context context) {
             var out = new StringWriter();
             var err = new StringWriter();
             var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-            out.toString().lines().forEach(line -> context.printer().accept(Level.INFO, line));
-            err.toString().lines().forEach(line -> context.printer().accept(Level.ERROR, line));
-            if (code != 0) {
-              var cause = new RuntimeException(err.toString());
-              throw new Error(name + " exited with code: " + code, cause);
+            synchronized (context.printer()) {
+              var printer = context.printer();
+              printer.accept(Level.DEBUG, this.toString());
+              print(out, printer, Level.INFO);
+              print(err, printer, Level.ERROR);
             }
+            if (code != 0) {
+              throw new RuntimeException(tool.name() + " exit code: " + code);
+            }
+          }
+
+          private void print(StringWriter source, Printer printer, Level level) {
+            var string = source.toString();
+            if (string.isEmpty()) return;
+            string.lines().forEach(line -> printer.accept(level,"    " + line));
+
           }
 
           @Override
           public String toString() {
-            return name + (args.length == 0 ? "" : " " + String.join(" ", args));
+            return tool.name() + (args.length == 0 ? "" : " " + String.join(" ", args));
           }
         }
-        return new Tool();
+        var tool = ToolProvider.findFirst(name).orElseThrow();
+        return new Tool(tool, args);
       }
 
       /** Create an active call providing an callable instance. */
-      static Call of(String caption, Callable<?> callable, String... code) {
-        class Lambda implements Call {
-          @Override
-          public String caption() {
-            return caption;
-          }
-
+      static Call of(Callable<?> callable, String... code) {
+        record Lambda(Callable<?> callable, String... code) implements Call {
           @Override
           public void executeNow(Context context) {
             try {
               callable.call();
             } catch (Exception e) {
-              throw new RuntimeException("Execution failed: " + e.getMessage(), e);
+              throw new RuntimeException(this + " failed: " + e.getMessage(), e);
             }
           }
 
           @Override
           public String toString() {
-            return code.length == 0 ? "// " + caption : String.join(" ", code);
+            return String.join(" ", code);
           }
         }
-        return new Lambda();
+        return new Lambda(callable, code);
       }
     }
 
     /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
-    interface Plan extends Call {
-
-      /** Nested calls of this container. */
-      List<Call> calls();
-
-      /** Configuration level. */
-      Level level();
-
-      /** Indicates that all nested calls are independent of each other. */
-      boolean parallel();
+    record Plan(String caption, Level level, boolean parallel, List<Call> calls) implements Call {
 
       @Override
-      default void executeNow(Context context, Listener listener) {
+      public void executeNow(Context context, Listener listener) {
         var parallel = context.parallel() && parallel();
         var stream = parallel ? calls().stream().parallel() : calls().stream();
         stream.forEach(call -> call.execute(context, listener));
       }
 
       @Override
-      default void executeNow(Context context) {}
+      public void executeNow(Context context) {}
 
       /** Walk a tree of calls starting with this container instance. */
-      default int walk(BiConsumer<String, Call> consumer) {
-        return walk(this, consumer);
+      public int walk(Consumer<Walker> consumer) {
+        return walk(this, 0, consumer);
       }
 
-      /** Create container with an array of calls. */
-      static Plan of(String caption, Level level, boolean parallel, Call... calls) {
-        class Record implements Plan {
-          @Override
-          public String caption() {
-            return caption;
-          }
-
-          @Override
-          public Level level() {
-            return level;
-          }
-
-          @Override
-          public boolean parallel() {
-            return parallel;
-          }
-
-          @Override
-          public List<Call> calls() {
-            return List.of(calls);
-          }
-
-          @Override
-          public String toMarkdown() {
-            return String.format(
-                "» %s _(size=%d, level=%s, parallel=%s)_",
-                caption(), calls().size(), level(), parallel());
-          }
-        }
-        return new Record();
+      @Override
+      public String toMarkdown() {
+        return String.format(
+            "» %s _(size=%d, level=%s, parallel=%s)_",
+            caption(), calls.size(), level(), parallel());
       }
 
       /** Walk a tree of calls starting with the given call instance. */
-      static int walk(Call call, BiConsumer<String, Call> consumer) {
-        return walk(call, "", "  ", consumer);
-      }
-
-      /** Walk a tree of calls starting with the given call instance. */
-      static int walk(Call call, String indent, String inc, BiConsumer<String, Call> consumer) {
-        consumer.accept(indent, call);
-        if (call instanceof Plan) {
-          var container = ((Plan) call);
+      private static int walk(Call call, int depth, Consumer<Walker> consumer) {
+        consumer.accept(new Walker(call, depth));
+        if (call instanceof Plan plan) {
           var count = 0;
-          for (var child : container.calls()) count += walk(child, indent + inc, inc, consumer);
+          for (var child : plan.calls()) count += walk(child, depth + 1, consumer);
           return count;
         }
         return 1;
       }
+
+      /** Walk companion. */
+      public record Walker(Call call, int depth) {
+        public String toMarkdown(String indent) {
+          return indent.repeat(depth) + "- " + call.toMarkdown();
+        }
+      }
     }
 
     /** Folder configuration record. */
-    /*record*/ final class Folder {
-      private final Path out;
-      private final Path lib;
-
+    record Folder(Path out, Path lib) {
       public Folder(Path base) {
         this(base.resolve(".bach"), base.resolve("lib"));
-      }
-
-      public Folder(Path out, Path lib) {
-        this.out = out;
-        this.lib = lib;
-      }
-
-      public Path out() {
-        return out;
-      }
-
-      public Path lib() {
-        return lib;
-      }
-
-      @Override
-      public String toString() {
-        return "Folder{out=" + out + ", lib=" + lib + "}";
       }
     }
 
     /** Project build container computer. */
-    class Planner {
+    public static class Planner {
 
       private final Logger logger;
       private final Project project;
@@ -633,31 +502,32 @@ public class Bach11 {
       public Plan newPlan() {
         logger.log(Level.DEBUG, "Computing build container for {0}", project);
         logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
-        return Plan.of(
+        return new Plan(
             "Build " + project.name() + " " + project.version(),
             Level.ALL,
             false,
-            showSystemInformation(),
-            createOutputDirectory(),
-            compileAllRealms());
+            List.of(
+                showSystemInformation(),
+                createOutputDirectory(),
+                compileAllRealms()));
       }
 
       /** Print system information. */
       public Call showSystemInformation() {
-        return Plan.of(
+        return new Plan(
             "Show System Information",
             Level.INFO,
             true,
-            Call.of("javac", "--version"),
-            Call.of("javadoc", "--version"),
-            Call.of("jar", "--version"),
-            Call.of("jdeps", "--version"));
+            List.of(
+                Call.of("javac", "--version"),
+                Call.of("javadoc", "--version"),
+                Call.of("jar", "--version"),
+                Call.of("jdeps", "--version")));
       }
 
       /** Create output directory. */
       public Call createOutputDirectory() {
         return Call.of(
-            "Create output directory",
             () -> Files.createDirectories(folder.out),
             "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
       }
@@ -667,32 +537,31 @@ public class Bach11 {
         var calls =
             project.realms().stream()
                 .map(this::compileRealm)
-                .collect(Collectors.toList())
-                .toArray(Call[]::new);
-        return Plan.of("Compile all realms", Level.ALL, false, calls);
+                .collect(Collectors.toList());
+        return new Plan("Compile all realms", Level.ALL, false, calls);
       }
 
       /** Compile specified realm. */
       public Call compileRealm(Project.Realm realm) {
-        var name = realm.name().orElse("default");
-        var classes = folder.out().resolve("classes").resolve(name).toString();
-        return Plan.of(
-            "Compile " + name + " realm",
+        var classes = folder.out().resolve("classes").resolve(realm.path()).normalize().toString();
+        return new Plan(
+            "Compile " + realm.name() + " realm",
             Level.ALL,
             false,
-            Call.of(
-                "javac",
-                "--module",
-                String.join(",", realm.modules()),
-                "--module-source-path",
-                realm.moduleSourcePath(),
-                "-d",
-                classes));
+            List.of(
+                Call.of(
+                    "javac",
+                    "--module",
+                    String.join(",", realm.modules()),
+                    "--module-source-path",
+                    realm.moduleSourcePath(),
+                    "-d",
+                    classes)));
       }
     }
 
     /** Java source code related helpers. */
-    class Code {
+    private static final class Code {
       private Code() {}
 
       /** Convert the string representation of the given object into a Java source snippet. */
@@ -706,54 +575,29 @@ public class Bach11 {
       }
     }
 
-    /** Execution configuration record. */
-    /*record*/ final class Composition {
-      private final Context context;
-      private final Project project;
-      private final Plan plan;
-
-      public Composition(Context context, Project project, Plan plan) {
-        this.context = context;
-        this.project = project;
-        this.plan = plan;
-      }
-
-      public Context context() {
-        return context;
-      }
-
-      public Project project() {
-        return project;
-      }
-
-      public Plan container() {
-        return plan;
-      }
-    }
-
     /** Composition executor. */
-    class Executor implements Callable<Summary> {
+    public static class Executor implements Callable<Summary> {
 
-      private final Composition composition;
+      private final Build build;
       private final Summary summary;
 
-      public Executor(Composition composition) {
-        this.composition = composition;
-        this.summary = new Summary(composition.project());
+      public Executor(Build build) {
+        this.build = build;
+        this.summary = new Summary(build.project());
       }
 
       /** Compute summary by executing the configuration. */
       @Override
       public Summary call() {
         var start = Instant.now();
-        composition.container().execute(composition.context(), summary);
+        build.plan().execute(build.context(), summary);
         summary.duration = Duration.between(start, Instant.now());
         return summary;
       }
     }
 
     /** Execution summary. */
-    class Summary implements Listener {
+    public static class Summary implements Listener {
       private final Project project;
       private final Collection<Call> calls;
       private Duration duration;
@@ -790,5 +634,5 @@ public class Bach11 {
   }
 
   /** Hidden default constructor. */
-  private Bach11() {}
+  private Bach() {}
 }

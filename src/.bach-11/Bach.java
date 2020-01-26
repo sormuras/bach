@@ -43,10 +43,10 @@ import java.util.stream.Collectors;
 /**
  * Java Shell Builder.
  *
- * <p>Requires JDK 14 with "--enable-preview".
+ * <p>Requires JDK 11 or later.
  */
 @SuppressWarnings({"UnusedReturnValue"})
-public class Bach14 {
+public class Bach {
 
   /** Version of the Java Shell Builder. */
   static final Version VERSION = Version.parse("1-ea");
@@ -634,5 +634,5 @@ public class Bach14 {
   }
 
   /** Hidden default constructor. */
-  private Bach14() {}
+  private Bach() {}
 }

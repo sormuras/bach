@@ -18,20 +18,20 @@
  */
 
 /*
- * Zero-installation "Bach11.java build" script.
+ * Zero-installation Bach.java build script.
  */
 
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
 //   a) to the "master" tag/branch and
-//   b) to "Bach11.java", which requires JDK 11.
+//   b) to "src/.bach-11/Bach.java", which requires JDK 11 or later.
 
-/open https://github.com/sormuras/bach/raw/master/src/.bach/Bach11.java
+/open https://github.com/sormuras/bach/raw/master/src/.bach-11/Bach.java
 
-var args = System.getProperty("Bach.main(args)", "build").split(" ")
+var args = System.getProperty("args", "build").split(" ")
 var code = 0
 try {
-  Bach11.main(args);
+  Bach.main(args);
 } catch (Throwable throwable) {
   System.err.println(throwable.getMessage());
   code = 1;
