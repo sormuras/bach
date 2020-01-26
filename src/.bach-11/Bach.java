@@ -280,7 +280,9 @@ public class Bach {
           call.executeNow(new Context());
           break;
         case CLEAN:
-          Util.Paths.delete(Folder.DEFAULT.lib);
+          if (arguments.isEmpty()) Util.Paths.delete(Folder.DEFAULT.out);
+          if (arguments.contains("out")) Util.Paths.delete(Folder.DEFAULT.out);
+          if (arguments.contains("lib")) Util.Paths.delete(Folder.DEFAULT.lib);
           break;
         case HELP:
           System.out.println("Usage: Bach.java [<operation> [args...]]");
