@@ -215,7 +215,17 @@ public class Bach {
   }
 
   /** Namespace for execution-related types. */
-  public record Build(Context context, Project project, Plan plan) {
+  public static final class Build {
+
+    private final Context context;
+    private final Project project;
+    private final Plan plan;
+
+    public Build(Context context, Project project, Plan plan) {
+      this.context = context;
+      this.project = project;
+      this.plan = plan;
+    }
 
     /** Supported operation modes by the default build program. */
     enum Operation {
@@ -612,14 +622,14 @@ public class Bach {
 
       public Executor(Build build) {
         this.build = build;
-        this.summary = new Summary(build.project());
+        this.summary = new Summary(build.project);
       }
 
       /** Compute summary by executing the configuration. */
       @Override
       public Summary call() {
         var start = Instant.now();
-        build.plan().execute(build.context(), summary);
+        build.plan.execute(build.context, summary);
         summary.duration = Duration.between(start, Instant.now());
         return summary;
       }
