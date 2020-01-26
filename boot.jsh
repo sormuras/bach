@@ -46,7 +46,7 @@ println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
 println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
-println("     Java Shell Builder - " + version)
+println("     Java Shell Builder - " + version + " - " + feature)
 println("     https://github.com/sormuras/bach")
 println()
 
@@ -58,7 +58,7 @@ println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
 for (var asset : Set.of(bach, build)) {
   if (Files.exists(asset)) {
-    println("  skip download -- using existing file: " + asset);
+    println("  skip download -- reuse existing " + asset.toUri());
     continue;
   }
   var remote = new URL(source, asset.getFileName().toString());
@@ -66,33 +66,50 @@ for (var asset : Set.of(bach, build)) {
   try (var stream = remote.openStream()) {
     Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
   }
-  println("  -> " + asset);
+  println("  -> " + asset.toUri());
 }
 
 /*
  * Generate local launchers.
  */
+var directly = "java " + bach
+if (preview) {
+    directly = "java --enable-preview --source " + feature + " " + bach;
+}
 var compiler = "javac -d .bach/boot " + bach + " " + build
 var launcher = "java -cp .bach/boot Build"
 if (preview) {
     compiler = "javac -d .bach/boot --enable-preview --release " + feature + " " + bach + " " + build;
     launcher = "java -cp .bach/boot --enable-preview Build";
 }
+var root = target
 println()
 println("Generate local launchers...")
-println("  -> bach (Linux/MacOS)")
-Files.write(Path.of("bach"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"")).toFile().setExecutable(true)
-println("  -> bach.bat (Windows)")
-Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", compiler, launcher + " %*"))
+Files.write(root.resolve("bach"), List.of("/usr/bin/env " + directly + " \"$@\"")).toFile().setExecutable(true)
+Files.write(root.resolve("bach.bat"), List.of("@ECHO OFF", directly + " %*"))
+Files.write(root.resolve("build"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"")).toFile().setExecutable(true)
+Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher + " %*"))
+
+/*
+ * Smoke test Bach.java by printing its version and help text.
+ */
+/open src/.bach/Bach.java
+Bach.main("version")
+Bach.main("help")
 
 /*
  * Print some help and wave goodbye.
  */
 println()
-println("Bach.java bootstrap finished. Use the following command to build your project:")
+println("Bach.java bootstrap finished. Use the following commands to build your project:")
 println()
-println("    Linux: ./bach <args...>")
-println("  Windows: bach <args...>")
+println("- " + root.resolve("bach"))
+println("    Launch Bach.java's default build program.")
+println()
+println("- " + root.resolve("build"))
+println("    Launch your custom build program.")
+println("    Edit " + build.toUri())
+println("    to customize your build program even further.")
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
