@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 public class Bach {
 
   /** Version of the Java Shell Builder. */
-  static final Version VERSION = Version.parse("1-ea");
+  static final Version VERSION = Version.parse("14.0-ea");
 
   /** Default logger instance. */
   private static final Logger LOGGER = System.getLogger("Bach.java");
