@@ -74,7 +74,19 @@ public class Bach {
   }
 
   /** Project model API. */
-  public record Project(Path base, String name, Version version, List<Realm> realms) {
+  public static final class Project {
+
+    private final Path base;
+    private final String name;
+    private final Version version;
+    private final List<Realm> realms;
+
+    public Project(Path base, String name, Version version, List<Realm> realms) {
+      this.base = base;
+      this.name = name;
+      this.version = version;
+      this.realms = realms;
+    }
 
     /** Project model builder. */
     static class Builder {
@@ -491,7 +503,7 @@ public class Bach {
 
       /** Initialize this planner instance. */
       public Planner(Logger logger, Project project) {
-        this(logger, project, new Folder(project.base()));
+        this(logger, project, new Folder(project.base));
       }
 
       /** Initialize this planner instance. */
@@ -507,7 +519,7 @@ public class Bach {
         logger.log(Level.DEBUG, "Computing build container for {0}", project);
         logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
         return new Plan(
-            "Build " + project.name() + " " + project.version(),
+            "Build " + project.name + " " + project.version,
             Level.ALL,
             false,
             List.of(
@@ -539,7 +551,7 @@ public class Bach {
       /** Compile all realms. */
       public Call compileAllRealms() {
         var calls =
-            project.realms().stream()
+            project.realms.stream()
                 .map(this::compileRealm)
                 .collect(Collectors.toList());
         return new Plan("Compile all realms", Level.ALL, false, calls);
@@ -632,7 +644,7 @@ public class Bach {
 
       @Override
       public String toString() {
-        return "Summary for " + project.name() + " -> " + calls.size() + " calls executed";
+        return "Summary for " + project.name + " -> " + calls.size() + " calls executed";
       }
     }
   }
