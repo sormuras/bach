@@ -16,16 +16,19 @@
  */
 
 /*
- * Declare constants.
+ * Read input and declare constants.
  */
-String VERSION = "master"
-var version = System.getProperty("Bach.java/version", VERSION)
+var version = System.getProperty("version", "master")
+var feature = System.getProperty("feature", "11")
+var preview = Boolean.parseBoolean(System.getProperty("preview", "false"))
+
+/*
+ * Compute and set variables.
+ */
 var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/.bach/")
-var target = Path.of(".bach/src")
-var bach11 = target.resolve("Bach11.java")
-var bach14 = target.resolve("Bach14.java")
-var build11 = target.resolve("Build11.java")
-var build14 = target.resolve("Build14.java")
+var target = Path.of(System.getProperty("target", "src/.bach"))
+var bach = target.resolve("Bach" + feature + ".java")
+var build = target.resolve("Build" + feature + ".java")
 
 /*
  * Source printing-related methods into this JShell session.
@@ -48,37 +51,39 @@ println("     https://github.com/sormuras/bach")
 println()
 
 /*
- * Download build tool and other assets from GitHub to local directory.
+ * Download build tool and other assets from GitHub to local project directory.
  */
 println()
 println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
-for (var asset : Set.of(bach11, build11, bach14, build14)) {
+for (var asset : Set.of(bach, build)) {
   if (Files.exists(asset)) {
     println("  skip download -- using existing file: " + asset);
-  } else {
-    var remote = new URL(source, asset.getFileName().toString());
-    println("Load " + remote + "...");
-    try (var stream = remote.openStream()) {
-      Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
-    }
-    println("  -> " + asset);
+    continue;
   }
+  var remote = new URL(source, asset.getFileName().toString());
+  println("Load " + remote + "...");
+  try (var stream = remote.openStream()) {
+    Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
+  }
+  println("  -> " + asset);
 }
 
 /*
- * Generate local launchers for JDK 11 and 14.
+ * Generate local launchers.
  */
-var javac11 = "javac -d .bach/boot " + bach11 + " " + build11
-var javac14 = "javac -d .bach/boot --enable-preview --release 14 " + bach14 + " " + build14
-var java11 = "java -cp .bach/boot Build11"
-var java14 = "java -cp .bach/boot --enable-preview Build14"
+var compiler = "javac -d .bach/boot " + bach + " " + build
+var launcher = "java -cp .bach/boot Build" + feature
+if (preview) {
+    compiler = "javac -d .bach/boot --enable-preview --release " + feature + " " + bach + " " + build;
+    launcher = "java -cp .bach/boot --enable-preview Build" + feature;
+}
 println()
-println("Generating local launchers and initial configuration...")
-println("  -> " + Files.write(Path.of("bach11"), List.of("/usr/bin/env " + javac11, "/usr/bin/env " + java11 + " \"$@\"")).toFile().setExecutable(true))
-println("  -> " + Files.write(Path.of("bach11.bat"), List.of("@ECHO OFF", javac11, java11 + " %*")))
-println("  -> " + Files.write(Path.of("bach14"), List.of("/usr/bin/env " + javac14, "/usr/bin/env " + java14 + " \"$@\"")).toFile().setExecutable(true))
-println("  -> " + Files.write(Path.of("bach14.bat"), List.of("@ECHO OFF", javac14, java14 + " %*")))
+println("Generate local launchers...")
+println("  -> bach (Linux/MacOS)")
+Files.write(Path.of("bach"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"")).toFile().setExecutable(true)
+println("  -> bach.bat (Windows)")
+Files.write(Path.of("bach.bat"), List.of("@ECHO OFF", compiler, launcher + " %*"))
 
 /*
  * Print some help and wave goodbye.
@@ -86,8 +91,8 @@ println("  -> " + Files.write(Path.of("bach14.bat"), List.of("@ECHO OFF", javac1
 println()
 println("Bach.java bootstrap finished. Use the following command to build your project:")
 println()
-println("    Linux: ./bach[11|14] <args...>")
-println("  Windows: bach[11|14] <args...>")
+println("    Linux: ./bach <args...>")
+println("  Windows: bach <args...>")
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
