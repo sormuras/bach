@@ -237,6 +237,8 @@ public class Bach {
       CALL,
       /** Generate, validate, and print project information. */
       DRY_RUN,
+      /** Print help screen. */
+      HELP,
       /** Emit version on the standard output stream and exit. */
       VERSION;
 
@@ -266,6 +268,13 @@ public class Bach {
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
           var call = Call.of(name, arguments.toArray(String[]::new));
           call.executeNow(new Context());
+          break;
+        case HELP:
+          System.out.println("Usage: Bach.java [<operation> [args...]]");
+          System.out.println("Operations:");
+          for (var constant : Operation.values()) {
+            System.out.println("  - " + constant.name().toLowerCase().replace('_', '-'));
+          }
           break;
         case VERSION:
           System.out.println(VERSION);
