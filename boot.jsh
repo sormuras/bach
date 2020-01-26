@@ -25,10 +25,10 @@ var preview = Boolean.parseBoolean(System.getProperty("preview", "false"))
 /*
  * Compute and set variables.
  */
-var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/.bach/")
+var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/.bach-" + feature + "/")
 var target = Path.of(System.getProperty("target", "src/.bach"))
-var bach = target.resolve("Bach" + feature + ".java")
-var build = target.resolve("Build" + feature + ".java")
+var bach = target.resolve("Bach.java")
+var build = target.resolve("Build.java")
 
 /*
  * Source printing-related methods into this JShell session.
@@ -73,10 +73,10 @@ for (var asset : Set.of(bach, build)) {
  * Generate local launchers.
  */
 var compiler = "javac -d .bach/boot " + bach + " " + build
-var launcher = "java -cp .bach/boot Build" + feature
+var launcher = "java -cp .bach/boot Build"
 if (preview) {
     compiler = "javac -d .bach/boot --enable-preview --release " + feature + " " + bach + " " + build;
-    launcher = "java -cp .bach/boot --enable-preview Build" + feature;
+    launcher = "java -cp .bach/boot --enable-preview Build";
 }
 println()
 println("Generate local launchers...")
