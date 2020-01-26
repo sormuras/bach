@@ -88,6 +88,11 @@ public class Bach {
       this.realms = realms;
     }
 
+    @Override
+    public String toString() {
+      return "Project{" + "base=" + base + ", name='" + name + '\'' + ", version=" + version + '}';
+    }
+
     /** Project model builder. */
     static class Builder {
       private Path base = Path.of("");
@@ -364,6 +369,11 @@ public class Bach {
         this.printer = printer;
         this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
         this.parallel = parallel;
+      }
+
+      @Override
+      public String toString() {
+        return "Context{" + "levels=" + levels + ", parallel=" + parallel + '}';
       }
 
       /** Return true iff the passed call is to be executed. */
