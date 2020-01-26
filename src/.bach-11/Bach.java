@@ -488,12 +488,24 @@ public class Bach {
     }
 
     /** A composite task that is composed of a name and a list of nested {@link Call} instances. */
-    record Plan(String caption, Level level, boolean parallel, List<Call> calls) implements Call {
+    public static final class Plan implements Call {
+
+      private final String caption;
+      private final Level level;
+      private final boolean parallel;
+      private final List<Call> calls;
+
+      public Plan(String caption, Level level, boolean parallel, List<Call> calls) {
+        this.caption = caption;
+        this.level = level;
+        this.parallel = parallel;
+        this.calls = calls;
+      }
 
       @Override
       public void executeNow(Context context, Listener listener) {
-        var parallel = context.parallel && parallel();
-        var stream = parallel ? calls().stream().parallel() : calls().stream();
+        var parallel = context.parallel && this.parallel;
+        var stream = parallel ? calls.stream().parallel() : calls.stream();
         stream.forEach(call -> call.execute(context, listener));
       }
 
@@ -509,7 +521,7 @@ public class Bach {
       public String toMarkdown() {
         return String.format(
             "» %s _(size=%d, level=%s, parallel=%s)_",
-            caption(), calls.size(), level(), parallel());
+            caption, calls.size(), level(), parallel);
       }
 
       /** Walk a tree of calls starting with the given call instance. */
@@ -518,7 +530,7 @@ public class Bach {
         if (call instanceof Plan) {
           var plan = (Plan) call;
           var count = 0;
-          for (var child : plan.calls()) count += walk(child, depth + 1, consumer);
+          for (var child : plan.calls) count += walk(child, depth + 1, consumer);
           return count;
         }
         return 1;
