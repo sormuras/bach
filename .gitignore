@@ -1,8 +1,9 @@
-**/.bach/bootstrap/
-**/.bach/out/
+**/.bach
 **/.gradle
 **/build/
 **/target/
+
+!/src/.bach
 
 *.jar
 
