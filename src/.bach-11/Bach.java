@@ -541,6 +541,11 @@ public class Bach {
       }
 
       @Override
+      public Level level() {
+        return level;
+      }
+
+      @Override
       public void executeNow(Context context, Listener listener) {
         var parallel = context.parallel && this.parallel;
         var stream = parallel ? calls.stream().parallel() : calls.stream();
