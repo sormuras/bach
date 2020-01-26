@@ -21,6 +21,7 @@
 var version = System.getProperty("version", "master")
 var feature = System.getProperty("feature", "11")
 var preview = Boolean.parseBoolean(System.getProperty("preview", "false"))
+var replace = Boolean.parseBoolean(System.getProperty("replace", "false"))
 
 /*
  * Compute and set variables.
@@ -57,16 +58,16 @@ println()
 println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
 for (var asset : Set.of(bach, build)) {
-  if (Files.exists(asset)) {
-    println("  skip download -- reuse existing " + asset.toUri());
-    continue;
+  if (Files.notExists(asset) || (replace && bach.equals(asset))) {
+    var remote = new URL(source, asset.getFileName().toString());
+    println("  | " + remote + "...");
+    try (var stream = remote.openStream()) {
+      Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
+    }
+    println("  +-> " + asset.toUri());
+  } else {
+    println("  | reuse existing " + asset.toUri());
   }
-  var remote = new URL(source, asset.getFileName().toString());
-  println("Load " + remote + "...");
-  try (var stream = remote.openStream()) {
-    Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
-  }
-  println("  -> " + asset.toUri());
 }
 
 /*
