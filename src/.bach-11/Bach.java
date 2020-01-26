@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -37,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -238,10 +240,12 @@ public class Bach {
     enum Operation {
       /** Build the project in the current working directory. */
       BUILD,
-      /** Create and execute a single (tool) call on-the-fly. */
-      CALL,
       /** Generate, validate, and print project information. */
       DRY_RUN,
+      /** Create and execute a single (tool) call on-the-fly. */
+      CALL,
+      /** Clean all compiled assets. */
+      CLEAN,
       /** Print help screen. */
       HELP,
       /** Emit version on the standard output stream and exit. */
@@ -274,6 +278,9 @@ public class Bach {
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
           var call = Call.of(name, arguments.toArray(String[]::new));
           call.executeNow(new Context());
+          break;
+        case CLEAN:
+          Util.Paths.delete(Folder.DEFAULT.lib);
           break;
         case HELP:
           System.out.println("Usage: Bach.java [<operation> [args...]]");
@@ -582,8 +589,15 @@ public class Bach {
 
     /** Folder configuration record. */
     public static final class Folder {
+
+      public static final Folder DEFAULT = new Folder();
+
       private final Path out;
       private final Path lib;
+
+      public Folder() {
+        this(Path.of(""));
+      }
 
       public Folder(Path base) {
         this(base.resolve(".bach"), base.resolve("lib"));
@@ -790,6 +804,40 @@ public class Bach {
             + ", throwable="
             + throwable
             + '}';
+      }
+    }
+  }
+
+  /** Common utility collection. */
+  public interface Util {
+
+    /** Path-related utilities. */
+    interface Paths {
+
+      /** Delete the given path recursively. */
+      static Path delete(Path path) {
+        return delete(path, __ -> true);
+      }
+
+      /** Delete the given path recursively. */
+      static Path delete(Path path, Predicate<Path> filter) {
+        try { // trivial case: delete existing empty directory or single file
+          Files.deleteIfExists(path);
+          return path;
+        } catch (DirectoryNotEmptyException ignored) {
+          // fall-through
+        } catch (Exception e) {
+          throw new RuntimeException("Delete path failed: " + path, e);
+        }
+        try (var stream = Files.walk(path)) { // default case: walk the tree...
+          var streamed = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+          for (var selected : streamed.collect(Collectors.toList())) {
+            Files.deleteIfExists(selected);
+          }
+        } catch (Exception e) {
+          throw new RuntimeException("Delete path failed: " + path, e);
+        }
+        return path;
       }
     }
   }
