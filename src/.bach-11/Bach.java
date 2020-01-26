@@ -194,7 +194,20 @@ public class Bach {
     }
 
     /** A realm of sources. */
-    record Realm(String name, List<String> modules, String moduleSourcePath, String modulePath) {
+    public static final class Realm {
+
+      private final String name;
+      private final List<String> modules;
+      private final String moduleSourcePath;
+      private final String modulePath;
+
+      public Realm(String name, List<String> modules, String moduleSourcePath, String modulePath) {
+        this.name = name;
+        this.modules = modules;
+        this.moduleSourcePath = moduleSourcePath;
+        this.modulePath = modulePath;
+      }
+
       Path path() {
         return Path.of(name.equals("default") ? "." : name);
       }
@@ -561,16 +574,16 @@ public class Bach {
       public Call compileRealm(Project.Realm realm) {
         var classes = folder.out().resolve("classes").resolve(realm.path()).normalize().toString();
         return new Plan(
-            "Compile " + realm.name() + " realm",
+            "Compile " + realm.name + " realm",
             Level.ALL,
             false,
             List.of(
                 Call.of(
                     "javac",
                     "--module",
-                    String.join(",", realm.modules()),
+                    String.join(",", realm.modules),
                     "--module-source-path",
-                    realm.moduleSourcePath(),
+                    realm.moduleSourcePath,
                     "-d",
                     classes)));
       }
