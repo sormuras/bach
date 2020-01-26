@@ -277,7 +277,7 @@ public class Bach {
         case CALL:
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
           var call = Call.of(name, arguments.toArray(String[]::new));
-          call.executeNow(new Context());
+          call.execute(new Context());
           break;
         case CLEAN:
           if (arguments.isEmpty()) Util.Paths.delete(Folder.DEFAULT.out);
@@ -407,7 +407,7 @@ public class Bach {
     interface Call {
 
       /** Execute this instance. */
-      default void execute(Context context, Listener listener) {
+      default void executeFiringEvents(Context context, Listener listener) {
         if (context.disabled(this)) {
           listener.executionDisabled(this);
           return;
@@ -415,7 +415,7 @@ public class Bach {
         listener.executionBegin(this);
         var start = Instant.now();
         try {
-          executeNow(context, listener);
+          execute(context, listener);
         } finally {
           var duration = Duration.between(Instant.now(), start);
           listener.executionEnd(this, duration);
@@ -423,12 +423,12 @@ public class Bach {
       }
 
       /** Execute this instance. */
-      default void executeNow(Context context, Listener listener) {
-        executeNow(context);
+      default void execute(Context context, Listener listener) {
+        execute(context);
       }
 
       /** Execute this instance. */
-      void executeNow(Context context);
+      void execute(Context context);
 
       /** Associated execution level. */
       default Level level() {
@@ -455,7 +455,7 @@ public class Bach {
           }
 
           @Override
-          public void executeNow(Context context) {
+          public void execute(Context context) {
             var out = new StringWriter();
             var err = new StringWriter();
             var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
@@ -503,7 +503,7 @@ public class Bach {
           }
 
           @Override
-          public void executeNow(Context context) {
+          public void execute(Context context) {
             try {
               callable.call();
             } catch (Exception e) {
@@ -546,14 +546,14 @@ public class Bach {
       }
 
       @Override
-      public void executeNow(Context context, Listener listener) {
+      public void execute(Context context, Listener listener) {
         var parallel = context.parallel && this.parallel;
         var stream = parallel ? calls.stream().parallel() : calls.stream();
-        stream.forEach(call -> call.execute(context, listener));
+        stream.forEach(call -> call.executeFiringEvents(context, listener));
       }
 
       @Override
-      public void executeNow(Context context) {}
+      public void execute(Context context) {}
 
       /** Walk a tree of calls starting with this container instance. */
       public int walk(Consumer<Walker> consumer) {
@@ -724,7 +724,7 @@ public class Bach {
       @Override
       public Summary call() {
         try {
-          build.plan.execute(build.context, this);
+          build.plan.executeFiringEvents(build.context, this);
         } catch (RuntimeException exception) {
           return newSummary(exception);
         }
