@@ -455,7 +455,8 @@ public class Bach {
       /** Walk a tree of calls starting with the given call instance. */
       private static int walk(Call call, int depth, Consumer<Walker> consumer) {
         consumer.accept(new Walker(call, depth));
-        if (call instanceof Plan plan) {
+        if (call instanceof Plan) {
+          var plan = (Plan) call;
           var count = 0;
           for (var child : plan.calls()) count += walk(child, depth + 1, consumer);
           return count;
