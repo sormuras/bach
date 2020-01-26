@@ -417,7 +417,15 @@ public class Bach {
 
       /** Create a named tool call. */
       static Call of(String name, String... args) {
-        record Tool(ToolProvider tool, String... args) implements Call {
+        class Tool implements Call {
+          private final ToolProvider tool;
+          private final String[] args;
+
+          Tool(ToolProvider tool, String... args) {
+            this.tool = tool;
+            this.args = args;
+          }
+
           @Override
           public void executeNow(Context context) {
             var out = new StringWriter();
@@ -452,7 +460,15 @@ public class Bach {
 
       /** Create an active call providing an callable instance. */
       static Call of(Callable<?> callable, String... code) {
-        record Lambda(Callable<?> callable, String... code) implements Call {
+        class Lambda implements Call {
+          private final Callable<?> callable;
+          private final String[] code;
+
+          Lambda(Callable<?> callable, String... code) {
+            this.callable = callable;
+            this.code = code;
+          }
+
           @Override
           public void executeNow(Context context) {
             try {
