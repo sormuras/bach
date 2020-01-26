@@ -215,7 +215,8 @@ public class Bach {
       var arguments = new ArrayDeque<>(List.of(args));
       var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
       switch (operation) {
-        case BUILD, DRY_RUN -> {
+        case BUILD:
+        case DRY_RUN:
           var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
           var builder = factory.newProjectBuilder();
           var project = builder.newProject();
@@ -223,13 +224,15 @@ public class Bach {
           var banner = !arguments.contains("--hide-banner");
           var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
           build(project, LOGGER, printer, banner, dryRun);
-        }
-        case CALL -> {
+          break;
+        case CALL:
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
           var call = Call.of(name, arguments.toArray(String[]::new));
           call.executeNow(new Context());
-        }
-        case VERSION -> System.out.println(VERSION);
+          break;
+        case VERSION:
+          System.out.println(VERSION);
+          break;
       }
     }
 
