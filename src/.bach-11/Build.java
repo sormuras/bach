@@ -4,6 +4,7 @@
 class Build {
 
   public static void main(String... args) {
-    Bach.build(project -> project.version("47.11"));
+    var summary = Bach.build(project -> project.version("47.11"));
+    if (summary.throwable() != null) throw new Error(summary.throwable().getMessage());
   }
 }

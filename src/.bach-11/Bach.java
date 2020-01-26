@@ -267,7 +267,8 @@ public class Bach {
           var printer = Printer.ofSystem();
           var banner = !arguments.contains("--hide-banner");
           var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
-          build(project, LOGGER, printer, banner, dryRun);
+          var summary = build(project, LOGGER, printer, banner, dryRun);
+          if (summary.throwable != null) throw new Error(summary.throwable.getMessage());
           break;
         case CALL:
           var name = arguments.removeFirst(); // or fail with "cryptic" error message
@@ -304,24 +305,23 @@ public class Bach {
       var count = plan.walk(it -> out.accept(it.toMarkdown("  ")));
       out.accept("The generated call plan contains " + count + " plain calls (leaves).");
 
+      var context = new Context(printer, Context.DEFAULT_LEVELS, true);
+      out.accept(context.toString());
+      var build = new Build(context, project, plan);
       if (dryRun) {
         out.accept("");
         out.accept("Dry-run successful.");
-        return new Summary(project);
+        return new Summary(build, List.of(), Duration.ZERO, null);
       }
 
       out.accept("");
       out.accept("Build...");
-      var context = new Context(printer, Context.DEFAULT_LEVELS, true);
-
-      out.accept(context.toString());
-      var build = new Build(context, project, plan);
       var summary = new Executor(build).call();
 
       out.accept("");
-      summary.calls().forEach(call -> out.accept(call.toMarkdown()));
+      summary.calls.forEach(call -> out.accept(call.toMarkdown()));
       out.accept("");
-      out.accept("Build took " + summary.duration().toMillis() + " milliseconds.");
+      out.accept("Build took " + summary.duration.toMillis() + " milliseconds.");
 
       if (banner) {
         out.accept("");
@@ -679,43 +679,27 @@ public class Bach {
     }
 
     /** Composition executor. */
-    public static class Executor implements Callable<Summary> {
+    public static class Executor implements Callable<Summary>, Listener {
 
       private final Build build;
-      private final Summary summary;
+      private final Collection<Call> calls;
 
       public Executor(Build build) {
         this.build = build;
-        this.summary = new Summary(build.project);
-      }
-
-      /** Compute summary by executing the configuration. */
-      @Override
-      public Summary call() {
-        var start = Instant.now();
-        build.plan.execute(build.context, summary);
-        summary.duration = Duration.between(start, Instant.now());
-        return summary;
-      }
-    }
-
-    /** Execution summary. */
-    public static class Summary implements Listener {
-      private final Project project;
-      private final Collection<Call> calls;
-      private Duration duration;
-
-      public Summary(Project project) {
-        this.project = project;
         this.calls = new ConcurrentLinkedQueue<>();
       }
 
-      public List<Call> calls() {
-        return List.copyOf(calls);
-      }
-
-      public Duration duration() {
-        return duration;
+      /** Compute summary by executing the build. */
+      @Override
+      public Summary call() {
+        var start = Instant.now();
+        try {
+          build.plan.execute(build.context, this);
+        } catch (RuntimeException exception) {
+          return new Summary(build, List.copyOf(calls), Duration.ZERO, exception);
+        }
+        var duration = Duration.between(start, Instant.now());
+        return new Summary(build, List.copyOf(calls), duration, null);
       }
 
       @Override
@@ -728,10 +712,38 @@ public class Bach {
 
       @Override
       public void executionEnd(Call call, Duration duration) {}
+    }
+
+    /** Execution summary. */
+    public static final class Summary {
+      private final Build build;
+      private final List<Call> calls;
+      private final Duration duration;
+      private final Throwable throwable;
+
+      public Summary(Build build, List<Call> calls, Duration duration, Throwable throwable) {
+        this.build = build;
+        this.calls = calls;
+        this.duration = duration;
+        this.throwable = throwable;
+      }
+
+      public Throwable throwable() {
+        return throwable;
+      }
 
       @Override
       public String toString() {
-        return "Summary for " + project.name + " -> " + calls.size() + " calls executed";
+        return "Summary{"
+            + "build="
+            + build
+            + ", calls="
+            + calls
+            + ", duration="
+            + duration
+            + ", throwable="
+            + throwable
+            + '}';
       }
     }
   }
