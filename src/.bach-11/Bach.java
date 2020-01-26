@@ -301,10 +301,6 @@ public class Bach {
       out.accept(project.toString());
       var plan = new Planner(logger, project).newPlan();
 
-      out.accept("");
-      var count = plan.walk(it -> out.accept(it.toMarkdown("  ")));
-      out.accept("The generated call plan contains " + count + " plain calls (leaves).");
-
       var context = new Context(printer, Context.DEFAULT_LEVELS, true);
       out.accept(context.toString());
       var build = new Build(context, project, plan);
@@ -317,9 +313,6 @@ public class Bach {
       out.accept("");
       out.accept("Build...");
       var summary = new Executor(build).call();
-
-      out.accept("");
-      summary.calls.forEach(call -> out.accept(call.toMarkdown()));
       out.accept("");
       out.accept("Build took " + summary.duration.toMillis() + " milliseconds.");
 
@@ -434,7 +427,11 @@ public class Bach {
       }
 
       default String toMarkdown() {
-        return "· `" + toString() + "`";
+        return "`" + toString() + "`";
+      }
+
+      default String toJavaLine() {
+        return "// not implemented: " + toMarkdown();
       }
 
       /** Create a named tool call. */
@@ -471,6 +468,12 @@ public class Bach {
           }
 
           @Override
+          public String toJavaLine() {
+            var arguments = args.length == 0 ? "" : ", \"" + String.join("\", \"", args) + "\"";
+            return "call(\"" + name + "\"" + arguments.replace('\\', '/') + ")";
+          }
+
+          @Override
           public String toString() {
             return tool.name() + (args.length == 0 ? "" : " " + String.join(" ", args));
           }
@@ -500,8 +503,13 @@ public class Bach {
           }
 
           @Override
-          public String toString() {
+          public String toJavaLine() {
             return String.join(" ", code);
+          }
+
+          @Override
+          public String toString() {
+            return toJavaLine();
           }
         }
         return new Lambda(callable, code);
@@ -541,7 +549,7 @@ public class Bach {
       @Override
       public String toMarkdown() {
         return String.format(
-            "» %s _(size=%d, level=%s, parallel=%s)_", caption, calls.size(), level(), parallel);
+            "%s _(size=%d, level=%s, parallel=%s)_", caption, calls.size(), level(), parallel);
       }
 
       /** Walk a tree of calls starting with the given call instance. */
@@ -682,25 +690,62 @@ public class Bach {
     public static class Executor implements Callable<Summary>, Listener {
 
       private final Build build;
+      private final Instant start;
       private final Collection<Call> calls;
 
       public Executor(Build build) {
         this.build = build;
+        this.start = Instant.now();
         this.calls = new ConcurrentLinkedQueue<>();
       }
 
       /** Compute summary by executing the build. */
       @Override
       public Summary call() {
-        var start = Instant.now();
         try {
           build.plan.execute(build.context, this);
         } catch (RuntimeException exception) {
-          var duration = Duration.between(start, Instant.now());
-          return new Summary(build, List.copyOf(calls), duration, exception);
+          return newSummary(exception);
         }
+        return newSummary(null);
+      }
+
+      private Summary newSummary(Throwable throwable) {
         var duration = Duration.between(start, Instant.now());
-        return new Summary(build, List.copyOf(calls), duration, null);
+        out("");
+        out("# Build Summary");
+        out(" - project = %s", build.project);
+        out(" - context = %s", build.context);
+        out(" - start = %s", start);
+        out(" - duration = %s milliseconds", duration.toMillis());
+        out("");
+        out("## Plan");
+        build.plan.walk(it -> out(it.toMarkdown("  ")));
+        out("## Program");
+        out("```java");
+        out("// default package");
+        out("");
+        out("import java.nio.file.Files;");
+        out("import java.nio.file.Path;");
+        out("import java.util.spi.ToolProvider;");
+        out("");
+        out("class ReproducibleBuild {");
+        out("  public static void main(String... args) throws Exception {");
+        calls.forEach(call -> out("    %s;", call.toJavaLine()));
+        out("  }");
+        out("");
+        out("  private static void call(String name, String... args) {");
+        out("    var tool = ToolProvider.findFirst(name).orElseThrow();");
+        out("    System.out.println('\\n' + name + ' ' + String.join(\" \", args));");
+        out("    tool.run(System.out, System.err, args);");
+        out("  }");
+        out("}");
+        out("```");
+        return new Summary(build, List.copyOf(calls), duration, throwable);
+      }
+
+      private void out(String format, Object... args) {
+        build.context.printer.out.accept(String.format(format, args));
       }
 
       @Override
