@@ -239,7 +239,7 @@ public class Bach {
       var out = printer.out;
 
       if (banner) {
-        out.accept(Bach14.class.getSimpleName() + ' ' + VERSION);
+        out.accept(Bach.class.getSimpleName() + ' ' + VERSION);
         out.accept("");
       }
 
