@@ -155,7 +155,9 @@ public class Bach {
         builder.base(base());
         scanName().ifPresent(builder::name);
         scanVersion().ifPresent(builder::version);
-        builder.realms(List.of(new Realm("default", List.of("default"), base().resolve("src").toString(), null)));
+        builder.realms(
+            List.of(
+                new Realm("default", List.of("default"), base().resolve("src").toString(), null)));
         return builder;
       }
 
@@ -338,7 +340,8 @@ public class Bach {
     /** Execution context. */
     public static final class Context {
 
-      public static final Set<Level> DEFAULT_LEVELS = EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
+      public static final Set<Level> DEFAULT_LEVELS =
+          EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
 
       private final Printer printer;
       private final Set<Level> levels;
@@ -445,8 +448,7 @@ public class Bach {
           private void print(StringWriter source, Printer printer, Level level) {
             var string = source.toString();
             if (string.isEmpty()) return;
-            string.lines().forEach(line -> printer.accept(level,"    " + line));
-
+            string.lines().forEach(line -> printer.accept(level, "    " + line));
           }
 
           @Override
@@ -520,8 +522,7 @@ public class Bach {
       @Override
       public String toMarkdown() {
         return String.format(
-            "» %s _(size=%d, level=%s, parallel=%s)_",
-            caption, calls.size(), level(), parallel);
+            "» %s _(size=%d, level=%s, parallel=%s)_", caption, calls.size(), level(), parallel);
       }
 
       /** Walk a tree of calls starting with the given call instance. */
@@ -595,10 +596,7 @@ public class Bach {
             "Build " + project.name + " " + project.version,
             Level.ALL,
             false,
-            List.of(
-                showSystemInformation(),
-                createOutputDirectory(),
-                compileAllRealms()));
+            List.of(showSystemInformation(), createOutputDirectory(), compileAllRealms()));
       }
 
       /** Print system information. */
@@ -623,10 +621,7 @@ public class Bach {
 
       /** Compile all realms. */
       public Call compileAllRealms() {
-        var calls =
-            project.realms.stream()
-                .map(this::compileRealm)
-                .collect(Collectors.toList());
+        var calls = project.realms.stream().map(this::compileRealm).collect(Collectors.toList());
         return new Plan("Compile all realms", Level.ALL, false, calls);
       }
 
