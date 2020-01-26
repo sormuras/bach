@@ -696,7 +696,8 @@ public class Bach {
         try {
           build.plan.execute(build.context, this);
         } catch (RuntimeException exception) {
-          return new Summary(build, List.copyOf(calls), Duration.ZERO, exception);
+          var duration = Duration.between(start, Instant.now());
+          return new Summary(build, List.copyOf(calls), duration, exception);
         }
         var duration = Duration.between(start, Instant.now());
         return new Summary(build, List.copyOf(calls), duration, null);
