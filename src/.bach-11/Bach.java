@@ -517,9 +517,17 @@ public class Bach {
     }
 
     /** Folder configuration record. */
-    record Folder(Path out, Path lib) {
+    public static final class Folder {
+      private final Path out;
+      private final Path lib;
+
       public Folder(Path base) {
         this(base.resolve(".bach"), base.resolve("lib"));
+      }
+
+      public Folder(Path out, Path lib) {
+        this.out = out;
+        this.lib = lib;
       }
     }
 
@@ -588,7 +596,7 @@ public class Bach {
 
       /** Compile specified realm. */
       public Call compileRealm(Project.Realm realm) {
-        var classes = folder.out().resolve("classes").resolve(realm.path()).normalize().toString();
+        var classes = folder.out.resolve("classes").resolve(realm.path()).normalize().toString();
         return new Plan(
             "Compile " + realm.name + " realm",
             Level.ALL,
