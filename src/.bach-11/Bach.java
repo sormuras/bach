@@ -336,23 +336,29 @@ public class Bach {
     }
 
     /** Execution context. */
-    record Context(Printer printer, Set<Level> levels, boolean parallel) {
+    public static final class Context {
 
       public static final Set<Level> DEFAULT_LEVELS = EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
+
+      private final Printer printer;
+      private final Set<Level> levels;
+      private final boolean parallel;
 
       public Context() {
         this(Printer.ofSystem(), DEFAULT_LEVELS, true);
       }
 
-      public Context {
+      public Context(Printer printer, Set<Level> levels, boolean parallel) {
+        this.printer = printer;
         this.levels = levels.isEmpty() ? EnumSet.noneOf(Level.class) : EnumSet.copyOf(levels);
+        this.parallel = parallel;
       }
 
       /** Return true iff the passed call is to be executed. */
       boolean enabled(Call call) {
         if (call.level() == Level.ALL) return true; // ALL as in "always active"
         if (call.level() == Level.OFF) return false; // OFF as in "always skip"
-        return levels().contains(call.level());
+        return levels.contains(call.level());
       }
 
       /** Return true iff the passed call is to be skipped from execution. */
@@ -417,8 +423,8 @@ public class Bach {
             var out = new StringWriter();
             var err = new StringWriter();
             var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-            synchronized (context.printer()) {
-              var printer = context.printer();
+            synchronized (context.printer) {
+              var printer = context.printer;
               printer.accept(Level.DEBUG, this.toString());
               print(out, printer, Level.INFO);
               print(err, printer, Level.ERROR);
@@ -470,7 +476,7 @@ public class Bach {
 
       @Override
       public void executeNow(Context context, Listener listener) {
-        var parallel = context.parallel() && parallel();
+        var parallel = context.parallel && parallel();
         var stream = parallel ? calls().stream().parallel() : calls().stream();
         stream.forEach(call -> call.execute(context, listener));
       }
