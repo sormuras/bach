@@ -509,7 +509,15 @@ public class Bach {
       }
 
       /** Walk companion. */
-      public record Walker(Call call, int depth) {
+      public static final class Walker {
+        private final Call call;
+        private final int depth;
+
+        public Walker(Call call, int depth) {
+          this.call = call;
+          this.depth = depth;
+        }
+
         public String toMarkdown(String indent) {
           return indent.repeat(depth) + "- " + call.toMarkdown();
         }
