@@ -83,18 +83,28 @@ public class Bach {
     private final Path base;
     private final String name;
     private final Version version;
+    private final List<Unit> units;
     private final List<Realm> realms;
 
-    public Project(Path base, String name, Version version, List<Realm> realms) {
+    public Project(Path base, String name, Version version, List<Unit> units, List<Realm> realms) {
       this.base = base;
       this.name = name;
       this.version = version;
-      this.realms = realms;
+      this.units = List.copyOf(units);
+      this.realms = List.copyOf(realms);
     }
 
     @Override
     public String toString() {
-      return "Project{" + "base=" + base + ", name='" + name + '\'' + ", version=" + version + '}';
+      @SuppressWarnings("StringBufferReplaceableByString")
+      var sb = new StringBuilder("Project{");
+      sb.append("base=").append(base);
+      sb.append(", name='").append(name).append('\'');
+      sb.append(", version=").append(version);
+      sb.append(", units=").append(units);
+      sb.append(", realms=").append(realms);
+      sb.append('}');
+      return sb.toString();
     }
 
     /** Project model builder. */
@@ -102,11 +112,12 @@ public class Bach {
       private Path base = Path.of("");
       private String name = "project";
       private Version version = Version.parse("0");
+      private List<Unit> units = new ArrayList<>();
       private List<Realm> realms = new ArrayList<>();
 
       /** Create project instance using property values from this builder. */
       public Project newProject() {
-        return new Project(base, name, version, realms);
+        return new Project(base, name, version, units, realms);
       }
 
       /** Set project's base directory. */
@@ -129,6 +140,12 @@ public class Bach {
       /** Set project's version. */
       public Builder version(Version version) {
         this.version = version;
+        return this;
+      }
+
+      /** Set project's units. */
+      public Builder units(List<Unit> units) {
+        this.units = units;
         return this;
       }
 
@@ -164,9 +181,9 @@ public class Bach {
         builder.base(base());
         scanName().ifPresent(builder::name);
         scanVersion().ifPresent(builder::version);
-        builder.realms(
-            List.of(
-                new Realm("default", List.of("default"), base().resolve("src").toString(), null)));
+        var units = scanUnits();
+        builder.units(units);
+        builder.realms(scanRealms(units));
         return builder;
       }
 
@@ -202,10 +219,102 @@ public class Bach {
       public Optional<Version> scanVersion() {
         return findProperty("version").map(Version::parse);
       }
+
+      /** Scan for modular source units. */
+      public List<Unit> scanUnits() {
+        try (var stream = Files.find(base, 9, (path, __) -> path.endsWith("module-info.java"))) {
+          return stream.map(base::relativize).map(Unit::new).collect(Collectors.toList());
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      /** Scan list of modular source units for modular realms. */
+      public List<Realm> scanRealms(List<Unit> units) {
+        return Layout.find(units).orElseThrow().realmsOf(units);
+      }
     }
 
-    /** A realm of sources. */
+    /** Source directory tree layout. */
+    public enum Layout {
+      /**
+       * Single realm source directory tree layout.
+       *
+       * <ul>
+       *   <li>{@code ${SRC}/${MODULE}/module-info.java}
+       * </ul>
+       *
+       * Module source path examples:
+       *
+       * <ul>
+       *   <li>{@code --module-source-path .}
+       *   <li>{@code --module-source-path src}
+       *   <li>{@code --module-source-path src/modules}
+       * </ul>
+       *
+       * @see <a href="https://openjdk.java.net/projects/jigsaw/quick-start">Project Jigsaw: Module
+       *     System Quick-Start Guide</a>
+       */
+      JIGSAW {
+        @Override
+        public boolean test(Unit unit) {
+          var path = unit.path;
+          var count = path.getNameCount();
+          return count >= 2 && path.getName(count - 2).toString().equals(unit.name());
+        }
+
+        @Override
+        public List<Realm> realmsOf(List<Unit> units) {
+          if (units.isEmpty()) return List.of();
+          var modules = units.stream().map(Unit::name).collect(Collectors.toList());
+          var path0 = units.get(0).path;
+          var count = path0.getNameCount();
+          var moduleSourcePath = count <= 2 ? "." : path0.subpath(0, count - 2).toString();
+          var modulePath = "lib"; // TODO Auto-append "lib" element later
+          var realm = new Realm(Realm.DEFAULT_NAME, modules, moduleSourcePath, modulePath);
+          return List.of(realm);
+        }
+      };
+
+      /** Test the given modular unit against this layout's expectations. */
+      public abstract boolean test(Unit unit);
+
+      /** Create realms based on the passed modular source units. */
+      public abstract List<Realm> realmsOf(List<Unit> units);
+
+      /** Scan the given units for a well-known modular source layout. */
+      public static Optional<Layout> find(List<Unit> units) {
+        for (var layout : Layout.values())
+          if (units.stream()
+              // .peek(unit -> System.out.println(layout + " " + layout.test(unit)))
+              .allMatch(layout::test)) return Optional.of(layout);
+        return Optional.empty();
+      }
+    }
+
+    /** A module source description unit. */
+    public static final class Unit {
+      private final Path path;
+      private final ModuleDescriptor descriptor;
+
+      public Unit(Path path) {
+        this(path, Util.Modules.describe(path));
+      }
+
+      public Unit(Path path, ModuleDescriptor descriptor) {
+        this.path = path;
+        this.descriptor = descriptor;
+      }
+
+      public String name() {
+        return descriptor.name();
+      }
+    }
+
+    /** A realm of modular sources. */
     public static final class Realm {
+
+      public static final String DEFAULT_NAME = "default";
 
       private final String name;
       private final List<String> modules;
@@ -220,7 +329,7 @@ public class Bach {
       }
 
       Path path() {
-        return Path.of(name.equals("default") ? "." : name);
+        return Path.of(name.equals(DEFAULT_NAME) ? "." : name);
       }
     }
   }
@@ -678,19 +787,17 @@ public class Bach {
       /** Compile specified realm. */
       public Call compileRealm(Project.Realm realm) {
         var classes = folder.out.resolve("classes").resolve(realm.path()).normalize().toString();
-        return new Plan(
-            "Compile " + realm.name + " realm",
-            Level.ALL,
-            false,
-            List.of(
-                Call.of(
-                    "javac",
-                    "--module",
-                    String.join(",", realm.modules),
-                    "--module-source-path",
-                    realm.moduleSourcePath,
-                    "-d",
-                    classes)));
+        var modulePath = realm.modulePath;
+        var javac =
+            Call.of(
+                "javac",
+                new Util.Args()
+                    .add("--module", String.join(",", realm.modules))
+                    .add("--module-source-path", realm.moduleSourcePath)
+                    .add(!modulePath.isEmpty(), "--module-path", modulePath)
+                    .add("-d", classes)
+                    .toStrings());
+        return new Plan("Compile " + realm.name + " realm", Level.ALL, false, List.of(javac));
       }
     }
 
