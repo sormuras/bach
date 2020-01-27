@@ -33,7 +33,7 @@ jobs:
         run: |
           find . -type f | wc -l
           du -bs .
-          java src/.bach-11/Bach.java build
+          jshell https://github.com/sormuras/bach/raw/master/src/.bach-11/main.jsh
           du -bs .
   maven:
     name: "Maven"
