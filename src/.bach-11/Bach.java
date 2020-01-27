@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -817,6 +819,105 @@ public class Bach {
 
   /** Common utility collection. */
   public interface Util {
+
+    /** Arguments collector. */
+    class Args {
+      private final List<String> list = new ArrayList<>();
+
+      /** Append a single non-null argument. */
+      public Args add(Object arg) {
+        list.add(arg.toString());
+        return this;
+      }
+
+      /** Append two arguments, a key and a value. */
+      public Args add(String key, Object arg) {
+        return add(key).add(arg);
+      }
+
+      /** Conditionally append one or more arguments. */
+      public Args add(boolean predicate, Object first, Object... more) {
+        return predicate ? add(first).addAll(more) : this;
+      }
+
+      /** Append all given arguments, potentially none. */
+      public Args addAll(Object... args) {
+        for(var arg : args) add(arg);
+        return this;
+      }
+
+      /** Walk the given iterable and expect this instance to be changed by side effects. */
+      public <T> Args forEach(Iterable<T> iterable, BiConsumer<Args, T> visitor) {
+        iterable.forEach(item -> visitor.accept(this, item));
+        return this;
+      }
+
+      /** Return a new array of collected argument strings.  */
+      String[] toStrings() {
+        return list.toArray(String[]::new);
+      }
+    }
+
+    /** Module-related utilities. */
+    interface Modules {
+
+      /**
+       * Source patterns matching parts of "Module Declarations" grammar.
+       *
+       * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
+       *     Declarations</>
+       */
+      interface Patterns {
+        /** Match {@code `module Identifier {. Identifier}`} snippets. */
+        Pattern NAME =
+            Pattern.compile(
+                "(?:module)" // key word
+                    + "\\s+([\\w.]+)" // module name
+                    + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                    + "\\s*\\{"); // end marker
+
+        /** Match {@code `requires {RequiresModifier} ModuleName ;`} snippets. */
+        Pattern REQUIRES =
+            Pattern.compile(
+                "(?:requires)" // key word
+                    + "(?:\\s+[\\w.]+)?" // optional modifiers
+                    + "\\s+([\\w.]+)" // module name
+                    + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                    + "\\s*;"); // end marker
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor describe(Path info) {
+        return describe(Paths.readString(info));
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor describe(String source) {
+        return newModule(source).build();
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor.Builder newModule(String source) {
+        // `module Identifier {. Identifier}`
+        var nameMatcher = Patterns.NAME.matcher(source);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "Expected Java module source unit, but got: " + source);
+        }
+        var name = nameMatcher.group(1).trim();
+        var builder = ModuleDescriptor.newModule(name, Set.of(ModuleDescriptor.Modifier.SYNTHETIC));
+        // "requires module /*version*/;"
+        var requiresMatcher = Patterns.REQUIRES.matcher(source);
+        while (requiresMatcher.find()) {
+          var requiredName = requiresMatcher.group(1);
+          Optional.ofNullable(requiresMatcher.group(2))
+              .ifPresentOrElse(
+                  version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+                  () -> builder.requires(requiredName));
+        }
+        return builder;
+      }
+    }
 
     /** Path-related utilities. */
     interface Paths {
