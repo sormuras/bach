@@ -231,9 +231,15 @@ public class Bach {
         }
       }
 
+      /** Scan for source directory tree layout. */
+      public Layout scanLayout(List<Unit> units) {
+        return Layout.find(units)
+            .orElseThrow(() -> new RuntimeException("Layout unknown: " + units));
+      }
+
       /** Scan list of modular source units for modular realms. */
       public List<Realm> scanRealms(List<Unit> units) {
-        return Layout.find(units).orElseThrow().realmsOf(units);
+        return scanLayout(units).realmsOf(units);
       }
     }
 
