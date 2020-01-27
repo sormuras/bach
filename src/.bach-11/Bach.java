@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -330,6 +331,69 @@ public class Bach {
 
       Path path() {
         return Path.of(name.equals(DEFAULT_NAME) ? "." : name);
+      }
+    }
+
+    /** Single source path with optional release directive. */
+    public static final class Source {
+
+      /** Source-specific modifier enumeration. */
+      public enum Modifier {
+        /** Store binary assets in {@code META-INF/versions/${release}/} directory of the jar. */
+        VERSIONED
+      }
+
+      /** Create default non-targeted source for the specified path and optional modifiers. */
+      public static Source of(Path path, Modifier... modifiers) {
+        return new Source(path, 0, Set.of(modifiers));
+      }
+
+      /** Create targeted source for the specified release and path. */
+      public static Source of(Path path, int release) {
+        return new Source(path, release, Set.of(Modifier.VERSIONED));
+      }
+
+      private final Path path;
+      private final int release;
+      private final Set<Modifier> modifiers;
+
+      public Source(Path path, int release, Set<Modifier> modifiers) {
+        this.path = path;
+        this.release = release;
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+      }
+
+      /** Source path. */
+      public Path path() {
+        return path;
+      }
+
+      /** Java feature release target number, with zero indicating the current runtime release. */
+      public int release() {
+        return release;
+      }
+
+      /** This source modifiers. */
+      public Set<Modifier> modifiers() {
+        return modifiers;
+      }
+
+      public boolean isTargeted() {
+        return release != 0;
+      }
+
+      /** Optional Java feature release target number. */
+      public OptionalInt target() {
+        return isTargeted() ? OptionalInt.of(release) : OptionalInt.empty();
+      }
+
+      public boolean isVersioned() {
+        return modifiers.contains(Source.Modifier.VERSIONED);
+      }
+
+      @Override
+      public String toString() {
+        return String.format("Source{path=%s, release=%d, modifiers=%s", path, release, modifiers);
       }
     }
   }
