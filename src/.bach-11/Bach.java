@@ -324,6 +324,21 @@ public class Bach {
         this.patches = patches;
       }
 
+      @Override
+      public String toString() {
+        @SuppressWarnings("StringBufferReplaceableByString")
+        var sb = new StringBuilder("Unit{");
+        sb.append("path=").append(path);
+        sb.append(", descriptor=").append(descriptor);
+        sb.append(", sources=").append(sources);
+        sb.append(", resources=").append(resources);
+        sb.append(", patches=").append(patches);
+        sb.append(", isMultiRelease=").append(isMultiRelease());
+        sb.append(", isMainClassPresent=").append(isMainClassPresent());
+        sb.append('}');
+        return sb.toString();
+      }
+
       public String name() {
         return descriptor.name();
       }
@@ -356,6 +371,18 @@ public class Bach {
         this.modules = modules;
         this.moduleSourcePath = moduleSourcePath;
         this.modulePath = modulePath;
+      }
+
+      @Override
+      public String toString() {
+        @SuppressWarnings("StringBufferReplaceableByString")
+        var sb = new StringBuilder("Realm{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", modules=").append(modules);
+        sb.append(", moduleSourcePath='").append(moduleSourcePath).append('\'');
+        sb.append(", modulePath='").append(modulePath).append('\'');
+        sb.append('}');
+        return sb.toString();
       }
 
       Path path() {
@@ -422,7 +449,15 @@ public class Bach {
 
       @Override
       public String toString() {
-        return String.format("Source{path=%s, release=%d, modifiers=%s", path, release, modifiers);
+        @SuppressWarnings("StringBufferReplaceableByString")
+        var sb = new StringBuilder("Source{");
+        sb.append("path=").append(path);
+        sb.append(", release=").append(release());
+        sb.append(", modifiers=").append(modifiers());
+        sb.append(", target=").append(target());
+        sb.append(", isVersioned=").append(isVersioned());
+        sb.append('}');
+        return sb.toString();
       }
     }
   }
