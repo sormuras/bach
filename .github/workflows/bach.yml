@@ -48,8 +48,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Launch Bach program (src/.bach-11)'
-      run: java src/.bach-11/Bach.java
     - name: 'Invoke Bach.java via JShell'
       working-directory: demo
       run: jshell https://bit.ly/bach-build

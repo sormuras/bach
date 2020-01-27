@@ -18,6 +18,23 @@ jobs:
         du -bs .
         jshell https://bit.ly/bach-build
         du -bs .
+  bach-11:
+    name: "src/.bach-11/Bach.java"
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v1
+      - name: 'Set up JDK'
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: 'Launch Bach.java`s default build program (src/.bach-11)'
+        working-directory: doc/comparison/minimal/bach
+        run: |
+          find . -type f | wc -l
+          du -bs .
+          java src/.bach-11/Bach.java build
+          du -bs .
   maven:
     name: "Maven"
     runs-on: ubuntu-latest
