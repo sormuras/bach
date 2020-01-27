@@ -849,15 +849,23 @@ public class Bach {
         logger.log(Level.TRACE, "Initialized {0}", this);
       }
 
-      /** Compute project build container. */
+      /** Compute project build plan. */
       public Plan newPlan() {
-        logger.log(Level.DEBUG, "Computing build container for {0}", project);
+        logger.log(Level.DEBUG, "Computing build plan for {0}", project);
         logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
+        if (project.realms.isEmpty()) return new Plan("No realm?!", Level.ALL, false, List.of());
         return new Plan(
             "Build " + project.name + " " + project.version,
             Level.ALL,
             false,
-            List.of(showSystemInformation(), createDirectories(folder.out), compileAllRealms()));
+            List.of(
+                showSystemInformation(),
+                createDirectories(folder.out),
+                new Plan(
+                    "Compile and generate API documentation",
+                    Level.ALL,
+                    true,
+                    List.of(compileAllRealms(), generateApiDocumentation()))));
       }
 
       /** Print system information. */
@@ -948,6 +956,41 @@ public class Bach {
                 createDirectories(modules),
                 createDirectories(sources),
                 new Plan("Parallel jar calls", Level.ALL, true, jars)));
+      }
+
+      /** Generate and package modular API documentation. */
+      public Call generateApiDocumentation() {
+        var realm = project.realms.get(0);
+        var module = String.join(",", realm.modules);
+        if (module.isEmpty()) return new Plan("No module?!", Level.ALL, false, List.of());
+        var file = project.name + "-" + project.version;
+        var modulePath = realm.modulePath;
+        var javadoc = folder.out("documentation", "javadoc");
+        return new Plan(
+            "Generate API documentation and jar generated site",
+            Level.ALL,
+            false,
+            List.of(
+                createDirectories(javadoc),
+                Call.of(
+                    "javadoc",
+                    new Util.Args()
+                        .add("--module", module)
+                        .add("--module-source-path", realm.moduleSourcePath)
+                        .add(!modulePath.isEmpty(), "--module-path", modulePath)
+                        .add("-d", javadoc)
+                        // .add(!logger().verbose(), "-quiet")
+                        .toStrings()),
+                Call.of(
+                    "jar",
+                    new Util.Args()
+                        .add("--create")
+                        .add("--file", javadoc.getParent().resolve(file + "-javadoc.jar"))
+                        // .add(logger().verbose(), "--verbose")
+                        .add("--no-manifest")
+                        .add("-C", javadoc)
+                        .add(".")
+                        .toStrings())));
       }
     }
 
