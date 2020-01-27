@@ -846,6 +846,15 @@ public class Bach {
         }
         return path;
       }
+
+      /** Read all content from a file into a string. */
+      static String readString(Path path) {
+        try {
+          return Files.readString(path);
+        } catch (Exception e) {
+          throw new RuntimeException("Read all content from file failed: " + path, e);
+        }
+      }
     }
   }
 
