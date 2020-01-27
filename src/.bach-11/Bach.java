@@ -40,6 +40,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
@@ -297,18 +298,46 @@ public class Bach {
     public static final class Unit {
       private final Path path;
       private final ModuleDescriptor descriptor;
+      private final List<Source> sources;
+      private final List<Path> resources;
+      private final List<Path> patches;
 
       public Unit(Path path) {
-        this(path, Util.Modules.describe(path));
+        this(
+            path,
+            Util.Modules.describe(path),
+            List.of(Source.of(path.getParent())),
+            List.of(),
+            List.of());
       }
 
-      public Unit(Path path, ModuleDescriptor descriptor) {
+      public Unit(
+          Path path,
+          ModuleDescriptor descriptor,
+          List<Source> sources,
+          List<Path> resources,
+          List<Path> patches) {
         this.path = path;
         this.descriptor = descriptor;
+        this.sources = sources;
+        this.resources = resources;
+        this.patches = patches;
       }
 
       public String name() {
         return descriptor.name();
+      }
+
+      public <T> List<T> sources(Function<Source, T> mapper) {
+        return sources.stream().map(mapper).collect(Collectors.toList());
+      }
+
+      public boolean isMultiRelease() {
+        return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
+      }
+
+      public boolean isMainClassPresent() {
+        return descriptor.mainClass().isPresent();
       }
     }
 
@@ -774,6 +803,11 @@ public class Bach {
 
       public static final Folder DEFAULT = new Folder();
 
+      private static Path resolve(Path path, String... more) {
+        if (more.length == 0) return path;
+        return path.resolve(String.join("/", more)).normalize();
+      }
+
       private final Path out;
       private final Path lib;
 
@@ -788,6 +822,10 @@ public class Bach {
       public Folder(Path out, Path lib) {
         this.out = out;
         this.lib = lib;
+      }
+
+      public Path out(String... more) {
+        return resolve(out, more);
       }
     }
 
@@ -819,7 +857,7 @@ public class Bach {
             "Build " + project.name + " " + project.version,
             Level.ALL,
             false,
-            List.of(showSystemInformation(), createOutputDirectory(), compileAllRealms()));
+            List.of(showSystemInformation(), createDirectories(folder.out), compileAllRealms()));
       }
 
       /** Print system information. */
@@ -836,10 +874,10 @@ public class Bach {
       }
 
       /** Create output directory. */
-      public Call createOutputDirectory() {
+      public Call createDirectories(Path path) {
         return Call.of(
-            () -> Files.createDirectories(folder.out),
-            "Files.createDirectories(" + Code.pathOf(folder.out) + ")");
+            () -> Files.createDirectories(path),
+            "Files.createDirectories(" + Code.pathOf(path) + ")");
       }
 
       /** Compile all realms. */
@@ -850,7 +888,7 @@ public class Bach {
 
       /** Compile specified realm. */
       public Call compileRealm(Project.Realm realm) {
-        var classes = folder.out.resolve("classes").resolve(realm.path()).normalize().toString();
+        var classes = folder.out("classes", realm.path().toString());
         var modulePath = realm.modulePath;
         var javac =
             Call.of(
@@ -861,7 +899,55 @@ public class Bach {
                     .add(!modulePath.isEmpty(), "--module-path", modulePath)
                     .add("-d", classes)
                     .toStrings());
-        return new Plan("Compile " + realm.name + " realm", Level.ALL, false, List.of(javac));
+        return new Plan(
+            "Compile " + realm.name + " realm",
+            Level.ALL,
+            false,
+            List.of(javac, packageRealm(realm)));
+      }
+
+      public Call packageRealm(Project.Realm realm) {
+        var jars = new ArrayList<Call>();
+        var realmPath = realm.path().toString();
+        var modules = folder.out("modules", realmPath);
+        var sources = folder.out("sources", realmPath);
+        for (var module : realm.modules) {
+          var unit =
+              project.units.stream().filter(u -> u.name().equals(module)).findFirst().orElseThrow();
+          var file = module + "-" + project.version;
+          var classes = folder.out("classes", realmPath, module);
+          jars.add(
+              Call.of(
+                  "jar",
+                  new Util.Args()
+                      .add("--create")
+                      .add("--file", modules.resolve(file + ".jar"))
+                      // .add(logger().verbose(), "--verbose")
+                      .add("-C", classes)
+                      .add(".")
+                      .toStrings()));
+          jars.add(
+              Call.of(
+                  "jar",
+                  new Util.Args()
+                      .add("--create")
+                      .add("--file", sources.resolve(file + "-sources.jar"))
+                      // .add(logger().verbose(), "--verbose")
+                      .add("--no-manifest")
+                      .forEach(
+                          unit.sources(Project.Source::path),
+                          (cmd, path) -> cmd.add("-C", path).add("."))
+                      .forEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
+                      .toStrings()));
+        }
+        return new Plan(
+            String.format("Package %s modules and sources", realm.name),
+            Level.ALL,
+            false,
+            List.of(
+                createDirectories(modules),
+                createDirectories(sources),
+                new Plan("Parallel jar calls", Level.ALL, true, jars)));
       }
     }
 
@@ -1013,7 +1099,7 @@ public class Bach {
 
       /** Append all given arguments, potentially none. */
       public Args addAll(Object... args) {
-        for(var arg : args) add(arg);
+        for (var arg : args) add(arg);
         return this;
       }
 
@@ -1023,7 +1109,7 @@ public class Bach {
         return this;
       }
 
-      /** Return a new array of collected argument strings.  */
+      /** Return a new array of collected argument strings. */
       String[] toStrings() {
         return list.toArray(String[]::new);
       }
