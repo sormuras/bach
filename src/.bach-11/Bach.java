@@ -410,11 +410,6 @@ public class Bach {
         return new Source(path, 0, Set.of(modifiers));
       }
 
-      /** Create targeted source for the specified release and path. */
-      public static Source of(Path path, int release) {
-        return new Source(path, release, Set.of(Modifier.VERSIONED));
-      }
-
       private final Path path;
       private final int release;
       private final Set<Modifier> modifiers;
