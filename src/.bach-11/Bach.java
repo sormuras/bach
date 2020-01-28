@@ -29,6 +29,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1237,6 +1240,8 @@ public class Bach {
       }
 
       private Summary newSummary(Throwable throwable) {
+        var formatter =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.systemDefault());
         var duration = Duration.between(start, Instant.now());
         out("");
         out("# Build Summary");
@@ -1255,7 +1260,7 @@ public class Bach {
         out("import java.nio.file.Path;");
         out("import java.util.spi.ToolProvider;");
         out("");
-        out("class ReproducibleBuild {");
+        out("class Build" + formatter.format(start.truncatedTo(ChronoUnit.SECONDS)) + " {");
         out("  public static void main(String... args) throws Exception {");
         calls.forEach(call -> out("    %s;", call.toJavaLine()));
         out("  }");
