@@ -1240,6 +1240,7 @@ public class Bach {
       }
 
       private Summary newSummary(Throwable throwable) {
+        @SuppressWarnings("SpellCheckingInspection")
         var formatter =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.systemDefault());
         var duration = Duration.between(start, Instant.now());
