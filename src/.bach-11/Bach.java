@@ -800,7 +800,7 @@ public class Bach {
         try {
           execute(context, listener);
         } finally {
-          var duration = Duration.between(Instant.now(), start);
+          var duration = Duration.between(start, Instant.now());
           listener.executionEnd(this, duration);
         }
       }
@@ -1288,7 +1288,9 @@ public class Bach {
       public void executionDisabled(Call call) {}
 
       @Override
-      public void executionEnd(Call call, Duration duration) {}
+      public void executionEnd(Call call, Duration duration) {
+        if (call instanceof Plan) out("[%5d ms] for %s", duration.toMillis(), call.toMarkdown());
+      }
     }
 
     /** Execution summary. */
