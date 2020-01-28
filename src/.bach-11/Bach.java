@@ -1134,7 +1134,7 @@ public class Bach {
                           realm.dependencies,
                           (args, other) -> {
                             var path = folder.out("classes", other.path().toString(), module);
-                            args.add(Files.isDirectory(path), "-C", path.toString(), ".");
+                            args.add(other.units.containsKey(module), "-C", path.toString(), ".");
                           })
                       .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
                       .toStrings()));
