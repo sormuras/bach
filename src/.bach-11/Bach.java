@@ -17,6 +17,7 @@
 
 // default package
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger;
@@ -31,20 +32,25 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Java Shell Builder.
@@ -185,7 +191,8 @@ public class Bach {
         scanVersion().ifPresent(builder::version);
         var units = scanUnits();
         builder.units(units);
-        builder.realms(scanRealms(units));
+        var sources = scanSources(units);
+        builder.realms(scanRealms(units, sources));
         return builder;
       }
 
@@ -224,11 +231,28 @@ public class Bach {
 
       /** Scan for modular source units. */
       public List<Unit> scanUnits() {
-        try (var stream = Files.find(base, 9, (path, __) -> path.endsWith("module-info.java"))) {
+        var src = base.resolve("src"); // More subdirectory candidates? E.g. "modules", "sources"?
+        var root = Files.isDirectory(src) ? src : base;
+        try (var stream = Files.find(root, 5, (path, __) -> path.endsWith("module-info.java"))) {
           return stream.map(base::relativize).map(Unit::new).collect(Collectors.toList());
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
+      }
+
+      /** Scan for common source directories. */
+      public List<Path> scanSources(List<Unit> units) {
+        var paths = new TreeSet<Path>();
+        for (var unit : units) {
+          var path = unit.path;
+          var name = unit.name();
+          var positions = Util.Paths.indexesOf(path, name);
+          if (positions.isEmpty())
+            throw new IllegalArgumentException("Name '" + name + "' not found in: " + path);
+          var index = positions.getLast(); // Or fail if multiple positions are found?
+          paths.add(index == 0 ? Path.of(".") : path.subpath(0, index));
+        }
+        return List.copyOf(paths);
       }
 
       /** Scan for source directory tree layout. */
@@ -238,8 +262,8 @@ public class Bach {
       }
 
       /** Scan list of modular source units for modular realms. */
-      public List<Realm> scanRealms(List<Unit> units) {
-        return scanLayout(units).realmsOf(units);
+      public List<Realm> scanRealms(List<Unit> units, List<Path> sources) {
+        return scanLayout(units).realmsOf(units, sources);
       }
     }
 
@@ -258,6 +282,7 @@ public class Bach {
        *   <li>{@code --module-source-path .}
        *   <li>{@code --module-source-path src}
        *   <li>{@code --module-source-path src/modules}
+       *   <li>{@code --module-source-path src/group-1:src/group-2}
        * </ul>
        *
        * @see <a href="https://openjdk.java.net/projects/jigsaw/quick-start">Project Jigsaw: Module
@@ -265,69 +290,124 @@ public class Bach {
        */
       JIGSAW {
         @Override
-        public boolean test(Unit unit) {
+        public Optional<String> realmOf(Unit unit) {
           var path = unit.path;
           var count = path.getNameCount();
-          return count >= 2 && path.getName(count - 2).toString().equals(unit.name());
+          var match = count >= 2 && path.getName(count - 2).toString().equals(unit.name());
+          return match ? Optional.of(Realm.DEFAULT_NAME) : Optional.empty();
         }
 
         @Override
-        public List<Realm> realmsOf(List<Unit> units) {
+        public List<Realm> realmsOf(List<Unit> units, List<Path> sources) {
           if (units.isEmpty()) return List.of();
-          var modules = units.stream().map(Unit::name).collect(Collectors.toList());
-          var path0 = units.get(0).path;
-          var count = path0.getNameCount();
-          var moduleSourcePath = count <= 2 ? "." : path0.subpath(0, count - 2).toString();
-          var modulePath = "lib"; // TODO Auto-append "lib" element later
-          var realm = new Realm(Realm.DEFAULT_NAME, modules, moduleSourcePath, modulePath);
-          return List.of(realm);
+          var name = Realm.DEFAULT_NAME;
+          var modifiers = EnumSet.of(Realm.Modifier.CREATE_JAVADOC);
+          var modules = Unit.toMap(units.stream());
+          return List.of(new Realm(name, modifiers, 0, modules, sources, List.of()));
+        }
+      },
+
+      /**
+       * Source tree layout with main and test realm and nested categories.
+       *
+       * <ul>
+       *   <li>{@code ${SRC}/${MODULE}/main/java/module-info.java}
+       *   <li>{@code ${SRC}/${MODULE}/test/[java|module]/module-info.java}
+       * </ul>
+       *
+       * Module source path examples:
+       *
+       * <ul>
+       *   <li>{@code --module-source-path src/ * /main/java}
+       *   <li>{@code --module-source-path src/ * /test/java:src/ * /test/module}
+       * </ul>
+       */
+      MAIN_TEST {
+        @Override
+        public Optional<String> realmOf(Unit unit) {
+          var deque = new ArrayDeque<String>();
+          unit.path.forEach(name -> deque.addFirst(name.toString()));
+          if (!deque.pop().equals("module-info.java"))
+            throw new IllegalArgumentException("No module-info.java?! " + unit.path);
+          var category = deque.pop();
+          if (!(category.equals("java")
+              || category.matches("java-\\d+")
+              || category.equals("module"))) return Optional.empty();
+          var realm = deque.pop();
+          if (!(realm.equals("main") || realm.equals("test"))) return Optional.empty();
+          var module = deque.pop();
+          var match = module.equals(unit.name());
+          return match ? Optional.of(realm) : Optional.empty();
+        }
+
+        @Override
+        public List<Realm> realmsOf(List<Unit> units, List<Path> sources) {
+          var main =
+              new Realm(
+                  "main",
+                  EnumSet.of(Realm.Modifier.CREATE_JAVADOC),
+                  0,
+                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("main"))),
+                  sources.stream()
+                      .map(source -> source.resolve("${MODULE}/main/java"))
+                      .collect(Collectors.toList()),
+                  List.of());
+
+          var testSources = new ArrayList<Path>();
+          for (var source : sources) { // poor man's fan-out/flat-map...
+            testSources.add(source.resolve("${MODULE}/test/java"));
+            testSources.add(source.resolve("${MODULE}/test/module"));
+          }
+          var test =
+              new Realm(
+                  "test",
+                  EnumSet.of(Realm.Modifier.ENABLE_PREVIEW, Realm.Modifier.LAUNCH_TESTS),
+                  // EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
+                  0,
+                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("test"))),
+                  testSources,
+                  List.of(main));
+          return List.of(main, test);
         }
       };
 
       /** Test the given modular unit against this layout's expectations. */
-      public abstract boolean test(Unit unit);
+      public abstract Optional<String> realmOf(Unit unit);
 
       /** Create realms based on the passed modular source units. */
-      public abstract List<Realm> realmsOf(List<Unit> units);
+      public abstract List<Realm> realmsOf(List<Unit> units, List<Path> sources);
 
       /** Scan the given units for a well-known modular source layout. */
       public static Optional<Layout> find(List<Unit> units) {
-        for (var layout : Layout.values())
-          if (units.stream()
-              // .peek(unit -> System.out.println(layout + " " + layout.test(unit)))
-              .allMatch(layout::test)) return Optional.of(layout);
+        for (var layout : Set.of(Layout.MAIN_TEST, Layout.JIGSAW))
+          if (units.stream().allMatch(unit -> layout.realmOf(unit).isPresent()))
+            return Optional.of(layout);
         return Optional.empty();
       }
     }
 
     /** A module source description unit. */
     public static final class Unit {
+
+      public static Map<String, Unit> toMap(Stream<Unit> units) {
+        return units.collect(Collectors.toMap(Unit::name, Function.identity()));
+      }
+
       private final Path path;
       private final ModuleDescriptor descriptor;
       private final List<Source> sources;
       private final List<Path> resources;
-      private final List<Path> patches;
 
       public Unit(Path path) {
-        this(
-            path,
-            Util.Modules.describe(path),
-            List.of(Source.of(path.getParent())),
-            List.of(),
-            List.of());
+        this(path, Util.Modules.describe(path), List.of(Source.of(path.getParent())), List.of());
       }
 
       public Unit(
-          Path path,
-          ModuleDescriptor descriptor,
-          List<Source> sources,
-          List<Path> resources,
-          List<Path> patches) {
+          Path path, ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
         this.path = path;
         this.descriptor = descriptor;
         this.sources = sources;
         this.resources = resources;
-        this.patches = patches;
       }
 
       @Override
@@ -338,7 +418,6 @@ public class Bach {
         sb.append(", descriptor=").append(descriptor);
         sb.append(", sources=").append(sources);
         sb.append(", resources=").append(resources);
-        sb.append(", patches=").append(patches);
         sb.append(", isMultiRelease=").append(isMultiRelease());
         sb.append(", isMainClassPresent=").append(isMainClassPresent());
         sb.append('}');
@@ -365,18 +444,35 @@ public class Bach {
     /** A realm of modular sources. */
     public static final class Realm {
 
+      /** Realm-related flags controlling the build process. */
+      public enum Modifier {
+        ENABLE_PREVIEW,
+        CREATE_JAVADOC,
+        LAUNCH_TESTS
+      }
+
       public static final String DEFAULT_NAME = "default";
 
       private final String name;
-      private final List<String> modules;
-      private final String moduleSourcePath;
-      private final String modulePath;
+      private final Set<Modifier> modifiers;
+      private final int release;
+      private final Map<String, Unit> units;
+      private final List<Path> sources;
+      private final List<Realm> dependencies;
 
-      public Realm(String name, List<String> modules, String moduleSourcePath, String modulePath) {
+      public Realm(
+          String name,
+          Set<Modifier> modifiers,
+          int release,
+          Map<String, Unit> units,
+          List<Path> sources,
+          List<Realm> dependencies) {
         this.name = name;
-        this.modules = modules;
-        this.moduleSourcePath = moduleSourcePath;
-        this.modulePath = modulePath;
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+        this.release = release;
+        this.units = Map.copyOf(units);
+        this.sources = List.copyOf(sources);
+        this.dependencies = List.copyOf(dependencies);
       }
 
       @Override
@@ -384,15 +480,59 @@ public class Bach {
         @SuppressWarnings("StringBufferReplaceableByString")
         var sb = new StringBuilder("Realm{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", modules=").append(modules);
-        sb.append(", moduleSourcePath='").append(moduleSourcePath).append('\'');
-        sb.append(", modulePath='").append(modulePath).append('\'');
+        sb.append(", units=").append(units);
+        sb.append(", sources=").append(sources);
+        sb.append(", dependencies=").append(dependencies);
         sb.append('}');
         return sb.toString();
       }
 
       Path path() {
         return Path.of(name.equals(DEFAULT_NAME) ? "." : name);
+      }
+
+      public OptionalInt release() {
+        return release == 0 ? OptionalInt.empty() : OptionalInt.of(release);
+      }
+
+      /** @return all module names of this realm as a comma-separated string. */
+      public String module() {
+        return units.values().stream().map(Unit::name).collect(Collectors.joining(","));
+      }
+
+      /** Generate {@code --module-source-path} string of this realm. */
+      public String moduleSourcePath() {
+        return sources.stream()
+            .map(Path::toString)
+            .map(string -> string.replace("${MODULE}", "*"))
+            .collect(Collectors.joining(File.pathSeparator));
+      }
+
+      /** Generate {@code --module-path} string of this realm. */
+      public String modulePath(Build.Folder folder) {
+        var paths = new ArrayList<String>();
+        dependencies.stream()
+            .map(dependency -> folder.out("modules" /* "classes" */, dependency.name))
+            .map(Path::toString)
+            .forEach(paths::add);
+        paths.add(folder.lib.toString());
+        return String.join(File.pathSeparator, paths);
+      }
+
+      /** Generate {@code --patch-module} strings for this realm. */
+      public List<String> patches(BiFunction<Realm, String, List<Path>> patcher) {
+        if (dependencies.isEmpty()) return List.of();
+        var patches = new ArrayList<String>();
+        for (var unit : units.values()) {
+          var module = unit.name();
+          for (var dependency : dependencies) {
+            var other = dependency.units.get(module);
+            if (other == null) continue;
+            var paths = Util.Paths.join(patcher.apply(dependency, module));
+            patches.add(module + '=' + paths);
+          }
+        }
+        return patches.isEmpty() ? List.of() : List.copyOf(patches);
       }
     }
 
@@ -706,7 +846,7 @@ public class Bach {
               print(err, printer, Level.ERROR);
             }
             if (code != 0) {
-              throw new RuntimeException(tool.name() + " exit code: " + code);
+              throw new RuntimeException(this + " exit code: " + code);
             }
           }
 
@@ -889,6 +1029,7 @@ public class Bach {
       public Plan newPlan() {
         logger.log(Level.DEBUG, "Computing build plan for {0}", project);
         logger.log(Level.DEBUG, "Using folder configuration: {0}", folder);
+        if (project.units.isEmpty()) return new Plan("No unit!", Level.ALL, false, List.of());
         if (project.realms.isEmpty()) return new Plan("No realm?!", Level.ALL, false, List.of());
         return new Plan(
             "Build " + project.name + " " + project.version,
@@ -932,15 +1073,34 @@ public class Bach {
 
       /** Compile specified realm. */
       public Call compileRealm(Project.Realm realm) {
+        if (realm.units.isEmpty())
+          return new Plan("No units in " + realm.name + " realm?!", Level.ALL, false, List.of());
         var classes = folder.out("classes", realm.path().toString());
-        var modulePath = realm.modulePath;
+        var enablePreview = realm.modifiers.contains(Project.Realm.Modifier.ENABLE_PREVIEW);
+        var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
+        var moduleSourcePath = realm.moduleSourcePath();
+        var modulePath = realm.modulePath(folder);
+        var modulePatches =
+            realm.patches(
+                (dependency, module) ->
+                    List.of(
+                        folder.out(
+                            Path.of(
+                                    "modules",
+                                    dependency.path().toString(),
+                                    module + "-" + project.version + ".jar")
+                                .toString())));
         var javac =
             Call.of(
                 "javac",
                 new Util.Args()
-                    .add("--module", String.join(",", realm.modules))
-                    .add("--module-source-path", realm.moduleSourcePath)
+                    .add("--module", realm.module())
+                    .add("--module-version", project.version)
+                    .add(enablePreview, "--enable-preview")
+                    .add(release.isPresent(), "--release", release.orElse(-1))
+                    .add("--module-source-path", moduleSourcePath)
                     .add(!modulePath.isEmpty(), "--module-path", modulePath)
+                    .forEach(modulePatches, (args, patch) -> args.add("--patch-module", patch))
                     .add("-d", classes)
                     .toStrings());
         return new Plan(
@@ -955,9 +1115,8 @@ public class Bach {
         var realmPath = realm.path().toString();
         var modules = folder.out("modules", realmPath);
         var sources = folder.out("sources", realmPath);
-        for (var module : realm.modules) {
-          var unit =
-              project.units.stream().filter(u -> u.name().equals(module)).findFirst().orElseThrow();
+        for (var unit : realm.units.values()) {
+          var module = unit.name();
           var file = module + "-" + project.version;
           var classes = folder.out("classes", realmPath, module);
           jars.add(
@@ -967,8 +1126,14 @@ public class Bach {
                       .add("--create")
                       .add("--file", modules.resolve(file + ".jar"))
                       // .add(logger().verbose(), "--verbose")
-                      .add("-C", classes)
-                      .add(".")
+                      .add(true, "-C", classes, ".")
+                      .forEach(
+                          realm.dependencies,
+                          (args, other) -> {
+                            var path = folder.out("classes", other.path().toString(), module);
+                            args.add(Files.isDirectory(path), "-C", path.toString(), ".");
+                          })
+                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
                       .toStrings()));
           jars.add(
               Call.of(
@@ -980,8 +1145,8 @@ public class Bach {
                       .add("--no-manifest")
                       .forEach(
                           unit.sources(Project.Source::path),
-                          (cmd, path) -> cmd.add("-C", path).add("."))
-                      .forEach(unit.resources, (cmd, path) -> cmd.add("-C", path).add("."))
+                          (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
                       .toStrings()));
         }
         return new Plan(
@@ -996,11 +1161,12 @@ public class Bach {
 
       /** Generate and package modular API documentation. */
       public Call generateApiDocumentation() {
-        var realm = project.realms.get(0);
-        var module = String.join(",", realm.modules);
+        var realm = project.realms.get(0); // assuming the first one is the one...
+        var module = realm.module();
         if (module.isEmpty()) return new Plan("No module?!", Level.ALL, false, List.of());
         var file = project.name + "-" + project.version;
-        var modulePath = realm.modulePath;
+        var moduleSourcePath = realm.moduleSourcePath();
+        var modulePath = realm.modulePath(folder);
         var javadoc = folder.out("documentation", "javadoc");
         return new Plan(
             "Generate API documentation and jar generated site",
@@ -1012,10 +1178,11 @@ public class Bach {
                     "javadoc",
                     new Util.Args()
                         .add("--module", module)
-                        .add("--module-source-path", realm.moduleSourcePath)
+                        .add("--module-source-path", moduleSourcePath)
                         .add(!modulePath.isEmpty(), "--module-path", modulePath)
                         .add("-d", javadoc)
-                        // .add(!logger().verbose(), "-quiet")
+                        .add("-quiet")
+                        .add("-Xdoclint:-missing")
                         .toStrings()),
                 Call.of(
                     "jar",
@@ -1282,6 +1449,20 @@ public class Bach {
           throw new RuntimeException("Delete path failed: " + path, e);
         }
         return path;
+      }
+
+      /** Find all index positions of the specified name within the given path. */
+      static Deque<Integer> indexesOf(Path path, String name) {
+        var deque = new ArrayDeque<Integer>();
+        for (int i = 0; i < path.getNameCount(); i++) {
+          if (name.equals(path.getName(i).toString())) deque.add(i);
+        }
+        return deque;
+      }
+
+      /** Join a collection of paths to a platform-specific path string. */
+      static String join(Collection<Path> paths) {
+        return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
       }
 
       /** Read all content from a file into a string. */
