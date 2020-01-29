@@ -67,10 +67,13 @@ import java.util.stream.Stream;
 public class Bach {
 
   /** Version of the Java Shell Builder. */
-  static final Version VERSION = Version.parse("11.0-ea");
+  private static final Version VERSION = Version.parse("11.0-ea");
 
   /** Default logger instance. */
   private static final Logger LOGGER = System.getLogger("Bach.java");
+
+  /** Default printer instance using system streams. */
+  private static final Printer PRINTER = new Printer(System.out::println, System.err::println);
 
   /** Entry-point. */
   public static void main(String... args) {
@@ -87,8 +90,7 @@ public class Bach {
 
   /** Build the given project. */
   public static Build.Summary build(Project project) {
-    var printer = Printer.ofSystem();
-    return Main.build(project, LOGGER, printer, true, false);
+    return Main.build(project, LOGGER, PRINTER, true, false);
   }
 
   /** Main program. */
@@ -126,10 +128,9 @@ public class Bach {
           var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
           var builder = factory.newProjectBuilder();
           var project = builder.newProject();
-          var printer = Printer.ofSystem();
           var banner = !arguments.contains("--hide-banner");
           var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
-          var summary = build(project, LOGGER, printer, banner, dryRun);
+          var summary = build(project, LOGGER, PRINTER, banner, dryRun);
           if (summary.throwable != null) throw new Error(summary.throwable.getMessage());
           break;
         case CALL:
@@ -143,7 +144,7 @@ public class Bach {
           if (arguments.contains("lib")) Util.Paths.delete(Build.Folder.DEFAULT.lib);
           break;
         case HELP:
-          help(Printer.ofSystem());
+          help(PRINTER);
           break;
         case VERSION:
           System.out.println(VERSION);
@@ -195,10 +196,6 @@ public class Bach {
 
   /** Level-aware line-consuming printer. */
   public static class Printer implements BiConsumer<Level, String> {
-
-    public static Printer ofSystem() {
-      return new Printer(System.out::println, System.err::println);
-    }
 
     private final Consumer<String> out;
     private final Consumer<String> err;
@@ -772,7 +769,7 @@ public class Bach {
       private final boolean parallel;
 
       public Context() {
-        this(Printer.ofSystem(), DEFAULT_LEVELS, true);
+        this(PRINTER, DEFAULT_LEVELS, true);
       }
 
       public Context(Printer printer, Set<Level> levels, boolean parallel) {
