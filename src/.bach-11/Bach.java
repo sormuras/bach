@@ -24,6 +24,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URISyntaxException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -189,8 +190,11 @@ public class Bach {
       printer.out("Usage: Bach.java [<operation> [args...]]");
       printer.out("Operations:");
       for (var constant : Operation.values()) {
-        printer.out("  - %s", constant.name().toLowerCase().replace('_', '-'));
+        printer.out("  - %8s", constant.name().toLowerCase().replace('_', '-'));
       }
+      var tools = new Util.Tools();
+      printer.out("Tools of the trade:");
+      tools.forEach(t -> printer.out("  - %8s [%s] %s", t.name(), Util.Modules.origin(t), t));
     }
   }
 
@@ -1449,6 +1453,20 @@ public class Bach {
                   () -> builder.requires(requiredName));
         }
         return builder;
+      }
+
+      /** Return modular origin of the given object. */
+      static String origin(Object object) {
+        var module = object.getClass().getModule();
+        if (module.isNamed()) {
+          return module.getDescriptor().toNameAndVersion();
+        }
+        try {
+          var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
+          return Path.of(uri).getFileName().toString();
+        } catch (NullPointerException | URISyntaxException ignore) {
+          return module.toString();
+        }
       }
     }
 
