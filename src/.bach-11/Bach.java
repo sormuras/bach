@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -213,6 +214,20 @@ public class Bach {
         return new Build.Summary(build, List.of(), Duration.ZERO, null);
       }
 
+      var uris = new Util.Uris();
+      try {
+        for (var requires : project.requires.entrySet()) {
+          printer.out(requires.toString());
+          var module = requires.getKey();
+          var version = requires.getValue();
+          var relation = project.resolver.apply(requires.getKey());
+          uris.copy(relation.uri, folder.lib.resolve(module + "-" + version + ".jar"));
+        }
+        Thread.sleep(1234);
+      } catch (Exception e) {
+        return new Build.Summary(build, List.of(), Duration.ZERO, e);
+      }
+
       var summary = new Build.Executor(build).call();
       printer.out();
       printer.out("Build took %d milliseconds.", summary.duration.toMillis());
@@ -355,13 +370,24 @@ public class Bach {
     private final Version version;
     private final List<Unit> units;
     private final List<Realm> realms;
+    private final Map<String, String> requires;
+    private final Function<String, Relation> resolver;
 
-    public Project(Path base, String name, Version version, List<Unit> units, List<Realm> realms) {
+    public Project(
+        Path base,
+        String name,
+        Version version,
+        List<Unit> units,
+        List<Realm> realms,
+        Map<String, String> requires,
+        Function<String, Relation> resolver) {
       this.base = base;
       this.name = name;
       this.version = version;
       this.units = List.copyOf(units);
       this.realms = List.copyOf(realms);
+      this.requires = Map.copyOf(requires);
+      this.resolver = resolver;
     }
 
     @Override
@@ -384,10 +410,12 @@ public class Bach {
       private Version version = Version.parse("0");
       private List<Unit> units = new ArrayList<>();
       private List<Realm> realms = new ArrayList<>();
+      private Map<String, String> requires = new HashMap<>();
+      private Function<String, Relation> resolver = new Resolver();
 
       /** Create project instance using property values from this builder. */
       public Project newProject() {
-        return new Project(base, name, version, units, realms);
+        return new Project(base, name, version, units, realms, requires, resolver);
       }
 
       /** Set project's base directory. */
@@ -422,6 +450,23 @@ public class Bach {
       /** Set project's realms. */
       public Builder realms(List<Realm> realms) {
         this.realms = realms;
+        return this;
+      }
+
+      public Builder requires(String module, String version) {
+        this.requires.put(module, version);
+        return this;
+      }
+
+      /** Set project's required modules with their versions. */
+      public Builder requires(Map<String, String> requires) {
+        this.requires = requires;
+        return this;
+      }
+
+      /** Set project's module resolver. */
+      public Builder resolver(Function<String, Relation> resolver) {
+        this.resolver = resolver;
         return this;
       }
     }
@@ -890,6 +935,73 @@ public class Bach {
         sb.append(", isVersioned=").append(isVersioned());
         sb.append('}');
         return sb.toString();
+      }
+    }
+
+    /** Module to URI and more other-system mappings. */
+    public static final class Relation {
+
+      public static Relation ofMavenCentral(
+          String module, String group, String artifact, String version, String classifier) {
+        return new Relation(
+            module, of("https://repo1.maven.org/maven2", group, artifact, version, classifier));
+      }
+
+      public static URI of(
+          String repository, String group, String artifact, String version, String classifier) {
+        var versionAndClassifier = classifier.isEmpty() ? version : version + '-' + classifier;
+        var type = "jar";
+        var file = artifact + '-' + versionAndClassifier + '.' + type;
+        var ref = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
+        return URI.create(ref);
+      }
+
+      private final String module;
+      private final URI uri;
+
+      public Relation(String module, URI uri) {
+        this.module = module;
+        this.uri = uri;
+      }
+    }
+
+    /** Default resolver mapping some well-known module names to their related coordinates. */
+    public static class Resolver implements Function<String, Relation> {
+
+      @Override
+      public Relation apply(String module) {
+        var group = computeMavenGroup(module);
+        var artifact = computeMavenArtifact(module, group);
+        var version = computeVersion(module, group, artifact);
+        var classifier = computeClassifier(module, group, artifact);
+        return Relation.ofMavenCentral(module, group, artifact, version, classifier);
+      }
+
+      public String computeMavenGroup(String module) {
+        if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+      }
+
+      public String computeMavenArtifact(String module, String mavenGroup) {
+        if (mavenGroup.equals("org.junit.jupiter")) return module.substring(4).replace('.', '-');
+        if (mavenGroup.equals("org.junit.platform")) return module.substring(4).replace('.', '-');
+        if (mavenGroup.equals("org.junit.vintage")) return module.substring(4).replace('.', '-');
+        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+      }
+
+      public String computeVersion(String module, String mavenGroup, String mavenArtifact) {
+        switch (mavenGroup) {
+          case "org.junit.jupiter":
+          case "org.junit.vintage":
+            return "5.6.0";
+          case "org.junit.platform":
+            return "1.6.0";
+        }
+        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+      }
+
+      public String computeClassifier(String module, String mavenGroup, String mavenArtifact) {
+        return "";
       }
     }
   }
@@ -1836,6 +1948,7 @@ public class Bach {
       /** Copy all content from a uri to a target file. */
       public Path copy(URI uri, Path path, CopyOption... options) throws Exception {
         // log.debug("Copy %s to %s", uri, path);
+        System.out.printf("Copy %s to %s%n", uri, path);
         Files.createDirectories(path.getParent());
         if ("file".equals(uri.getScheme())) {
           try {
