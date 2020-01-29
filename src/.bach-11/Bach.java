@@ -76,6 +76,9 @@ public class Bach {
   /** Default printer instance using system streams. */
   private static final Printer PRINTER = new Printer(System.out::println, System.err::println);
 
+  /** Default tool registry. */
+  private static final Util.Tools TOOLS = new Util.Tools();
+
   /** Entry-point. */
   public static void main(String... args) {
     Main.build(args);
@@ -214,9 +217,8 @@ public class Bach {
       printer.out("Runtime information:");
       printer.out("  - java.version = " + System.getProperty("java.version"));
       printer.out("  - user.dir = " + System.getProperty("user.dir"));
-      var tools = new Util.Tools();
       printer.out("Tools of the trade:");
-      tools.forEach(t -> printer.out("  - %8s [%s] %s", t.name(), Util.Modules.origin(t), t));
+      TOOLS.forEach(t -> printer.out("  - %8s [%s] %s", t.name(), Util.Modules.origin(t), t));
     }
   }
 
@@ -918,7 +920,7 @@ public class Bach {
             return tool.name() + (args.length == 0 ? "" : " " + String.join(" ", args));
           }
         }
-        var tool = ToolProvider.findFirst(name).orElseThrow();
+        var tool = TOOLS.get(name);
         return new Tool(tool, args);
       }
 
