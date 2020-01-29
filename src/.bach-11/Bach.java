@@ -211,6 +211,9 @@ public class Bach {
         printer.out("  - %8s %s", operation.argument, operation.caption);
         operation.lines.forEach(printer::out);
       }
+      printer.out("Runtime information:");
+      printer.out("  - java.version = " + System.getProperty("java.version"));
+      printer.out("  - user.dir = " + System.getProperty("user.dir"));
       var tools = new Util.Tools();
       printer.out("Tools of the trade:");
       tools.forEach(t -> printer.out("  - %8s [%s] %s", t.name(), Util.Modules.origin(t), t));
