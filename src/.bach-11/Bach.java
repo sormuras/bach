@@ -1106,8 +1106,7 @@ public class Bach {
 
       @Override
       public String toMarkdown() {
-        return String.format(
-            "%s _(size=%d, level=%s, parallel=%s)_", caption, calls.size(), level(), parallel);
+        return String.format("%s%s", caption, parallel ? " (parallel)" : "");
       }
 
       /** Walk a tree of calls starting with the given call instance. */
@@ -1294,7 +1293,7 @@ public class Bach {
             List.of(
                 createDirectories(folder.out("modules", realmPath)),
                 createDirectories(sources),
-                new Plan("Parallel jar calls", Level.ALL, true, jars)));
+                new Plan("Jar each module", Level.ALL, true, jars)));
       }
 
       /** Generate and package modular API documentation. */
