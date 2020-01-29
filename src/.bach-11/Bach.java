@@ -39,9 +39,12 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -1484,6 +1487,31 @@ public class Bach {
         } catch (Exception e) {
           throw new RuntimeException("Read all content from file failed: " + path, e);
         }
+      }
+    }
+
+    /** Tool registry. */
+    class Tools {
+
+      final Map<String, ToolProvider> map;
+
+      public Tools() {
+        this.map = new TreeMap<>();
+        ServiceLoader.load(ToolProvider.class, ClassLoader.getSystemClassLoader()).stream()
+            .map(ServiceLoader.Provider::get)
+            .forEach(provider -> map.putIfAbsent(provider.name(), provider));
+      }
+
+      public ToolProvider get(String name) {
+        var tool = map.get(name);
+        if (tool == null) {
+          throw new NoSuchElementException("No such tool: " + name);
+        }
+        return tool;
+      }
+
+      public void forEach(Consumer<ToolProvider> action) {
+        map.values().forEach(action);
       }
     }
   }
