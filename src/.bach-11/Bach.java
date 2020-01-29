@@ -143,11 +143,7 @@ public class Bach {
           if (arguments.contains("lib")) Util.Paths.delete(Build.Folder.DEFAULT.lib);
           break;
         case HELP:
-          System.out.println("Usage: Bach.java [<operation> [args...]]");
-          System.out.println("Operations:");
-          for (var constant : Operation.values()) {
-            System.out.println("  - " + constant.name().toLowerCase().replace('_', '-'));
-          }
+          help(Build.Printer.ofSystem());
           break;
         case VERSION:
           System.out.println(VERSION);
@@ -188,6 +184,15 @@ public class Bach {
         out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
       }
       return summary;
+    }
+
+    static void help(Build.Printer printer) {
+      var out = printer.out;
+      out.accept("Usage: Bach.java [<operation> [args...]]");
+      out.accept("Operations:");
+      for (var constant : Operation.values()) {
+        out.accept("  - " + constant.name().toLowerCase().replace('_', '-'));
+      }
     }
   }
 
