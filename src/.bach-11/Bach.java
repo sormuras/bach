@@ -100,22 +100,40 @@ public class Bach {
     /** Supported operation modes by the default build program. */
     enum Operation {
       /** Build the project in the current working directory. */
-      BUILD,
+      BUILD("Build the project in the current working directory."),
       /** Generate, validate, and print project information. */
-      DRY_RUN,
+      DRY_RUN("Generate, validate, and print project information."),
       /** Create and execute a single (tool) call on-the-fly. */
-      CALL,
+      CALL("Create and execute a single (tool) call on-the-fly."),
       /** Clean all compiled assets. */
-      CLEAN,
+      CLEAN("Clean all compiled assets."),
       /** Print help screen. */
-      HELP,
+      HELP("Print this help screen."),
       /** Emit version on the standard output stream and exit. */
-      VERSION;
+      VERSION("Emit version on the standard output stream and exit.");
+
+      /** Name variant acceptable as an argument. */
+      final String argument;
+      /** Descriptive sentence of this operation. */
+      final String caption;
+      /** Detailed help text lines. */
+      final List<String> lines;
+
+      Operation(String caption, String... lines) {
+        this.argument = name().toLowerCase().replace('_', '-');
+        this.caption = caption;
+        this.lines = List.of(lines);
+      }
 
       /** Return the operation for the specified argument. */
       static Operation of(String argument, Operation defaultOperation) {
         if (argument == null) return defaultOperation;
-        return valueOf(argument.toUpperCase().replace('-', '_'));
+        return valueOf(nameOf(argument));
+      }
+
+      /** Return constant name of the passed argument. */
+      static String nameOf(String argument) {
+        return argument.toUpperCase().replace('-', '_');
       }
     }
 
@@ -189,8 +207,9 @@ public class Bach {
     static void help(Printer printer) {
       printer.out("Usage: Bach.java [<operation> [args...]]");
       printer.out("Operations:");
-      for (var constant : Operation.values()) {
-        printer.out("  - %8s", constant.name().toLowerCase().replace('_', '-'));
+      for (var operation : Operation.values()) {
+        printer.out("  - %8s %s", operation.argument, operation.caption);
+        operation.lines.forEach(printer::out);
       }
       var tools = new Util.Tools();
       printer.out("Tools of the trade:");
