@@ -71,10 +71,10 @@ public class Bach {
 
   /** Entry-point. */
   public static void main(String... args) {
-    Build.build(args);
+    Main.build(args);
   }
 
-  /** Build the given project. */
+  /** Build a customized project based on the current working directory. */
   public static Build.Summary build(Consumer<Project.Builder> consumer) {
     var builder = new Project.BuilderFactory(LOGGER, Path.of("")).newProjectBuilder();
     consumer.accept(builder); // side-effects are expected
@@ -85,7 +85,107 @@ public class Bach {
   /** Build the given project. */
   public static Build.Summary build(Project project) {
     var printer = Build.Printer.ofSystem();
-    return Build.build(project, LOGGER, printer, true, false);
+    return Main.build(project, LOGGER, printer, true, false);
+  }
+
+  /** Main program. */
+  interface Main {
+
+    /** Supported operation modes by the default build program. */
+    enum Operation {
+      /** Build the project in the current working directory. */
+      BUILD,
+      /** Generate, validate, and print project information. */
+      DRY_RUN,
+      /** Create and execute a single (tool) call on-the-fly. */
+      CALL,
+      /** Clean all compiled assets. */
+      CLEAN,
+      /** Print help screen. */
+      HELP,
+      /** Emit version on the standard output stream and exit. */
+      VERSION;
+
+      /** Return the operation for the specified argument. */
+      static Operation of(String argument, Operation defaultOperation) {
+        if (argument == null) return defaultOperation;
+        return valueOf(argument.toUpperCase().replace('-', '_'));
+      }
+    }
+
+    /** Default build program. */
+    static void build(String... args) {
+      var arguments = new ArrayDeque<>(List.of(args));
+      var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
+      switch (operation) {
+        case BUILD:
+        case DRY_RUN:
+          var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
+          var builder = factory.newProjectBuilder();
+          var project = builder.newProject();
+          var printer = Build.Printer.ofSystem();
+          var banner = !arguments.contains("--hide-banner");
+          var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
+          var summary = build(project, LOGGER, printer, banner, dryRun);
+          if (summary.throwable != null) throw new Error(summary.throwable.getMessage());
+          break;
+        case CALL:
+          var name = arguments.removeFirst(); // or fail with "cryptic" error message
+          var call = Build.Call.of(name, arguments.toArray(String[]::new));
+          call.execute(new Build.Context());
+          break;
+        case CLEAN:
+          if (arguments.isEmpty()) Util.Paths.delete(Build.Folder.DEFAULT.out);
+          if (arguments.contains("out")) Util.Paths.delete(Build.Folder.DEFAULT.out);
+          if (arguments.contains("lib")) Util.Paths.delete(Build.Folder.DEFAULT.lib);
+          break;
+        case HELP:
+          System.out.println("Usage: Bach.java [<operation> [args...]]");
+          System.out.println("Operations:");
+          for (var constant : Operation.values()) {
+            System.out.println("  - " + constant.name().toLowerCase().replace('_', '-'));
+          }
+          break;
+        case VERSION:
+          System.out.println(VERSION);
+          break;
+      }
+    }
+
+    /** Build the given project. */
+    static Build.Summary build(
+        Project project, Logger logger, Build.Printer printer, boolean banner, boolean dryRun) {
+      var out = printer.out;
+
+      if (banner) {
+        out.accept(Bach.class.getSimpleName() + ' ' + VERSION);
+        out.accept("");
+      }
+
+      out.accept(project.toString());
+      var plan = new Build.Planner(logger, project).newPlan();
+
+      var context = new Build.Context(printer, Build.Context.DEFAULT_LEVELS, true);
+      out.accept(context.toString());
+      var build = new Build(context, project, plan);
+      if (dryRun) {
+        out.accept("");
+        out.accept("Dry-run successful.");
+        return new Build.Summary(build, List.of(), Duration.ZERO, null);
+      }
+
+      out.accept("");
+      out.accept("Build...");
+      var summary = new Build.Executor(build).call();
+      out.accept("");
+      out.accept("Build took " + summary.duration.toMillis() + " milliseconds.");
+
+      if (banner) {
+        out.accept("");
+        out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+      }
+      return summary;
+    }
   }
 
   /** Project model API. */
@@ -617,102 +717,6 @@ public class Bach {
       this.context = context;
       this.project = project;
       this.plan = plan;
-    }
-
-    /** Supported operation modes by the default build program. */
-    enum Operation {
-      /** Build the project in the current working directory. */
-      BUILD,
-      /** Generate, validate, and print project information. */
-      DRY_RUN,
-      /** Create and execute a single (tool) call on-the-fly. */
-      CALL,
-      /** Clean all compiled assets. */
-      CLEAN,
-      /** Print help screen. */
-      HELP,
-      /** Emit version on the standard output stream and exit. */
-      VERSION;
-
-      /** Return the operation for the specified argument. */
-      static Operation of(String argument, Operation defaultOperation) {
-        if (argument == null) return defaultOperation;
-        return valueOf(argument.toUpperCase().replace('-', '_'));
-      }
-    }
-
-    /** Default build program. */
-    static void build(String... args) {
-      var arguments = new ArrayDeque<>(List.of(args));
-      var operation = Operation.of(arguments.pollFirst(), Operation.DRY_RUN);
-      switch (operation) {
-        case BUILD:
-        case DRY_RUN:
-          var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
-          var builder = factory.newProjectBuilder();
-          var project = builder.newProject();
-          var printer = Printer.ofSystem();
-          var banner = !arguments.contains("--hide-banner");
-          var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
-          var summary = build(project, LOGGER, printer, banner, dryRun);
-          if (summary.throwable != null) throw new Error(summary.throwable.getMessage());
-          break;
-        case CALL:
-          var name = arguments.removeFirst(); // or fail with "cryptic" error message
-          var call = Call.of(name, arguments.toArray(String[]::new));
-          call.execute(new Context());
-          break;
-        case CLEAN:
-          if (arguments.isEmpty()) Util.Paths.delete(Folder.DEFAULT.out);
-          if (arguments.contains("out")) Util.Paths.delete(Folder.DEFAULT.out);
-          if (arguments.contains("lib")) Util.Paths.delete(Folder.DEFAULT.lib);
-          break;
-        case HELP:
-          System.out.println("Usage: Bach.java [<operation> [args...]]");
-          System.out.println("Operations:");
-          for (var constant : Operation.values()) {
-            System.out.println("  - " + constant.name().toLowerCase().replace('_', '-'));
-          }
-          break;
-        case VERSION:
-          System.out.println(VERSION);
-          break;
-      }
-    }
-
-    /** Build the given project. */
-    static Summary build(
-        Project project, Logger logger, Printer printer, boolean banner, boolean dryRun) {
-      var out = printer.out;
-
-      if (banner) {
-        out.accept(Bach.class.getSimpleName() + ' ' + VERSION);
-        out.accept("");
-      }
-
-      out.accept(project.toString());
-      var plan = new Planner(logger, project).newPlan();
-
-      var context = new Context(printer, Context.DEFAULT_LEVELS, true);
-      out.accept(context.toString());
-      var build = new Build(context, project, plan);
-      if (dryRun) {
-        out.accept("");
-        out.accept("Dry-run successful.");
-        return new Summary(build, List.of(), Duration.ZERO, null);
-      }
-
-      out.accept("");
-      out.accept("Build...");
-      var summary = new Executor(build).call();
-      out.accept("");
-      out.accept("Build took " + summary.duration.toMillis() + " milliseconds.");
-
-      if (banner) {
-        out.accept("");
-        out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
-      }
-      return summary;
     }
 
     /** Level-aware printer. */
