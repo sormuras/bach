@@ -24,6 +24,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.net.URISyntaxException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
@@ -60,6 +61,7 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Java Shell Builder.
@@ -759,6 +761,14 @@ public class Bach {
         return release == 0 ? OptionalInt.empty() : OptionalInt.of(release);
       }
 
+      public Path modularJar(Build.Folder folder, String module, Version version) {
+        return file(folder.out("modules"), module, version, ".jar");
+      }
+
+      public Path file(Path root, String module, Version version, String ext) {
+        return root.resolve(Path.of(path().toString(), module + '-' + version + ext));
+      }
+
       /** @return all module names of this realm as a comma-separated string. */
       public String module() {
         return units.values().stream().map(Unit::name).collect(Collectors.joining(","));
@@ -774,13 +784,19 @@ public class Bach {
 
       /** Generate {@code --module-path} string of this realm. */
       public String modulePath(Build.Folder folder) {
-        var paths = new ArrayList<String>();
+        return modulePaths(folder).stream()
+            .map(Path::toString)
+            .collect(Collectors.joining(File.pathSeparator));
+      }
+
+      /** Generate {@code --module-path} string of this realm. */
+      public List<Path> modulePaths(Build.Folder folder) {
+        var paths = new ArrayList<Path>();
         dependencies.stream()
             .map(dependency -> folder.out("modules" /* "classes" */, dependency.name))
-            .map(Path::toString)
             .forEach(paths::add);
-        paths.add(folder.lib.toString());
-        return String.join(File.pathSeparator, paths);
+        paths.add(folder.lib);
+        return paths;
       }
 
       /** Generate {@code --patch-module} strings for this realm. */
@@ -1184,7 +1200,8 @@ public class Bach {
                     "Compile and generate API documentation",
                     Level.ALL,
                     true,
-                    List.of(compileAllRealms(), generateApiDocumentation()))));
+                    List.of(compileAllRealms(), generateApiDocumentation())),
+                launchTests()));
       }
 
       /** Create output directory. */
@@ -1209,22 +1226,15 @@ public class Bach {
         var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
         var moduleSourcePath = realm.moduleSourcePath();
         var modulePath = realm.modulePath(folder);
+        var version = project.version;
         var modulePatches =
-            realm.patches(
-                (dependency, module) ->
-                    List.of(
-                        folder.out(
-                            Path.of(
-                                    "modules",
-                                    dependency.path().toString(),
-                                    module + "-" + project.version + ".jar")
-                                .toString())));
+            realm.patches((other, module) -> List.of(other.modularJar(folder, module, version)));
         var javac =
             Call.of(
                 "javac",
                 new Util.Args()
                     .add("--module", realm.module())
-                    .add("--module-version", project.version)
+                    .add("--module-version", version)
                     .add(enablePreview, "--enable-preview")
                     .add(release.isPresent(), "--release", release.orElse(-1))
                     .add("--module-source-path", moduleSourcePath)
@@ -1242,18 +1252,17 @@ public class Bach {
       public Call packageRealm(Project.Realm realm) {
         var jars = new ArrayList<Call>();
         var realmPath = realm.path().toString();
-        var modules = folder.out("modules", realmPath);
         var sources = folder.out("sources", realmPath);
         for (var unit : realm.units.values()) {
           var module = unit.name();
-          var file = module + "-" + project.version;
+          var version = project.version;
           var classes = folder.out("classes", realmPath, module);
           jars.add(
               Call.of(
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", modules.resolve(file + ".jar"))
+                      .add("--file", realm.modularJar(folder, module, version))
                       // .add(logger().verbose(), "--verbose")
                       .add(true, "-C", classes, ".")
                       .forEach(
@@ -1269,7 +1278,7 @@ public class Bach {
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", sources.resolve(file + "-sources.jar"))
+                      .add("--file", sources.resolve(module + "-" + version + "-sources.jar"))
                       // .add(logger().verbose(), "--verbose")
                       .add("--no-manifest")
                       .forEach(
@@ -1283,7 +1292,7 @@ public class Bach {
             Level.ALL,
             false,
             List.of(
-                createDirectories(modules),
+                createDirectories(folder.out("modules", realmPath)),
                 createDirectories(sources),
                 new Plan("Parallel jar calls", Level.ALL, true, jars)));
       }
@@ -1310,7 +1319,7 @@ public class Bach {
                         .add("--module-source-path", moduleSourcePath)
                         .add(!modulePath.isEmpty(), "--module-path", modulePath)
                         .add("-d", javadoc)
-                        // .add("-quiet")
+                        .add("-quiet")
                         .add("-Xdoclint:-missing")
                         .toStrings()),
                 Call.of(
@@ -1323,6 +1332,28 @@ public class Bach {
                         .add("-C", javadoc)
                         .add(".")
                         .toStrings())));
+      }
+
+      /** Launch tests. */
+      public Call launchTests() {
+        var realms =
+            project.realms.stream()
+                .filter(realm -> realm.modifiers.contains(Project.Realm.Modifier.LAUNCH_TESTS))
+                .collect(Collectors.toList());
+        if (realms.isEmpty())
+          return new Plan("No testable realms, no tests", Level.ALL, false, List.of());
+        var launches = new ArrayList<Call>();
+        for (var realm : realms) {
+          for (var unit : realm.units.values()) {
+            launches.add(
+                Call.of(
+                    () -> new Util.Tester(project, folder).test(realm, unit),
+                    String.format(
+                        "call(%s, %s, %s)",
+                        Code.$("junit"), Code.$("--select-module"), Code.$(unit.name()))));
+          }
+        }
+        return new Plan("Test launches", Level.ALL, false, launches);
       }
     }
 
@@ -1674,6 +1705,100 @@ public class Bach {
 
       public void forEach(Consumer<ToolProvider> action) {
         map.values().forEach(action);
+      }
+    }
+
+    /** Test launcher. */
+    class Tester {
+
+      private final Project project;
+      private final Build.Folder folder;
+
+      Tester(Project project, Build.Folder folder) {
+        this.project = project;
+        this.folder = folder;
+      }
+
+      boolean test(Project.Realm realm, Project.Unit unit) {
+        var modulePath = new ArrayList<Path>();
+        modulePath.add(realm.modularJar(folder, unit.name(), project.version)); // test module first
+        modulePath.addAll(realm.modulePaths(folder)); // compile dependencies next, like "main"...
+        modulePath.add(folder.out("modules", realm.name)); // same realm last, like "test"...
+        var layer = layer(modulePath, unit.name());
+
+        @SuppressWarnings("StringBufferReplaceableByString")
+        var errors = new StringBuilder();
+        errors.append(runAll(layer, "test(" + unit.name() + ")"));
+        errors.append(
+            run(
+                layer,
+                "junit",
+                "--select-module",
+                unit.name(),
+                "--reports-dir",
+                folder.out("junit-reports", unit.name()).toString()));
+        return errors.toString().replace('0', ' ').isEmpty();
+      }
+
+      private ModuleLayer layer(List<Path> modulePath, String module) {
+        var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+        var roots = List.of(module);
+        //        if (bach.isVerbose()) {
+        //          log.debug("Module path:");
+        //          for (var element : modulePath) {
+        //            log.debug("  -> %s", element);
+        //          }
+        //          log.debug("Finder finds module(s):");
+        //          finder.findAll().stream()
+        //              .sorted(Comparator.comparing(ModuleReference::descriptor))
+        //              .forEach(reference -> log.debug("  -> %s", reference));
+        //          log.debug("Root module(s):");
+        //          for (var root : roots) {
+        //            log.debug("  -> %s", root);
+        //          }
+        //        }
+        var boot = ModuleLayer.boot();
+        var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+        var loader = ClassLoader.getPlatformClassLoader();
+        var controller =
+            ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
+        return controller.layer();
+      }
+
+      private int run(ModuleLayer layer, String name, String... args) {
+        var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+        var toolProvider =
+            StreamSupport.stream(serviceLoader.spliterator(), false)
+                .filter(provider -> provider.name().equals(name))
+                .findFirst();
+        if (toolProvider.isEmpty()) return 1;
+        return run(toolProvider.get(), args);
+      }
+
+      private int runAll(ModuleLayer layer, String name, String... args) {
+        var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+        return StreamSupport.stream(serviceLoader.spliterator(), false)
+            .filter(provider -> provider.name().equals(name))
+            .mapToInt(tool -> Math.abs(run(tool, args)))
+            .sum();
+      }
+
+      private int run(ToolProvider tool, String... args) {
+        var toolLoader = tool.getClass().getClassLoader();
+        var currentThread = Thread.currentThread();
+        var currentContextLoader = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(toolLoader);
+        try {
+          var parent = toolLoader;
+          while (parent != null) {
+            parent.setDefaultAssertionStatus(true);
+            parent = parent.getParent();
+          }
+          // TODO return bach.run(tool, new Call(tool.name(), args));
+          return tool.run(System.out, System.err, args);
+        } finally {
+          currentThread.setContextClassLoader(currentContextLoader);
+        }
       }
     }
   }
