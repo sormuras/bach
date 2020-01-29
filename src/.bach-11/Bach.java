@@ -87,7 +87,7 @@ public class Bach {
 
   /** Build the given project. */
   public static Build.Summary build(Project project) {
-    var printer = Build.Printer.ofSystem();
+    var printer = Printer.ofSystem();
     return Main.build(project, LOGGER, printer, true, false);
   }
 
@@ -126,7 +126,7 @@ public class Bach {
           var factory = new Project.BuilderFactory(LOGGER, Path.of(""));
           var builder = factory.newProjectBuilder();
           var project = builder.newProject();
-          var printer = Build.Printer.ofSystem();
+          var printer = Printer.ofSystem();
           var banner = !arguments.contains("--hide-banner");
           var dryRun = operation == Operation.DRY_RUN || arguments.contains("--dry-run");
           var summary = build(project, LOGGER, printer, banner, dryRun);
@@ -143,7 +143,7 @@ public class Bach {
           if (arguments.contains("lib")) Util.Paths.delete(Build.Folder.DEFAULT.lib);
           break;
         case HELP:
-          help(Build.Printer.ofSystem());
+          help(Printer.ofSystem());
           break;
         case VERSION:
           System.out.println(VERSION);
@@ -153,7 +153,7 @@ public class Bach {
 
     /** Build the given project. */
     static Build.Summary build(
-        Project project, Logger logger, Build.Printer printer, boolean banner, boolean dryRun) {
+        Project project, Logger logger, Printer printer, boolean banner, boolean dryRun) {
       var out = printer.out;
 
       if (banner) {
@@ -186,13 +186,34 @@ public class Bach {
       return summary;
     }
 
-    static void help(Build.Printer printer) {
+    static void help(Printer printer) {
       var out = printer.out;
       out.accept("Usage: Bach.java [<operation> [args...]]");
       out.accept("Operations:");
       for (var constant : Operation.values()) {
         out.accept("  - " + constant.name().toLowerCase().replace('_', '-'));
       }
+    }
+  }
+
+  /** Level-aware line-consuming printer. */
+  public static class Printer implements BiConsumer<Level, String> {
+
+    public static Printer ofSystem() {
+      return new Printer(System.out::println, System.err::println);
+    }
+
+    private final Consumer<String> out;
+    private final Consumer<String> err;
+
+    public Printer(Consumer<String> out, Consumer<String> err) {
+      this.out = out;
+      this.err = err;
+    }
+
+    @Override
+    public void accept(Level level, String line) {
+      (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
     }
   }
 
@@ -725,27 +746,6 @@ public class Bach {
       this.context = context;
       this.project = project;
       this.plan = plan;
-    }
-
-    /** Level-aware printer. */
-    public static class Printer implements BiConsumer<Level, String> {
-
-      public static Printer ofSystem() {
-        return new Printer(System.out::println, System.err::println);
-      }
-
-      private final Consumer<String> out;
-      private final Consumer<String> err;
-
-      public Printer(Consumer<String> out, Consumer<String> err) {
-        this.out = out;
-        this.err = err;
-      }
-
-      @Override
-      public void accept(Level level, String line) {
-        (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
-      }
     }
 
     /** Execution context. */
