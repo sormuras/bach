@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -49,6 +50,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -182,13 +184,16 @@ public class Bach {
         printer.out();
       }
 
-      printer.out(project.toString());
       var plan = new Build.Planner(logger, project).newPlan();
-
       var context = new Build.Context(printer, Build.Context.DEFAULT_LEVELS, true);
-      printer.out(context.toString());
       var build = new Build(context, project, plan);
+
       if (dryRun) {
+        project.print(printer);
+        printer.out();
+        plan.walk(walker -> printer.out(walker.toMarkdown("  ")));
+        printer.out();
+        context.print(printer);
         printer.out();
         printer.out("Dry-run successful.");
         return new Build.Summary(build, List.of(), Duration.ZERO, null);
@@ -226,6 +231,80 @@ public class Bach {
   /** Level-aware line-consuming printer. */
   public static class Printer implements BiConsumer<Level, String> {
 
+    /** Self-reflecting print support. */
+    public interface Printable {
+      /** Print this instance using the given printer object. */
+      default void print(Printer printer) {
+        print(printer, "", new IdentityHashMap<>());
+      }
+
+      /** Internal print method. */
+      private void print(Printer printer, String indent, Map<Object, AtomicLong> printed) {
+        var caption = printCaption();
+        var counter = printed.get(this);
+        if (counter != null) {
+          printer.out("%s# %s already printed (%d)", indent, caption, counter.getAndIncrement());
+          return;
+        }
+        printed.put(this, new AtomicLong(1));
+        if (!indent.isEmpty()) printer.out();
+        printer.out("%s%s", indent, caption);
+        try {
+          for (var field : getClass().getDeclaredFields()) {
+            if (field.isSynthetic()) continue;
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+            var name = field.getName();
+            var value = field.get(this);
+            if (!printTest(name, value)) continue;
+            if (value instanceof Printable) {
+              ((Printable) value).print(printer);
+              continue;
+            }
+            if (value instanceof Collection) {
+              var collection = (Collection<?>) value;
+              if (!collection.isEmpty()) {
+                var first = collection.iterator().next();
+                if (first instanceof Printable) {
+                  // var type = first.getClass().getCanonicalName();
+                  // printer.out("%s+ %s -- %s<%s>", indent, name, "Collection", type);
+                  for (var element : collection) {
+                    if (element instanceof Printable)
+                      ((Printable) element).print(printer, indent + "  ", printed);
+                    else printer.accept(Level.WARNING, "Not printable element?! " + element);
+                  }
+                  continue;
+                }
+              }
+            }
+            printer.out("  %s%s = %s", indent, name, printBeautify(value));
+          }
+        } catch (ReflectiveOperationException e) {
+          printer.accept(Level.WARNING, e.getMessage());
+        }
+      }
+
+      /** Return beautified String-representation of the given object. */
+      default String printBeautify(Object object) {
+        if (object instanceof String) return "\"" + object + "\"";
+        if (object instanceof Path) {
+          var string = String.valueOf(object);
+          if (!string.isEmpty()) return string;
+          return "\"" + object + "\" -> " + ((Path) object).toUri();
+        }
+        return String.valueOf(object);
+      }
+
+      /** Return caption string of this object. */
+      default String printCaption() {
+        return getClass().getSimpleName();
+      }
+
+      /** Return {@code false} to prevent the named component from being printed. */
+      default boolean printTest(String name, Object value) {
+        return true;
+      }
+    }
+
     private final Consumer<String> out;
     private final Consumer<String> err;
 
@@ -257,7 +336,7 @@ public class Bach {
   }
 
   /** Project model API. */
-  public static final class Project {
+  public static final class Project implements Printer.Printable {
 
     private final Path base;
     private final String name;
@@ -558,7 +637,7 @@ public class Bach {
     }
 
     /** A module source description unit. */
-    public static final class Unit {
+    public static final class Unit implements Printer.Printable {
 
       public static Map<String, Unit> toMap(Stream<Unit> units) {
         return units.collect(Collectors.toMap(Unit::name, Function.identity()));
@@ -599,6 +678,11 @@ public class Bach {
         return descriptor.name();
       }
 
+      @Override
+      public String printCaption() {
+        return "Unit '" + name() + "'";
+      }
+
       public <T> List<T> sources(Function<Source, T> mapper) {
         return sources.stream().map(mapper).collect(Collectors.toList());
       }
@@ -613,7 +697,7 @@ public class Bach {
     }
 
     /** A realm of modular sources. */
-    public static final class Realm {
+    public static final class Realm implements Printer.Printable {
 
       /** Realm-related flags controlling the build process. */
       public enum Modifier {
@@ -656,6 +740,16 @@ public class Bach {
         sb.append(", dependencies=").append(dependencies);
         sb.append('}');
         return sb.toString();
+      }
+
+      @Override
+      public String printCaption() {
+        return "Realm '" + name + "'";
+      }
+
+      @Override
+      public boolean printTest(String name, Object value) {
+        return !name.equals("units");
       }
 
       Path path() {
@@ -788,7 +882,7 @@ public class Bach {
     }
 
     /** Execution context. */
-    public static final class Context {
+    public static final class Context implements Printer.Printable {
 
       public static final Set<Level> DEFAULT_LEVELS =
           EnumSet.complementOf(EnumSet.of(Level.ALL, Level.OFF));
