@@ -153,45 +153,42 @@ public class Bach {
 
     /** Build the given project. */
     static Build.Summary build(
-        Project project, Logger logger, Printer printer, boolean banner, boolean dryRun) {
-      var out = printer.out;
-
-      if (banner) {
-        out.accept(Bach.class.getSimpleName() + ' ' + VERSION);
-        out.accept("");
+        Project project, Logger logger, Printer printer, boolean printBanner, boolean dryRun) {
+      if (printBanner) {
+        printer.out("%s %s", Bach.class.getSimpleName(), VERSION);
+        printer.out();
       }
 
-      out.accept(project.toString());
+      printer.out(project.toString());
       var plan = new Build.Planner(logger, project).newPlan();
 
       var context = new Build.Context(printer, Build.Context.DEFAULT_LEVELS, true);
-      out.accept(context.toString());
+      printer.out(context.toString());
       var build = new Build(context, project, plan);
       if (dryRun) {
-        out.accept("");
-        out.accept("Dry-run successful.");
+        printer.out();
+        printer.out("Dry-run successful.");
         return new Build.Summary(build, List.of(), Duration.ZERO, null);
       }
 
-      out.accept("");
-      out.accept("Build...");
+      printer.out();
+      printer.out("Build...");
       var summary = new Build.Executor(build).call();
-      out.accept("");
-      out.accept("Build took " + summary.duration.toMillis() + " milliseconds.");
+      printer.out();
+      printer.out("Build took %d milliseconds.", summary.duration.toMillis());
 
-      if (banner) {
-        out.accept("");
-        out.accept("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
+      if (printBanner) {
+        printer.out();
+        printer.out("Thanks for using Bach.java · https://github.com/sponsors/sormuras (-:");
       }
       return summary;
     }
 
     static void help(Printer printer) {
-      var out = printer.out;
-      out.accept("Usage: Bach.java [<operation> [args...]]");
-      out.accept("Operations:");
+      printer.out("Usage: Bach.java [<operation> [args...]]");
+      printer.out("Operations:");
       for (var constant : Operation.values()) {
-        out.accept("  - " + constant.name().toLowerCase().replace('_', '-'));
+        printer.out("  - %s", constant.name().toLowerCase().replace('_', '-'));
       }
     }
   }
@@ -214,6 +211,22 @@ public class Bach {
     @Override
     public void accept(Level level, String line) {
       (level.getSeverity() <= Level.INFO.getSeverity() ? out : err).accept(line);
+    }
+
+    public String out() {
+      out.accept("");
+      return "";
+    }
+
+    public String out(String line) {
+      out.accept(line);
+      return line;
+    }
+
+    public String out(String format, Object... args) {
+      var line = String.format(format, args);
+      out.accept(line);
+      return line;
     }
   }
 
