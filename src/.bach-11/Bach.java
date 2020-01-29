@@ -184,23 +184,22 @@ public class Bach {
         printer.out();
       }
 
-      var plan = new Build.Planner(logger, project).newPlan();
+      var folder = new Build.Folder(project.base);
+      var plan = new Build.Planner(logger, project, folder).newPlan();
       var context = new Build.Context(printer, Build.Context.DEFAULT_LEVELS, true);
-      var build = new Build(context, project, plan);
+      var build = new Build(context, project, folder, plan);
 
       if (dryRun) {
+        printer.out();
         project.print(printer);
         printer.out();
         plan.walk(walker -> printer.out(walker.toMarkdown("  ")));
         printer.out();
         context.print(printer);
-        printer.out();
         printer.out("Dry-run successful.");
         return new Build.Summary(build, List.of(), Duration.ZERO, null);
       }
 
-      printer.out();
-      printer.out("Build...");
       var summary = new Build.Executor(build).call();
       printer.out();
       printer.out("Build took %d milliseconds.", summary.duration.toMillis());
@@ -873,11 +872,13 @@ public class Bach {
 
     private final Context context;
     private final Project project;
+    private final Folder folder;
     private final Plan plan;
 
-    public Build(Context context, Project project, Plan plan) {
+    public Build(Context context, Project project, Folder folder, Plan plan) {
       this.context = context;
       this.project = project;
+      this.folder = folder;
       this.plan = plan;
     }
 
@@ -989,7 +990,6 @@ public class Bach {
             var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
             synchronized (context.printer) {
               var printer = context.printer;
-              printer.accept(Level.DEBUG, this.toString());
               print(out, printer, Level.INFO);
               print(err, printer, Level.ERROR);
             }
@@ -1161,11 +1161,6 @@ public class Bach {
       private final Folder folder;
 
       /** Initialize this planner instance. */
-      public Planner(Logger logger, Project project) {
-        this(logger, project, new Folder(project.base));
-      }
-
-      /** Initialize this planner instance. */
       public Planner(Logger logger, Project project, Folder folder) {
         this.logger = logger;
         this.project = project;
@@ -1184,26 +1179,12 @@ public class Bach {
             Level.ALL,
             false,
             List.of(
-                showSystemInformation(),
                 createDirectories(folder.out),
                 new Plan(
                     "Compile and generate API documentation",
                     Level.ALL,
                     true,
                     List.of(compileAllRealms(), generateApiDocumentation()))));
-      }
-
-      /** Print system information. */
-      public Call showSystemInformation() {
-        return new Plan(
-            "Show System Information",
-            Level.INFO,
-            true,
-            List.of(
-                Call.of("javac", "--version"),
-                Call.of("javadoc", "--version"),
-                Call.of("jar", "--version"),
-                Call.of("jdeps", "--version")));
       }
 
       /** Create output directory. */
@@ -1329,7 +1310,7 @@ public class Bach {
                         .add("--module-source-path", moduleSourcePath)
                         .add(!modulePath.isEmpty(), "--module-path", modulePath)
                         .add("-d", javadoc)
-                        .add("-quiet")
+                        // .add("-quiet")
                         .add("-Xdoclint:-missing")
                         .toStrings()),
                 Call.of(
@@ -1366,11 +1347,15 @@ public class Bach {
       private final Build build;
       private final Instant start;
       private final Collection<Call> calls;
+      private final Collection<String> log;
 
       public Executor(Build build) {
         this.build = build;
         this.start = Instant.now();
         this.calls = new ConcurrentLinkedQueue<>();
+        this.log = new ConcurrentLinkedQueue<>();
+        log.add("|Kind|Thread|Duration|Message|");
+        log.add("|----|------|--------|-------|");
       }
 
       /** Compute summary by executing the build. */
@@ -1389,45 +1374,64 @@ public class Bach {
         var formatter =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.systemDefault());
         var duration = Duration.between(start, Instant.now());
-        out("");
-        out("# Build Summary");
-        out(" - project = %s", build.project);
-        out(" - context = %s", build.context);
-        out(" - start = %s", start);
-        out(" - duration = %s milliseconds", duration.toMillis());
-        out("");
-        out("## Plan");
-        build.plan.walk(it -> out(it.toMarkdown("  ")));
-        out("## Program");
-        out("```java");
-        out("// default package");
-        out("");
-        out("import java.nio.file.Files;");
-        out("import java.nio.file.Path;");
-        out("import java.util.spi.ToolProvider;");
-        out("");
-        out("class Build" + formatter.format(start.truncatedTo(ChronoUnit.SECONDS)) + " {");
-        out("  public static void main(String... args) throws Exception {");
-        calls.forEach(call -> out("    %s;", call.toJavaLine()));
-        out("  }");
-        out("");
-        out("  private static void call(String name, String... args) {");
-        out("    var tool = ToolProvider.findFirst(name).orElseThrow();");
-        out("    System.out.println('\\n' + name + ' ' + String.join(\" \", args));");
-        out("    tool.run(System.out, System.err, args);");
-        out("  }");
-        out("}");
-        out("```");
+        var lines = new ArrayList<String>();
+        var md = new Printer(lines::add, lines::add);
+        md.out();
+        md.out("# Build Summary");
+        md.out(" - context = %s", build.context);
+        md.out(" - start = %s", start);
+        md.out(" - duration = %s milliseconds", duration.toMillis());
+        md.out();
+        md.out("## Log");
+        this.log.forEach(md::out);
+        md.out();
+        md.out("## Project");
+        md.out("```text");
+        build.project.print(md);
+        md.out("```");
+        md.out();
+        md.out("## Plan");
+        build.plan.walk(it -> md.out(it.toMarkdown("  ")));
+        md.out("## Build Program");
+        md.out("```java");
+        md.out("// default package");
+        md.out("");
+        md.out("import java.nio.file.Files;");
+        md.out("import java.nio.file.Path;");
+        md.out("import java.util.spi.ToolProvider;");
+        md.out("");
+        md.out("class Build" + formatter.format(start.truncatedTo(ChronoUnit.SECONDS)) + " {");
+        md.out("  public static void main(String... args) throws Exception {");
+        calls.forEach(call -> md.out("    %s;", call.toJavaLine()));
+        md.out("  }");
+        md.out("");
+        md.out("  private static void call(String name, String... args) {");
+        md.out("    var tool = ToolProvider.findFirst(name).orElseThrow();");
+        md.out("    System.out.println('\\n' + name + ' ' + String.join(\" \", args));");
+        md.out("    tool.run(System.out, System.err, args);");
+        md.out("  }");
+        md.out("}");
+        md.out("```");
+        md.out();
+        try {
+          Files.write(build.folder.out("summary.md"), lines);
+        } catch (Exception e) {
+          build.context.printer.accept(Level.WARNING, e.getMessage());
+        }
         return new Summary(build, List.copyOf(calls), duration, throwable);
-      }
-
-      private void out(String format, Object... args) {
-        build.context.printer.out.accept(String.format(format, args));
       }
 
       @Override
       public void executionBegin(Call call) {
-        if (!(call instanceof Plan)) calls.add(call);
+        if (call instanceof Plan) {
+          var format = "+|%04X|        | %s";
+          var thread = Thread.currentThread().getId();
+          var text = call.toMarkdown();
+          var line = build.context.printer.out(format, thread, text);
+          log.add(line);
+          return;
+        }
+        calls.add(call);
       }
 
       @Override
@@ -1435,7 +1439,13 @@ public class Bach {
 
       @Override
       public void executionEnd(Call call, Duration duration) {
-        if (call instanceof Plan) out("[%5d ms] for %s", duration.toMillis(), call.toMarkdown());
+        var format = "%c|%04X|%5d ms| %s";
+        var kind = (call instanceof Plan) ? '=' : '*';
+        var thread = Thread.currentThread().getId();
+        var millis = duration.toMillis();
+        var text = call.toMarkdown();
+        var line = build.context.printer.out(format, kind, thread, millis, text);
+        log.add(line);
       }
     }
 
