@@ -209,7 +209,8 @@ public class Bach {
 
     static void help(Printer printer) {
       printer.out("Usage: Bach.java [<operation> [args...]]");
-      printer.out("Operations:");
+      printer.out("Version: %s", VERSION);
+      printer.out("Available operations:");
       for (var operation : Operation.values()) {
         printer.out("  - %8s %s", operation.argument, operation.caption);
         operation.lines.forEach(printer::out);
