@@ -612,8 +612,8 @@ public class Bach {
           var test =
               new Realm(
                   "test",
-                  EnumSet.of(Realm.Modifier.ENABLE_PREVIEW, Realm.Modifier.LAUNCH_TESTS),
-                  // EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
+                  // EnumSet.of(Realm.Modifier.ENABLE_PREVIEW, Realm.Modifier.LAUNCH_TESTS),
+                  EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
                   0,
                   Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("test"))),
                   testSources,
