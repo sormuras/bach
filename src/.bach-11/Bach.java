@@ -979,14 +979,14 @@ public class Bach {
 
       public String computeMavenGroup(String module) {
         if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
-        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+        throw new Util.Modules.UnmappedModuleException(module);
       }
 
       public String computeMavenArtifact(String module, String mavenGroup) {
         if (mavenGroup.equals("org.junit.jupiter")) return module.substring(4).replace('.', '-');
         if (mavenGroup.equals("org.junit.platform")) return module.substring(4).replace('.', '-');
         if (mavenGroup.equals("org.junit.vintage")) return module.substring(4).replace('.', '-');
-        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+        throw new Util.Modules.UnmappedModuleException(module);
       }
 
       public String computeVersion(String module, String mavenGroup, String mavenArtifact) {
@@ -997,7 +997,7 @@ public class Bach {
           case "org.junit.platform":
             return "1.6.0";
         }
-        throw new UnsupportedOperationException("Module '" + module + "' is not mapped");
+        throw new Util.Modules.UnmappedModuleException(module);
       }
 
       public String computeClassifier(String module, String mavenGroup, String mavenArtifact) {
@@ -1703,6 +1703,15 @@ public class Bach {
                     + "\\s+([\\w.]+)" // module name
                     + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
                     + "\\s*;"); // end marker
+      }
+
+      /** Unchecked exception thrown when a module name is not mapped. */
+      class UnmappedModuleException extends RuntimeException {
+        private static final long serialVersionUID = 0L;
+
+        public UnmappedModuleException(String module) {
+          super("Module " + module + " is not mapped");
+        }
       }
 
       /** Module descriptor parser. */
