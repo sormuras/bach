@@ -216,19 +216,23 @@ public class Bach {
         return new Build.Summary(build, List.of(), Duration.ZERO, null);
       }
 
+      /*
       var uris = new Util.Uris();
       try {
-        for (var requires : project.requires.entrySet()) {
-          printer.out(requires.toString());
-          var module = requires.getKey();
-          var version = requires.getValue();
-          var relation = project.resolver.apply(requires.getKey());
-          uris.copy(relation.uri, folder.lib.resolve(module + "-" + version + ".jar"));
+        var system = Project.Survey.of(ModuleFinder.ofSystem());
+        for (var required : project.survey.requiredModules()) {
+          if (system.declaredModules.contains(required)) continue;
+          if (project.survey.declaredModules().contains(required)) continue;
+          printer.out(required);
+          var version = project.survey.requiredVersion(required).orElse(null);
+          var relation = project.resolver.apply(required, version);
+          uris.copy(relation.uri, folder.lib.resolve(required + "-" + relation.version + ".jar"));
         }
         Thread.sleep(1234);
       } catch (Exception e) {
         return new Build.Summary(build, List.of(), Duration.ZERO, e);
       }
+      */
 
       var summary = new Build.Executor(build).call();
       printer.out();
@@ -372,8 +376,8 @@ public class Bach {
     private final Version version;
     private final List<Unit> units;
     private final List<Realm> realms;
-    private final Map<String, String> requires;
-    private final Function<String, Relation> resolver;
+    private final Survey survey;
+    private final BiFunction<String, Version, Relation> resolver;
 
     public Project(
         Path base,
@@ -381,14 +385,14 @@ public class Bach {
         Version version,
         List<Unit> units,
         List<Realm> realms,
-        Map<String, String> requires,
-        Function<String, Relation> resolver) {
+        Survey survey,
+        BiFunction<String, Version, Relation> resolver) {
       this.base = base;
       this.name = name;
       this.version = version;
       this.units = List.copyOf(units);
       this.realms = List.copyOf(realms);
-      this.requires = Map.copyOf(requires);
+      this.survey = survey;
       this.resolver = resolver;
     }
 
@@ -412,12 +416,14 @@ public class Bach {
       private Version version = Version.parse("0");
       private List<Unit> units = new ArrayList<>();
       private List<Realm> realms = new ArrayList<>();
-      private Map<String, String> requires = new HashMap<>();
-      private Function<String, Relation> resolver = new Resolver();
+      private Map<String, Version> requires = new HashMap<>();
+      private BiFunction<String, Version, Relation> resolver = new Resolver();
 
       /** Create project instance using property values from this builder. */
       public Project newProject() {
-        return new Project(base, name, version, units, realms, requires, resolver);
+        var s1 = Survey.of(units.stream().map(Unit::path).collect(Collectors.toList()));
+        // var s2 = Survey.of(s1, requires);
+        return new Project(base, name, version, units, realms, s1, resolver);
       }
 
       /** Set project's base directory. */
@@ -455,19 +461,25 @@ public class Bach {
         return this;
       }
 
+      /** Put required module and version. */
       public Builder requires(String module, String version) {
+        return requires(module, Version.parse(version));
+      }
+
+      /** Put required module and version. */
+      public Builder requires(String module, Version version) {
         this.requires.put(module, version);
         return this;
       }
 
       /** Set project's required modules with their versions. */
-      public Builder requires(Map<String, String> requires) {
+      public Builder requires(Map<String, Version> requires) {
         this.requires = requires;
         return this;
       }
 
       /** Set project's module resolver. */
-      public Builder resolver(Function<String, Relation> resolver) {
+      public Builder resolver(BiFunction<String, Version, Relation> resolver) {
         this.resolver = resolver;
         return this;
       }
@@ -719,6 +731,10 @@ public class Bach {
         this.resources = resources;
       }
 
+      public Path path() {
+        return path;
+      }
+
       @Override
       public String toString() {
         @SuppressWarnings("StringBufferReplaceableByString")
@@ -941,7 +957,7 @@ public class Bach {
     }
 
     /** Declared and required modules and optional versions holder. */
-    public static final class Survey {
+    public static final class Survey implements Printer.Printable {
 
       /** Create modular survey by scanning the locatable modules of the given module finder. */
       public static Survey of(ModuleFinder finder) {
@@ -980,6 +996,8 @@ public class Bach {
         return new Survey(declaredModules, requiredModules);
       }
 
+      // TODO public static Survey of(Survey survey, Map<String, Version> requires)
+
       static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
         stream
             .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
@@ -1013,7 +1031,7 @@ public class Bach {
 
       public Optional<Version> requiredVersion(String requiredModule) {
         var versions = requiresMap.get(requiredModule);
-        if (versions == null) throw new UnmappedModuleException(requiredModule);
+        // if (versions == null) throw new UnmappedModuleException(requiredModule);
         if (versions.size() > 1) {
           var message = "Multiple versions: " + requiredModule + " -> " + versions;
           throw new IllegalStateException(message);
@@ -1022,16 +1040,18 @@ public class Bach {
       }
     }
 
-    /** Module to URI and more other-system mappings. */
+    /** Module and version to URI and more other-system-property mappings. */
     public static final class Relation {
 
       public static Relation ofMavenCentral(
-          String module, String group, String artifact, String version, String classifier) {
+          String module, Version version, String group, String artifact, String classifier) {
         return new Relation(
-            module, of("https://repo1.maven.org/maven2", group, artifact, version, classifier));
+            module,
+            version,
+            uri("https://repo1.maven.org/maven2", group, artifact, version.toString(), classifier));
       }
 
-      public static URI of(
+      public static URI uri(
           String repository, String group, String artifact, String version, String classifier) {
         var versionAndClassifier = classifier.isEmpty() ? version : version + '-' + classifier;
         var type = "jar";
@@ -1041,50 +1061,63 @@ public class Bach {
       }
 
       private final String module;
+      private final Version version;
       private final URI uri;
 
-      public Relation(String module, URI uri) {
+      public Relation(String module, Version version, URI uri) {
         this.module = module;
+        this.version = version;
         this.uri = uri;
       }
     }
 
     /** Default resolver mapping some well-known module names to their related coordinates. */
-    public static class Resolver implements Function<String, Relation> {
+    public static class Resolver implements BiFunction<String, Version, Relation> {
 
       @Override
-      public Relation apply(String module) {
-        var group = computeMavenGroup(module);
-        var artifact = computeMavenArtifact(module, group);
-        var version = computeVersion(module, group, artifact);
-        var classifier = computeClassifier(module, group, artifact);
-        return Relation.ofMavenCentral(module, group, artifact, version, classifier);
+      public Relation apply(String module, Version version) {
+        var group = mapGroup(module, version);
+        var artifact = mapArtifact(module, version, group);
+        var version2 = mapVersion(module, version, group, artifact);
+        var classifier = mapClassifier(module, version, group, artifact);
+        return Relation.ofMavenCentral(module, version2, group, artifact, classifier);
       }
 
-      public String computeMavenGroup(String module) {
+      public String mapGroup(String module, Version version) {
         if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
-        throw new UnmappedModuleException(module);
-      }
-
-      public String computeMavenArtifact(String module, String mavenGroup) {
-        if (mavenGroup.equals("org.junit.jupiter")) return module.substring(4).replace('.', '-');
-        if (mavenGroup.equals("org.junit.platform")) return module.substring(4).replace('.', '-');
-        if (mavenGroup.equals("org.junit.vintage")) return module.substring(4).replace('.', '-');
-        throw new UnmappedModuleException(module);
-      }
-
-      public String computeVersion(String module, String mavenGroup, String mavenArtifact) {
-        switch (mavenGroup) {
-          case "org.junit.jupiter":
-          case "org.junit.vintage":
-            return "5.6.0";
-          case "org.junit.platform":
-            return "1.6.0";
+        switch (module) {
+          case "junit":
+            return "junit";
         }
         throw new UnmappedModuleException(module);
       }
 
-      public String computeClassifier(String module, String mavenGroup, String mavenArtifact) {
+      public String mapArtifact(String module, Version version, String group) {
+        if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
+        switch (module) {
+          case "junit":
+            return "junit";
+        }
+        throw new UnmappedModuleException(module);
+      }
+
+      public Version mapVersion(String module, Version version, String group, String artifact) {
+        if (version != null) return version;
+        switch (module) {
+          case "junit":
+            return Version.parse("4.13");
+        }
+        switch (group) {
+          case "org.junit.jupiter":
+          case "org.junit.vintage":
+            return Version.parse("5.6.0");
+          case "org.junit.platform":
+            return Version.parse("1.6.0");
+        }
+        throw new UnmappedModuleException(module);
+      }
+
+      public String mapClassifier(String module, Version version, String group, String artifact) {
         return "";
       }
     }
