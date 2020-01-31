@@ -1597,17 +1597,37 @@ public class Bach {
     }
 
     /** Java source code related helpers. */
-    private static final class Code {
-      private Code() {}
-
+    interface Code {
       /** Convert the string representation of the given object into a Java source snippet. */
-      public static String $(Object object) {
+      static String $(Object object) {
         return "\"" + object.toString() + "\"";
       }
 
       /** Create {@code Path.of("some/path/...")} snippet. */
-      public static String pathOf(Path path) {
+      static String pathOf(Path path) {
         return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+      }
+
+      static List<String> generateBuildProgram(String name, Iterable<Call> calls) {
+        var lines = new ArrayList<String>();
+        lines.add("// default package");
+        lines.add("");
+        lines.add("import java.nio.file.Files;");
+        lines.add("import java.nio.file.Path;");
+        lines.add("import java.util.spi.ToolProvider;");
+        lines.add("");
+        lines.add("class " + name + " {");
+        lines.add("  public static void main(String... args) throws Exception {");
+        calls.forEach(call -> lines.add("    " + call.toJavaLine() + ";"));
+        lines.add("  }");
+        lines.add("");
+        lines.add("  private static void call(String name, String... args) {");
+        lines.add("    var tool = ToolProvider.findFirst(name).orElseThrow();");
+        lines.add("    System.out.println('\\n' + name + ' ' + String.join(\" \", args));");
+        lines.add("    tool.run(System.out, System.err, args);");
+        lines.add("  }");
+        lines.add("}");
+        return lines;
       }
     }
 
@@ -1644,8 +1664,10 @@ public class Bach {
         var formatter =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.systemDefault());
         var duration = Duration.between(start, Instant.now());
-        var lines = new ArrayList<String>();
-        var md = new Printer(lines::add, lines::add);
+        var programName = "Build" + formatter.format(start.truncatedTo(ChronoUnit.SECONDS));
+        var programLines = Code.generateBuildProgram(programName, calls);
+        var summaryLines = new ArrayList<String>();
+        var md = new Printer(summaryLines::add, summaryLines::add);
         md.out();
         md.out("# Build Summary");
         md.out(" - context = %s", build.context);
@@ -1664,27 +1686,12 @@ public class Bach {
         build.plan.walk(it -> md.out(it.toMarkdown("  ")));
         md.out("## Build Program");
         md.out("```java");
-        md.out("// default package");
-        md.out("");
-        md.out("import java.nio.file.Files;");
-        md.out("import java.nio.file.Path;");
-        md.out("import java.util.spi.ToolProvider;");
-        md.out("");
-        md.out("class Build" + formatter.format(start.truncatedTo(ChronoUnit.SECONDS)) + " {");
-        md.out("  public static void main(String... args) throws Exception {");
-        calls.forEach(call -> md.out("    %s;", call.toJavaLine()));
-        md.out("  }");
-        md.out("");
-        md.out("  private static void call(String name, String... args) {");
-        md.out("    var tool = ToolProvider.findFirst(name).orElseThrow();");
-        md.out("    System.out.println('\\n' + name + ' ' + String.join(\" \", args));");
-        md.out("    tool.run(System.out, System.err, args);");
-        md.out("  }");
-        md.out("}");
+        programLines.forEach(md::out);
         md.out("```");
         md.out();
         try {
-          Files.write(build.folder.out("summary.md"), lines);
+          Files.write(build.folder.out(programName + ".java"), programLines);
+          Files.write(build.folder.out("summary.md"), summaryLines);
         } catch (Exception e) {
           build.context.printer.accept(Level.WARNING, e.getMessage());
         }
