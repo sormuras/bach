@@ -25,7 +25,7 @@ public /*record*/ class Library {
     }
 
     public static Link central(String group, String artifact, String version, String classifier) {
-      return of("https://repo1.maven.org/maven2", group, artifact, version, classifier);
+      return of("https://repo.maven.apache.org/maven2", group, artifact, version, classifier);
     }
 
     public static Link of(

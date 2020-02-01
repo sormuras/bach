@@ -34,7 +34,7 @@ class ResolverTests {
     var library = Library.of();
     var resolver = new Resolver(Log.ofNullWriter(), library);
     assertEquals(
-        "Link{https://repo1.maven.org/maven2/org/junit/jupiter/junit-jupiter/0/junit-jupiter-0.jar@0}",
+        "Link{https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/0/junit-jupiter-0.jar@0}",
         resolver.lookup("org.junit.jupiter", Version.parse("0")).toString());
   }
 
@@ -69,6 +69,6 @@ class ResolverTests {
             .lookup("junit")
             .toString()
             .startsWith(
-                "Link{https://repo1.maven.org/maven2/junit/junit/${VERSION}/junit-${VERSION}.jar@4."));
+                "Link{https://repo.maven.apache.org/maven2/junit/junit/${VERSION}/junit-${VERSION}.jar@4."));
   }
 }
