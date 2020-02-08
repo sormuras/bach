@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class Bach {
 
   /** The {@code Bach.java} version constant. */
-  static final String VERSION = "2.1";
+  static final String VERSION = "2.1-ea";
 
   /** Debug flag. */
   static final boolean DEBUG = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
