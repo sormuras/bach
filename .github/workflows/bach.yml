@@ -7,47 +7,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        java: [13]
+        java: [11]
     runs-on: ${{ matrix.os }}
     steps:
     - name: 'Checkout'
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Cache Maven repository'
-      uses: actions/cache@v1
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-${{ matrix.java }}-maven-${{ hashFiles('**/*pom*.xml') }}
-        restore-keys: ${{ runner.os }}-${{ matrix.java }}-maven-
-    - name: 'Print JShell version (triggers creation of user preferences directory)'
-      run: jshell --version
-    - name: 'Build with Bootstrap.java'
-      run: java src/bach/Bootstrap.java
-    - name: 'Install artifacts to local Maven repository'
-      shell: bash
-      run: |
-        BACH="java --module-path .bach/out/main/modules --module de.sormuras.bach"
-        INSTALL="--batch-mode --no-transfer-progress install:install-file"
-        ${BACH} tool mvn ${INSTALL} @.bach/out/main/deploy/de.sormuras.bach/maven-cli-arguments.txt
-  demo:
-    needs: build
-    name: "Demo (JDK-${{ matrix.java }}, ${{ matrix.os }})"
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-        java: [11, 14.0.0-ea]
-    runs-on: ${{ matrix.os }}
-    steps:
-    - name: 'Checkout'
-      uses: actions/checkout@v1
-    - name: 'Set up JDK'
-      uses: actions/setup-java@v1
-      with:
-        java-version: ${{ matrix.java }}
-    - name: 'Invoke Bach.java via JShell'
-      working-directory: demo
-      run: jshell https://bit.ly/bach-build
+    - name: 'Call default operation (dry-run)'
+      run: java src/.bach-11/Bach.java
