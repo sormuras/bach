@@ -26,7 +26,7 @@ import java.nio.file.Path;
 /** Bach.java's build program, using module {@code de.sormuras.bach} itself. */
 public class Build {
 
-  private static final String VERSION = "2.1-ea";
+  private static final String VERSION = "2.1";
 
   public static void main(String... args) {
     System.out.println("Building Bach.java " + VERSION + "...");
