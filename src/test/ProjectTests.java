@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +18,7 @@ class ProjectTests {
 
     final Bach.Project project =
         Bach.newProject("custom")
+            .paths(Path.of("custom"))
             .version("1.2-C")
             // .requires("java.base", "11")
             .requires("foo", "4711")
@@ -27,6 +29,16 @@ class ProjectTests {
     void toStringRepresentationIsLegit() {
       assertNotNull(project.toString());
       assertFalse(project.toString().isBlank());
+    }
+
+    @Test
+    void base() {
+      assertEquals(Path.of("custom"), project.paths().base());
+    }
+
+    @Test
+    void out() {
+      assertEquals(Path.of("custom", ".bach"), project.paths().out());
     }
 
     @Test

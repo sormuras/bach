@@ -13,7 +13,7 @@ class BachTests {
   @Test
   void useCanonicalConstructorWithCustomLogger() {
     var log = new Log();
-    var bach = new Bach(log, log, Bach.Folder.ofSystem());
+    var bach = new Bach(log, log);
     assertDoesNotThrow(bach::hashCode);
     assertLinesMatch(List.of("Initialized Bach.java .+"), log.lines());
   }
@@ -24,12 +24,12 @@ class BachTests {
     @Test
     void empty(@TempDir Path temp) {
       var log = new Log();
-      var project = Bach.newProject("empty").build();
-      var summary = new Bach(log, log, Bach.Folder.of(temp)).build(project);
+      var project = Bach.newProject("empty").paths(temp).build();
+      var summary = new Bach(log, log).build(project);
       assertLinesMatch(
           List.of(
               "Initialized Bach.java .+",
-              "Build project Project{descriptor=module { name: empty, [mandated java.base] }}",
+              "Build Project.+",
               "Summary written to " + temp.resolve(".bach/summary.md").toUri()),
           log.lines());
       assertLinesMatch(

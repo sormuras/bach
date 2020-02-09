@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
@@ -65,28 +66,24 @@ public class Bach {
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
-  /** Well-known paths. */
-  private final Folder folder;
-
   /** Initialize this instance with default values. */
   public Bach() {
-    this(LOGGER, System.out::println, Folder.ofSystem());
+    this(LOGGER, System.out::println);
   }
 
   /** Initialize this instance with the specified arguments. */
-  public Bach(Logger logger, Consumer<String> printer, Folder folder) {
+  public Bach(Logger logger, Consumer<String> printer) {
     this.logger = logger;
     this.printer = printer;
-    this.folder = folder;
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
   /** Build the specified project. */
   public Summary build(Project project) {
-    logger.log(Level.DEBUG, "Build project {0}", project);
+    logger.log(Level.DEBUG, "Build {0}", project);
     var summary = new Summary(project);
     // TODO Build...
-    var markdown = summary.write(folder.out);
+    var markdown = summary.write();
     printer.accept("Summary written to " + markdown.toUri());
     return summary;
   }
@@ -133,12 +130,21 @@ public class Bach {
   /** Project model. */
   public static final class Project {
 
+    /** Base path of the project. */
+    private final Paths paths;
+
     /** Project descriptor. */
     private final ModuleDescriptor descriptor;
 
     /** Initialize this project model. */
-    public Project(ModuleDescriptor descriptor) {
+    public Project(Paths paths, ModuleDescriptor descriptor) {
+      this.paths = paths;
       this.descriptor = descriptor;
+    }
+
+    /** Project paths. */
+    public Paths paths() {
+      return paths;
     }
 
     /** Project model descriptor. */
@@ -148,24 +154,74 @@ public class Bach {
 
     @Override
     public String toString() {
-      return "Project{" + "descriptor=" + descriptor + '}';
+      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
+          .add("paths=" + paths)
+          .add("descriptor=" + descriptor)
+          .toString();
+    }
+
+    /** Common project-related paths. */
+    public static final class Paths {
+
+      public static Paths of(Path base) {
+        return new Paths(base, base.resolve(".bach"));
+      }
+
+      private final Path base;
+      private final Path out;
+
+      public Paths(Path base, Path out) {
+        this.base = base;
+        this.out = out;
+      }
+
+      public Path base() {
+        return base;
+      }
+
+      public Path out() {
+        return out;
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", Paths.class.getSimpleName() + "[", "]")
+            .add("base='" + base + "'")
+            .add("out='" + out + "'")
+            .toString();
+      }
     }
 
     /** Project model builder. */
     public static class Builder {
+
+      /** Paths of the project. */
+      private Paths paths;
 
       /** Project model descriptor builder. */
       private final ModuleDescriptor.Builder descriptor;
 
       /** Initialize this project model builder with the given name. */
       Builder(String name) {
+        this.paths = Paths.of(Path.of(""));
         var synthetic = Set.of(ModuleDescriptor.Modifier.SYNTHETIC);
         this.descriptor = ModuleDescriptor.newModule(name, synthetic);
       }
 
       /** Create new project model instance based on this builder's components. */
       public Project build() {
-        return new Project(descriptor.build());
+        return new Project(paths, descriptor.build());
+      }
+
+      /** Set base directory of the project. */
+      public Builder paths(Path base) {
+        return paths(Paths.of(base));
+      }
+
+      /** Set paths of the project. */
+      public Builder paths(Paths paths) {
+        this.paths = paths;
+        return this;
       }
 
       /** Declare a dependence on the specified module and version. */
@@ -180,24 +236,6 @@ public class Bach {
         descriptor.version(version);
         return this;
       }
-    }
-  }
-
-  /** Target paths. */
-  public static final class Folder {
-
-    public static Folder of(Path base) {
-      return new Folder(base.resolve(".bach"));
-    }
-
-    public static Folder ofSystem() {
-      return of(Path.of(""));
-    }
-
-    private final Path out;
-
-    public Folder(Path out) {
-      this.out = out;
     }
   }
 
@@ -233,10 +271,11 @@ public class Bach {
       return build.toString();
     }
 
-    public Path write(Path directory) {
+    public Path write() {
       var markdown = toMarkdown();
       try {
-        return Files.write(Files.createDirectories(directory).resolve("summary.md"), markdown);
+        var directory = Files.createDirectories(project.paths().out());
+        return Files.write(directory.resolve("summary.md"), markdown);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
