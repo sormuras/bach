@@ -81,6 +81,16 @@ public class Bach {
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
+  /** Build the specified project. */
+  public Summary build(Project project) {
+    logger.log(Level.DEBUG, "Build project {0}", project);
+    var summary = new Summary(project);
+    // TODO Build...
+    var markdown = summary.write(folder.out);
+    printer.accept("Summary written to " + markdown.toUri());
+    return summary;
+  }
+
   /** Bach.java's main program class. */
   private class Main implements Callable<Integer> {
 
