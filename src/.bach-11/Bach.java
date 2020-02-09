@@ -44,7 +44,7 @@ public class Bach {
     var bach = new Bach();
     var main = bach.new Main(args);
     var code = main.call();
-    if (code != 0) throw new AssertionError("Non-zero exit code: " + code);
+    if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 
   /** Logger instance. */
@@ -66,12 +66,12 @@ public class Bach {
   }
 
   /** Bach.java's main program class. */
-  class Main implements Callable<Integer> {
+  private class Main implements Callable<Integer> {
 
     private final Deque<String> operations;
 
     /** Initialize this instance with the given command line arguments. */
-    Main(String... arguments) {
+    private Main(String... arguments) {
       this.operations = new ArrayDeque<>(List.of(arguments));
     }
 
