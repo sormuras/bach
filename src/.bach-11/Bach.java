@@ -49,6 +49,11 @@ public class Bach {
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 
+  /** Create new project model builder instance for the given name. */
+  public static Project.Builder newProject(String name) {
+    return new Project.Builder(name);
+  }
+
   /** Logger instance. */
   private final Logger logger;
 
@@ -108,11 +113,6 @@ public class Bach {
 
   /** Project model. */
   public static final class Project {
-
-    /** Create new project model builder instance. */
-    public static Builder newProject(String name) {
-      return new Builder(name);
-    }
 
     /** Project descriptor. */
     private final ModuleDescriptor descriptor;

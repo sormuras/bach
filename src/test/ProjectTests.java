@@ -16,7 +16,7 @@ class ProjectTests {
   class CustomProject {
 
     final Bach.Project project =
-        Bach.Project.newProject("custom")
+        Bach.newProject("custom")
             .version("1.2-C")
             // .requires("java.base", "11")
             .requires("foo", "4711")
