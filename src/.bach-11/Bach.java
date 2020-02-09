@@ -19,10 +19,12 @@
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
@@ -101,6 +103,64 @@ public class Bach {
     public int version() {
       printer.accept("" + VERSION);
       return 0;
+    }
+  }
+
+  /** Project model. */
+  public static final class Project {
+
+    /** Create new project model builder instance. */
+    public static Builder newProject(String name) {
+      return new Builder(name);
+    }
+
+    /** Project descriptor. */
+    private final ModuleDescriptor descriptor;
+
+    /** Initialize this project model. */
+    public Project(ModuleDescriptor descriptor) {
+      this.descriptor = descriptor;
+    }
+
+    /** Project model descriptor. */
+    public ModuleDescriptor descriptor() {
+      return descriptor;
+    }
+
+    @Override
+    public String toString() {
+      return "Project{" + "descriptor=" + descriptor + '}';
+    }
+
+    /** Project model builder. */
+    public static class Builder {
+
+      /** Project model descriptor builder. */
+      private final ModuleDescriptor.Builder descriptor;
+
+      /** Initialize this project model builder with the given name. */
+      Builder(String name) {
+        var synthetic = Set.of(ModuleDescriptor.Modifier.SYNTHETIC);
+        this.descriptor = ModuleDescriptor.newModule(name, synthetic);
+      }
+
+      /** Create new project model instance based on this builder's components. */
+      public Project build() {
+        return new Project(descriptor.build());
+      }
+
+      /** Declare a dependence on the specified module and version. */
+      public Builder requires(String module, String version) {
+        var synthetic = Set.of(ModuleDescriptor.Requires.Modifier.SYNTHETIC);
+        descriptor.requires(synthetic, module, Version.parse(version));
+        return this;
+      }
+
+      /** Set the version of the project. */
+      public Builder version(String version) {
+        descriptor.version(version);
+        return this;
+      }
     }
   }
 }
