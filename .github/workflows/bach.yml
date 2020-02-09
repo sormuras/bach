@@ -16,5 +16,12 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
+    - uses: sormuras/setup-junit@master
+      id: junit
+      with:
+        platform-version: '1.6.0'
+    - run: |
+      javac -d classes --class-path ${{ steps.junit.outputs.standalone-jar }} src/.bach-11/Bach.java src/test/Log.java src/test/BachTests.java
+      java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
     - name: 'Call default operation (dry-run)'
       run: java src/.bach-11/Bach.java
