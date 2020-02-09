@@ -17,11 +17,16 @@
 
 // default package
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
@@ -60,15 +65,19 @@ public class Bach {
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
+  /** Well-known paths. */
+  private final Folder folder;
+
   /** Initialize this instance with default values. */
   public Bach() {
-    this(LOGGER, System.out::println);
+    this(LOGGER, System.out::println, Folder.ofSystem());
   }
 
   /** Initialize this instance with the specified arguments. */
-  public Bach(Logger logger, Consumer<String> printer) {
+  public Bach(Logger logger, Consumer<String> printer, Folder folder) {
     this.logger = logger;
     this.printer = printer;
+    this.folder = folder;
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
@@ -160,6 +169,66 @@ public class Bach {
       public Builder version(String version) {
         descriptor.version(version);
         return this;
+      }
+    }
+  }
+
+  /** Target paths. */
+  public static final class Folder {
+
+    public static Folder of(Path base) {
+      return new Folder(base.resolve(".bach"));
+    }
+
+    public static Folder ofSystem() {
+      return of(Path.of(""));
+    }
+
+    private final Path out;
+
+    public Folder(Path out) {
+      this.out = out;
+    }
+  }
+
+  /** Build summary. */
+  public static final class Summary {
+    private final Project project;
+
+    public Summary(Project project) {
+      this.project = project;
+    }
+
+    public List<String> toMarkdown() {
+      var md = new ArrayList<String>();
+      md.add("# Summary");
+      md.add("");
+      md.add("## Project");
+      md.add("`" + project + "`");
+      md.add("");
+      md.add("## System Properties");
+      System.getProperties().stringPropertyNames().stream()
+          .sorted()
+          .forEach(key -> md.add(String.format("- `%s`: `%s`", key, value(key))));
+      return md;
+    }
+
+    static String value(String systemPropertyKey) {
+      var value = System.getProperty(systemPropertyKey);
+      if (!"line.separator".equals(systemPropertyKey)) return value;
+      var build = new StringBuilder();
+      for (char c : value.toCharArray()) {
+        build.append("0x").append(Integer.toHexString(c).toUpperCase());
+      }
+      return build.toString();
+    }
+
+    public Path write(Path directory) {
+      var markdown = toMarkdown();
+      try {
+        return Files.write(Files.createDirectories(directory).resolve("summary.md"), markdown);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
     }
   }
