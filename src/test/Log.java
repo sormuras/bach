@@ -7,13 +7,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class Log implements System.Logger, Consumer<String> {
+public class Log implements System.Logger, Consumer<String>, Bach.Listener {
 
   private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
 
   @Override
   public void accept(String message) {
-    entries.add(new Entry(Instant.now(), Level.ALL, message, null));
+    entries.add(new Entry("P", Instant.now(), Level.ALL, message, null));
+  }
+
+  @Override
+  public void executionBegin(Bach.Task task) {
+    entries.add(new Entry("E", Instant.now(), Level.ALL, "BEGIN " + task.toMarkdown(), null));
+  }
+
+  @Override
+  public void executionEnd(Bach.Task task, Bach.Task.Result result) {
+    entries.add(new Entry("E", Instant.now(), Level.ALL, "END " + task.toMarkdown(), null));
   }
 
   @Override
@@ -28,44 +38,31 @@ public class Log implements System.Logger, Consumer<String> {
 
   @Override
   public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
-    entries.add(new Entry(Instant.now(), level, msg, thrown));
+    entries.add(new Entry("L", Instant.now(), level, msg, thrown));
   }
 
   @Override
   public void log(Level level, ResourceBundle bundle, String format, Object... params) {
-    entries.add(new Entry(Instant.now(), level, MessageFormat.format(format, params), null));
+    entries.add(new Entry("L", Instant.now(), level, MessageFormat.format(format, params), null));
   }
 
   public List<String> lines() {
-    return entries.stream().map(e -> e.message).collect(Collectors.toList());
+    return entries.stream().map(e -> e.source + " " + e.message).collect(Collectors.toList());
   }
 
   public static final class Entry {
+    private final String source;
     private final Instant instant;
     private final Level level;
     private final String message;
     private final Throwable thrown;
 
-    public Entry(Instant instant, Level level, String message, Throwable thrown) {
+    public Entry(String source, Instant instant, Level level, String message, Throwable thrown) {
+      this.source = source;
       this.instant = instant;
       this.level = level;
       this.message = message;
       this.thrown = thrown;
-    }
-
-    @Override
-    public String toString() {
-      return "Entry{"
-          + "instant="
-          + instant
-          + ", level="
-          + level
-          + ", message='"
-          + message
-          + '\''
-          + ", thrown="
-          + thrown
-          + '}';
     }
   }
 }

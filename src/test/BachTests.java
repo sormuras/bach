@@ -13,9 +13,9 @@ class BachTests {
   @Test
   void useCanonicalConstructorWithCustomLogger() {
     var log = new Log();
-    var bach = new Bach(log, log);
+    var bach = new Bach(log, log, true);
     assertDoesNotThrow(bach::hashCode);
-    assertLinesMatch(List.of("Initialized Bach.java .+"), log.lines());
+    assertLinesMatch(List.of("L Initialized Bach.java .+"), log.lines());
   }
 
   @Nested
@@ -25,13 +25,17 @@ class BachTests {
     void empty(@TempDir Path temp) {
       var log = new Log();
       var project = Bach.newProject("empty").paths(temp).build();
-      var summary = new Bach(log, log).build(project);
+      var summary = new Bach(log, log, true).build(project);
       assertLinesMatch(
           List.of(
-              "Initialized Bach.java .+",
-              "Build Project.+",
-              "Execute Build project empty",
-              "Summary written to " + temp.resolve(".bach/summary.md").toUri()),
+              "L Initialized Bach.java .+",
+              "L Build Project.+",
+              "L Build project empty",
+              "P Build project empty", // verbose
+              "L Emit version of javac",
+              "P `javac --version`", // verbose
+              "P javac .+", // verbose
+              "P Summary written to " + temp.resolve(".bach/summary.md").toUri()),
           log.lines());
       assertLinesMatch(
           List.of(
@@ -39,6 +43,10 @@ class BachTests {
               "",
               "## Project",
               ">> PROJECT >>",
+              "## Task Execution Overview",
+              ">> TASK TABLE >>",
+              "## Task Execution Details",
+              ">> TASK DETAILS >>",
               "## System Properties",
               ">> SYSTEM PROPERTIES LISTING >>"),
           summary.toMarkdown());
@@ -51,11 +59,18 @@ class BachTests {
     @Test
     void singleTask() {
       var log = new Log();
-      var bach = new Bach(log, log);
-      var task = new Bach.Task.ToolTask("javac", "--version");
-      bach.execute(task);
+      var bach = new Bach(log, log, true);
+      var task = new Bach.Task.ToolTask("Emit version of javac", "javac", "--version");
+      bach.execute(task, log);
       assertLinesMatch(
-          List.of("Initialized Bach.java .+", "Execute javac --version", "javac .+"), log.lines());
+          List.of(
+              "L Initialized Bach.java .+",
+              "L Emit version of javac",
+              "P `javac --version`", // verbose
+              "E BEGIN `javac --version`",
+              "P javac .+",
+              "E END `javac --version`"),
+          log.lines());
     }
   }
 }
