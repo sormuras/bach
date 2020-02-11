@@ -18,6 +18,8 @@
 // default package
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
@@ -29,10 +31,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 
 /**
  * Java Shell Builder.
@@ -82,10 +86,31 @@ public class Bach {
   public Summary build(Project project) {
     logger.log(Level.DEBUG, "Build {0}", project);
     var summary = new Summary(project);
-    // TODO Build...
+    var task = new Composer(project).newBuildTask();
+    execute(task);
     var markdown = summary.write();
     printer.accept("Summary written to " + markdown.toUri());
     return summary;
+  }
+
+  /** Run the given task and its attached child tasks. */
+  void execute(Task task) {
+    logger.log(Level.DEBUG, "Execute {0}", task.caption);
+
+    var optionalResult = task.call();
+    if (optionalResult.isPresent()) {
+      var result = optionalResult.get();
+      result.out.lines().forEach(printer);
+      result.err.lines().forEach(printer);
+      if (result.throwable != null) throw new RuntimeException(result.throwable);
+      if (result.code != 0) throw new RuntimeException("Non-zero result code: " + result.code);
+    }
+
+    var children = task.children;
+    if (!children.isEmpty()) {
+      var tasks = task.parallel ? children.parallelStream() : children.stream();
+      tasks.forEach(this::execute);
+    }
   }
 
   /** Bach.java's main program class. */
@@ -235,6 +260,78 @@ public class Bach {
       public Builder version(String version) {
         descriptor.version(version);
         return this;
+      }
+    }
+  }
+
+  /** Build task factory. */
+  public static class Composer {
+    private final Project project;
+
+    public Composer(Project project) {
+      this.project = project;
+    }
+
+    public Task newBuildTask() {
+      var caption = "Build project " + project.descriptor().name();
+      return new Task(caption, false, List.of());
+    }
+  }
+
+  /** An executable task and a potentially non-empty list of sub-tasks. */
+  public static class Task implements Callable<Optional<Task.Result>> {
+
+    /** Tool-running task. */
+    public static final class ToolTask extends Task {
+
+      private final String name;
+      private final String[] args;
+
+      public ToolTask(String name, String... args) {
+        super(name + " " + String.join(" ", args), false, List.of());
+        this.name = name;
+        this.args = args;
+      }
+
+      @Override
+      public Optional<Result> call() {
+        var out = new StringWriter();
+        var err = new StringWriter();
+        var tool = ToolProvider.findFirst(name).orElseThrow();
+        var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+        return Optional.of(new Result(code, out.toString(), err.toString(), null));
+      }
+    }
+
+    private final String caption;
+    private final boolean parallel;
+    private final List<Task> children;
+
+    /** Initialize a task container */
+    public Task(String caption, boolean parallel, List<Task> children) {
+      this.caption = caption;
+      this.parallel = parallel;
+      this.children = children;
+    }
+
+    /** Default computation called before executing child tasks. */
+    @Override
+    public Optional<Result> call() {
+      return Optional.empty();
+    }
+
+    /** Task action result record. */
+    public static final class Result {
+      private final int code;
+      private final String out;
+      private final String err;
+      private final Throwable throwable;
+
+      public Result(int code, String out, String err, Throwable throwable) {
+        this.code = code;
+        this.out = out;
+        this.err = err;
+        this.throwable = throwable;
       }
     }
   }

@@ -30,6 +30,7 @@ class BachTests {
           List.of(
               "Initialized Bach.java .+",
               "Build Project.+",
+              "Execute Build project empty",
               "Summary written to " + temp.resolve(".bach/summary.md").toUri()),
           log.lines());
       assertLinesMatch(
@@ -41,6 +42,20 @@ class BachTests {
               "## System Properties",
               ">> SYSTEM PROPERTIES LISTING >>"),
           summary.toMarkdown());
+    }
+  }
+
+  @Nested
+  class Execute {
+
+    @Test
+    void singleTask() {
+      var log = new Log();
+      var bach = new Bach(log, log);
+      var task = new Bach.Task.ToolTask("javac", "--version");
+      bach.execute(task);
+      assertLinesMatch(
+          List.of("Initialized Bach.java .+", "Execute javac --version", "javac .+"), log.lines());
     }
   }
 }
