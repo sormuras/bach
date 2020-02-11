@@ -55,7 +55,7 @@ public class Bach {
   public static void main(String... args) {
     var bach = new Bach();
     var main = bach.new Main(args);
-    var code = main.call();
+    var code = main.run();
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 
@@ -114,7 +114,7 @@ public class Bach {
   }
 
   /** Bach.java's main program class. */
-  private class Main implements Callable<Integer> {
+  private class Main {
 
     private final Deque<String> operations;
 
@@ -123,8 +123,8 @@ public class Bach {
       this.operations = new ArrayDeque<>(List.of(arguments));
     }
 
-    @Override
-    public Integer call() {
+    /** Run main operation. */
+    int run() {
       logger.log(Level.DEBUG, "Call main operation(s): " + operations);
       if (operations.isEmpty()) return 0;
       var operation = operations.removeFirst();
