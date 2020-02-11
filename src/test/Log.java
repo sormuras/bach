@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class Log implements System.Logger, Consumer<String>, Bach.Listener {
+public class Log implements System.Logger, Consumer<String>, Bach.Build {
 
   private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
 
@@ -16,12 +16,12 @@ public class Log implements System.Logger, Consumer<String>, Bach.Listener {
   }
 
   @Override
-  public void executionBegin(Bach.Task task) {
+  public void executionBegin(Bach.Build.Task task) {
     entries.add(new Entry("E", Level.ALL, "BEGIN " + task.toMarkdown(), null));
   }
 
   @Override
-  public void executionEnd(Bach.Task task, Bach.Result result) {
+  public void executionEnd(Bach.Build.Task task, Bach.Build.Result result) {
     entries.add(new Entry("E", Level.ALL, "END " + task.toMarkdown(), null));
   }
 

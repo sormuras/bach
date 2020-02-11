@@ -90,10 +90,10 @@ public class Bach {
   }
 
   /** Build the specified project. */
-  public Summary build(Project project) {
+  public Build.Summary build(Project project) {
     logger.log(Level.DEBUG, "Build {0}", project);
-    var summary = new Summary(project);
-    var task = new Composer(project).newBuildTask();
+    var summary = new Build.Summary(project);
+    var task = new Build.Factory(project).newBuildTask();
     execute(task, summary);
     var markdown = summary.write();
     printer.accept("Summary written to " + markdown.toUri());
@@ -101,7 +101,7 @@ public class Bach {
   }
 
   /** Run the given task and its attached child tasks. */
-  void execute(Task task, Listener listener) {
+  void execute(Build.Task task, Build listener) {
     logger.log(Level.DEBUG, task.caption);
     if (verbose) printer.accept(task.toMarkdown());
 
@@ -281,287 +281,295 @@ public class Bach {
     }
   }
 
-  /** Build task factory. */
-  public static class Composer {
-    private final Project project;
+  /** Namespace for build-related types. */
+  public interface Build {
 
-    public Composer(Project project) {
-      this.project = project;
+    /** Create new tool-running task. */
+    static Task newToolTask(String name, String... args) {
+      var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
+      return new Task.ToolTask(caption, name, args);
     }
 
-    public Task newBuildTask() {
-      var caption = "Build project " + project.descriptor().name();
-      return new Task(
-          caption,
-          false,
-          List.of(
-              new Task.CreateDirectories(project.paths.out),
-              new Task(
-                  "Print version of various foundation tools",
-                  true,
-                  List.of(
-                      new Task.ToolTask("Emit version of javac", "javac", "--version"),
-                      new Task.ToolTask("Emit version of javadoc", "javadoc", "--version"),
-                      new Task.ToolTask("Emit version of jar", "jar", "--version") //
-                      ))));
-    }
-  }
-
-  /** An executable task and a potentially non-empty list of sub-tasks. */
-  public static class Task implements Callable<Result> {
-
-    /** Tool-running task. */
-    public static final class ToolTask extends Task {
-
-      private final String name;
-      private final String[] args;
-
-      public ToolTask(String caption, String name, String... args) {
-        super(caption, false, List.of());
-        this.name = name;
-        this.args = args;
-      }
-
-      @Override
-      public Result call() {
-        var out = new StringWriter();
-        var err = new StringWriter();
-        var now = Instant.now();
-        var tool =
-            ToolProvider.findFirst(name)
-                .orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
-        var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-        return new Result(now, code, out.toString(), err.toString());
-      }
-
-      @Override
-      public String toMarkdown() {
-        var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
-        return '`' + name + arguments + '`';
-      }
-    }
-
-    /**
-     * Task delegating to {@link Files#createDirectories(Path,
-     * java.nio.file.attribute.FileAttribute[])}.
-     */
-    public static final class CreateDirectories extends Task {
-
-      private final Path path;
-
-      public CreateDirectories(Path path) {
-        super("Create directories " + path, false, List.of());
-        this.path = path;
-      }
-
-      @Override
-      public Result call() {
-        try {
-          Files.createDirectories(path);
-          return Result.ok();
-        } catch (IOException e) {
-          return Result.failed(e);
-        }
-      }
-
-      @Override
-      public String toMarkdown() {
-        return "`Files.createDirectories(Path.of(" + path + "))`";
-      }
-    }
-
-    private final String caption;
-    private final boolean parallel;
-    private final List<Task> children;
-
-    /** Initialize a task container */
-    public Task(String caption, boolean parallel, List<Task> children) {
-      this.caption = caption;
-      this.parallel = parallel;
-      this.children = children;
-    }
-
-    /** Default computation called before executing child tasks. */
-    @Override
-    public Result call() {
-      return Result.UNDEFINED;
-    }
-
-    public String toMarkdown() {
-      return caption;
-    }
-  }
-
-  /** Execution result record. */
-  public static final class Result {
-
-    /** No-operation result constant. */
-    private static final Result UNDEFINED = new Result(Instant.ofEpochMilli(0), 0, "", "");
-
-    public static Result ok() {
-      return new Result(Instant.now(), 0, "", "");
-    }
-
-    public static Result failed(Throwable throwable) {
-      return new Result(Instant.now(), 1, "", throwable.toString());
-    }
-
-    private final Instant start;
-    private final int code;
-    private final String out;
-    private final String err;
-
-    public Result(Instant start, int code, String out, String err) {
-      this.start = start;
-      this.code = code;
-      this.out = out;
-      this.err = err;
-    }
-  }
-
-  /** Task execution event listener. */
-  interface Listener {
     /** Task execution is about to begin callback. */
     default void executionBegin(Task task) {}
 
     /** Task execution ended callback. */
     default void executionEnd(Task task, Result result) {}
-  }
 
-  /** Build summary. */
-  public static final class Summary implements Listener {
+    /** Build task factory. */
+    class Factory {
 
-    /** Task and its result tuple. */
-    public static final class Detail {
-      private final Task task;
-      private final Result result;
+      private final Project project;
 
-      public Detail(Task task, Result result) {
-        this.task = task;
-        this.result = result;
+      public Factory(Project project) {
+        this.project = project;
+      }
+
+      public Build.Task newBuildTask() {
+        var caption = "Build project " + project.descriptor().name();
+        return new Build.Task(
+            caption,
+            false,
+            List.of(
+                new Task.CreateDirectories(project.paths.out),
+                new Task(
+                    "Print version of various foundation tools",
+                    true,
+                    List.of(
+                        newToolTask("javac", "--version"),
+                        newToolTask("javadoc", "--version"),
+                        newToolTask("jar", "--version") //
+                        ))));
       }
     }
 
-    private final Project project;
-    private final Deque<String> executions = new ConcurrentLinkedDeque<>();
-    private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
+    /** An executable task and a potentially non-empty list of sub-tasks. */
+    class Task implements Callable<Result> {
 
-    public Summary(Project project) {
-      this.project = project;
-    }
+      /** Tool-running task. */
+      public static final class ToolTask extends Task {
 
-    @Override
-    public void executionBegin(Task task) {
-      if (task.children.isEmpty()) return;
-      var format = "+|%04X|      ms| %s";
-      var thread = Thread.currentThread().getId();
-      var text = task.caption;
-      executions.add(String.format(format, thread, text));
-    }
+        private final String name;
+        private final String[] args;
 
-    @Override
-    public void executionEnd(Task task, Result result) {
-      var format = "%c|%04X|%5d ms| %s";
-      var kind = task.children.isEmpty() ? '*' : '=';
-      var thread = Thread.currentThread().getId();
-      var millis = Duration.between(result.start, Instant.now()).toMillis();
-      var text = task.caption;
-      var row = String.format(format, kind, thread, millis, text);
-      if (result.out.isBlank() && result.err.isBlank()) {
-        executions.add(row);
-        return;
+        public ToolTask(String caption, String name, String... args) {
+          super(caption, false, List.of());
+          this.name = name;
+          this.args = args;
+        }
+
+        @Override
+        public Result call() {
+          var out = new StringWriter();
+          var err = new StringWriter();
+          var now = Instant.now();
+          var tool =
+              ToolProvider.findFirst(name)
+                  .orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
+          var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+          return new Result(now, code, out.toString(), err.toString());
+        }
+
+        @Override
+        public String toMarkdown() {
+          var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
+          return '`' + name + arguments + '`';
+        }
       }
-      var hash = Integer.toHexString(System.identityHashCode(task));
-      executions.add(row + " [...](#details-" + hash + ")");
-      details.add(new Detail(task, result));
+
+      /**
+       * Task delegating to {@link Files#createDirectories(Path,
+       * java.nio.file.attribute.FileAttribute[])}.
+       */
+      public static final class CreateDirectories extends Task {
+
+        private final Path path;
+
+        public CreateDirectories(Path path) {
+          super("Create directories " + path, false, List.of());
+          this.path = path;
+        }
+
+        @Override
+        public Result call() {
+          try {
+            Files.createDirectories(path);
+            return Result.ok();
+          } catch (IOException e) {
+            return Result.failed(e);
+          }
+        }
+
+        @Override
+        public String toMarkdown() {
+          return "`Files.createDirectories(Path.of(" + path + "))`";
+        }
+      }
+
+      private final String caption;
+      private final boolean parallel;
+      private final List<Task> children;
+
+      /** Initialize a task container */
+      public Task(String caption, boolean parallel, List<Task> children) {
+        this.caption = caption;
+        this.parallel = parallel;
+        this.children = children;
+      }
+
+      /** Default computation called before executing child tasks. */
+      @Override
+      public Result call() {
+        return Result.UNDEFINED;
+      }
+
+      public String toMarkdown() {
+        return caption;
+      }
     }
 
-    public List<String> toMarkdown() {
-      var md = new ArrayList<String>();
-      md.add("# Summary");
-      md.addAll(projectDescription());
-      md.addAll(taskExecutionOverview());
-      md.addAll(taskExecutionDetails());
-      md.addAll(systemProperties());
-      return md;
+    /** Execution result record. */
+    final class Result {
+
+      /** No-operation result constant. */
+      private static final Result UNDEFINED = new Result(Instant.ofEpochMilli(0), 0, "", "");
+
+      public static Result ok() {
+        return new Result(Instant.now(), 0, "", "");
+      }
+
+      public static Result failed(Throwable throwable) {
+        return new Result(Instant.now(), 1, "", throwable.toString());
+      }
+
+      private final Instant start;
+      private final int code;
+      private final String out;
+      private final String err;
+
+      public Result(Instant start, int code, String out, String err) {
+        this.start = start;
+        this.code = code;
+        this.out = out;
+        this.err = err;
+      }
     }
 
-    private List<String> projectDescription() {
-      var md = new ArrayList<String>();
-      md.add("");
-      md.add("## Project");
-      md.add("`" + project + "`");
-      return md;
-    }
+    /** Build summary. */
+    final class Summary implements Build {
 
-    private List<String> taskExecutionOverview() {
-      var md = new ArrayList<String>();
-      md.add("");
-      md.add("## Task Execution Overview");
-      md.add("|Kind|Thread|Duration|Message|");
-      md.add("|----|------|--------|-------|");
-      md.addAll(executions);
-      return md;
-    }
+      /** Task and its result tuple. */
+      public static final class Detail {
+        private final Task task;
+        private final Result result;
 
-    private List<String> taskExecutionDetails() {
-      if (details.isEmpty()) return List.of();
-      var md = new ArrayList<String>();
-      md.add("");
-      md.add("## Task Execution Details");
-      md.add("");
-      for (var detail : details) {
-        var task = detail.task;
-        var result = detail.result;
+        public Detail(Task task, Result result) {
+          this.task = task;
+          this.result = result;
+        }
+      }
+
+      private final Project project;
+      private final Deque<String> executions = new ConcurrentLinkedDeque<>();
+      private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
+
+      public Summary(Project project) {
+        this.project = project;
+      }
+
+      @Override
+      public void executionBegin(Task task) {
+        if (task.children.isEmpty()) return;
+        var format = "+|%04X|      ms| %s";
+        var thread = Thread.currentThread().getId();
+        var text = task.caption;
+        executions.add(String.format(format, thread, text));
+      }
+
+      @Override
+      public void executionEnd(Task task, Result result) {
+        var format = "%c|%04X|%5d ms| %s";
+        var kind = task.children.isEmpty() ? '*' : '=';
+        var thread = Thread.currentThread().getId();
+        var millis = Duration.between(result.start, Instant.now()).toMillis();
+        var text = task.caption;
+        var row = String.format(format, kind, thread, millis, text);
+        if (result.out.isBlank() && result.err.isBlank()) {
+          executions.add(row);
+          return;
+        }
         var hash = Integer.toHexString(System.identityHashCode(task));
-        md.add("### <a name='details-" + hash + "'/> " + task.caption);
-        md.add(" - Command = " + task.toMarkdown());
-        md.add(" - Start Instant = " + result.start);
-        md.add(" - Exit Code = " + result.code);
+        executions.add(row + " [...](#details-" + hash + ")");
+        details.add(new Detail(task, result));
+      }
+
+      public List<String> toMarkdown() {
+        var md = new ArrayList<String>();
+        md.add("# Summary");
+        md.addAll(projectDescription());
+        md.addAll(taskExecutionOverview());
+        md.addAll(taskExecutionDetails());
+        md.addAll(systemProperties());
+        return md;
+      }
+
+      private List<String> projectDescription() {
+        var md = new ArrayList<String>();
         md.add("");
-        if (!detail.result.out.isBlank()) {
-          md.add("Normal (expected) output");
-          md.add("```text");
-          md.add(result.out.strip());
-          md.add("```");
-        }
-        if (!detail.result.err.isBlank()) {
-          md.add("Error output");
-          md.add("```text");
-          md.add(result.err.strip());
-          md.add("```");
-        }
+        md.add("## Project");
+        md.add("`" + project + "`");
+        return md;
       }
-      return md;
-    }
 
-    private List<String> systemProperties() {
-      var md = new ArrayList<String>();
-      md.add("");
-      md.add("## System Properties");
-      System.getProperties().stringPropertyNames().stream()
-          .sorted()
-          .forEach(key -> md.add(String.format("- `%s`: `%s`", key, systemProperty(key))));
-      return md;
-    }
-
-    private String systemProperty(String systemPropertyKey) {
-      var value = System.getProperty(systemPropertyKey);
-      if (!"line.separator".equals(systemPropertyKey)) return value;
-      var build = new StringBuilder();
-      for (char c : value.toCharArray()) {
-        build.append("0x").append(Integer.toHexString(c).toUpperCase());
+      private List<String> taskExecutionOverview() {
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Task Execution Overview");
+        md.add("|Kind|Thread|Duration|Message|");
+        md.add("|----|------|--------|-------|");
+        md.addAll(executions);
+        return md;
       }
-      return build.toString();
-    }
 
-    public Path write() {
-      var markdown = toMarkdown();
-      try {
-        var directory = project.paths().out();
-        return Files.write(directory.resolve("summary.md"), markdown);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+      private List<String> taskExecutionDetails() {
+        if (details.isEmpty()) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Task Execution Details");
+        md.add("");
+        for (var detail : details) {
+          var task = detail.task;
+          var result = detail.result;
+          var hash = Integer.toHexString(System.identityHashCode(task));
+          md.add("### <a name='details-" + hash + "'/> " + task.caption);
+          md.add(" - Command = " + task.toMarkdown());
+          md.add(" - Start Instant = " + result.start);
+          md.add(" - Exit Code = " + result.code);
+          md.add("");
+          if (!detail.result.out.isBlank()) {
+            md.add("Normal (expected) output");
+            md.add("```text");
+            md.add(result.out.strip());
+            md.add("```");
+          }
+          if (!detail.result.err.isBlank()) {
+            md.add("Error output");
+            md.add("```text");
+            md.add(result.err.strip());
+            md.add("```");
+          }
+        }
+        return md;
+      }
+
+      private List<String> systemProperties() {
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## System Properties");
+        System.getProperties().stringPropertyNames().stream()
+            .sorted()
+            .forEach(key -> md.add(String.format("- `%s`: `%s`", key, systemProperty(key))));
+        return md;
+      }
+
+      private String systemProperty(String systemPropertyKey) {
+        var value = System.getProperty(systemPropertyKey);
+        if (!"line.separator".equals(systemPropertyKey)) return value;
+        var build = new StringBuilder();
+        for (char c : value.toCharArray()) {
+          build.append("0x").append(Integer.toHexString(c).toUpperCase());
+        }
+        return build.toString();
+      }
+
+      public Path write() {
+        var markdown = toMarkdown();
+        try {
+          var directory = project.paths().out();
+          return Files.write(directory.resolve("summary.md"), markdown);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
       }
     }
   }

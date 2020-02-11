@@ -62,12 +62,12 @@ class BachTests {
     void singleTask() {
       var log = new Log();
       var bach = new Bach(log, log, true);
-      var task = new Bach.Task.ToolTask("Emit version of javac", "javac", "--version");
+      var task = Bach.Build.newToolTask("javac", "--version");
       bach.execute(task, log);
       assertLinesMatch(
           List.of(
               "L Initialized Bach.java .+",
-              "L Emit version of javac",
+              "L Run `javac` with 1 argument(s)",
               "P `javac --version`", // verbose
               "E BEGIN `javac --version`",
               "P javac .+",
