@@ -33,6 +33,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
@@ -110,7 +111,6 @@ public class Bach {
       result.out.lines().forEach(printer);
       result.err.lines().forEach(printer);
     }
-    if (result.throwable != null) throw new RuntimeException(result.throwable);
     if (result.code != 0) throw new RuntimeException("Non-zero result code: " + result.code);
 
     var children = task.children;
@@ -294,12 +294,21 @@ public class Bach {
       return new Task(
           caption,
           false,
-          List.of(new Task.ToolTask("Emit version of javac", "javac", "--version")));
+          List.of(
+              new Task.CreateDirectories(project.paths.out),
+              new Task(
+                  "Print version of various foundation tools",
+                  true,
+                  List.of(
+                      new Task.ToolTask("Emit version of javac", "javac", "--version"),
+                      new Task.ToolTask("Emit version of javadoc", "javadoc", "--version"),
+                      new Task.ToolTask("Emit version of jar", "jar", "--version") //
+                      ))));
     }
   }
 
   /** An executable task and a potentially non-empty list of sub-tasks. */
-  public static class Task implements Callable<Task.Result> {
+  public static class Task implements Callable<Result> {
 
     /** Tool-running task. */
     public static final class ToolTask extends Task {
@@ -318,15 +327,46 @@ public class Bach {
         var out = new StringWriter();
         var err = new StringWriter();
         var now = Instant.now();
-        var tool = ToolProvider.findFirst(name).orElseThrow();
+        var tool =
+            ToolProvider.findFirst(name)
+                .orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
         var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-        return new Result(this, now, code, out.toString(), err.toString(), null);
+        return new Result(now, code, out.toString(), err.toString());
       }
 
       @Override
       public String toMarkdown() {
         var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
         return '`' + name + arguments + '`';
+      }
+    }
+
+    /**
+     * Task delegating to {@link Files#createDirectories(Path,
+     * java.nio.file.attribute.FileAttribute[])}.
+     */
+    public static final class CreateDirectories extends Task {
+
+      private final Path path;
+
+      public CreateDirectories(Path path) {
+        super("Create directories " + path, false, List.of());
+        this.path = path;
+      }
+
+      @Override
+      public Result call() {
+        try {
+          Files.createDirectories(path);
+          return Result.ok();
+        } catch (IOException e) {
+          return Result.failed(e);
+        }
+      }
+
+      @Override
+      public String toMarkdown() {
+        return "`Files.createDirectories(Path.of(" + path + "))`";
       }
     }
 
@@ -344,31 +384,38 @@ public class Bach {
     /** Default computation called before executing child tasks. */
     @Override
     public Result call() {
-      return new Result(this, Instant.now(), 0, "", "", null);
+      return Result.UNDEFINED;
     }
 
     public String toMarkdown() {
       return caption;
     }
+  }
 
-    /** Task action result record. */
-    public static final class Result {
-      private final Task task;
-      private final Instant start;
-      private final int code;
-      private final String out;
-      private final String err;
-      private final Throwable throwable;
+  /** Execution result record. */
+  public static final class Result {
 
-      public Result(
-          Task task, Instant start, int code, String out, String err, Throwable throwable) {
-        this.task = task;
-        this.start = start;
-        this.code = code;
-        this.out = out;
-        this.err = err;
-        this.throwable = throwable;
-      }
+    /** No-operation result constant. */
+    private static final Result UNDEFINED = new Result(Instant.ofEpochMilli(0), 0, "", "");
+
+    public static Result ok() {
+      return new Result(Instant.now(), 0, "", "");
+    }
+
+    public static Result failed(Throwable throwable) {
+      return new Result(Instant.now(), 1, "", throwable.toString());
+    }
+
+    private final Instant start;
+    private final int code;
+    private final String out;
+    private final String err;
+
+    public Result(Instant start, int code, String out, String err) {
+      this.start = start;
+      this.code = code;
+      this.out = out;
+      this.err = err;
     }
   }
 
@@ -378,15 +425,26 @@ public class Bach {
     default void executionBegin(Task task) {}
 
     /** Task execution ended callback. */
-    default void executionEnd(Task task, Task.Result result) {}
+    default void executionEnd(Task task, Result result) {}
   }
 
   /** Build summary. */
   public static final class Summary implements Listener {
 
+    /** Task and its result tuple. */
+    public static final class Detail {
+      private final Task task;
+      private final Result result;
+
+      public Detail(Task task, Result result) {
+        this.task = task;
+        this.result = result;
+      }
+    }
+
     private final Project project;
     private final Deque<String> executions = new ConcurrentLinkedDeque<>();
-    private final Deque<Task.Result> details = new ConcurrentLinkedDeque<>();
+    private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
 
     public Summary(Project project) {
       this.project = project;
@@ -402,7 +460,7 @@ public class Bach {
     }
 
     @Override
-    public void executionEnd(Task task, Task.Result result) {
+    public void executionEnd(Task task, Result result) {
       var format = "%c|%04X|%5d ms| %s";
       var kind = task.children.isEmpty() ? '*' : '=';
       var thread = Thread.currentThread().getId();
@@ -415,7 +473,7 @@ public class Bach {
       }
       var hash = Integer.toHexString(System.identityHashCode(task));
       executions.add(row + " [...](#details-" + hash + ")");
-      details.add(result);
+      details.add(new Detail(task, result));
     }
 
     public List<String> toMarkdown() {
@@ -452,20 +510,22 @@ public class Bach {
       md.add("");
       md.add("## Task Execution Details");
       md.add("");
-      for (var result : details) {
-        var hash = Integer.toHexString(System.identityHashCode(result.task));
-        md.add("### <a name='details-" + hash + "'/> " + result.task.caption);
-        md.add(" - Command = " + result.task.toMarkdown());
+      for (var detail : details) {
+        var task = detail.task;
+        var result = detail.result;
+        var hash = Integer.toHexString(System.identityHashCode(task));
+        md.add("### <a name='details-" + hash + "'/> " + task.caption);
+        md.add(" - Command = " + task.toMarkdown());
         md.add(" - Start Instant = " + result.start);
         md.add(" - Exit Code = " + result.code);
         md.add("");
-        if (!result.out.isBlank()) {
+        if (!detail.result.out.isBlank()) {
           md.add("Normal (expected) output");
           md.add("```text");
           md.add(result.out.strip());
           md.add("```");
         }
-        if (!result.err.isBlank()) {
+        if (!detail.result.err.isBlank()) {
           md.add("Error output");
           md.add("```text");
           md.add(result.err.strip());
@@ -498,7 +558,7 @@ public class Bach {
     public Path write() {
       var markdown = toMarkdown();
       try {
-        var directory = Files.createDirectories(project.paths().out());
+        var directory = project.paths().out();
         return Files.write(directory.resolve("summary.md"), markdown);
       } catch (IOException e) {
         throw new UncheckedIOException(e);

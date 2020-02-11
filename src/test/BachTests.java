@@ -32,9 +32,11 @@ class BachTests {
               "L Build Project.+",
               "L Build project empty",
               "P Build project empty", // verbose
-              "L Emit version of javac",
-              "P `javac --version`", // verbose
-              "P javac .+", // verbose
+              "L Create directories .+",
+              "P `Files.createDirectories.+",
+              "L Print version of various foundation tools",
+              "P Print version of various foundation tools", // verbose
+              ">> FOUNDATION TOOL VERSIONS >>",
               "P Summary written to " + temp.resolve(".bach/summary.md").toUri()),
           log.lines());
       assertLinesMatch(

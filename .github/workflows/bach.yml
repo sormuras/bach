@@ -25,5 +25,5 @@ jobs:
       run: |
         javac -d classes --class-path ${{ steps.junit.outputs.standalone-jar }} src/.bach-11/Bach.java src/test/Log.java src/test/BachTests.java src/test/ProjectTests.java
         java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
-    - name: 'Call default operation (dry-run)'
-      run: java src/.bach-11/Bach.java
+    - name: 'Build'
+      run: java -Dverbose=true src/.bach-11/Bach.java build
