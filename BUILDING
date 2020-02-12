@@ -4,6 +4,9 @@ class Arguments {
     list.add(String.valueOf(o));
     return this;
   }
+  Arguments add(Object key, Object value) {
+    return add(key).add(value);
+  }
   Arguments addAll(String... strings) {
     for(var o : strings) add(o);
     return this;
