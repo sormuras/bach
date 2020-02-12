@@ -32,12 +32,11 @@ class BachTests {
               "L Build Project.+",
               "L Build project empty",
               "P Build project empty", // verbose
-              "L Create directories .+",
+              "L `Files.createDirectories.+",
               "P `Files.createDirectories.+",
               "L Print version of various foundation tools",
               "P Print version of various foundation tools", // verbose
-              ">> FOUNDATION TOOL VERSIONS >>",
-              "P Summary written to " + temp.resolve(".bach/summary.md").toUri()),
+              ">> FOUNDATION TOOL VERSIONS >>"),
           log.lines());
       assertLinesMatch(
           List.of(
