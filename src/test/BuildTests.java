@@ -15,7 +15,7 @@ class BuildTests {
     @ParameterizedTest(name = "verbose={0}")
     @ValueSource(booleans = {false, true})
     void singleTask(boolean verbose) {
-      var task = Bach.Build.newToolTask("javac", "--version");
+      var task = Bach.Build.tool("javac", "--version");
 
       var log = new Log();
       var bach = new Bach(log, log, verbose);

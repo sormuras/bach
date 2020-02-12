@@ -252,8 +252,18 @@ public class Bach {
       summary.executionEnd(task, result);
     }
 
+    /** Group the given tasks for parallel execution. */
+    static Task parallel(String caption, Task... tasks) {
+      return new Build.Task(caption, true, List.of(tasks));
+    }
+
+    /** Group the given tasks for sequential execution. */
+    static Task sequence(String caption, Task... tasks) {
+      return new Build.Task(caption, false, List.of(tasks));
+    }
+
     /** Create new tool-running task for the given tool name. */
-    static Task newToolTask(String name, String... args) {
+    static Task tool(String name, String... args) {
       var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
       var provider = ToolProvider.findFirst(name);
       var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
@@ -277,20 +287,14 @@ public class Bach {
       }
 
       public Build.Task newBuildTask() {
-        var caption = "Build project " + project.descriptor().name();
-        return new Build.Task(
-            caption,
-            false,
-            List.of(
-                new Task.CreateDirectories(project.paths.out),
-                new Task(
-                    "Print version of various foundation tools",
-                    true,
-                    List.of(
-                        newToolTask("javac", "--version"),
-                        newToolTask("javadoc", "--version"),
-                        newToolTask("jar", "--version") //
-                        ))));
+        return sequence(
+            "Build project " + project.descriptor().name(),
+            new Task.CreateDirectories(project.paths.out),
+            parallel(
+                "Print version of various foundation tools",
+                tool("javac", "--version"),
+                tool("javadoc", "--version"),
+                tool("jar", "--version")));
       }
     }
 
@@ -537,7 +541,7 @@ public class Bach {
         md.add("");
         md.add("- Caught " + exceptions.length + " exception(s).");
         md.add("");
-        for(var exception : exceptions) {
+        for (var exception : exceptions) {
           md.add("### " + exception.getMessage());
           md.add("```text");
           var stackTrace = new StringWriter();
