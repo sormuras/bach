@@ -466,6 +466,7 @@ public class Bach {
         md.addAll(projectDescription());
         md.addAll(taskExecutionOverview());
         md.addAll(taskExecutionDetails());
+        md.addAll(exceptionDetails());
         md.addAll(systemProperties());
         return md;
       }
@@ -523,6 +524,26 @@ public class Bach {
             md.add(result.err.strip());
             md.add("```");
           }
+        }
+        return md;
+      }
+
+      private List<String> exceptionDetails() {
+        var exceptions = error.getSuppressed();
+        if (exceptions.length == 0) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Exception Details");
+        md.add("");
+        md.add("- Caught " + exceptions.length + " exception(s).");
+        md.add("");
+        for(var exception : exceptions) {
+          md.add("### " + exception.getMessage());
+          md.add("```text");
+          var stackTrace = new StringWriter();
+          exception.printStackTrace(new PrintWriter(stackTrace));
+          md.add(stackTrace.toString());
+          md.add("```");
         }
         return md;
       }
