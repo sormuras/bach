@@ -33,6 +33,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
@@ -232,11 +233,16 @@ public class Bach {
         this.base = base;
       }
 
-      Project.Builder scan() {
-        var name = base.toAbsolutePath().getFileName().toString();
-        var builder = newProject(name);
+      /** Scan the base directory for project components. */
+      public Project.Builder scan() {
+        var builder = newProject(scanName().orElse("nameless"));
         builder.paths(base);
         return builder;
+      }
+
+      /** Return name of the project. */
+      public Optional<String> scanName() {
+        return Optional.of(base.toAbsolutePath().getFileName()).map(Object::toString);
       }
     }
   }
