@@ -33,7 +33,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
@@ -236,7 +235,7 @@ public class Bach {
         result.err.lines().forEach(bach.printer);
         summary.executionEnd(task, result);
         var message = markdown + ": non-zero result code: " + result.code;
-        throw new ExecutionException(message);
+        throw new TaskExecutionException(message);
       }
 
       var children = task.children;
@@ -266,15 +265,8 @@ public class Bach {
     static Task tool(String name, String... args) {
       var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
       var provider = ToolProvider.findFirst(name);
-      var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
-      return new Task.ToolTask(caption, tool, args);
-    }
-
-    /** Indicates an error happened while executing a task. */
-    class ExecutionException extends RuntimeException {
-      public ExecutionException(String message) {
-        super(message, null, true, false);
-      }
+      var tool = provider.orElseThrow(() -> new ToolNotFoundException(name));
+      return new Task.RunTool(caption, tool, args);
     }
 
     /** Build task factory. */
@@ -302,12 +294,12 @@ public class Bach {
     class Task implements Callable<Result> {
 
       /** Tool-running task. */
-      public static final class ToolTask extends Task {
+      public static final class RunTool extends Task {
 
         private final ToolProvider tool;
         private final String[] args;
 
-        public ToolTask(String caption, ToolProvider tool, String... args) {
+        public RunTool(String caption, ToolProvider tool, String... args) {
           super(caption, false, List.of());
           this.tool = tool;
           this.args = args;
@@ -580,6 +572,20 @@ public class Bach {
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
+      }
+    }
+
+    /** Indicates an error happened while executing a task. */
+    class TaskExecutionException extends RuntimeException {
+      public TaskExecutionException(String message) {
+        super(message);
+      }
+    }
+
+    /** Named tool not available. */
+    class ToolNotFoundException extends RuntimeException {
+      public ToolNotFoundException(String name) {
+        super("No tool with name '" + name + "' available.");
       }
     }
   }
