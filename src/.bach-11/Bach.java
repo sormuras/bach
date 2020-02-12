@@ -39,6 +39,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 
 /**
@@ -89,37 +90,9 @@ public class Bach {
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
-  /** Build the specified project. */
+  /** Build the specified project using the default task factory. */
   public Build.Summary build(Project project) {
-    logger.log(Level.DEBUG, "Build {0}", project);
-    var summary = new Build.Summary(project);
-    var task = new Build.Factory(project).newBuildTask();
-    execute(task, summary);
-    var markdown = summary.write();
-    printer.accept("Summary written to " + markdown.toUri());
-    return summary;
-  }
-
-  /** Run the given task and its attached child tasks. */
-  void execute(Build.Task task, Build listener) {
-    logger.log(Level.DEBUG, task.caption);
-    if (verbose) printer.accept(task.toMarkdown());
-
-    listener.executionBegin(task);
-    var result = task.call();
-    if (verbose) {
-      result.out.lines().forEach(printer);
-      result.err.lines().forEach(printer);
-    }
-    if (result.code != 0) throw new RuntimeException("Non-zero result code: " + result.code);
-
-    var children = task.children;
-    if (!children.isEmpty()) {
-      var tasks = task.parallel ? children.parallelStream() : children.stream();
-      tasks.forEach(child -> execute(child, listener));
-    }
-
-    listener.executionEnd(task, result);
+    return Build.build(this, project, new Build.Factory(project)::newBuildTask);
   }
 
   /** Bach.java's main program class. */
@@ -284,12 +257,36 @@ public class Bach {
   /** Namespace for build-related types. */
   public interface Build {
 
-    /** Create new tool-running task for the given tool name. */
-    static Task newToolTask(String name, String... args) {
-      var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
-      var provider = ToolProvider.findFirst(name);
-      var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
-      return new Task.ToolTask(caption, tool, args);
+    /** Build the specified project using the given root task supplier. */
+    static Summary build(Bach bach, Project project, Supplier<Task> task) {
+      bach.logger.log(Level.DEBUG, "Build {0}", project);
+      var summary = new Summary(project);
+      execute(bach, task.get(), summary);
+      var markdown = summary.write();
+      bach.printer.accept("Summary written to " + markdown.toUri());
+      return summary;
+    }
+
+    /** Run the given task and its attached child tasks. */
+    static void execute(Bach bach, Task task, Build listener) {
+      bach.logger.log(Level.DEBUG, task.caption);
+      if (bach.verbose) bach.printer.accept(task.toMarkdown());
+
+      listener.executionBegin(task);
+      var result = task.call();
+      if (bach.verbose) {
+        result.out.lines().forEach(bach.printer);
+        result.err.lines().forEach(bach.printer);
+      }
+      if (result.code != 0) throw new RuntimeException("Non-zero result code: " + result.code);
+
+      var children = task.children;
+      if (!children.isEmpty()) {
+        var tasks = task.parallel ? children.parallelStream() : children.stream();
+        tasks.forEach(child -> execute(bach, child, listener));
+      }
+
+      listener.executionEnd(task, result);
     }
 
     /** Task execution is about to begin callback. */
@@ -297,6 +294,14 @@ public class Bach {
 
     /** Task execution ended callback. */
     default void executionEnd(Task task, Result result) {}
+
+    /** Create new tool-running task for the given tool name. */
+    static Task newToolTask(String name, String... args) {
+      var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
+      var provider = ToolProvider.findFirst(name);
+      var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
+      return new Task.ToolTask(caption, tool, args);
+    }
 
     /** Build task factory. */
     class Factory {
