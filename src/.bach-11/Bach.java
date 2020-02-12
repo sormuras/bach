@@ -284,10 +284,12 @@ public class Bach {
   /** Namespace for build-related types. */
   public interface Build {
 
-    /** Create new tool-running task. */
+    /** Create new tool-running task for the given tool name. */
     static Task newToolTask(String name, String... args) {
       var caption = String.format("Run `%s` with %d argument(s)", name, args.length);
-      return new Task.ToolTask(caption, name, args);
+      var provider = ToolProvider.findFirst(name);
+      var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
+      return new Task.ToolTask(caption, tool, args);
     }
 
     /** Task execution is about to begin callback. */
@@ -329,12 +331,12 @@ public class Bach {
       /** Tool-running task. */
       public static final class ToolTask extends Task {
 
-        private final String name;
+        private final ToolProvider tool;
         private final String[] args;
 
-        public ToolTask(String caption, String name, String... args) {
+        public ToolTask(String caption, ToolProvider tool, String... args) {
           super(caption, false, List.of());
-          this.name = name;
+          this.tool = tool;
           this.args = args;
         }
 
@@ -343,9 +345,6 @@ public class Bach {
           var out = new StringWriter();
           var err = new StringWriter();
           var now = Instant.now();
-          var tool =
-              ToolProvider.findFirst(name)
-                  .orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
           var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
           return new Result(now, code, out.toString(), err.toString());
         }
@@ -353,7 +352,7 @@ public class Bach {
         @Override
         public String toMarkdown() {
           var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
-          return '`' + name + arguments + '`';
+          return '`' + tool.name() + arguments + '`';
         }
       }
 
@@ -403,6 +402,7 @@ public class Bach {
         return Result.UNDEFINED;
       }
 
+      /** Return markdown representation of this task instance. */
       public String toMarkdown() {
         return caption;
       }
@@ -414,10 +414,12 @@ public class Bach {
       /** No-operation result constant. */
       private static final Result UNDEFINED = new Result(Instant.ofEpochMilli(0), 0, "", "");
 
+      /** Create result with code zero and empty output strings. */
       public static Result ok() {
         return new Result(Instant.now(), 0, "", "");
       }
 
+      /** Create result with error code one and use throwable's message as the error string. */
       public static Result failed(Throwable throwable) {
         return new Result(Instant.now(), 1, "", throwable.toString());
       }
