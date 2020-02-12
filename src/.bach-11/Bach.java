@@ -98,12 +98,13 @@ public class Bach {
 
   /** Build project based on the given builder instance. */
   public Build.Summary build(Consumer<Project.Builder> consumer) {
-    return build(Path.of(""), consumer);
+    var base = Path.of("");
+    return build(Project.Paths.of(base), consumer);
   }
 
   /** Build project based on the builder initialized by scanning the given base path. */
-  public Build.Summary build(Path base, Consumer<Project.Builder> consumer) {
-    var builder = new Project.Scanner(base).scan();
+  public Build.Summary build(Project.Paths paths, Consumer<Project.Builder> consumer) {
+    var builder = new Project.Scanner(paths).scan();
     consumer.accept(builder);
     return build(builder.build());
   }
@@ -227,22 +228,26 @@ public class Bach {
 
     /** Directory-based project model builder factory. */
     public static class Scanner {
-      private final Path base;
+      private final Paths paths;
 
-      public Scanner(Path base) {
-        this.base = base;
+      public Scanner(Paths paths) {
+        this.paths = paths;
+      }
+
+      public Path base() {
+        return paths.base();
       }
 
       /** Scan the base directory for project components. */
       public Project.Builder scan() {
         var builder = newProject(scanName().orElse("nameless"));
-        builder.paths(base);
+        builder.paths(paths);
         return builder;
       }
 
       /** Return name of the project. */
       public Optional<String> scanName() {
-        return Optional.of(base.toAbsolutePath().getFileName()).map(Object::toString);
+        return Optional.of(base().toAbsolutePath().getFileName()).map(Object::toString);
       }
     }
   }
