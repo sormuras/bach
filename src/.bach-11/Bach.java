@@ -90,6 +90,23 @@ public class Bach {
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
+  /** Build project located in the current working directory. */
+  public void build() {
+    build(project -> {}).assertSuccessful();
+  }
+
+  /** Build project based on the given builder instance. */
+  public Build.Summary build(Consumer<Project.Builder> consumer) {
+    return build(Path.of(""), consumer);
+  }
+
+  /** Build project based on the builder initialized by scanning the given base path. */
+  public Build.Summary build(Path base, Consumer<Project.Builder> consumer) {
+    var builder = new Project.Scanner(base).scan();
+    consumer.accept(builder);
+    return build(builder.build());
+  }
+
   /** Build the specified project using the default build task factory. */
   public Build.Summary build(Project project) {
     var factory = new Build.Factory(project);
@@ -229,9 +246,23 @@ public class Bach {
 
     /** Build the specified project using the given root task supplier. */
     static Summary build(Bach bach, Project project, Supplier<Task> task) {
+      var start = Instant.now();
       bach.logger.log(Level.DEBUG, "Build {0}", project);
+      bach.printer.accept("Build " + project.descriptor().toNameAndVersion());
+
       var summary = new Summary(project);
       execute(bach, task.get(), summary);
+
+      var markdown = summary.write();
+      var duration =
+          Duration.between(start, Instant.now())
+              .toString()
+              .substring(2)
+              .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+              .toLowerCase();
+
+      bach.printer.accept("Summary written to " + markdown.toUri());
+      bach.printer.accept("Build took " + duration);
       return summary;
     }
 
@@ -634,26 +665,6 @@ public class Bach {
         default:
           throw new UnsupportedOperationException(operation);
       }
-    }
-
-    /** Build project located in the current working directory. */
-    public void build() {
-      var start = Instant.now();
-      var project = newProject("TODO").build();
-      printer.accept("Build " + project.descriptor().toNameAndVersion());
-
-      var summary = Bach.this.build(project);
-      var markdown = summary.write();
-      var duration =
-          Duration.between(start, Instant.now())
-              .toString()
-              .substring(2)
-              .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-              .toLowerCase();
-
-      printer.accept("Summary written to " + markdown.toUri());
-      printer.accept("Build took " + duration);
-      summary.assertSuccessful();
     }
 
     /** Print help screen. */

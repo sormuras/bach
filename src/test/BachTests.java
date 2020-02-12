@@ -30,6 +30,7 @@ class BachTests {
           List.of(
               "L Initialized Bach.java .+",
               "L Build Project.+",
+              "P Build empty", // verbose
               "L Build project empty",
               "P Build project empty", // verbose
               "L `Files.createDirectories.+",
