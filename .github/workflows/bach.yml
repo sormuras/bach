@@ -27,3 +27,8 @@ jobs:
         java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
     - name: 'Build'
       run: java -Dverbose=true src/.bach-11/Bach.java build
+    - name: 'Upload summary to this workflow run'
+      uses: actions/upload-artifact@v1
+      with:
+        name: summary.md
+        path: .bach/summary.md
