@@ -57,10 +57,11 @@ public class Bach {
 
   /** Bach.java's main program entry-point. */
   public static void main(String... args) {
-    var bach = new Bach();
-    var main = bach.new Main(args);
-    var code = main.run();
-    if (code != 0) throw new Error("Non-zero exit code: " + code);
+    try {
+      new Bach().new Main(args).run();
+    } catch (Throwable throwable) {
+      throw new Error("Main program of Bach.java failed", throwable);
+    }
   }
 
   /** Create new project model builder instance for the given name. */
@@ -90,56 +91,10 @@ public class Bach {
     logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
-  /** Build the specified project using the default task factory. */
+  /** Build the specified project using the default build task factory. */
   public Build.Summary build(Project project) {
-    return Build.build(this, project, new Build.Factory(project)::newBuildTask);
-  }
-
-  /** Bach.java's main program class. */
-  private class Main {
-
-    private final Deque<String> operations;
-
-    /** Initialize this instance with the given command line arguments. */
-    private Main(String... arguments) {
-      this.operations = new ArrayDeque<>(List.of(arguments));
-    }
-
-    /** Run main operation. */
-    int run() {
-      logger.log(Level.DEBUG, "Call main operation(s): " + operations);
-      if (operations.isEmpty()) return 0;
-      var operation = operations.removeFirst();
-      switch (operation) {
-        case "build":
-          return build();
-        case "help":
-          return help();
-        case "version":
-          return version();
-        default:
-          throw new UnsupportedOperationException(operation);
-      }
-    }
-
-    public int build() {
-      var project = newProject("xxx").build();
-      Bach.this.build(project);
-      return 0;
-    }
-
-    /** Print help screen. */
-    public int help() {
-      printer.accept("Bach.java " + VERSION + " running on Java " + Runtime.version());
-      printer.accept("F1 F1 F1");
-      return 0;
-    }
-
-    /** Print version. */
-    public int version() {
-      printer.accept("" + VERSION);
-      return 0;
-    }
+    var factory = new Build.Factory(project);
+    return Build.build(this, project, factory::newBuildTask);
   }
 
   /** Project model. */
@@ -262,38 +217,40 @@ public class Bach {
       bach.logger.log(Level.DEBUG, "Build {0}", project);
       var summary = new Summary(project);
       execute(bach, task.get(), summary);
-      var markdown = summary.write();
-      bach.printer.accept("Summary written to " + markdown.toUri());
       return summary;
     }
 
     /** Run the given task and its attached child tasks. */
-    static void execute(Bach bach, Task task, Build listener) {
-      bach.logger.log(Level.DEBUG, task.caption);
-      if (bach.verbose) bach.printer.accept(task.toMarkdown());
+    static void execute(Bach bach, Task task, Summary summary) {
+      var markdown = task.toMarkdown();
+      bach.logger.log(Level.DEBUG, markdown);
+      if (bach.verbose) bach.printer.accept(markdown);
 
-      listener.executionBegin(task);
+      summary.executionBegin(task);
       var result = task.call();
       if (bach.verbose) {
         result.out.lines().forEach(bach.printer);
         result.err.lines().forEach(bach.printer);
       }
-      if (result.code != 0) throw new RuntimeException("Non-zero result code: " + result.code);
+      if (result.code != 0) {
+        result.err.lines().forEach(bach.printer);
+        summary.executionEnd(task, result);
+        var message = markdown + ": non-zero result code: " + result.code;
+        throw new ExecutionException(message);
+      }
 
       var children = task.children;
       if (!children.isEmpty()) {
-        var tasks = task.parallel ? children.parallelStream() : children.stream();
-        tasks.forEach(child -> execute(bach, child, listener));
+        try {
+          var tasks = task.parallel ? children.parallelStream() : children.stream();
+          tasks.forEach(child -> execute(bach, child, summary));
+        } catch (RuntimeException e) {
+          summary.error.addSuppressed(e);
+        }
       }
 
-      listener.executionEnd(task, result);
+      summary.executionEnd(task, result);
     }
-
-    /** Task execution is about to begin callback. */
-    default void executionBegin(Task task) {}
-
-    /** Task execution ended callback. */
-    default void executionEnd(Task task, Result result) {}
 
     /** Create new tool-running task for the given tool name. */
     static Task newToolTask(String name, String... args) {
@@ -301,6 +258,13 @@ public class Bach {
       var provider = ToolProvider.findFirst(name);
       var tool = provider.orElseThrow(() -> new NoSuchElementException("Tool not found: " + name));
       return new Task.ToolTask(caption, tool, args);
+    }
+
+    /** Indicates an error happened while executing a task. */
+    class ExecutionException extends RuntimeException {
+      public ExecutionException(String message) {
+        super(message, null, true, false);
+      }
     }
 
     /** Build task factory. */
@@ -456,12 +420,21 @@ public class Bach {
       private final Project project;
       private final Deque<String> executions = new ConcurrentLinkedDeque<>();
       private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
+      private final AssertionError error = new AssertionError("Build failed");
 
       public Summary(Project project) {
         this.project = project;
       }
 
-      @Override
+      void assertSuccessful() {
+        var exceptions = error.getSuppressed();
+        if (exceptions.length == 0) return;
+        if (exceptions.length == 1 && exceptions[0] instanceof RuntimeException)
+          throw (RuntimeException) exceptions[0];
+        throw error;
+      }
+
+      /** Task execution is about to begin callback. */
       public void executionBegin(Task task) {
         if (task.children.isEmpty()) return;
         var format = "|   +|%6X|        | %s";
@@ -470,10 +443,10 @@ public class Bach {
         executions.add(String.format(format, thread, text));
       }
 
-      @Override
+      /** Task execution ended callback. */
       public void executionEnd(Task task, Result result) {
         var format = "|%4c|%6X|%8d| %s";
-        var kind = task.children.isEmpty() ? ' ' : '=';
+        var kind = task.children.isEmpty() ? result.code == 0 ? ' ' : 'X' : '=';
         var thread = Thread.currentThread().getId();
         var millis = Duration.between(result.start, Instant.now()).toMillis();
         var caption = task.children.isEmpty() ? "**" + task.caption + "**" : task.caption;
@@ -515,9 +488,9 @@ public class Bach {
         md.add("");
         md.add("Legend");
         md.add(" - A row starting with `+` denotes the start of a task container.");
+        md.add(" - A blank row start (` `) is a normal task execution. Its caption is emphasized.");
+        md.add(" - A row starting with `X` marks an erroneous task execution.");
         md.add(" - A row starting with `=` marks the end (sum) of a task container.");
-        md.add(" - A blank row start (` `) is a single task execution.");
-        md.add(" The caption is also printed emphasized.");
         md.add(" - The Thread column shows the thread identifier, with `1` denoting main thread.");
         md.add(" - Duration is measured in milliseconds.");
         return md;
@@ -583,6 +556,68 @@ public class Bach {
           throw new UncheckedIOException(e);
         }
       }
+    }
+  }
+
+  /** Bach.java's main program class. */
+  private class Main {
+
+    private final Deque<String> operations;
+
+    /** Initialize this instance with the given command line arguments. */
+    private Main(String... arguments) {
+      this.operations = new ArrayDeque<>(List.of(arguments));
+    }
+
+    /** Run main operation. */
+    void run() {
+      logger.log(Level.DEBUG, "Run main operation(s): " + operations);
+      if (operations.isEmpty()) return;
+      var operation = operations.removeFirst();
+      switch (operation) {
+        case "build":
+          build();
+          return;
+        case "help":
+          help();
+          return;
+        case "version":
+          version();
+          return;
+        default:
+          throw new UnsupportedOperationException(operation);
+      }
+    }
+
+    /** Build project located in the current working directory. */
+    public void build() {
+      var start = Instant.now();
+      var project = newProject("TODO").build();
+      printer.accept("Build " + project.descriptor().toNameAndVersion());
+
+      var summary = Bach.this.build(project);
+      var markdown = summary.write();
+      var duration =
+          Duration.between(start, Instant.now())
+              .toString()
+              .substring(2)
+              .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+              .toLowerCase();
+
+      printer.accept("Summary written to " + markdown.toUri());
+      printer.accept("Build took " + duration);
+      summary.assertSuccessful();
+    }
+
+    /** Print help screen. */
+    public void help() {
+      printer.accept("Bach.java " + VERSION + " running on Java " + Runtime.version());
+      printer.accept("F1 F1 F1");
+    }
+
+    /** Print version. */
+    public void version() {
+      printer.accept("" + VERSION);
     }
   }
 }
