@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
@@ -644,6 +645,57 @@ public class Bach {
     class ToolNotFoundException extends RuntimeException {
       public ToolNotFoundException(String name) {
         super("No tool with name '" + name + "' available.");
+      }
+    }
+  }
+
+  /** Namespace for common utilities. */
+  public interface Util {
+    /** Arguments collector. */
+    class Args {
+      private final List<String> list = new ArrayList<>();
+
+      /** Append a single non-null argument. */
+      public Args add(Object arg) {
+        list.add(arg.toString());
+        return this;
+      }
+
+      /** Append two arguments, a key and a value. */
+      public Args add(String key, Object arg) {
+        return add(key).add(arg);
+      }
+
+      /** Conditionally append one or more arguments. */
+      public Args add(boolean predicate, Object first, Object... more) {
+        return predicate ? add(first).addAll(more) : this;
+      }
+
+      /** Append all given arguments, potentially none. */
+      public Args addAll(Object... args) {
+        for (var arg : args) add(arg);
+        return this;
+      }
+
+      /** Walk the given iterable and expect this instance to be changed by side effects. */
+      public <T> Args forEach(Iterable<T> iterable, BiConsumer<Args, T> visitor) {
+        iterable.forEach(item -> visitor.accept(this, item));
+        return this;
+      }
+
+      /** Return a copy of the collected argument strings. */
+      public List<String> list() {
+        return List.copyOf(list);
+      }
+
+      @Override
+      public String toString() {
+        return "Args{" + String.join(", ", list) + '}';
+      }
+
+      /** Return a new array of all collected argument strings. */
+      String[] toStrings() {
+        return list.toArray(String[]::new);
       }
     }
   }
