@@ -480,16 +480,16 @@ public class Bach {
         this.project = project;
       }
 
-      void assertSuccessful() {
+      public void assertSuccessful() {
         var exceptions = error.getSuppressed();
         if (exceptions.length == 0) return;
-        if (exceptions.length == 1 && exceptions[0] instanceof RuntimeException)
-          throw (RuntimeException) exceptions[0];
+        var one = exceptions[0]; // first suppressed exception
+        if (exceptions.length == 1 && one instanceof RuntimeException) throw (RuntimeException) one;
         throw error;
       }
 
       /** Task execution is about to begin callback. */
-      public void executionBegin(Task task) {
+      private void executionBegin(Task task) {
         if (task.children.isEmpty()) return;
         var format = "|   +|%6X|        | %s";
         var thread = Thread.currentThread().getId();
@@ -498,7 +498,7 @@ public class Bach {
       }
 
       /** Task execution ended callback. */
-      public void executionEnd(Task task, Result result) {
+      private void executionEnd(Task task, Result result) {
         var format = "|%4c|%6X|%8d| %s";
         var kind = task.children.isEmpty() ? result.code == 0 ? ' ' : 'X' : '=';
         var thread = Thread.currentThread().getId();
