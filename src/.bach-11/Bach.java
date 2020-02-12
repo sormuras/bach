@@ -404,7 +404,7 @@ public class Bach {
       /** Default computation called before executing child tasks. */
       @Override
       public Result call() {
-        return Result.UNDEFINED;
+        return Result.ok();
       }
 
       /** Return markdown representation of this task instance. */
@@ -415,9 +415,6 @@ public class Bach {
 
     /** Execution result record. */
     final class Result {
-
-      /** No-operation result constant. */
-      private static final Result UNDEFINED = new Result(Instant.ofEpochMilli(0), 0, "", "");
 
       /** Create result with code zero and empty output strings. */
       public static Result ok() {
@@ -467,7 +464,7 @@ public class Bach {
       @Override
       public void executionBegin(Task task) {
         if (task.children.isEmpty()) return;
-        var format = "+|%04X|      ms| %s";
+        var format = "|   +|%6X|        | %s";
         var thread = Thread.currentThread().getId();
         var text = task.caption;
         executions.add(String.format(format, thread, text));
@@ -475,12 +472,12 @@ public class Bach {
 
       @Override
       public void executionEnd(Task task, Result result) {
-        var format = "%c|%04X|%5d ms| %s";
-        var kind = task.children.isEmpty() ? '*' : '=';
+        var format = "|%4c|%6X|%8d| %s";
+        var kind = task.children.isEmpty() ? ' ' : '=';
         var thread = Thread.currentThread().getId();
         var millis = Duration.between(result.start, Instant.now()).toMillis();
-        var text = task.caption;
-        var row = String.format(format, kind, thread, millis, text);
+        var caption = task.children.isEmpty() ? "**" + task.caption + "**" : task.caption;
+        var row = String.format(format, kind, thread, millis, caption);
         if (result.out.isBlank() && result.err.isBlank()) {
           executions.add(row);
           return;
@@ -512,9 +509,17 @@ public class Bach {
         var md = new ArrayList<String>();
         md.add("");
         md.add("## Task Execution Overview");
-        md.add("|Kind|Thread|Duration|Message|");
-        md.add("|----|------|--------|-------|");
+        md.add("|    |Thread|Duration|Caption");
+        md.add("|----|-----:|-------:|-------");
         md.addAll(executions);
+        md.add("");
+        md.add("Legend");
+        md.add(" - A row starting with `+` denotes the start of a task container.");
+        md.add(" - A row starting with `=` marks the end (sum) of a task container.");
+        md.add(" - A blank row start (` `) is a single task execution.");
+        md.add(" The caption is also printed emphasized.");
+        md.add(" - The Thread column shows the thread identifier, with `1` denoting main thread.");
+        md.add(" - Duration is measured in milliseconds.");
         return md;
       }
 
