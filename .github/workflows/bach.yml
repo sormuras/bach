@@ -23,7 +23,7 @@ jobs:
         platform-version: '1.6.0'
     - name: 'Compile and run tests'
       run: |
-        javac -d classes --class-path ${{ steps.junit.outputs.standalone-jar }} src/.bach-11/Bach.java src/test/Log.java src/test/BachTests.java src/test/BuildTests.java src/test/ProjectTests.java
+        javac -d classes --class-path ${{ steps.junit.outputs.standalone-jar }} src/.bach-11/Bach.java src/test/Log.java src/test/BachTests.java src/test/BuildTests.java src/test/DocTests.java src/test/ProjectTests.java
         java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
     - name: 'Build'
       run: java -Dverbose=true src/.bach-11/Bach.java build
