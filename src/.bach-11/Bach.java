@@ -206,6 +206,22 @@ public class Bach {
         return this;
       }
     }
+
+    /** Directory-based project model builder factory. */
+    public static class Scanner {
+      private final Path base;
+
+      public Scanner(Path base) {
+        this.base = base;
+      }
+
+      Project.Builder scan() {
+        var name = base.toAbsolutePath().getFileName().toString();
+        var builder = newProject(name);
+        builder.paths(base);
+        return builder;
+      }
+    }
   }
 
   /** Namespace for build-related types. */
