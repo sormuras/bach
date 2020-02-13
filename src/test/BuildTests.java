@@ -19,7 +19,7 @@ class BuildTests {
 
       var log = new Log();
       var bach = new Bach(log, log, verbose);
-      var project = Bach.newProject("demo").build();
+      var project = new Bach.Project.Builder("demo").build();
       var summary = new Bach.Build.Summary(project);
       Bach.Build.execute(bach, task, summary);
 

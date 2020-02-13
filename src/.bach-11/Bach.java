@@ -65,11 +65,6 @@ public class Bach {
     }
   }
 
-  /** Create new project model builder instance for the given name. */
-  public static Project.Builder newProject(String name) {
-    return new Project.Builder(name);
-  }
-
   /** Logger instance. */
   private final Logger logger;
 
@@ -241,7 +236,7 @@ public class Bach {
 
       /** Scan the base directory for project components. */
       public Project.Builder scan() {
-        var builder = newProject(scanName().orElse("nameless"));
+        var builder = new Project.Builder(scanName().orElse("nameless"));
         builder.paths(paths);
         return builder;
       }

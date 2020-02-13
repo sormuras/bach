@@ -24,7 +24,7 @@ class BachTests {
     @Test
     void empty(@TempDir Path temp) {
       var log = new Log();
-      var project = Bach.newProject("empty").paths(temp).build();
+      var project = new Bach.Project.Builder("empty").paths(temp).build();
       var summary = new Bach(log, log, true).build(project);
       assertLinesMatch(
           List.of(
