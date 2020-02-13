@@ -867,6 +867,18 @@ public class Bach {
         return true;
       }
     }
+
+    /** String-related helpers. */
+    interface Strings {
+      /** Read all content from a file into a string. */
+      static String readString(Path path) {
+        try {
+          return Files.readString(path);
+        } catch (IOException e) {
+          throw new UncheckedIOException("Read all content from file failed: " + path, e);
+        }
+      }
+    }
   }
 
   /** Bach.java's main program class. */
