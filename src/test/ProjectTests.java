@@ -42,6 +42,11 @@ class ProjectTests {
     }
 
     @Test
+    void lib() {
+      assertEquals(Path.of("custom", "lib"), project.paths().lib());
+    }
+
+    @Test
     void name() {
       assertEquals("custom", project.descriptor().name());
     }

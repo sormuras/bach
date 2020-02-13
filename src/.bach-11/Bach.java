@@ -148,15 +148,17 @@ public class Bach {
     public static final class Paths {
 
       public static Paths of(Path base) {
-        return new Paths(base, base.resolve(".bach"));
+        return new Paths(base, base.resolve(".bach"), base.resolve("lib"));
       }
 
       private final Path base;
       private final Path out;
+      private final Path lib;
 
-      public Paths(Path base, Path out) {
+      public Paths(Path base, Path out, Path lib) {
         this.base = base;
         this.out = out;
+        this.lib = lib;
       }
 
       public Path base() {
@@ -167,11 +169,16 @@ public class Bach {
         return out;
       }
 
+      public Path lib() {
+        return lib;
+      }
+
       @Override
       public String toString() {
         return new StringJoiner(", ", Paths.class.getSimpleName() + "[", "]")
-            .add("base='" + base + "'")
-            .add("out='" + out + "'")
+            .add("base='" + base() + "'")
+            .add("out='" + out() + "'")
+            .add("lib='" + lib() + "'")
             .toString();
       }
     }

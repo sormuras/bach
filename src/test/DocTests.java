@@ -15,7 +15,7 @@ class DocTests {
   void project(Path base, @TempDir Path temp) {
     var log = new Log();
     var bach = new Bach(log, log, true);
-    var paths = new Bach.Project.Paths(base, temp.resolve("out"));
+    var paths = new Bach.Project.Paths(base, temp.resolve("out"), temp.resolve("lib"));
     var summary = bach.build(paths, project -> project.version("0-ea"));
     assertDoesNotThrow(summary::assertSuccessful);
     // log.lines().forEach(System.out::println);
