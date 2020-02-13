@@ -17,6 +17,7 @@
 
 // default package
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -27,6 +28,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -51,8 +54,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Java Shell Builder.
@@ -778,6 +785,100 @@ public class Bach {
       /** Return a new array of all collected argument strings. */
       String[] toStrings() {
         return list.toArray(String[]::new);
+      }
+    }
+
+    /** Module-related utilities. */
+    interface Modules {
+
+      /**
+       * Source patterns matching parts of "Module Declarations" grammar.
+       *
+       * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
+       *     Declarations</>
+       */
+      interface Patterns {
+        /** Match {@code `module Identifier {. Identifier}`} snippets. */
+        Pattern NAME =
+            Pattern.compile(
+                "(?:module)" // key word
+                    + "\\s+([\\w.]+)" // module name
+                    + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                    + "\\s*\\{"); // end marker
+
+        /** Match {@code `requires {RequiresModifier} ModuleName ;`} snippets. */
+        Pattern REQUIRES =
+            Pattern.compile(
+                "(?:requires)" // key word
+                    + "(?:\\s+[\\w.]+)?" // optional modifiers
+                    + "\\s+([\\w.]+)" // module name
+                    + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                    + "\\s*;"); // end marker
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor describe(Path info) {
+        return describe(Strings.readString(info));
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor describe(String source) {
+        return newModule(source).build();
+      }
+
+      /** Module descriptor parser. */
+      static ModuleDescriptor.Builder newModule(String source) {
+        // `module Identifier {. Identifier}`
+        var nameMatcher = Patterns.NAME.matcher(source);
+        if (!nameMatcher.find()) {
+          throw new IllegalArgumentException(
+              "Expected Java module source unit, but got: " + source);
+        }
+        var name = nameMatcher.group(1).trim();
+        var builder = ModuleDescriptor.newModule(name);
+        // "requires module /*version*/;"
+        var requiresMatcher = Patterns.REQUIRES.matcher(source);
+        while (requiresMatcher.find()) {
+          var requiredName = requiresMatcher.group(1);
+          Optional.ofNullable(requiresMatcher.group(2))
+              .ifPresentOrElse(
+                  version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+                  () -> builder.requires(requiredName));
+        }
+        return builder;
+      }
+
+      /** Compute module's source path. */
+      static String moduleSourcePath(Path path, String module) {
+        var directory = path.endsWith("module-info.java") ? path.getParent() : path;
+        var names = new ArrayList<String>();
+        directory.forEach(element -> names.add(element.toString()));
+        int frequency = Collections.frequency(names, module);
+        if (frequency == 0) {
+          return directory.toString();
+        }
+        if (frequency == 1) {
+          if (directory.endsWith(module)) {
+            return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
+          }
+          var elements = names.stream().map(name -> name.equals(module) ? "*" : name);
+          return elements.collect(Collectors.joining(File.separator));
+        }
+        throw new IllegalArgumentException("Ambiguous module source path: " + path);
+      }
+
+      /** Return modular origin of the given object. */
+      static String origin(Object object) {
+        var module = object.getClass().getModule();
+        if (module.isNamed()) {
+          return module.getDescriptor().toNameAndVersion();
+        }
+        try {
+          var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
+          return Path.of(uri).getFileName().toString();
+        } catch (NullPointerException | URISyntaxException ignore) {
+          return module.toString();
+        }
       }
     }
 
