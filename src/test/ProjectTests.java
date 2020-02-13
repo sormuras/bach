@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -32,8 +31,6 @@ class ProjectTests {
 
     @Test
     void print() {
-      var lines = new ArrayList<String>();
-      project.print(lines::add);
       assertLinesMatch(
           List.of(
               "Project",
@@ -43,7 +40,7 @@ class ProjectTests {
               "    base = custom",
               "    lib = " + Path.of("custom/lib"),
               "    out = " + Path.of("custom/.bach")),
-          lines);
+          project.print());
     }
 
     @Test
