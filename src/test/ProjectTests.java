@@ -2,10 +2,12 @@
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
@@ -24,6 +26,22 @@ class ProjectTests {
             .requires("foo", "4711")
             .requires("bar", "1701")
             .build();
+
+    @Test
+    void print() {
+      var lines = new ArrayList<String>();
+      project.print(lines::add);
+      assertLinesMatch(
+          List.of(
+              "Project",
+              "  descriptor = module { name: custom@1.2-C, requires: [synthetic bar (@1701), synthetic foo (@4711), mandated java.base] }",
+              "  paths -> instance of Bach$Project$Paths",
+              "  Paths",
+              "    base = custom",
+              "    lib = " + Path.of("custom/lib"),
+              "    out = " + Path.of("custom/.bach")),
+          lines);
+    }
 
     @Test
     void toStringRepresentationIsLegit() {

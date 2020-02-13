@@ -25,19 +25,27 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -112,7 +120,7 @@ public class Bach {
   }
 
   /** Project model. */
-  public static final class Project {
+  public static final class Project implements Util.Printable {
 
     /** Base path of the project. */
     private final Paths paths;
@@ -145,7 +153,7 @@ public class Bach {
     }
 
     /** Common project-related paths. */
-    public static final class Paths {
+    public static final class Paths implements Util.Printable {
 
       public static Paths of(Path base) {
         return new Paths(base, base.resolve(".bach"), base.resolve("lib"));
@@ -529,10 +537,16 @@ public class Bach {
       }
 
       private List<String> projectDescription() {
+        var descriptor = project.descriptor();
         var md = new ArrayList<String>();
         md.add("");
         md.add("## Project");
-        md.add("`" + project + "`");
+        md.add("- name: " + descriptor.name());
+        md.add("- version: " + descriptor.version());
+        md.add("");
+        md.add("```text");
+        project.print(md::add);
+        md.add("```");
         return md;
       }
 
@@ -698,6 +712,94 @@ public class Bach {
       /** Return a new array of all collected argument strings. */
       String[] toStrings() {
         return list.toArray(String[]::new);
+      }
+    }
+
+    /** Self-reflecting print support. */
+    interface Printable {
+      /** Print this instance using the given printer object. */
+      default void print(Consumer<String> printer) {
+        print(printer, "", new IdentityHashMap<>());
+      }
+
+      /** Internal print method. */
+      private void print(Consumer<String> printer, String indent, Map<Object, AtomicLong> printed) {
+        var caption = printCaption();
+        var counter = printed.get(this);
+        if (counter != null) {
+          var count = counter.getAndIncrement();
+          printer.accept(String.format("%s# %s already printed (%d)", indent, caption, count));
+          return;
+        }
+        printed.put(this, new AtomicLong(1));
+        printer.accept(String.format("%s%s", indent, caption));
+        try {
+          var fields = getClass().getDeclaredFields();
+          Arrays.sort(fields, Comparator.comparing(Field::getName));
+          for (var field : fields) {
+            if (field.isSynthetic()) continue;
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+            var name = field.getName();
+            try {
+              getClass().getMethod(name);
+            } catch (NoSuchMethodException e) {
+              continue;
+            }
+            var value = field.get(this);
+            if (!printTest(name, value)) continue;
+            if (value instanceof Printable) {
+              var type = value.getClass().getTypeName();
+              printer.accept(String.format("  %s%s -> instance of %s", indent, name, type));
+              ((Printable) value).print(printer, indent + "  ", printed);
+              continue;
+            }
+            if (value instanceof Collection) {
+              var collection = (Collection<?>) value;
+              if (!collection.isEmpty()) {
+                var first = collection.iterator().next();
+                if (first instanceof Printable) {
+                  for (var element : collection) {
+                    if (element instanceof Printable)
+                      ((Printable) element).print(printer, indent + "  ", printed);
+                    else printer.accept("Not printable element?! " + element.getClass());
+                  }
+                  continue;
+                }
+              }
+            }
+            printer.accept(String.format("  %s%s = %s", indent, name, printBeautify(value)));
+          }
+        } catch (ReflectiveOperationException e) {
+          printer.accept(e.getMessage());
+        }
+      }
+
+      /** Return beautified String-representation of the given object. */
+      default String printBeautify(Object object) {
+        if (object instanceof String) return "\"" + object + "\"";
+        if (object instanceof Path) {
+          var string = String.valueOf(object);
+          if (!string.isEmpty()) return string;
+          return "\"" + object + "\" -> " + ((Path) object).toUri();
+        }
+        if (object instanceof ModuleDescriptor) {
+          var module = (ModuleDescriptor) object;
+          var joiner = new StringJoiner(", ", "module { ", " }");
+          joiner.add("name: " + module.toNameAndVersion());
+          joiner.add("requires: " + new TreeSet<>(module.requires()));
+          return joiner.toString();
+        }
+        return String.valueOf(object);
+      }
+
+      /** Return caption string of this object. */
+      default String printCaption() {
+        return getClass().getSimpleName();
+      }
+
+      /** Return {@code false} to prevent the named component from being printed. */
+      default boolean printTest(String name, Object value) {
+        return true;
       }
     }
   }
