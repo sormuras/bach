@@ -138,10 +138,14 @@ public class Bach {
     /** Project descriptor. */
     private final ModuleDescriptor descriptor;
 
+    /** List of all modular units. */
+    private final List<Unit> units;
+
     /** Initialize this project model. */
-    public Project(Paths paths, ModuleDescriptor descriptor) {
+    public Project(Paths paths, ModuleDescriptor descriptor, List<Unit> units) {
       this.paths = paths;
       this.descriptor = descriptor;
+      this.units = List.copyOf(units);
     }
 
     /** Project paths. */
@@ -152,6 +156,11 @@ public class Bach {
     /** Project model descriptor. */
     public ModuleDescriptor descriptor() {
       return descriptor;
+    }
+
+    /** Return list of modular units. */
+    public List<Unit> units() {
+      return units;
     }
 
     @Override
@@ -292,6 +301,18 @@ public class Bach {
         return path;
       }
 
+      public ModuleDescriptor descriptor() {
+        return descriptor;
+      }
+
+      public List<Source> sources() {
+        return sources;
+      }
+
+      public List<Path> resources() {
+        return resources;
+      }
+
       @Override
       public String toString() {
         @SuppressWarnings("StringBufferReplaceableByString")
@@ -337,16 +358,20 @@ public class Bach {
       /** Project model descriptor builder. */
       private final ModuleDescriptor.Builder descriptor;
 
+      /** List of modular units. */
+      private List<Unit> units;
+
       /** Initialize this project model builder with the given name. */
       Builder(String name) {
         this.paths = Paths.of(Path.of(""));
         var synthetic = Set.of(ModuleDescriptor.Modifier.SYNTHETIC);
         this.descriptor = ModuleDescriptor.newModule(name, synthetic);
+        this.units = List.of();
       }
 
       /** Create new project model instance based on this builder's components. */
       public Project build() {
-        return new Project(paths, descriptor.build());
+        return new Project(paths, descriptor.build(), units);
       }
 
       /** Set base directory of the project. */
@@ -364,6 +389,12 @@ public class Bach {
       public Builder requires(String module, String version) {
         var synthetic = Set.of(ModuleDescriptor.Requires.Modifier.SYNTHETIC);
         descriptor.requires(synthetic, module, Version.parse(version));
+        return this;
+      }
+
+      /** Set list of modular units. */
+      public Builder units(List<Unit> units) {
+        this.units = units;
         return this;
       }
 
@@ -390,12 +421,42 @@ public class Bach {
       public Project.Builder scan() {
         var builder = new Project.Builder(scanName().orElse("nameless"));
         builder.paths(paths);
+        var units = scanUnits();
+        builder.units(units);
+        var sources = scanSources(units);
         return builder;
       }
 
       /** Return name of the project. */
       public Optional<String> scanName() {
         return Optional.of(base().toAbsolutePath().getFileName()).map(Object::toString);
+      }
+
+      /** Scan for modular source units. */
+      public List<Unit> scanUnits() {
+        var base = paths.base();
+        var src = base.resolve("src"); // More subdirectory candidates? E.g. "modules", "sources"?
+        var root = Files.isDirectory(src) ? src : base;
+        try (var stream = Files.find(root, 5, (path, __) -> path.endsWith("module-info.java"))) {
+          return stream.map(Unit::new).collect(Collectors.toList());
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
+
+      /** Scan for common source directories. */
+      public List<Path> scanSources(List<Unit> units) {
+        var paths = new TreeSet<Path>();
+        for (var unit : units) {
+          var path = unit.path();
+          var name = unit.name();
+          var positions = Util.Strings.positions(path, name);
+          if (positions.isEmpty())
+            throw new IllegalArgumentException("Name '" + name + "' not found in: " + path);
+          var index = positions.getLast(); // Or fail if multiple positions are found?
+          paths.add(index == 0 ? Path.of(".") : path.subpath(0, index));
+        }
+        return List.copyOf(paths);
       }
     }
   }
@@ -408,6 +469,7 @@ public class Bach {
       var start = Instant.now();
       bach.logger.log(Level.DEBUG, "Build {0}", project);
       bach.printer.accept("Build " + project.descriptor().toNameAndVersion());
+      if (bach.verbose) project.print(bach.printer);
 
       var summary = new Summary(project);
       execute(bach, task.get(), summary);
@@ -939,7 +1001,7 @@ public class Bach {
         }
         try {
           var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-          return Path.of(uri).getFileName().toString();
+          return uri.toString();
         } catch (NullPointerException | URISyntaxException ignore) {
           return module.toString();
         }
@@ -1033,9 +1095,12 @@ public class Bach {
           if (!collection.isEmpty()) {
             var first = collection.iterator().next();
             if (first instanceof Printable) {
+              var size = collection.size();
+              var type = value.getClass().getTypeName();
+              printer.accept(String.format("  %s%s -> size=%d type=%s", indent, name, size, type));
               for (var element : collection) {
                 if (element instanceof Printable) {
-                  ((Printable) element).print(context.nested(value), indent + "  ");
+                  ((Printable) element).print(context.nested(element), indent + "  ");
                 } else printer.accept("Not printable element?! " + element.getClass());
               }
               return;
@@ -1082,6 +1147,16 @@ public class Bach {
 
     /** String-related helpers. */
     interface Strings {
+
+      /** Find all positions of the specified name within the given path instance. */
+      static Deque<Integer> positions(Path path, String name) {
+        var deque = new ArrayDeque<Integer>();
+        for (int i = 0; i < path.getNameCount(); i++) {
+          if (name.equals(path.getName(i).toString())) deque.add(i);
+        }
+        return deque;
+      }
+
       /** Read all content from a file into a string. */
       static String readString(Path path) {
         try {

@@ -4,14 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +44,8 @@ class ProjectTests {
               "  Paths",
               "    base = custom",
               "    lib = " + Path.of("custom/lib"),
-              "    out = " + Path.of("custom/.bach")),
+              "    out = " + Path.of("custom/.bach"),
+              "  units = []"),
           project.print());
     }
 
@@ -67,6 +73,11 @@ class ProjectTests {
     @Test
     void name() {
       assertEquals("custom", project.descriptor().name());
+    }
+
+    @Test
+    void units() {
+      assertEquals(List.of(), project.units());
     }
 
     @Test
@@ -117,6 +128,22 @@ class ProjectTests {
       assertEquals(789, source.target().orElseThrow());
       assertTrue(source.isTargeted());
       assertTrue(source.isVersioned());
+    }
+  }
+
+  @Nested
+  class Units {
+    @Test
+    void canonical() {
+      var path = Path.of("canonical/module-info.java");
+      var descriptor = ModuleDescriptor.newModule("canonical").build();
+      var unit = new Bach.Project.Unit(path, descriptor, List.of(), List.of());
+      assertSame(path, unit.path());
+      assertSame(descriptor, unit.descriptor());
+      assertEquals(List.of(), unit.sources());
+      assertEquals(List.of(), unit.sources(Bach.Project.Source::path));
+      assertEquals(List.of(), unit.resources());
+      assertEquals(Map.of("canonical", unit), Bach.Project.Unit.toMap(Stream.of(unit)));
     }
   }
 }

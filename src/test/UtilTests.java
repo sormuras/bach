@@ -90,6 +90,18 @@ class UtilTests {
   @Nested
   class Modules {
     @Test
+    void originOfJavaLangObjectIsJavaBase() {
+      var expected = Object.class.getModule().getDescriptor().toNameAndVersion();
+      assertEquals(expected, Bach.Util.Modules.origin(new Object()));
+    }
+
+    @Test
+    void originOfThisObjectIsTheLocationOfTheClassFileContainer() {
+      var expected = getClass().getProtectionDomain().getCodeSource().getLocation().toString();
+      assertEquals(expected, Bach.Util.Modules.origin(this));
+    }
+
+    @Test
     void minimalisticModuleDeclaration() {
       var actual = Bach.Util.Modules.describe("module a{}");
       assertEquals(ModuleDescriptor.newModule("a").build(), actual);
