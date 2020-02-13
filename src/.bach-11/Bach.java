@@ -25,6 +25,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -782,14 +783,47 @@ public class Bach {
 
     /** Self-reflecting print support. */
     interface Printable {
-      /** Print this instance using the given printer object. */
-      default void print(Consumer<String> printer) {
-        print(printer, "", new IdentityHashMap<>());
+
+      static List<String> print(Object object) {
+        var lines = new ArrayList<String>();
+        new Printable() {}.print(new Context(object, lines::add, new IdentityHashMap<>()), "");
+        return List.copyOf(lines);
       }
 
-      /** Internal print method. */
-      private void print(Consumer<String> printer, String indent, Map<Object, AtomicLong> printed) {
-        var caption = printCaption();
+      /** Print this instance using the given printer object. */
+      default List<String> print() {
+        var lines = new ArrayList<String>();
+        print(lines::add);
+        return List.copyOf(lines);
+      }
+
+      /** Print this instance using the given printer object. */
+      default void print(Consumer<String> printer) {
+        print(new Context(this, printer, new IdentityHashMap<>()), "");
+      }
+
+      final class Context {
+        private final Object object;
+        private final Consumer<String> printer;
+        private final Map<Object, AtomicLong> printed;
+
+        private Context(Object object, Consumer<String> printer, Map<Object, AtomicLong> printed) {
+          this.object = object;
+          this.printer = printer;
+          this.printed = printed;
+        }
+
+        private Context nested(Object nested) {
+          return new Context(nested, printer, printed);
+        }
+      }
+
+      /** Recursive print method. */
+      default void print(Context context, String indent) {
+        var object = context.object;
+        var printer = context.printer;
+        var printed = context.printed;
+        var caption = this == object ? printCaption() : object.getClass().getSimpleName();
         var counter = printed.get(this);
         if (counter != null) {
           var count = counter.getAndIncrement();
@@ -799,48 +833,61 @@ public class Bach {
         printed.put(this, new AtomicLong(1));
         printer.accept(String.format("%s%s", indent, caption));
         try {
-          var fields = getClass().getDeclaredFields();
+          var fields = object.getClass().getDeclaredFields();
           Arrays.sort(fields, Comparator.comparing(Field::getName));
           for (var field : fields) {
             if (field.isSynthetic()) continue;
             if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
             var name = field.getName();
             try {
-              getClass().getMethod(name);
+              var method = object.getClass().getMethod(name);
+              if (!method.getReturnType().equals(field.getType())) continue;
+              var value = method.invoke(object);
+              print(context, indent, name, value);
             } catch (NoSuchMethodException e) {
-              continue;
+              // continue
             }
-            var value = field.get(this);
-            if (!printTest(name, value)) continue;
-            if (value instanceof Printable) {
-              var type = value.getClass().getTypeName();
-              printer.accept(String.format("  %s%s -> instance of %s", indent, name, type));
-              ((Printable) value).print(printer, indent + "  ", printed);
-              continue;
-            }
-            if (value instanceof Collection) {
-              var collection = (Collection<?>) value;
-              if (!collection.isEmpty()) {
-                var first = collection.iterator().next();
-                if (first instanceof Printable) {
-                  for (var element : collection) {
-                    if (element instanceof Printable)
-                      ((Printable) element).print(printer, indent + "  ", printed);
-                    else printer.accept("Not printable element?! " + element.getClass());
-                  }
-                  continue;
-                }
-              }
-            }
-            printer.accept(String.format("  %s%s = %s", indent, name, printBeautify(value)));
           }
         } catch (ReflectiveOperationException e) {
           printer.accept(e.getMessage());
         }
       }
 
+      /** Print the given name and its associated value. */
+      private void print(Context context, String indent, String name, Object value) {
+        var printer = context.printer;
+        if (!printTest(name, value)) return;
+        if (value instanceof Printable) {
+          var type = value.getClass().getTypeName();
+          printer.accept(String.format("  %s%s -> instance of %s", indent, name, type));
+          ((Printable) value).print(context.nested(value), indent + "  ");
+          return;
+        }
+        if (value instanceof Collection) {
+          var collection = (Collection<?>) value;
+          if (!collection.isEmpty()) {
+            var first = collection.iterator().next();
+            if (first instanceof Printable) {
+              for (var element : collection) {
+                if (element instanceof Printable) {
+                  ((Printable) element).print(context.nested(value), indent + "  ");
+                } else printer.accept("Not printable element?! " + element.getClass());
+              }
+              return;
+            }
+          }
+        }
+        printer.accept(String.format("  %s%s = %s", indent, name, printBeautify(value)));
+      }
+
       /** Return beautified String-representation of the given object. */
       default String printBeautify(Object object) {
+        if (object.getClass().isArray()) {
+          var length = Array.getLength(object);
+          var joiner = new StringJoiner(", ", "[", "]");
+          for (int i = 0; i < length; i++) joiner.add(printBeautify(Array.get(object, i)));
+          return joiner.toString();
+        }
         if (object instanceof String) return "\"" + object + "\"";
         if (object instanceof Path) {
           var string = String.valueOf(object);
