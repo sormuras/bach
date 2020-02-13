@@ -264,6 +264,70 @@ public class Bach {
       }
     }
 
+    /** A module source description unit. */
+    public static final class Unit implements Util.Printable {
+
+      public static Map<String, Unit> toMap(Stream<Unit> units) {
+        return units.collect(Collectors.toMap(Unit::name, Function.identity()));
+      }
+
+      private final Path path;
+      private final ModuleDescriptor descriptor;
+      private final List<Source> sources;
+      private final List<Path> resources;
+
+      public Unit(Path path) {
+        this(path, Util.Modules.describe(path), List.of(Source.of(path.getParent())), List.of());
+      }
+
+      public Unit(
+          Path path, ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
+        this.path = path;
+        this.descriptor = descriptor;
+        this.sources = sources;
+        this.resources = resources;
+      }
+
+      public Path path() {
+        return path;
+      }
+
+      @Override
+      public String toString() {
+        @SuppressWarnings("StringBufferReplaceableByString")
+        var sb = new StringBuilder("Unit{");
+        sb.append("path=").append(path);
+        sb.append(", descriptor=").append(descriptor);
+        sb.append(", sources=").append(sources);
+        sb.append(", resources=").append(resources);
+        sb.append(", isMultiRelease=").append(isMultiRelease());
+        sb.append(", isMainClassPresent=").append(isMainClassPresent());
+        sb.append('}');
+        return sb.toString();
+      }
+
+      public String name() {
+        return descriptor.name();
+      }
+
+      @Override
+      public String printCaption() {
+        return "Unit '" + name() + "'";
+      }
+
+      public <T> List<T> sources(Function<Source, T> mapper) {
+        return sources.stream().map(mapper).collect(Collectors.toList());
+      }
+
+      public boolean isMultiRelease() {
+        return !sources.isEmpty() && sources.stream().allMatch(Source::isTargeted);
+      }
+
+      public boolean isMainClassPresent() {
+        return descriptor.mainClass().isPresent();
+      }
+    }
+
     /** Project model builder. */
     public static class Builder {
 
