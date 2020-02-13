@@ -36,10 +36,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -187,6 +189,69 @@ public class Bach {
             .add("base='" + base() + "'")
             .add("out='" + out() + "'")
             .add("lib='" + lib() + "'")
+            .toString();
+      }
+    }
+
+    /** Single source path with optional release directive. */
+    public static final class Source {
+
+      /** Source-specific modifier enumeration. */
+      public enum Modifier {
+        /** Store binary assets in {@code META-INF/versions/${release}/} directory of the jar. */
+        VERSIONED
+      }
+
+      /** Create default non-targeted source for the specified path and optional modifiers. */
+      public static Source of(Path path, Modifier... modifiers) {
+        return new Source(path, 0, Set.of(modifiers));
+      }
+
+      private final Path path;
+      private final int release;
+      private final Set<Modifier> modifiers;
+
+      public Source(Path path, int release, Set<Modifier> modifiers) {
+        this.path = path;
+        this.release = release;
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+      }
+
+      /** Source path. */
+      public Path path() {
+        return path;
+      }
+
+      /** Java feature release target number, with zero indicating the current runtime release. */
+      public int release() {
+        return release;
+      }
+
+      /** This source modifiers. */
+      public Set<Modifier> modifiers() {
+        return modifiers;
+      }
+
+      public boolean isTargeted() {
+        return release != 0;
+      }
+
+      /** Optional Java feature release target number. */
+      public OptionalInt target() {
+        return isTargeted() ? OptionalInt.of(release) : OptionalInt.empty();
+      }
+
+      public boolean isVersioned() {
+        return modifiers.contains(Modifier.VERSIONED);
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", "Source { ", " }")
+            .add("path=" + path())
+            .add("release=" + release())
+            .add("target=" + target())
+            .add("modifiers=" + modifiers())
             .toString();
       }
     }
