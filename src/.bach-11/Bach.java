@@ -690,6 +690,10 @@ public class Bach {
         this.project = project;
       }
 
+      public Project project() {
+        return project;
+      }
+
       public void assertSuccessful() {
         var exceptions = error.getSuppressed();
         if (exceptions.length == 0) return;
