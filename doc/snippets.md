@@ -97,6 +97,22 @@ Algorithm outline:
 
 1. Throw `UnmappedModuleException`
 
-## Wish list
+## Wish List
 
 - Support ZIP files as sources of `Project.BuilderFactory`
+
+## Workshop Description
+
+In this workshop you learn how to use Bach.java, a lightweight build tool for Java.
+No tricks or foreign syntax required: no x(ml), no y(aml), no z... just *.java files.
+
+Bach.java uses jshell/java to build modular Java projects.
+It supports a zero-installation run mode, convention over configuration pragmatism covers most default values, allows property-based overrides to tweak some default values, and a clean Java API to customize your build.
+This allows stepping through the build process with a debugger. But that's rarely needed.
+
+Bach.java is targeted to coders of small to mid-size Java projects, who want to focus on their ideas and modules instead of learning and taming a build tool.
+In the spirit of Rémi Forax, who wrote: _"No need to be a maven to be able to use a build tool"_.
+A build tool should just shuffle the JDK foundtation tool in the right order and pass the right arguments.
+Nothing more, noting less.
+That's what Bach.java does for you.
+From `javac` over `jar` to `jlink`/`jpackage`.
