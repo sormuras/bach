@@ -101,21 +101,25 @@ class UtilTests {
       assertEquals(expected, Bach.Util.Modules.origin(this));
     }
 
+    private ModuleDescriptor describe(String source) {
+      return Bach.Util.Modules.newModule(source).build();
+    }
+
     @Test
     void minimalisticModuleDeclaration() {
-      var actual = Bach.Util.Modules.describe("module a{}");
+      var actual = describe("module a{}");
       assertEquals(ModuleDescriptor.newModule("a").build(), actual);
     }
 
     @Test
     void moduleDeclarationWithRequires() {
-      var actual = Bach.Util.Modules.describe("module a{requires b;}");
+      var actual = describe("module a{requires b;}");
       assertEquals(ModuleDescriptor.newModule("a").requires("b").build(), actual);
     }
 
     @Test
     void moduleDeclarationWithRequiresAndVersion() {
-      var actual = Bach.Util.Modules.describe("module a{requires b/*1.2*/;}");
+      var actual = describe("module a{requires b/*1.2*/;}");
       assertEquals(
           ModuleDescriptor.newModule("a").requires(Set.of(), "b", Version.parse("1.2")).build(),
           actual);
@@ -123,7 +127,7 @@ class UtilTests {
 
     @Test
     void moduleDeclarationWithComments() {
-      var actual = Bach.Util.Modules.describe("open /*test*/ module a /*extends a*/ {}");
+      var actual = describe("open /*test*/ module a /*extends a*/ {}");
       assertEquals(ModuleDescriptor.newModule("a").build(), actual);
     }
 

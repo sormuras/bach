@@ -948,12 +948,12 @@ public class Bach {
 
       /** Module descriptor parser. */
       static ModuleDescriptor describe(Path info) {
-        return describe(Strings.readString(info));
-      }
-
-      /** Module descriptor parser. */
-      static ModuleDescriptor describe(String source) {
-        return newModule(source).build();
+        var builder = newModule(Strings.readString(info));
+        var temporary = builder.build();
+        var name = temporary.name();
+        var main = info.resolveSibling(Path.of(name.replace('.', '/'), "Main.java"));
+        if (Files.isRegularFile(main)) builder.mainClass(name + '.' + "Main");
+        return builder.build();
       }
 
       /** Module descriptor parser. */
@@ -1133,6 +1133,7 @@ public class Bach {
           var joiner = new StringJoiner(", ", "module { ", " }");
           joiner.add("name: " + module.toNameAndVersion());
           joiner.add("requires: " + new TreeSet<>(module.requires()));
+          module.mainClass().ifPresent(main -> joiner.add("mainClass: " + main));
           return joiner.toString();
         }
         return String.valueOf(object);

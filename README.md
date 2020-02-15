@@ -36,6 +36,12 @@ To build your project with this effectively deprecated version of Bach.java, inv
 
 - `jshell https://github.com/sormuras/bach/raw/2.1/src/bach/build.jsh`
 
+## Common Conventions
+
+- **Main Class** Convention\
+A compilation unit named `Main.java` and located in a package with the same name as its module is considered to be the main class of that module.
+For example: a module `com.greetings` (with a `module-info.java` in `src/com.greetings`) provides the main class `com.greetings.Main` if there's a `src/com.greetings/com/greetings/Main.java` compilation unit.
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).

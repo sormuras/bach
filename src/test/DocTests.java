@@ -3,6 +3,7 @@
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -23,13 +24,18 @@ class DocTests {
     var units = project.units();
     assertEquals(1, units.size());
     var greetings = units.get(0);
-    assertEquals("com.greetings", greetings.name());
-    assertEquals(base.resolve("com.greetings/module-info.java"), greetings.path());
-    assertEquals(1, greetings.sources().size());
-    assertEquals(0, greetings.resources().size());
-    assertFalse(greetings.isMainClassPresent()); // TODO should be true!
-    assertFalse(greetings.isMultiRelease());
-    System.out.println(greetings);
+    try {
+      assertEquals("com.greetings", greetings.name());
+      assertEquals(base.resolve("com.greetings/module-info.java"), greetings.path());
+      assertEquals(1, greetings.sources().size());
+      assertEquals(0, greetings.resources().size());
+      assertTrue(greetings.isMainClassPresent());
+      assertEquals("com.greetings.Main", greetings.descriptor().mainClass().orElseThrow());
+      assertFalse(greetings.isMultiRelease());
+    } catch (AssertionError error) {
+      greetings.print(System.err::println);
+      throw error;
+    }
   }
 
   @Test
