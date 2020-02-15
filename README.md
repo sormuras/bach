@@ -21,17 +21,20 @@ Experimental is experimental is experimental.
 
 ## Build with Bach.java 11.0-ea on-the-fly 
 
+Use `https://bit.ly/bach-build` as `<load-file>` argument for `jshell`:
+
 - `jshell https://bit.ly/bach-build`
 
-or shortened
+The shortened URL expands to:
 
 - `jshell https://github.com/sormuras/bach/raw/master/src/bach/build.jsh`
 
 ### Build with Bach.java 2.1 on-the-fly
 
-- `jshell https://github.com/sormuras/bach/raw/2.1/src/bach/build.jsh`
-
 Bach.java 2.x was showcased in a lightning talk at [FOSDEM2020](https://fosdem.org/2020/schedule/event/bach).
+To build your project with this effectively deprecated version of Bach.java, invoke:
+
+- `jshell https://github.com/sormuras/bach/raw/2.1/src/bach/build.jsh`
 
 # install-jdk.sh
 
