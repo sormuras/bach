@@ -19,6 +19,20 @@ Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to mult
 
 Experimental is experimental is experimental.
 
+## Build with Bach.java 11.0-ea on-the-fly 
+
+- `jshell https://bit.ly/bach-build`
+
+or shortened
+
+- `jshell https://github.com/sormuras/bach/raw/master/src/bach/build.jsh`
+
+### Build with Bach.java 2.1 on-the-fly
+
+- `jshell https://github.com/sormuras/bach/raw/2.1/src/bach/build.jsh`
+
+Bach.java 2.x was showcased in a lightning talk at [FOSDEM2020](https://fosdem.org/2020/schedule/event/bach).
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
