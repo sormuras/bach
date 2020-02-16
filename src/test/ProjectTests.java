@@ -33,6 +33,7 @@ class ProjectTests {
             // .requires("java.base", "11")
             .requires("foo", "4711")
             .requires("bar", "1701")
+            .units(List.of())
             .build();
 
     @Test
