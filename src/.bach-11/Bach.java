@@ -17,6 +17,7 @@
 
 // default package
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -36,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -175,6 +177,89 @@ public class Bach {
           .toString();
     }
 
+    /** Source directory tree layout. */
+    public enum Layout {
+      /**
+       * Single realm source directory tree layout.
+       *
+       * <ul>
+       *   <li>{@code ${SRC}/${MODULE}/module-info.java}
+       * </ul>
+       *
+       * Module source path examples:
+       *
+       * <ul>
+       *   <li>{@code --module-source-path .}
+       *   <li>{@code --module-source-path src}
+       *   <li>{@code --module-source-path src/modules}
+       *   <li>{@code --module-source-path src/group-1:src/group-2}
+       * </ul>
+       *
+       * @see <a href="https://openjdk.java.net/projects/jigsaw/quick-start">Project Jigsaw: Module
+       *     System Quick-Start Guide</a>
+       */
+      JIGSAW {
+        @Override
+        public Optional<String> realmOf(Unit unit) {
+          if (Collections.frequency(deque(unit), unit.name()) != 1) return Optional.empty();
+          return Optional.of("");
+        }
+      },
+
+      /**
+       * Source tree layout with main and test realm and nested categories.
+       *
+       * <ul>
+       *   <li>{@code ${SRC}/${MODULE}/${OFFSET}/main/java/module-info.java}
+       *   <li>{@code ${SRC}/${MODULE}/${OFFSET}/test/java/module-info.java}
+       *   <li>{@code ${SRC}/${MODULE}/${OFFSET}/test/module/module-info.java}
+       * </ul>
+       *
+       * Module source path examples:
+       *
+       * <ul>
+       *   <li>{@code --module-source-path src/ * /main/java}
+       *   <li>{@code --module-source-path src/ * /test/java:src/ * /test/module}
+       * </ul>
+       */
+      MAIN_TEST {
+        @Override
+        public Optional<String> realmOf(Unit unit) {
+          var deque = deque(unit);
+          var category = deque.pop();
+          if (!(category.equals("java")
+              || category.matches("java-\\d+")
+              || category.equals("module"))) return Optional.empty();
+          var realm = deque.pop();
+          if (!(realm.equals("main") || realm.equals("test"))) return Optional.empty();
+          if (Collections.frequency(deque(unit), unit.name()) != 1) return Optional.empty();
+          return Optional.of(realm);
+        }
+      };
+
+      /** Extract the name of the realm from the given modular unit. */
+      public abstract Optional<String> realmOf(Unit unit);
+
+      /** Convert path element names of the given unit into a reversed deque. */
+      private static Deque<String> deque(Unit unit) {
+        var path = unit.path;
+        var deque = new ArrayDeque<String>();
+        path.forEach(name -> deque.addFirst(name.toString()));
+        var info = deque.pop();
+        if (!info.equals("module-info.java"))
+          throw new IllegalArgumentException("No module-info.java?! " + path);
+        return deque;
+      }
+
+      /** Scan the given units for a well-known modular source layout. */
+      public static Optional<Layout> find(List<Unit> units) {
+        for (var layout : List.of(Layout.MAIN_TEST, Layout.JIGSAW))
+          if (units.stream().allMatch(unit -> layout.realmOf(unit).isPresent()))
+            return Optional.of(layout);
+        return Optional.empty();
+      }
+    }
+
     /** Common project-related paths. */
     public static final class Paths implements Util.Printable {
 
@@ -286,17 +371,32 @@ public class Bach {
 
       private final Path path;
       private final ModuleDescriptor descriptor;
+      private final String moduleSourcePath;
       private final List<Source> sources;
       private final List<Path> resources;
 
-      public Unit(Path path) {
-        this(path, Util.Modules.describe(path), List.of(Source.of(path.getParent())), List.of());
+      private Unit(Path info) {
+        this(info, Util.Modules.describe(info));
+      }
+
+      private Unit(Path info, ModuleDescriptor descriptor) {
+        this(
+            info,
+            descriptor,
+            Util.Modules.moduleSourcePath(info, descriptor.name()),
+            List.of(Source.of(info.getParent())),
+            List.of());
       }
 
       public Unit(
-          Path path, ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
+          Path path,
+          ModuleDescriptor descriptor,
+          String moduleSourcePath,
+          List<Source> sources,
+          List<Path> resources) {
         this.path = path;
         this.descriptor = descriptor;
+        this.moduleSourcePath = moduleSourcePath;
         this.sources = sources;
         this.resources = resources;
       }
@@ -307,6 +407,10 @@ public class Bach {
 
       public ModuleDescriptor descriptor() {
         return descriptor;
+      }
+
+      public String moduleSourcePath() {
+        return moduleSourcePath;
       }
 
       public List<Source> sources() {
@@ -321,10 +425,11 @@ public class Bach {
       public String toString() {
         @SuppressWarnings("StringBufferReplaceableByString")
         var sb = new StringBuilder("Unit{");
-        sb.append("path=").append(path);
-        sb.append(", descriptor=").append(descriptor);
-        sb.append(", sources=").append(sources);
-        sb.append(", resources=").append(resources);
+        sb.append("path=").append(path());
+        sb.append(", descriptor=").append(descriptor());
+        sb.append(", moduleSourcePath=").append(moduleSourcePath());
+        sb.append(", sources=").append(sources());
+        sb.append(", resources=").append(resources());
         sb.append(", isMultiRelease=").append(isMultiRelease());
         sb.append(", isMainClassPresent=").append(isMainClassPresent());
         sb.append('}');
@@ -1001,6 +1106,21 @@ public class Bach {
                   () -> builder.requires(requiredName));
         }
         return builder;
+      }
+
+      /** Return module source path by combining a module-info.java path and a module name. */
+      static String moduleSourcePath(Path info, String module) {
+        assert "module-info.java".equals(info.getFileName().toString());
+        var names = new ArrayList<String>();
+        for (var element : info.subpath(0, info.getNameCount() - 1)) {
+          var name = element.toString();
+          if (name.equals(module)) {
+            if (names.size() < info.getNameCount() - 2) names.add("*");
+            continue;
+          }
+          names.add(name);
+        }
+        return String.join(File.separator, names);
       }
 
       /** Return modular origin of the given object. */

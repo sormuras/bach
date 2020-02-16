@@ -104,6 +104,24 @@ class ProjectTests {
   }
 
   @Nested
+  class Layouts {
+    @Test
+    void jigsawed() {
+      var path = Path.of("prefix/module/postfix/main/java");
+      var unit =
+          new Bach.Project.Unit(
+              path.resolve("module-info.java"),
+              ModuleDescriptor.newModule("module").build(),
+              "prefix/*/postfix/main/java",
+              List.of(),
+              List.of());
+      var jigsaw = Bach.Project.Layout.JIGSAW;
+      assertEquals("", jigsaw.realmOf(unit).orElseThrow());
+      assertEquals("prefix/*/postfix/main/java", unit.moduleSourcePath());
+    }
+  }
+
+  @Nested
   class Sources {
 
     @Test
@@ -144,9 +162,10 @@ class ProjectTests {
     void canonical() {
       var path = Path.of("canonical/module-info.java");
       var descriptor = ModuleDescriptor.newModule("canonical").build();
-      var unit = new Bach.Project.Unit(path, descriptor, List.of(), List.of());
+      var unit = new Bach.Project.Unit(path, descriptor, ".", List.of(), List.of());
       assertSame(path, unit.path());
       assertSame(descriptor, unit.descriptor());
+      assertEquals(".", unit.moduleSourcePath());
       assertEquals(List.of(), unit.sources());
       assertEquals(List.of(), unit.sources(Bach.Project.Source::path));
       assertEquals(List.of(), unit.resources());

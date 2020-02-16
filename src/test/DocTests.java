@@ -24,10 +24,14 @@ class DocTests {
     assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
     assertEquals(1, units.size());
+    var layout = Bach.Project.Layout.JIGSAW;
+    assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
     var greetings = units.get(0);
     try {
       assertEquals("com.greetings", greetings.name());
       assertEquals(base.resolve("com.greetings/module-info.java"), greetings.path());
+      assertEquals(base.toString(), greetings.moduleSourcePath());
+      assertEquals("", layout.realmOf(greetings).orElseThrow());
       assertEquals(1, greetings.sources().size());
       assertEquals(0, greetings.resources().size());
       assertTrue(greetings.isMainClassPresent());
@@ -49,6 +53,22 @@ class DocTests {
     assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
     assertEquals(3, units.size());
+    var layout = Bach.Project.Layout.MAIN_TEST;
+    assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
+    for(var unit : units) {
+      if (unit.path().equals(base.resolve("com.greetings/src/main/java/module-info.java"))) {
+        assertEquals("main", layout.realmOf(unit).orElseThrow());
+        assertTrue(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("org.astro/src/main/java/module-info.java"))) {
+        assertEquals("main", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("test.base/src/test/java/module-info.java"))) {
+        assertEquals("test", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+    }
   }
 
   private Bach.Build.Summary build(Path base, Path temp) {
