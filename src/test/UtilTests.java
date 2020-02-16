@@ -58,10 +58,15 @@ class UtilTests {
 
       @SuppressWarnings({"unused", "FieldCanBeLocal"})
       class Record implements Bach.Util.Printable {
+        private final boolean active;
         private final boolean b = true;
         private final char c = 'c';
         private final int[] integers = {1, 2, 3};
         private final String[] strings = {"s", "t"};
+
+        Record(boolean active) {
+          this.active = active;
+        }
 
         public boolean b() {
           return b;
@@ -78,8 +83,14 @@ class UtilTests {
         public String[] strings() {
           return strings;
         }
+
+        @Override
+        public boolean printTest(String name, Object value) {
+          return active;
+        }
       }
 
+      assertLinesMatch(List.of("Record"), new Record(false).print());
       assertLinesMatch(
           List.of(
               "Record",
@@ -87,7 +98,7 @@ class UtilTests {
               "  c = c",
               "  integers = [1, 2, 3]",
               "  strings = [\"s\", \"t\"]"),
-          new Record().print());
+          new Record(true).print());
     }
   }
 
@@ -146,7 +157,6 @@ class UtilTests {
       var actual = moduleSourcePath(Path.of("src/a.b.c/main/java"), "a.b.c");
       assertEquals(String.join(File.separator, "src", "*", "main", "java"), actual);
     }
-
 
     /** Compute module's source path. */
     String moduleSourcePath(Path path, String module) {
