@@ -21,6 +21,7 @@ class DocTests {
     var summary = build(base, temp);
     var project = summary.project();
     assertEquals(name, project.descriptor().name());
+    assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
     assertEquals(1, units.size());
     var greetings = units.get(0);
@@ -45,6 +46,7 @@ class DocTests {
     var summary = build(base, temp);
     var project = summary.project();
     assertEquals(name, project.descriptor().name());
+    assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
     assertEquals(3, units.size());
   }

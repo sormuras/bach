@@ -138,7 +138,7 @@ public class Bach {
     /** Project descriptor. */
     private final ModuleDescriptor descriptor;
 
-    /** List of all modular units. */
+    /** List of all declared modular units. */
     private final List<Unit> units;
 
     /** Initialize this project model. */
@@ -163,11 +163,17 @@ public class Bach {
       return units;
     }
 
+    /** Return the project main module. */
+    public Optional<String> mainModule() {
+      return descriptor.mainClass();
+    }
+
     @Override
     public String toString() {
-      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
-          .add("paths=" + paths)
-          .add("descriptor=" + descriptor)
+      return new StringJoiner(", ", "Project [", "]")
+          .add("paths=" + paths())
+          .add("descriptor=" + descriptor())
+          .add("mainModule=" + mainModule())
           .toString();
     }
 
@@ -371,6 +377,11 @@ public class Bach {
 
       /** Create new project model instance based on this builder's components. */
       public Project build() {
+        var temporary = descriptor.build();
+        if (temporary.mainClass().isEmpty()) {
+          var mains = units.stream().filter(Unit::isMainClassPresent).collect(Collectors.toList());
+          if (mains.size() == 1) descriptor.mainClass(mains.get(0).name());
+        }
         return new Project(paths, descriptor.build(), units);
       }
 
