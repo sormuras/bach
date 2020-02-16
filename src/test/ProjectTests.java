@@ -12,6 +12,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,6 +69,11 @@ class ProjectTests {
     @Test
     void lib() {
       assertEquals(Path.of("custom", "lib"), project.paths().lib());
+    }
+
+    @Test
+    void mainModule() {
+      assertEquals(Optional.empty(), project.mainModule());
     }
 
     @Test

@@ -379,8 +379,7 @@ public class Bach {
       public Project build() {
         var temporary = descriptor.build();
         if (temporary.mainClass().isEmpty()) {
-          var mains = units.stream().filter(Unit::isMainClassPresent).collect(Collectors.toList());
-          if (mains.size() == 1) descriptor.mainClass(mains.get(0).name());
+          Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
         return new Project(paths, descriptor.build(), units);
       }
@@ -413,6 +412,23 @@ public class Bach {
       public Builder version(String version) {
         descriptor.version(version);
         return this;
+      }
+    }
+
+    /** Common project conventions. */
+    interface Convention {
+
+      /** Return name of main class of the specified module. */
+      static Optional<String> mainClass(Path info, String module) {
+        var main = Path.of(module.replace('.', '/'), "Main.java");
+        var exists = Files.isRegularFile(info.resolveSibling(main));
+        return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+      }
+
+      /** Return name of the main module by finding a single main class containing unit. */
+      static Optional<String> mainModule(Stream<Unit> units) {
+        var mains = units.filter(Unit::isMainClassPresent).collect(Collectors.toList());
+        return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
       }
     }
 
@@ -961,9 +977,9 @@ public class Bach {
       static ModuleDescriptor describe(Path info) {
         var builder = newModule(Strings.readString(info));
         var temporary = builder.build();
-        var name = temporary.name();
-        var main = info.resolveSibling(Path.of(name.replace('.', '/'), "Main.java"));
-        if (Files.isRegularFile(main)) builder.mainClass(name + '.' + "Main");
+        if (temporary.mainClass().isEmpty()) {
+          Project.Convention.mainClass(info, temporary.name()).ifPresent(builder::mainClass);
+        }
         return builder.build();
       }
 
