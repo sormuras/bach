@@ -1125,13 +1125,11 @@ public class Bach {
 
       /** Return modular origin of the given object. */
       static String origin(Object object) {
-        var module = object.getClass().getModule();
-        if (module.isNamed()) {
-          return module.getDescriptor().toNameAndVersion();
-        }
+        var type = object.getClass();
+        var module = type.getModule();
+        if (module.isNamed()) return module.getDescriptor().toNameAndVersion();
         try {
-          var uri = object.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-          return uri.toString();
+          return type.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
         } catch (NullPointerException | URISyntaxException ignore) {
           return module.toString();
         }
