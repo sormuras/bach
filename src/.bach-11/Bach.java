@@ -17,7 +17,6 @@
 
 // default package
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -37,7 +36,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -1003,25 +1001,6 @@ public class Bach {
                   () -> builder.requires(requiredName));
         }
         return builder;
-      }
-
-      /** Compute module's source path. */
-      static String moduleSourcePath(Path path, String module) {
-        var directory = path.endsWith("module-info.java") ? path.getParent() : path;
-        var names = new ArrayList<String>();
-        directory.forEach(element -> names.add(element.toString()));
-        int frequency = Collections.frequency(names, module);
-        if (frequency == 0) {
-          return directory.toString();
-        }
-        if (frequency == 1) {
-          if (directory.endsWith(module)) {
-            return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
-          }
-          var elements = names.stream().map(name -> name.equals(module) ? "*" : name);
-          return elements.collect(Collectors.joining(File.separator));
-        }
-        throw new IllegalArgumentException("Ambiguous module source path: " + path);
       }
 
       /** Return modular origin of the given object. */

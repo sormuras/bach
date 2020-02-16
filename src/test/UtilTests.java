@@ -8,8 +8,12 @@ import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -133,14 +137,34 @@ class UtilTests {
 
     @Test
     void moduleSourcePathWithModuleNameAtTheEnd() {
-      var actual = Bach.Util.Modules.moduleSourcePath(Path.of("src/main/a.b.c"), "a.b.c");
+      var actual = moduleSourcePath(Path.of("src/main/a.b.c"), "a.b.c");
       assertEquals(Path.of("src/main").toString(), actual);
     }
 
     @Test
     void moduleSourcePathWithNestedModuleName() {
-      var actual = Bach.Util.Modules.moduleSourcePath(Path.of("src/a.b.c/main/java"), "a.b.c");
+      var actual = moduleSourcePath(Path.of("src/a.b.c/main/java"), "a.b.c");
       assertEquals(String.join(File.separator, "src", "*", "main", "java"), actual);
+    }
+
+
+    /** Compute module's source path. */
+    String moduleSourcePath(Path path, String module) {
+      var directory = path.endsWith("module-info.java") ? path.getParent() : path;
+      var names = new ArrayList<String>();
+      directory.forEach(element -> names.add(element.toString()));
+      int frequency = Collections.frequency(names, module);
+      if (frequency == 0) {
+        return directory.toString();
+      }
+      if (frequency == 1) {
+        if (directory.endsWith(module)) {
+          return Optional.ofNullable(directory.getParent()).map(Path::toString).orElse(".");
+        }
+        var elements = names.stream().map(name -> name.equals(module) ? "*" : name);
+        return elements.collect(Collectors.joining(File.separator));
+      }
+      throw new IllegalArgumentException("Ambiguous module source path: " + path);
     }
   }
 }
