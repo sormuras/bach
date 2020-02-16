@@ -138,14 +138,14 @@ public class Bach {
     /** Project descriptor. */
     private final ModuleDescriptor descriptor;
 
-    /** List of all declared modular units. */
-    private final List<Unit> units;
+    /** Project structure. */
+    private final Structure structure;
 
     /** Initialize this project model. */
-    public Project(Paths paths, ModuleDescriptor descriptor, List<Unit> units) {
+    public Project(Paths paths, ModuleDescriptor descriptor, Structure structure) {
       this.paths = paths;
       this.descriptor = descriptor;
-      this.units = List.copyOf(units);
+      this.structure = structure;
     }
 
     /** Project paths. */
@@ -158,9 +158,14 @@ public class Bach {
       return descriptor;
     }
 
+    /** Project structure. */
+    public Structure structure() {
+      return structure;
+    }
+
     /** Return list of modular units. */
     public List<Unit> units() {
-      return units;
+      return structure().units();
     }
 
     /** Return the project main module. */
@@ -362,6 +367,37 @@ public class Bach {
       }
     }
 
+    /** A modular project structure. */
+    public static final class Structure implements Util.Printable {
+
+      /** List of all declared modular units. */
+      private final List<Unit> units;
+
+      /** List of all realms. */
+      private final List<Realm> realms;
+
+      public Structure(List<Unit> units, List<Realm> realms) {
+        this.units = List.copyOf(units);
+        this.realms = realms;
+      }
+
+      public List<Unit> units() {
+        return units;
+      }
+
+      public List<Realm> realms() {
+        return realms;
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", "Structure { ", " }")
+            .add("units=" + units())
+            .add("realms=" + realms())
+            .toString();
+      }
+    }
+
     /** A module source description unit. */
     public static final class Unit implements Util.Printable {
 
@@ -458,6 +494,61 @@ public class Bach {
       }
     }
 
+    /** A realm of modular sources. */
+    public static final class Realm implements Util.Printable {
+
+      /** Realm-related flags controlling the build process. */
+      public enum Modifier {
+        ENABLE_PREVIEW,
+        CREATE_JAVADOC,
+        LAUNCH_TESTS
+      }
+
+      private final String name;
+      private final Set<Modifier> modifiers;
+      private final int release;
+      private final Map<String, Unit> units;
+      private final List<Realm> dependencies;
+
+      public Realm(
+          String name,
+          Set<Modifier> modifiers,
+          int release,
+          Map<String, Unit> units,
+          List<Realm> dependencies) {
+        this.name = name;
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+        this.release = release;
+        this.units = Map.copyOf(units);
+        this.dependencies = List.copyOf(dependencies);
+      }
+
+      public String name() {
+        return name;
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", "Realm { ", " }")
+            .add("name='" + name + "'")
+            .add("modifiers=" + modifiers)
+            .add("release=" + release)
+            .add("units=" + units)
+            .add("dependencies=" + dependencies)
+            .toString();
+      }
+
+      @Override
+      public String printCaption() {
+        return "Realm '" + name() + "'";
+      }
+
+      @Override
+      public boolean printTest(String name, Object value) {
+        return !name.equals("units");
+      }
+    }
+
     /** Project model builder. */
     public static class Builder {
 
@@ -484,7 +575,8 @@ public class Bach {
         if (temporary.mainClass().isEmpty()) {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
-        return new Project(paths, descriptor.build(), units);
+        var structure = new Structure(units, List.of());
+        return new Project(paths, descriptor.build(), structure);
       }
 
       /** Set base directory of the project. */

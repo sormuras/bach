@@ -47,7 +47,10 @@ class ProjectTests {
               "    base = custom",
               "    lib = " + Path.of("custom/lib"),
               "    out = " + Path.of("custom/.bach"),
-              "  units = []"),
+              "  structure -> instance of Bach$Project$Structure",
+              "  Structure",
+              "    realms = []",
+              "    units = []"),
           project.print());
     }
 
