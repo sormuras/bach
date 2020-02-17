@@ -125,7 +125,7 @@ public class Bach {
 
   /** Build the specified project using the default build task factory. */
   public Build.Summary build(Project project) {
-    var factory = new Build.Factory(project);
+    var factory = new Build.Factory(project, verbose);
     return Build.build(this, project, factory::newBuildTask);
   }
 
@@ -180,6 +180,23 @@ public class Bach {
           .add("descriptor=" + descriptor())
           .add("mainModule=" + mainModule())
           .toString();
+    }
+
+    /** Generate {@code --module-path} string of this realm. */
+    public String modulePath(Project.Realm realm) {
+      return modulePaths(realm).stream()
+          .map(Path::toString)
+          .collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /** Generate list of path for the specified realm. */
+    public List<Path> modulePaths(Project.Realm realm) {
+      var paths = new ArrayList<Path>();
+      realm.dependencies().stream()
+          .map(dependency -> paths().modules(dependency.name()))
+          .forEach(paths::add);
+      paths.add(paths().lib());
+      return paths;
     }
 
     /** Source directory tree layout. */
@@ -268,6 +285,10 @@ public class Bach {
     /** Common project-related paths. */
     public static final class Paths implements Util.Printable {
 
+      public static final Path DOCUMENTATION = Path.of("documentation");
+      public static final Path JAVADOC = DOCUMENTATION.resolve("javadoc");
+      public static final Path MODULES = Path.of("modules");
+
       public static Paths of(Path base) {
         return new Paths(base, base.resolve(".bach"), base.resolve("lib"));
       }
@@ -288,6 +309,14 @@ public class Bach {
 
       public Path out() {
         return out;
+      }
+
+      public Path javadoc() {
+        return out.resolve(JAVADOC);
+      }
+
+      public Path modules(String realm) {
+        return out.resolve(MODULES).resolve(realm);
       }
 
       public Path lib() {
@@ -527,6 +556,14 @@ public class Bach {
         return name;
       }
 
+      public Map<String, Unit> units() {
+        return units;
+      }
+
+      public List<Realm> dependencies() {
+        return dependencies;
+      }
+
       @Override
       public String toString() {
         return new StringJoiner(", ", "Realm { ", " }")
@@ -536,6 +573,14 @@ public class Bach {
             .add("units=" + units)
             .add("dependencies=" + dependencies)
             .toString();
+      }
+
+      public boolean lacks(Modifier modifier) {
+        return !modifiers.contains(modifier);
+      }
+
+      public boolean test(Modifier modifier) {
+        return modifiers.contains(modifier);
       }
 
       @Override
@@ -763,20 +808,73 @@ public class Bach {
     class Factory {
 
       private final Project project;
+      private final boolean verbose;
 
-      public Factory(Project project) {
+      public Factory(Project project, boolean verbose) {
         this.project = project;
+        this.verbose = verbose;
       }
 
-      public Build.Task newBuildTask() {
+      public Task newBuildTask() {
+        // if (project.structure().units().isEmpty()) throw new IllegalStateException("No units");
+        // if (project.structure().realms().isEmpty()) throw new IllegalStateException("No realms");
         return sequence(
             "Build project " + project.descriptor().name(),
-            new Task.CreateDirectories(project.paths.out),
+            new Task.CreateDirectories(project.paths().out()),
             parallel(
                 "Print version of various foundation tools",
                 tool("javac", "--version"),
                 tool("javadoc", "--version"),
-                tool("jar", "--version")));
+                tool("jar", "--version")),
+            parallel(
+                "Compile and generate API documentation",
+                compileAllRealms(),
+                compileApiDocumentation()));
+      }
+
+      private Task compileAllRealms() {
+        var realms = project.structure().realms();
+        if (realms.isEmpty()) return sequence("Cannot compile modules: 0 realms declared");
+        return sequence("Compile all realms");
+      }
+
+      private Task compileApiDocumentation() {
+        var realms = project.structure().realms();
+        if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
+        var realm = realms.get(0); // assuming the first one is the one...
+        if (realm.lacks(Project.Realm.Modifier.CREATE_JAVADOC)) return sequence("");
+        var module =
+            realm.units().values().stream()
+                .map(Project.Unit::name)
+                .collect(Collectors.joining(","));
+        if (module.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
+        var file = project.descriptor().name() + "-" + project.descriptor().version();
+        var moduleSourcePath = "."; // TODO realm.moduleSourcePath();
+        var modulePath = project.modulePath(realm);
+        var javadoc = project.paths().javadoc();
+        return sequence(
+            "Generate API documentation and jar generated site",
+            new Task.CreateDirectories(javadoc),
+            tool(
+                "javadoc",
+                new Util.Args()
+                    .add("--module", module)
+                    .add("--module-source-path", moduleSourcePath)
+                    .add(!modulePath.isEmpty(), "--module-path", modulePath)
+                    .add("-d", javadoc)
+                    .add(!verbose, "-quiet")
+                    .add("-Xdoclint:-missing")
+                    .toStrings()),
+            tool(
+                "jar",
+                new Util.Args()
+                    .add("--create")
+                    .add("--file", javadoc.getParent().resolve(file + "-javadoc.jar"))
+                    .add(verbose, "--verbose")
+                    .add("--no-manifest")
+                    .add("-C", javadoc)
+                    .add(".")
+                    .toStrings()));
       }
     }
 
