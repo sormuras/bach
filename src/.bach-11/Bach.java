@@ -182,7 +182,7 @@ public class Bach {
           .toString();
     }
 
-    /** Generate {@code --module-path} string of this realm. */
+    /** Generate {@code --module-path} string for the specified realm. */
     public String modulePath(Project.Realm realm) {
       return modulePaths(realm).stream()
           .map(Path::toString)
@@ -536,6 +536,7 @@ public class Bach {
       private final String name;
       private final Set<Modifier> modifiers;
       private final int release;
+      private final String moduleSourcePath;
       private final Map<String, Unit> units;
       private final List<Realm> dependencies;
 
@@ -543,17 +544,23 @@ public class Bach {
           String name,
           Set<Modifier> modifiers,
           int release,
+          String moduleSourcePath,
           Map<String, Unit> units,
           List<Realm> dependencies) {
         this.name = name;
         this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
         this.release = release;
+        this.moduleSourcePath = moduleSourcePath;
         this.units = Map.copyOf(units);
         this.dependencies = List.copyOf(dependencies);
       }
 
       public String name() {
         return name;
+      }
+
+      public String moduleSourcePath() {
+        return moduleSourcePath;
       }
 
       public Map<String, Unit> units() {
@@ -849,7 +856,7 @@ public class Bach {
                 .collect(Collectors.joining(","));
         if (module.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
         var file = project.descriptor().name() + "-" + project.descriptor().version();
-        var moduleSourcePath = "."; // TODO realm.moduleSourcePath();
+        var moduleSourcePath = realm.moduleSourcePath();
         var modulePath = project.modulePath(realm);
         var javadoc = project.paths().javadoc();
         return sequence(
