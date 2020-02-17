@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +169,11 @@ public class Bach {
       return structure().units();
     }
 
+    /** Return list of modular realms. */
+    public List<Realm> realms() {
+      return structure().realms();
+    }
+
     /** Return the project main module. */
     public Optional<String> mainModule() {
       return descriptor.mainClass();
@@ -202,7 +208,7 @@ public class Bach {
     /** Source directory tree layout. */
     public enum Layout {
       /**
-       * Single realm source directory tree layout.
+       * Unnamed or flat realm source directory tree layout.
        *
        * <ul>
        *   <li>{@code ${SRC}/${MODULE}/module-info.java}
@@ -220,13 +226,7 @@ public class Bach {
        * @see <a href="https://openjdk.java.net/projects/jigsaw/quick-start">Project Jigsaw: Module
        *     System Quick-Start Guide</a>
        */
-      JIGSAW {
-        @Override
-        public Optional<String> realmOf(Unit unit) {
-          if (Collections.frequency(deque(unit), unit.name()) != 1) return Optional.empty();
-          return Optional.of("");
-        }
-      },
+      FLAT,
 
       /**
        * Source tree layout with main and test realm and nested categories.
@@ -257,14 +257,56 @@ public class Bach {
           if (Collections.frequency(deque(unit), unit.name()) != 1) return Optional.empty();
           return Optional.of(realm);
         }
+
+        @Override
+        public List<Realm> realmsOf(List<Unit> units) {
+          var map = new HashMap<String, List<Unit>>();
+          for (var unit : units) {
+            var realm = realmOf(unit).orElse(unit.path().toString());
+            map.computeIfAbsent(realm, key -> new ArrayList<>()).add(unit);
+          }
+          if (!map.keySet().equals(Set.of("main", "test")))
+            throw new IllegalStateException("Only main and test realm expected: " + map);
+          var main =
+              new Realm(
+                  "main",
+                  EnumSet.of(Realm.Modifier.CREATE_JAVADOC),
+                  0,
+                  moduleSourcePath(map.get("main")),
+                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("main"))),
+                  List.of());
+          var test =
+              new Realm(
+                  "test",
+                  // EnumSet.of(Realm.Modifier.LAUNCH_TESTS, Realm.Modifier.ENABLE_PREVIEW),
+                  EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
+                  0,
+                  moduleSourcePath(map.get("test")),
+                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("test"))),
+                  List.of(main));
+          return List.of(main, test);
+        }
       };
 
       /** Extract the name of the realm from the given modular unit. */
-      public abstract Optional<String> realmOf(Unit unit);
+      public Optional<String> realmOf(Unit unit) {
+        if (Collections.frequency(deque(unit), unit.name()) != 1) return Optional.empty();
+        return Optional.of("");
+      }
+
+      /** Create realms based on the given units. */
+      public List<Realm> realmsOf(List<Unit> units) {
+        if (units.isEmpty()) return List.of();
+        var name = "";
+        var modifiers = EnumSet.of(Realm.Modifier.CREATE_JAVADOC);
+        var moduleSourcePath = moduleSourcePath(units);
+        var modules = Unit.toMap(units.stream());
+        return List.of(new Realm(name, modifiers, 0, moduleSourcePath, modules, List.of()));
+      }
 
       /** Convert path element names of the given unit into a reversed deque. */
       private static Deque<String> deque(Unit unit) {
-        var path = unit.path;
+        var path = unit.path();
         var deque = new ArrayDeque<String>();
         path.forEach(name -> deque.addFirst(name.toString()));
         var info = deque.pop();
@@ -273,9 +315,16 @@ public class Bach {
         return deque;
       }
 
+      static String moduleSourcePath(List<Project.Unit> units) {
+        return units.stream()
+            .map(unit -> Util.Modules.moduleSourcePath(unit.path(), unit.name()))
+            .distinct()
+            .collect(Collectors.joining(File.pathSeparator));
+      }
+
       /** Scan the given units for a well-known modular source layout. */
       public static Optional<Layout> find(List<Unit> units) {
-        for (var layout : List.of(Layout.MAIN_TEST, Layout.JIGSAW))
+        for (var layout : List.of(Layout.MAIN_TEST, Layout.FLAT))
           if (units.stream().allMatch(unit -> layout.realmOf(unit).isPresent()))
             return Optional.of(layout);
         return Optional.empty();
@@ -407,7 +456,7 @@ public class Bach {
 
       public Structure(List<Unit> units, List<Realm> realms) {
         this.units = List.copyOf(units);
-        this.realms = realms;
+        this.realms = List.copyOf(realms);
       }
 
       public List<Unit> units() {
@@ -559,6 +608,14 @@ public class Bach {
         return name;
       }
 
+      public Set<Modifier> modifiers() {
+        return modifiers;
+      }
+
+      public int release() {
+        return release;
+      }
+
       public String moduleSourcePath() {
         return moduleSourcePath;
       }
@@ -613,12 +670,16 @@ public class Bach {
       /** List of modular units. */
       private List<Unit> units;
 
+      /** List of modular realms. */
+      private List<Realm> realms;
+
       /** Initialize this project model builder with the given name. */
       Builder(String name) {
         this.paths = Paths.of(Path.of(""));
         var synthetic = Set.of(ModuleDescriptor.Modifier.SYNTHETIC);
         this.descriptor = ModuleDescriptor.newModule(name, synthetic);
         this.units = List.of();
+        this.realms = List.of();
       }
 
       /** Create new project model instance based on this builder's components. */
@@ -627,7 +688,7 @@ public class Bach {
         if (temporary.mainClass().isEmpty()) {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
-        var structure = new Structure(units, List.of());
+        var structure = new Structure(units, realms);
         return new Project(paths, descriptor.build(), structure);
       }
 
@@ -652,6 +713,12 @@ public class Bach {
       /** Set list of modular units. */
       public Builder units(List<Unit> units) {
         this.units = units;
+        return this;
+      }
+
+      /** Set list of modular realms. */
+      public Builder realms(List<Realm> realms) {
+        this.realms = realms;
         return this;
       }
 
@@ -697,7 +764,8 @@ public class Bach {
         builder.paths(paths);
         var units = scanUnits();
         builder.units(units);
-        var sources = scanSources(units);
+        var layout = Layout.find(units).orElse(Layout.FLAT);
+        builder.realms(layout.realmsOf(units));
         return builder;
       }
 
@@ -716,21 +784,6 @@ public class Bach {
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
-      }
-
-      /** Scan for common source directories. */
-      public List<Path> scanSources(List<Unit> units) {
-        var paths = new TreeSet<Path>();
-        for (var unit : units) {
-          var path = unit.path();
-          var name = unit.name();
-          var positions = Util.Strings.positions(path, name);
-          if (positions.isEmpty())
-            throw new IllegalArgumentException("Name '" + name + "' not found in: " + path);
-          var index = positions.getLast(); // Or fail if multiple positions are found?
-          paths.add(index == 0 ? Path.of(".") : path.subpath(0, index));
-        }
-        return List.copyOf(paths);
       }
     }
   }
@@ -855,7 +908,9 @@ public class Bach {
                 .map(Project.Unit::name)
                 .collect(Collectors.joining(","));
         if (module.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
-        var file = project.descriptor().name() + "-" + project.descriptor().version();
+        var file =
+            project.descriptor().name()
+                + project.descriptor().version().map(version -> "-" + version).orElse("");
         var moduleSourcePath = realm.moduleSourcePath();
         var modulePath = project.modulePath(realm);
         var javadoc = project.paths().javadoc();
@@ -1312,11 +1367,13 @@ public class Bach {
         for (var element : info.subpath(0, info.getNameCount() - 1)) {
           var name = element.toString();
           if (name.equals(module)) {
-            if (names.size() < info.getNameCount() - 2) names.add("*");
+            if (names.isEmpty()) names.add("."); // leading '*' are bad
+            if (names.size() < info.getNameCount() - 2) names.add("*"); // avoid trailing '*'
             continue;
           }
           names.add(name);
         }
+        if (names.isEmpty()) return ".";
         return String.join(File.separator, names);
       }
 
@@ -1437,6 +1494,7 @@ public class Bach {
 
       /** Return beautified String-representation of the given object. */
       default String printBeautify(Object object) {
+        if (object == null) return "null";
         if (object.getClass().isArray()) {
           var length = Array.getLength(object);
           var joiner = new StringJoiner(", ", "[", "]");
@@ -1473,15 +1531,6 @@ public class Bach {
 
     /** String-related helpers. */
     interface Strings {
-
-      /** Find all positions of the specified name within the given path instance. */
-      static Deque<Integer> positions(Path path, String name) {
-        var deque = new ArrayDeque<Integer>();
-        for (int i = 0; i < path.getNameCount(); i++) {
-          if (name.equals(path.getName(i).toString())) deque.add(i);
-        }
-        return deque;
-      }
 
       /** Read all content from a file into a string. */
       static String readString(Path path) {

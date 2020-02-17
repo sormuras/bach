@@ -34,6 +34,7 @@ class ProjectTests {
             .requires("foo", "4711")
             .requires("bar", "1701")
             .units(List.of())
+            .realms(List.of())
             .build();
 
     @Test
@@ -91,6 +92,11 @@ class ProjectTests {
     }
 
     @Test
+    void realms() {
+      assertEquals(List.of(), project.realms());
+    }
+
+    @Test
     void version() {
       assertEquals(Version.parse("1.2-C"), project.descriptor().version().orElseThrow());
     }
@@ -118,8 +124,8 @@ class ProjectTests {
               "prefix/*/postfix/main/java",
               List.of(),
               List.of());
-      var jigsaw = Bach.Project.Layout.JIGSAW;
-      assertEquals("", jigsaw.realmOf(unit).orElseThrow());
+      var flat = Bach.Project.Layout.FLAT;
+      assertEquals("", flat.realmOf(unit).orElseThrow());
       assertEquals("prefix/*/postfix/main/java", unit.moduleSourcePath());
     }
   }
@@ -173,6 +179,22 @@ class ProjectTests {
       assertEquals(List.of(), unit.sources(Bach.Project.Source::path));
       assertEquals(List.of(), unit.resources());
       assertEquals(Map.of("canonical", unit), Bach.Project.Unit.toMap(Stream.of(unit)));
+    }
+  }
+
+  @Nested
+  class Realms {
+    @Test
+    void canonical() {
+      var realm = new Bach.Project.Realm("canonical", Set.of(), 0, ".", Map.of(), List.of());
+      assertEquals("canonical", realm.name());
+      assertEquals(Set.of(), realm.modifiers());
+      for (var modifier : Bach.Project.Realm.Modifier.values()) {
+        assertTrue(realm.lacks(modifier));
+        assertFalse(realm.test(modifier));
+      }
+      assertEquals(0, realm.release());
+      assertEquals(".", realm.moduleSourcePath());
     }
   }
 }

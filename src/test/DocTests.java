@@ -24,7 +24,7 @@ class DocTests {
     assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
     assertEquals(1, units.size());
-    var layout = Bach.Project.Layout.JIGSAW;
+    var layout = Bach.Project.Layout.FLAT;
     assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
     var greetings = units.get(0);
     try {
