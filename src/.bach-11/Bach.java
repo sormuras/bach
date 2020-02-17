@@ -317,7 +317,7 @@ public class Bach {
 
       static String moduleSourcePath(List<Project.Unit> units) {
         return units.stream()
-            .map(unit -> Util.Modules.moduleSourcePath(unit.path(), unit.name()))
+            .map(Unit::moduleSourcePath)
             .distinct()
             .collect(Collectors.joining(File.pathSeparator));
       }
