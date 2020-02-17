@@ -1054,10 +1054,12 @@ public class Bach {
 
       /** Task and its result tuple. */
       public static final class Detail {
+        private final String caption;
         private final Task task;
         private final Result result;
 
-        public Detail(Task task, Result result) {
+        public Detail(String caption, Task task, Result result) {
+          this.caption = caption;
           this.task = task;
           this.result = result;
         }
@@ -1101,13 +1103,14 @@ public class Bach {
         var millis = Duration.between(result.start, Instant.now()).toMillis();
         var caption = task.children.isEmpty() ? "**" + task.caption + "**" : task.caption;
         var row = String.format(format, kind, thread, millis, caption);
-        if (result.out.isBlank() && result.err.isBlank()) {
+        if (task.children.isEmpty()) {
+          var hash = Integer.toHexString(System.identityHashCode(task));
+          var detail = new Detail("Task Execution Details " + hash, task, result);
+          executions.add(row + " [...](#task-execution-details-" + hash + ")");
+          details.add(detail);
+        } else {
           executions.add(row);
-          return;
         }
-        var hash = Integer.toHexString(System.identityHashCode(task));
-        executions.add(row + " [...](#details-" + hash + ")");
-        details.add(new Detail(task, result));
       }
 
       public List<String> toMarkdown() {
@@ -1160,23 +1163,23 @@ public class Bach {
         md.add("## Task Execution Details");
         md.add("");
         for (var detail : details) {
+          var caption = detail.caption;
           var task = detail.task;
           var result = detail.result;
-          var hash = Integer.toHexString(System.identityHashCode(task));
-          md.add("### <a name='details-" + hash + "'/> " + task.caption);
+          md.add("### " + caption);
           md.add(" - Command = " + task.toMarkdown());
           md.add(" - Start Instant = " + result.start);
           md.add(" - Exit Code = " + result.code);
           md.add("");
           if (!detail.result.out.isBlank()) {
             md.add("Normal (expected) output");
-            md.add("```text");
+            md.add("```");
             md.add(result.out.strip());
             md.add("```");
           }
           if (!detail.result.err.isBlank()) {
             md.add("Error output");
-            md.add("```text");
+            md.add("```");
             md.add(result.err.strip());
             md.add("```");
           }
