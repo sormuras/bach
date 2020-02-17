@@ -3,6 +3,7 @@
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
@@ -143,6 +144,18 @@ class UtilTests {
     }
 
     @Test
+    void moduleSourcePathWithModuleNameAtTheBeginning() {
+      var actual = moduleSourcePath(Path.of("a.b.c/module-info.java"), "a.b.c");
+      assertEquals(Path.of(".").toString(), actual);
+    }
+
+    @Test
+    void moduleSourcePathWithModuleNameAtTheBeginningWithOffset() {
+      var actual = moduleSourcePath(Path.of("a.b.c/offset/module-info.java"), "a.b.c");
+      assertEquals(Path.of(".", "offset").toString(), actual);
+    }
+
+    @Test
     void moduleSourcePathWithModuleNameAtTheEnd() {
       var actual = moduleSourcePath(Path.of("src/main/a.b.c/module-info.java"), "a.b.c");
       assertEquals(Path.of("src/main").toString(), actual);
@@ -152,6 +165,18 @@ class UtilTests {
     void moduleSourcePathWithNestedModuleName() {
       var actual = moduleSourcePath(Path.of("src/a.b.c/main/java/module-info.java"), "a.b.c");
       assertEquals(String.join(File.separator, "src", "*", "main", "java"), actual);
+    }
+
+    @Test
+    void moduleSourcePathWithNonUniqueModuleNameInPath() {
+      var path = Path.of("a/a/module-info.java");
+      assertThrows(IllegalArgumentException.class, () -> moduleSourcePath(path, "a"));
+    }
+
+    @Test
+    void moduleSourcePathWithoutModuleNameInPath() {
+      var path = Path.of("a/a/module-info.java");
+      assertThrows(IllegalArgumentException.class, () -> moduleSourcePath(path, "b"));
     }
 
     /** Compute module's source path. */

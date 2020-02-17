@@ -52,6 +52,7 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -305,7 +306,7 @@ public class Bach {
       }
 
       /** Convert path element names of the given unit into a reversed deque. */
-      private static Deque<String> deque(Unit unit) {
+      public static Deque<String> deque(Unit unit) {
         var path = unit.path();
         var deque = new ArrayDeque<String>();
         path.forEach(name -> deque.addFirst(name.toString()));
@@ -315,7 +316,8 @@ public class Bach {
         return deque;
       }
 
-      static String moduleSourcePath(List<Project.Unit> units) {
+      /** Compute distinct module source path from the given list of units. */
+      public static String moduleSourcePath(List<Unit> units) {
         return units.stream()
             .map(Unit::moduleSourcePath)
             .distinct()
@@ -1365,17 +1367,23 @@ public class Bach {
 
       /** Return module source path by combining a module-info.java path and a module name. */
       static String moduleSourcePath(Path info, String module) {
-        assert "module-info.java".equals(info.getFileName().toString());
         var names = new ArrayList<String>();
+        var found = new AtomicBoolean(false);
         for (var element : info.subpath(0, info.getNameCount() - 1)) {
           var name = element.toString();
           if (name.equals(module)) {
+            if (found.getAndSet(true))
+              throw new IllegalArgumentException(
+                  String.format("Name '%s' not unique in path: %s", module, info));
             if (names.isEmpty()) names.add("."); // leading '*' are bad
             if (names.size() < info.getNameCount() - 2) names.add("*"); // avoid trailing '*'
             continue;
           }
           names.add(name);
         }
+        if (!found.get())
+          throw new IllegalArgumentException(
+              String.format("Name of module '%s' not found in path's elements: %s", module, info));
         if (names.isEmpty()) return ".";
         return String.join(File.separator, names);
       }
