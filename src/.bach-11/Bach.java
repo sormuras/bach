@@ -838,6 +838,9 @@ public class Bach {
   /** Namespace for build-related types. */
   public interface Build {
 
+    /** Implement this marker interface indicating a {@link System#gc()} call is required. */
+    interface GarbageCollect {}
+
     /** Run the given task and its attached child tasks. */
     static void execute(Bach bach, Task task, Summary summary) {
       var markdown = task.toMarkdown();
@@ -1090,7 +1093,7 @@ public class Bach {
       }
 
       /** Test launcher running provided test tools. */
-      class TestProvider implements ToolProvider {
+      class TestProvider implements ToolProvider, GarbageCollect {
 
         private final Project.Realm realm;
         private final Project.Unit unit;
@@ -1111,15 +1114,11 @@ public class Bach {
           modulePath.add(toModularJar(realm, unit)); // test module first
           modulePath.addAll(toModulePaths(realm)); // compile dependencies next, like "main"...
           modulePath.add(project.paths().modules(realm)); // same realm last, like "test"...
+          var name = "test(" + unit.name() + ")";
           var layer = Util.Modules.layer(modulePath, unit.name());
-          return runAll(layer, "test(" + unit.name() + ")", out, err);
-        }
-
-        private int runAll(
-            ModuleLayer layer, String name, PrintWriter out, PrintWriter err, String... args) {
-          var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
-          return StreamSupport.stream(serviceLoader.spliterator(), false)
-              .filter(provider -> provider.name().equals(name))
+          var tools = ServiceLoader.load(layer, ToolProvider.class);
+          return StreamSupport.stream(tools.spliterator(), false)
+              .filter(tool -> name.equals(tool.name()))
               .mapToInt(tool -> Math.abs(run(tool, out, err, args)))
               .sum();
         }
@@ -1144,13 +1143,16 @@ public class Bach {
       /** Tool-running task. */
       public static final class RunTool extends Task {
 
-        private final ToolProvider tool;
+        private final ToolProvider[] tool;
         private final String[] args;
+        private final String markdown;
 
         public RunTool(String caption, ToolProvider tool, String... args) {
           super(caption, false, List.of());
-          this.tool = tool;
+          this.tool = new ToolProvider[] {tool};
           this.args = args;
+          var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
+          this.markdown = '`' + tool.name() + arguments + '`';
         }
 
         @Override
@@ -1158,14 +1160,17 @@ public class Bach {
           var out = new StringWriter();
           var err = new StringWriter();
           var now = Instant.now();
-          var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+          var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+          if (tool[0] instanceof GarbageCollect) {
+            tool[0] = null;
+            System.gc();
+          }
           return new Result(now, code, out.toString(), err.toString());
         }
 
         @Override
         public String toMarkdown() {
-          var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
-          return '`' + tool.name() + arguments + '`';
+          return markdown;
         }
       }
 
