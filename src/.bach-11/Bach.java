@@ -55,6 +55,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -672,6 +673,22 @@ public class Bach {
         return modifiers.contains(modifier);
       }
 
+      /** Generate {@code --patch-module} strings for this realm. */
+      public List<String> patches(BiFunction<Realm, Unit, List<Path>> patcher) {
+        if (dependencies().isEmpty()) return List.of();
+        var patches = new ArrayList<String>();
+        for (var unit : units().values()) {
+          var module = unit.name();
+          for (var dependency : dependencies()) {
+            var other = dependency.units().get(module);
+            if (other == null) continue;
+            var paths = Util.Strings.join(patcher.apply(dependency, other));
+            patches.add(module + '=' + paths);
+          }
+        }
+        return patches.isEmpty() ? List.of() : List.copyOf(patches);
+      }
+
       @Override
       public String printCaption() {
         return "Realm '" + name() + "'";
@@ -936,8 +953,7 @@ public class Bach {
         var moduleSourcePath = realm.moduleSourcePath();
         var modulePath = project.modulePath(realm);
         var version = project.descriptor().version();
-        // var modulePatches =
-        //    realm.patches((other, module) -> List.of(other.modularJar(folder, module, version)));
+        var patches = realm.patches((other, unit) -> List.of(project.modularJar(other, unit)));
         var javac =
             tool(
                 "javac",
@@ -948,8 +964,7 @@ public class Bach {
                     .add(release.isPresent(), "--release", release.orElse(-1))
                     .add("--module-source-path", moduleSourcePath)
                     .add(!modulePath.isEmpty(), "--module-path", modulePath)
-                    // TODO .forEach(modulePatches, (args, patch) -> args.add("--patch-module",
-                    // patch))
+                    .forEach(patches, (args, patch) -> args.add("--patch-module", patch))
                     .add("-d", classes)
                     .toStrings());
         return sequence("Compile " + realm.name() + " realm", javac, packageRealm(realm));
@@ -1646,6 +1661,11 @@ public class Bach {
 
     /** String-related helpers. */
     interface Strings {
+
+      /** Join a collection of paths to a platform-specific path string. */
+      static String join(Collection<Path> paths) {
+        return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+      }
 
       /** Read all content from a file into a string. */
       static String readString(Path path) {
