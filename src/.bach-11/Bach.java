@@ -189,6 +189,21 @@ public class Bach {
           .toString();
     }
 
+    /** Compose JAR file name by using unit and project properties. */
+    public String jarName(Unit unit, String classifier) {
+      var unitVersion = unit.descriptor().version();
+      var projectVersion = descriptor().version();
+      var version = unitVersion.isPresent() ? unitVersion : projectVersion;
+      var versionSuffix = version.map(v -> "-" + v).orElse("");
+      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+      return unit.name() + versionSuffix + classifierSuffix + ".jar";
+    }
+
+    /** Compose path to the Java module specified by its realm and modular unit. */
+    public Path modularJar(Project.Realm realm, Unit unit) {
+      return paths().modules(realm).resolve(jarName(unit, ""));
+    }
+
     /** Generate {@code --module-path} string for the specified realm. */
     public String modulePath(Project.Realm realm) {
       return modulePaths(realm).stream()
@@ -199,9 +214,7 @@ public class Bach {
     /** Generate list of path for the specified realm. */
     public List<Path> modulePaths(Project.Realm realm) {
       var paths = new ArrayList<Path>();
-      realm.dependencies().stream()
-          .map(dependency -> paths().modules(dependency.name()))
-          .forEach(paths::add);
+      realm.dependencies().stream().map(paths()::modules).forEach(paths::add);
       paths.add(paths().lib());
       return paths;
     }
@@ -336,9 +349,11 @@ public class Bach {
     /** Common project-related paths. */
     public static final class Paths implements Util.Printable {
 
+      public static final Path CLASSES = Path.of("classes");
+      public static final Path MODULES = Path.of("modules");
+      public static final Path SOURCES = Path.of("sources");
       public static final Path DOCUMENTATION = Path.of("documentation");
       public static final Path JAVADOC = DOCUMENTATION.resolve("javadoc");
-      public static final Path MODULES = Path.of("modules");
 
       public static Paths of(Path base) {
         return new Paths(base, base.resolve(".bach"), base.resolve("lib"));
@@ -362,12 +377,20 @@ public class Bach {
         return out;
       }
 
+      public Path classes(Realm realm) {
+        return out.resolve(CLASSES).resolve(realm.name());
+      }
+
       public Path javadoc() {
         return out.resolve(JAVADOC);
       }
 
-      public Path modules(String realm) {
-        return out.resolve(MODULES).resolve(realm);
+      public Path modules(Realm realm) {
+        return out.resolve(MODULES).resolve(realm.name());
+      }
+
+      public Path sources(Realm realm) {
+        return out.resolve(SOURCES).resolve(realm.name());
       }
 
       public Path lib() {
@@ -614,8 +637,8 @@ public class Bach {
         return modifiers;
       }
 
-      public int release() {
-        return release;
+      public OptionalInt release() {
+        return release == 0 ? OptionalInt.empty() : OptionalInt.of(release);
       }
 
       public String moduleSourcePath() {
@@ -894,13 +917,87 @@ public class Bach {
                 compileApiDocumentation()));
       }
 
-      private Task compileAllRealms() {
+      public Task compileAllRealms() {
         var realms = project.structure().realms();
         if (realms.isEmpty()) return sequence("Cannot compile modules: 0 realms declared");
-        return sequence("Compile all realms");
+        var tasks = realms.stream().map(this::compileRealm);
+        return sequence("Compile all realms", tasks.toArray(Task[]::new));
       }
 
-      private Task compileApiDocumentation() {
+      public Task compileRealm(Project.Realm realm) {
+        if (realm.units.isEmpty()) return sequence("No units in " + realm.name + " realm?!");
+        var module =
+            realm.units().values().stream()
+                .map(Project.Unit::name)
+                .collect(Collectors.joining(","));
+        var classes = project.paths().classes(realm);
+        var enablePreview = realm.test(Project.Realm.Modifier.ENABLE_PREVIEW);
+        var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
+        var moduleSourcePath = realm.moduleSourcePath();
+        var modulePath = project.modulePath(realm);
+        var version = project.descriptor().version();
+        // var modulePatches =
+        //    realm.patches((other, module) -> List.of(other.modularJar(folder, module, version)));
+        var javac =
+            tool(
+                "javac",
+                new Util.Args()
+                    .add("--module", module)
+                    .add(version, (args, v) -> args.add("--module-version", v))
+                    .add(enablePreview, "--enable-preview")
+                    .add(release.isPresent(), "--release", release.orElse(-1))
+                    .add("--module-source-path", moduleSourcePath)
+                    .add(!modulePath.isEmpty(), "--module-path", modulePath)
+                    // TODO .forEach(modulePatches, (args, patch) -> args.add("--patch-module",
+                    // patch))
+                    .add("-d", classes)
+                    .toStrings());
+        return sequence("Compile " + realm.name() + " realm", javac, packageRealm(realm));
+      }
+
+      public Task packageRealm(Project.Realm realm) {
+        var jars = new ArrayList<Task>();
+        var paths = project.paths();
+        var modules = paths.modules(realm);
+        var sources = paths.sources(realm);
+        for (var unit : realm.units().values()) {
+          var module = unit.name();
+          var classes = paths.classes(realm).resolve(module);
+          var jar =
+              tool(
+                  "jar",
+                  new Util.Args()
+                      .add("--create")
+                      .add("--file", project.modularJar(realm, unit))
+                      .add(verbose, "--verbose")
+                      .add(true, "-C", classes, ".")
+                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .toStrings());
+          var src =
+              tool(
+                  "jar",
+                  new Util.Args()
+                      .add("--create")
+                      .add("--file", sources.resolve(project.jarName(unit, "sources")))
+                      .add(verbose, "--verbose")
+                      .add("--no-manifest")
+                      .forEach(
+                          unit.sources(Project.Source::path),
+                          (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .toStrings());
+          jars.add(jar);
+          jars.add(src);
+        }
+        var name = realm.name();
+        return sequence(
+            "Package " + name + " modules and sources",
+            new Task.CreateDirectories(modules),
+            new Task.CreateDirectories(sources),
+            parallel("Jar each " + name + " module", jars.toArray(Task[]::new)));
+      }
+
+      public Task compileApiDocumentation() {
         var realms = project.structure().realms();
         if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
         var realm = realms.get(0); // assuming the first one is the one...
@@ -1275,6 +1372,13 @@ public class Bach {
       /** Conditionally append one or more arguments. */
       public Args add(boolean predicate, Object first, Object... more) {
         return predicate ? add(first).addAll(more) : this;
+      }
+
+      /** Conditionally append one or more arguments. */
+      @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+      public <T> Args add(Optional<T> optional, BiConsumer<Args, T> visitor) {
+        optional.ifPresent(value -> visitor.accept(this, value));
+        return this;
       }
 
       /** Append all given arguments, potentially none. */

@@ -193,7 +193,7 @@ class ProjectTests {
         assertTrue(realm.lacks(modifier));
         assertFalse(realm.test(modifier));
       }
-      assertEquals(0, realm.release());
+      assertTrue(realm.release().isEmpty());
       assertEquals(".", realm.moduleSourcePath());
     }
   }
