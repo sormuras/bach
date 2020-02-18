@@ -2,7 +2,7 @@ package org.astro;
 
 public class WorldTests {
   static {
-    assert World.PACKAGE_PRIVATE_FIELD.equals("World");
+    if (!World.PACKAGE_PRIVATE_FIELD.equals("World")) throw new AssertionError(")-:");
     new test.base.Tester();
   }
 }
