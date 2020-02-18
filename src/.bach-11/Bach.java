@@ -126,10 +126,33 @@ public class Bach {
     return build(builder.build());
   }
 
-  /** Build the specified project using the default build task factory. */
+  /** Build the specified project using the default build factory supplying the root build task. */
   public Build.Summary build(Project project) {
     var factory = new Build.Factory(project, verbose);
-    return Build.build(this, project, factory::newBuildTask);
+    return build(project, factory::build);
+  }
+
+  /** Build the specified project using the given root task supplier. */
+  public Build.Summary build(Project project, Supplier<Build.Task> task) {
+    var start = Instant.now();
+    logger.log(Level.DEBUG, "Build {0}", project);
+    printer.accept("Build " + project.descriptor().toNameAndVersion());
+    if (verbose) project.print(printer);
+
+    var summary = new Build.Summary(project);
+    Build.execute(this, task.get(), summary);
+
+    var markdown = summary.write();
+    var duration =
+        Duration.between(start, Instant.now())
+            .toString()
+            .substring(2)
+            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+            .toLowerCase();
+
+    printer.accept("Summary written to " + markdown.toUri());
+    printer.accept("Build took " + duration);
+    return summary;
   }
 
   /** Project model. */
@@ -803,29 +826,6 @@ public class Bach {
   /** Namespace for build-related types. */
   public interface Build {
 
-    /** Build the specified project using the given root task supplier. */
-    static Summary build(Bach bach, Project project, Supplier<Task> task) {
-      var start = Instant.now();
-      bach.logger.log(Level.DEBUG, "Build {0}", project);
-      bach.printer.accept("Build " + project.descriptor().toNameAndVersion());
-      if (bach.verbose) project.print(bach.printer);
-
-      var summary = new Summary(project);
-      execute(bach, task.get(), summary);
-
-      var markdown = summary.write();
-      var duration =
-          Duration.between(start, Instant.now())
-              .toString()
-              .substring(2)
-              .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-              .toLowerCase();
-
-      bach.printer.accept("Summary written to " + markdown.toUri());
-      bach.printer.accept("Build took " + duration);
-      return summary;
-    }
-
     /** Run the given task and its attached child tasks. */
     static void execute(Bach bach, Task task, Summary summary) {
       var markdown = task.toMarkdown();
@@ -887,7 +887,7 @@ public class Bach {
         this.verbose = verbose;
       }
 
-      public Task newBuildTask() {
+      public Task build() {
         // if (project.structure().units().isEmpty()) throw new IllegalStateException("No units");
         // if (project.structure().realms().isEmpty()) throw new IllegalStateException("No realms");
         return sequence(
@@ -1033,7 +1033,7 @@ public class Bach {
       }
 
       /** Join all unit names of the given realm to a comma-separated string. */
-      public static String toModule(Project.Realm realm) {
+      public String toModule(Project.Realm realm) {
         var names = realm.units().values().stream().map(Project.Unit::name);
         return names.collect(Collectors.joining(","));
       }
