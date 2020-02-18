@@ -77,11 +77,14 @@ public class Bach {
   /** Default logger instance. */
   private static final Logger LOGGER = System.getLogger("Bach.java");
 
-  /** Default verbosity flag. */
+  /** Default printer instance. */
+  private static final Consumer<String> PRINTER = System.out::println;
+
+  /** Default verbosity flag, including {@code -Debug} support. */
   private static final boolean VERBOSE =
       Boolean.getBoolean("verbose") // -D verbose=true
-          || Boolean.getBoolean("ebug") // -D ebug=true
-          || "".equals(System.getProperty("ebug")); // -D ebug
+          || Boolean.getBoolean("ebug") // -Debug=true
+          || "".equals(System.getProperty("ebug")); // -Debug
 
   /** Bach.java's main program entry-point. */
   public static void main(String... args) {
@@ -103,7 +106,7 @@ public class Bach {
 
   /** Initialize this instance with default values. */
   public Bach() {
-    this(LOGGER, System.out::println, VERBOSE);
+    this(LOGGER, PRINTER, VERBOSE);
   }
 
   /** Initialize this instance with the specified arguments. */
