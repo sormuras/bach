@@ -52,7 +52,7 @@ class DocTests {
     assertEquals(name, project.descriptor().name());
     assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
-    assertEquals(3, units.size());
+    assertEquals(5, units.size());
     var layout = Bach.Project.Layout.MAIN_TEST;
     assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
     for (var unit : units) {
@@ -65,6 +65,14 @@ class DocTests {
         assertFalse(unit.isMainClassPresent());
       }
       if (unit.path().equals(base.resolve("test.base/src/test/java/module-info.java"))) {
+        assertEquals("test", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("test.modules/src/test/java/module-info.java"))) {
+        assertEquals("test", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("org.astro/src/test/java/module-info.java"))) {
         assertEquals("test", layout.realmOf(unit).orElseThrow());
         assertFalse(unit.isMainClassPresent());
       }
