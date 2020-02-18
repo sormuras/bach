@@ -45,6 +45,10 @@ For example: a module `com.greetings` (with a `module-info.java` in `src/com.gre
 - **Main Module** Convention\
 If the project declares exactly a single module with a main class, that module is considered to be the project main module.
 
+- **Test Module `ToolProvider`** Convention\
+If a test module provides a `java.util.spi.ToolProvider` implementation named like that (or another) test module, it is run.
+For example: the `TestProvider` class is instantiated and run if module `test.modules` declares `provides java.util.spi.ToolProvider with test.modules.TestProvider;` and `TestProvider#getName()` returns `test(test.modules)`.
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
