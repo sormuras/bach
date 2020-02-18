@@ -1723,6 +1723,15 @@ public class Bach {
           return module.toString();
         }
       }
+
+      /** Unchecked exception thrown when a module name is not mapped. */
+      class UnmappedModuleException extends RuntimeException {
+        private static final long serialVersionUID = 0L;
+
+        public UnmappedModuleException(String module) {
+          super("Module " + module + " is not mapped");
+        }
+      }
     }
 
     /** Self-reflecting print support. */
@@ -1880,15 +1889,6 @@ public class Bach {
           throw new UncheckedIOException("Read all content from file failed: " + path, e);
         }
       }
-    }
-  }
-
-  /** Unchecked exception thrown when a module name is not mapped. */
-  public static class UnmappedModuleException extends RuntimeException {
-    private static final long serialVersionUID = 0L;
-
-    public UnmappedModuleException(String module) {
-      super("Module " + module + " is not mapped");
     }
   }
 

@@ -248,8 +248,9 @@ class UtilTests {
       assertEquals(Set.of("a", "c"), survey.requiredModules());
       assertEquals(Optional.empty(), survey.requiredVersion("a"));
       assertEquals("2", survey.requiredVersion("c").orElseThrow().toString());
-      assertThrows(Bach.UnmappedModuleException.class, () -> survey.requiredVersion("b"));
-      assertThrows(Bach.UnmappedModuleException.class, () -> survey.requiredVersion("x"));
+      var expected = Bach.Util.Modules.UnmappedModuleException.class;
+      assertThrows(expected, () -> survey.requiredVersion("b"));
+      assertThrows(expected, () -> survey.requiredVersion("x"));
     }
   }
 }
