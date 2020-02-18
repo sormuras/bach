@@ -897,8 +897,6 @@ public class Bach {
       }
 
       public Task build() {
-        // if (project.structure().units().isEmpty()) throw new IllegalStateException("No units");
-        // if (project.structure().realms().isEmpty()) throw new IllegalStateException("No realms");
         return sequence(
             "Build project " + project.descriptor().name(),
             new Task.CreateDirectories(project.paths().out()),
@@ -910,7 +908,8 @@ public class Bach {
             parallel(
                 "Compile and generate API documentation",
                 compileAllRealms(),
-                compileApiDocumentation()));
+                compileApiDocumentation()),
+            launchAllTests());
       }
 
       public Task compileAllRealms() {
@@ -988,12 +987,27 @@ public class Bach {
             parallel("Jar each " + name + " module", jars.toArray(Task[]::new)));
       }
 
+      public Task launchAllTests() {
+        var launches =
+            project.structure().realms().stream()
+                .filter(candidate -> candidate.test(Project.Realm.Modifier.LAUNCH_TESTS))
+                .map(this::launchTests)
+                .toArray(Task[]::new);
+        return sequence("Launch all tests", launches);
+      }
+
+      public Task launchTests(Project.Realm realm) {
+        return sequence("Launch tests in " + realm.name() + " realm");
+      }
+
       public Task compileApiDocumentation() {
         var realms = project.structure().realms();
         if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
         var realm =
-            realms.stream().filter(r -> r.test(Project.Realm.Modifier.CREATE_JAVADOC)).findFirst();
-        if (realm.isEmpty()) return sequence("");
+            realms.stream()
+                .filter(candidate -> candidate.test(Project.Realm.Modifier.CREATE_JAVADOC))
+                .findFirst();
+        if (realm.isEmpty()) return sequence("No realm wants javadoc: " + realms);
         return compileApiDocumentation(realm.get());
       }
 
