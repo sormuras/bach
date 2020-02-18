@@ -27,7 +27,7 @@ jobs:
         java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
     - name: 'Build project: jigsaw.quick.start.with.tests'
       working-directory: doc/project/jigsaw.quick.start.with.tests
-      run: java -Dverbose=true $GITHUB_WORKSPACE/src/.bach-11/Bach.java build
+      run: java -Debug $GITHUB_WORKSPACE/src/.bach-11/Bach.java build
     - name: 'Upload summaries'
       uses: actions/upload-artifact@v1
       with:
