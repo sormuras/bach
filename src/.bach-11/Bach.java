@@ -31,6 +31,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -705,6 +706,64 @@ public class Bach {
       @Override
       public boolean printTest(String name, Object value) {
         return !name.equals("units");
+      }
+    }
+
+    /** Default resolver mapping some well-known module names to their related coordinates. */
+    public interface ModuleLinker extends BiFunction<String, Version, ModuleLink> {}
+
+    /** Module and version to URI and more other-system-property mapping. */
+    public static final class ModuleLink implements Util.Printable {
+
+      public static ModuleLink ofMavenCentral(
+          String module, Version version, String group, String artifact, String classifier) {
+        var repository = "https://repo.apache.maven.org/maven2";
+        var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
+        return new ModuleLink(module, version, uri);
+      }
+
+      public static URI uri(
+          String repository,
+          String group,
+          String artifact,
+          String version,
+          String classifier,
+          String type) {
+        var versionAndClassifier = classifier.isEmpty() ? version : version + '-' + classifier;
+        var file = artifact + '-' + versionAndClassifier + '.' + type;
+        var ref = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
+        return URI.create(ref);
+      }
+
+      private final String module;
+      private final Version version;
+      private final URI uri;
+
+      public ModuleLink(String module, Version version, URI uri) {
+        this.module = module;
+        this.version = version;
+        this.uri = uri;
+      }
+
+      public String module() {
+        return module;
+      }
+
+      public Version version() {
+        return version;
+      }
+
+      public URI uri() {
+        return uri;
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", "ModuleLink { ", " }")
+            .add("module='" + module() + "'")
+            .add("version=" + version())
+            .add("uri=" + uri())
+            .toString();
       }
     }
 
