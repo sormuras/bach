@@ -26,6 +26,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -63,6 +65,7 @@ import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Java Shell Builder.
@@ -997,7 +1000,12 @@ public class Bach {
       }
 
       public Task launchTests(Project.Realm realm) {
-        return sequence("Launch tests in " + realm.name() + " realm");
+        var tasks = new ArrayList<Task>();
+        for (var unit : realm.units().values()) {
+          var provider = new TestProvider(realm, unit);
+          tasks.add(new Task.RunTool("Run provided test(" + unit.name() + ")", provider));
+        }
+        return sequence("Launch tests in " + realm.name() + " realm", tasks.toArray(Task[]::new));
       }
 
       public Task compileApiDocumentation() {
@@ -1079,6 +1087,54 @@ public class Bach {
         realm.dependencies().stream().map(project.paths()::modules).forEach(paths::add);
         paths.add(project.paths().lib());
         return paths;
+      }
+
+      /** Test launcher running provided test tools. */
+      class TestProvider implements ToolProvider {
+
+        private final Project.Realm realm;
+        private final Project.Unit unit;
+
+        TestProvider(Project.Realm realm, Project.Unit unit) {
+          this.realm = realm;
+          this.unit = unit;
+        }
+
+        @Override
+        public String name() {
+          return "test-provider(" + unit.name() + ")";
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          var modulePath = new ArrayList<Path>();
+          modulePath.add(toModularJar(realm, unit)); // test module first
+          modulePath.addAll(toModulePaths(realm)); // compile dependencies next, like "main"...
+          modulePath.add(project.paths().modules(realm)); // same realm last, like "test"...
+          var layer = Util.Modules.layer(modulePath, unit.name());
+          return runAll(layer, "test(" + unit.name() + ")", out, err);
+        }
+
+        private int runAll(
+            ModuleLayer layer, String name, PrintWriter out, PrintWriter err, String... args) {
+          var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+          return StreamSupport.stream(serviceLoader.spliterator(), false)
+              .filter(provider -> provider.name().equals(name))
+              .mapToInt(tool -> Math.abs(run(tool, out, err, args)))
+              .sum();
+        }
+
+        private int run(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+          var toolLoader = tool.getClass().getClassLoader();
+          var currentThread = Thread.currentThread();
+          var currentContextLoader = currentThread.getContextClassLoader();
+          currentThread.setContextClassLoader(toolLoader);
+          try {
+            return tool.run(out, err, args);
+          } finally {
+            currentThread.setContextClassLoader(currentContextLoader);
+          }
+        }
       }
     }
 
@@ -1533,6 +1589,31 @@ public class Bach {
               String.format("Name of module '%s' not found in path's elements: %s", module, info));
         if (names.isEmpty()) return ".";
         return String.join(File.separator, names);
+      }
+
+      static ModuleLayer layer(List<Path> modulePath, String module) {
+        var finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+        var roots = List.of(module);
+        //        if (verbose) {
+        //          log.debug("Module path:");
+        //          for (var element : modulePath) {
+        //            log.debug("  -> %s", element);
+        //          }
+        //          log.debug("Finder finds module(s):");
+        //          finder.findAll().stream()
+        //              .sorted(Comparator.comparing(ModuleReference::descriptor))
+        //              .forEach(reference -> log.debug("  -> %s", reference));
+        //          log.debug("Root module(s):");
+        //          for (var root : roots) {
+        //            log.debug("  -> %s", root);
+        //          }
+        //        }
+        var boot = ModuleLayer.boot();
+        var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+        var loader = ClassLoader.getPlatformClassLoader();
+        var controller =
+            ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
+        return controller.layer();
       }
 
       /** Return modular origin of the given object. */
