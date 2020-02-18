@@ -190,36 +190,6 @@ public class Bach {
           .toString();
     }
 
-    /** Compose JAR file name by using unit and project properties. */
-    public String jarName(Unit unit, String classifier) {
-      var unitVersion = unit.descriptor().version();
-      var projectVersion = descriptor().version();
-      var version = unitVersion.isPresent() ? unitVersion : projectVersion;
-      var versionSuffix = version.map(v -> "-" + v).orElse("");
-      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
-      return unit.name() + versionSuffix + classifierSuffix + ".jar";
-    }
-
-    /** Compose path to the Java module specified by its realm and modular unit. */
-    public Path modularJar(Project.Realm realm, Unit unit) {
-      return paths().modules(realm).resolve(jarName(unit, ""));
-    }
-
-    /** Generate {@code --module-path} string for the specified realm. */
-    public String modulePath(Project.Realm realm) {
-      return modulePaths(realm).stream()
-          .map(Path::toString)
-          .collect(Collectors.joining(File.pathSeparator));
-    }
-
-    /** Generate list of path for the specified realm. */
-    public List<Path> modulePaths(Project.Realm realm) {
-      var paths = new ArrayList<Path>();
-      realm.dependencies().stream().map(paths()::modules).forEach(paths::add);
-      paths.add(paths().lib());
-      return paths;
-    }
-
     /** Source directory tree layout. */
     public enum Layout {
       /**
@@ -943,17 +913,14 @@ public class Bach {
 
       public Task compileRealm(Project.Realm realm) {
         if (realm.units.isEmpty()) return sequence("No units in " + realm.name + " realm?!");
-        var module =
-            realm.units().values().stream()
-                .map(Project.Unit::name)
-                .collect(Collectors.joining(","));
+        var module = toModule(realm);
         var classes = project.paths().classes(realm);
         var enablePreview = realm.test(Project.Realm.Modifier.ENABLE_PREVIEW);
         var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
         var moduleSourcePath = realm.moduleSourcePath();
-        var modulePath = project.modulePath(realm);
+        var modulePath = toModulePath(realm);
         var version = project.descriptor().version();
-        var patches = realm.patches((other, unit) -> List.of(project.modularJar(other, unit)));
+        var patches = realm.patches((other, unit) -> List.of(toModularJar(other, unit)));
         var javac =
             tool(
                 "javac",
@@ -983,7 +950,7 @@ public class Bach {
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", project.modularJar(realm, unit))
+                      .add("--file", toModularJar(realm, unit))
                       .add(verbose, "--verbose")
                       .add(true, "-C", classes, ".")
                       .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
@@ -993,7 +960,7 @@ public class Bach {
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", sources.resolve(project.jarName(unit, "sources")))
+                      .add("--file", sources.resolve(toJarName(unit, "sources")))
                       .add(verbose, "--verbose")
                       .add("--no-manifest")
                       .forEach(
@@ -1015,18 +982,20 @@ public class Bach {
       public Task compileApiDocumentation() {
         var realms = project.structure().realms();
         if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
-        var realm = realms.get(0); // assuming the first one is the one...
-        if (realm.lacks(Project.Realm.Modifier.CREATE_JAVADOC)) return sequence("");
-        var module =
-            realm.units().values().stream()
-                .map(Project.Unit::name)
-                .collect(Collectors.joining(","));
+        var realm =
+            realms.stream().filter(r -> r.test(Project.Realm.Modifier.CREATE_JAVADOC)).findFirst();
+        if (realm.isEmpty()) return sequence("");
+        return compileApiDocumentation(realm.get());
+      }
+
+      public Task compileApiDocumentation(Project.Realm realm) {
+        var module = toModule(realm);
         if (module.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
-        var file =
-            project.descriptor().name()
-                + project.descriptor().version().map(version -> "-" + version).orElse("");
+        var name = project.descriptor().name();
+        var version = project.descriptor().version();
+        var file = name + version.map(v -> "-" + v).orElse("");
         var moduleSourcePath = realm.moduleSourcePath();
-        var modulePath = project.modulePath(realm);
+        var modulePath = toModulePath(realm);
         var javadoc = project.paths().javadoc();
         return sequence(
             "Generate API documentation and jar generated site",
@@ -1051,6 +1020,42 @@ public class Bach {
                     .add("-C", javadoc)
                     .add(".")
                     .toStrings()));
+      }
+
+      /** Compose JAR file name by using unit and project properties. */
+      public String toJarName(Project.Unit unit, String classifier) {
+        var unitVersion = unit.descriptor().version();
+        var projectVersion = project.descriptor().version();
+        var version = unitVersion.isPresent() ? unitVersion : projectVersion;
+        var versionSuffix = version.map(v -> "-" + v).orElse("");
+        var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+        return unit.name() + versionSuffix + classifierSuffix + ".jar";
+      }
+
+      /** Join all unit names of the given realm to a comma-separated string. */
+      public static String toModule(Project.Realm realm) {
+        var names = realm.units().values().stream().map(Project.Unit::name);
+        return names.collect(Collectors.joining(","));
+      }
+
+      /** Compose path to the Java module specified by its realm and modular unit. */
+      public Path toModularJar(Project.Realm realm, Project.Unit unit) {
+        return project.paths().modules(realm).resolve(toJarName(unit, ""));
+      }
+
+      /** Generate {@code --module-path} string for the specified realm. */
+      public String toModulePath(Project.Realm realm) {
+        return toModulePaths(realm).stream()
+            .map(Path::toString)
+            .collect(Collectors.joining(File.pathSeparator));
+      }
+
+      /** Generate list of path for the specified realm. */
+      public List<Path> toModulePaths(Project.Realm realm) {
+        var paths = new ArrayList<Path>();
+        realm.dependencies().stream().map(project.paths()::modules).forEach(paths::add);
+        paths.add(project.paths().lib());
+        return paths;
       }
     }
 
