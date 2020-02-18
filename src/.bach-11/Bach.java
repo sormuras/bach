@@ -25,8 +25,10 @@ import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
@@ -51,6 +53,7 @@ import java.util.OptionalInt;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -752,7 +755,7 @@ public class Bach {
 
       /** Declare a dependence on the specified module and version. */
       public Builder requires(String module, String version) {
-        var synthetic = Set.of(ModuleDescriptor.Requires.Modifier.SYNTHETIC);
+        var synthetic = Set.of(Requires.Modifier.SYNTHETIC);
         descriptor.requires(synthetic, module, Version.parse(version));
         return this;
       }
@@ -1541,6 +1544,94 @@ public class Bach {
                     + "\\s*;"); // end marker
       }
 
+      /** Declared and required modules and optional versions holder. */
+      final class Survey implements Printable {
+
+        /** Create modular survey by scanning the locatable modules of the given module finder. */
+        public static Survey of(ModuleFinder finder) {
+          var declaredModules = new TreeSet<String>();
+          var requiredModules = new TreeMap<String, Set<Version>>();
+          var stream =
+              finder.findAll().stream()
+                  .map(ModuleReference::descriptor)
+                  .peek(descriptor -> declaredModules.add(descriptor.name()))
+                  .map(ModuleDescriptor::requires)
+                  .flatMap(Set::stream)
+                  .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC));
+          merge(requiredModules, stream);
+          return new Survey(declaredModules, requiredModules);
+        }
+
+        /** Create modular survey by parsing the paths pointing to module descriptor units. */
+        public static Survey of(Collection<Path> paths) {
+          var sources = new ArrayList<String>();
+          for (var path : paths) {
+            if (Files.isDirectory(path)) path = path.resolve("module-info.java");
+            sources.add(Util.Strings.readString(path));
+          }
+          return of(sources.toArray(String[]::new));
+        }
+
+        /** Create modular survey by parsing the given module-describing strings. */
+        public static Survey of(String... sources) {
+          var declaredModules = new TreeSet<String>();
+          var requiredModules = new TreeMap<String, Set<Version>>();
+          for (var source : sources) {
+            var descriptor = Util.Modules.newModule(source).build();
+            declaredModules.add(descriptor.name());
+            merge(requiredModules, descriptor.requires().stream());
+          }
+          return new Survey(declaredModules, requiredModules);
+        }
+
+        static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
+          stream
+              .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+              .forEach(
+                  requires ->
+                      requiredModules.merge(
+                          requires.name(),
+                          requires.compiledVersion().map(Set::of).orElse(Set.of()),
+                          Survey::concatToTreeSet));
+        }
+
+        /** Concat the passed sets */
+        static <E extends Comparable<E>> Set<E> concatToTreeSet(Set<E> s, Set<E> t) {
+          return Stream.concat(s.stream(), t.stream())
+              .collect(Collectors.toCollection(TreeSet::new));
+        }
+
+        final Set<String> declaredModules;
+        final Map<String, Set<Version>> requiresMap;
+
+        Survey(Set<String> declaredModules, Map<String, Set<Version>> requiresMap) {
+          this.declaredModules = declaredModules;
+          this.requiresMap = requiresMap;
+        }
+
+        public Set<String> declaredModules() {
+          return declaredModules;
+        }
+
+        public Set<String> requiredModules() {
+          return requiresMap.keySet();
+        }
+
+        // public void putAllRequiresTo(Map<String, Set<Version>> map) {
+        //  map.putAll(requiresMap);
+        // }
+
+        public Optional<Version> requiredVersion(String requiredModule) {
+          var versions = requiresMap.get(requiredModule);
+          if (versions == null) throw new UnmappedModuleException(requiredModule);
+          if (versions.size() > 1) {
+            var message = "Multiple versions: " + requiredModule + " -> " + versions;
+            throw new IllegalStateException(message);
+          }
+          return versions.stream().findFirst();
+        }
+      }
+
       /** Module descriptor parser. */
       static ModuleDescriptor describe(Path info) {
         var builder = newModule(Strings.readString(info));
@@ -1789,6 +1880,15 @@ public class Bach {
           throw new UncheckedIOException("Read all content from file failed: " + path, e);
         }
       }
+    }
+  }
+
+  /** Unchecked exception thrown when a module name is not mapped. */
+  public static class UnmappedModuleException extends RuntimeException {
+    private static final long serialVersionUID = 0L;
+
+    public UnmappedModuleException(String module) {
+      super("Module " + module + " is not mapped");
     }
   }
 

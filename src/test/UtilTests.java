@@ -2,17 +2,25 @@
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class UtilTests {
 
@@ -182,6 +190,66 @@ class UtilTests {
     /** Compute module's source path. */
     String moduleSourcePath(Path info, String module) {
       return Bach.Util.Modules.moduleSourcePath(info, module);
+    }
+  }
+
+  @Nested
+  class Surveys {
+
+    @Test
+    void ofConstructor() {
+      var declared = Set.of("a", "b");
+      Map<String, Set<Version>> requires = Map.of("a", Set.of(), "c", Set.of(Version.parse("2")));
+      assertABC(new Bach.Util.Modules.Survey(declared, requires));
+    }
+
+    @Test
+    void ofModuleInfoSourceStrings() {
+      var a = "module a {}";
+      var b = "module b { requires a; requires c/*2*/; }";
+      assertABC(Bach.Util.Modules.Survey.of(a, b));
+    }
+
+    @Test
+    void ofModuleInfoSourceFiles(@TempDir Path temp) throws Exception {
+      var a = declare(temp, "a", "module a {}");
+      var b = declare(temp, "b", "module b { requires a; requires c /*2*/;}");
+      assertABC(Bach.Util.Modules.Survey.of(Set.of(a, b)));
+    }
+
+    @Test
+    void ofModuleFinder(@TempDir Path temp) throws Exception {
+      var a = declare(temp, "a", "module a {}");
+      var b = declare(temp, "b", "module b { requires a; requires c;}");
+      var c = declare(temp, "c", "module c {}");
+      var javac = ToolProvider.findFirst("javac").orElseThrow();
+      javac.run(System.out, System.err, a.toString());
+      javac.run(System.out, System.err, "--module-version", "2", c.toString()); // c@2
+      javac.run(System.out, System.err, "--module-path", temp.toString(), b.toString());
+      Files.delete(temp.resolve("c/module-info.class")); // Make module "c" magically disappear...
+      assertABC(Bach.Util.Modules.Survey.of(ModuleFinder.of(temp)));
+    }
+
+    @Test
+    void ofSystem() {
+      var system = Bach.Util.Modules.Survey.of(ModuleFinder.ofSystem());
+      assertTrue(system.declaredModules().contains("java.base"));
+      assertFalse(system.requiredModules().contains("java.base")); // mandated are ignored
+      assertTrue(system.declaredModules().size() > system.requiredModules().size());
+    }
+
+    private Path declare(Path path, String name, String source) throws Exception {
+      var directory = Files.createDirectory(path.resolve(name));
+      return Files.writeString(directory.resolve("module-info.java"), source);
+    }
+
+    private void assertABC(Bach.Util.Modules.Survey survey) {
+      assertEquals(Set.of("a", "b"), survey.declaredModules());
+      assertEquals(Set.of("a", "c"), survey.requiredModules());
+      assertEquals(Optional.empty(), survey.requiredVersion("a"));
+      assertEquals("2", survey.requiredVersion("c").orElseThrow().toString());
+      assertThrows(Bach.UnmappedModuleException.class, () -> survey.requiredVersion("b"));
+      assertThrows(Bach.UnmappedModuleException.class, () -> survey.requiredVersion("x"));
     }
   }
 }
