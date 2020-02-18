@@ -55,7 +55,7 @@ class DocTests {
     assertEquals(3, units.size());
     var layout = Bach.Project.Layout.MAIN_TEST;
     assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
-    for(var unit : units) {
+    for (var unit : units) {
       if (unit.path().equals(base.resolve("com.greetings/src/main/java/module-info.java"))) {
         assertEquals("main", layout.realmOf(unit).orElseThrow());
         assertTrue(unit.isMainClassPresent());
@@ -74,9 +74,13 @@ class DocTests {
   private Bach.Build.Summary build(Path base, Path temp) {
     var paths = new Bach.Project.Paths(base, temp.resolve("out"), temp.resolve("lib"));
     var summary = bach.build(paths, project -> project.version("0-ea"));
-    assertDoesNotThrow(summary::assertSuccessful);
-    // log.lines().forEach(System.out::println);
-    // summary.toMarkdown().forEach(System.out::println);
+    try {
+      assertDoesNotThrow(summary::assertSuccessful);
+    } catch (AssertionError e) {
+      log.lines().forEach(System.out::println);
+      summary.toMarkdown().forEach(System.out::println);
+      throw e;
+    }
     return summary;
   }
 }
