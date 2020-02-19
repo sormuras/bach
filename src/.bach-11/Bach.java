@@ -1185,8 +1185,8 @@ public class Bach {
       public Task launchTests(Project.Realm realm) {
         var tasks = new ArrayList<Task>();
         for (var unit : realm.units().values()) {
-          var provider = new TestProvider(realm, unit);
-          tasks.add(new Task.RunTool("Run provided test(" + unit.name() + ")", provider));
+          var tester = new Tester(realm, unit);
+          tasks.add(new Task.RunTool("Run provided test(" + unit.name() + ")", tester));
         }
         return sequence("Launch tests in " + realm.name() + " realm", tasks.toArray(Task[]::new));
       }
@@ -1273,19 +1273,19 @@ public class Bach {
       }
 
       /** Test launcher running provided test tools. */
-      class TestProvider implements ToolProvider, GarbageCollect {
+      class Tester implements ToolProvider, GarbageCollect {
 
         private final Project.Realm realm;
         private final Project.Unit unit;
 
-        TestProvider(Project.Realm realm, Project.Unit unit) {
+        Tester(Project.Realm realm, Project.Unit unit) {
           this.realm = realm;
           this.unit = unit;
         }
 
         @Override
         public String name() {
-          return "test-provider(" + unit.name() + ")";
+          return "tester(" + unit.name() + ")";
         }
 
         @Override
