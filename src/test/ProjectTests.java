@@ -70,6 +70,10 @@ class ProjectTests {
               "  structure -> instance of Bach$Project$Structure",
               "  Structure",
               "    realms = []",
+              "    survey -> instance of Bach$Project$ModuleSurvey",
+              "    ModuleSurvey",
+              "      declaredModules = []",
+              "      requiredModules = {}",
               "    units = []"),
           project.print());
     }
@@ -229,12 +233,6 @@ class ProjectTests {
   @Nested
   class ModuleSurveys {
 
-    /**
-     * <pre>
-     *   a requires c@2;
-     *   b requires a;
-     * </pre>
-     */
     private void assertABC(Bach.Project.ModuleSurvey survey) {
       assertEquals(Set.of("a", "b"), survey.declaredModules());
       assertEquals(Set.of("a", "c"), survey.requiredModuleNames());
@@ -252,6 +250,17 @@ class ProjectTests {
       required.put("a", null);
       required.put("c", Version.parse("2"));
       assertABC(new Bach.Project.ModuleSurvey(declared, required));
+    }
+
+    @Test
+    void ofStreamWithMultipleVersions() {
+      var descriptors =
+          Stream.of(
+              ModuleDescriptor.newModule("a").requires("x").build(),
+              ModuleDescriptor.newModule("b").requires(Set.of(), "x", Version.parse("1")).build(),
+              ModuleDescriptor.newModule("c").requires("x").build(),
+              ModuleDescriptor.newModule("d").requires(Set.of(), "x", Version.parse("2")).build());
+      assertThrows(IllegalArgumentException.class, () -> Bach.Project.ModuleSurvey.of(descriptors));
     }
 
     @Test

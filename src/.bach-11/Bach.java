@@ -511,9 +511,13 @@ public class Bach {
       /** List of all realms. */
       private final List<Realm> realms;
 
-      public Structure(List<Unit> units, List<Realm> realms) {
+      /** Project module survey */
+      private final ModuleSurvey survey;
+
+      public Structure(List<Unit> units, List<Realm> realms, ModuleSurvey survey) {
         this.units = List.copyOf(units);
         this.realms = List.copyOf(realms);
+        this.survey = survey;
       }
 
       public List<Unit> units() {
@@ -524,11 +528,16 @@ public class Bach {
         return realms;
       }
 
+      public ModuleSurvey survey() {
+        return survey;
+      }
+
       @Override
       public String toString() {
         return new StringJoiner(", ", "Structure { ", " }")
             .add("units=" + units())
             .add("realms=" + realms())
+            .add("survey=" + survey())
             .toString();
       }
     }
@@ -895,7 +904,14 @@ public class Bach {
             .flatMap(Set::stream)
             .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
             .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-            .forEach(requires -> requiredModules.put(requires.name(), requires.compiledVersion().orElse(null)));
+            .forEach(
+                requires -> {
+                  var module = requires.name();
+                  var version = requires.compiledVersion().orElse(null);
+                  var previous = requiredModules.putIfAbsent(module, version);
+                  if (previous == null || version == null || previous.equals(version)) return;
+                  throw new IllegalArgumentException(previous + " != " + version);
+                });
         return new ModuleSurvey(declaredModules, requiredModules);
       }
 
@@ -941,6 +957,9 @@ public class Bach {
       /** List of modular realms. */
       private List<Realm> realms;
 
+      /** Project module survey. */
+      private ModuleSurvey survey;
+
       /** Mapper of modules. */
       private ModuleMapper mapper;
 
@@ -951,6 +970,7 @@ public class Bach {
         this.descriptor = ModuleDescriptor.newModule(name, synthetic);
         this.units = List.of();
         this.realms = List.of();
+        this.survey = new ModuleSurvey(Set.of(), Map.of());
         this.mapper = new ModuleMapper.DefaultMavenCentralMapper();
       }
 
@@ -960,7 +980,7 @@ public class Bach {
         if (temporary.mainClass().isEmpty()) {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
-        var structure = new Structure(units, realms);
+        var structure = new Structure(units, realms, survey);
         var library = new Library(mapper);
         return new Project(paths, descriptor.build(), structure, library);
       }
@@ -998,6 +1018,12 @@ public class Bach {
       /** Set list of modular realms. */
       public Builder realms(List<Realm> realms) {
         this.realms = realms;
+        return this;
+      }
+
+      /** Set project module survey. */
+      public Builder survey(ModuleSurvey survey) {
+        this.survey = survey;
         return this;
       }
 
@@ -1039,13 +1065,14 @@ public class Bach {
 
       /** Scan the base directory for project components. */
       public Project.Builder scan() {
-        var builder = new Project.Builder(scanName().orElse("nameless"));
-        builder.paths(paths);
         var units = scanUnits();
-        builder.units(units);
         var layout = Layout.find(units).orElse(Layout.FLAT);
-        builder.realms(layout.realmsOf(units));
-        return builder;
+        var survey = ModuleSurvey.of(units.stream().map(Unit::descriptor));
+        return new Project.Builder(scanName().orElse("nameless"))
+            .paths(paths)
+            .units(units)
+            .realms(layout.realmsOf(units))
+            .survey(survey);
       }
 
       /** Return name of the project. */
