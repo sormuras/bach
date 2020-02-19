@@ -709,17 +709,70 @@ public class Bach {
       }
     }
 
-    /** Default resolver mapping some well-known module names to their related coordinates. */
-    public interface ModuleLinker extends BiFunction<String, Version, ModuleLink> {}
+    /** Mapping module names to their related coordinates. */
+    public interface ModuleMapper extends BiFunction<String, Version, ModuleMapping> {
+
+      /** Mapping well-known module names to their related Maven Central coordinates. */
+      @SuppressWarnings({"unused", "SwitchStatementWithTooFewBranches"})
+      class DefaultMavenCentralMapper implements ModuleMapper {
+
+        @Override
+        public ModuleMapping apply(String module, Version version) {
+          var group = mapGroup(module, version);
+          var artifact = mapArtifact(module, version, group);
+          var version2 = mapVersion(module, version, group, artifact);
+          var classifier = mapClassifier(module, version, group, artifact);
+          return ModuleMapping.ofMavenCentral(module, version2, group, artifact, classifier);
+        }
+
+        public String mapGroup(String module, Version version) {
+          if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+          switch (module) {
+            case "junit":
+              return "junit";
+          }
+          throw new Util.Modules.UnmappedModuleException(module);
+        }
+
+        public String mapArtifact(String module, Version version, String group) {
+          if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
+          switch (module) {
+            case "junit":
+              return "junit";
+          }
+          throw new Util.Modules.UnmappedModuleException(module);
+        }
+
+        public Version mapVersion(String module, Version version, String group, String artifact) {
+          if (version != null) return version;
+          switch (module) {
+            case "junit":
+              return Version.parse("4.13");
+          }
+          switch (group) {
+            case "org.junit.jupiter":
+            case "org.junit.vintage":
+              return Version.parse("5.6.0");
+            case "org.junit.platform":
+              return Version.parse("1.6.0");
+          }
+          throw new Util.Modules.UnmappedModuleException(module);
+        }
+
+        public String mapClassifier(String module, Version version, String group, String artifact) {
+          return "";
+        }
+      }
+    }
 
     /** Module and version to URI and more other-system-property mapping. */
-    public static final class ModuleLink implements Util.Printable {
+    public static final class ModuleMapping implements Util.Printable {
 
-      public static ModuleLink ofMavenCentral(
+      public static ModuleMapping ofMavenCentral(
           String module, Version version, String group, String artifact, String classifier) {
         var repository = "https://repo.apache.maven.org/maven2";
         var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
-        return new ModuleLink(module, version, uri);
+        return new ModuleMapping(module, version, uri);
       }
 
       public static URI uri(
@@ -739,7 +792,7 @@ public class Bach {
       private final Version version;
       private final URI uri;
 
-      public ModuleLink(String module, Version version, URI uri) {
+      public ModuleMapping(String module, Version version, URI uri) {
         this.module = module;
         this.version = version;
         this.uri = uri;
