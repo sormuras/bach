@@ -737,10 +737,21 @@ public class Bach {
             .add("mapper=" + mapper())
             .toString();
       }
+
+      /** Look up the mapped URI for the given pair of a module name and its version. */
+      public URI uri(String module, Version version) {
+        var mapping = mapper().apply(module, version);
+        if (mapping == null) throw new Util.Modules.UnmappedModuleException(module);
+        return mapping.uri();
+      }
     }
 
     /** Mapping module names to their related coordinates. */
     public interface ModuleMapper extends BiFunction<String, Version, ModuleMapper.Mapping> {
+
+      /** Return mapping instance for the pair of module name and its version - {@code null}able. */
+      @Override
+      Mapping apply(String module, Version version);
 
       /** Module and version to URI and more other-system-property mapping. */
       final class Mapping implements Util.Printable {
