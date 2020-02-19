@@ -309,7 +309,9 @@ public class Bach {
             var realm = realmOf(unit).orElse(unit.path().toString());
             map.computeIfAbsent(realm, key -> new ArrayList<>()).add(unit);
           }
-          if (!map.keySet().equals(Set.of("main", "test")))
+          var realms = map.keySet();
+          if (realms.isEmpty()) return List.of();
+          if (!realms.equals(Set.of("main", "test")))
             throw new IllegalStateException("Only main and test realm expected: " + map);
           var main =
               new Realm(
@@ -768,7 +770,7 @@ public class Bach {
 
         public static Mapping ofMavenCentral(
             String module, Version version, String group, String artifact, String classifier) {
-          var repository = "https://repo.apache.maven.org/maven2";
+          var repository = "https://repo1.maven.org/maven2";
           var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
           return new Mapping(module, version, uri);
         }
@@ -900,6 +902,7 @@ public class Bach {
         this.descriptor = ModuleDescriptor.newModule(name, synthetic);
         this.units = List.of();
         this.realms = List.of();
+        this.mapper = new ModuleMapper.DefaultMavenCentralMapper();
       }
 
       /** Create new project model instance based on this builder's components. */
@@ -1100,7 +1103,7 @@ public class Bach {
       }
 
       public Task resolveMissingModules() {
-        return sequence("Resolve missing modules");
+        return new Resolver();
       }
 
       public Task compileAllRealms() {
@@ -1318,6 +1321,82 @@ public class Bach {
           } finally {
             currentThread.setContextClassLoader(currentContextLoader);
           }
+        }
+      }
+
+      /** Determine and load all missing modules. */
+      class Resolver extends Task {
+
+        private final List<String> out = new ArrayList<>();
+
+        public Resolver() {
+          super("Resolve missing modules", false, List.of());
+        }
+
+        @Override
+        public Result call() {
+          var start = Instant.now();
+          try {
+            var systemModulesSurvey = Util.Modules.Survey.of(ModuleFinder.ofSystem());
+            var missing = findMissingModules(systemModulesSurvey);
+            if (missing.isEmpty()) {
+              out.add("All required modules are locatable.");
+              return new Result(start, 0, String.join("\n", out), "");
+            }
+            var uris = new Util.Uris();
+            out.add("Resolve missing modules: " + missing);
+            for (var entry : missing.entrySet()) {
+              var module = entry.getKey();
+              var version = entry.getValue().stream().findFirst().orElse(null);
+              var mapping = project.library().mapper().apply(module, version);
+              var source = mapping.uri();
+              var target = project.paths().lib().resolve(module + "-" + version + ".jar");
+              uris.copy(source, target);
+            }
+            return Result.ok();
+          } catch (Exception e) {
+            return Result.failed(e);
+          }
+        }
+
+        void debug(String format, Object... args) {
+          if (verbose) out.add(String.format(format, args));
+        }
+
+        Map<String, Set<Version>> findMissingModules(Util.Modules.Survey systemModulesSurvey) {
+          var lib = project.paths().lib();
+          var units =
+              project.structure().units().stream()
+                  .map(Project.Unit::path)
+                  .collect(Collectors.toList());
+          var projectModulesSurvey = Util.Modules.Survey.of(units);
+          var libraryModulesSurvey = Util.Modules.Survey.of(ModuleFinder.of(lib));
+
+          debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
+          debug("  declared -> " + projectModulesSurvey.declaredModules());
+          debug("  requires -> " + projectModulesSurvey.requiredModules());
+          debug("Library modules survey of -> %s", lib.toUri());
+          debug("  declared -> " + libraryModulesSurvey.declaredModules());
+          debug("  requires -> " + libraryModulesSurvey.requiredModules());
+          debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
+
+          var missing = new TreeMap<String, Set<Version>>();
+          projectModulesSurvey.putAllRequiresTo(missing);
+          libraryModulesSurvey.putAllRequiresTo(missing);
+          Util.Modules.Survey.merge(missing, project.descriptor().requires().stream());
+
+          /*
+          var library = project.library();
+          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
+            Project.Library.addJUnitTestEngines(missing);
+          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
+            Project.Library.addJUnitPlatformConsole(missing);
+           */
+
+          projectModulesSurvey.declaredModules().forEach(missing::remove);
+          libraryModulesSurvey.declaredModules().forEach(missing::remove);
+          systemModulesSurvey.declaredModules().forEach(missing::remove);
+          return missing;
         }
       }
     }
@@ -1799,9 +1878,9 @@ public class Bach {
           return requiresMap.keySet();
         }
 
-        // public void putAllRequiresTo(Map<String, Set<Version>> map) {
-        //  map.putAll(requiresMap);
-        // }
+        public void putAllRequiresTo(Map<String, Set<Version>> map) {
+          map.putAll(requiresMap);
+        }
 
         public Optional<Version> requiredVersion(String requiredModule) {
           var versions = requiresMap.get(requiredModule);
