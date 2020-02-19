@@ -1,3 +1,5 @@
+// default package
+
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
