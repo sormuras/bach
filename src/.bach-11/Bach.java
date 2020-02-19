@@ -1091,11 +1091,16 @@ public class Bach {
                 tool("javac", "--version"),
                 tool("javadoc", "--version"),
                 tool("jar", "--version")),
+            resolveMissingModules(),
             parallel(
                 "Compile and generate API documentation",
                 compileAllRealms(),
                 compileApiDocumentation()),
             launchAllTests());
+      }
+
+      public Task resolveMissingModules() {
+        return sequence("Resolve missing modules");
       }
 
       public Task compileAllRealms() {
