@@ -46,7 +46,10 @@ class UrisTests {
         List.of(
             "L Copy " + sa.toUri() + " to " + ta,
             "L Copy " + sb.toUri() + " to " + tb,
-            "L Copy " + sc.toUri() + " to " + tc),
+            "L Copy " + sc.toUri() + " to " + tc,
+            "L Read " + ta.toUri(),
+            "L Read " + tb.toUri(),
+            "L Read " + tc.toUri()),
         log.lines());
   }
 }

@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -220,6 +223,50 @@ class ProjectTests {
       }
       assertTrue(realm.release().isEmpty());
       assertEquals(".", realm.moduleSourcePath());
+    }
+  }
+
+  @Nested
+  class ModuleSurveys {
+
+    /**
+     * <pre>
+     *   a requires c@2;
+     *   b requires a;
+     * </pre>
+     */
+    private void assertABC(Bach.Project.ModuleSurvey survey) {
+      assertEquals(Set.of("a", "b"), survey.declaredModules());
+      assertEquals(Set.of("a", "c"), survey.requiredModuleNames());
+      assertNull(survey.requiredModules().get("a"));
+      assertEquals("2", survey.requiredVersion("c").orElseThrow().toString());
+      var expected = Bach.Util.Modules.UnmappedModuleException.class;
+      assertThrows(expected, () -> survey.requiredVersion("b"));
+      assertThrows(expected, () -> survey.requiredVersion("x"));
+    }
+
+    @Test
+    void ofConstructor() {
+      var declared = Set.of("a", "b");
+      var required = new TreeMap<String, Version>();
+      required.put("a", null);
+      required.put("c", Version.parse("2"));
+      assertABC(new Bach.Project.ModuleSurvey(declared, required));
+    }
+
+    @Test
+    void surveyOfSystemModules() {
+      var survey = Bach.Project.ModuleSurvey.of(ModuleFinder.ofSystem());
+      assertTrue(survey.declaredModules().contains("java.base"));
+      assertFalse(survey.requiredModules().containsKey("java.base")); // mandated are ignored
+      assertTrue(survey.requiredModuleNames().contains("java.logging"));
+      assertTrue(survey.declaredModules().size() > survey.requiredModules().size());
+      assertLinesMatch(
+          List.of(
+              "ModuleSurvey",
+              "\\Q  declaredModules = [\\E.*java\\.base.*\\]",
+              "\\Q  requiredModules = {\\E.*java\\.logging.*\\}"),
+          survey.print());
     }
   }
 }

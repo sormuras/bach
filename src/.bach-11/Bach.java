@@ -877,6 +877,55 @@ public class Bach {
       }
     }
 
+    /** Declared and required modules and optional versions holder. */
+    public static final class ModuleSurvey implements Util.Printable {
+
+      /** Create modular survey by scanning the locatable modules of the given module finder. */
+      public static ModuleSurvey of(ModuleFinder finder) {
+        return of(finder.findAll().stream().map(ModuleReference::descriptor));
+      }
+
+      /** Create modular survey by scanning the given stream of module descriptors. */
+      public static ModuleSurvey of(Stream<ModuleDescriptor> descriptors) {
+        var declaredModules = new TreeSet<String>();
+        var requiredModules = new TreeMap<String, Version>();
+        descriptors
+            .peek(descriptor -> declaredModules.add(descriptor.name()))
+            .map(ModuleDescriptor::requires)
+            .flatMap(Set::stream)
+            .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
+            .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+            .forEach(requires -> requiredModules.put(requires.name(), requires.compiledVersion().orElse(null)));
+        return new ModuleSurvey(declaredModules, requiredModules);
+      }
+
+      final Set<String> declaredModules;
+      final Map<String, Version> requiredModules;
+
+      ModuleSurvey(Set<String> declaredModules, Map<String, Version> requiredModules) {
+        this.declaredModules = declaredModules;
+        this.requiredModules = requiredModules;
+      }
+
+      public Set<String> declaredModules() {
+        return declaredModules;
+      }
+
+      public Map<String, Version> requiredModules() {
+        return requiredModules;
+      }
+
+      public Set<String> requiredModuleNames() {
+        return requiredModules.keySet();
+      }
+
+      public Optional<Version> requiredVersion(String requiredModule) {
+        var unmapped = !requiredModules.containsKey(requiredModule);
+        if (unmapped) throw new Util.Modules.UnmappedModuleException(requiredModule);
+        return Optional.ofNullable(requiredModules.get(requiredModule));
+      }
+    }
+
     /** Project model builder. */
     public static class Builder {
 
@@ -1324,10 +1373,8 @@ public class Bach {
         }
       }
 
-      /** Determine and load all missing modules. */
+      /** Determine and load missing library modules. */
       class Resolver extends Task {
-
-        private final List<String> out = new ArrayList<>();
 
         public Resolver() {
           super("Resolve missing modules", false, List.of());
@@ -1335,68 +1382,7 @@ public class Bach {
 
         @Override
         public Result call() {
-          var start = Instant.now();
-          try {
-            var systemModulesSurvey = Util.Modules.Survey.of(ModuleFinder.ofSystem());
-            var missing = findMissingModules(systemModulesSurvey);
-            if (missing.isEmpty()) {
-              out.add("All required modules are locatable.");
-              return new Result(start, 0, String.join("\n", out), "");
-            }
-            var uris = new Util.Uris();
-            out.add("Resolve missing modules: " + missing);
-            for (var entry : missing.entrySet()) {
-              var module = entry.getKey();
-              var version = entry.getValue().stream().findFirst().orElse(null);
-              var mapping = project.library().mapper().apply(module, version);
-              var source = mapping.uri();
-              var target = project.paths().lib().resolve(module + "-" + version + ".jar");
-              uris.copy(source, target);
-            }
-            return Result.ok();
-          } catch (Exception e) {
-            return Result.failed(e);
-          }
-        }
-
-        void debug(String format, Object... args) {
-          if (verbose) out.add(String.format(format, args));
-        }
-
-        Map<String, Set<Version>> findMissingModules(Util.Modules.Survey systemModulesSurvey) {
-          var lib = project.paths().lib();
-          var units =
-              project.structure().units().stream()
-                  .map(Project.Unit::path)
-                  .collect(Collectors.toList());
-          var projectModulesSurvey = Util.Modules.Survey.of(units);
-          var libraryModulesSurvey = Util.Modules.Survey.of(ModuleFinder.of(lib));
-
-          debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
-          debug("  declared -> " + projectModulesSurvey.declaredModules());
-          debug("  requires -> " + projectModulesSurvey.requiredModules());
-          debug("Library modules survey of -> %s", lib.toUri());
-          debug("  declared -> " + libraryModulesSurvey.declaredModules());
-          debug("  requires -> " + libraryModulesSurvey.requiredModules());
-          debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
-
-          var missing = new TreeMap<String, Set<Version>>();
-          projectModulesSurvey.putAllRequiresTo(missing);
-          libraryModulesSurvey.putAllRequiresTo(missing);
-          Util.Modules.Survey.merge(missing, project.descriptor().requires().stream());
-
-          /*
-          var library = project.library();
-          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
-            Project.Library.addJUnitTestEngines(missing);
-          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
-            Project.Library.addJUnitPlatformConsole(missing);
-           */
-
-          projectModulesSurvey.declaredModules().forEach(missing::remove);
-          libraryModulesSurvey.declaredModules().forEach(missing::remove);
-          systemModulesSurvey.declaredModules().forEach(missing::remove);
-          return missing;
+          return Result.ok();
         }
       }
     }
@@ -1805,94 +1791,6 @@ public class Bach {
                     + "\\s*;"); // end marker
       }
 
-      /** Declared and required modules and optional versions holder. */
-      final class Survey implements Printable {
-
-        /** Create modular survey by scanning the locatable modules of the given module finder. */
-        public static Survey of(ModuleFinder finder) {
-          var declaredModules = new TreeSet<String>();
-          var requiredModules = new TreeMap<String, Set<Version>>();
-          var stream =
-              finder.findAll().stream()
-                  .map(ModuleReference::descriptor)
-                  .peek(descriptor -> declaredModules.add(descriptor.name()))
-                  .map(ModuleDescriptor::requires)
-                  .flatMap(Set::stream)
-                  .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC));
-          merge(requiredModules, stream);
-          return new Survey(declaredModules, requiredModules);
-        }
-
-        /** Create modular survey by parsing the paths pointing to module descriptor units. */
-        public static Survey of(Collection<Path> paths) {
-          var sources = new ArrayList<String>();
-          for (var path : paths) {
-            if (Files.isDirectory(path)) path = path.resolve("module-info.java");
-            sources.add(Util.Strings.readString(path));
-          }
-          return of(sources.toArray(String[]::new));
-        }
-
-        /** Create modular survey by parsing the given module-describing strings. */
-        public static Survey of(String... sources) {
-          var declaredModules = new TreeSet<String>();
-          var requiredModules = new TreeMap<String, Set<Version>>();
-          for (var source : sources) {
-            var descriptor = Util.Modules.newModule(source).build();
-            declaredModules.add(descriptor.name());
-            merge(requiredModules, descriptor.requires().stream());
-          }
-          return new Survey(declaredModules, requiredModules);
-        }
-
-        static void merge(Map<String, Set<Version>> requiredModules, Stream<Requires> stream) {
-          stream
-              .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-              .forEach(
-                  requires ->
-                      requiredModules.merge(
-                          requires.name(),
-                          requires.compiledVersion().map(Set::of).orElse(Set.of()),
-                          Survey::concatToTreeSet));
-        }
-
-        /** Concat the passed sets */
-        static <E extends Comparable<E>> Set<E> concatToTreeSet(Set<E> s, Set<E> t) {
-          return Stream.concat(s.stream(), t.stream())
-              .collect(Collectors.toCollection(TreeSet::new));
-        }
-
-        final Set<String> declaredModules;
-        final Map<String, Set<Version>> requiresMap;
-
-        Survey(Set<String> declaredModules, Map<String, Set<Version>> requiresMap) {
-          this.declaredModules = declaredModules;
-          this.requiresMap = requiresMap;
-        }
-
-        public Set<String> declaredModules() {
-          return declaredModules;
-        }
-
-        public Set<String> requiredModules() {
-          return requiresMap.keySet();
-        }
-
-        public void putAllRequiresTo(Map<String, Set<Version>> map) {
-          map.putAll(requiresMap);
-        }
-
-        public Optional<Version> requiredVersion(String requiredModule) {
-          var versions = requiresMap.get(requiredModule);
-          if (versions == null) throw new UnmappedModuleException(requiredModule);
-          if (versions.size() > 1) {
-            var message = "Multiple versions: " + requiredModule + " -> " + versions;
-            throw new IllegalStateException(message);
-          }
-          return versions.stream().findFirst();
-        }
-      }
-
       /** Module descriptor parser. */
       static ModuleDescriptor describe(Path info) {
         var builder = newModule(Strings.readString(info));
@@ -2233,7 +2131,7 @@ public class Bach {
 
       /** Read all content from a uri into a string. */
       public String read(URI uri) throws Exception {
-        // log.debug("Read %s", uri);
+        logger.log(Level.DEBUG, "Read {0}", uri);
         if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
         var request = HttpRequest.newBuilder(uri).GET();
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString()).body();
