@@ -183,11 +183,15 @@ public class Bach {
     /** Project structure. */
     private final Structure structure;
 
+    /** Library of assets. */
+    private final Library library;
+
     /** Initialize this project model. */
-    public Project(Paths paths, ModuleDescriptor descriptor, Structure structure) {
+    public Project(Paths paths, ModuleDescriptor descriptor, Structure structure, Library library) {
       this.paths = paths;
       this.descriptor = descriptor;
       this.structure = structure;
+      this.library = library;
     }
 
     /** Project paths. */
@@ -203,6 +207,11 @@ public class Bach {
     /** Project structure. */
     public Structure structure() {
       return structure;
+    }
+
+    /** Library of assets. */
+    public Library library() {
+      return library;
     }
 
     /** Return list of modular units. */
@@ -226,6 +235,7 @@ public class Bach {
           .add("paths=" + paths())
           .add("descriptor=" + descriptor())
           .add("mainModule=" + mainModule())
+          .add("loader=" + library())
           .toString();
     }
 
@@ -709,20 +719,95 @@ public class Bach {
       }
     }
 
+    /** Library of assets. */
+    public static final class Library implements Util.Printable {
+      private final ModuleMapper mapper;
+
+      public Library(ModuleMapper mapper) {
+        this.mapper = mapper;
+      }
+
+      public ModuleMapper mapper() {
+        return mapper;
+      }
+
+      @Override
+      public String toString() {
+        return new StringJoiner(", ", Library.class.getSimpleName() + "[", "]")
+            .add("mapper=" + mapper())
+            .toString();
+      }
+    }
+
     /** Mapping module names to their related coordinates. */
-    public interface ModuleMapper extends BiFunction<String, Version, ModuleMapping> {
+    public interface ModuleMapper extends BiFunction<String, Version, ModuleMapper.Mapping> {
+
+      /** Module and version to URI and more other-system-property mapping. */
+      final class Mapping implements Util.Printable {
+
+        public static Mapping ofMavenCentral(
+            String module, Version version, String group, String artifact, String classifier) {
+          var repository = "https://repo.apache.maven.org/maven2";
+          var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
+          return new Mapping(module, version, uri);
+        }
+
+        public static URI uri(
+            String repository,
+            String group,
+            String artifact,
+            String version,
+            String classifier,
+            String type) {
+          var versionAndClassifier = classifier.isEmpty() ? version : version + '-' + classifier;
+          var file = artifact + '-' + versionAndClassifier + '.' + type;
+          var ref = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
+          return URI.create(ref);
+        }
+
+        private final String module;
+        private final Version version;
+        private final URI uri;
+
+        public Mapping(String module, Version version, URI uri) {
+          this.module = module;
+          this.version = version;
+          this.uri = uri;
+        }
+
+        public String module() {
+          return module;
+        }
+
+        public Version version() {
+          return version;
+        }
+
+        public URI uri() {
+          return uri;
+        }
+
+        @Override
+        public String toString() {
+          return new StringJoiner(", ", "ModuleLink { ", " }")
+              .add("module='" + module() + "'")
+              .add("version=" + version())
+              .add("uri=" + uri())
+              .toString();
+        }
+      }
 
       /** Mapping well-known module names to their related Maven Central coordinates. */
       @SuppressWarnings({"unused", "SwitchStatementWithTooFewBranches"})
       class DefaultMavenCentralMapper implements ModuleMapper {
 
         @Override
-        public ModuleMapping apply(String module, Version version) {
+        public Mapping apply(String module, Version version) {
           var group = mapGroup(module, version);
           var artifact = mapArtifact(module, version, group);
           var version2 = mapVersion(module, version, group, artifact);
           var classifier = mapClassifier(module, version, group, artifact);
-          return ModuleMapping.ofMavenCentral(module, version2, group, artifact, classifier);
+          return Mapping.ofMavenCentral(module, version2, group, artifact, classifier);
         }
 
         public String mapGroup(String module, Version version) {
@@ -735,6 +820,7 @@ public class Bach {
         }
 
         public String mapArtifact(String module, Version version, String group) {
+          // Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
           if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
           switch (module) {
             case "junit":
@@ -745,11 +831,9 @@ public class Bach {
 
         public Version mapVersion(String module, Version version, String group, String artifact) {
           if (version != null) return version;
-          switch (module) {
+          switch (group) {
             case "junit":
               return Version.parse("4.13");
-          }
-          switch (group) {
             case "org.junit.jupiter":
             case "org.junit.vintage":
               return Version.parse("5.6.0");
@@ -762,61 +846,11 @@ public class Bach {
         public String mapClassifier(String module, Version version, String group, String artifact) {
           return "";
         }
-      }
-    }
 
-    /** Module and version to URI and more other-system-property mapping. */
-    public static final class ModuleMapping implements Util.Printable {
-
-      public static ModuleMapping ofMavenCentral(
-          String module, Version version, String group, String artifact, String classifier) {
-        var repository = "https://repo.apache.maven.org/maven2";
-        var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
-        return new ModuleMapping(module, version, uri);
-      }
-
-      public static URI uri(
-          String repository,
-          String group,
-          String artifact,
-          String version,
-          String classifier,
-          String type) {
-        var versionAndClassifier = classifier.isEmpty() ? version : version + '-' + classifier;
-        var file = artifact + '-' + versionAndClassifier + '.' + type;
-        var ref = String.join("/", repository, group.replace('.', '/'), artifact, version, file);
-        return URI.create(ref);
-      }
-
-      private final String module;
-      private final Version version;
-      private final URI uri;
-
-      public ModuleMapping(String module, Version version, URI uri) {
-        this.module = module;
-        this.version = version;
-        this.uri = uri;
-      }
-
-      public String module() {
-        return module;
-      }
-
-      public Version version() {
-        return version;
-      }
-
-      public URI uri() {
-        return uri;
-      }
-
-      @Override
-      public String toString() {
-        return new StringJoiner(", ", "ModuleLink { ", " }")
-            .add("module='" + module() + "'")
-            .add("version=" + version())
-            .add("uri=" + uri())
-            .toString();
+        @Override
+        public String toString() {
+          return getClass().getSimpleName();
+        }
       }
     }
 
@@ -835,6 +869,9 @@ public class Bach {
       /** List of modular realms. */
       private List<Realm> realms;
 
+      /** Mapper of modules. */
+      private ModuleMapper mapper;
+
       /** Initialize this project model builder with the given name. */
       Builder(String name) {
         this.paths = Paths.of(Path.of(""));
@@ -851,7 +888,8 @@ public class Bach {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
         var structure = new Structure(units, realms);
-        return new Project(paths, descriptor.build(), structure);
+        var library = new Library(mapper);
+        return new Project(paths, descriptor.build(), structure, library);
       }
 
       /** Set base directory of the project. */
@@ -862,6 +900,12 @@ public class Bach {
       /** Set paths of the project. */
       public Builder paths(Paths paths) {
         this.paths = paths;
+        return this;
+      }
+
+      /** Set module mapper. */
+      public Builder mapper(ModuleMapper mapper) {
+        this.mapper = mapper;
         return this;
       }
 

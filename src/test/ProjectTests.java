@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,26 @@ class ProjectTests {
             .requires("bar", "1701")
             .units(List.of())
             .realms(List.of())
+            .mapper(new CustomMapper())
             .build();
+
+    class CustomMapper implements Bach.Project.ModuleMapper {
+      @Override
+      public Mapping apply(String module, Version version) {
+        switch (module) {
+          case "bar":
+            return new Mapping(module, version, URI.create("bar-123.jar"));
+          case "foo":
+            return new Mapping(module, version, URI.create("foo-4.5.jar"));
+        }
+        throw new Bach.Util.Modules.UnmappedModuleException(module);
+      }
+
+      @Override
+      public String toString() {
+        return getClass().getSimpleName();
+      }
+    }
 
     @Test
     void print() {
@@ -43,6 +63,9 @@ class ProjectTests {
           List.of(
               "Project",
               "  descriptor = module { name: custom@1.2-C, requires: [synthetic bar (@1701), synthetic foo (@4711), mandated java.base] }",
+              "  library -> instance of Bach$Project$Library",
+              "  Library",
+              "    mapper = CustomMapper",
               "  paths -> instance of Bach$Project$Paths",
               "  Paths",
               "    base = custom",
@@ -109,6 +132,14 @@ class ProjectTests {
               .map(Object::toString)
               .sorted()
               .collect(Collectors.toList()));
+    }
+
+    @Test
+    void moduleMappings() {
+      var mapper = project.library().mapper();
+      var zero = Version.parse("0");
+      assertEquals("foo-4.5.jar", mapper.apply("foo", zero).uri().toString());
+      assertEquals("bar-123.jar", mapper.apply("bar", zero).uri().toString());
     }
   }
 
