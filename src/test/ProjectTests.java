@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor;
@@ -36,25 +37,17 @@ class ProjectTests {
             .requires("bar", "1701")
             .units(List.of())
             .realms(List.of())
-            .mapper(new CustomMapper())
+            .mapper(this::customModuleMapper)
             .build();
 
-    class CustomMapper implements Bach.Project.ModuleMapper {
-      @Override
-      public Mapping apply(String module, Version version) {
-        switch (module) {
-          case "bar":
-            return new Mapping(module, version, URI.create("bar-123.jar"));
-          case "foo":
-            return new Mapping(module, version, URI.create("foo-4.5.jar"));
-        }
-        throw new Bach.Util.Modules.UnmappedModuleException(module);
+    Bach.Project.ModuleMapper.Mapping customModuleMapper(String module, Version version) {
+      switch (module) {
+        case "bar":
+          return new Bach.Project.ModuleMapper.Mapping(module, version, URI.create("bar-123.jar"));
+        case "foo":
+          return new Bach.Project.ModuleMapper.Mapping(module, version, URI.create("foo-4.5.jar"));
       }
-
-      @Override
-      public String toString() {
-        return getClass().getSimpleName();
-      }
+      return null;
     }
 
     @Test
@@ -65,7 +58,7 @@ class ProjectTests {
               "  descriptor = module { name: custom@1.2-C, requires: [synthetic bar (@1701), synthetic foo (@4711), mandated java.base] }",
               "  library -> instance of Bach$Project$Library",
               "  Library",
-              "    mapper = CustomMapper",
+              "    mapper = \\QProjectTests$CustomProject$$Lambda$\\E.+",
               "  paths -> instance of Bach$Project$Paths",
               "  Paths",
               "    base = custom",
@@ -136,10 +129,11 @@ class ProjectTests {
 
     @Test
     void moduleMappings() {
-      var mapper = project.library().mapper();
+      var library = project.library();
       var zero = Version.parse("0");
-      assertEquals("foo-4.5.jar", mapper.apply("foo", zero).uri().toString());
-      assertEquals("bar-123.jar", mapper.apply("bar", zero).uri().toString());
+      assertEquals("foo-4.5.jar", library.uri("foo", zero).toString());
+      assertEquals("bar-123.jar", library.uri("bar", zero).toString());
+      assertThrows(Bach.Util.Modules.UnmappedModuleException.class, () -> library.uri("abc", zero));
     }
   }
 
