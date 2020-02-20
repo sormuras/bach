@@ -784,6 +784,20 @@ public class Bach {
     /** Mapping module names to their related coordinates. */
     public interface ModuleMapper extends BiFunction<String, Version, ModuleMapper.Mapping> {
 
+      /** Transform Maven Central based coordinates to a map of mappings. */
+      static Map<String, Mapping> ofMavenCentral(Map<String, String> coordinates) {
+        var mappings = new TreeMap<String, Mapping>();
+        for (var entry : coordinates.entrySet()) {
+          var module = entry.getKey();
+          var coordinate = entry.getValue().split(":");
+          var group = coordinate[0];
+          var artifact = coordinate[1];
+          var version = Version.parse(coordinate[2]);
+          mappings.put(module, Mapping.ofMavenCentral(module, version, group, artifact, ""));
+        }
+        return mappings;
+      }
+
       /** Return mapping instance for the pair of module name and its version - {@code null}able. */
       @Override
       Mapping apply(String module, Version version);
@@ -847,8 +861,15 @@ public class Bach {
       @SuppressWarnings({"unused", "SwitchStatementWithTooFewBranches"})
       class DefaultMavenCentralMapper implements ModuleMapper {
 
+        private final Map<String, Mapping> constants;
+
+        public DefaultMavenCentralMapper(Map<String, Mapping> constants) {
+          this.constants = constants;
+        }
+
         @Override
         public Mapping apply(String module, Version version) {
+          if (constants.containsKey(module)) return constants.get(module);
           var group = mapGroup(module, version);
           var artifact = mapArtifact(module, version, group);
           var version2 = mapVersion(module, version, group, artifact);
@@ -979,6 +1000,9 @@ public class Bach {
       /** Mapper of modules. */
       private ModuleMapper mapper;
 
+      /** Module to Maven coordinates constants. */
+      private final Map<String, String> mavens;
+
       /** Initialize this project model builder with the given name. */
       Builder(String name) {
         this.paths = Paths.of(Path.of(""));
@@ -987,7 +1011,8 @@ public class Bach {
         this.units = List.of();
         this.realms = List.of();
         this.survey = new ModuleSurvey(Set.of(), Map.of());
-        this.mapper = new ModuleMapper.DefaultMavenCentralMapper();
+        this.mapper = null;
+        this.mavens = new TreeMap<>();
       }
 
       /** Create new project model instance based on this builder's components. */
@@ -997,6 +1022,10 @@ public class Bach {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
         var structure = new Structure(units, realms, survey);
+        var mapper =
+            this.mapper != null
+                ? this.mapper
+                : new ModuleMapper.DefaultMavenCentralMapper(ModuleMapper.ofMavenCentral(mavens));
         var library = new Library(EnumSet.allOf(Library.Modifier.class), mapper);
         return new Project(paths, descriptor.build(), structure, library);
       }
@@ -1015,6 +1044,12 @@ public class Bach {
       /** Set module mapper. */
       public Builder mapper(ModuleMapper mapper) {
         this.mapper = mapper;
+        return this;
+      }
+
+      /** Put a module name to Maven Central coordinates mapping. */
+      public Builder map(String module, String maven) {
+        mavens.put(module, maven);
         return this;
       }
 

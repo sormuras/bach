@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -58,20 +57,6 @@ class BuildTests {
 
     @Test
     void resolveJUnitJupiter(@TempDir Path temp) {
-
-      class Mapper extends Bach.Project.ModuleMapper.DefaultMavenCentralMapper {
-        @Override
-        public Mapping apply(String module, Version version) {
-          if (module.equals("org.apiguardian.api"))
-            return Mapping.ofMavenCentral(
-                module, Version.parse("1.1.0"), "org.apiguardian", "apiguardian-api", "");
-          if (module.equals("org.opentest4j"))
-            return Mapping.ofMavenCentral(
-                module, Version.parse("1.2.0"), "org.opentest4j", "opentest4j", "");
-          return super.apply(module, version);
-        }
-      }
-
       var log = new Log();
       var bach = new Bach(log, log, true);
       try {
@@ -81,7 +66,8 @@ class BuildTests {
                     project
                         .paths(temp)
                         .requires("org.junit.jupiter", "5.6.0")
-                        .mapper(new Mapper()));
+                        .map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0")
+                        .map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"));
         var lib = temp.resolve("lib");
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("org.apiguardian.api-1.1.0.jar")));
