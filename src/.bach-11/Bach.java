@@ -1403,13 +1403,74 @@ public class Bach {
       /** Determine and load missing library modules. */
       class Resolver extends Task {
 
+        private final StringWriter out = new StringWriter();
+        private final Project.ModuleSurvey systemModulesSurvey;
+
         public Resolver() {
           super("Resolve missing modules", false, List.of());
+          this.systemModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.ofSystem());
         }
 
         @Override
         public Result call() {
-          return Result.ok();
+          var lib = project.paths().lib();
+          var start = Instant.now();
+          try {
+            var missing = findMissingModules(lib);
+            if (missing.isEmpty()) {
+              out.write("All required modules are locatable.");
+              return new Result(start, 0, out.toString(), "");
+            }
+            out.write("Resolve missing modules: " + missing);
+            var mapper = project.library().mapper();
+            var uris = new Util.Uris();
+            for (var entry : missing.entrySet()) {
+              var module = entry.getKey();
+              var version = entry.getValue();
+              var mapping = mapper.apply(module, version);
+              var source = mapping.uri();
+              var target = lib.resolve(module + "-" + version + ".jar");
+              uris.copy(source, target);
+            }
+            return new Result(start, 0, out.toString(), "");
+          } catch (Exception e) {
+            return new Result(start, 1, "", e.toString());
+          }
+        }
+
+        Map<String, Version> findMissingModules(Path lib) {
+          var projectModulesSurvey = project.structure().survey();
+          var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
+
+          var missing = new TreeMap<String, Version>();
+          missing.putAll(projectModulesSurvey.requiredModules());
+          missing.putAll(libraryModulesSurvey.requiredModules());
+          for (var requires : project.descriptor().requires()) {
+            missing.put(requires.name(), requires.compiledVersion().orElse(null));
+          }
+
+          /*
+          debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
+          debug("  declared -> " + projectModulesSurvey.declaredModules());
+          debug("  requires -> " + projectModulesSurvey.requiredModules());
+          debug("Library modules survey of -> %s", lib.toUri());
+          debug("  declared -> " + libraryModulesSurvey.declaredModules());
+          debug("  requires -> " + libraryModulesSurvey.requiredModules());
+          debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
+          */
+
+          /*
+          var library = project.library();
+          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
+            Project.Library.addJUnitTestEngines(missing);
+          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
+            Project.Library.addJUnitPlatformConsole(missing);
+           */
+
+          projectModulesSurvey.declaredModules().forEach(missing::remove);
+          libraryModulesSurvey.declaredModules().forEach(missing::remove);
+          systemModulesSurvey.declaredModules().forEach(missing::remove);
+          return missing;
         }
       }
     }

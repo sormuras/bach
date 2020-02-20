@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +41,6 @@ class BuildTests {
   @Nested
   class Resolver {
     @Test
-    @Disabled("Not implemented, yet")
     void resolveJUnit4(@TempDir Path temp) {
       var log = new Log();
       var bach = new Bach(log, log, true);
