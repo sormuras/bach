@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,6 +50,44 @@ class BuildTests {
         var lib = temp.resolve("lib");
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("junit-4.13.jar")));
+      } catch (Throwable t) {
+        log.lines().forEach(System.err::println);
+        throw t;
+      }
+    }
+
+    @Test
+    void resolveJUnitJupiter(@TempDir Path temp) {
+
+      class Mapper extends Bach.Project.ModuleMapper.DefaultMavenCentralMapper {
+        @Override
+        public Mapping apply(String module, Version version) {
+          if (module.equals("org.apiguardian.api"))
+            return Mapping.ofMavenCentral(
+                module, Version.parse("1.1.0"), "org.apiguardian", "apiguardian-api", "");
+          if (module.equals("org.opentest4j"))
+            return Mapping.ofMavenCentral(
+                module, Version.parse("1.2.0"), "org.opentest4j", "opentest4j", "");
+          return super.apply(module, version);
+        }
+      }
+
+      var log = new Log();
+      var bach = new Bach(log, log, true);
+      try {
+        var summary =
+            bach.build(
+                project ->
+                    project
+                        .paths(temp)
+                        .requires("org.junit.jupiter", "5.6.0")
+                        .mapper(new Mapper()));
+        var lib = temp.resolve("lib");
+        assertEquals(lib, summary.project().paths().lib());
+        assertTrue(Files.exists(lib.resolve("org.junit.jupiter-5.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.jupiter.api-5.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.jupiter.engine-5.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.jupiter.params-5.6.0.jar")));
       } catch (Throwable t) {
         log.lines().forEach(System.err::println);
         throw t;

@@ -843,7 +843,9 @@ public class Bach {
         }
 
         public String mapGroup(String module, Version version) {
+          if (module.startsWith("org.junit.platform")) return "org.junit.platform";
           if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+          if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
           switch (module) {
             case "junit":
               return "junit";
@@ -1403,7 +1405,7 @@ public class Bach {
       /** Determine and load missing library modules. */
       class Resolver extends Task {
 
-        private final StringWriter out = new StringWriter();
+        private final List<String> out = new ArrayList<>();
         private final Project.ModuleSurvey systemModulesSurvey;
 
         public Resolver() {
@@ -1418,21 +1420,11 @@ public class Bach {
           try {
             var missing = findMissingModules(lib);
             if (missing.isEmpty()) {
-              out.write("All required modules are locatable.");
+              out.add("All required modules are locatable.");
               return new Result(start, 0, out.toString(), "");
             }
-            out.write("Resolve missing modules: " + missing);
-            var mapper = project.library().mapper();
-            var uris = new Util.Uris();
-            for (var entry : missing.entrySet()) {
-              var module = entry.getKey();
-              var version = entry.getValue();
-              var mapping = mapper.apply(module, version);
-              var source = mapping.uri();
-              var target = lib.resolve(module + "-" + version + ".jar");
-              uris.copy(source, target);
-            }
-            return new Result(start, 0, out.toString(), "");
+            resolve(lib, missing);
+            return new Result(start, 0, String.join("\n", out), "");
           } catch (Exception e) {
             return new Result(start, 1, "", e.toString());
           }
@@ -1471,6 +1463,40 @@ public class Bach {
           libraryModulesSurvey.declaredModules().forEach(missing::remove);
           systemModulesSurvey.declaredModules().forEach(missing::remove);
           return missing;
+        }
+
+        void resolve(Path lib, Map<String, Version> modules) throws Exception {
+          var uris = new Util.Uris();
+          var loaded = new ArrayList<String>();
+          var repeat = true; // TODO library.test(Library.Modifier.RESOLVE_RECURSIVELY);
+          do {
+            var intersection = new TreeSet<>(modules.keySet());
+            resolve(lib, modules, uris);
+            loaded.addAll(modules.keySet());
+            modules.clear();
+            var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
+            modules.putAll(libraryModulesSurvey.requiredModules());
+            libraryModulesSurvey.declaredModules().forEach(modules::remove);
+            systemModulesSurvey.declaredModules().forEach(modules::remove);
+            intersection.retainAll(modules.keySet());
+            if (!intersection.isEmpty())
+              throw new IllegalStateException("Unresolved modules: " + intersection);
+          } while (repeat && !modules.isEmpty());
+          out.add(String.format("Resolved %d missing modules: %s", loaded.size(), loaded));
+        }
+
+        void resolve(Path lib, Map<String, Version> modules, Util.Uris uris) throws Exception {
+          out.add("Resolve modules: " + modules);
+          var mapper = project.library().mapper();
+          for (var entry : modules.entrySet()) {
+            var module = entry.getKey();
+            var version = entry.getValue();
+            var mapping = mapper.apply(module, version);
+            var source = mapping.uri();
+            var target = lib.resolve(module + "-" + mapping.version() + ".jar");
+            uris.copy(source, target);
+            out.add(target + " <- " + source);
+          }
         }
       }
     }
