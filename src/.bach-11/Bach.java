@@ -807,7 +807,7 @@ public class Bach {
 
         public static Mapping ofMavenCentral(
             String module, Version version, String group, String artifact, String classifier) {
-          var repository = "https://repo1.maven.org/maven2";
+          var repository = "https://repo.maven.apache.org/maven2";
           var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
           return new Mapping(module, version, uri);
         }
