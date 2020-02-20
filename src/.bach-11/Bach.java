@@ -784,18 +784,9 @@ public class Bach {
     /** Mapping module names to their related coordinates. */
     public interface ModuleMapper extends BiFunction<String, Version, ModuleMapper.Mapping> {
 
-      /** Transform Maven Central based coordinates to a map of mappings. */
-      static Map<String, Mapping> ofMavenCentral(Map<String, String> coordinates) {
-        var mappings = new TreeMap<String, Mapping>();
-        for (var entry : coordinates.entrySet()) {
-          var module = entry.getKey();
-          var coordinate = entry.getValue().split(":");
-          var group = coordinate[0];
-          var artifact = coordinate[1];
-          var version = Version.parse(coordinate[2]);
-          mappings.put(module, Mapping.ofMavenCentral(module, version, group, artifact, ""));
-        }
-        return mappings;
+      /** Create default Maven Central module mapper. */
+      static ModuleMapper ofMavenCentral(Map<String, String> mavens) {
+        return new MavenCentral.DefaultMapper(MavenCentral.map(mavens));
       }
 
       /** Return mapping instance for the pair of module name and its version - {@code null}able. */
@@ -804,13 +795,6 @@ public class Bach {
 
       /** Module and version to URI and more other-system-property mapping. */
       final class Mapping implements Util.Printable {
-
-        public static Mapping ofMavenCentral(
-            String module, Version version, String group, String artifact, String classifier) {
-          var repository = "https://repo.maven.apache.org/maven2";
-          var uri = uri(repository, group, artifact, version.toString(), classifier, "jar");
-          return new Mapping(module, version, uri);
-        }
 
         public static URI uri(
             String repository,
@@ -857,68 +841,97 @@ public class Bach {
         }
       }
 
-      /** Mapping well-known module names to their related Maven Central coordinates. */
-      @SuppressWarnings({"unused", "SwitchStatementWithTooFewBranches"})
-      class DefaultMavenCentralMapper implements ModuleMapper {
+      /** Mapping Maven Central coordinates. */
+      interface MavenCentral {
 
-        private final Map<String, Mapping> constants;
+        String REPOSITORY = "https://repo.maven.apache.org/maven2";
 
-        public DefaultMavenCentralMapper(Map<String, Mapping> constants) {
-          this.constants = constants;
+        /** Transform Maven Central based coordinates to a mapping instance. */
+        static Mapping map(
+            String module, Version version, String group, String artifact, String classifier) {
+          var uri = Mapping.uri(REPOSITORY, group, artifact, version.toString(), classifier, "jar");
+          return new Mapping(module, version, uri);
         }
 
-        @Override
-        public Mapping apply(String module, Version version) {
-          if (constants.containsKey(module)) return constants.get(module);
-          var group = mapGroup(module, version);
-          var artifact = mapArtifact(module, version, group);
-          var version2 = mapVersion(module, version, group, artifact);
-          var classifier = mapClassifier(module, version, group, artifact);
-          return Mapping.ofMavenCentral(module, version2, group, artifact, classifier);
-        }
-
-        public String mapGroup(String module, Version version) {
-          if (module.startsWith("org.junit.platform")) return "org.junit.platform";
-          if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
-          if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
-          switch (module) {
-            case "junit":
-              return "junit";
+        /** Transform Maven Central based coordinates to a map of mappings. */
+        static Map<String, Mapping> map(Map<String, String> coordinates) {
+          var mappings = new TreeMap<String, Mapping>();
+          for (var entry : coordinates.entrySet()) {
+            var module = entry.getKey();
+            var coordinate = entry.getValue().split(":");
+            var group = coordinate[0];
+            var artifact = coordinate[1];
+            var version = Version.parse(coordinate[2]);
+            var classifier = coordinate.length < 4 ? "" : coordinate[3];
+            mappings.put(module, map(module, version, group, artifact, classifier));
           }
-          throw new Util.Modules.UnmappedModuleException(module);
+          return mappings;
         }
 
-        public String mapArtifact(String module, Version version, String group) {
-          // Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
-          if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
-          switch (module) {
-            case "junit":
-              return "junit";
+        /** Mapping well-known module names to their related Maven Central coordinates. */
+        @SuppressWarnings({"unused", "SwitchStatementWithTooFewBranches"})
+        class DefaultMapper implements ModuleMapper {
+
+          private final Map<String, Mapping> constants;
+
+          public DefaultMapper(Map<String, Mapping> constants) {
+            this.constants = constants;
           }
-          throw new Util.Modules.UnmappedModuleException(module);
-        }
 
-        public Version mapVersion(String module, Version version, String group, String artifact) {
-          if (version != null) return version;
-          switch (group) {
-            case "junit":
-              return Version.parse("4.13");
-            case "org.junit.jupiter":
-            case "org.junit.vintage":
-              return Version.parse("5.6.0");
-            case "org.junit.platform":
-              return Version.parse("1.6.0");
+          @Override
+          public Mapping apply(String module, Version version) {
+            if (constants.containsKey(module)) return constants.get(module);
+            var group = mapGroup(module, version);
+            var artifact = mapArtifact(module, version, group);
+            var version2 = mapVersion(module, version, group, artifact);
+            var classifier = mapClassifier(module, version, group, artifact);
+            return MavenCentral.map(module, version2, group, artifact, classifier);
           }
-          throw new Util.Modules.UnmappedModuleException(module);
-        }
 
-        public String mapClassifier(String module, Version version, String group, String artifact) {
-          return "";
-        }
+          public String mapGroup(String module, Version version) {
+            if (module.startsWith("org.junit.platform")) return "org.junit.platform";
+            if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+            if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
+            switch (module) {
+              case "junit":
+                return "junit";
+            }
+            throw new Util.Modules.UnmappedModuleException(module);
+          }
 
-        @Override
-        public String toString() {
-          return getClass().getSimpleName();
+          public String mapArtifact(String module, Version version, String group) {
+            // Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
+            if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
+            switch (module) {
+              case "junit":
+                return "junit";
+            }
+            throw new Util.Modules.UnmappedModuleException(module);
+          }
+
+          public Version mapVersion(String module, Version version, String group, String artifact) {
+            if (version != null) return version;
+            switch (group) {
+              case "junit":
+                return Version.parse("4.13");
+              case "org.junit.jupiter":
+              case "org.junit.vintage":
+                return Version.parse("5.6.0");
+              case "org.junit.platform":
+                return Version.parse("1.6.0");
+            }
+            throw new Util.Modules.UnmappedModuleException(module);
+          }
+
+          public String mapClassifier(
+              String module, Version version, String group, String artifact) {
+            return "";
+          }
+
+          @Override
+          public String toString() {
+            return getClass().getSimpleName();
+          }
         }
       }
     }
@@ -1022,10 +1035,7 @@ public class Bach {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
         var structure = new Structure(units, realms, survey);
-        var mapper =
-            this.mapper != null
-                ? this.mapper
-                : new ModuleMapper.DefaultMavenCentralMapper(ModuleMapper.ofMavenCentral(mavens));
+        var mapper = this.mapper != null ? this.mapper : ModuleMapper.ofMavenCentral(mavens);
         var library = new Library(EnumSet.allOf(Library.Modifier.class), mapper);
         return new Project(paths, descriptor.build(), structure, library);
       }
