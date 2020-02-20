@@ -47,6 +47,7 @@ class BuildTests {
       try {
         var summary = bach.build(project -> project.paths(temp).requires("junit", "4.13"));
         var lib = temp.resolve("lib");
+        summary.assertSuccessful();
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("junit-4.13.jar")));
       } catch (Throwable t) {
@@ -69,6 +70,7 @@ class BuildTests {
                         .map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0")
                         .map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"));
         var lib = temp.resolve("lib");
+        summary.assertSuccessful();
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("org.apiguardian.api-1.1.0.jar")));
         assertTrue(Files.exists(lib.resolve("org.junit.jupiter-5.6.0.jar")));
