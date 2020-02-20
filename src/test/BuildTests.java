@@ -45,11 +45,21 @@ class BuildTests {
       var log = new Log();
       var bach = new Bach(log, log, true);
       try {
-        var summary = bach.build(project -> project.paths(temp).requires("junit", "4.13"));
+        var summary =
+            bach.build(
+                project ->
+                    project
+                        .paths(temp)
+                        .requires("junit", "4.13")
+                        .requires("org.hamcrest", "2.2")
+                        .map("org.hamcrest", "org.hamcrest:hamcrest:2.2")
+                        .map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0")
+                        .map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"));
         var lib = temp.resolve("lib");
         summary.assertSuccessful();
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("junit-4.13.jar")));
+        assertTrue(Files.exists(lib.resolve("org.hamcrest-2.2.jar")));
       } catch (Throwable t) {
         log.lines().forEach(System.err::println);
         throw t;
