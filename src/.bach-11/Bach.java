@@ -742,9 +742,18 @@ public class Bach {
 
     /** Library of assets. */
     public static final class Library implements Util.Printable {
+
+      public enum Modifier {
+        RESOLVE_RECURSIVELY,
+        ADD_MISSING_JUNIT_TEST_ENGINES,
+        ADD_MISSING_JUNIT_PLATFORM_CONSOLE
+      }
+
+      private final Set<Modifier> modifiers;
       private final ModuleMapper mapper;
 
-      public Library(ModuleMapper mapper) {
+      public Library(Set<Modifier> modifiers, ModuleMapper mapper) {
+        this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
         this.mapper = mapper;
       }
 
@@ -757,6 +766,11 @@ public class Bach {
         return new StringJoiner(", ", Library.class.getSimpleName() + "[", "]")
             .add("mapper=" + mapper())
             .toString();
+      }
+
+      /** Check the specified flag. */
+      public boolean test(Modifier modifier) {
+        return modifiers.contains(modifier);
       }
 
       /** Look up the mapped URI for the given pair of a module name and its version. */
@@ -983,7 +997,7 @@ public class Bach {
           Convention.mainModule(units.stream()).ifPresent(descriptor::mainClass);
         }
         var structure = new Structure(units, realms, survey);
-        var library = new Library(mapper);
+        var library = new Library(EnumSet.allOf(Library.Modifier.class), mapper);
         return new Project(paths, descriptor.build(), structure, library);
       }
 
@@ -1468,7 +1482,7 @@ public class Bach {
         void resolve(Path lib, Map<String, Version> modules) throws Exception {
           var uris = new Util.Uris();
           var loaded = new ArrayList<String>();
-          var repeat = true; // TODO library.test(Library.Modifier.RESOLVE_RECURSIVELY);
+          var repeat = project.library().test(Project.Library.Modifier.RESOLVE_RECURSIVELY);
           do {
             var intersection = new TreeSet<>(modules.keySet());
             resolve(lib, modules, uris);
