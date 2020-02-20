@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,27 +41,18 @@ class BuildTests {
   }
 
   @Nested
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   class Resolver {
     @Test
     void resolveJUnit4(@TempDir Path temp) {
       var log = new Log();
       var bach = new Bach(log, log, true);
       try {
-        var summary =
-            bach.build(
-                project ->
-                    project
-                        .paths(temp)
-                        .requires("junit", "4.13")
-                        .requires("org.hamcrest", "2.2")
-                        .map("org.hamcrest", "org.hamcrest:hamcrest:2.2")
-                        .map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0")
-                        .map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"));
+        var summary = bach.build(project -> project.paths(temp).requires("junit", "4.13"));
         var lib = temp.resolve("lib");
         summary.assertSuccessful();
         assertEquals(lib, summary.project().paths().lib());
         assertTrue(Files.exists(lib.resolve("junit-4.13.jar")));
-        assertTrue(Files.exists(lib.resolve("org.hamcrest-2.2.jar")));
       } catch (Throwable t) {
         log.lines().forEach(System.err::println);
         throw t;
@@ -72,13 +65,7 @@ class BuildTests {
       var bach = new Bach(log, log, true);
       try {
         var summary =
-            bach.build(
-                project ->
-                    project
-                        .paths(temp)
-                        .requires("org.junit.jupiter", "5.6.0")
-                        .map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0")
-                        .map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"));
+            bach.build(project -> project.paths(temp).requires("org.junit.jupiter", "5.6.0"));
         var lib = temp.resolve("lib");
         summary.assertSuccessful();
         assertEquals(lib, summary.project().paths().lib());
@@ -97,6 +84,8 @@ class BuildTests {
         log.lines().forEach(System.err::println);
         throw t;
       }
+      assertLinesMatch(
+          List.of(">>>>", "P Create Maven Central Module Mapper", ">>>>"), log.lines());
     }
   }
 }

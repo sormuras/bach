@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
@@ -22,9 +23,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 class ProjectTests {
 
@@ -40,6 +43,7 @@ class ProjectTests {
             .requires("bar", "1701")
             .units(List.of())
             .realms(List.of())
+            .map("custom", "group:artifact:version")
             .mapper(this::customModuleMapper)
             .build();
 
@@ -276,6 +280,23 @@ class ProjectTests {
               "\\Q  declaredModules = [\\E.*java\\.base.*\\]",
               "\\Q  requiredModules = {\\E.*java\\.logging.*\\}"),
           survey.print());
+    }
+  }
+
+  @Nested
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
+  class SormurasModulesMappers {
+    private final Bach.Project.ModuleMapper mapper;
+
+    SormurasModulesMappers() throws Exception {
+      var uris = new Bach.Util.Uris();
+      this.mapper = new Bach.Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> map() {
+      return Stream.of("junit", "org.junit.jupiter", "org.objectweb.asm", "de.sormuras.bach")
+          .map(module -> dynamicTest(module + '=' + mapper.apply(module, null).uri(), () -> {}));
     }
   }
 }

@@ -61,6 +61,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -70,6 +71,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -933,6 +935,45 @@ public class Bach {
             return getClass().getSimpleName();
           }
         }
+
+        /** https://github.com/sormuras/modules */
+        class SormurasModulesMapper implements ModuleMapper {
+
+          private static final String ROOT = "https://github.com/sormuras/modules";
+
+          private final Map<String, String> mavens;
+          private final Map<String, String> versions;
+
+          public SormurasModulesMapper(Util.Uris uris) throws Exception {
+            this.mavens = load(uris, "module-maven.properties");
+            this.versions = load(uris, "module-version.properties");
+          }
+
+          private Map<String, String> load(Util.Uris uris, String properties) throws Exception {
+            var user = Path.of(System.getProperty("user.home"));
+            var cache = Files.createDirectories(user.resolve(".bach/modules"));
+            var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+            var target = cache.resolve(properties);
+            var path = uris.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+            return Util.Strings.map(Util.Strings.load(new Properties(), path));
+          }
+
+          @Override
+          public Mapping apply(String module, Version version) {
+            var maven = mavens.get(module);
+            if (maven == null) throw new Util.Modules.UnmappedModuleException(module);
+            var indexOfColon = maven.indexOf(':');
+            if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+            var group = maven.substring(0, indexOfColon);
+            var artifact = maven.substring(indexOfColon + 1);
+            if (version == null) {
+              var latest = versions.get(module);
+              if (latest == null) throw new Util.Modules.UnmappedModuleException(module);
+              version = Version.parse(latest);
+            }
+            return ModuleMapper.MavenCentral.map(module, version, group, artifact, "");
+          }
+        }
       }
     }
 
@@ -1489,10 +1530,12 @@ public class Bach {
 
         private final List<String> out = new ArrayList<>();
         private final Project.ModuleSurvey systemModulesSurvey;
+        private final AtomicReference<Project.ModuleMapper.MavenCentral.SormurasModulesMapper> magic;
 
         public Resolver() {
           super("Resolve missing modules", false, List.of());
           this.systemModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.ofSystem());
+          this.magic = new AtomicReference<>(null);
         }
 
         @Override
@@ -1566,17 +1609,37 @@ public class Bach {
 
         void resolve(Path lib, Map<String, Version> modules, Util.Uris uris) throws Exception {
           out.add("Resolve modules: " + modules);
-          var mapper = project.library().mapper();
           for (var entry : modules.entrySet()) {
             var module = entry.getKey();
             var version = entry.getValue();
-            var mapping = mapper.apply(module, version);
+            var mapping = mapping(uris, module, version);
             var source = mapping.uri();
             var target = lib.resolve(module + "-" + mapping.version() + ".jar");
             uris.copy(source, target);
             out.add(target + " <- " + source);
           }
         }
+
+        private Project.ModuleMapper.Mapping mapping(Util.Uris uris, String module, Version version) {
+          try {
+            return project.library().mapper().apply(module, version);
+          } catch (Util.Modules.UnmappedModuleException e) {
+            return magic(uris).apply(module, version);
+          }
+        }
+
+        private Project.ModuleMapper.MavenCentral.SormurasModulesMapper magic(Util.Uris uris) {
+          var current = magic.get();
+          if (current != null) return current;
+          try {
+            out.add("Create Maven Central Module Mapper");
+            var newCentral = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
+            return magic.compareAndSet(null, newCentral) ? newCentral : magic.get();
+          } catch (Exception e) {
+            throw new AssertionError("Create Central failed", e);
+          }
+        }
+
       }
     }
 
@@ -2233,6 +2296,27 @@ public class Bach {
         return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
       }
 
+      /** Load all strings from the specified file into the passed properties instance. */
+      static Properties load(Properties properties, Path path) {
+        if (Files.isRegularFile(path)) {
+          try (var reader = Files.newBufferedReader(path)) {
+            properties.load(reader);
+          } catch (Exception e) {
+            throw new RuntimeException("Load properties failed: " + path, e);
+          }
+        }
+        return properties;
+      }
+
+      /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */
+      static Map<String, String> map(Properties properties) {
+        var map = new HashMap<String, String>();
+        for (var name : properties.stringPropertyNames()) {
+          map.put(name, properties.getProperty(name));
+        }
+        return Map.copyOf(map);
+      }
+
       /** Read all content from a file into a string. */
       static String readString(Path path) {
         try {
@@ -2318,8 +2402,11 @@ public class Bach {
             }
           }
           logger.log(Level.DEBUG, "{0} <- {1}", path, uri);
+          return path;
         }
-        return path;
+        if (response.statusCode() == 304) // Not Modified
+          return path; // https://tools.ietf.org/html/rfc7232#section-4.1
+        throw new IOException("response=" + response);
       }
 
       /** Read all content from a uri into a string. */
