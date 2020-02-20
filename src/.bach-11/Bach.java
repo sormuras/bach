@@ -1065,6 +1065,29 @@ public class Bach {
         var mains = units.filter(Unit::isMainClassPresent).collect(Collectors.toList());
         return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
       }
+
+      /** Extend the passed map of modules with missing JUnit test engine implementations. */
+      static void addMissingJUnitTestEngines(Map<String, Version> modules) {
+        var names = modules.keySet();
+        if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
+          modules.putIfAbsent("org.junit.jupiter.engine", null);
+        if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
+      }
+
+      /** Extend the passed map of modules with the JUnit Platform Console module. */
+      static void addJUnitPlatformConsole(Map<String, Version> modules) {
+        var names = modules.keySet();
+        if (names.contains("org.junit.platform.console")) return;
+        var triggers =
+            Set.of(
+                "org.junit.jupiter.engine",
+                "org.junit.vintage.engine",
+                "org.junit.platform.engine");
+        names.stream()
+            .filter(triggers::contains)
+            .findAny()
+            .ifPresent(__ -> modules.put("org.junit.platform.console", null));
+      }
     }
 
     /** Directory-based project model builder factory. */
@@ -1465,13 +1488,10 @@ public class Bach {
           debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
           */
 
-          /*
-          var library = project.library();
-          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
-            Project.Library.addJUnitTestEngines(missing);
-          if (library.modifiers().contains(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
-            Project.Library.addJUnitPlatformConsole(missing);
-           */
+          if (project.library().test(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
+            Project.Convention.addMissingJUnitTestEngines(missing);
+          if (project.library().test(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
+            Project.Convention.addJUnitPlatformConsole(missing);
 
           projectModulesSurvey.declaredModules().forEach(missing::remove);
           libraryModulesSurvey.declaredModules().forEach(missing::remove);

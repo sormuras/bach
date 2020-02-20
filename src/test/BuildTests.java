@@ -84,10 +84,17 @@ class BuildTests {
                         .mapper(new Mapper()));
         var lib = temp.resolve("lib");
         assertEquals(lib, summary.project().paths().lib());
+        assertTrue(Files.exists(lib.resolve("org.apiguardian.api-1.1.0.jar")));
         assertTrue(Files.exists(lib.resolve("org.junit.jupiter-5.6.0.jar")));
         assertTrue(Files.exists(lib.resolve("org.junit.jupiter.api-5.6.0.jar")));
         assertTrue(Files.exists(lib.resolve("org.junit.jupiter.engine-5.6.0.jar")));
         assertTrue(Files.exists(lib.resolve("org.junit.jupiter.params-5.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.platform.commons-1.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.platform.console-1.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.platform.engine-1.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.platform.launcher-1.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.junit.platform.reporting-1.6.0.jar")));
+        assertTrue(Files.exists(lib.resolve("org.opentest4j-1.2.0.jar")));
       } catch (Throwable t) {
         log.lines().forEach(System.err::println);
         throw t;

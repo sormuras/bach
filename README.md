@@ -49,6 +49,10 @@ If the project declares exactly a single module with a main class, that module i
 If a test module provides a `java.util.spi.ToolProvider` implementation named like that (or another) test module, it is run.
 For example: the `TestProvider` class is instantiated and run if module `test.modules` declares `provides java.util.spi.ToolProvider with test.modules.TestProvider;` and `TestProvider#getName()` returns `test(test.modules)`.
 
+- **Mend Missing Modules** Convention\
+If a project declares dependence to a members of set of well-known "API" modules, that for themselves require more modules to be present at runtime, those additional modules are implicitly declared as a dependence.
+For example: a project module declares `requires org.junit.jupiter.api;` then `org.junit.jupiter.engine` is added to the set of required modules.
+
 # install-jdk.sh
 
 `install-jdk.sh` main purpose is to install the _latest-and-greatest_ available OpenJDK release from [jdk.java.net](https://jdk.java.net).
