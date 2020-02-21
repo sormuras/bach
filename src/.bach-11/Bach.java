@@ -432,6 +432,11 @@ public class Bach {
         return out;
       }
 
+      public Path out(String first, String... more) {
+        var path = Path.of(first, more);
+        return out.resolve(path);
+      }
+
       public Path classes(Realm realm) {
         return out.resolve(CLASSES).resolve(realm.name());
       }
@@ -1417,8 +1422,15 @@ public class Bach {
       public Task launchTests(Project.Realm realm) {
         var tasks = new ArrayList<Task>();
         for (var unit : realm.units().values()) {
-          var tester = new Tester(realm, unit);
-          tasks.add(new Task.RunTool("Run provided test(" + unit.name() + ")", tester));
+          var module = unit.name();
+          var tester = new ToolTester(realm, unit);
+          tasks.add(new Task.RunTool("Run provided tool: test(" + module + ")", tester));
+          var junit = new JUnitTester(realm, unit);
+          var args =
+              new Util.Args()
+                  .add("--select-module", module)
+                  .add("--reports-dir", project.paths().out("junit-reports", module));
+          tasks.add(new Task.RunTool("Run JUnit Platform for " + module, junit, args.toStrings()));
         }
         return sequence("Launch tests in " + realm.name() + " realm", tasks.toArray(Task[]::new));
       }
@@ -1504,38 +1516,35 @@ public class Bach {
         return paths;
       }
 
-      /** Test launcher running provided test tools. */
-      class Tester implements ToolProvider, GarbageCollect {
+      /** Test launcher base. */
+      abstract class AbstractTester implements ToolProvider, GarbageCollect {
 
-        private final Project.Realm realm;
-        private final Project.Unit unit;
+        private final String name;
+        final Project.Realm realm;
+        final Project.Unit unit;
 
-        Tester(Project.Realm realm, Project.Unit unit) {
+        AbstractTester(String name, Project.Realm realm, Project.Unit unit) {
+          this.name = name;
           this.realm = realm;
           this.unit = unit;
         }
 
         @Override
         public String name() {
-          return "tester(" + unit.name() + ")";
+          return name;
         }
 
-        @Override
-        public int run(PrintWriter out, PrintWriter err, String... args) {
+        Stream<ToolProvider> tools() {
           var modulePath = new ArrayList<Path>();
           modulePath.add(toModularJar(realm, unit)); // test module first
           modulePath.addAll(toModulePaths(realm)); // compile dependencies next, like "main"...
           modulePath.add(project.paths().modules(realm)); // same realm last, like "test"...
-          var name = "test(" + unit.name() + ")";
           var layer = Util.Modules.layer(modulePath, unit.name());
           var tools = ServiceLoader.load(layer, ToolProvider.class);
-          return StreamSupport.stream(tools.spliterator(), false)
-              .filter(tool -> name.equals(tool.name()))
-              .mapToInt(tool -> Math.abs(run(tool, out, err, args)))
-              .sum();
+          return StreamSupport.stream(tools.spliterator(), false);
         }
 
-        private int run(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+        int run(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
           var toolLoader = tool.getClass().getClassLoader();
           var currentThread = Thread.currentThread();
           var currentContextLoader = currentThread.getContextClassLoader();
@@ -1545,6 +1554,41 @@ public class Bach {
           } finally {
             currentThread.setContextClassLoader(currentContextLoader);
           }
+        }
+      }
+
+      /** Test launcher running provided test tools. */
+      class ToolTester extends AbstractTester {
+
+        ToolTester(Project.Realm realm, Project.Unit unit) {
+          super("tester(" + unit.name() + ")", realm, unit);
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          var name = "test(" + unit.name() + ")";
+          return tools()
+              .filter(tool -> name.equals(tool.name()))
+              .mapToInt(tool -> Math.abs(run(tool, out, err, args)))
+              .sum();
+        }
+      }
+
+      /** Test launcher running JUnit Platform. */
+      class JUnitTester extends AbstractTester {
+
+        JUnitTester(Project.Realm realm, Project.Unit unit) {
+          super("junit(" + unit.name() + ")", realm, unit);
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          var junit = tools().filter(tool -> "junit".equals(tool.name())).findFirst();
+          if (junit.isEmpty()) {
+            out.println("Tool named 'junit' not found");
+            return 0;
+          }
+          return run(junit.get(), out, err, args);
         }
       }
 
