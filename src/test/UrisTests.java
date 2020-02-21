@@ -30,7 +30,7 @@ class UrisTests {
     var tb = target.resolve("b.txt");
     var tc = target.resolve("c.txt");
 
-    var uris = new Bach.Util.Uris(HttpClient.newBuilder().build());
+    var uris = new Bach.Util.Uris();
     assertTrue(Files.isRegularFile(uris.copy(sa.toUri(), ta)));
     uris.copy(sb.toUri(), tb);
     uris.copy(sc.toUri(), tc);

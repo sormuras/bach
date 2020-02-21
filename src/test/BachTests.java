@@ -1,6 +1,7 @@
 // default package
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.nio.file.Path;
@@ -15,7 +16,24 @@ class BachTests {
     var log = new Log();
     var bach = new Bach(log, true);
     assertDoesNotThrow(bach::hashCode);
-    assertLinesMatch(List.of(), log.lines());
+    assertEquals("all", bach.print(System.Logger.Level.ALL, "all"));
+    assertEquals("trace", bach.print(System.Logger.Level.TRACE, "trace"));
+    assertEquals("debug", bach.print(System.Logger.Level.DEBUG, "debug"));
+    assertEquals("info 123", bach.print("info %d", 123));
+    assertEquals("warning", bach.print(System.Logger.Level.WARNING, "warning"));
+    assertEquals("error", bach.print(System.Logger.Level.ERROR, "error"));
+    assertEquals("off", bach.print(System.Logger.Level.OFF, "off"));
+    assertLinesMatch(
+        List.of(
+            "P Bach.java initialized",
+            "P all",
+            "P trace",
+            "P debug",
+            "P info 123",
+            "P warning",
+            "P error",
+            "P off"),
+        log.lines());
   }
 
   @Nested
@@ -28,6 +46,7 @@ class BachTests {
       var summary = new Bach(log, true).build(project);
       assertLinesMatch(
           List.of(
+              "P Bach.java initialized", // verbose
               "P Build empty", // verbose
               "P Project", // verbose
               ">> PROJECT COMPONENTS >>", // verbose

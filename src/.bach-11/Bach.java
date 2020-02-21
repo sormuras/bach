@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
@@ -108,6 +109,9 @@ public class Bach {
     }
   }
 
+  /** Lazily created atomic references to heavyweight objects. */
+  private final Atomics atomics;
+
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
@@ -121,8 +125,25 @@ public class Bach {
 
   /** Initialize this instance with the specified arguments. */
   public Bach(Consumer<String> printer, boolean verbose) {
+    this.atomics = new Atomics();
     this.printer = printer;
     this.verbose = verbose;
+    print(Level.TRACE, "Bach.java initialized");
+  }
+
+  /** Atomic accessor. */
+  private Atomics atomics() {
+    return atomics;
+  }
+
+  /** Line printer. */
+  private Consumer<String> printer() {
+    return printer;
+  }
+
+  /** Verbosity flag. */
+  public boolean verbose() {
+    return verbose;
   }
 
   /** Build project located in the current working directory. */
@@ -145,15 +166,15 @@ public class Bach {
 
   /** Build the specified project using the default build factory supplying the root build task. */
   public Build.Summary build(Project project) {
-    var factory = new Build.Factory(project, verbose);
+    var factory = new Build.Factory(project, verbose());
     return build(project, factory::build);
   }
 
   /** Build the specified project using the given root task supplier. */
   public Build.Summary build(Project project, Supplier<Build.Task> task) {
     var start = Instant.now();
-    printer.accept("Build " + project.descriptor().toNameAndVersion());
-    if (verbose) project.print(printer);
+    print("Build %s", project.descriptor().toNameAndVersion());
+    if (verbose()) project.print(printer());
 
     var summary = new Build.Summary(project);
     Build.execute(this, task.get(), summary);
@@ -166,9 +187,21 @@ public class Bach {
             .replaceAll("(\\d[HMS])(?!$)", "$1 ")
             .toLowerCase();
 
-    printer.accept("Summary written to " + markdown.toUri());
-    printer.accept("Build took " + duration);
+    print("Summary written to %s", markdown.toUri());
+    print("Build took %s", duration);
     return summary;
+  }
+
+  /** Print a message at information level. */
+  public String print(String format, Object... args) {
+    return print(Level.INFO, format, args);
+  }
+
+  /** Print a message at specified level. */
+  public String print(Level level, String format, Object... args) {
+    var message = String.format(format, args);
+    if (verbose() || level.getSeverity() >= Level.INFO.getSeverity()) printer().accept(message);
+    return message;
   }
 
   /** Project model. */
@@ -1215,14 +1248,14 @@ public class Bach {
 
     /** Run the given task and its attached child tasks. */
     static void execute(Bach bach, Task task, Summary summary) {
-      var verbose = bach.verbose;
-      var printer = bach.printer;
+      var verbose = bach.verbose();
+      var printer = bach.printer();
 
       var markdown = task.toMarkdown();
       if (verbose) printer.accept(markdown);
 
       summary.executionBegin(task);
-      var result = task.execute(new Task.Execution(printer, verbose));
+      var result = task.execute(new Task.Execution(bach));
       if (verbose) {
         result.out.lines().forEach(printer);
         result.err.lines().forEach(printer);
@@ -1543,7 +1576,7 @@ public class Bach {
           try {
             var missing = findMissingModules(libraryModulesSurvey);
             if (missing.isEmpty()) {
-              execution.debug("All required modules are locatable.");
+              execution.bach().print("All required modules are locatable.");
               return execution.ok();
             }
             new Loader(execution, lib).resolve(missing);
@@ -1612,7 +1645,7 @@ public class Bach {
               var mapping = mapping(module, version);
               var source = mapping.uri();
               var target = lib.resolve(module + "-" + mapping.version() + ".jar");
-              execution.uris().copy(source, target);
+              execution.bach().atomics().uris().copy(source, target);
               execution.debug("%s <- %s", target, source);
             }
           }
@@ -1622,7 +1655,7 @@ public class Bach {
               return project.library().mapper().apply(module, version);
             } catch (Util.Modules.UnmappedModuleException e) {
               execution.debug("Module %s not mapped directly", module);
-              return execution.magic().apply(module, version);
+              return execution.bach().atomics().mapper().apply(module, version);
             }
           }
         }
@@ -1635,43 +1668,29 @@ public class Bach {
       /** Task execution context. */
       public static final class Execution {
 
-        private static final AtomicReference<Project.ModuleMapper> magic = new AtomicReference<>();
-
-        private final Consumer<String> printer;
-        private final boolean verbose;
+        private final Bach bach;
         private final Instant start;
         private final StringWriter out;
         private final StringWriter err;
-        private final Util.Uris uris;
 
-        public Execution(Consumer<String> printer, boolean verbose) {
-          this.printer = printer;
-          this.verbose = verbose;
+        public Execution(Bach bach) {
+          this.bach = bach;
           this.start = Instant.now();
           this.out = new StringWriter();
           this.err = new StringWriter();
-          this.uris = new Util.Uris(); // TODO AtomicReference<Uris>
         }
 
-        public Consumer<String> printer() {
-          return printer;
-        }
-
-        public boolean verbose() {
-          return verbose;
+        public Bach bach() {
+          return bach;
         }
 
         public Instant start() {
           return start;
         }
 
-        public Util.Uris uris() {
-          return uris;
-        }
-
         /** Print message if verbose flag is set. */
         public void debug(String format, Object... args) {
-          if (verbose()) {
+          if (bach().verbose()) {
             out.write(String.format(format, args));
             out.write('\n');
           }
@@ -1685,19 +1704,6 @@ public class Bach {
         /** Create result with error code one and append throwable's message to the error string. */
         public Result failed(Throwable throwable) {
           return new Result(start, 1, out.toString(), err.toString() + '\n' + throwable.toString());
-        }
-
-        /** Module mapper. */
-        public Project.ModuleMapper magic() {
-          var current = magic.get();
-          if (current != null) return current;
-          try {
-            printer().accept("Create Maven Central Module Mapper");
-            var newCentral = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
-            return magic.compareAndSet(null, newCentral) ? newCentral : magic.get();
-          } catch (Exception e) {
-            throw new AssertionError("Create Central Magic failed", e);
-          }
         }
       }
 
@@ -2373,11 +2379,7 @@ public class Bach {
       private final HttpClient http;
 
       public Uris() {
-        this(HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
-      }
-
-      public Uris(HttpClient http) {
-        this.http = http;
+        this.http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
       }
 
       /** Request head-only from the specified uri. */
@@ -2457,6 +2459,44 @@ public class Bach {
     }
   }
 
+  /** Lazily created atomic references to heavyweight objects. */
+  private class Atomics {
+
+    private final AtomicReference<Util.Uris> uris;
+    private final AtomicReference<Project.ModuleMapper> modules;
+
+    private Atomics() {
+      this.uris = new AtomicReference<>();
+      this.modules = new AtomicReference<>();
+    }
+
+    /** Get or create uris instance. */
+    Util.Uris uris() {
+      var current = uris.get();
+      if (current != null) return current;
+      try {
+        print(Level.DEBUG, "Create Uris instance");
+        var created = new Util.Uris(); // Creates an HttpClient instance with threads...
+        return uris.compareAndSet(null, created) ? created : uris.get();
+      } catch (Exception e) {
+        throw new AssertionError("Create Uris instance failed", e);
+      }
+    }
+
+    /** Get or create Maven Central "sormuras/modules" ModuleMapper instance. */
+    Project.ModuleMapper mapper() {
+      var current = modules.get();
+      if (current != null) return current;
+      try {
+        print("Create Maven Central module mapper instance");
+        var created = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris());
+        return modules.compareAndSet(null, created) ? created : modules.get();
+      } catch (Exception e) {
+        throw new AssertionError("Create Uris instance failed", e);
+      }
+    }
+  }
+
   /** Bach.java's main program class. */
   private class Main {
 
@@ -2469,7 +2509,7 @@ public class Bach {
 
     /** Run main operation. */
     void run() {
-      if (verbose) printer.accept("Run main operation(s): " + operations);
+      print(Level.DEBUG, "Run main operation(s): " + operations);
       if (operations.isEmpty()) return;
       var operation = operations.removeFirst();
       switch (operation) {
@@ -2489,13 +2529,13 @@ public class Bach {
 
     /** Print help screen. */
     public void help() {
-      printer.accept("Bach.java " + VERSION + " running on Java " + Runtime.version());
-      printer.accept("F1 F1 F1");
+      print("Bach.java %s running on Java %s", VERSION, Runtime.version());
+      print("F1 F1 F1");
     }
 
     /** Print version. */
     public void version() {
-      printer.accept("" + VERSION);
+      print("" + VERSION);
     }
   }
 }
