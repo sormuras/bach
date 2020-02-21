@@ -963,7 +963,7 @@ public class Bach {
             var maven = mavens.get(module);
             if (maven == null) throw new Util.Modules.UnmappedModuleException(module);
             var indexOfColon = maven.indexOf(':');
-            if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+            if (indexOfColon < 0) throw new AssertionError("Expected group:artifact: " + maven);
             var group = maven.substring(0, indexOfColon);
             var artifact = maven.substring(indexOfColon + 1);
             if (version == null) {
@@ -1530,7 +1530,8 @@ public class Bach {
 
         private final List<String> out = new ArrayList<>();
         private final Project.ModuleSurvey systemModulesSurvey;
-        private final AtomicReference<Project.ModuleMapper.MavenCentral.SormurasModulesMapper> magic;
+        private final AtomicReference<Project.ModuleMapper.MavenCentral.SormurasModulesMapper>
+            magic;
 
         public Resolver() {
           super("Resolve missing modules", false, List.of());
@@ -1620,7 +1621,8 @@ public class Bach {
           }
         }
 
-        private Project.ModuleMapper.Mapping mapping(Util.Uris uris, String module, Version version) {
+        private Project.ModuleMapper.Mapping mapping(
+            Util.Uris uris, String module, Version version) {
           try {
             return project.library().mapper().apply(module, version);
           } catch (Util.Modules.UnmappedModuleException e) {
@@ -1639,7 +1641,6 @@ public class Bach {
             throw new AssertionError("Create Central failed", e);
           }
         }
-
       }
     }
 
@@ -2308,7 +2309,7 @@ public class Bach {
         return properties;
       }
 
-      /** Convert all {@link String}-based properties in an instance of {@code Map<String, String>}. */
+      /** Convert all {@link String}-based properties into a {@code Map<String, String>}. */
       static Map<String, String> map(Properties properties) {
         var map = new HashMap<String, String>();
         for (var name : properties.stringPropertyNames()) {
@@ -2404,7 +2405,7 @@ public class Bach {
           logger.log(Level.DEBUG, "{0} <- {1}", path, uri);
           return path;
         }
-        if (response.statusCode() == 304) // Not Modified
+        if (response.statusCode() == 304 /*Not Modified*/)
           return path; // https://tools.ietf.org/html/rfc7232#section-4.1
         throw new IOException("response=" + response);
       }
