@@ -44,15 +44,15 @@ class DocTests {
   }
 
   @Test
-  void buildProjectJigsawQuickStartWithTests(@TempDir Path temp) {
-    var name = "jigsaw.quick.start.with.tests";
+  void buildProjectJigsawQuickStartAndTesting(@TempDir Path temp) {
+    var name = "jigsaw.quick.start.and.testing";
     var base = Path.of("doc/project", name);
     var summary = build(base, temp);
     var project = summary.project();
     assertEquals(name, project.descriptor().name());
     assertEquals("com.greetings", project.mainModule().orElseThrow());
     var units = project.units();
-    assertEquals(5, units.size());
+    assertEquals(3, units.size());
     var layout = Bach.Project.Layout.MAIN_TEST;
     assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
     for (var unit : units) {
@@ -64,15 +64,43 @@ class DocTests {
         assertEquals("main", layout.realmOf(unit).orElseThrow());
         assertFalse(unit.isMainClassPresent());
       }
-      if (unit.path().equals(base.resolve("test.base/src/test/java/module-info.java"))) {
-        assertEquals("test", layout.realmOf(unit).orElseThrow());
-        assertFalse(unit.isMainClassPresent());
-      }
       if (unit.path().equals(base.resolve("test.modules/src/test/java/module-info.java"))) {
         assertEquals("test", layout.realmOf(unit).orElseThrow());
         assertFalse(unit.isMainClassPresent());
       }
-      if (unit.path().equals(base.resolve("org.astro/src/test/java/module-info.java"))) {
+    }
+  }
+
+  @Test
+  void buildProjectJigsawQuickStartWithJUnit(@TempDir Path temp) {
+    var name = "jigsaw.quick.start.with.junit";
+    var base = Path.of("doc/project", name);
+    var summary = build(base, temp);
+    var project = summary.project();
+    assertEquals(name, project.descriptor().name());
+    assertEquals("com.greetings", project.mainModule().orElseThrow());
+    var units = project.units();
+    assertEquals(5, units.size());
+    var layout = Bach.Project.Layout.MAIN_TEST;
+    assertEquals(layout, Bach.Project.Layout.find(units).orElseThrow());
+    for (var unit : units) {
+      if (unit.path().equals(base.resolve("src/com.greetings/main/java/module-info.java"))) {
+        assertEquals("main", layout.realmOf(unit).orElseThrow());
+        assertTrue(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("src/org.astro/main/java/module-info.java"))) {
+        assertEquals("main", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("src/test.base/test/java/module-info.java"))) {
+        assertEquals("test", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("src/test.modules/test/java/module-info.java"))) {
+        assertEquals("test", layout.realmOf(unit).orElseThrow());
+        assertFalse(unit.isMainClassPresent());
+      }
+      if (unit.path().equals(base.resolve("src/org.astro/test/java/module-info.java"))) {
         assertEquals("test", layout.realmOf(unit).orElseThrow());
         assertFalse(unit.isMainClassPresent());
       }
