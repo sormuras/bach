@@ -13,9 +13,9 @@ class BachTests {
   @Test
   void useCanonicalConstructorWithCustomLogger() {
     var log = new Log();
-    var bach = new Bach(log, log, true);
+    var bach = new Bach(log, true);
     assertDoesNotThrow(bach::hashCode);
-    assertLinesMatch(List.of("L Initialized Bach.java .+"), log.lines());
+    assertLinesMatch(List.of(), log.lines());
   }
 
   @Nested
@@ -25,19 +25,14 @@ class BachTests {
     void empty(@TempDir Path temp) {
       var log = new Log();
       var project = new Bach.Project.Builder("empty").paths(temp).build();
-      var summary = new Bach(log, log, true).build(project);
+      var summary = new Bach(log, true).build(project);
       assertLinesMatch(
           List.of(
-              "L Initialized Bach.java .+",
-              "L Build Project.+",
               "P Build empty", // verbose
               "P Project", // verbose
               ">> PROJECT COMPONENTS >>", // verbose
-              "L Build project empty",
               "P Build project empty", // verbose
-              "L `Files.createDirectories.+",
               "P `Files.createDirectories.+",
-              "L Print version of various foundation tools",
               "P Print version of various foundation tools", // verbose
               ">> FOUNDATION TOOL VERSIONS >>"),
           log.lines());

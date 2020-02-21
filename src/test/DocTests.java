@@ -12,7 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DocTests {
 
   private final Log log = new Log();
-  private final Bach bach = new Bach(log, log, true);
+  private final Bach bach = new Bach(log, true);
 
   @Test
   void buildProjectJigsawQuickStart(@TempDir Path temp) {

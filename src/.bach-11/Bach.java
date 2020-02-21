@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
@@ -92,9 +90,6 @@ public class Bach {
   /** Version of the Java Shell Builder. */
   private static final Version VERSION = Version.parse("11.0-ea");
 
-  /** Default logger instance. */
-  private static final Logger LOGGER = System.getLogger("Bach.java");
-
   /** Default printer instance. */
   private static final Consumer<String> PRINTER = System.out::println;
 
@@ -113,9 +108,6 @@ public class Bach {
     }
   }
 
-  /** Logger instance. */
-  private final Logger logger;
-
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
@@ -124,15 +116,13 @@ public class Bach {
 
   /** Initialize this instance with default values. */
   public Bach() {
-    this(LOGGER, PRINTER, VERBOSE);
+    this(PRINTER, VERBOSE);
   }
 
   /** Initialize this instance with the specified arguments. */
-  public Bach(Logger logger, Consumer<String> printer, boolean verbose) {
-    this.logger = logger;
+  public Bach(Consumer<String> printer, boolean verbose) {
     this.printer = printer;
     this.verbose = verbose;
-    logger.log(Level.TRACE, "Initialized Bach.java " + VERSION);
   }
 
   /** Build project located in the current working directory. */
@@ -162,7 +152,6 @@ public class Bach {
   /** Build the specified project using the given root task supplier. */
   public Build.Summary build(Project project, Supplier<Build.Task> task) {
     var start = Instant.now();
-    logger.log(Level.DEBUG, "Build {0}", project);
     printer.accept("Build " + project.descriptor().toNameAndVersion());
     if (verbose) project.print(printer);
 
@@ -1226,16 +1215,14 @@ public class Bach {
 
     /** Run the given task and its attached child tasks. */
     static void execute(Bach bach, Task task, Summary summary) {
-      var logger = bach.logger;
       var verbose = bach.verbose;
       var printer = bach.printer;
 
       var markdown = task.toMarkdown();
-      logger.log(Level.DEBUG, markdown);
       if (verbose) printer.accept(markdown);
 
       summary.executionBegin(task);
-      var result = task.execute(new Task.Execution(logger, printer, verbose));
+      var result = task.execute(new Task.Execution(printer, verbose));
       if (verbose) {
         result.out.lines().forEach(printer);
         result.err.lines().forEach(printer);
@@ -1650,7 +1637,6 @@ public class Bach {
 
         private static final AtomicReference<Project.ModuleMapper> magic = new AtomicReference<>();
 
-        private final Logger logger;
         private final Consumer<String> printer;
         private final boolean verbose;
         private final Instant start;
@@ -1658,18 +1644,13 @@ public class Bach {
         private final StringWriter err;
         private final Util.Uris uris;
 
-        public Execution(Logger logger, Consumer<String> printer, boolean verbose) {
-          this.logger = logger;
+        public Execution(Consumer<String> printer, boolean verbose) {
           this.printer = printer;
           this.verbose = verbose;
           this.start = Instant.now();
           this.out = new StringWriter();
           this.err = new StringWriter();
-          this.uris = new Util.Uris(logger);
-        }
-
-        public Logger logger() {
-          return logger;
+          this.uris = new Util.Uris(); // TODO AtomicReference<Uris>
         }
 
         public Consumer<String> printer() {
@@ -1712,7 +1693,6 @@ public class Bach {
           if (current != null) return current;
           try {
             printer().accept("Create Maven Central Module Mapper");
-            logger().log(Level.DEBUG, "Create Maven Central Module Mapper");
             var newCentral = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
             return magic.compareAndSet(null, newCentral) ? newCentral : magic.get();
           } catch (Exception e) {
@@ -2390,19 +2370,13 @@ public class Bach {
     /** Uniform Resource Identifier ({@link URI}) read and download support. */
     class Uris {
 
-      private final Logger logger;
       private final HttpClient http;
 
       public Uris() {
-        this(LOGGER);
+        this(HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
       }
 
-      public Uris(Logger logger) {
-        this(logger, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
-      }
-
-      public Uris(Logger logger, HttpClient http) {
-        this.logger = logger;
+      public Uris(HttpClient http) {
         this.http = http;
       }
 
@@ -2416,7 +2390,7 @@ public class Bach {
 
       /** Copy all content from a uri to a target file. */
       public Path copy(URI uri, Path path, CopyOption... options) throws Exception {
-        logger.log(Level.DEBUG, "Copy {0} to {1}", uri, path);
+        // logger.log(Level.DEBUG, "Copy {0} to {1}", uri, path);
         Files.createDirectories(path.getParent());
         if ("file".equals(uri.getScheme())) {
           try {
@@ -2432,7 +2406,7 @@ public class Bach {
             var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
             request.setHeader("If-None-Match", etag);
           } catch (Exception e) {
-            logger.log(Level.WARNING, "Couldn't get 'user:etag' file attribute: {0}", e);
+            // logger.log(Level.WARNING, "Couldn't get 'user:etag' file attribute: {0}", e);
           }
         }
         var handler = HttpResponse.BodyHandlers.ofFile(path);
@@ -2446,10 +2420,10 @@ public class Bach {
                   var etag = etagHeader.get();
                   Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
                 } catch (Exception e) {
-                  logger.log(Level.WARNING, "Couldn't set 'user:etag' file attribute: {0}", e);
+                  // logger.log(Level.WARNING, "Couldn't set 'user:etag' file attribute: {0}", e);
                 }
               }
-            } else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
+            } // else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
 
             var lastModifiedHeader = response.headers().firstValue("last-modified");
             if (lastModifiedHeader.isPresent()) {
@@ -2461,11 +2435,11 @@ public class Bach {
                 var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
                 Files.setLastModifiedTime(path, fileTime);
               } catch (Exception e) {
-                logger.log(Level.WARNING, "Couldn't set last modified file attribute: {0}", e);
+                // logger.log(Level.WARNING, "Couldn't set last modified file attribute: {0}", e);
               }
             }
           }
-          logger.log(Level.DEBUG, "{0} <- {1}", path, uri);
+          // logger.log(Level.DEBUG, "{0} <- {1}", path, uri);
           return path;
         }
         if (response.statusCode() == 304 /*Not Modified*/)
@@ -2475,7 +2449,7 @@ public class Bach {
 
       /** Read all content from a uri into a string. */
       public String read(URI uri) throws Exception {
-        logger.log(Level.DEBUG, "Read {0}", uri);
+        // logger.log(Level.DEBUG, "Read {0}", uri);
         if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
         var request = HttpRequest.newBuilder(uri).GET();
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString()).body();
@@ -2495,7 +2469,7 @@ public class Bach {
 
     /** Run main operation. */
     void run() {
-      logger.log(Level.DEBUG, "Run main operation(s): " + operations);
+      if (verbose) printer.accept("Run main operation(s): " + operations);
       if (operations.isEmpty()) return;
       var operation = operations.removeFirst();
       switch (operation) {

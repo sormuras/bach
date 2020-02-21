@@ -25,14 +25,12 @@ class BuildTests {
       var task = Bach.Build.tool("javac", "--version");
 
       var log = new Log();
-      var bach = new Bach(log, log, verbose);
+      var bach = new Bach(log, verbose);
       var project = new Bach.Project.Builder("demo").build();
       var summary = new Bach.Build.Summary(project);
       Bach.Build.execute(bach, task, summary);
 
       var expected = new ArrayList<String>();
-      expected.add("L Initialized Bach.java .+");
-      expected.add("L `javac --version`");
       if (verbose) expected.add("P `javac --version`");
       if (verbose) expected.add("P javac .+");
       assertLinesMatch(expected, log.lines());
@@ -45,7 +43,7 @@ class BuildTests {
     @Test
     void resolveJUnit4(@TempDir Path temp) {
       var log = new Log();
-      var bach = new Bach(log, log, true);
+      var bach = new Bach(log, true);
       try {
         var summary = bach.build(project -> project.paths(temp).requires("junit", "4.13"));
         var lib = temp.resolve("lib");
@@ -61,7 +59,7 @@ class BuildTests {
     @Test
     void resolveJUnitJupiter(@TempDir Path temp) {
       var log = new Log();
-      var bach = new Bach(log, log, true);
+      var bach = new Bach(log, true);
       try {
         var summary =
             bach.build(project -> project.paths(temp).requires("org.junit.jupiter", "5.6.0"));
