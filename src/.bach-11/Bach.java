@@ -1429,6 +1429,9 @@ public class Bach {
           var args =
               new Util.Args()
                   .add("--select-module", module)
+                  .add("--details", "tree")
+                  .add("--details-theme", "unicode")
+                  .add("--disable-ansi-colors")
                   .add("--reports-dir", project.paths().out("junit-reports", module));
           tasks.add(new Task.RunTool("Run JUnit Platform for " + module, junit, args.toStrings()));
         }
