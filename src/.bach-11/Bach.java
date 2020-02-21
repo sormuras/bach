@@ -67,7 +67,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1645,7 +1644,7 @@ public class Bach {
     }
 
     /** An executable task and a potentially non-empty list of sub-tasks. */
-    class Task implements Callable<Result> {
+    class Task {
 
       /** Tool-running task. */
       public static final class RunTool extends Task {
@@ -1722,7 +1721,6 @@ public class Bach {
       }
 
       /** Default computation called before executing child tasks. */
-      @Override
       public Result call() {
         return Result.ok();
       }
