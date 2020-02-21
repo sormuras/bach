@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -84,8 +83,6 @@ class BuildTests {
         log.lines().forEach(System.err::println);
         throw t;
       }
-      assertLinesMatch(
-          List.of(">>>>", "P Create Maven Central Module Mapper", ">>>>"), log.lines());
     }
   }
 }

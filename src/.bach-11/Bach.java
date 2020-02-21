@@ -1226,18 +1226,22 @@ public class Bach {
 
     /** Run the given task and its attached child tasks. */
     static void execute(Bach bach, Task task, Summary summary) {
+      var logger = bach.logger;
+      var verbose = bach.verbose;
+      var printer = bach.printer;
+
       var markdown = task.toMarkdown();
-      bach.logger.log(Level.DEBUG, markdown);
-      if (bach.verbose) bach.printer.accept(markdown);
+      logger.log(Level.DEBUG, markdown);
+      if (verbose) printer.accept(markdown);
 
       summary.executionBegin(task);
-      var result = task.call();
-      if (bach.verbose) {
-        result.out.lines().forEach(bach.printer);
-        result.err.lines().forEach(bach.printer);
+      var result = task.execute(new Task.Execution(logger, printer, verbose));
+      if (verbose) {
+        result.out.lines().forEach(printer);
+        result.err.lines().forEach(printer);
       }
       if (result.code != 0) {
-        result.err.lines().forEach(bach.printer);
+        result.err.lines().forEach(printer);
         summary.executionEnd(task, result);
         var message = markdown + ": non-zero result code: " + result.code;
         throw new TaskExecutionException(message);
@@ -1527,37 +1531,43 @@ public class Bach {
       /** Determine and load missing library modules. */
       class Resolver extends Task {
 
-        private final List<String> out = new ArrayList<>();
         private final Project.ModuleSurvey systemModulesSurvey;
-        private final AtomicReference<Project.ModuleMapper.MavenCentral.SormurasModulesMapper>
-            magic;
 
         public Resolver() {
           super("Resolve missing modules", false, List.of());
           this.systemModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.ofSystem());
-          this.magic = new AtomicReference<>(null);
         }
 
         @Override
-        public Result call() {
+        public Result execute(Execution execution) {
+          var units = project.units();
           var lib = project.paths().lib();
-          var start = Instant.now();
+          var projectModulesSurvey = project.structure().survey();
+          var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
+
+          execution.debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
+          execution.debug("  declared -> " + projectModulesSurvey.declaredModules());
+          execution.debug("  requires -> " + projectModulesSurvey.requiredModules());
+          execution.debug("Library modules survey of -> %s", lib.toUri());
+          execution.debug("  declared -> " + libraryModulesSurvey.declaredModules());
+          execution.debug("  requires -> " + libraryModulesSurvey.requiredModules());
+          execution.debug("System with %d modules.", systemModulesSurvey.declaredModules().size());
+
           try {
-            var missing = findMissingModules(lib);
+            var missing = findMissingModules(libraryModulesSurvey);
             if (missing.isEmpty()) {
-              out.add("All required modules are locatable.");
-              return new Result(start, 0, out.toString(), "");
+              execution.debug("All required modules are locatable.");
+              return execution.ok();
             }
-            resolve(lib, missing);
-            return new Result(start, 0, String.join("\n", out), "");
+            new Loader(execution, lib).resolve(missing);
+            return execution.ok();
           } catch (Exception e) {
-            return new Result(start, 1, "", e.toString());
+            return execution.failed(e);
           }
         }
 
-        Map<String, Version> findMissingModules(Path lib) {
+        Map<String, Version> findMissingModules(Project.ModuleSurvey libraryModulesSurvey) {
           var projectModulesSurvey = project.structure().survey();
-          var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
 
           var missing = new TreeMap<String, Version>();
           missing.putAll(projectModulesSurvey.requiredModules());
@@ -1565,16 +1575,6 @@ public class Bach {
           for (var requires : project.descriptor().requires()) {
             missing.put(requires.name(), requires.compiledVersion().orElse(null));
           }
-
-          /*
-          debug("Project modules survey of %s unit(s) -> %s", units.size(), units);
-          debug("  declared -> " + projectModulesSurvey.declaredModules());
-          debug("  requires -> " + projectModulesSurvey.requiredModules());
-          debug("Library modules survey of -> %s", lib.toUri());
-          debug("  declared -> " + libraryModulesSurvey.declaredModules());
-          debug("  requires -> " + libraryModulesSurvey.requiredModules());
-          debug("System contains %d modules.", systemModulesSurvey.declaredModules().size());
-          */
 
           if (project.library().test(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
             Project.Convention.addMissingJUnitTestEngines(missing);
@@ -1587,57 +1587,56 @@ public class Bach {
           return missing;
         }
 
-        void resolve(Path lib, Map<String, Version> modules) throws Exception {
-          var uris = new Util.Uris();
-          var loaded = new ArrayList<String>();
-          var repeat = project.library().test(Project.Library.Modifier.RESOLVE_RECURSIVELY);
-          do {
-            var intersection = new TreeSet<>(modules.keySet());
-            resolve(lib, modules, uris);
-            loaded.addAll(modules.keySet());
-            modules.clear();
-            var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
-            modules.putAll(libraryModulesSurvey.requiredModules());
-            libraryModulesSurvey.declaredModules().forEach(modules::remove);
-            systemModulesSurvey.declaredModules().forEach(modules::remove);
-            intersection.retainAll(modules.keySet());
-            if (!intersection.isEmpty())
-              throw new IllegalStateException("Unresolved modules: " + intersection);
-          } while (repeat && !modules.isEmpty());
-          out.add(String.format("Resolved %d missing modules: %s", loaded.size(), loaded));
-        }
+        private class Loader {
 
-        void resolve(Path lib, Map<String, Version> modules, Util.Uris uris) throws Exception {
-          out.add("Resolve modules: " + modules);
-          for (var entry : modules.entrySet()) {
-            var module = entry.getKey();
-            var version = entry.getValue();
-            var mapping = mapping(uris, module, version);
-            var source = mapping.uri();
-            var target = lib.resolve(module + "-" + mapping.version() + ".jar");
-            uris.copy(source, target);
-            out.add(target + " <- " + source);
+          private final Task.Execution execution;
+          private final Path lib;
+
+          private Loader(Execution execution, Path lib) {
+            this.execution = execution;
+            this.lib = lib;
           }
-        }
 
-        private Project.ModuleMapper.Mapping mapping(
-            Util.Uris uris, String module, Version version) {
-          try {
-            return project.library().mapper().apply(module, version);
-          } catch (Util.Modules.UnmappedModuleException e) {
-            return magic(uris).apply(module, version);
+          void resolve(Map<String, Version> modules) throws Exception {
+            var loaded = new ArrayList<String>();
+            var repeat = project.library().test(Project.Library.Modifier.RESOLVE_RECURSIVELY);
+            do {
+              var intersection = new TreeSet<>(modules.keySet());
+              load(modules);
+              loaded.addAll(modules.keySet());
+              modules.clear();
+              var libraryModulesSurvey = Project.ModuleSurvey.of(ModuleFinder.of(lib));
+              modules.putAll(libraryModulesSurvey.requiredModules());
+              libraryModulesSurvey.declaredModules().forEach(modules::remove);
+              systemModulesSurvey.declaredModules().forEach(modules::remove);
+              intersection.retainAll(modules.keySet());
+              if (!intersection.isEmpty())
+                throw new IllegalStateException("Unresolved modules: " + intersection);
+            } while (repeat && !modules.isEmpty());
+            execution.debug("Resolved %d missing modules", loaded.size());
+            loaded.stream().sorted().forEach(module -> execution.debug("  - %s", module));
           }
-        }
 
-        private Project.ModuleMapper.MavenCentral.SormurasModulesMapper magic(Util.Uris uris) {
-          var current = magic.get();
-          if (current != null) return current;
-          try {
-            out.add("Create Maven Central Module Mapper");
-            var newCentral = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
-            return magic.compareAndSet(null, newCentral) ? newCentral : magic.get();
-          } catch (Exception e) {
-            throw new AssertionError("Create Central failed", e);
+          void load(Map<String, Version> modules) throws Exception {
+            execution.debug("Resolve modules: %s", modules);
+            for (var entry : modules.entrySet()) {
+              var module = entry.getKey();
+              var version = entry.getValue();
+              var mapping = mapping(module, version);
+              var source = mapping.uri();
+              var target = lib.resolve(module + "-" + mapping.version() + ".jar");
+              execution.uris().copy(source, target);
+              execution.debug("%s <- %s", target, source);
+            }
+          }
+
+          private Project.ModuleMapper.Mapping mapping(String module, Version version) {
+            try {
+              return project.library().mapper().apply(module, version);
+            } catch (Util.Modules.UnmappedModuleException e) {
+              execution.debug("Module %s not mapped directly", module);
+              return execution.magic().apply(module, version);
+            }
           }
         }
       }
@@ -1645,6 +1644,82 @@ public class Bach {
 
     /** An executable task and a potentially non-empty list of sub-tasks. */
     class Task {
+
+      /** Task execution context. */
+      public static final class Execution {
+
+        private static final AtomicReference<Project.ModuleMapper> magic = new AtomicReference<>();
+
+        private final Logger logger;
+        private final Consumer<String> printer;
+        private final boolean verbose;
+        private final Instant start;
+        private final StringWriter out;
+        private final StringWriter err;
+        private final Util.Uris uris;
+
+        public Execution(Logger logger, Consumer<String> printer, boolean verbose) {
+          this.logger = logger;
+          this.printer = printer;
+          this.verbose = verbose;
+          this.start = Instant.now();
+          this.out = new StringWriter();
+          this.err = new StringWriter();
+          this.uris = new Util.Uris(logger);
+        }
+
+        public Logger logger() {
+          return logger;
+        }
+
+        public Consumer<String> printer() {
+          return printer;
+        }
+
+        public boolean verbose() {
+          return verbose;
+        }
+
+        public Instant start() {
+          return start;
+        }
+
+        public Util.Uris uris() {
+          return uris;
+        }
+
+        /** Print message if verbose flag is set. */
+        public void debug(String format, Object... args) {
+          if (verbose()) {
+            out.write(String.format(format, args));
+            out.write('\n');
+          }
+        }
+
+        /** Create result with code zero and empty output strings. */
+        public Result ok() {
+          return new Result(start, 0, out.toString(), err.toString());
+        }
+
+        /** Create result with error code one and append throwable's message to the error string. */
+        public Result failed(Throwable throwable) {
+          return new Result(start, 1, out.toString(), err.toString() + '\n' + throwable.toString());
+        }
+
+        /** Module mapper. */
+        public Project.ModuleMapper magic() {
+          var current = magic.get();
+          if (current != null) return current;
+          try {
+            printer().accept("Create Maven Central Module Mapper");
+            logger().log(Level.DEBUG, "Create Maven Central Module Mapper");
+            var newCentral = new Project.ModuleMapper.MavenCentral.SormurasModulesMapper(uris);
+            return magic.compareAndSet(null, newCentral) ? newCentral : magic.get();
+          } catch (Exception e) {
+            throw new AssertionError("Create Central Magic failed", e);
+          }
+        }
+      }
 
       /** Tool-running task. */
       public static final class RunTool extends Task {
@@ -1662,10 +1737,10 @@ public class Bach {
         }
 
         @Override
-        public Result call() {
+        public Result execute(Execution context) {
           var out = new StringWriter();
           var err = new StringWriter();
-          var now = Instant.now();
+          var now = context.start();
           var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
           if (tool[0] instanceof GarbageCollect) {
             tool[0] = null;
@@ -1680,10 +1755,7 @@ public class Bach {
         }
       }
 
-      /**
-       * Task delegating to {@link Files#createDirectories(Path,
-       * java.nio.file.attribute.FileAttribute[])}.
-       */
+      /** Creates a directory by creating all nonexistent parent directories first. */
       public static final class CreateDirectories extends Task {
 
         private final Path path;
@@ -1694,12 +1766,12 @@ public class Bach {
         }
 
         @Override
-        public Result call() {
+        public Result execute(Execution context) {
           try {
             Files.createDirectories(path);
-            return Result.ok();
+            return context.ok();
           } catch (IOException e) {
-            return Result.failed(e);
+            return context.failed(e);
           }
         }
 
@@ -1721,8 +1793,8 @@ public class Bach {
       }
 
       /** Default computation called before executing child tasks. */
-      public Result call() {
-        return Result.ok();
+      public Result execute(Execution context) {
+        return context.ok();
       }
 
       /** Return markdown representation of this task instance. */
@@ -1733,17 +1805,6 @@ public class Bach {
 
     /** Execution result record. */
     final class Result {
-
-      /** Create result with code zero and empty output strings. */
-      public static Result ok() {
-        return new Result(Instant.now(), 0, "", "");
-      }
-
-      /** Create result with error code one and use throwable's message as the error string. */
-      public static Result failed(Throwable throwable) {
-        return new Result(Instant.now(), 1, "", throwable.toString());
-      }
-
       private final Instant start;
       private final int code;
       private final String out;
@@ -2333,7 +2394,11 @@ public class Bach {
       private final HttpClient http;
 
       public Uris() {
-        this(LOGGER, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
+        this(LOGGER);
+      }
+
+      public Uris(Logger logger) {
+        this(logger, HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build());
       }
 
       public Uris(Logger logger, HttpClient http) {
