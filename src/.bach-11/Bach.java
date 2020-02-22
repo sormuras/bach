@@ -577,6 +577,11 @@ public class Bach {
         return units.collect(Collectors.toMap(Unit::name, Function.identity()));
       }
 
+      private static List<Path> resources(Path path) {
+        var resources = path.resolveSibling("resources");
+        return Files.isDirectory(resources) ? List.of(resources) : List.of();
+      }
+
       private final Path path;
       private final ModuleDescriptor descriptor;
       private final String moduleSourcePath;
@@ -593,7 +598,7 @@ public class Bach {
             descriptor,
             Util.Modules.moduleSourcePath(info, descriptor.name()),
             List.of(Source.of(info.getParent())),
-            List.of());
+            resources(info.getParent()));
       }
 
       public Unit(
@@ -1384,7 +1389,7 @@ public class Bach {
                       .add("--file", toModularJar(realm, unit))
                       .add(verbose, "--verbose")
                       .add(true, "-C", classes, ".")
-                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .forEach(unit.resources(), (cmd, path) -> cmd.add(true, "-C", path, "."))
                       .toStrings());
           var src =
               tool(
@@ -1397,7 +1402,7 @@ public class Bach {
                       .forEach(
                           unit.sources(Project.Source::path),
                           (cmd, path) -> cmd.add(true, "-C", path, "."))
-                      .forEach(unit.resources, (cmd, path) -> cmd.add(true, "-C", path, "."))
+                      .forEach(unit.resources(), (cmd, path) -> cmd.add(true, "-C", path, "."))
                       .toStrings());
           jars.add(jar);
           jars.add(src);

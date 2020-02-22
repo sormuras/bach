@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -95,6 +96,7 @@ class DocTests {
       if (unit.path().equals(base.resolve("src/test.base/test/java/module-info.java"))) {
         assertEquals("test", layout.realmOf(unit).orElseThrow());
         assertFalse(unit.isMainClassPresent());
+        assertEquals(List.of(base.resolve("src/test.base/test/resources")), unit.resources());
       }
       if (unit.path().equals(base.resolve("src/test.modules/test/java/module-info.java"))) {
         assertEquals("test", layout.realmOf(unit).orElseThrow());
