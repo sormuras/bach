@@ -1167,46 +1167,6 @@ public class Bach {
       }
     }
 
-    /** Common project conventions. */
-    interface Convention {
-
-      /** Return name of main class of the specified module. */
-      static Optional<String> mainClass(Path info, String module) {
-        var main = Path.of(module.replace('.', '/'), "Main.java");
-        var exists = Files.isRegularFile(info.resolveSibling(main));
-        return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
-      }
-
-      /** Return name of the main module by finding a single main class containing unit. */
-      static Optional<String> mainModule(Stream<Unit> units) {
-        var mains = units.filter(Unit::isMainClassPresent).collect(Collectors.toList());
-        return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
-      }
-
-      /** Extend the passed map of modules with missing JUnit test engine implementations. */
-      static void addMissingJUnitTestEngines(Map<String, Version> modules) {
-        var names = modules.keySet();
-        if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
-          modules.putIfAbsent("org.junit.jupiter.engine", null);
-        if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
-      }
-
-      /** Extend the passed map of modules with the JUnit Platform Console module. */
-      static void addJUnitPlatformConsole(Map<String, Version> modules) {
-        var names = modules.keySet();
-        if (names.contains("org.junit.platform.console")) return;
-        var triggers =
-            Set.of(
-                "org.junit.jupiter.engine",
-                "org.junit.vintage.engine",
-                "org.junit.platform.engine");
-        names.stream()
-            .filter(triggers::contains)
-            .findAny()
-            .ifPresent(__ -> modules.put("org.junit.platform.console", null));
-      }
-    }
-
     /** Directory-based project model builder factory. */
     public static class Scanner {
       private final Paths paths;
@@ -1247,6 +1207,44 @@ public class Bach {
           throw new UncheckedIOException(e);
         }
       }
+    }
+  }
+
+  /** Common project conventions. */
+  interface Convention {
+
+    /** Return name of main class of the specified module. */
+    static Optional<String> mainClass(Path info, String module) {
+      var main = Path.of(module.replace('.', '/'), "Main.java");
+      var exists = Files.isRegularFile(info.resolveSibling(main));
+      return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+    }
+
+    /** Return name of the main module by finding a single main class containing unit. */
+    static Optional<String> mainModule(Stream<Project.Unit> units) {
+      var mains = units.filter(Project.Unit::isMainClassPresent).collect(Collectors.toList());
+      return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+    }
+
+    /** Extend the passed map of modules with missing JUnit test engine implementations. */
+    static void addMissingJUnitTestEngines(Map<String, Version> modules) {
+      var names = modules.keySet();
+      if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
+        modules.putIfAbsent("org.junit.jupiter.engine", null);
+      if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
+    }
+
+    /** Extend the passed map of modules with the JUnit Platform Console module. */
+    static void addJUnitPlatformConsole(Map<String, Version> modules) {
+      var names = modules.keySet();
+      if (names.contains("org.junit.platform.console")) return;
+      var triggers =
+          Set.of(
+              "org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
+      names.stream()
+          .filter(triggers::contains)
+          .findAny()
+          .ifPresent(__ -> modules.put("org.junit.platform.console", null));
     }
   }
 
@@ -1649,9 +1647,9 @@ public class Bach {
           }
 
           if (project.library().test(Project.Library.Modifier.ADD_MISSING_JUNIT_TEST_ENGINES))
-            Project.Convention.addMissingJUnitTestEngines(missing);
+            Convention.addMissingJUnitTestEngines(missing);
           if (project.library().test(Project.Library.Modifier.ADD_MISSING_JUNIT_PLATFORM_CONSOLE))
-            Project.Convention.addJUnitPlatformConsole(missing);
+            Convention.addJUnitPlatformConsole(missing);
 
           projectModulesSurvey.declaredModules().forEach(missing::remove);
           libraryModulesSurvey.declaredModules().forEach(missing::remove);
@@ -2150,7 +2148,7 @@ public class Bach {
         var builder = newModule(Strings.readString(info));
         var temporary = builder.build();
         if (temporary.mainClass().isEmpty()) {
-          Project.Convention.mainClass(info, temporary.name()).ifPresent(builder::mainClass);
+          Convention.mainClass(info, temporary.name()).ifPresent(builder::mainClass);
         }
         return builder.build();
       }
