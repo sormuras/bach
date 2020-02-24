@@ -272,6 +272,42 @@ public class Bach {
           .toString();
     }
 
+    /** Compose JAR file name by using unit and project properties. */
+    public String toJarName(Unit unit, String classifier) {
+      var unitVersion = unit.descriptor().version();
+      var projectVersion = descriptor().version();
+      var version = unitVersion.isPresent() ? unitVersion : projectVersion;
+      var versionSuffix = version.map(v -> "-" + v).orElse("");
+      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+      return unit.name() + versionSuffix + classifierSuffix + ".jar";
+    }
+
+    /** Join all unit names of the given realm to a comma-separated string. */
+    public String toModule(Realm realm) {
+      var names = realm.units().values().stream().map(Unit::name);
+      return names.collect(Collectors.joining(","));
+    }
+
+    /** Compose path to the Java module specified by its realm and modular unit. */
+    public Path toModularJar(Realm realm, Unit unit) {
+      return paths().modules(realm).resolve(toJarName(unit, ""));
+    }
+
+    /** Generate {@code --module-path} string for the specified realm. */
+    public String toModulePath(Realm realm) {
+      return toModulePaths(realm).stream()
+          .map(Path::toString)
+          .collect(Collectors.joining(File.pathSeparator));
+    }
+
+    /** Generate list of path for the specified realm. */
+    public List<Path> toModulePaths(Realm realm) {
+      var paths = new ArrayList<Path>();
+      realm.dependencies().stream().map(paths()::modules).forEach(paths::add);
+      paths.add(paths().lib());
+      return paths;
+    }
+
     /** Source directory tree layout. */
     public enum Layout {
       /**
@@ -1347,14 +1383,14 @@ public class Bach {
 
       public Task compileRealm(Project.Realm realm) {
         if (realm.units.isEmpty()) return sequence("No units in " + realm.name + " realm?!");
-        var module = toModule(realm);
+        var module = project.toModule(realm);
         var classes = project.paths().classes(realm);
         var enablePreview = realm.test(Project.Realm.Modifier.ENABLE_PREVIEW);
         var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
         var moduleSourcePath = realm.moduleSourcePath();
-        var modulePath = toModulePath(realm);
+        var modulePath = project.toModulePath(realm);
         var version = project.descriptor().version();
-        var patches = realm.patches((other, unit) -> List.of(toModularJar(other, unit)));
+        var patches = realm.patches((other, unit) -> List.of(project.toModularJar(other, unit)));
         var javac =
             tool(
                 "javac",
@@ -1384,7 +1420,7 @@ public class Bach {
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", toModularJar(realm, unit))
+                      .add("--file", project.toModularJar(realm, unit))
                       .add(verbose, "--verbose")
                       .add(true, "-C", classes, ".")
                       .forEach(unit.resources(), (cmd, path) -> cmd.add(true, "-C", path, "."))
@@ -1394,7 +1430,7 @@ public class Bach {
                   "jar",
                   new Util.Args()
                       .add("--create")
-                      .add("--file", sources.resolve(toJarName(unit, "sources")))
+                      .add("--file", sources.resolve(project.toJarName(unit, "sources")))
                       .add(verbose, "--verbose")
                       .add("--no-manifest")
                       .forEach(
@@ -1453,13 +1489,13 @@ public class Bach {
       }
 
       public Task compileApiDocumentation(Project.Realm realm) {
-        var module = toModule(realm);
+        var module = project.toModule(realm);
         if (module.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
         var name = project.descriptor().name();
         var version = project.descriptor().version();
         var file = name + version.map(v -> "-" + v).orElse("");
         var moduleSourcePath = realm.moduleSourcePath();
-        var modulePath = toModulePath(realm);
+        var modulePath = project.toModulePath(realm);
         var javadoc = project.paths().javadoc();
         return sequence(
             "Generate API documentation and jar generated site",
@@ -1486,42 +1522,6 @@ public class Bach {
                     .toStrings()));
       }
 
-      /** Compose JAR file name by using unit and project properties. */
-      public String toJarName(Project.Unit unit, String classifier) {
-        var unitVersion = unit.descriptor().version();
-        var projectVersion = project.descriptor().version();
-        var version = unitVersion.isPresent() ? unitVersion : projectVersion;
-        var versionSuffix = version.map(v -> "-" + v).orElse("");
-        var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
-        return unit.name() + versionSuffix + classifierSuffix + ".jar";
-      }
-
-      /** Join all unit names of the given realm to a comma-separated string. */
-      public String toModule(Project.Realm realm) {
-        var names = realm.units().values().stream().map(Project.Unit::name);
-        return names.collect(Collectors.joining(","));
-      }
-
-      /** Compose path to the Java module specified by its realm and modular unit. */
-      public Path toModularJar(Project.Realm realm, Project.Unit unit) {
-        return project.paths().modules(realm).resolve(toJarName(unit, ""));
-      }
-
-      /** Generate {@code --module-path} string for the specified realm. */
-      public String toModulePath(Project.Realm realm) {
-        return toModulePaths(realm).stream()
-            .map(Path::toString)
-            .collect(Collectors.joining(File.pathSeparator));
-      }
-
-      /** Generate list of path for the specified realm. */
-      public List<Path> toModulePaths(Project.Realm realm) {
-        var paths = new ArrayList<Path>();
-        realm.dependencies().stream().map(project.paths()::modules).forEach(paths::add);
-        paths.add(project.paths().lib());
-        return paths;
-      }
-
       /** Test launcher base. */
       abstract class AbstractTester implements ToolProvider, GarbageCollect {
 
@@ -1542,9 +1542,9 @@ public class Bach {
 
         Stream<ToolProvider> tools() {
           var modulePath = new ArrayList<Path>();
-          modulePath.add(toModularJar(realm, unit)); // test module first
-          modulePath.addAll(toModulePaths(realm)); // compile dependencies next, like "main"...
-          modulePath.add(project.paths().modules(realm)); // same realm last, like "test"...
+          modulePath.add(project.toModularJar(realm, unit)); // test module first
+          modulePath.addAll(project.toModulePaths(realm)); // compile dependencies next, like "main"
+          modulePath.add(project.paths().modules(realm)); // same realm last, like "test"
           var layer = Util.Modules.layer(modulePath, unit.name());
           var tools = ServiceLoader.load(layer, ToolProvider.class);
           return StreamSupport.stream(tools.spliterator(), false);
