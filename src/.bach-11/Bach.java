@@ -1626,7 +1626,7 @@ public class Bach {
           try {
             var missing = findMissingModules(libraryModulesSurvey);
             if (missing.isEmpty()) {
-              execution.bach().print("All required modules are locatable.");
+              execution.debug("All required modules are locatable.");
               return execution.ok();
             }
             new Loader(execution, lib).resolve(missing);
@@ -1935,7 +1935,7 @@ public class Bach {
         md.add("");
         md.add("## Project");
         md.add("- name: " + descriptor.name());
-        md.add("- version: " + descriptor.version());
+        md.add("- version: " + descriptor.version().map(Version::toString).orElse("<none>"));
         md.add("");
         md.add("```text");
         project.print(md::add);
