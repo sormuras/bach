@@ -1935,7 +1935,7 @@ public class Bach {
         md.add("");
         md.add("## Project");
         md.add("- name: " + descriptor.name());
-        md.add("- version: " + descriptor.version().map(Version::toString).orElse("<none>"));
+        md.add("- version: " + descriptor.version().map(Version::toString).orElse("_none_"));
         md.add("");
         md.add("```text");
         project.print(md::add);
