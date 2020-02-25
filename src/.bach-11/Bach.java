@@ -2580,7 +2580,14 @@ public class Bach {
     /** Print help screen. */
     public void help() {
       print("Bach.java %s running on Java %s", VERSION, Runtime.version());
-      print("F1 F1 F1");
+      print("Usage: java Bach.java <operation> [args...]");
+      print("Available operations include:");
+      print("  build");
+      print("    Build the modular Java project in the current working directory.");
+      print("  help");
+      print("    Print this help text.");
+      print("  version");
+      print("    Print the version of Bach.");
     }
 
     /** Print version. */
