@@ -2598,12 +2598,13 @@ public class Bach {
     }
 
     public void upgrade() throws Exception {
-      var tag = operations.isEmpty() ? "master" : operations.removeFirst();
-      var uri = "https://github.com/sormuras/bach/raw/" + tag + "/src/.bach-11/Bach.java";
       var source = Path.of(operations.isEmpty() ? "src/.bach/Bach.java" : operations.removeFirst());
       var string = Files.exists(source) ? Files.readString(source) : "";
-      var remote = atomics().uris().read(URI.create(uri));
+      print("Source file path: %s", source.toUri());
       print("Source hash code: 0x%X (%d lines)", string.hashCode(), string.lines().count());
+      var tag = operations.isEmpty() ? "master" : operations.removeFirst();
+      var uri = "https://github.com/sormuras/bach/raw/" + tag + "/src/.bach-11/Bach.java";
+      var remote = atomics().uris().read(URI.create(uri));
       print("Remote hash code: 0x%X (%d lines)", remote.hashCode(), remote.lines().count());
       print("Remote file path: %s", uri);
       if (string.hashCode() == remote.hashCode()) return;
