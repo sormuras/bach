@@ -21,7 +21,7 @@
 var version = System.getProperty("version", "master")
 var feature = System.getProperty("feature", "11")
 var preview = Boolean.parseBoolean(System.getProperty("preview", "false"))
-var replace = Boolean.parseBoolean(System.getProperty("replace", "false"))
+var upgrade = Boolean.parseBoolean(System.getProperty("upgrade", "false"))
 
 /*
  * Compute and set variables.
@@ -58,7 +58,7 @@ println()
 println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
 for (var asset : Set.of(bach, build)) {
-  if (Files.notExists(asset) || (replace && bach.equals(asset))) {
+  if (Files.notExists(asset) || (upgrade && bach.equals(asset))) {
     var remote = new URL(source, asset.getFileName().toString());
     println("  | " + remote + "...");
     try (var stream = remote.openStream()) {
