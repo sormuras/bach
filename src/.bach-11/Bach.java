@@ -368,7 +368,6 @@ public class Bach {
             var realm = realmOf(unit).orElse(unit.path().toString());
             map.computeIfAbsent(realm, key -> new ArrayList<>()).add(unit);
           }
-          if (map.isEmpty()) return List.of();
           var realms = new ArrayList<Realm>();
           var main = map.remove("main");
           if (main != null) {
