@@ -32,6 +32,7 @@ try {
   Bach.main(args);
 } catch (Throwable throwable) {
   System.err.println(throwable.getMessage());
+  throwable.printStackTrace();
   code = 1;
 }
 
