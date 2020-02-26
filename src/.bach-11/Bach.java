@@ -2558,7 +2558,7 @@ public class Bach {
     }
 
     /** Run main operation. */
-    void run() {
+    void run() throws Exception {
       print(Level.DEBUG, "Run main operation(s): " + operations);
       if (operations.isEmpty()) return;
       var operation = operations.removeFirst();
@@ -2568,6 +2568,9 @@ public class Bach {
           return;
         case "help":
           help();
+          return;
+        case "replace":
+          replace();
           return;
         case "version":
           version();
@@ -2586,8 +2589,27 @@ public class Bach {
       print("    Build the modular Java project in the current working directory.");
       print("  help");
       print("    Print this help text.");
+      print("  replace [<version> [<local-file>]]");
+      print("    Replace local Bach.java source file with the lines of the specified");
+      print("    version read directly from https://github.com/sormuras/bach");
+      print("    Default version: master, default local file: src/.bach/Bach.java");
       print("  version");
       print("    Print the version of Bach.");
+    }
+
+    public void replace() throws Exception {
+      var tag = operations.isEmpty() ? "master" : operations.removeFirst();
+      var uri = "https://github.com/sormuras/bach/raw/" + tag + "/src/.bach-11/Bach.java";
+      var source = Path.of(operations.isEmpty() ? "src/.bach/Bach.java" : operations.removeFirst());
+      var string = Files.exists(source) ? Files.readString(source) : "";
+      var remote = atomics().uris().read(URI.create(uri));
+      print("Source hash code: 0x%X (%d lines)", string.hashCode(), string.lines().count());
+      print("Remote hash code: 0x%X (%d lines)", remote.hashCode(), remote.lines().count());
+      if (string.hashCode() == remote.hashCode()) return;
+      var parent = source.getParent();
+      if (Files.notExists(source) && parent != null) Files.createDirectories(parent);
+      var target = Files.writeString(source, remote);
+      print("Replace complete: " + target.toUri());
     }
 
     /** Print version. */
