@@ -2685,7 +2685,7 @@ public class Bach {
       }
 
       static JavaFileObject source(Path path) throws Exception {
-        return new CharContentFileObject(path.toUri(), Files.readString(path));
+        return source(path.toUri(), Files.readString(path));
       }
 
       static JavaFileObject source(URI uri, String charContent) {
