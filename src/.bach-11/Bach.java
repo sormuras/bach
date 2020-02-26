@@ -1234,7 +1234,11 @@ public class Bach {
 
       /** Return name of the project. */
       public Optional<String> scanName() {
-        return Optional.of(base().toAbsolutePath().getFileName()).map(Object::toString);
+        return Optional.of(base().toAbsolutePath().getFileName())
+            .map(Object::toString)
+            .map(name -> name.replace(' ', '.'))
+            .map(name -> name.replace('-', '.'))
+            .map(name -> name.replace('_', '.'));
       }
 
       /** Scan for modular source units. */
