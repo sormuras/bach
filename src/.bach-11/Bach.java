@@ -368,10 +368,11 @@ public class Bach {
             var realm = realmOf(unit).orElse(unit.path().toString());
             map.computeIfAbsent(realm, key -> new ArrayList<>()).add(unit);
           }
-          var realms = map.keySet();
+          var realms = new TreeSet<>(map.keySet());
           if (realms.isEmpty()) return List.of();
-          if (!realms.equals(Set.of("main", "test")))
-            throw new IllegalStateException("Only main and test realm expected: " + map);
+          realms.remove("main");
+          realms.remove("test");
+          if (!realms.isEmpty()) throw new IllegalStateException("Expected main and test: " + map);
           var main =
               new Realm(
                   "main",
