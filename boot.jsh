@@ -95,7 +95,7 @@ Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher +
  * Smoke test Bach.java by printing its version and help text.
  */
 /open src/.bach/Bach.java
-Bach.main("version")
+println()
 Bach.main("help")
 
 /*
