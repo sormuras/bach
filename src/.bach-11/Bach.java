@@ -17,8 +17,10 @@
 
 // default package
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
@@ -42,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.security.SecureClassLoader;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -80,6 +83,14 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javax.annotation.processing.Processor;
+import javax.tools.DiagnosticCollector;
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 
 /**
  * Java Shell Builder.
@@ -147,7 +158,22 @@ public class Bach {
   }
 
   /** Build project located in the current working directory. */
-  public void build() {
+  public void build() throws Exception {
+    var program = Path.of("src", ".bach", "Build.java");
+    if (Files.exists(program)) {
+      print("Delegating to custom build program: %s", program);
+      var bach = Path.of("src", ".bach", "Bach.java");
+      var loader =
+          Util.Compilation.compile(
+              getClass().getClassLoader(),
+              List.of(),
+              List.of(),
+              List.of(Util.Compilation.source(bach), Util.Compilation.source(program)));
+      var main = loader.loadClass("Build").getMethod("main", String[].class);
+      main.trySetAccessible();
+      main.invoke(null, (Object) new String[0]);
+      return;
+    }
     build(project -> {}).assertSuccessful();
   }
 
@@ -2513,6 +2539,157 @@ public class Bach {
         if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
         var request = HttpRequest.newBuilder(uri).GET();
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString()).body();
+      }
+    }
+
+    /** In-memory file manager and compiler support. */
+    interface Compilation {
+
+      class ByteArrayFileObject extends SimpleJavaFileObject {
+
+        private ByteArrayOutputStream stream;
+
+        public ByteArrayFileObject(String canonical, Kind kind) {
+          super(URI.create("bach:///" + canonical.replace('.', '/') + kind.extension), kind);
+        }
+
+        public byte[] getBytes() {
+          return stream.toByteArray();
+        }
+
+        @Override
+        public OutputStream openOutputStream() {
+          this.stream = new ByteArrayOutputStream(2000);
+          return stream;
+        }
+      }
+
+      class CharContentFileObject extends SimpleJavaFileObject {
+
+        private final String charContent;
+        private final long lastModified;
+
+        public CharContentFileObject(URI uri, String charContent) {
+          super(uri, Kind.SOURCE);
+          this.charContent = charContent;
+          this.lastModified = System.currentTimeMillis();
+        }
+
+        @Override
+        public String getCharContent(boolean ignoreEncodingErrors) {
+          return charContent;
+        }
+
+        @Override
+        public long getLastModified() {
+          return lastModified;
+        }
+      }
+
+      class SourceFileObject extends SimpleJavaFileObject {
+
+        private ByteArrayOutputStream stream;
+
+        public SourceFileObject(String canonical, Kind kind) {
+          super(URI.create("beethoven:///" + canonical.replace('.', '/') + kind.extension), kind);
+        }
+
+        @Override
+        public String getCharContent(boolean ignoreEncodingErrors) {
+          return stream.toString(StandardCharsets.UTF_8);
+        }
+
+        @Override
+        public OutputStream openOutputStream() {
+          this.stream = new ByteArrayOutputStream(2000);
+          return stream;
+        }
+      }
+
+      class Manager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+
+        private final Map<String, ByteArrayFileObject> map = new HashMap<>();
+        private final ClassLoader parent;
+
+        public Manager(StandardJavaFileManager standardManager, ClassLoader parent) {
+          super(standardManager);
+          this.parent = parent != null ? parent : getClass().getClassLoader();
+        }
+
+        @Override
+        public ClassLoader getClassLoader(Location location) {
+          return new SecureLoader(parent, map);
+        }
+
+        @Override
+        public JavaFileObject getJavaFileForOutput(
+            Location location, String name, JavaFileObject.Kind kind, FileObject sibling) {
+          switch (kind) {
+            case CLASS:
+              ByteArrayFileObject object = new ByteArrayFileObject(name, kind);
+              map.put(name, object);
+              return object;
+            case SOURCE:
+              return new SourceFileObject(name, kind);
+            default:
+              throw new UnsupportedOperationException("kind not supported: " + kind);
+          }
+        }
+
+        @Override
+        public boolean isSameFile(FileObject fileA, FileObject fileB) {
+          return fileA.toUri().equals(fileB.toUri());
+        }
+      }
+
+      class SecureLoader extends SecureClassLoader {
+        private final Map<String, ByteArrayFileObject> map;
+
+        public SecureLoader(ClassLoader parent, Map<String, ByteArrayFileObject> map) {
+          super("SecureLoader", parent);
+          this.map = map;
+        }
+
+        @Override
+        protected Class<?> findClass(String className) throws ClassNotFoundException {
+          try {
+            return getParent().loadClass(className);
+          } catch (ClassNotFoundException e) {
+            // fall-through
+          }
+          var object = map.get(className);
+          if (object == null) {
+            throw new ClassNotFoundException(className);
+          }
+          byte[] bytes = object.getBytes();
+          return super.defineClass(className, bytes, 0, bytes.length);
+        }
+      }
+
+      static ClassLoader compile(
+          ClassLoader parent,
+          List<String> options,
+          List<Processor> processors,
+          List<JavaFileObject> units) {
+        var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        var diagnostics = new DiagnosticCollector<JavaFileObject>();
+        var standardFileManager =
+            compiler.getStandardFileManager(
+                diagnostics, Locale.getDefault(), StandardCharsets.UTF_8);
+        var manager = new Manager(standardFileManager, parent);
+        var task = compiler.getTask(null, manager, diagnostics, options, null, units);
+        if (!processors.isEmpty()) task.setProcessors(processors);
+        boolean success = task.call();
+        if (!success) throw new Error("Compilation failed! " + diagnostics.getDiagnostics());
+        return manager.getClassLoader(StandardLocation.CLASS_PATH);
+      }
+
+      static JavaFileObject source(Path path) throws Exception {
+        return new CharContentFileObject(path.toUri(), Files.readString(path));
+      }
+
+      static JavaFileObject source(URI uri, String charContent) {
+        return new CharContentFileObject(uri, charContent);
       }
     }
   }
