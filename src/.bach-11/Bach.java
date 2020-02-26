@@ -368,29 +368,33 @@ public class Bach {
             var realm = realmOf(unit).orElse(unit.path().toString());
             map.computeIfAbsent(realm, key -> new ArrayList<>()).add(unit);
           }
-          var realms = new TreeSet<>(map.keySet());
-          if (realms.isEmpty()) return List.of();
-          realms.remove("main");
-          realms.remove("test");
-          if (!realms.isEmpty()) throw new IllegalStateException("Expected main and test: " + map);
-          var main =
-              new Realm(
-                  "main",
-                  EnumSet.of(Realm.Modifier.CREATE_JAVADOC),
-                  0,
-                  moduleSourcePath(map.get("main")),
-                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("main"))),
-                  List.of());
-          var test =
-              new Realm(
-                  "test",
-                  // EnumSet.of(Realm.Modifier.LAUNCH_TESTS, Realm.Modifier.ENABLE_PREVIEW),
-                  EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
-                  0,
-                  moduleSourcePath(map.get("test")),
-                  Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("test"))),
-                  List.of(main));
-          return List.of(main, test);
+          if (map.isEmpty()) return List.of();
+          var realms = new ArrayList<Realm>();
+          var main = map.remove("main");
+          if (main != null) {
+            realms.add(
+                new Realm(
+                    "main",
+                    EnumSet.of(Realm.Modifier.CREATE_JAVADOC),
+                    0,
+                    moduleSourcePath(main),
+                    Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("main"))),
+                    List.of()));
+          }
+          var test = map.get("test");
+          if (test != null) {
+            realms.add(
+                new Realm(
+                    "test",
+                    // EnumSet.of(Realm.Modifier.LAUNCH_TESTS, Realm.Modifier.ENABLE_PREVIEW),
+                    EnumSet.of(Realm.Modifier.LAUNCH_TESTS),
+                    0,
+                    moduleSourcePath(test),
+                    Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("test"))),
+                    realms));
+          }
+          if (map.isEmpty()) return realms;
+          throw new IllegalStateException("Expected main and test realms only: " + map.keySet());
         }
       };
 
