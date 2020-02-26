@@ -381,7 +381,7 @@ public class Bach {
                     Unit.toMap(units.stream().filter(u -> realmOf(u).orElseThrow().equals("main"))),
                     List.of()));
           }
-          var test = map.get("test");
+          var test = map.remove("test");
           if (test != null) {
             realms.add(
                 new Realm(
