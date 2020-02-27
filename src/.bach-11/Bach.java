@@ -319,6 +319,11 @@ public class Bach {
       return paths().modules(realm).resolve(toJarName(unit, ""));
     }
 
+    /** Collect all source paths of the specified unit. */
+    public List<Path> toSourcePaths(Realm realm, Unit unit) {
+      return unit.sources().stream().map(Source::path).collect(Collectors.toList());
+    }
+
     /** Generate {@code --module-path} string for the specified realm. */
     public String toModulePath(Realm realm) {
       return toModulePaths(realm).stream()
@@ -1424,7 +1429,7 @@ public class Bach {
         var moduleSourcePath = realm.moduleSourcePath();
         var modulePath = project.toModulePath(realm);
         var version = project.descriptor().version();
-        var patches = realm.patches((other, unit) -> List.of(project.toModularJar(other, unit)));
+        var patches = realm.patches(project::toSourcePaths);
         var javac =
             tool(
                 "javac",
