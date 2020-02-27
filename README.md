@@ -4,8 +4,6 @@
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
-:scroll:Fast-forward to [install-jdk.sh](#install-jdksh) section.
-
 Use Java source to build your modular Java project.
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
@@ -50,7 +48,7 @@ If a test module provides a `java.util.spi.ToolProvider` implementation named li
 For example: the `TestProvider` class is instantiated and run if module `test.modules` declares `provides java.util.spi.ToolProvider with test.modules.TestProvider;` and `TestProvider#getName()` returns `test(test.modules)`.
 
 - **Mend Missing Modules** Convention\
-If a project declares dependence to a members of set of well-known "API" modules, that for themselves require more modules to be present at runtime, those additional modules are implicitly declared as a dependence.
+If a project declares dependence to members of a set of well-known "API" modules, that for themselves require more modules to be present at runtime, those additional modules are implicitly declared as a dependence.
 For example: a project module declares `requires org.junit.jupiter.api;` then `org.junit.jupiter.engine` is added to the set of required modules.
 
 # install-jdk.sh
