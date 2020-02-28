@@ -49,6 +49,22 @@ Ideas, thoughts, and more on the architecture of `Bach.java`.
 - `--module-source-path src/org.foo/*/main/java:src/org.bar/*/main/java:...`
 - `--module-source-path src/org.foo/*/test/java:src/org.bar/*/test/java:...`
 
+## In-module (white box) Patching
+
+Assuming a dedicated `module-info.java` exists in the test folder, that describes all needs to compile and run in-module tests.
+That test module descriptor also contains all (hand-written or supported by some merging-logic) directives from the main descriptor.
+
+### Patch main sources - Recompilation
+
+- For compiling test sources, the sources of the main module are patched into the sources of the test module.
+- Only touched (read tested) sources are re-compiled.
+
+### Patch main classes - Jarring main binaries
+
+- For compiling test sources, the already jarred main module is patched into the test module.
+- All binary assets of the main module, that is classes and resources, are added to the JAR of the test module.
+
+
 ## Library
 
 This section describes how directory `lib/` is populated by `${MODULE}-${VERSION}.jar` modules.
