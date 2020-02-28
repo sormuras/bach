@@ -6,12 +6,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.Test;
 import test.base.PrependModuleName;
+import test.base.Tester;
 
 @DisplayNameGeneration(PrependModuleName.class)
 class WorldTests {
+
   @Test
-  void test() {
-    assertEquals("World", World.PACKAGE_PRIVATE_FIELD);
-    assertNotNull(new test.base.Tester().toString());
+  void createTesterFromModuleTestBase() {
+    assertNotNull(new Tester().toString());
+  }
+
+  @Test
+  void accessPublicMember() {
+    assertEquals("public World", World.publicName());
+  }
+
+  @Test
+  void accessPackagePrivateMember() {
+    assertEquals("package-private World", World.packagePrivateName());
   }
 }
