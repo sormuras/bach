@@ -6,18 +6,70 @@
 
 Use Java source to build your modular Java project.
 
-> No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
+Everything's written in standard `.java` files.
+No additional `.xml`, `.yml`, or `.z...` configuration files required.
+`Bach.java` infers many projects properties directly from the `module-info.java` compilation units.
+On top of that, `Bach.java` supports an installation-free on-the-fly run mode via:
 
-Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to multi-language, multi-purpose build tools...
-![jdk-and-build-tools](doc/img/jdk-and-build-tools-with-bach.svg)
+```shell script
+jshell https://bit.ly/bach-build
+```
 
-...`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
+Declare your own custom build program in `src/.bach/Build.java` and override various project properties using a builder API.
+Your IDE of choice offers available property setters by default.
+```java
+class Build {
+  public static void main(String... args) {
+    new Bach().build(project -> project.version("1-ea")).assertSuccessful();
+  }
+}
+```
 
-# R E B O O T I N G . . .
+`Bach.java` writes a build summary file in markdown format stores it in `.bach/summary.md`.
+It contains amongst other information the structure of the project and the system properties at invocation-time.
+The calls to [JDK Foundation Tools] with their arguments are also recorded:
 
-Experimental is experimental is experimental.
+|    |Thread|Duration|Caption
+|----|-----:|-------:|-------
+|   +|     1|        | Build project demo 1-ea
+|    |     1|       0| **Create directories .bach**
+|   +|     1|        | Print version of various foundation tools
+|    |    16|      21| **Run `javac` with 1 argument(s)**
+|    |    15|      23| **Run `jar` with 1 argument(s)**
+|    |     1|      52| **Run `javadoc` with 1 argument(s)**
+|   =|     1|      56| Print version of various foundation tools
+|    |     1|      37| **Resolve missing modules**
+|    |      |        | ...
+|   +|     1|        | **Launch all tests**
+|    |      |        | ...
+|   =|     1|     105| Build project demo 1-ea done.
+Legend
+ - A row starting with `+` denotes the start of a task container.
+ - A blank row start (` `) is a normal task execution. Its caption is emphasized.
+ - A row starting with `X` marks an erroneous task execution.
+ - A row starting with `=` marks the end (sum) of a task container.
+ - The Thread column shows the thread identifier, with `1` denoting main thread.
+ - Duration is measured in milliseconds.
 
-## Build with Bach.java 11.0-ea on-the-fly 
+## Example Projects
+
+After cloning or downloading an example project, open a shell in the base directory of the project and call `jshell https://bit.ly/bach-build`.
+
+That's all.
+Have fun!
+
+- [📋 bach-template](https://github.com/sormuras/bach-template) - Minimal Java project template
+
+  A minimal modular Java project that contains a single and almost empty `module-info.java` file.
+
+- [☁ bach-air](https://github.com/sormuras/bach-air) - Java project with inter-module and in-module tests
+
+  A modular Java project that show-cases inter-module (black-box) and in-module (white-box) testing.
+  It also provides IntelliJ IDEA configuration files with shared test run launchers for both scenarios.
+
+All example projects usually contain a `.github/workflows/build.yml` configuration file that builds the project using `Bach.java` on push events.
+
+## Build your project with Bach.java 11.0-ea on-the-fly 
 
 Use `https://bit.ly/bach-build` as `<load-file>` argument for `jshell`:
 
@@ -50,6 +102,16 @@ For example: the `TestProvider` class is instantiated and run if module `test.mo
 - **Mend Missing Modules** Convention\
 If a project declares dependence to members of a set of well-known "API" modules, that for themselves require more modules to be present at runtime, those additional modules are implicitly declared as a dependence.
 For example: a project module declares `requires org.junit.jupiter.api;` then `org.junit.jupiter.engine` is added to the set of required modules.
+
+## Motivation
+
+> No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)
+
+Ranging from [JDK Foundation Tools], over shell scripts and [Apache Ant] to multi-language, multi-purpose build tools...
+![jdk-and-build-tools](doc/img/jdk-and-build-tools-with-bach.svg)
+
+...`Bach.java`'s target is between platform-specific shell scripts and [Apache Ant].
+`Bach.java` delegates
 
 # install-jdk.sh
 
