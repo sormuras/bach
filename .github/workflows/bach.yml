@@ -16,15 +16,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Set up JUnit Platform'
-      uses: sormuras/setup-junit@master
-      id: junit
-      with:
-        platform-version: '1.6.0'
-    - name: 'Compile and run tests'
-      run: |
-        javac -d classes --class-path ${{ steps.junit.outputs.standalone-jar }} src/.bach-11/Bach.java $(find src/test -name "*.java")
-        java -jar ${{ steps.junit.outputs.standalone-jar }} --class-path classes --scan-class-path
     - name: 'Build project: jigsaw.quick.start.with.tests'
       working-directory: doc/project/jigsaw.quick.start.with.junit
       run: java -Debug $GITHUB_WORKSPACE/src/.bach-11/Bach.java build
