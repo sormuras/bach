@@ -34,7 +34,7 @@ echo ______
 echo Step 4: Build
 pause > nul
 @echo on
-jshell --show-version --execution local https://bit.ly/bach-build
+jshell --show-version https://bit.ly/bach-build
 @echo off
 pause > nul
 
@@ -49,7 +49,7 @@ echo ______
 echo Step 6: Describe demo module
 pause > nul
 echo.
-jar --describe-module --file .bach\out\main\modules\demo-0.jar
+jar --describe-module --file .bach\modules\demo.jar
 pause > nul
 
 cd ..
