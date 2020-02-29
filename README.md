@@ -79,6 +79,11 @@ The shortened URL expands to:
 
 - `jshell https://github.com/sormuras/bach/raw/master/src/bach/build.jsh`
 
+Set system property `debug` to `""` (an empty string) or `true` to enable verbose output of the build run.
+The prefix `-R` is required when running `Bach.java` on-the-fly via [jshell] as it launches a remote runtime system per default.
+
+- `jshell -R-Debug https://bit.ly/bach-build`
+
 ### Build with Bach.java 2.1 on-the-fly
 
 Bach.java 2.x was showcased in a lightning talk at [FOSDEM2020](https://fosdem.org/2020/schedule/event/bach).
