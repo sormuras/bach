@@ -20,7 +20,7 @@ package de.sormuras.bach;
 import de.sormuras.bach.model.Project;
 
 /** Bach's main program. */
-class Main {
+/*static*/ class Main {
   public static void main(String... args) {
     System.out.println("Bach.java");
     System.out.println(new Project("project").name());

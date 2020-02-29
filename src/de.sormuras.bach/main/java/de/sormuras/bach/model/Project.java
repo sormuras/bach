@@ -18,7 +18,7 @@
 package de.sormuras.bach.model;
 
 /** Bach's project model. */
-public final class Project {
+public /*static*/ final class Project {
 
   private final String name;
 
