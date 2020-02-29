@@ -10,9 +10,9 @@ module de.sormuras.bach.doc.minimal {}
 
 The goal of each build tool, is to generate 3 JAR files:
 
-- Java module
-- `-sources.jar`
-- `-javadoc.jar`
+- Java module: `minimal.jar`
+- Sources JAR: `minimal-sources.jar`
+- Javadoc JAR: `minimal-javadoc.jar`
 
 All build tools are able to generate those 3 required JAR files.
 See https://github.com/sormuras/bach/runs/375630551 for details and their build logs.
@@ -21,10 +21,9 @@ Here's a summary of the most interesting numbers.
 
 | Tool           | Project Files | Raw Build Time | Total Time | Tool Files | Tool Size in MB |
 |----------------| ------------- | -------------- | ---------- | ---------- | --------------- |
-| Bach.java 2.0  |             1 |             2  |         11 |          1 |             0.1 |
-| Maven 3.6.3    |             6 |            14  |         18 |       1394 |            44   |
-| Gradle 6.0.1   |             7 |            43  |         44 |        447 |           330   |
-
+| Bach.java      |             1 |             2  |         11 |          1 |             0.1 |
+| Maven          |             6 |            14  |         18 |       1394 |            44   |
+| Gradle         |             7 |            43  |         44 |        447 |           330   |
 
 ### Bach.java
 
@@ -34,7 +33,7 @@ Here's a summary of the most interesting numbers.
             module-info.java
 ```
 
-1 file, the module compilation unit, weighing in 12,327 bytes before build.
+1 file, the module compilation unit, weighing in 40 bytes before build.
 
 `jshell https://bit.ly/bach-build`
 
@@ -124,4 +123,3 @@ Here's a summary of the most interesting numbers.
 | Bach.java 2.0  |           100 |             3  |         23 |
 | Maven 3.6.3    | 6 + 100 + 100 |            27  |         32 |
 | Gradle         | 7 +  ?  + 100 |             ?  |          ? |
-
