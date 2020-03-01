@@ -17,7 +17,10 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.model.Project;
+import de.sormuras.bach.model.ProjectBuilder;
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.function.Consumer;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -28,5 +31,23 @@ public class Bach {
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
+  }
+
+  /** Build default project potentially modified by the passed project builder consumer. */
+  public Object build(Consumer<ProjectBuilder> projectBuilderConsumer) {
+    return build(project(projectBuilderConsumer));
+  }
+
+  /** Build the specified project. */
+  public Object build(Project project) {
+    return project;
+  }
+
+  /** Create new default project potentially modified by the passed project builder consumer. */
+  Project project(Consumer<ProjectBuilder> projectBuilderConsumer) {
+    // var projectBuilder = new ProjectScanner(paths).scan();
+    var projectBuilder = new ProjectBuilder();
+    projectBuilderConsumer.accept(projectBuilder);
+    return projectBuilder.build();
   }
 }
