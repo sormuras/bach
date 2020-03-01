@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.Objects;
 /** Bach - Java Shell Builder. */
 public class Bach {
   /** Version of Bach. */
@@ -28,18 +29,39 @@ public class Bach {
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
-      System.out.println(new Project("project").name());
     }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/model/Project.java
   /** Bach's project model. */
   public static final class Project {
     private final String name;
-    public Project(String name) {
-      this.name = name;
+    private final Version version;
+    public Project(String name, Version version) {
+      this.name = Objects.requireNonNull(name, "name");
+      this.version = version;
     }
     public String name() {
       return name;
+    }
+    public Version version() {
+      return version;
+    }
+  }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/model/ProjectBuilder.java
+  /** Project model builder. */
+  public static final class ProjectBuilder {
+    private String name;
+    private Version version;
+    public ProjectBuilder name(String name) {
+      this.name = name;
+      return this;
+    }
+    public ProjectBuilder version(Version version) {
+      this.version = version;
+      return this;
+    }
+    public Project build() {
+      return new Project(name, version);
     }
   }
 }
