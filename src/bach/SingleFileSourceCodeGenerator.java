@@ -70,7 +70,6 @@ class SingleFileSourceCodeGenerator {
     var imports =
         sources.stream()
             .flatMap(source -> source.imports.stream())
-            .filter(statement -> !template.imports.contains(statement))
             .filter(
                 statement -> {
                   for (var name : packages) {
@@ -79,9 +78,9 @@ class SingleFileSourceCodeGenerator {
                   }
                   return true;
                 })
-            .collect(Collectors.toList());
+            .collect(Collectors.toCollection(TreeSet::new));
 
-    var lookingForImports = true;
+    var addAllImports = true;
     for (var line : Files.readAllLines(template.path)) {
       if (line.isEmpty()) {
         continue;
@@ -89,13 +88,12 @@ class SingleFileSourceCodeGenerator {
       if (line.startsWith("package ") && line.endsWith(";")) {
         continue;
       }
-      if (lookingForImports) {
-        if (line.startsWith("import ")) {
-          continue;
-        } else {
-          lookingForImports = false;
+      if (line.startsWith("import ")) {
+        if (addAllImports) {
+          addAllImports = false;
           lines.addAll(imports);
         }
+        continue;
       }
       lines.add(line);
     }
