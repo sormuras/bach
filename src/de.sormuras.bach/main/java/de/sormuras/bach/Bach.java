@@ -17,12 +17,16 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.model.Project;
+import java.lang.module.ModuleDescriptor.Version;
 
-/** Bach's main program. */
-/*static*/ class Main {
+/** Bach - Java Shell Builder. */
+public class Bach {
+
+  /** Version of Bach. */
+  public static Version VERSION = Version.parse("11.0-ea");
+
+  /** Main entry-point. */
   public static void main(String... args) {
-    System.out.println("Bach.java " + Bach.VERSION);
-    System.out.println(new Project("project").name());
+    Main.main(args);
   }
 }
