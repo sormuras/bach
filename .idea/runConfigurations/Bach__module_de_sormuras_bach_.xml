@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Main (de.sormuras.bach)" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="de.sormuras.bach.Main" />
+  <configuration default="false" name="Bach (module de.sormuras.bach)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="de.sormuras.bach.Bach" />
     <module name="de.sormuras.bach" />
     <extension name="coverage">
       <pattern>
