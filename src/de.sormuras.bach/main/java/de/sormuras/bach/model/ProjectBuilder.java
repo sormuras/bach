@@ -17,15 +17,25 @@
 
 package de.sormuras.bach.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.lang.module.ModuleDescriptor.Version;
 
-import org.junit.jupiter.api.Test;
+/** Project model builder. */
+public /*static*/ final class ProjectBuilder {
 
-class ProjectTests {
+  private String name;
+  private Version version;
 
-  @Test
-  void canonical() {
-    var project = new Project("name");
-    assertEquals("name", project.name());
+  public ProjectBuilder name(String name) {
+    this.name = name;
+    return this;
+  }
+
+  public ProjectBuilder version(Version version) {
+    this.version = version;
+    return this;
+  }
+
+  public Project build() {
+    return new Project(name, version);
   }
 }

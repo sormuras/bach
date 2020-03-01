@@ -17,12 +17,9 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.model.Project;
-
 /** Bach's main program. */
 /*static*/ class Main {
   public static void main(String... args) {
     System.out.println("Bach.java " + Bach.VERSION);
-    System.out.println(new Project("project").name());
   }
 }
