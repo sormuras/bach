@@ -18,7 +18,9 @@
 package test.modules;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import de.sormuras.bach.Bach;
 import de.sormuras.bach.model.Project;
 import org.junit.jupiter.api.Test;
 
@@ -28,5 +30,10 @@ class BachTests {
   void createBachProject() {
     var project = new Project("test.modules");
     assertEquals("test.modules", project.name());
+  }
+
+  @Test
+  void versionIsAccessible() {
+    assertNotNull(Bach.VERSION.toString());
   }
 }
