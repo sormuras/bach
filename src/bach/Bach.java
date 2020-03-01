@@ -17,6 +17,7 @@
 import java.lang.module.ModuleDescriptor.Version;
 /** Bach - Java Shell Builder. */
 public class Bach {
+  /** Version of Bach. */
   public static Version VERSION = Version.parse("11.0-ea");
   /** Main entry-point. */
   public static void main(String... args) {
