@@ -1,6 +1,12 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="All in de.sormuras.bach" type="JUnit" factoryName="JUnit">
     <module name="de.sormuras.bach" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="de.sormuras.bach.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
     <option name="PACKAGE_NAME" value="" />
     <option name="MAIN_CLASS_NAME" value="" />
     <option name="METHOD_NAME" value="" />
