@@ -1,4 +1,5 @@
-open module test.base {
-  requires org.junit.jupiter;
+open /*test*/ module test.base {
   exports test.base;
+
+  requires org.junit.jupiter;
 }
