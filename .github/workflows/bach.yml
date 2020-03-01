@@ -16,11 +16,10 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Build project: jigsaw.quick.start.with.tests'
-      working-directory: doc/project/jigsaw.quick.start.with.junit
-      run: java -Debug $GITHUB_WORKSPACE/src/.bach-11/Bach.java build
-    - name: 'Upload summaries'
+    - name: 'Build'
+      run: java -Debug src/.bach-11/Bach.java build
+    - name: 'Upload build summary'
       uses: actions/upload-artifact@v1
       with:
-        name: summary-jigsaw.quick.start.with.junit.md
-        path: doc/project/jigsaw.quick.start.with.junit/.bach/summary.md
+        name: summary.md
+        path: .bach/summary.md
