@@ -19,17 +19,33 @@ package de.sormuras.bach.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class ProjectBuilderTests {
 
-  final Project canonical =
-      new ProjectBuilder().name("canonical").version(Version.parse("99")).build();
+  final Project project = new ProjectBuilder().name("name").version("99").paths("").build();
 
   @Test
-  void canonical() {
-    assertEquals("canonical", canonical.name());
-    assertEquals("99", canonical.version().toString());
+  void name() {
+    assertEquals("name", project.name());
+  }
+
+  @Test
+  void version() {
+    assertEquals("99", project.version().toString());
+  }
+
+  @Test
+  void paths() {
+    var paths = project.paths();
+    assertEquals(Path.of(""), paths.base());
+    assertEquals(Path.of(".bach"), paths.out());
+    assertEquals(Path.of("lib"), paths.lib());
+    assertEquals(Path.of(".bach/first/more"), paths.out("first", "more"));
+    assertEquals(Path.of(".bach/classes/realm"), paths.classes("realm"));
+    assertEquals(Path.of(".bach/modules/realm"), paths.modules("realm"));
+    assertEquals(Path.of(".bach/sources/realm"), paths.sources("realm"));
+    assertEquals(Path.of(".bach/documentation/javadoc"), paths.javadoc());
   }
 }

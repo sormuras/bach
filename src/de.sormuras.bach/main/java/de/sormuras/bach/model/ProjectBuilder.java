@@ -18,12 +18,19 @@
 package de.sormuras.bach.model;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 
 /** Project model builder. */
 public /*static*/ final class ProjectBuilder {
 
   private String name;
   private Version version;
+  private Paths paths = Paths.of(Path.of(""));
+
+  public Project build() {
+    var structure = new Structure(paths);
+    return new Project(name, version, structure);
+  }
 
   public ProjectBuilder name(String name) {
     this.name = name;
@@ -35,7 +42,16 @@ public /*static*/ final class ProjectBuilder {
     return this;
   }
 
-  public Project build() {
-    return new Project(name, version);
+  public ProjectBuilder version(String version) {
+    return version(Version.parse(version));
+  }
+
+  public ProjectBuilder paths(Paths paths) {
+    this.paths = paths;
+    return this;
+  }
+
+  public ProjectBuilder paths(String base) {
+    return paths(Paths.of(Path.of(base)));
   }
 }

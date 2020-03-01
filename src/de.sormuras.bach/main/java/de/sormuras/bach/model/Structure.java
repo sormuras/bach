@@ -17,35 +17,16 @@
 
 package de.sormuras.bach.model;
 
-import java.lang.module.ModuleDescriptor.Version;
-import java.util.Objects;
+/** Project structure. */
+public /*static*/ final class Structure {
 
-/** Bach's project model. */
-public /*static*/ final class Project {
+  private final Paths paths;
 
-  private final String name;
-  private final Version version;
-  private final Structure structure;
-
-  public Project(String name, Version version, Structure structure) {
-    this.name = Objects.requireNonNull(name, "name");
-    this.version = version;
-    this.structure = Objects.requireNonNull(structure, "paths");
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public Version version() {
-    return version;
-  }
-
-  public Structure structure() {
-    return structure;
+  public Structure(Paths paths) {
+    this.paths = paths;
   }
 
   public Paths paths() {
-    return structure().paths();
+    return paths;
   }
 }
