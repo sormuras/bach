@@ -15,10 +15,27 @@
  * limitations under the License.
  */
 
-open /*test*/ module de.sormuras.bach {
-  exports de.sormuras.bach;
-  exports de.sormuras.bach.model;
+package de.sormuras.bach;
 
-  requires org.junit.jupiter;
-  requires test.base;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.module.ModuleDescriptor.Version;
+import org.junit.jupiter.api.Test;
+import test.base.SwallowSystem;
+
+class BachTests {
+
+  @Test
+  void versionNotZero() {
+    assertNotEquals(Version.parse("0"), Bach.VERSION);
+  }
+
+  @Test
+  @SwallowSystem
+  void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
+    Bach.main();
+    assertTrue(streams.errors().isEmpty());
+    assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+  }
 }

@@ -18,13 +18,23 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import test.base.SwallowSystem;
 
 class MainTests {
 
   @Test
   void mainClassContainsLegitMainEntryPoint() {
     assertDoesNotThrow(() -> Main.class.getMethod("main", String[].class));
+  }
+
+  @Test
+  @SwallowSystem
+  void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
+    Main.main();
+    assertTrue(streams.errors().isEmpty());
+    assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
   }
 }
