@@ -28,44 +28,25 @@ import java.util.stream.Collectors;
 class SingleFileSourceCodeGenerator {
 
   public static void main(String... args) throws Exception {
-    generate(
-        Path.of("src", "bach", "Bach.java.template"),
-        Path.of("src", "bach", "Bach.java"),
-        Path.of("src", "de.sormuras.bach", "main", "java").toString());
+    var directory = Path.of("src", "de.sormuras.bach", "main", "java");
+    var template = directory.resolve("de/sormuras/bach/Bach.java");
+    var target = Path.of("src", "bach", "Bach.java");
+    generate(template, target, directory);
   }
 
-  public static void generate(Path template, Path target, String... inputs) throws Exception {
-    var templates = Files.readAllLines(template);
-
+  public static void generate(Path template, Path target, Path... paths) throws Exception {
+    System.out.printf("Generate %s from %s%n", target.getFileName(), template.toUri());
     var files = new ArrayList<Path>();
-    for (var input : inputs) {
-      var path = Path.of(input);
-      if (Files.isRegularFile(path)) {
-        files.add(path);
-        continue;
-      }
+    for (var path : paths) {
       try (var stream = Files.walk(path)) {
-        stream
-            .sorted()
-            .filter(SingleFileSourceCodeGenerator::isRegularJavaSourceFile)
-            .forEach(files::add);
+        stream.filter(SingleFileSourceCodeGenerator::isRegularJavaSourceFile).forEach(files::add);
       }
     }
-
-    var sources = files.stream().map(Source::of).collect(Collectors.toList());
-    sources.forEach(
-        source -> {
-          System.out.println(source.path);
-          System.out.println("package = " + source.packageName);
-          System.out.println("imports = " + source.imports);
-          System.out.println("  lines = " + source.lines.size());
-        });
-
-    var generator = new SingleFileSourceCodeGenerator(templates, sources);
+    var sources = files.stream().sorted().map(Source::of).collect(Collectors.toList());
+    var generator = new SingleFileSourceCodeGenerator(Source.of(template), sources);
     var lines = generator.toLines();
-    // lines.forEach(System.out::println);
     Files.write(target, lines);
-    System.out.printf("%nGenerated %d lines: %s%n", lines.size(), target.toUri());
+    System.out.printf("Wrote %d lines to %s%n", lines.size(), target.toUri());
   }
 
   private static boolean isRegularJavaSourceFile(Path path) {
@@ -75,19 +56,21 @@ class SingleFileSourceCodeGenerator {
     return name.indexOf('-') == -1; // package-info.java, module-info.java
   }
 
-  private final List<String> templates;
+  private final Source template;
   private final List<Source> sources;
 
-  public SingleFileSourceCodeGenerator(List<String> templates, List<Source> sources) {
-    this.templates = templates;
+  public SingleFileSourceCodeGenerator(Source template, List<Source> sources) {
+    this.template = template;
     this.sources = sources;
   }
 
-  public List<String> toLines() {
+  public List<String> toLines() throws Exception {
+    var lines = new ArrayList<String>();
     var packages = sources.stream().map(source -> source.packageName).collect(Collectors.toList());
     var imports =
         sources.stream()
             .flatMap(source -> source.imports.stream())
+            .filter(statement -> !template.imports.contains(statement))
             .filter(
                 statement -> {
                   for (var name : packages) {
@@ -97,26 +80,42 @@ class SingleFileSourceCodeGenerator {
                   return true;
                 })
             .collect(Collectors.toList());
-    var lines = new ArrayList<String>();
-    for (var template : templates) {
-      if (template.equals("${IMPORTS}")) {
-        lines.addAll(imports);
+
+    var lookingForImports = true;
+    for (var line : Files.readAllLines(template.path)) {
+      if (line.isEmpty()) {
         continue;
       }
-      if (template.endsWith("${SOURCES}")) {
-        var indent = "  "; // extract indentation from marker line
-        for (var source : sources) {
-          lines.add(indent + "// " + source.path.toString().replace('\\', '/'));
-          for (var line : source.lines) {
-            if (line.isEmpty()) continue;
-            var mangled = line.replace("/*static*/", "static");
-            lines.add(indent + mangled);
-          }
+      if (line.startsWith("package ") && line.endsWith(";")) {
+        continue;
+      }
+      if (lookingForImports) {
+        if (line.startsWith("import ")) {
+          continue;
+        } else {
+          lookingForImports = false;
+          lines.addAll(imports);
         }
-        continue;
       }
-      lines.add(template);
+      lines.add(line);
     }
+
+    var classes = new ArrayList<String>();
+    var indent = "  "; // extract indentation from marker line
+    for (var source : sources) {
+      if (this.template.path.equals(source.path)) continue;
+      System.out.println(" + " + source.path.toUri());
+      classes.add(indent + "// " + source.path.toString().replace('\\', '/'));
+      for (var line : source.lines) {
+        if (line.isEmpty()) continue;
+        // classes.add(indent + line);
+        var mangled = line.replace("/*static*/", "static");
+        classes.add(indent + mangled);
+      }
+    }
+    // lines.addAll(classes);
+    lines.addAll(lines.size() - 1, classes);
+
     return lines;
   }
 

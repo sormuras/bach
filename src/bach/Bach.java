@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-/**
- * Bach - Java Shell Builder.
- */
+import java.lang.module.ModuleDescriptor.Version;
+/** Bach - Java Shell Builder. */
 public class Bach {
-
+  public static Version VERSION = Version.parse("11.0-ea");
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
   }
-
   // src/de.sormuras.bach/main/java/de/sormuras/bach/Main.java
   /** Bach's main program. */
   static class Main {
     public static void main(String... args) {
-      System.out.println("Bach.java");
+      System.out.println("Bach.java " + Bach.VERSION);
       System.out.println(new Project("project").name());
     }
   }

@@ -15,17 +15,11 @@
  * limitations under the License.
  */
 
-${IMPORTS}
+/open src/bach/SingleFileSourceCodeGenerator.java
+SingleFileSourceCodeGenerator.main()
 
-/**
- * Bach - Java Shell Builder.
- */
-public class Bach {
+/open src/bach/Bach.java
+System.out.println()
+System.out.println("Bach.java " + Bach.VERSION)
 
-  /** Main entry-point. */
-  public static void main(String... args) {
-    Main.main(args);
-  }
-
-  ${SOURCES}
-}
+/exit
