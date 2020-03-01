@@ -17,11 +17,16 @@
 
 package de.sormuras.bach;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import test.base.Log;
 import test.base.SwallowSystem;
 
 class BachTests {
@@ -37,5 +42,30 @@ class BachTests {
     Bach.main();
     assertTrue(streams.errors().isEmpty());
     assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+  }
+
+  @Test
+  void printMessagesAtAllLevelsInVerboseMode() {
+    var log = new Log();
+    var bach = new Bach(log, true);
+    assertDoesNotThrow(bach::hashCode);
+    assertEquals("all", bach.print(System.Logger.Level.ALL, "all"));
+    assertEquals("trace", bach.print(System.Logger.Level.TRACE, "trace"));
+    assertEquals("debug", bach.print(System.Logger.Level.DEBUG, "debug"));
+    assertEquals("info 123", bach.print("info %d", 123));
+    assertEquals("warning", bach.print(System.Logger.Level.WARNING, "warning"));
+    assertEquals("error", bach.print(System.Logger.Level.ERROR, "error"));
+    assertEquals("off", bach.print(System.Logger.Level.OFF, "off"));
+    assertLinesMatch(
+        List.of(
+            "P Bach initialized",
+            "P all",
+            "P trace",
+            "P debug",
+            "P info 123",
+            "P warning",
+            "P error",
+            "P off"),
+        log.lines());
   }
 }

@@ -19,18 +19,68 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.model.Project;
 import de.sormuras.bach.model.ProjectBuilder;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.function.Consumer;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
 
-  /** Version of Bach. */
+  /** Version of the Java Shell Builder. */
   public static Version VERSION = Version.parse("11.0-ea");
+
+  /** Default line printer instance delegates to {@link System#out}. */
+  private static final Consumer<String> PRINTER = System.out::println;
+
+  /** Default verbosity flag, including {@code -Debug} support. */
+  private static final boolean VERBOSE =
+      Boolean.getBoolean("verbose") // -D verbose=true
+          || Boolean.getBoolean("ebug") // -Debug=true
+          || "".equals(System.getProperty("ebug")); // -Debug
 
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
+  }
+
+  /** Line-based message printing consumer. */
+  private final Consumer<String> printer;
+
+  /** Verbosity flag. */
+  private final boolean verbose;
+
+  /** Initialize this instance with the specified line printer and verbosity flag. */
+  public Bach() {
+    this(PRINTER, VERBOSE);
+  }
+
+  /** Initialize this instance with the specified line printer and verbosity flag. */
+  public Bach(Consumer<String> printer, boolean verbose) {
+    this.printer = printer;
+    this.verbose = verbose;
+    print(Level.TRACE, "Bach initialized");
+  }
+
+  /** Verbosity flag. */
+  public boolean verbose() {
+    return verbose;
+  }
+
+  /** Line printer. */
+  private Consumer<String> printer() {
+    return printer;
+  }
+
+  /** Print a message at information level. */
+  public String print(String format, Object... args) {
+    return print(Level.INFO, format, args);
+  }
+
+  /** Print a message at specified level. */
+  public String print(Level level, String format, Object... args) {
+    var message = String.format(format, args);
+    if (verbose() || level.getSeverity() >= Level.INFO.getSeverity()) printer().accept(message);
+    return message;
   }
 
   /** Build default project potentially modified by the passed project builder consumer. */
