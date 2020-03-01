@@ -28,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class PathsTests {
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "path=\"{0}\"")
   @ValueSource(strings = {"", "root", "a/b/c"})
   void paths(Path path) {
     assertPaths(path);
