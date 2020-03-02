@@ -117,12 +117,13 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "P Bach initialized",
-            "P group",
-            "P Noop",
-            "P Fail",
+            "P + group",
+            "P * Noop",
+            "P * Fail",
             "P Debug 1",
             "P Error 1",
-            "P Error 1"),
+            "P Error 1",
+            "P = group"),
         log.lines());
     var markdown = summary.toMarkdown();
     assertLinesMatch(
