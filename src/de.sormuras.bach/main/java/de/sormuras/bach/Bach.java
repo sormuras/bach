@@ -17,6 +17,8 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.execution.ExecutionContext;
+import de.sormuras.bach.execution.Task;
 import de.sormuras.bach.model.Project;
 import de.sormuras.bach.model.ProjectBuilder;
 import java.lang.System.Logger.Level;
@@ -84,13 +86,44 @@ public class Bach {
   }
 
   /** Build default project potentially modified by the passed project builder consumer. */
-  public Object build(Consumer<ProjectBuilder> projectBuilderConsumer) {
+  public Summary build(Consumer<ProjectBuilder> projectBuilderConsumer) {
     return build(project(projectBuilderConsumer));
   }
 
   /** Build the specified project. */
-  public Object build(Project project) {
-    return project;
+  public Summary build(Project project) {
+    return new Summary(project);
+  }
+
+  /** Run the given task and its attached child tasks. */
+  void execute(Task task, Summary summary) {
+    var markdown = task.toMarkdown();
+    print(Level.DEBUG, markdown);
+
+    summary.executionBegin(task);
+    var result = task.execute(new ExecutionContext(this));
+    if (verbose()) {
+      result.out().lines().forEach(printer());
+      result.err().lines().forEach(printer());
+    }
+    if (result.code() != 0) {
+      result.err().lines().forEach(printer);
+      summary.executionEnd(task, result);
+      var message = markdown + ": non-zero result code: " + result.code();
+      throw new RuntimeException(message);
+    }
+
+    var children = task.children();
+    if (!children.isEmpty()) {
+      try {
+        var tasks = task.parallel() ? children.parallelStream() : children.stream();
+        tasks.forEach(child -> execute(child, summary));
+      } catch (RuntimeException e) {
+        summary.error().addSuppressed(e);
+      }
+    }
+
+    summary.executionEnd(task, result);
   }
 
   /** Create new default project potentially modified by the passed project builder consumer. */

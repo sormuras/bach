@@ -21,11 +21,21 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.execution.ExecutionContext;
+import de.sormuras.bach.execution.ExecutionResult;
+import de.sormuras.bach.execution.Task;
+import de.sormuras.bach.model.ProjectBuilder;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import test.base.Log;
 import test.base.SwallowSystem;
 
@@ -49,13 +59,13 @@ class BachTests {
     var log = new Log();
     var bach = new Bach(log, true);
     assertDoesNotThrow(bach::hashCode);
-    assertEquals("all", bach.print(System.Logger.Level.ALL, "all"));
-    assertEquals("trace", bach.print(System.Logger.Level.TRACE, "trace"));
-    assertEquals("debug", bach.print(System.Logger.Level.DEBUG, "debug"));
+    assertEquals("all", bach.print(Level.ALL, "all"));
+    assertEquals("trace", bach.print(Level.TRACE, "trace"));
+    assertEquals("debug", bach.print(Level.DEBUG, "debug"));
     assertEquals("info 123", bach.print("info %d", 123));
-    assertEquals("warning", bach.print(System.Logger.Level.WARNING, "warning"));
-    assertEquals("error", bach.print(System.Logger.Level.ERROR, "error"));
-    assertEquals("off", bach.print(System.Logger.Level.OFF, "off"));
+    assertEquals("warning", bach.print(Level.WARNING, "warning"));
+    assertEquals("error", bach.print(Level.ERROR, "error"));
+    assertEquals("off", bach.print(Level.OFF, "off"));
     assertLinesMatch(
         List.of(
             "P Bach initialized",
@@ -67,5 +77,77 @@ class BachTests {
             "P error",
             "P off"),
         log.lines());
+  }
+
+  @Test
+  void executeLocalNoopTask() {
+    var log = new Log();
+    var bach = new Bach(log, true);
+    var summary = new Summary(new ProjectBuilder().name("Noop").build());
+    bach.execute(new Task("Noop", false, List.of()), summary);
+    assertDoesNotThrow(summary::assertSuccessful);
+  }
+
+  @Test
+  void executeLocalTasks(@TempDir Path temp) throws Exception {
+    var log = new Log();
+    var bach = new Bach(log, true);
+    var noop = new Task("Noop", false, List.of());
+    var fail =
+        new Task("Fail", false, List.of()) {
+          @Override
+          public ExecutionResult execute(ExecutionContext execution) {
+            assertSame(bach, execution.bach());
+            execution.print(Level.DEBUG, "Debug %d", 1);
+            execution.print(Level.ERROR, "Error %d", 1);
+            var failed = execution.failed(new Error("X"));
+            assertEquals(1, failed.code());
+            assertEquals("Debug 1" + System.lineSeparator(), failed.out());
+            assertEquals("Error 1" + System.lineSeparator(), failed.err());
+            assertEquals("X", failed.throwable().getMessage());
+            return failed;
+          }
+        };
+    var summary = new Summary(new ProjectBuilder().name("local").paths(temp).build());
+    bach.execute(Task.parallel("parallel", Task.sequence("sequence", noop, fail)), summary);
+    assertThrows(RuntimeException.class, summary::assertSuccessful);
+    assertEquals(2, summary.countedChildlessTasks());
+    assertEquals(6, summary.countedExecutionEvents());
+    assertEquals("local", summary.project().name());
+    assertLinesMatch(
+        List.of(
+            "P Bach initialized",
+            "P parallel",
+            "P sequence",
+            "P Noop",
+            "P Fail",
+            "P Debug 1",
+            "P Error 1",
+            "P Error 1"),
+        log.lines());
+    var markdown = summary.toMarkdown();
+    assertLinesMatch(
+        List.of(
+            "# Summary",
+            "",
+            "## Project",
+            ">> PROJECT >>",
+            "## Task Execution Overview",
+            "|    |Thread|Duration|Caption",
+            "|----|-----:|-------:|-------",
+            "|   +|     1|        | parallel",
+            "|   +|     1|        | sequence",
+            "\\Q|    |     1|\\E.+\\Q| **Noop** [...](#task-execution-details-\\E.+",
+            "\\Q|   X|     1|\\E.+\\Q| **Fail** [...](#task-execution-details-\\E.+",
+            "\\Q|   =|     1|\\E.+\\Q| sequence",
+            "\\Q|   =|     1|\\E.+\\Q| parallel",
+            ">> LEGEND >>",
+            "## Task Execution Details",
+            ">> TASK DETAILS >>",
+            "## System Properties",
+            ">> SYSTEM PROPERTIES LISTING >>"),
+        markdown);
+    var path = summary.write();
+    assertEquals(markdown, Files.readAllLines(path));
   }
 }
