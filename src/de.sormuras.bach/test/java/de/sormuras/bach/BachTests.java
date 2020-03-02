@@ -113,7 +113,7 @@ class BachTests {
     assertThrows(RuntimeException.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());
     assertEquals(6, summary.countedExecutionEvents());
-    assertEquals("local", summary.project().name());
+    assertEquals("local", summary.project().toNameAndVersion());
     assertLinesMatch(
         List.of(
             "P Bach initialized",

@@ -37,6 +37,11 @@ class ProjectBuilderTests {
   }
 
   @Test
+  void toNameAndVersion() {
+    assertEquals("name 99", project.toNameAndVersion());
+  }
+
+  @Test
   void paths() {
     var paths = project.paths();
     assertEquals(Path.of(""), paths.base());

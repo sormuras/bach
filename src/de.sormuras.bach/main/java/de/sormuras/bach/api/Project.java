@@ -48,4 +48,9 @@ public /*static*/ final class Project {
   public Paths paths() {
     return structure().paths();
   }
+
+  public String toNameAndVersion() {
+    if (version == null) return name;
+    return name + ' ' + version;
+  }
 }
