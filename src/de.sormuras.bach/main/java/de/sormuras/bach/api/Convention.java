@@ -1,4 +1,4 @@
-package de.sormuras.bach;
+package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;

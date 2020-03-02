@@ -1,4 +1,4 @@
-package de.sormuras.bach;
+package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
