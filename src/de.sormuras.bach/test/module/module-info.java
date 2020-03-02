@@ -17,7 +17,8 @@
 
 open /*test*/ module de.sormuras.bach {
   exports de.sormuras.bach;
-  exports de.sormuras.bach.model;
+  exports de.sormuras.bach.api;
+  exports de.sormuras.bach.execution;
 
   requires org.junit.jupiter;
   requires test.base;

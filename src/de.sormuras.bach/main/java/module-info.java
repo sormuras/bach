@@ -20,6 +20,6 @@
  */
 module de.sormuras.bach {
   exports de.sormuras.bach;
+  exports de.sormuras.bach.api;
   exports de.sormuras.bach.execution;
-  exports de.sormuras.bach.model;
 }

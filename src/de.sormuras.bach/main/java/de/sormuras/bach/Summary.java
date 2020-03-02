@@ -17,9 +17,9 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.api.Project;
 import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.model.Project;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;

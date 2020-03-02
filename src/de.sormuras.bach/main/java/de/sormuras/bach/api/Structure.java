@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.model;
+package de.sormuras.bach.api;
 
 /** Project structure. */
 public /*static*/ final class Structure {

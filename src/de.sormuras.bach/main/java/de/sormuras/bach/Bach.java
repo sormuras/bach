@@ -17,10 +17,10 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.api.Project;
+import de.sormuras.bach.api.ProjectBuilder;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.model.Project;
-import de.sormuras.bach.model.ProjectBuilder;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.function.Consumer;

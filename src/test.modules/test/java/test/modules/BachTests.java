@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.model.ProjectBuilder;
+import de.sormuras.bach.api.ProjectBuilder;
 import org.junit.jupiter.api.Test;
 
 class BachTests {

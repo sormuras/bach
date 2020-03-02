@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.model;
+package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.Objects;

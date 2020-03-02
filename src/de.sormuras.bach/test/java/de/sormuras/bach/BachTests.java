@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.api.ProjectBuilder;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.model.ProjectBuilder;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
