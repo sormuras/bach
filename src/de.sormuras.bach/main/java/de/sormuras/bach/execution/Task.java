@@ -23,16 +23,6 @@ import java.util.Objects;
 /** Executable task definition. */
 public /*static*/ class Task {
 
-  /** Group the given tasks for parallel execution. */
-  public static Task parallel(String title, Task... tasks) {
-    return new Task(title, true, List.of(tasks));
-  }
-
-  /** Group the given tasks for sequential execution. */
-  public static Task sequence(String title, Task... tasks) {
-    return new Task(title, false, List.of(tasks));
-  }
-
   private final String title;
   private final boolean parallel;
   private final List<Task> children;

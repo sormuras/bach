@@ -30,7 +30,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 /** Bach - Java Shell Builder. */
 public class Bach {
   /** Version of the Java Shell Builder. */
@@ -65,7 +67,7 @@ public class Bach {
     return verbose;
   }
   /** Line printer. */
-  private Consumer<String> printer() {
+  Consumer<String> printer() {
     return printer;
   }
   /** Print a message at information level. */
@@ -82,14 +84,33 @@ public class Bach {
   public Summary build(Consumer<ProjectBuilder> projectBuilderConsumer) {
     return build(project(projectBuilderConsumer));
   }
-  /** Build the specified project. */
+  /** Build the specified project using the default build task generator. */
   public Summary build(Project project) {
-    return new Summary(project);
+    return build(project, new BuildTaskGenerator(project, verbose()));
+  }
+  /** Build the specified project using the given build task supplier. */
+  Summary build(Project project, Supplier<Task> taskSupplier) {
+    var start = Instant.now();
+    print("Build %s", project.name());
+    // if (verbose()) project.print(printer());
+    var summary = new Summary(project);
+    execute(taskSupplier.get(), summary);
+    var markdown = summary.write();
+    var duration =
+        Duration.between(start, Instant.now())
+            .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
+            .toString()
+            .substring(2)
+            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+            .toLowerCase();
+    print("Build took %s -> %s", duration, markdown.toUri());
+    return summary;
   }
   /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
     var markdown = task.toMarkdown();
-    print(Level.DEBUG, markdown);
+    var children = task.children();
+    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', markdown);
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
     if (verbose()) {
@@ -102,7 +123,6 @@ public class Bach {
       var message = markdown + ": non-zero result code: " + result.code();
       throw new RuntimeException(message);
     }
-    var children = task.children();
     if (!children.isEmpty()) {
       try {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
@@ -110,6 +130,7 @@ public class Bach {
       } catch (RuntimeException e) {
         summary.error().addSuppressed(e);
       }
+      print(Level.DEBUG, "= %s", markdown);
     }
     summary.executionEnd(task, result);
   }
@@ -221,6 +242,10 @@ public class Bach {
     public Paths paths() {
       return structure().paths();
     }
+    public String toNameAndVersion() {
+      if (version == null) return name;
+      return name + ' ' + version;
+    }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/api/ProjectBuilder.java
   /** Project model builder. */
@@ -263,6 +288,66 @@ public class Bach {
     }
     public Paths paths() {
       return paths;
+    }
+  }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/BuildTaskGenerator.java
+  /** Generate default build task for a given project. */
+  public static class BuildTaskGenerator implements Supplier<Task> {
+    private final Project project;
+    private final boolean verbose;
+    public BuildTaskGenerator(Project project, boolean verbose) {
+      this.project = project;
+      this.verbose = verbose;
+    }
+    public Project project() {
+      return project;
+    }
+    public boolean verbose() {
+      return verbose;
+    }
+    @Override
+    public Task get() {
+      return sequence(
+          "Build " + project().toNameAndVersion(),
+          createDirectories(project.paths().out()),
+          printVersionOfSelectedFoundationTools(),
+          resolveMissingModules(),
+          parallel(
+              "Compile realms and generate API documentation",
+              compileAllRealms(),
+              compileApiDocumentation()),
+          launchAllTests());
+    }
+    protected Task parallel(String title, Task... tasks) {
+      return new Task(title, true, List.of(tasks));
+    }
+    protected Task sequence(String title, Task... tasks) {
+      return new Task(title, false, List.of(tasks));
+    }
+    protected Task createDirectories(Path path) {
+      return new Tasks.CreateDirectories(path);
+    }
+    protected Task printVersionOfSelectedFoundationTools() {
+      return verbose()
+          ? parallel(
+              "Print version of various foundation tools"
+              // tool("javac", "--version"),
+              // tool("javadoc", "--version"),
+              // tool("jar", "--version")
+              )
+          : sequence("Print version of javac");
+    }
+    protected Task resolveMissingModules() {
+      return sequence("Resolve missing modules");
+    }
+    protected Task compileAllRealms() {
+      return sequence("Compile all realms");
+    }
+    protected Task compileApiDocumentation() {
+      return sequence("Compile API documentation");
+    }
+    protected Task launchAllTests() {
+      return sequence("Launch all tests");
     }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/ExecutionContext.java
@@ -337,14 +422,6 @@ public class Bach {
   // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/Task.java
   /** Executable task definition. */
   public static class Task {
-    /** Group the given tasks for parallel execution. */
-    public static Task parallel(String title, Task... tasks) {
-      return new Task(title, true, List.of(tasks));
-    }
-    /** Group the given tasks for sequential execution. */
-    public static Task sequence(String title, Task... tasks) {
-      return new Task(title, false, List.of(tasks));
-    }
     private final String title;
     private final boolean parallel;
     private final List<Task> children;
@@ -370,6 +447,31 @@ public class Bach {
     /** Return markdown representation of this task instance. */
     public String toMarkdown() {
       return title();
+    }
+  }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/Tasks.java
+  /** Collection of tasks. */
+  public interface Tasks {
+    /** Creates a directory by creating all nonexistent parent directories first. */
+    class CreateDirectories extends Task {
+      private final Path path;
+      public CreateDirectories(Path path) {
+        super("Create directories " + path, false, List.of());
+        this.path = path;
+      }
+      @Override
+      public ExecutionResult execute(ExecutionContext context) {
+        try {
+          Files.createDirectories(path);
+          return context.ok();
+        } catch (Exception e) {
+          return context.failed(e);
+        }
+      }
+      @Override
+      public String toMarkdown() {
+        return "`Files.createDirectories(Path.of(" + path + "))`";
+      }
     }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/Main.java

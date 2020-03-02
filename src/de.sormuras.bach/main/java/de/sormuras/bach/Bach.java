@@ -19,11 +19,16 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.api.ProjectBuilder;
+import de.sormuras.bach.execution.BuildTaskGenerator;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.Task;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -69,7 +74,7 @@ public class Bach {
   }
 
   /** Line printer. */
-  private Consumer<String> printer() {
+  Consumer<String> printer() {
     return printer;
   }
 
@@ -90,15 +95,36 @@ public class Bach {
     return build(project(projectBuilderConsumer));
   }
 
-  /** Build the specified project. */
+  /** Build the specified project using the default build task generator. */
   public Summary build(Project project) {
-    return new Summary(project);
+    return build(project, new BuildTaskGenerator(project, verbose()));
+  }
+
+  /** Build the specified project using the given build task supplier. */
+  Summary build(Project project, Supplier<Task> taskSupplier) {
+    var start = Instant.now();
+    print("Build %s", project.name());
+    // if (verbose()) project.print(printer());
+    var summary = new Summary(project);
+    execute(taskSupplier.get(), summary);
+    var markdown = summary.write();
+    var duration =
+        Duration.between(start, Instant.now())
+            .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
+            .toString()
+            .substring(2)
+            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+            .toLowerCase();
+    print("Build took %s -> %s", duration, markdown.toUri());
+    return summary;
   }
 
   /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
     var markdown = task.toMarkdown();
-    print(Level.DEBUG, markdown);
+    var children = task.children();
+
+    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', markdown);
 
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
@@ -113,7 +139,6 @@ public class Bach {
       throw new RuntimeException(message);
     }
 
-    var children = task.children();
     if (!children.isEmpty()) {
       try {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
@@ -121,6 +146,7 @@ public class Bach {
       } catch (RuntimeException e) {
         summary.error().addSuppressed(e);
       }
+      print(Level.DEBUG, "= %s", markdown);
     }
 
     summary.executionEnd(task, result);

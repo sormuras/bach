@@ -109,16 +109,15 @@ class BachTests {
           }
         };
     var summary = new Summary(new ProjectBuilder().name("local").paths(temp).build());
-    bach.execute(Task.parallel("parallel", Task.sequence("sequence", noop, fail)), summary);
+    bach.execute(new Task("group", false, List.of(noop, fail)), summary);
     assertThrows(RuntimeException.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());
-    assertEquals(6, summary.countedExecutionEvents());
+    assertEquals(4, summary.countedExecutionEvents());
     assertEquals("local", summary.project().toNameAndVersion());
     assertLinesMatch(
         List.of(
             "P Bach initialized",
-            "P parallel",
-            "P sequence",
+            "P group",
             "P Noop",
             "P Fail",
             "P Debug 1",
@@ -135,12 +134,10 @@ class BachTests {
             "## Task Execution Overview",
             "|    |Thread|Duration|Caption",
             "|----|-----:|-------:|-------",
-            "|   +|     1|        | parallel",
-            "|   +|     1|        | sequence",
+            "|   +|     1|        | group",
             "\\Q|    |     1|\\E.+\\Q| **Noop** [...](#task-execution-details-\\E.+",
             "\\Q|   X|     1|\\E.+\\Q| **Fail** [...](#task-execution-details-\\E.+",
-            "\\Q|   =|     1|\\E.+\\Q| sequence",
-            "\\Q|   =|     1|\\E.+\\Q| parallel",
+            "\\Q|   =|     1|\\E.+\\Q| group",
             ">> LEGEND >>",
             "## Task Execution Details",
             ">> TASK DETAILS >>",
