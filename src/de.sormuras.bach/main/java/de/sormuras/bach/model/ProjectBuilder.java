@@ -51,7 +51,11 @@ public /*static*/ final class ProjectBuilder {
     return this;
   }
 
+  public ProjectBuilder paths(Path base) {
+    return paths(Paths.of(base));
+  }
+
   public ProjectBuilder paths(String base) {
-    return paths(Paths.of(Path.of(base)));
+    return paths(Path.of(base));
   }
 }
