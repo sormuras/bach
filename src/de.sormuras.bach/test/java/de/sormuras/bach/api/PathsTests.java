@@ -28,10 +28,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class PathsTests {
 
-  @ParameterizedTest(name = "path=\"{0}\"")
+  @ParameterizedTest(name = "base -> Path.of(\"{0}\")")
   @ValueSource(strings = {"", "root", "a/b/c"})
-  void paths(Path path) {
-    assertPaths(path);
+  void paths(Path base) {
+    assertPaths(base);
   }
 
   @Test
