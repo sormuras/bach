@@ -28,7 +28,7 @@ class BachTests {
 
   @Test
   void createBachProject() {
-    var project = new Project.Builder().name("test.modules").version("123").build();
+    var project = Project.builder().name("test.modules").version("123").build();
     assertEquals("test.modules", project.name());
     assertEquals("123", project.version().toString());
   }

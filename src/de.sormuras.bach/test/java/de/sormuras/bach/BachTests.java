@@ -83,7 +83,7 @@ class BachTests {
   void executeLocalNoopTask() {
     var log = new Log();
     var bach = new Bach(log, true);
-    var summary = new Summary(new Project.Builder().name("Noop").build());
+    var summary = new Summary(Project.builder().name("Noop").build());
     bach.execute(new Task("Noop", false, List.of()), summary);
     assertDoesNotThrow(summary::assertSuccessful);
   }
@@ -108,7 +108,7 @@ class BachTests {
             return failed;
           }
         };
-    var summary = new Summary(new Project.Builder().name("local").paths(temp).build());
+    var summary = new Summary(Project.builder().name("local").paths(temp).build());
     bach.execute(new Task("group", false, List.of(noop, fail)), summary);
     assertThrows(RuntimeException.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());

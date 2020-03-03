@@ -154,7 +154,7 @@ public class Bach {
   /** Create new default project potentially modified by the passed project builder consumer. */
   Project project(Consumer<Project.Builder> projectBuilderConsumer) {
     // var projectBuilder = new ProjectScanner(paths).scan();
-    var projectBuilder = new Project.Builder();
+    var projectBuilder = Project.builder();
     projectBuilderConsumer.accept(projectBuilder);
     return projectBuilder.build();
   }

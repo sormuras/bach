@@ -24,6 +24,11 @@ import java.util.Objects;
 /** Bach's project model. */
 public /*static*/ final class Project {
 
+  /** Return a mutable builder for creating a project instance. */
+  public static Builder builder() {
+    return new Builder();
+  }
+
   private final String name;
   private final Version version;
   private final Structure structure;
@@ -60,7 +65,13 @@ public /*static*/ final class Project {
 
     private String name;
     private Version version;
-    private Paths paths = Paths.of(Path.of(""));
+    private Paths paths;
+
+    private Builder() {
+      name(null);
+      version((Version) null);
+      paths("");
+    }
 
     public Project build() {
       var structure = new Structure(paths);
