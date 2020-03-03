@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class ProjectBuilderTests {
 
-  final Project project = new ProjectBuilder().name("name").version("99").paths("").build();
+  final Project project = new Project.Builder().name("name").version("99").paths("").build();
 
   @Test
   void name() {

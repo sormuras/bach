@@ -18,6 +18,7 @@
 package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.Objects;
 
 /** Bach's project model. */
@@ -52,5 +53,45 @@ public /*static*/ final class Project {
   public String toNameAndVersion() {
     if (version == null) return name;
     return name + ' ' + version;
+  }
+
+  /** A mutable builder for a {@link Project}. */
+  public static class Builder {
+
+    private String name;
+    private Version version;
+    private Paths paths = Paths.of(Path.of(""));
+
+    public Project build() {
+      var structure = new Structure(paths);
+      return new Project(name, version, structure);
+    }
+
+    public Builder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder version(Version version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder version(String version) {
+      return version(Version.parse(version));
+    }
+
+    public Builder paths(Paths paths) {
+      this.paths = paths;
+      return this;
+    }
+
+    public Builder paths(Path base) {
+      return paths(Paths.of(base));
+    }
+
+    public Builder paths(String base) {
+      return paths(Path.of(base));
+    }
   }
 }

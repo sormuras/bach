@@ -18,7 +18,6 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.api.Project;
-import de.sormuras.bach.api.ProjectBuilder;
 import de.sormuras.bach.execution.BuildTaskGenerator;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.Task;
@@ -91,7 +90,7 @@ public class Bach {
   }
 
   /** Build default project potentially modified by the passed project builder consumer. */
-  public Summary build(Consumer<ProjectBuilder> projectBuilderConsumer) {
+  public Summary build(Consumer<Project.Builder> projectBuilderConsumer) {
     return build(project(projectBuilderConsumer));
   }
 
@@ -153,9 +152,9 @@ public class Bach {
   }
 
   /** Create new default project potentially modified by the passed project builder consumer. */
-  Project project(Consumer<ProjectBuilder> projectBuilderConsumer) {
+  Project project(Consumer<Project.Builder> projectBuilderConsumer) {
     // var projectBuilder = new ProjectScanner(paths).scan();
-    var projectBuilder = new ProjectBuilder();
+    var projectBuilder = new Project.Builder();
     projectBuilderConsumer.accept(projectBuilder);
     return projectBuilder.build();
   }

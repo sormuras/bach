@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.api.ProjectBuilder;
+import de.sormuras.bach.api.Project;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.Task;
@@ -83,7 +83,7 @@ class BachTests {
   void executeLocalNoopTask() {
     var log = new Log();
     var bach = new Bach(log, true);
-    var summary = new Summary(new ProjectBuilder().name("Noop").build());
+    var summary = new Summary(new Project.Builder().name("Noop").build());
     bach.execute(new Task("Noop", false, List.of()), summary);
     assertDoesNotThrow(summary::assertSuccessful);
   }
@@ -108,7 +108,7 @@ class BachTests {
             return failed;
           }
         };
-    var summary = new Summary(new ProjectBuilder().name("local").paths(temp).build());
+    var summary = new Summary(new Project.Builder().name("local").paths(temp).build());
     bach.execute(new Task("group", false, List.of(noop, fail)), summary);
     assertThrows(RuntimeException.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());
