@@ -18,21 +18,26 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 /** Bach - Java Shell Builder. */
 public class Bach {
   /** Version of the Java Shell Builder. */
@@ -287,6 +292,49 @@ public class Bach {
       }
     }
   }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Source.java
+  /** Single source path with optional release directive. */
+  public static final class Source {
+    /** Source-related flags. */
+    public enum Flag {
+      /** Store binary assets in {@code META-INF/versions/${release}/} directory of the jar. */
+      VERSIONED
+    }
+    /** Create default non-targeted source for the specified path and optional flags. */
+    public static Source of(Path path, Flag... flags) {
+      return new Source(path, 0, Set.of(flags));
+    }
+    private final Path path;
+    private final int release;
+    private final Set<Flag> flags;
+    public Source(Path path, int release, Set<Flag> flags) {
+      this.path = Objects.requireNonNull(path, "path");
+      this.release = release;
+      this.flags = flags.isEmpty() ? Set.of() : EnumSet.copyOf(flags);
+    }
+    /** Source path. */
+    public Path path() {
+      return path;
+    }
+    /** Java feature release target number, with zero indicating the current runtime release. */
+    public int release() {
+      return release;
+    }
+    /** This source's flags. */
+    public Set<Flag> flags() {
+      return flags;
+    }
+    public boolean isVersioned() {
+      return flags.contains(Flag.VERSIONED);
+    }
+    public boolean isTargeted() {
+      return release != 0;
+    }
+    /** Optional Java feature release target number. */
+    public OptionalInt target() {
+      return isTargeted() ? OptionalInt.of(release) : OptionalInt.empty();
+    }
+  }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Structure.java
   /** Project structure. */
   public static final class Structure {
@@ -298,9 +346,67 @@ public class Bach {
       return paths;
     }
   }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Unit.java
+  /** A module source description unit. */
+  public static final class Unit {
+    private final Path info;
+    private final ModuleDescriptor descriptor;
+    private final String moduleSourcePath;
+    private final List<Source> sources;
+    private final List<Path> resources;
+    public Unit(
+        Path info,
+        ModuleDescriptor descriptor,
+        String moduleSourcePath,
+        List<Source> sources,
+        List<Path> resources) {
+      this.info = Objects.requireNonNull(info, "info");
+      this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+      this.moduleSourcePath = Objects.requireNonNull(moduleSourcePath, "moduleSourcePath");
+      this.sources = List.copyOf(sources);
+      this.resources = List.copyOf(resources);
+    }
+    public Path info() {
+      return info;
+    }
+    public ModuleDescriptor descriptor() {
+      return descriptor;
+    }
+    public String moduleSourcePath() {
+      return moduleSourcePath;
+    }
+    public List<Source> sources() {
+      return sources;
+    }
+    public List<Path> resources() {
+      return resources;
+    }
+    public String name() {
+      return descriptor.name();
+    }
+    public boolean isMainClassPresent() {
+      return descriptor.mainClass().isPresent();
+    }
+    public <T> List<T> sources(Function<Source, T> mapper) {
+      if (sources.isEmpty()) return List.of();
+      if (sources.size() == 1) return List.of(mapper.apply(sources.get(0)));
+      return sources.stream().map(mapper).collect(Collectors.toList());
+    }
+    public boolean isMultiRelease() {
+      if (sources.isEmpty()) return false;
+      if (sources.size() == 1) return sources.get(0).isTargeted();
+      return sources.stream().allMatch(Source::isTargeted);
+    }
+  }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/BuildTaskGenerator.java
   /** Generate default build task for a given project. */
   public static class BuildTaskGenerator implements Supplier<Task> {
+    public static Task parallel(String title, Task... tasks) {
+      return new Task(title, true, List.of(tasks));
+    }
+    public static Task sequence(String title, Task... tasks) {
+      return new Task(title, false, List.of(tasks));
+    }
     private final Project project;
     private final boolean verbose;
     public BuildTaskGenerator(Project project, boolean verbose) {
@@ -325,12 +431,6 @@ public class Bach {
               compileAllRealms(),
               compileApiDocumentation()),
           launchAllTests());
-    }
-    protected Task parallel(String title, Task... tasks) {
-      return new Task(title, true, List.of(tasks));
-    }
-    protected Task sequence(String title, Task... tasks) {
-      return new Task(title, false, List.of(tasks));
     }
     protected Task createDirectories(Path path) {
       return new Tasks.CreateDirectories(path);
