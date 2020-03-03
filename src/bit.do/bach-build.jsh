@@ -24,8 +24,10 @@
 //   a) to the "master" tag/branch and
 //   b) to "src/bach/Bach.java", which requires JDK 11 or later.
 
+System.out.println("| /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java")
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
+System.out.println("| Bach.main(\"build\")")
 var code = 0
 try {
   Bach.main("build");
@@ -34,4 +36,5 @@ try {
   code = 1;
 }
 
+System.out.println("| /exit " + code)
 /exit code
