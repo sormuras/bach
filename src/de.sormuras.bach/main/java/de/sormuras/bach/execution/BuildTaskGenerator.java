@@ -25,6 +25,14 @@ import java.util.function.Supplier;
 /** Generate default build task for a given project. */
 public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
 
+  public static Task parallel(String title, Task... tasks) {
+    return new Task(title, true, List.of(tasks));
+  }
+
+  public static Task sequence(String title, Task... tasks) {
+    return new Task(title, false, List.of(tasks));
+  }
+
   private final Project project;
   private final boolean verbose;
 
@@ -53,14 +61,6 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
             compileAllRealms(),
             compileApiDocumentation()),
         launchAllTests());
-  }
-
-  protected Task parallel(String title, Task... tasks) {
-    return new Task(title, true, List.of(tasks));
-  }
-
-  protected Task sequence(String title, Task... tasks) {
-    return new Task(title, false, List.of(tasks));
   }
 
   protected Task createDirectories(Path path) {
