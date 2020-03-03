@@ -7,8 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/test/java" isTestSource="true" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="test.base" scope="TEST" />
     <orderEntry type="library" scope="TEST" name="JUnit Jupiter" level="project" />
     <orderEntry type="inheritedJdk" />
-    <orderEntry type="module" module-name="test.base" scope="TEST" />
   </component>
 </module>
