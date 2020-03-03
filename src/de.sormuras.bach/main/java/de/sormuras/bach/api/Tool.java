@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.execution;
+package de.sormuras.bach.api;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Interface for {@code String}-based mutable tool options. */
-public interface ToolOptions {
+public interface Tool {
 
   /** Return name of the tool. */
   String name();
@@ -31,13 +31,13 @@ public interface ToolOptions {
   List<String> args();
 
   /** Base class for common {@code String}-based mutable tool options. */
-  abstract class AbstractToolOptions implements ToolOptions {
+  abstract class AbstractTool implements Tool {
 
     private final String name;
     private boolean verbose;
     private boolean version;
 
-    public AbstractToolOptions(String name) {
+    public AbstractTool(String name) {
       this.name = name;
       setVerbose(false);
       setVersion(false);
@@ -81,13 +81,13 @@ public interface ToolOptions {
   }
 
   /** Mutable options collection for {@code javac}. */
-  class JavaCompilerOptions extends AbstractToolOptions {
+  class JavaCompiler extends AbstractTool {
 
     private Path destinationDirectory;
     private boolean generateMetadataForMethodParameters;
     private boolean terminateCompilationIfWarningsOccur;
 
-    public JavaCompilerOptions() {
+    public JavaCompiler() {
       super("javac");
       setDestinationDirectory(null);
       setGenerateMetadataForMethodParameters(false);

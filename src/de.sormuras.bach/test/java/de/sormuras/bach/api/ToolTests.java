@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.execution;
+package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
@@ -25,11 +25,11 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ToolOptionsTests {
+class ToolTests {
 
   @Test
   void javac() {
-    var javac = new ToolOptions.JavaCompilerOptions();
+    var javac = new Tool.JavaCompiler();
     assertEquals("javac", javac.name());
     assertEquals("javac", javac.toString());
     javac.setVerbose(true);
