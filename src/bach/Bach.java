@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -34,6 +36,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -290,6 +293,72 @@ public class Bach {
       public Builder paths(String base) {
         return paths(Path.of(base));
       }
+    }
+  }
+  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Realm.java
+  /** A realm of modular sources. */
+  public static final class Realm {
+    /** Realm-related flags controlling the build process. */
+    public enum Flag {
+      ENABLE_PREVIEW,
+      CREATE_JAVADOC,
+      LAUNCH_TESTS
+    }
+    private final String name;
+    private final int feature;
+    private final Map<String, Unit> units;
+    private final List<Realm> requires;
+    private final Set<Flag> flags;
+    public Realm(String name, int feature, Map<String, Unit> units, List<Realm> requires, Flag... flags) {
+      this.name = Objects.requireNonNull(name, "name");
+      this.feature = Objects.checkIndex(feature, Runtime.version().feature() + 1);
+      this.units = Map.copyOf(units);
+      this.requires = List.copyOf(requires);
+      this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
+    }
+    public String name() {
+      return name;
+    }
+    public int feature() {
+      return feature;
+    }
+    public Map<String, Unit> units() {
+      return units;
+    }
+    public List<Realm> requires() {
+      return requires;
+    }
+    public Set<Flag> flags() {
+      return flags;
+    }
+    public OptionalInt release() {
+      return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
+    }
+    /** Generate {@code --module-source-path} argument for this realm. */
+    public String moduleSourcePath() {
+      return units.values().stream()
+          .map(Unit::moduleSourcePath)
+          .distinct()
+          .collect(Collectors.joining(File.pathSeparator));
+    }
+    /** Generate {@code --patch-module} value strings for this realm. */
+    public List<String> patches(BiFunction<Realm, Unit, List<Path>> patcher) {
+      FileSystems.getDefault().getSeparator();
+      if (requires.isEmpty()) return List.of();
+      var patches = new ArrayList<String>();
+      for (var unit : units().values()) {
+        var module = unit.name();
+        for (var required : requires) {
+          var other = required.units().get(module);
+          if (other == null) continue;
+          var paths =
+              patcher.apply(required, other).stream()
+                  .map(Path::toString)
+                  .collect(Collectors.joining(File.pathSeparator));
+          patches.add(module + '=' + paths);
+        }
+      }
+      return patches.isEmpty() ? List.of() : List.copyOf(patches);
     }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Source.java
@@ -751,6 +820,7 @@ public class Bach {
     }
     private String systemProperty(String systemPropertyKey) {
       var value = System.getProperty(systemPropertyKey);
+      // if (value.endsWith("\\")) return value + ' '; // make trailing backslash visible
       if (!"line.separator".equals(systemPropertyKey)) return value;
       var build = new StringBuilder();
       for (char c : value.toCharArray()) {
