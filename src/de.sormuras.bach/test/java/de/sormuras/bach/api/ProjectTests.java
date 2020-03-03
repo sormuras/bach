@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class ProjectBuilderTests {
+class ProjectTests {
 
   final Project project = Project.builder().name("name").version("99").paths("").build();
 
