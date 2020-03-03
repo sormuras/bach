@@ -81,7 +81,7 @@ public class Bach {
     return message;
   }
   /** Build default project potentially modified by the passed project builder consumer. */
-  public Summary build(Consumer<ProjectBuilder> projectBuilderConsumer) {
+  public Summary build(Consumer<Project.Builder> projectBuilderConsumer) {
     return build(project(projectBuilderConsumer));
   }
   /** Build the specified project using the default build task generator. */
@@ -135,9 +135,9 @@ public class Bach {
     summary.executionEnd(task, result);
   }
   /** Create new default project potentially modified by the passed project builder consumer. */
-  Project project(Consumer<ProjectBuilder> projectBuilderConsumer) {
+  Project project(Consumer<Project.Builder> projectBuilderConsumer) {
     // var projectBuilder = new ProjectScanner(paths).scan();
-    var projectBuilder = new ProjectBuilder();
+    var projectBuilder = Project.builder();
     projectBuilderConsumer.accept(projectBuilder);
     return projectBuilder.build();
   }
@@ -222,6 +222,10 @@ public class Bach {
   // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Project.java
   /** Bach's project model. */
   public static final class Project {
+    /** Return a mutable builder for creating a project instance. */
+    public static Builder builder() {
+      return new Builder();
+    }
     private final String name;
     private final Version version;
     private final Structure structure;
@@ -246,37 +250,41 @@ public class Bach {
       if (version == null) return name;
       return name + ' ' + version;
     }
-  }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/ProjectBuilder.java
-  /** Project model builder. */
-  public static final class ProjectBuilder {
-    private String name;
-    private Version version;
-    private Paths paths = Paths.of(Path.of(""));
-    public Project build() {
-      var structure = new Structure(paths);
-      return new Project(name, version, structure);
-    }
-    public ProjectBuilder name(String name) {
-      this.name = name;
-      return this;
-    }
-    public ProjectBuilder version(Version version) {
-      this.version = version;
-      return this;
-    }
-    public ProjectBuilder version(String version) {
-      return version(Version.parse(version));
-    }
-    public ProjectBuilder paths(Paths paths) {
-      this.paths = paths;
-      return this;
-    }
-    public ProjectBuilder paths(Path base) {
-      return paths(Paths.of(base));
-    }
-    public ProjectBuilder paths(String base) {
-      return paths(Path.of(base));
+    /** A mutable builder for a {@link Project}. */
+    public static class Builder {
+      private String name;
+      private Version version;
+      private Paths paths;
+      private Builder() {
+        name(null);
+        version((Version) null);
+        paths("");
+      }
+      public Project build() {
+        var structure = new Structure(paths);
+        return new Project(name, version, structure);
+      }
+      public Builder name(String name) {
+        this.name = name;
+        return this;
+      }
+      public Builder version(Version version) {
+        this.version = version;
+        return this;
+      }
+      public Builder version(String version) {
+        return version(Version.parse(version));
+      }
+      public Builder paths(Paths paths) {
+        this.paths = paths;
+        return this;
+      }
+      public Builder paths(Path base) {
+        return paths(Paths.of(base));
+      }
+      public Builder paths(String base) {
+        return paths(Path.of(base));
+      }
     }
   }
   // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Structure.java
