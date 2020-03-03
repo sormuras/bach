@@ -65,7 +65,7 @@ public /*static*/ final class Unit {
 
   public boolean isMultiRelease() {
     if (sources.isEmpty()) return false;
-    if (sources.size() == 1) return sources.get(0).targeted();
-    return sources.stream().allMatch(Source::targeted);
+    if (sources.size() == 1) return sources.get(0).isTargeted();
+    return sources.stream().allMatch(Source::isTargeted);
   }
 }

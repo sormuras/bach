@@ -33,9 +33,9 @@ class SourceTests {
     assertEquals("java", source.path().getFileName().toString());
     assertEquals(0, source.release());
     assertTrue(source.target().isEmpty());
-    assertFalse(source.targeted());
+    assertFalse(source.isTargeted());
     assertTrue(source.flags().isEmpty());
-    assertFalse(source.versioned());
+    assertFalse(source.isVersioned());
   }
 
   @Test
@@ -44,8 +44,8 @@ class SourceTests {
     assertEquals("java", source.path().getFileName().toString());
     assertEquals(9, source.release());
     assertEquals(9, source.target().orElseThrow());
-    assertTrue(source.targeted());
+    assertTrue(source.isTargeted());
     assertTrue(source.flags().contains(Source.Flag.VERSIONED));
-    assertTrue(source.versioned());
+    assertTrue(source.isVersioned());
   }
 }

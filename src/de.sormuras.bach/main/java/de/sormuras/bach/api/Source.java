@@ -45,16 +45,16 @@ public /*static*/ final class Source {
     return flags;
   }
 
-  public boolean versioned() {
+  public boolean isVersioned() {
     return flags.contains(Flag.VERSIONED);
   }
 
-  public boolean targeted() {
+  public boolean isTargeted() {
     return release != 0;
   }
 
   /** Optional Java feature release target number. */
   public OptionalInt target() {
-    return targeted() ? OptionalInt.of(release) : OptionalInt.empty();
+    return isTargeted() ? OptionalInt.of(release) : OptionalInt.empty();
   }
 }
