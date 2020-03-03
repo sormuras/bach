@@ -206,6 +206,7 @@ public /*static*/ final class Summary {
 
   private String systemProperty(String systemPropertyKey) {
     var value = System.getProperty(systemPropertyKey);
+    // if (value.endsWith("\\")) return value + ' '; // make trailing backslash visible
     if (!"line.separator".equals(systemPropertyKey)) return value;
     var build = new StringBuilder();
     for (char c : value.toCharArray()) {
