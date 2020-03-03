@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 /** Bach - Java Shell Builder. */
 public class Bach {
   /** Version of the Java Shell Builder. */
-  public static Version VERSION = Version.parse("11.0-ea");
+  public static final Version VERSION = Version.parse("11.0-ea");
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
