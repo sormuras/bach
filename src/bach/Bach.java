@@ -45,13 +45,6 @@ import java.util.stream.Collectors;
 public class Bach {
   /** Version of the Java Shell Builder. */
   public static Version VERSION = Version.parse("11.0-ea");
-  /** Default line printer instance delegates to {@link System#out}. */
-  private static final Consumer<String> PRINTER = System.out::println;
-  /** Default verbosity flag, including {@code -Debug} support. */
-  private static final boolean VERBOSE =
-      Boolean.getBoolean("verbose") // -D verbose=true
-          || Boolean.getBoolean("ebug") // -Debug=true
-          || "".equals(System.getProperty("ebug")); // -Debug
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
@@ -62,7 +55,11 @@ public class Bach {
   private final boolean verbose;
   /** Initialize this instance with the specified line printer and verbosity flag. */
   public Bach() {
-    this(PRINTER, VERBOSE);
+    this(
+        System.out::println,
+        Boolean.getBoolean("verbose") // -D verbose=true
+            || Boolean.getBoolean("ebug") // -Debug=true
+            || "".equals(System.getProperty("ebug")));
   }
   /** Initialize this instance with the specified line printer and verbosity flag. */
   public Bach(Consumer<String> printer, boolean verbose) {
