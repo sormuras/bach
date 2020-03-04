@@ -87,7 +87,7 @@ class BachTests {
     var bach = new Bach(log, true);
     var summary = new Summary(Project.builder().name("Noop").build());
     bach.execute(new Task("Noop", false, List.of()), summary);
-    assertDoesNotThrow(summary::assertSuccessful);
+    summary.assertSuccessful();
   }
 
   @Test
@@ -160,7 +160,7 @@ class BachTests {
       var bach = new Bach(log, true);
       var summary = new Summary(Project.builder().name("Local").build());
       bach.execute(task, summary);
-      assertDoesNotThrow(summary::assertSuccessful);
+      summary.assertSuccessful();
     }
   }
 }
