@@ -12,14 +12,14 @@ public /*static*/ final class Unit {
 
   private final Path info;
   private final ModuleDescriptor descriptor;
-  private final String moduleSourcePath;
+  private final Path moduleSourcePath;
   private final List<Source> sources;
   private final List<Path> resources;
 
   public Unit(
       Path info,
       ModuleDescriptor descriptor,
-      String moduleSourcePath,
+      Path moduleSourcePath,
       List<Source> sources,
       List<Path> resources) {
     this.info = Objects.requireNonNull(info, "info");
@@ -37,7 +37,7 @@ public /*static*/ final class Unit {
     return descriptor;
   }
 
-  public String moduleSourcePath() {
+  public Path moduleSourcePath() {
     return moduleSourcePath;
   }
 

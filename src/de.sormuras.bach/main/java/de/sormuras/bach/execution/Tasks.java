@@ -61,12 +61,20 @@ public interface Tasks {
     /** Implement this marker interface indicating a {@link System#gc()} call is required. */
     public interface GarbageCollect {}
 
+    static String title(String tool, String... args) {
+      var length = args.length;
+      if (length == 0) return String.format("Run `%s`", tool);
+      if (length == 1) return String.format("Run `%s %s`", tool, args[0]);
+      if (length == 2) return String.format("Run `%s %s %s`", tool, args[0], args[1]);
+      return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
+    }
+
     private final ToolProvider[] tool;
     private final String[] args;
     private final String markdown;
 
-    public RunToolProvider(String title, ToolProvider tool, String... args) {
-      super(title, false, List.of());
+    public RunToolProvider(ToolProvider tool, String... args) {
+      super(title(tool.name(), args), false, List.of());
       this.tool = new ToolProvider[] {tool};
       this.args = args;
       var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);

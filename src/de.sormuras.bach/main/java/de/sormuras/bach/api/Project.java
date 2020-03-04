@@ -21,6 +21,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Bach's project model. */
 public /*static*/ final class Project {
@@ -63,6 +64,20 @@ public /*static*/ final class Project {
   public String toNameAndVersion() {
     if (version == null) return name;
     return name + ' ' + version;
+  }
+
+  /** Compose JAR file name by preferring passed argument values over project properties. */
+  public String toJarName(Unit unit, String classifier) {
+    var unitVersion = unit.descriptor().version();
+    var version = unitVersion.isPresent() ? unitVersion : Optional.ofNullable(this.version);
+    var versionSuffix = version.map(v -> "-" + v).orElse("");
+    var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+    return unit.name() + versionSuffix + classifierSuffix + ".jar";
+  }
+
+  /** Compose path to the Java module specified by its realm and modular unit. */
+  public Path toModularJar(Realm realm, Unit unit) {
+    return paths().modules(realm).resolve(toJarName(unit, ""));
   }
 
   /** A mutable builder for a {@link Project}. */
