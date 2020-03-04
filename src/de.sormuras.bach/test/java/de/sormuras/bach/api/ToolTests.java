@@ -60,7 +60,7 @@ class ToolTests {
             "--patch-module",
             "b=" + String.join(File.separator, "src", "b", "test"),
             "--release",
-            "14",
+            String.valueOf(Runtime.version().feature()),
             "--enable-preview",
             "-parameters",
             "-deprecation",
