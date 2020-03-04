@@ -28,7 +28,9 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 /** Build summary. */
 public /*static*/ final class Summary {
@@ -36,7 +38,7 @@ public /*static*/ final class Summary {
   private final Project project;
   private final Deque<String> executions = new ConcurrentLinkedDeque<>();
   private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
-  private final AssertionError error = new AssertionError("Build failed");
+  private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
 
   public Summary(Project project) {
     this.project = project;
@@ -46,15 +48,17 @@ public /*static*/ final class Summary {
     return project;
   }
 
-  public AssertionError error() {
-    return error;
+  public void addSuppressed(Throwable throwable) {
+    suppressed.add(throwable);
   }
 
   public void assertSuccessful() {
-    var exceptions = error.getSuppressed();
-    if (exceptions.length == 0) return;
-    var one = exceptions[0]; // first suppressed exception
-    if (exceptions.length == 1 && one instanceof RuntimeException) throw (RuntimeException) one;
+    if (suppressed.isEmpty()) return;
+    var message = new StringJoiner("\n");
+    message.add(String.format("collected %d suppressed throwable(s)", suppressed.size()));
+    message.add(String.join("\n", toMarkdown()));
+    var error = new AssertionError(message.toString());
+    suppressed.forEach(error::addSuppressed);
     throw error;
   }
 
@@ -175,18 +179,19 @@ public /*static*/ final class Summary {
   }
 
   private List<String> exceptionDetails() {
-    var exceptions = error.getSuppressed();
-    if (exceptions.length == 0) return List.of();
+    if (suppressed.isEmpty()) return List.of();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Exception Details");
     md.add("");
-    md.add("- Caught " + exceptions.length + " exception(s).");
+    md.add("- Caught " + suppressed.size() + " throwable(s).");
     md.add("");
-    for (var exception : exceptions) {
+    for (var throwable : suppressed) {
+      var lines = throwable.getMessage().lines().collect(Collectors.toList());
+      md.add("### " + (lines.isEmpty() ? throwable.getClass() : lines.get(0)));
+      if (lines.size() > 1) md.addAll(lines);
       var stackTrace = new StringWriter();
-      exception.printStackTrace(new PrintWriter(stackTrace));
-      md.add("### " + exception.getMessage());
+      throwable.printStackTrace(new PrintWriter(stackTrace));
       md.add("```text");
       stackTrace.toString().lines().forEach(md::add);
       md.add("```");

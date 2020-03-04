@@ -112,7 +112,7 @@ class BachTests {
         };
     var summary = new Summary(Project.builder().name("local").paths(temp).build());
     bach.execute(new Task("group", false, List.of(noop, fail)), summary);
-    assertThrows(RuntimeException.class, summary::assertSuccessful);
+    assertThrows(AssertionError.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());
     assertEquals(4, summary.countedExecutionEvents());
     assertEquals("local", summary.project().toNameAndVersion());

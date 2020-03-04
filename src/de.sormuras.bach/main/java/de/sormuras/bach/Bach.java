@@ -138,7 +138,7 @@ public class Bach {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
         tasks.forEach(child -> execute(child, summary));
       } catch (RuntimeException e) {
-        summary.error().addSuppressed(e);
+        summary.addSuppressed(e);
       }
       print(Level.DEBUG, "= %s", markdown);
     }
