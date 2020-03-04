@@ -20,12 +20,12 @@ import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
@@ -34,26 +34,23 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
-/** Bach - Java Shell Builder. */
 public class Bach {
-  /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("11.0-ea");
-  /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
   }
-  /** Line-based message printing consumer. */
   private final Consumer<String> printer;
-  /** Verbosity flag. */
   private final boolean verbose;
-  /** Initialize this instance with the specified line printer and verbosity flag. */
   public Bach() {
     this(
         System.out::println,
@@ -61,43 +58,34 @@ public class Bach {
             || Boolean.getBoolean("ebug") // -Debug=true
             || "".equals(System.getProperty("ebug")));
   }
-  /** Initialize this instance with the specified line printer and verbosity flag. */
   public Bach(Consumer<String> printer, boolean verbose) {
     this.printer = printer;
     this.verbose = verbose;
     print(Level.TRACE, "Bach initialized");
   }
-  /** Verbosity flag. */
   public boolean verbose() {
     return verbose;
   }
-  /** Line printer. */
   Consumer<String> printer() {
     return printer;
   }
-  /** Print a message at information level. */
   public String print(String format, Object... args) {
     return print(Level.INFO, format, args);
   }
-  /** Print a message at specified level. */
   public String print(Level level, String format, Object... args) {
     var message = String.format(format, args);
     if (verbose() || level.getSeverity() >= Level.INFO.getSeverity()) printer().accept(message);
     return message;
   }
-  /** Build default project potentially modified by the passed project builder consumer. */
   public Summary build(Consumer<Project.Builder> projectBuilderConsumer) {
     return build(project(projectBuilderConsumer));
   }
-  /** Build the specified project using the default build task generator. */
   public Summary build(Project project) {
     return build(project, new BuildTaskGenerator(project, verbose()));
   }
-  /** Build the specified project using the given build task supplier. */
   Summary build(Project project, Supplier<Task> taskSupplier) {
     var start = Instant.now();
     print("Build %s", project.name());
-    // if (verbose()) project.print(printer());
     var summary = new Summary(project);
     execute(taskSupplier.get(), summary);
     var markdown = summary.write();
@@ -111,7 +99,6 @@ public class Bach {
     print("Build took %s -> %s", duration, markdown.toUri());
     return summary;
   }
-  /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
     var markdown = task.toMarkdown();
     var children = task.children();
@@ -133,40 +120,29 @@ public class Bach {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
         tasks.forEach(child -> execute(child, summary));
       } catch (RuntimeException e) {
-        summary.error().addSuppressed(e);
+        summary.addSuppressed(e);
       }
       print(Level.DEBUG, "= %s", markdown);
     }
     summary.executionEnd(task, result);
   }
-  /** Create new default project potentially modified by the passed project builder consumer. */
   Project project(Consumer<Project.Builder> projectBuilderConsumer) {
-    // var projectBuilder = new ProjectScanner(paths).scan();
     var projectBuilder = Project.builder();
     projectBuilderConsumer.accept(projectBuilder);
     return projectBuilder.build();
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Convention.java
-  /**
-   * Common conventions.
-   *
-   * @see <a href="https://github.com/sormuras/bach#common-conventions">Common Conventions</a>
-   */
   interface Convention {
-    /** Return name of main class of the specified module. */
     static Optional<String> mainClass(Path info, String module) {
       var main = Path.of(module.replace('.', '/'), "Main.java");
       var exists = Files.isRegularFile(info.resolveSibling(main));
       return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
     }
-    /** Extend the passed map of modules with missing JUnit test engine implementations. */
     static void amendJUnitTestEngines(Map<String, Version> modules) {
       var names = modules.keySet();
       if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
         modules.putIfAbsent("org.junit.jupiter.engine", null);
       if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
     }
-    /** Extend the passed map of modules with the JUnit Platform Console module. */
     static void amendJUnitPlatformConsole(Map<String, Version> modules) {
       var names = modules.keySet();
       if (names.contains("org.junit.platform.console")) return;
@@ -178,15 +154,12 @@ public class Bach {
           .ifPresent(__ -> modules.put("org.junit.platform.console", null));
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Paths.java
-  /** Common project-related paths. */
   public static final class Paths {
     private static final Path CLASSES = Path.of("classes");
     private static final Path MODULES = Path.of("modules");
     private static final Path SOURCES = Path.of("sources");
     private static final Path DOCUMENTATION = Path.of("documentation");
     private static final Path JAVADOC = DOCUMENTATION.resolve("javadoc");
-    /** Create default instance for the specified base directory. */
     public static Paths of(Path base) {
       return new Paths(base, base.resolve(".bach"), base.resolve("lib"));
     }
@@ -211,33 +184,30 @@ public class Bach {
       var path = Path.of(first, more);
       return out.resolve(path);
     }
-    public Path classes(String realm) {
-      return out.resolve(CLASSES).resolve(realm);
+    public Path classes(Realm realm) {
+      return out.resolve(CLASSES).resolve(realm.name());
     }
     public Path javadoc() {
       return out.resolve(JAVADOC);
     }
-    public Path modules(String realm) {
-      return out.resolve(MODULES).resolve(realm);
+    public Path modules(Realm realm) {
+      return out.resolve(MODULES).resolve(realm.name());
     }
-    public Path sources(String realm) {
-      return out.resolve(SOURCES).resolve(realm);
+    public Path sources(Realm realm) {
+      return out.resolve(SOURCES).resolve(realm.name());
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Project.java
-  /** Bach's project model. */
   public static final class Project {
-    /** Return a mutable builder for creating a project instance. */
     public static Builder builder() {
       return new Builder();
     }
     private final String name;
     private final Version version;
     private final Structure structure;
-    public Project(String name, Version version, Structure structure) {
+    private Project(String name, Version version, Structure structure) {
       this.name = Objects.requireNonNull(name, "name");
       this.version = version;
-      this.structure = Objects.requireNonNull(structure, "paths");
+      this.structure = Objects.requireNonNull(structure, "structure");
     }
     public String name() {
       return name;
@@ -251,22 +221,40 @@ public class Bach {
     public Paths paths() {
       return structure().paths();
     }
+    public Tuner tuner() {
+      return structure().tuner();
+    }
     public String toNameAndVersion() {
       if (version == null) return name;
       return name + ' ' + version;
     }
-    /** A mutable builder for a {@link Project}. */
+    public String toJarName(Unit unit, String classifier) {
+      var unitVersion = unit.descriptor().version();
+      var version = unitVersion.isPresent() ? unitVersion : Optional.ofNullable(this.version);
+      var versionSuffix = version.map(v -> "-" + v).orElse("");
+      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+      return unit.name() + versionSuffix + classifierSuffix + ".jar";
+    }
+    public Path toModularJar(Realm realm, Unit unit) {
+      return paths().modules(realm).resolve(toJarName(unit, ""));
+    }
     public static class Builder {
       private String name;
       private Version version;
       private Paths paths;
+      private List<Unit> units;
+      private List<Realm> realms;
+      private Tuner tuner;
       private Builder() {
         name(null);
         version((Version) null);
         paths("");
+        units(List.of());
+        realms(List.of());
+        tuner(new Tuner());
       }
       public Project build() {
-        var structure = new Structure(paths);
+        var structure = new Structure(paths, units, realms, tuner);
         return new Project(name, version, structure);
       }
       public Builder name(String name) {
@@ -290,12 +278,21 @@ public class Bach {
       public Builder paths(String base) {
         return paths(Path.of(base));
       }
+      public Builder units(List<Unit> units) {
+        this.units = units;
+        return this;
+      }
+      public Builder realms(List<Realm> realms) {
+        this.realms = realms;
+        return this;
+      }
+      public Builder tuner(Tuner tuner) {
+        this.tuner = tuner;
+        return this;
+      }
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Realm.java
-  /** A realm of modular sources. */
   public static final class Realm {
-    /** Realm-related flags controlling the build process. */
     public enum Flag {
       ENABLE_PREVIEW,
       CREATE_JAVADOC,
@@ -306,7 +303,8 @@ public class Bach {
     private final Map<String, Unit> units;
     private final List<Realm> requires;
     private final Set<Flag> flags;
-    public Realm(String name, int feature, Map<String, Unit> units, List<Realm> requires, Flag... flags) {
+    public Realm(
+        String name, int feature, Map<String, Unit> units, List<Realm> requires, Flag... flags) {
       this.name = Objects.requireNonNull(name, "name");
       this.feature = Objects.checkIndex(feature, Runtime.version().feature() + 1);
       this.units = Map.copyOf(units);
@@ -328,45 +326,47 @@ public class Bach {
     public Set<Flag> flags() {
       return flags;
     }
+    public String title() {
+      return name.isEmpty() ? "default" : name;
+    }
     public OptionalInt release() {
       return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
     }
-    /** Generate {@code --module-source-path} argument for this realm. */
-    public String moduleSourcePath() {
+    public List<String> moduleNames() {
+      return new ArrayList<>(units.keySet());
+    }
+    public List<Path> moduleSourcePaths() {
       return units.values().stream()
           .map(Unit::moduleSourcePath)
           .distinct()
-          .collect(Collectors.joining(File.pathSeparator));
+          .collect(Collectors.toList());
     }
-    /** Generate {@code --patch-module} value strings for this realm. */
-    public List<String> patches(BiFunction<Realm, Unit, List<Path>> patcher) {
-      FileSystems.getDefault().getSeparator();
-      if (requires.isEmpty()) return List.of();
-      var patches = new ArrayList<String>();
+    public List<Path> modulePaths(Paths paths) {
+      var list = new ArrayList<Path>();
+      requires.stream().map(paths::modules).forEach(list::add);
+      list.add(paths.lib());
+      return list;
+    }
+    public Map<String, List<Path>> patches(BiFunction<Realm, Unit, List<Path>> patcher) {
+      if (units.isEmpty() || requires.isEmpty()) return Map.of();
+      var patches = new TreeMap<String, List<Path>>();
       for (var unit : units().values()) {
         var module = unit.name();
         for (var required : requires) {
           var other = required.units().get(module);
           if (other == null) continue;
-          var paths =
-              patcher.apply(required, other).stream()
-                  .map(Path::toString)
-                  .collect(Collectors.joining(File.pathSeparator));
-          patches.add(module + '=' + paths);
+          var paths = patcher.apply(required, other);
+          if (paths.isEmpty()) continue;
+          patches.put(module, paths);
         }
       }
-      return patches.isEmpty() ? List.of() : List.copyOf(patches);
+      return patches;
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Source.java
-  /** Single source path with optional release directive. */
   public static final class Source {
-    /** Source-related flags. */
     public enum Flag {
-      /** Store binary assets in {@code META-INF/versions/${release}/} directory of the jar. */
       VERSIONED
     }
-    /** Create default non-targeted source for the specified path and optional flags. */
     public static Source of(Path path, Flag... flags) {
       return new Source(path, 0, Set.of(flags));
     }
@@ -378,15 +378,12 @@ public class Bach {
       this.release = release;
       this.flags = flags.isEmpty() ? Set.of() : EnumSet.copyOf(flags);
     }
-    /** Source path. */
     public Path path() {
       return path;
     }
-    /** Java feature release target number, with zero indicating the current runtime release. */
     public int release() {
       return release;
     }
-    /** This source's flags. */
     public Set<Flag> flags() {
       return flags;
     }
@@ -396,124 +393,222 @@ public class Bach {
     public boolean isTargeted() {
       return release != 0;
     }
-    /** Optional Java feature release target number. */
     public OptionalInt target() {
       return isTargeted() ? OptionalInt.of(release) : OptionalInt.empty();
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Structure.java
-  /** Project structure. */
   public static final class Structure {
     private final Paths paths;
-    public Structure(Paths paths) {
+    private final List<Unit> units;
+    private final List<Realm> realms;
+    private final Tuner tuner;
+    public Structure(Paths paths, List<Unit> units, List<Realm> realms, Tuner tuner) {
       this.paths = paths;
+      this.units = units;
+      this.realms = realms;
+      this.tuner = tuner;
     }
     public Paths paths() {
       return paths;
     }
+    public List<Unit> units() {
+      return units;
+    }
+    public List<Realm> realms() {
+      return realms;
+    }
+    public Tuner tuner() {
+      return tuner;
+    }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Tool.java
-  /** Interface for {@code String}-based mutable tool options. */
   public interface Tool {
-    /** Return name of the tool. */
+    static JavaCompiler javac() {
+      return new JavaCompiler();
+    }
     String name();
-    /** Return list of arguments compiled from option properties. */
-    List<String> args();
-    /** Base class for common {@code String}-based mutable tool options. */
-    abstract class AbstractTool implements Tool {
-      private final String name;
-      private boolean verbose;
-      private boolean version;
-      public AbstractTool(String name) {
-        this.name = name;
-        setVerbose(false);
-        setVersion(false);
-      }
+    List<String> arguments();
+    class JavaCompiler implements Tool {
+      private List<String> compileModulesCheckingTimestamps;
+      private Version versionOfModulesThatAreBeingCompiled;
+      private List<Path> pathsWhereToFindSourceFilesForModules;
+      private List<Path> pathsWhereToFindApplicationModules;
+      private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
+      private String characterEncodingUsedBySourceFiles;
+      private int compileForVirtualMachineVersion;
+      private boolean enablePreviewLanguageFeatures;
+      private boolean generateMetadataForMethodParameters;
+      private boolean outputMessagesAboutWhatTheCompilerIsDoing;
+      private boolean outputSourceLocationsOfDeprecatedUsages;
+      private boolean terminateCompilationIfWarningsOccur;
+      private Path destinationDirectory;
+      private JavaCompiler() {}
       @Override
       public String name() {
-        return name;
+        return "javac";
+      }
+      private static boolean isAssigned(Object object) {
+        if (object == null) return false;
+        if (object instanceof Number) return ((Number) object).intValue() != 0;
+        if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+        if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+        return true;
+      }
+      private static String join(Collection<Path> paths) {
+        return paths.stream()
+            .map(Path::toString)
+            .map(string -> string.replace("{MODULE}", "*"))
+            .collect(Collectors.joining(File.pathSeparator));
       }
       @Override
-      public List<String> args() {
+      public List<String> arguments() {
         var args = new ArrayList<String>();
-        if (isVerbose()) args.add("--verbose");
-        if (isVersion()) args.add("--version");
-        return args;
-      }
-      public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-      }
-      public boolean isVerbose() {
-        return verbose;
-      }
-      public void setVersion(boolean version) {
-        this.version = version;
-      }
-      public boolean isVersion() {
-        return version;
-      }
-      @Override
-      public String toString() {
-        var args = args();
-        if (args.isEmpty()) return name();
-        return name() + ' ' + String.join(" ", args);
-      }
-    }
-    /** Mutable options collection for {@code javac}. */
-    class JavaCompiler extends AbstractTool {
-      private Path destinationDirectory;
-      private boolean generateMetadataForMethodParameters;
-      private boolean terminateCompilationIfWarningsOccur;
-      public JavaCompiler() {
-        super("javac");
-        setDestinationDirectory(null);
-        setGenerateMetadataForMethodParameters(false);
-        setTerminateCompilationIfWarningsOccur(false);
-      }
-      @Override
-      public List<String> args() {
-        var args = new ArrayList<String>();
-        if (getDestinationDirectory() != null) {
-          args.add("-d");
-          args.add(destinationDirectory.toString());
+        if (isAssigned(getCompileModulesCheckingTimestamps())) {
+          args.add("--module");
+          args.add(String.join(",", getCompileModulesCheckingTimestamps()));
         }
+        if (isAssigned(getVersionOfModulesThatAreBeingCompiled())) {
+          args.add("--module-version");
+          args.add(String.valueOf(getVersionOfModulesThatAreBeingCompiled()));
+        }
+        if (isAssigned(getPathsWhereToFindSourceFilesForModules())) {
+          args.add("--module-source-path");
+          args.add(join(getPathsWhereToFindSourceFilesForModules()));
+        }
+        if (isAssigned(getPathsWhereToFindApplicationModules())) {
+          args.add("--module-path");
+          args.add(join(getPathsWhereToFindApplicationModules()));
+        }
+        if (isAssigned(getPathsWhereToFindMoreAssetsPerModule())) {
+          for(var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
+            args.add("--patch-module");
+            args.add(patch.getKey() + '=' + join(patch.getValue()));
+          }
+        }
+        if (isAssigned(getCompileForVirtualMachineVersion())) {
+          args.add("--release");
+          args.add(String.valueOf(getCompileForVirtualMachineVersion()));
+        }
+        if (isEnablePreviewLanguageFeatures()) args.add("--enable-preview");
         if (isGenerateMetadataForMethodParameters()) args.add("-parameters");
+        if (isOutputSourceLocationsOfDeprecatedUsages()) args.add("-deprecation");
+        if (isOutputMessagesAboutWhatTheCompilerIsDoing()) args.add("-verbose");
         if (isTerminateCompilationIfWarningsOccur()) args.add("-Werror");
-        args.addAll(super.args());
+        if (isAssigned(getCharacterEncodingUsedBySourceFiles())) {
+          args.add("-encoding");
+          args.add(getCharacterEncodingUsedBySourceFiles());
+        }
+        if (isAssigned(getDestinationDirectory())) {
+          args.add("-d");
+          args.add(String.valueOf(getDestinationDirectory()));
+        }
         return args;
       }
-      public void setDestinationDirectory(Path destinationDirectory) {
+      public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
+        this.compileModulesCheckingTimestamps = modules;
+        return this;
+      }
+      public List<String> getCompileModulesCheckingTimestamps() {
+        return compileModulesCheckingTimestamps;
+      }
+      public JavaCompiler setPathsWhereToFindSourceFilesForModules(List<Path> moduleSourcePath) {
+        this.pathsWhereToFindSourceFilesForModules = moduleSourcePath;
+        return this;
+      }
+      public List<Path> getPathsWhereToFindSourceFilesForModules() {
+        return pathsWhereToFindSourceFilesForModules;
+      }
+      public JavaCompiler setPathsWhereToFindApplicationModules(List<Path> modulePath) {
+        this.pathsWhereToFindApplicationModules = modulePath;
+        return this;
+      }
+      public List<Path> getPathsWhereToFindApplicationModules() {
+        return pathsWhereToFindApplicationModules;
+      }
+      public JavaCompiler setDestinationDirectory(Path destinationDirectory) {
         this.destinationDirectory = destinationDirectory;
+        return this;
       }
       public Path getDestinationDirectory() {
         return destinationDirectory;
       }
-      public void setGenerateMetadataForMethodParameters(boolean parameters) {
+      public JavaCompiler setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> patches) {
+        this.pathsWhereToFindMoreAssetsPerModule = patches;
+        return this;
+      }
+      public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+        return pathsWhereToFindMoreAssetsPerModule;
+      }
+      public JavaCompiler setCharacterEncodingUsedBySourceFiles(String encoding) {
+        this.characterEncodingUsedBySourceFiles = encoding;
+        return this;
+      }
+      public String getCharacterEncodingUsedBySourceFiles() {
+        return characterEncodingUsedBySourceFiles;
+      }
+      public JavaCompiler setCompileForVirtualMachineVersion(int release) {
+        this.compileForVirtualMachineVersion = release;
+        return this;
+      }
+      public int getCompileForVirtualMachineVersion() {
+        return compileForVirtualMachineVersion;
+      }
+      public JavaCompiler setEnablePreviewLanguageFeatures(boolean enablePreview) {
+        this.enablePreviewLanguageFeatures = enablePreview;
+        return this;
+      }
+      public boolean isEnablePreviewLanguageFeatures() {
+        return enablePreviewLanguageFeatures;
+      }
+      public JavaCompiler setGenerateMetadataForMethodParameters(boolean parameters) {
         this.generateMetadataForMethodParameters = parameters;
+        return this;
       }
       public boolean isGenerateMetadataForMethodParameters() {
         return generateMetadataForMethodParameters;
       }
-      public void setTerminateCompilationIfWarningsOccur(boolean warningsAreErrors) {
+      public JavaCompiler setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
+        this.outputSourceLocationsOfDeprecatedUsages = deprecation;
+        return this;
+      }
+      public boolean isOutputSourceLocationsOfDeprecatedUsages() {
+        return outputSourceLocationsOfDeprecatedUsages;
+      }
+      public JavaCompiler setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
+        this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
+        return this;
+      }
+      public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
+        return outputMessagesAboutWhatTheCompilerIsDoing;
+      }
+      public JavaCompiler setTerminateCompilationIfWarningsOccur(boolean warningsAreErrors) {
         this.terminateCompilationIfWarningsOccur = warningsAreErrors;
+        return this;
       }
       public boolean isTerminateCompilationIfWarningsOccur() {
         return terminateCompilationIfWarningsOccur;
       }
+      public JavaCompiler setVersionOfModulesThatAreBeingCompiled(Version moduleVersion) {
+        this.versionOfModulesThatAreBeingCompiled = moduleVersion;
+        return this;
+      }
+      public Version getVersionOfModulesThatAreBeingCompiled() {
+        return versionOfModulesThatAreBeingCompiled;
+      }
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/api/Unit.java
-  /** A module source description unit. */
+  public static class Tuner {
+    public void tune(Tool.JavaCompiler javac, Project project, Realm realm) {}
+  }
   public static final class Unit {
     private final Path info;
     private final ModuleDescriptor descriptor;
-    private final String moduleSourcePath;
+    private final Path moduleSourcePath;
     private final List<Source> sources;
     private final List<Path> resources;
     public Unit(
         Path info,
         ModuleDescriptor descriptor,
-        String moduleSourcePath,
+        Path moduleSourcePath,
         List<Source> sources,
         List<Path> resources) {
       this.info = Objects.requireNonNull(info, "info");
@@ -528,7 +623,7 @@ public class Bach {
     public ModuleDescriptor descriptor() {
       return descriptor;
     }
-    public String moduleSourcePath() {
+    public Path moduleSourcePath() {
       return moduleSourcePath;
     }
     public List<Source> sources() {
@@ -554,14 +649,19 @@ public class Bach {
       return sources.stream().allMatch(Source::isTargeted);
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/BuildTaskGenerator.java
-  /** Generate default build task for a given project. */
   public static class BuildTaskGenerator implements Supplier<Task> {
     public static Task parallel(String title, Task... tasks) {
       return new Task(title, true, List.of(tasks));
     }
     public static Task sequence(String title, Task... tasks) {
       return new Task(title, false, List.of(tasks));
+    }
+    public static Task run(Tool tool) {
+      return run(tool.name(), tool.arguments().toArray(String[]::new));
+    }
+    public static Task run(String name, String... args) {
+      var provider = ToolProvider.findFirst(name).orElseThrow();
+      return new Tasks.RunToolProvider(provider, args);
     }
     private final Project project;
     private final boolean verbose;
@@ -580,32 +680,70 @@ public class Bach {
       return sequence(
           "Build " + project().toNameAndVersion(),
           createDirectories(project.paths().out()),
-          printVersionOfSelectedFoundationTools(),
+          printVersionInformationOfFoundationTools(),
           resolveMissingModules(),
           parallel(
               "Compile realms and generate API documentation",
-              compileAllRealms(),
-              compileApiDocumentation()),
+              compileApiDocumentation(),
+              compileAllRealms()),
           launchAllTests());
     }
     protected Task createDirectories(Path path) {
       return new Tasks.CreateDirectories(path);
     }
-    protected Task printVersionOfSelectedFoundationTools() {
+    protected Task printVersionInformationOfFoundationTools() {
       return verbose()
           ? parallel(
-              "Print version of various foundation tools"
-              // tool("javac", "--version"),
-              // tool("javadoc", "--version"),
-              // tool("jar", "--version")
-              )
-          : sequence("Print version of javac");
+              "Print version of various foundation tools",
+              run("javac", "--version"),
+              run("javadoc", "--version"),
+              run("jar", "--version"))
+          : sequence("Print version of javac", run("javac", "--version"));
     }
     protected Task resolveMissingModules() {
       return sequence("Resolve missing modules");
     }
     protected Task compileAllRealms() {
-      return sequence("Compile all realms");
+      var realms = project.structure().realms();
+      if (realms.isEmpty()) return sequence("Cannot compile modules: 0 realms declared");
+      var tasks = realms.stream().map(this::compileRealm);
+      return sequence("Compile all realms", tasks.toArray(Task[]::new));
+    }
+    protected Task compileRealm(Realm realm) {
+      if (realm.units().isEmpty()) return sequence("No units in " + realm.title() + " realm?!");
+      var paths = project.paths();
+      var enablePreview = realm.flags().contains(Realm.Flag.ENABLE_PREVIEW);
+      var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
+      var patches = realm.patches((other, unit) -> List.of(project.toModularJar(other, unit)));
+      var javac =
+          Tool.javac()
+              .setCompileModulesCheckingTimestamps(realm.moduleNames())
+              .setVersionOfModulesThatAreBeingCompiled(project.version())
+              .setPathsWhereToFindSourceFilesForModules(realm.moduleSourcePaths())
+              .setPathsWhereToFindApplicationModules(realm.modulePaths(paths))
+              .setPathsWhereToFindMoreAssetsPerModule(patches)
+              .setEnablePreviewLanguageFeatures(enablePreview)
+              .setCompileForVirtualMachineVersion(release.orElse(0))
+              .setCharacterEncodingUsedBySourceFiles("UTF-8")
+              .setOutputMessagesAboutWhatTheCompilerIsDoing(false)
+              .setGenerateMetadataForMethodParameters(true)
+              .setOutputSourceLocationsOfDeprecatedUsages(true)
+              .setTerminateCompilationIfWarningsOccur(true)
+              .setDestinationDirectory(paths.classes(realm));
+      project.tuner().tune(javac, project, realm);
+      return sequence("Compile " + realm.title() + " realm", run(javac), packageRealm(realm));
+    }
+    protected Task packageRealm(Realm realm) {
+      var jars = new ArrayList<Task>();
+      var paths = project.paths();
+      var modules = paths.modules(realm);
+      var sources = paths.sources(realm);
+      var title = realm.title();
+      return sequence(
+          "Package " + title + " modules and sources",
+          createDirectories(modules),
+          createDirectories(sources),
+          parallel("Jar each " + title + " module", jars.toArray(Task[]::new)));
     }
     protected Task compileApiDocumentation() {
       return sequence("Compile API documentation");
@@ -614,8 +752,6 @@ public class Bach {
       return sequence("Launch all tests");
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/ExecutionContext.java
-  /** Task execution context passed {@link Task#execute(ExecutionContext)}. */
   public static final class ExecutionContext {
     private final Bach bach;
     private final Instant start;
@@ -633,7 +769,6 @@ public class Bach {
     public Instant start() {
       return start;
     }
-    /** Print message if verbose flag is set. */
     public void print(Level level, String format, Object... args) {
       if (bach().verbose() || level.getSeverity() >= Level.INFO.getSeverity()) {
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
@@ -641,19 +776,15 @@ public class Bach {
         writer.write(System.lineSeparator());
       }
     }
-    /** Create result with code zero and empty output strings. */
     public ExecutionResult ok() {
       var duration = Duration.between(start(), Instant.now());
       return new ExecutionResult(0, duration, out.toString(), err.toString(), null);
     }
-    /** Create result with error code one and append throwable's message to the error string. */
     public ExecutionResult failed(Throwable throwable) {
       var duration = Duration.between(start(), Instant.now());
       return new ExecutionResult(1, duration, out.toString(), err.toString(), throwable);
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/ExecutionResult.java
-  /** Task execution result record returned by {@link Task#execute(ExecutionContext)}. */
   public static final class ExecutionResult {
     private final int code;
     private final Duration duration;
@@ -683,13 +814,10 @@ public class Bach {
       return throwable;
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/Task.java
-  /** Executable task definition. */
   public static class Task {
     private final String title;
     private final boolean parallel;
     private final List<Task> children;
-    /** Initialize a task instance. */
     public Task(String title, boolean parallel, List<Task> children) {
       this.title = Objects.requireNonNull(title, "title");
       this.parallel = parallel;
@@ -704,19 +832,14 @@ public class Bach {
     public List<Task> children() {
       return children;
     }
-    /** Default computation called before executing child tasks. */
     public ExecutionResult execute(ExecutionContext execution) {
       return execution.ok();
     }
-    /** Return markdown representation of this task instance. */
     public String toMarkdown() {
       return title();
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/execution/Tasks.java
-  /** Collection of tasks. */
   public interface Tasks {
-    /** Creates a directory by creating all nonexistent parent directories first. */
     class CreateDirectories extends Task {
       private final Path path;
       public CreateDirectories(Path path) {
@@ -737,36 +860,70 @@ public class Bach {
         return "`Files.createDirectories(Path.of(" + path + "))`";
       }
     }
+    class RunToolProvider extends Task {
+      public interface GarbageCollect {}
+      static String title(String tool, String... args) {
+        var length = args.length;
+        if (length == 0) return String.format("Run `%s`", tool);
+        if (length == 1) return String.format("Run `%s %s`", tool, args[0]);
+        if (length == 2) return String.format("Run `%s %s %s`", tool, args[0], args[1]);
+        return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
+      }
+      private final ToolProvider[] tool;
+      private final String[] args;
+      private final String markdown;
+      public RunToolProvider(ToolProvider tool, String... args) {
+        super(title(tool.name(), args), false, List.of());
+        this.tool = new ToolProvider[] {tool};
+        this.args = args;
+        var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
+        this.markdown = '`' + tool.name() + arguments + '`';
+      }
+      @Override
+      public ExecutionResult execute(ExecutionContext context) {
+        var out = new StringWriter();
+        var err = new StringWriter();
+        var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+        var duration = Duration.between(context.start(), Instant.now());
+        if (tool[0] instanceof GarbageCollect) {
+          tool[0] = null;
+          System.gc();
+        }
+        return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
+      }
+      @Override
+      public String toMarkdown() {
+        return markdown;
+      }
+    }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/Main.java
-  /** Bach's main program. */
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
       new Bach().build(project -> project.name("project")).assertSuccessful();
     }
   }
-  // src/de.sormuras.bach/main/java/de/sormuras/bach/Summary.java
-  /** Build summary. */
   public static final class Summary {
     private final Project project;
     private final Deque<String> executions = new ConcurrentLinkedDeque<>();
     private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
-    private final AssertionError error = new AssertionError("Build failed");
+    private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
     public Summary(Project project) {
       this.project = project;
     }
     public Project project() {
       return project;
     }
-    public AssertionError error() {
-      return error;
+    public void addSuppressed(Throwable throwable) {
+      suppressed.add(throwable);
     }
     public void assertSuccessful() {
-      var exceptions = error.getSuppressed();
-      if (exceptions.length == 0) return;
-      var one = exceptions[0]; // first suppressed exception
-      if (exceptions.length == 1 && one instanceof RuntimeException) throw (RuntimeException) one;
+      if (suppressed.isEmpty()) return;
+      var message = new StringJoiner("\n");
+      message.add(String.format("collected %d suppressed throwable(s)", suppressed.size()));
+      message.add(String.join("\n", toMarkdown()));
+      var error = new AssertionError(message.toString());
+      suppressed.forEach(error::addSuppressed);
       throw error;
     }
     public int countedChildlessTasks() {
@@ -775,7 +932,6 @@ public class Bach {
     public int countedExecutionEvents() {
       return executions.size();
     }
-    /** Task execution is about to begin callback. */
     void executionBegin(Task task) {
       if (task.children().isEmpty()) return;
       var format = "|   +|%6X|        | %s";
@@ -783,7 +939,6 @@ public class Bach {
       var text = task.title();
       executions.add(String.format(format, thread, text));
     }
-    /** Task execution ended callback. */
     void executionEnd(Task task, ExecutionResult result) {
       var format = "|%4c|%6X|%8d| %s";
       var children = task.children();
@@ -878,18 +1033,19 @@ public class Bach {
       return md;
     }
     private List<String> exceptionDetails() {
-      var exceptions = error.getSuppressed();
-      if (exceptions.length == 0) return List.of();
+      if (suppressed.isEmpty()) return List.of();
       var md = new ArrayList<String>();
       md.add("");
       md.add("## Exception Details");
       md.add("");
-      md.add("- Caught " + exceptions.length + " exception(s).");
+      md.add("- Caught " + suppressed.size() + " throwable(s).");
       md.add("");
-      for (var exception : exceptions) {
+      for (var throwable : suppressed) {
+        var lines = throwable.getMessage().lines().collect(Collectors.toList());
+        md.add("### " + (lines.isEmpty() ? throwable.getClass() : lines.get(0)));
+        if (lines.size() > 1) md.addAll(lines);
         var stackTrace = new StringWriter();
-        exception.printStackTrace(new PrintWriter(stackTrace));
-        md.add("### " + exception.getMessage());
+        throwable.printStackTrace(new PrintWriter(stackTrace));
         md.add("```text");
         stackTrace.toString().lines().forEach(md::add);
         md.add("```");
@@ -907,7 +1063,6 @@ public class Bach {
     }
     private String systemProperty(String systemPropertyKey) {
       var value = System.getProperty(systemPropertyKey);
-      // if (value.endsWith("\\")) return value + ' '; // make trailing backslash visible
       if (!"line.separator".equals(systemPropertyKey)) return value;
       var build = new StringBuilder();
       for (char c : value.toCharArray()) {
@@ -925,7 +1080,6 @@ public class Bach {
         throw new RuntimeException(e);
       }
     }
-    /** Task and its result tuple. */
     private static final class Detail {
       private final String caption;
       private final Task task;
