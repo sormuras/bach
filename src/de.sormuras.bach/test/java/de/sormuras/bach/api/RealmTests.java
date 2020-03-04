@@ -58,6 +58,7 @@ class RealmTests {
     assertFalse(main.flags().contains(Realm.Flag.ENABLE_PREVIEW));
     assertFalse(main.flags().contains(Realm.Flag.LAUNCH_TESTS));
 
+    assertEquals("main", main.title());
     assertEquals(Runtime.version().feature(), main.release().orElseThrow());
     assertEquals("src/*/main/java", main.moduleSourcePath());
     assertLinesMatch(List.of(), main.patches((realm, unit) -> List.of(Path.of("?"))));
@@ -102,6 +103,7 @@ class RealmTests {
     assertTrue(test.flags().contains(Realm.Flag.ENABLE_PREVIEW));
     assertTrue(test.flags().contains(Realm.Flag.LAUNCH_TESTS));
 
+    assertEquals("test", test.title());
     assertEquals(Runtime.version().feature(), test.release().orElseThrow());
     assertEquals("src/*/test/java", test.moduleSourcePath());
     assertLinesMatch(

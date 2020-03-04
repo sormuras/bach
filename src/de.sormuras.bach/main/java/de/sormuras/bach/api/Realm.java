@@ -74,6 +74,10 @@ public /*static*/ final class Realm {
     return flags;
   }
 
+  public String title() {
+    return name.isEmpty() ? "default" : name;
+  }
+
   public OptionalInt release() {
     return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
   }
