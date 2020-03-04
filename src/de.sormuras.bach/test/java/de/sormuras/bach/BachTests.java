@@ -155,7 +155,7 @@ class BachTests {
   class TasksTests {
     @Test
     void executeLocalToolProvider() {
-      var task = new Tasks.RunToolProvider("Run noop tool", new NoopToolProvider(), "a", "b", "c");
+      var task = new Tasks.RunToolProvider(new NoopToolProvider(), "a", "b", "c");
       var log = new Log();
       var bach = new Bach(log, true);
       var summary = new Summary(Project.builder().name("Local").build());

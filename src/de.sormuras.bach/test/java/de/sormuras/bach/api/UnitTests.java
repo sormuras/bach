@@ -36,13 +36,13 @@ class UnitTests {
         new Unit(
             Path.of("src/a/java/module-info.java"),
             descriptor,
-            "src/*/java",
+            Path.of("src/{MODULE}/java"),
             List.of(Source.of(Path.of("src/a/java"))),
             List.of(Path.of("src/a/resources")));
 
     assertEquals("module-info.java", unit.info().getFileName().toString());
     assertSame(descriptor, unit.descriptor());
-    assertEquals("src/*/java", unit.moduleSourcePath());
+    assertEquals(Path.of("src/{MODULE}/java"), unit.moduleSourcePath());
     assertFalse(unit.sources().isEmpty());
     assertFalse(unit.resources().isEmpty());
     assertEquals("a", unit.name());

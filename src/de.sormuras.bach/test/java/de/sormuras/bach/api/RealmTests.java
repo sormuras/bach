@@ -38,7 +38,7 @@ class RealmTests {
         new Unit(
             Path.of("src/a/main/java/module-info.java"),
             ModuleDescriptor.newModule("a").build(),
-            "src/*/main/java",
+            Path.of("src/{MODULE}/main/java"),
             List.of(Source.of(Path.of("src/a/main/java"))),
             List.of(Path.of("src/a/main/resources")));
 
@@ -60,8 +60,8 @@ class RealmTests {
 
     assertEquals("main", main.title());
     assertEquals(Runtime.version().feature(), main.release().orElseThrow());
-    assertEquals("src/*/main/java", main.moduleSourcePath());
-    assertLinesMatch(List.of(), main.patches((realm, unit) -> List.of(Path.of("?"))));
+    assertEquals(List.of(Path.of("src/{MODULE}/main/java")), main.moduleSourcePaths());
+    assertTrue(main.patches((realm, unit) -> List.of(Path.of("?"))).isEmpty());
 
     var t =
         new Unit(
@@ -70,7 +70,7 @@ class RealmTests {
                 .requires("a")
                 .requires("org.junit.jupiter")
                 .build(),
-            "src/*/test/java",
+            Path.of("src/{MODULE}/test/java"),
             List.of(Source.of(Path.of("src/a/main/java"))),
             List.of(Path.of("src/a/main/resources")));
 
@@ -80,7 +80,7 @@ class RealmTests {
             ModuleDescriptor.newModule("a", Set.of(ModuleDescriptor.Modifier.OPEN))
                 .requires("org.junit.jupiter")
                 .build(),
-            "src/*/test/java",
+            Path.of("src/{MODULE}/test/java"),
             List.of(Source.of(Path.of("src/a/test/java"))),
             List.of(Path.of("src/a/test/resources")));
 
@@ -105,9 +105,9 @@ class RealmTests {
 
     assertEquals("test", test.title());
     assertEquals(Runtime.version().feature(), test.release().orElseThrow());
-    assertEquals("src/*/test/java", test.moduleSourcePath());
-    assertLinesMatch(
-        List.of("a=" + Path.of("src/a/main/java")),
+    assertEquals(List.of(Path.of("src/{MODULE}/test/java")), test.moduleSourcePaths());
+    assertEquals(
+        Map.of("a", List.of(Path.of("src/a/main/java"))),
         test.patches((realm, unit) -> List.of(unit.info().getParent())));
   }
 }

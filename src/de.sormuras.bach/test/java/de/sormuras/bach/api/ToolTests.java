@@ -19,27 +19,57 @@ package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ToolTests {
 
   @Test
   void javac() {
-    var javac = new Tool.JavaCompiler();
+    var javac =
+        Tool.javac()
+            .setCompileModulesCheckingTimestamps(List.of("a", "b", "c"))
+            .setVersionOfModulesThatAreBeingCompiled(Version.parse("123"))
+            .setPathsWhereToFindSourceFilesForModules(List.of(Path.of("src/{MODULE}/main")))
+            .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
+            .setPathsWhereToFindMoreAssetsPerModule(Map.of("b", List.of(Path.of("src/b/test"))))
+            .setEnablePreviewLanguageFeatures(true)
+            .setCompileForVirtualMachineVersion(Runtime.version().feature())
+            .setCharacterEncodingUsedBySourceFiles("UTF-8")
+            .setOutputMessagesAboutWhatTheCompilerIsDoing(true)
+            .setGenerateMetadataForMethodParameters(true)
+            .setOutputSourceLocationsOfDeprecatedUsages(true)
+            .setTerminateCompilationIfWarningsOccur(true)
+            .setDestinationDirectory(Path.of("classes"));
     assertEquals("javac", javac.name());
-    assertEquals("javac", javac.toString());
-    javac.setVerbose(true);
-    javac.setVersion(true);
-    javac.setDestinationDirectory(Path.of("classes"));
-    javac.setGenerateMetadataForMethodParameters(true);
-    javac.setTerminateCompilationIfWarningsOccur(true);
     assertLinesMatch(
-        List.of("-d", "classes", "-parameters", "-Werror", "-verbose", "-version"), javac.args());
-    assertTrue(javac.toString().startsWith("javac "));
-    assertTrue(javac.toString().endsWith("-version"));
+        List.of(
+            "--module",
+            "a,b,c",
+            "--module-version",
+            "123",
+            "--module-source-path",
+            String.join(File.separator, "src", "*", "main"),
+            "--module-path",
+            "lib",
+            "--patch-module",
+            "b=" + String.join(File.separator, "src", "b", "test"),
+            "--release",
+            "14",
+            "--enable-preview",
+            "-parameters",
+            "-deprecation",
+            "-verbose",
+            "-Werror",
+            "-encoding",
+            "UTF-8",
+            "-d",
+            "classes"),
+        javac.arguments());
   }
 }

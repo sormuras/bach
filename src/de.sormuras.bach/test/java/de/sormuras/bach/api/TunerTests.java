@@ -27,10 +27,10 @@ class TunerTests {
 
   @Test
   void compiler() {
-    var tool = new Tool.JavaCompiler();
-    var expected = tool.args();
+    var tool = Tool.javac();
+    var expected = tool.arguments();
     new Tuner().tune(tool, null, null);
-    assertLinesMatch(expected, tool.args());
+    assertLinesMatch(expected, tool.arguments());
   }
 
   @Nested
@@ -43,9 +43,9 @@ class TunerTests {
 
     @Test
     void compiler() {
-      var tool = new Tool.JavaCompiler();
+      var tool = Tool.javac();
       tune(tool, null, null);
-      var args = tool.args();
+      var args = tool.arguments();
       assertTrue(args.contains("-parameters"));
       assertTrue(args.contains("-Werror"));
     }

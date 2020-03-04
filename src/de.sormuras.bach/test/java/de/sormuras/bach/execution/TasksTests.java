@@ -40,8 +40,8 @@ class TasksTests {
 
   @Test
   void checkRunToolProvider() {
-    var task = new Tasks.RunToolProvider("Noop!", new NoopToolProvider(0, true), "a", "b", "c");
-    assertEquals("Noop!", task.title());
+    var task = new Tasks.RunToolProvider(new NoopToolProvider(0, true), "a", "b", "c");
+    assertEquals("Run `noop a b ...` (3 arguments)", task.title());
     assertFalse(task.parallel());
     assertTrue(task.children().isEmpty());
     assertEquals("`noop a b c`", task.toMarkdown());
