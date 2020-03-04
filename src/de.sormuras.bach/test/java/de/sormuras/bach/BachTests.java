@@ -29,11 +29,13 @@ import de.sormuras.bach.api.Project;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.Task;
+import de.sormuras.bach.execution.Tasks;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Log;
@@ -147,5 +149,18 @@ class BachTests {
         markdown);
     var path = summary.write();
     assertEquals(markdown, Files.readAllLines(path));
+  }
+
+  @Nested
+  class TasksTests {
+    @Test
+    void executeLocalToolProvider() {
+      var task = new Tasks.RunToolProvider("Run noop tool", new NoopToolProvider(), "a", "b", "c");
+      var log = new Log();
+      var bach = new Bach(log, true);
+      var summary = new Summary(Project.builder().name("Local").build());
+      bach.execute(task, summary);
+      assertDoesNotThrow(summary::assertSuccessful);
+    }
   }
 }
