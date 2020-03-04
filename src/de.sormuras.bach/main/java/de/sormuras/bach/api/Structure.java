@@ -17,16 +17,36 @@
 
 package de.sormuras.bach.api;
 
+import java.util.List;
+
 /** Project structure. */
 public /*static*/ final class Structure {
 
   private final Paths paths;
+  private final List<Unit> units;
+  private final List<Realm> realms;
+  private final Tuner tuner;
 
-  public Structure(Paths paths) {
+  public Structure(Paths paths, List<Unit> units, List<Realm> realms, Tuner tuner) {
     this.paths = paths;
+    this.units = units;
+    this.realms = realms;
+    this.tuner = tuner;
   }
 
   public Paths paths() {
     return paths;
+  }
+
+  public List<Unit> units() {
+    return units;
+  }
+
+  public List<Realm> realms() {
+    return realms;
+  }
+
+  public Tuner tuner() {
+    return tuner;
   }
 }

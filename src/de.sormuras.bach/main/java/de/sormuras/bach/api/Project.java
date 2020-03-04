@@ -19,6 +19,7 @@ package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 /** Bach's project model. */
@@ -33,10 +34,10 @@ public /*static*/ final class Project {
   private final Version version;
   private final Structure structure;
 
-  public Project(String name, Version version, Structure structure) {
+  private Project(String name, Version version, Structure structure) {
     this.name = Objects.requireNonNull(name, "name");
     this.version = version;
-    this.structure = Objects.requireNonNull(structure, "paths");
+    this.structure = Objects.requireNonNull(structure, "structure");
   }
 
   public String name() {
@@ -55,6 +56,10 @@ public /*static*/ final class Project {
     return structure().paths();
   }
 
+  public Tuner tuner() {
+    return structure().tuner();
+  }
+
   public String toNameAndVersion() {
     if (version == null) return name;
     return name + ' ' + version;
@@ -66,15 +71,21 @@ public /*static*/ final class Project {
     private String name;
     private Version version;
     private Paths paths;
+    private List<Unit> units;
+    private List<Realm> realms;
+    private Tuner tuner;
 
     private Builder() {
       name(null);
       version((Version) null);
       paths("");
+      units(List.of());
+      realms(List.of());
+      tuner(new Tuner());
     }
 
     public Project build() {
-      var structure = new Structure(paths);
+      var structure = new Structure(paths, units, realms, tuner);
       return new Project(name, version, structure);
     }
 
@@ -103,6 +114,21 @@ public /*static*/ final class Project {
 
     public Builder paths(String base) {
       return paths(Path.of(base));
+    }
+
+    public Builder units(List<Unit> units) {
+      this.units = units;
+      return this;
+    }
+
+    public Builder realms(List<Realm> realms) {
+      this.realms = realms;
+      return this;
+    }
+
+    public Builder tuner(Tuner tuner) {
+      this.tuner = tuner;
+      return this;
     }
   }
 }

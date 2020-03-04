@@ -18,13 +18,25 @@
 package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
 
-  final Project project = Project.builder().name("name").version("99").paths("").build();
+  final Project project =
+      Project.builder()
+          .name("name")
+          .version("99")
+          .paths("")
+          .units(List.of())
+          .realms(List.of())
+          .tuner(new Tuner())
+          .build();
 
   @Test
   void name() {
@@ -52,5 +64,22 @@ class ProjectTests {
     assertEquals(Path.of(".bach/modules/realm"), paths.modules("realm"));
     assertEquals(Path.of(".bach/sources/realm"), paths.sources("realm"));
     assertEquals(Path.of(".bach/documentation/javadoc"), paths.javadoc());
+  }
+
+  @Test
+  void units() {
+    assertTrue(project.structure().units().isEmpty());
+  }
+
+  @Test
+  void realms() {
+    assertTrue(project.structure().realms().isEmpty());
+  }
+
+  @Test
+  void tuner() {
+    var tuner = project.tuner();
+    assertNotNull(tuner);
+    assertSame(Tuner.class, tuner.getClass());
   }
 }
