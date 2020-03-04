@@ -56,6 +56,12 @@ class SingleFileSourceCodeGenerator {
     return name.indexOf('-') == -1; // package-info.java, module-info.java
   }
 
+  private static boolean isRedundant(String trim) {
+    if (trim.startsWith("//")) return true;
+    if (trim.startsWith("/**") && trim.endsWith("*/")) return true;
+    return trim.isEmpty();
+  }
+
   private final Source template;
   private final List<Source> sources;
 
@@ -65,7 +71,6 @@ class SingleFileSourceCodeGenerator {
   }
 
   public List<String> toLines() throws Exception {
-    var lines = new ArrayList<String>();
     var packages = sources.stream().map(source -> source.packageName).collect(Collectors.toList());
     var imports =
         sources.stream()
@@ -79,38 +84,22 @@ class SingleFileSourceCodeGenerator {
                   return true;
                 })
             .collect(Collectors.toCollection(TreeSet::new));
-
-    var addAllImports = true;
-    for (var line : Files.readAllLines(template.path)) {
-      if (line.isEmpty()) {
-        continue;
-      }
-      if (line.startsWith("package ") && line.endsWith(";")) {
-        continue;
-      }
-      if (line.startsWith("import ")) {
-        if (addAllImports) {
-          addAllImports = false;
-          lines.addAll(imports);
-        }
-        continue;
-      }
-      lines.add(line);
-    }
-
     var classes = new ArrayList<String>();
     var indent = "  "; // extract indentation from marker line
     for (var source : sources) {
-      if (this.template.path.equals(source.path)) continue;
+      if (template.path.equals(source.path)) continue;
       System.out.println(" + " + source.path.toUri());
-      classes.add(indent + "// " + source.path.toString().replace('\\', '/'));
+      // classes.add(indent + "// " + source.path.toString().replace('\\', '/'));
       for (var line : source.lines) {
-        if (line.isEmpty()) continue;
         // classes.add(indent + line);
         var mangled = line.replace("/*static*/", "static");
         classes.add(indent + mangled);
       }
     }
+    var lines = new ArrayList<String>();
+    Files.readAllLines(template.path).stream().limit(16).forEach(lines::add);
+    lines.addAll(imports);
+    lines.addAll(template.lines);
     // lines.addAll(classes);
     lines.addAll(lines.size() - 1, classes);
 
@@ -124,9 +113,19 @@ class SingleFileSourceCodeGenerator {
       var imports = new ArrayList<String>();
       var lines = new ArrayList<String>();
       var lookingForPackageName = true;
+      var inJavadocBlock = false;
       try {
         for (var line : Files.readAllLines(file)) {
           var trim = line.trim();
+          if (isRedundant(trim)) continue;
+          if (inJavadocBlock) {
+            if (trim.equals("*/")) inJavadocBlock = false;
+            continue;
+          }
+          if (trim.equals("/**")) {
+            inJavadocBlock = true;
+            continue;
+          }
           if (lookingForPackageName) {
             if (trim.startsWith("package ")) {
               packageName = trim.substring("package ".length(), trim.indexOf(';'));
