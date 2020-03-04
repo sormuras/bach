@@ -17,9 +17,14 @@
 
 package de.sormuras.bach.execution;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.spi.ToolProvider;
 
 /** Collection of tasks. */
 public interface Tasks {
@@ -47,6 +52,43 @@ public interface Tasks {
     @Override
     public String toMarkdown() {
       return "`Files.createDirectories(Path.of(" + path + "))`";
+    }
+  }
+
+  /** Tool-running task. */
+  class RunToolProvider extends Task {
+
+    /** Implement this marker interface indicating a {@link System#gc()} call is required. */
+    public interface GarbageCollect {}
+
+    private final ToolProvider[] tool;
+    private final String[] args;
+    private final String markdown;
+
+    public RunToolProvider(String title, ToolProvider tool, String... args) {
+      super(title, false, List.of());
+      this.tool = new ToolProvider[] {tool};
+      this.args = args;
+      var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
+      this.markdown = '`' + tool.name() + arguments + '`';
+    }
+
+    @Override
+    public ExecutionResult execute(ExecutionContext context) {
+      var out = new StringWriter();
+      var err = new StringWriter();
+      var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+      var duration = Duration.between(context.start(), Instant.now());
+      if (tool[0] instanceof GarbageCollect) {
+        tool[0] = null;
+        System.gc();
+      }
+      return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
+    }
+
+    @Override
+    public String toMarkdown() {
+      return markdown;
     }
   }
 }
