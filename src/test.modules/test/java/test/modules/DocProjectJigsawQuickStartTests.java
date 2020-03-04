@@ -29,7 +29,6 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Log;
@@ -53,7 +52,7 @@ class DocProjectJigsawQuickStartTests {
             base,
             List.of(source),
             List.of());
-    var realm = new Realm("", 0, Map.of(module, unit), List.of());
+    var realm = new Realm("", 0, List.of(unit), List.of());
     var paths = new Paths(base, temp.resolve("out"), temp.resolve("lib"));
     var project =
         Project.builder()

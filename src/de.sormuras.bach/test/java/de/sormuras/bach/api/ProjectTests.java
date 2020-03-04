@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -70,7 +69,7 @@ class ProjectTests {
 
   @Test
   void toModularJar() {
-    var realm = new Realm("realm", 0, Map.of(), List.of());
+    var realm = new Realm("realm", 0, List.of(), List.of());
     var unit =
         new Unit(
             Path.of("module-info.java"),
@@ -83,7 +82,7 @@ class ProjectTests {
 
   @Test
   void paths() {
-    var realm = new Realm("realm", 0, Map.of(), List.of());
+    var realm = new Realm("realm", 0, List.of(), List.of());
     var paths = project.paths();
     assertEquals(Path.of(""), paths.base());
     assertEquals(Path.of(".bach"), paths.out());

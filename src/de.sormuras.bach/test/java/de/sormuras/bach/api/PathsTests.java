@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +39,7 @@ class PathsTests {
   void temporaryOutAndLibraryPaths(@TempDir Path temp) {
     var base = Path.of("");
     var paths = new Paths(base, temp, Path.of("lib"));
-    var realm = new Realm("realm", 0, Map.of(), List.of());
+    var realm = new Realm("realm", 0, List.of(), List.of());
     assertThrows(AssertionError.class, () -> assertPaths(base, paths));
     assertEquals(base.resolve(""), paths.base());
     assertEquals(base.resolve("lib"), paths.lib());
@@ -57,7 +56,7 @@ class PathsTests {
   }
 
   private static void assertPaths(Path base, Paths paths) {
-    var realm = new Realm("", 0, Map.of(), List.of());
+    var realm = new Realm("", 0, List.of(), List.of());
     assertEquals(base.resolve(""), paths.base());
     assertEquals(base.resolve(".bach"), paths.out());
     assertEquals(base.resolve("lib"), paths.lib());

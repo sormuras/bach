@@ -44,15 +44,11 @@ class RealmTests {
 
     var main =
         new Realm(
-            "main",
-            Runtime.version().feature(),
-            Map.of("a", a),
-            List.of(),
-            Realm.Flag.CREATE_JAVADOC);
+            "main", Runtime.version().feature(), List.of(a), List.of(), Realm.Flag.CREATE_JAVADOC);
 
     assertEquals("main", main.name());
     assertEquals(Runtime.version().feature(), main.feature());
-    assertSame(a, main.units().get("a"));
+    assertSame(a, main.unit("a").orElseThrow());
     assertTrue(main.requires().isEmpty());
     assertTrue(main.flags().contains(Realm.Flag.CREATE_JAVADOC));
     assertFalse(main.flags().contains(Realm.Flag.ENABLE_PREVIEW));
@@ -60,6 +56,7 @@ class RealmTests {
 
     assertEquals("main", main.title());
     assertEquals(Runtime.version().feature(), main.release().orElseThrow());
+    assertLinesMatch(List.of("a"), main.moduleNames());
     assertEquals(List.of(Path.of("src/{MODULE}/main/java")), main.moduleSourcePaths());
     assertTrue(main.patches((realm, unit) -> List.of(Path.of("?"))).isEmpty());
 
@@ -88,15 +85,15 @@ class RealmTests {
         new Realm(
             "test",
             Runtime.version().feature(),
-            Map.of("t", t, "a", a2),
+            List.of(t, a2),
             List.of(main),
             Realm.Flag.ENABLE_PREVIEW,
             Realm.Flag.LAUNCH_TESTS);
 
     assertEquals("test", test.name());
     assertEquals(Runtime.version().feature(), test.feature());
-    assertSame(t, test.units().get("t"));
-    assertSame(a2, test.units().get("a"));
+    assertSame(t, test.unit("t").orElseThrow());
+    assertSame(a2, test.unit("a").orElseThrow());
     assertFalse(test.requires().isEmpty());
     assertSame(main, test.requires().get(0));
     assertFalse(test.flags().contains(Realm.Flag.CREATE_JAVADOC));
@@ -105,6 +102,7 @@ class RealmTests {
 
     assertEquals("test", test.title());
     assertEquals(Runtime.version().feature(), test.release().orElseThrow());
+    assertLinesMatch(List.of("t", "a"), test.moduleNames());
     assertEquals(List.of(Path.of("src/{MODULE}/test/java")), test.moduleSourcePaths());
     assertEquals(
         Map.of("a", List.of(Path.of("src/a/main/java"))),

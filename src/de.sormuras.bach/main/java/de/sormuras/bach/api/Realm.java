@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
@@ -41,15 +42,15 @@ public /*static*/ final class Realm {
 
   private final String name;
   private final int feature;
-  private final Map<String, Unit> units;
+  private final List<Unit> units;
   private final List<Realm> requires;
   private final Set<Flag> flags;
 
   public Realm(
-      String name, int feature, Map<String, Unit> units, List<Realm> requires, Flag... flags) {
+      String name, int feature, List<Unit> units, List<Realm> requires, Flag... flags) {
     this.name = Objects.requireNonNull(name, "name");
     this.feature = Objects.checkIndex(feature, Runtime.version().feature() + 1);
-    this.units = Map.copyOf(units);
+    this.units = List.copyOf(units);
     this.requires = List.copyOf(requires);
     this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
   }
@@ -62,7 +63,7 @@ public /*static*/ final class Realm {
     return feature;
   }
 
-  public Map<String, Unit> units() {
+  public List<Unit> units() {
     return units;
   }
 
@@ -82,14 +83,18 @@ public /*static*/ final class Realm {
     return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
   }
 
+  Optional<Unit> unit(String name) {
+    return units.stream().filter(unit -> unit.name().equals(name)).findAny();
+  }
+
   /** Return mutable list of all module names associated with this realm. */
   public List<String> moduleNames() {
-    return new ArrayList<>(units.keySet());
+    return units.stream().map(Unit::name).collect(Collectors.toList());
   }
 
   /** Generate {@code --module-source-path} argument for this realm. */
   public List<Path> moduleSourcePaths() {
-    return units.values().stream()
+    return units.stream()
         .map(Unit::moduleSourcePath)
         .distinct()
         .collect(Collectors.toList());
@@ -107,12 +112,12 @@ public /*static*/ final class Realm {
   public Map<String, List<Path>> patches(BiFunction<Realm, Unit, List<Path>> patcher) {
     if (units.isEmpty() || requires.isEmpty()) return Map.of();
     var patches = new TreeMap<String, List<Path>>();
-    for (var unit : units().values()) {
+    for (var unit : units()) {
       var module = unit.name();
       for (var required : requires) {
-        var other = required.units().get(module);
-        if (other == null) continue;
-        var paths = patcher.apply(required, other);
+        var other = required.unit(module);
+        if (other.isEmpty()) continue;
+        var paths = patcher.apply(required, other.orElseThrow());
         if (paths.isEmpty()) continue;
         patches.put(module, paths);
       }
