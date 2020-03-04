@@ -34,6 +34,7 @@ class RealmTests {
 
   @Test
   void syntheticMainAndTestRealms() {
+    var paths = Paths.of(Path.of(""));
     var a =
         new Unit(
             Path.of("src/a/main/java/module-info.java"),
@@ -58,6 +59,7 @@ class RealmTests {
     assertEquals(Runtime.version().feature(), main.release().orElseThrow());
     assertLinesMatch(List.of("a"), main.moduleNames());
     assertEquals(List.of(Path.of("src/{MODULE}/main/java")), main.moduleSourcePaths());
+    assertEquals(List.of(Path.of("lib")), main.modulePaths(paths));
     assertTrue(main.patches((realm, unit) -> List.of(Path.of("?"))).isEmpty());
 
     var t =
@@ -104,6 +106,7 @@ class RealmTests {
     assertEquals(Runtime.version().feature(), test.release().orElseThrow());
     assertLinesMatch(List.of("t", "a"), test.moduleNames());
     assertEquals(List.of(Path.of("src/{MODULE}/test/java")), test.moduleSourcePaths());
+    assertEquals(List.of(paths.modules(main), Path.of("lib")), test.modulePaths(paths));
     assertEquals(
         Map.of("a", List.of(Path.of("src/a/main/java"))),
         test.patches((realm, unit) -> List.of(unit.info().getParent())));
