@@ -83,7 +83,8 @@ public /*static*/ final class Realm {
     return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
   }
 
-  Optional<Unit> unit(String name) {
+  /** Find a unit instance by its name. */
+  public Optional<Unit> unit(String name) {
     return units.stream().filter(unit -> unit.name().equals(name)).findAny();
   }
 
