@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,32 @@ class ProjectTests {
   @Test
   void toNameAndVersion() {
     assertEquals("name 99", project.toNameAndVersion());
+  }
+
+  @Test
+  void toJarName() {
+    var unit =
+        new Unit(
+            Path.of("module-info.java"),
+            ModuleDescriptor.newModule("unit").build(),
+            Path.of("."),
+            List.of(Source.of(Path.of(""))),
+            List.of());
+    assertEquals("unit-99.jar", project.toJarName(unit, ""));
+    assertEquals("unit-99-classifier.jar", project.toJarName(unit, "classifier"));
+  }
+
+  @Test
+  void toModularJar() {
+    var realm = new Realm("realm", 0, Map.of(), List.of());
+    var unit =
+        new Unit(
+            Path.of("module-info.java"),
+            ModuleDescriptor.newModule("unit").build(),
+            Path.of("."),
+            List.of(Source.of(Path.of(""))),
+            List.of());
+    assertEquals(Path.of(".bach/modules/realm", "unit-99.jar"), project.toModularJar(realm, unit));
   }
 
   @Test
