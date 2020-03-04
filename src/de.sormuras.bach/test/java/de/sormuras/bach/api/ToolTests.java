@@ -38,8 +38,8 @@ class ToolTests {
     javac.setGenerateMetadataForMethodParameters(true);
     javac.setTerminateCompilationIfWarningsOccur(true);
     assertLinesMatch(
-        List.of("-d", "classes", "-parameters", "-Werror", "--verbose", "--version"), javac.args());
+        List.of("-d", "classes", "-parameters", "-Werror", "-verbose", "-version"), javac.args());
     assertTrue(javac.toString().startsWith("javac "));
-    assertTrue(javac.toString().endsWith("--version"));
+    assertTrue(javac.toString().endsWith("-version"));
   }
 }

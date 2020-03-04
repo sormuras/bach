@@ -103,7 +103,8 @@ public interface Tool {
       }
       if (isGenerateMetadataForMethodParameters()) args.add("-parameters");
       if (isTerminateCompilationIfWarningsOccur()) args.add("-Werror");
-      args.addAll(super.args());
+      if (isVerbose()) args.add("-verbose");
+      if (isVersion()) args.add("-version");
       return args;
     }
 
