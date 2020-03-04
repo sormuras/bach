@@ -60,19 +60,19 @@ public /*static*/ final class Paths {
     return out.resolve(path);
   }
 
-  public Path classes(String realm) {
-    return out.resolve(CLASSES).resolve(realm);
+  public Path classes(Realm realm) {
+    return out.resolve(CLASSES).resolve(realm.name());
   }
 
   public Path javadoc() {
     return out.resolve(JAVADOC);
   }
 
-  public Path modules(String realm) {
-    return out.resolve(MODULES).resolve(realm);
+  public Path modules(Realm realm) {
+    return out.resolve(MODULES).resolve(realm.name());
   }
 
-  public Path sources(String realm) {
-    return out.resolve(SOURCES).resolve(realm);
+  public Path sources(Realm realm) {
+    return out.resolve(SOURCES).resolve(realm.name());
   }
 }

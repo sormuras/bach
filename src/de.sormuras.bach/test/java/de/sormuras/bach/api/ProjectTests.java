@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -55,14 +56,15 @@ class ProjectTests {
 
   @Test
   void paths() {
+    var realm = new Realm("realm", 0, Map.of(), List.of());
     var paths = project.paths();
     assertEquals(Path.of(""), paths.base());
     assertEquals(Path.of(".bach"), paths.out());
     assertEquals(Path.of("lib"), paths.lib());
     assertEquals(Path.of(".bach/first/more"), paths.out("first", "more"));
-    assertEquals(Path.of(".bach/classes/realm"), paths.classes("realm"));
-    assertEquals(Path.of(".bach/modules/realm"), paths.modules("realm"));
-    assertEquals(Path.of(".bach/sources/realm"), paths.sources("realm"));
+    assertEquals(Path.of(".bach/classes/realm"), paths.classes(realm));
+    assertEquals(Path.of(".bach/modules/realm"), paths.modules(realm));
+    assertEquals(Path.of(".bach/sources/realm"), paths.sources(realm));
     assertEquals(Path.of(".bach/documentation/javadoc"), paths.javadoc());
   }
 
