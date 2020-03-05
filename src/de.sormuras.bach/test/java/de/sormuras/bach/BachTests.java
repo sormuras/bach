@@ -154,6 +154,20 @@ class BachTests {
   }
 
   @Nested
+  class ExceptionTests {
+
+    @Test
+    void checkUnmappedModuleException() {
+      var exception = assertThrows(UnmappedModuleException.class, this::throwUnmappedFooException);
+      assertEquals("Module foo is not mapped", exception.getMessage());
+    }
+
+    private void throwUnmappedFooException() {
+      throw new UnmappedModuleException("foo");
+    }
+  }
+
+  @Nested
   class TasksTests {
     @Test
     void executeLocalToolProvider() {
