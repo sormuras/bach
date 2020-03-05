@@ -153,9 +153,13 @@ public /*static*/ final class Summary {
     for (var detail : details) {
       var result = detail.result;
       md.add("### " + detail.caption);
-      md.add(" - Title = " + detail.task.title());
-      md.add(" - Code = " + result.code());
+      md.add(" - Task Title = " + detail.task.title());
+      md.add(" - Exit Code = " + result.code());
       md.add(" - Duration = " + result.duration());
+      md.add("");
+      md.add("```");
+      md.addAll(detail.task.toSnippet().lines());
+      md.add("```");
       md.add("");
       if (!result.out().isBlank()) {
         md.add("Normal (expected) output");
