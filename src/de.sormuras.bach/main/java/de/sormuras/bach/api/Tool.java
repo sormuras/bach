@@ -133,8 +133,6 @@ public interface Tool {
       return "javac";
     }
 
-
-
     @Override
     public String[] toStrings() {
       var args = new ArrayList<String>();
@@ -155,7 +153,7 @@ public interface Tool {
         args.add(join(getPathsWhereToFindApplicationModules()));
       }
       if (isAssigned(getPathsWhereToFindMoreAssetsPerModule())) {
-        for(var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
+        for (var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
           args.add("--patch-module");
           args.add(patch.getKey() + '=' + join(patch.getValue()));
         }
