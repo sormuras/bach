@@ -18,8 +18,12 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -29,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -37,18 +42,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 public class Bach {
   public static final Version VERSION = Version.parse("11.0-ea");
   public static void main(String... args) {
@@ -713,7 +723,9 @@ public class Bach {
       return run(tool.name(), tool.toStrings());
     }
     public static Task run(String name, String... args) {
-      var provider = ToolProvider.findFirst(name).orElseThrow();
+      return run(ToolProvider.findFirst(name).orElseThrow(), args);
+    }
+    public static Task run(ToolProvider provider, String... args) {
       return new Tasks.RunToolProvider(provider, args);
     }
     private final Project project;
@@ -872,7 +884,28 @@ public class Bach {
                   .add(".")));
     }
     protected Task launchAllTests() {
-      return sequence("Launch all tests");
+      return sequence(
+          "Launch all tests",
+          project.structure().realms().stream()
+              .filter(candidate -> candidate.flags().contains(Realm.Flag.LAUNCH_TESTS))
+              .map(this::launchTests)
+              .toArray(Task[]::new));
+    }
+    protected Task launchTests(Realm realm) {
+      var tasks = new ArrayList<Task>();
+      for (var unit : realm.units()) {
+        tasks.add(run(new TestLauncher.ToolTester(project, realm, unit)));
+        var junit =
+            Tool.of("junit")
+                .add("--select-module", unit.name())
+                .add("--details", "tree")
+                .add("--details-theme", "unicode")
+                .add("--disable-ansi-colors")
+                .add("--reports-dir", project.paths().out("junit-reports", unit.name()));
+        project.tuner().tune(junit, project, realm, unit);
+        tasks.add(run(new TestLauncher.JUnitTester(project, realm, unit), junit.toStrings()));
+      }
+      return sequence("Launch tests in " + realm.title() + " realm", tasks.toArray(Task[]::new));
     }
   }
   public static final class ExecutionContext {
@@ -937,15 +970,16 @@ public class Bach {
       return throwable;
     }
   }
+  interface GarbageCollect {}
   public static final class Snippet {
     interface Scribe {
       Snippet toSnippet();
       default String $(Object object) {
         if (object == null) return "null";
-        return "\"" + object.toString() + "\"";
+        return '"' + object.toString().replace("\\", "\\\\") + '"';
       }
       default String $(Path path) {
-        return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+        return "Path.of(" + $((Object) path) + ")";
       }
       default String $(String[] strings) {
         if (strings.length == 0) return "";
@@ -1060,7 +1094,6 @@ public class Bach {
       }
     }
     class RunToolProvider extends Task {
-      public interface GarbageCollect {}
       static String title(String tool, String... args) {
         var length = args.length;
         if (length == 0) return String.format("Run `%s`", tool);
@@ -1069,13 +1102,17 @@ public class Bach {
         return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
       }
       private final ToolProvider[] tool;
-      private final String name;
       private final String[] args;
+      private final Snippet snippet;
       public RunToolProvider(ToolProvider tool, String... args) {
         super(title(tool.name(), args), false, List.of());
         this.tool = new ToolProvider[] {tool};
-        this.name = tool.name();
         this.args = args;
+        var empty = args.length == 0;
+        this.snippet =
+            tool instanceof Snippet.Scribe
+                ? ((Snippet.Scribe) tool).toSnippet()
+                : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
       }
       @Override
       public ExecutionResult execute(ExecutionContext context) {
@@ -1091,14 +1128,173 @@ public class Bach {
       }
       @Override
       public Snippet toSnippet() {
-        return Snippet.of(String.format("run(%s, %s);", $(name), $(args)));
+        return snippet;
       }
+    }
+  }
+  abstract static class TestLauncher implements ToolProvider, GarbageCollect, Snippet.Scribe {
+    static class ToolTester extends TestLauncher {
+      ToolTester(Project project, Realm realm, Unit unit) {
+        super("test(" + unit.name() + ")", project, realm, unit);
+      }
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        return tools()
+            .filter(tool -> name().equals(tool.name()))
+            .mapToInt(tool -> Math.abs(run(tool, out, err, args)))
+            .sum();
+      }
+    }
+    static class JUnitTester extends TestLauncher {
+      JUnitTester(Project project, Realm realm, Unit unit) {
+        super("junit", project, realm, unit);
+      }
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        var junit = tools().filter(tool -> "junit".equals(tool.name())).findFirst();
+        if (junit.isEmpty()) {
+          out.println("Tool named 'junit' not found");
+          return 0;
+        }
+        return run(junit.get(), out, err, args);
+      }
+    }
+    static ModuleLayer layer(List<Path> paths, String module) {
+      var finder = ModuleFinder.of(paths.toArray(Path[]::new));
+      var boot = ModuleLayer.boot();
+      var roots = List.of(module);
+      try {
+        var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+        var loader = ClassLoader.getPlatformClassLoader();
+        var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), loader);
+        return controller.layer();
+      } catch (FindException e) {
+        var joiner = new StringJoiner(System.lineSeparator());
+        joiner.add(e.getMessage());
+        joiner.add("Module path:");
+        paths.forEach(path -> joiner.add("\t" + path.toString()));
+        joiner.add("Finder finds module(s):");
+        finder.findAll().stream()
+            .sorted(Comparator.comparing(ModuleReference::descriptor))
+            .forEach(reference -> joiner.add("\t" + reference));
+        joiner.add("");
+        throw new RuntimeException(joiner.toString(), e);
+      }
+    }
+    private final String name;
+    private final Project project;
+    private final Realm realm;
+    private final Unit unit;
+    TestLauncher(String name, Project project, Realm realm, Unit unit) {
+      this.name = name;
+      this.project = project;
+      this.realm = realm;
+      this.unit = unit;
+    }
+    @Override
+    public String name() {
+      return name;
+    }
+    Stream<ToolProvider> tools() {
+      var modulePath = new ArrayList<Path>();
+      modulePath.add(project.toModularJar(realm, unit)); // test module first
+      modulePath.addAll(realm.modulePaths(project.paths())); // compiled requires next, like "main"
+      modulePath.add(project.paths().modules(realm)); // same realm last, like "test"
+      var layer = layer(modulePath, unit.name());
+      var tools = ServiceLoader.load(layer, ToolProvider.class);
+      return StreamSupport.stream(tools.spliterator(), false);
+    }
+    int run(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+      var toolLoader = tool.getClass().getClassLoader();
+      var currentThread = Thread.currentThread();
+      var currentContextLoader = currentThread.getContextClassLoader();
+      currentThread.setContextClassLoader(toolLoader);
+      try {
+        return tool.run(out, err, args);
+      } finally {
+        currentThread.setContextClassLoader(currentContextLoader);
+      }
+    }
+    @Override
+    public Snippet toSnippet() {
+      return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
       new Bach().build(project -> project.name("project")).assertSuccessful();
+    }
+  }
+  public interface Modules {
+    interface Patterns {
+      Pattern NAME =
+          Pattern.compile(
+              "(?:module)" // key word
+                  + "\\s+([\\w.]+)" // module name
+                  + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                  + "\\s*\\{"); // end marker
+      Pattern REQUIRES =
+          Pattern.compile(
+              "(?:requires)" // key word
+                  + "(?:\\s+[\\w.]+)?" // optional modifiers
+                  + "\\s+([\\w.]+)" // module name
+                  + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                  + "\\s*;"); // end marker
+    }
+    static ModuleDescriptor describe(Path info) {
+      try {
+        return newModule(Files.readString(info)).build();
+      } catch (Exception e) {
+        throw new RuntimeException("Describe failed", e);
+      }
+    }
+    static ModuleDescriptor.Builder newModule(String source) {
+      var nameMatcher = Patterns.NAME.matcher(source);
+      if (!nameMatcher.find())
+        throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
+      var name = nameMatcher.group(1).trim();
+      var builder = ModuleDescriptor.newModule(name);
+      var requiresMatcher = Patterns.REQUIRES.matcher(source);
+      while (requiresMatcher.find()) {
+        var requiredName = requiresMatcher.group(1);
+        Optional.ofNullable(requiresMatcher.group(2))
+            .ifPresentOrElse(
+                version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+                () -> builder.requires(requiredName));
+      }
+      return builder;
+    }
+    static String moduleSourcePath(Path info, String module) {
+      var names = new ArrayList<String>();
+      var found = new AtomicBoolean(false);
+      for (var element : info.subpath(0, info.getNameCount() - 1)) {
+        var name = element.toString();
+        if (name.equals(module)) {
+          if (found.getAndSet(true))
+            throw new IllegalArgumentException(
+                String.format("Name '%s' not unique in path: %s", module, info));
+          if (names.isEmpty()) names.add("."); // leading '*' are bad
+          if (names.size() < info.getNameCount() - 2) names.add("*"); // avoid trailing '*'
+          continue;
+        }
+        names.add(name);
+      }
+      if (!found.get())
+        throw new IllegalArgumentException(
+            String.format("Name of module '%s' not found in path's elements: %s", module, info));
+      if (names.isEmpty()) return ".";
+      return String.join(File.separator, names);
+    }
+    static String origin(Object object) {
+      var type = object.getClass();
+      var module = type.getModule();
+      if (module.isNamed()) return module.getDescriptor().toNameAndVersion();
+      try {
+        return type.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
+      } catch (NullPointerException | URISyntaxException ignore) {
+        return module.toString();
+      }
     }
   }
   public static final class Summary {
@@ -1311,6 +1507,12 @@ public class Bach {
         this.task = task;
         this.result = result;
       }
+    }
+  }
+  public static class UnmappedModuleException extends RuntimeException {
+    private static final long serialVersionUID = 0L;
+    public UnmappedModuleException(String module) {
+      super("Module " + module + " is not mapped");
     }
   }
 }
