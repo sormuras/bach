@@ -37,12 +37,12 @@ public /*static*/ final class Snippet {
     /** Convert the string representation of the given object into a {@code String} literal. */
     default String $(Object object) {
       if (object == null) return "null";
-      return "\"" + object.toString() + "\"";
+      return '"' + object.toString().replace("\\", "\\\\") + '"';
     }
 
     /** Create {@code Path.of("some/path/...")} literal. */
     default String $(Path path) {
-      return "Path.of(" + $(path.toString().replace('\\', '/')) + ")";
+      return "Path.of(" + $((Object) path) + ")";
     }
 
     /** Create {@code "first" [, "second" [, ...]]} literal. */
