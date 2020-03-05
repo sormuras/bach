@@ -60,7 +60,7 @@ class DocProjectJigsawQuickStartTests {
             .build();
 
     var log = new Log();
-    var bach = new Bach(log, true);
+    var bach = new Bach(log, true, false);
     var summary = bach.build(project);
     var files = new ArrayList<String>();
     Tree.walk(temp, files::add);

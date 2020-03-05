@@ -59,7 +59,7 @@ class BachTests {
   @Test
   void printMessagesAtAllLevelsInVerboseMode() {
     var log = new Log();
-    var bach = new Bach(log, true);
+    var bach = new Bach(log, true, true);
     assertDoesNotThrow(bach::hashCode);
     assertEquals("all", bach.print(Level.ALL, "all"));
     assertEquals("trace", bach.print(Level.TRACE, "trace"));
@@ -84,7 +84,7 @@ class BachTests {
   @Test
   void executeLocalNoopTask() {
     var log = new Log();
-    var bach = new Bach(log, true);
+    var bach = new Bach(log, true, true);
     var task = new Task("Noop", false, List.of());
     var summary = new Summary(Project.builder().name("Noop").build(), task);
     bach.execute(task, summary);
@@ -94,7 +94,7 @@ class BachTests {
   @Test
   void executeLocalTasks(@TempDir Path temp) throws Exception {
     var log = new Log();
-    var bach = new Bach(log, true);
+    var bach = new Bach(log, true, false);
     var noop = new Task("Noop", false, List.of());
     var fail =
         new Task("Fail", false, List.of()) {
@@ -157,7 +157,7 @@ class BachTests {
     @Test
     void executeLocalToolProvider() {
       var log = new Log();
-      var bach = new Bach(log, true);
+      var bach = new Bach(log, true, true);
       var task = new Tasks.RunToolProvider(new NoopToolProvider(), "a", "b", "c");
       var summary = new Summary(Project.builder().name("Local").build(), task);
       bach.execute(task, summary);
