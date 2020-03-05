@@ -48,7 +48,11 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
 
   /** Create new tool-running task for the given tool and its options. */
   public static Task run(String name, String... args) {
-    var provider = ToolProvider.findFirst(name).orElseThrow();
+    return run(ToolProvider.findFirst(name).orElseThrow(), args);
+  }
+
+  /** Create new tool-running task for the given tool and its options. */
+  public static Task run(ToolProvider provider, String... args) {
     return new Tasks.RunToolProvider(provider, args);
   }
 
@@ -223,6 +227,28 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
   }
 
   protected Task launchAllTests() {
-    return sequence("Launch all tests");
+    return sequence(
+        "Launch all tests",
+        project.structure().realms().stream()
+            .filter(candidate -> candidate.flags().contains(Realm.Flag.LAUNCH_TESTS))
+            .map(this::launchTests)
+            .toArray(Task[]::new));
+  }
+
+  protected Task launchTests(Realm realm) {
+    var tasks = new ArrayList<Task>();
+    for (var unit : realm.units()) {
+      tasks.add(run(new TestLauncher.ToolTester(project, realm, unit)));
+      var junit =
+          Tool.of("junit")
+              .add("--select-module", unit.name())
+              .add("--details", "tree")
+              .add("--details-theme", "unicode")
+              .add("--disable-ansi-colors")
+              .add("--reports-dir", project.paths().out("junit-reports", unit.name()));
+      project.tuner().tune(junit, project, realm, unit);
+      tasks.add(run(new TestLauncher.JUnitTester(project, realm, unit), junit.toStrings()));
+    }
+    return sequence("Launch tests in " + realm.title() + " realm", tasks.toArray(Task[]::new));
   }
 }
