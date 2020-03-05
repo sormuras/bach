@@ -24,6 +24,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -220,11 +224,17 @@ public /*static*/ final class Summary {
   }
 
   public Path write() {
+    @SuppressWarnings("SpellCheckingInspection")
+    var pattern = "yyyyMMddHHmmss";
+    var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+    var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
     var markdown = toMarkdown();
     try {
-      var directory = project.paths().out();
-      Files.createDirectories(directory);
-      return Files.write(directory.resolve("summary.md"), markdown);
+      var out = project.paths().out();
+      var summaries = out.resolve("summaries");
+      Files.createDirectories(summaries);
+      Files.write(summaries.resolve("summary-" + timestamp + ".md"), markdown);
+      return Files.write(out.resolve("summary.md"), markdown);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
