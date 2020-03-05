@@ -17,39 +17,27 @@
 
 package de.sormuras.bach.execution;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.api.Project;
-import de.sormuras.bach.api.Realm;
-import de.sormuras.bach.api.Source;
-import de.sormuras.bach.api.Unit;
-import java.lang.module.ModuleDescriptor;
-import java.nio.file.Path;
-import java.util.List;
+import de.sormuras.bach.api.Projects;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class BuildTaskGeneratorTests {
 
   @Test
-  void checkCreateDirectoriesWithEmptyPath() {
-    var name = "jigsaw.quick.start";
-    var base = Path.of("doc", "project", name);
-    var module = "com.greetings";
-    var source = Source.of(base.resolve(module));
-    var unit =
-        new Unit(
-            source.path().resolve("module-info.java"),
-            ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
-            base,
-            List.of(source),
-            List.of());
-    var realm = new Realm("", 0, List.of(unit), List.of());
-    var project = Project.builder().name(name).units(List.of(unit)).realms(List.of(realm)).build();
+  void checkBuildTaskGenerationForMultiModuleProjectWithTests() {
+    var project = Projects.newProjectWithAllBellsAndWhistles();
     var generator = new BuildTaskGenerator(project, true);
     assertSame(project, generator.project());
     assertTrue(generator.verbose());
-    assertNotNull(generator.get());
+    var root = generator.get();
+    walk(root, task -> System.out.println(task.toMarkdown()));
+  }
+
+  private static void walk(Task task, Consumer<Task> consumer) {
+    consumer.accept(task);
+    for(var sub : task.children()) walk(sub, consumer);
   }
 }

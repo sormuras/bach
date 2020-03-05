@@ -19,7 +19,9 @@ package de.sormuras.bach.execution;
 
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.api.Realm;
+import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Tool;
+import de.sormuras.bach.api.Unit;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +40,9 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
     return new Task(title, false, List.of(tasks));
   }
 
-  /** Create new tool-running task for the given tool name and arguments. */
+  /** Create new tool-running task for the given tool name and argument strings. */
   public static Task run(Tool tool) {
-    return run(tool.name(), tool.arguments().toArray(String[]::new));
+    return run(tool.name(), tool.toStrings());
   }
 
   /** Create new tool-running task for the given tool and its options. */
@@ -131,15 +133,51 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
 
   protected Task packageRealm(Realm realm) {
     var jars = new ArrayList<Task>();
-    var paths = project.paths();
-    var modules = paths.modules(realm);
-    var sources = paths.sources(realm);
-    var title = realm.title();
+    for (var unit : realm.units()) {
+      jars.add(packageUnitModule(realm, unit));
+      jars.add(packageUnitSources(realm, unit));
+    }
     return sequence(
-        "Package " + title + " modules and sources",
-        createDirectories(modules),
-        createDirectories(sources),
-        parallel("Jar each " + title + " module", jars.toArray(Task[]::new)));
+        "Package " + realm.title() + " modules and sources",
+        createDirectories(project.paths().modules(realm)),
+        createDirectories(project.paths().sources(realm)),
+        parallel("Jar each " + realm.title() + " module", jars.toArray(Task[]::new)));
+  }
+
+  protected Task packageUnitModule(Realm realm, Unit unit) {
+    var paths = project.paths();
+    var module = unit.name();
+    var classes = paths.classes(realm).resolve(module);
+    var jar =
+        Tool.of("jar")
+            .add("--create")
+            .add("--file", project.toModularJar(realm, unit))
+            .add(verbose, "--verbose")
+            .add("-C", classes, ".")
+            .forEach(
+                realm.requires(),
+                (args, other) -> {
+                  var patched = other.unit(module).isPresent();
+                  var path = paths.classes(other).resolve(module);
+                  args.add(patched, "-C", path, ".");
+                })
+            .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+    project.tuner().tune(jar, project, realm, unit);
+    return run(jar);
+  }
+
+  protected Task packageUnitSources(Realm realm, Unit unit) {
+    var sources = project.paths().sources(realm);
+    var jar =
+        Tool.of("jar")
+            .add("--create")
+            .add("--file", sources.resolve(project.toJarName(unit, "sources")))
+            .add(verbose, "--verbose")
+            .add("--no-manifest")
+            .forEach(unit.sources(Source::path), (any, path) -> any.add("-C", path, "."))
+            .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+    project.tuner().tune(jar, project, realm, unit);
+    return run(jar);
   }
 
   protected Task compileApiDocumentation() {
