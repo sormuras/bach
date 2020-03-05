@@ -48,11 +48,6 @@ public interface Tasks {
         return context.failed(e);
       }
     }
-
-    @Override
-    public String toMarkdown() {
-      return "`Files.createDirectories(Path.of(" + path + "))`";
-    }
   }
 
   /** Tool-running task. */
@@ -71,14 +66,11 @@ public interface Tasks {
 
     private final ToolProvider[] tool;
     private final String[] args;
-    private final String markdown;
 
     public RunToolProvider(ToolProvider tool, String... args) {
       super(title(tool.name(), args), false, List.of());
       this.tool = new ToolProvider[] {tool};
       this.args = args;
-      var arguments = args.length == 0 ? "" : ' ' + String.join(" ", args);
-      this.markdown = '`' + tool.name() + arguments + '`';
     }
 
     @Override
@@ -92,11 +84,6 @@ public interface Tasks {
         System.gc();
       }
       return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
-    }
-
-    @Override
-    public String toMarkdown() {
-      return markdown;
     }
   }
 }

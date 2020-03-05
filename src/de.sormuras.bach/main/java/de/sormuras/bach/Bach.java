@@ -115,10 +115,10 @@ public class Bach {
 
   /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
-    var markdown = task.toMarkdown();
+    var title = task.title();
     var children = task.children();
 
-    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', markdown);
+    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', title);
 
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
@@ -129,7 +129,7 @@ public class Bach {
     if (result.code() != 0) {
       result.err().lines().forEach(printer);
       summary.executionEnd(task, result);
-      var message = markdown + ": non-zero result code: " + result.code();
+      var message = title + ": non-zero result code: " + result.code();
       throw new RuntimeException(message);
     }
 
@@ -140,7 +140,7 @@ public class Bach {
       } catch (RuntimeException e) {
         summary.addSuppressed(e);
       }
-      print(Level.DEBUG, "= %s", markdown);
+      print(Level.DEBUG, "= %s", title);
     }
 
     summary.executionEnd(task, result);

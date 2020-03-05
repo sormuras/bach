@@ -75,8 +75,7 @@ public /*static*/ final class Summary {
     if (task.children().isEmpty()) return;
     var format = "|   +|%6X|        | %s";
     var thread = Thread.currentThread().getId();
-    var text = task.title();
-    executions.add(String.format(format, thread, text));
+    executions.add(String.format(format, thread, task.title()));
   }
 
   /** Task execution ended callback. */
@@ -150,7 +149,7 @@ public /*static*/ final class Summary {
     for (var detail : details) {
       var result = detail.result;
       md.add("### " + detail.caption);
-      md.add(" - Command = " + detail.task.toMarkdown());
+      md.add(" - Title = " + detail.task.title());
       md.add(" - Code = " + result.code());
       md.add(" - Duration = " + result.duration());
       md.add("");

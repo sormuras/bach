@@ -50,9 +50,4 @@ public /*static*/ class Task {
   public ExecutionResult execute(ExecutionContext execution) {
     return execution.ok();
   }
-
-  /** Return markdown representation of this task instance. */
-  public String toMarkdown() {
-    return title();
-  }
 }

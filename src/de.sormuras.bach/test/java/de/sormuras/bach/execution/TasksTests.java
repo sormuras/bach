@@ -19,7 +19,6 @@ package de.sormuras.bach.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.NoopToolProvider;
@@ -35,7 +34,6 @@ class TasksTests {
     assertEquals("Create directories " + path, task.title());
     assertFalse(task.parallel());
     assertTrue(task.children().isEmpty());
-    assertNotNull(task.toMarkdown());
   }
 
   @Test
@@ -44,6 +42,5 @@ class TasksTests {
     assertEquals("Run `noop a b ...` (3 arguments)", task.title());
     assertFalse(task.parallel());
     assertTrue(task.children().isEmpty());
-    assertEquals("`noop a b c`", task.toMarkdown());
   }
 }

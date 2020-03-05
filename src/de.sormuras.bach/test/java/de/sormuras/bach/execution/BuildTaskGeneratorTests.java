@@ -33,7 +33,7 @@ class BuildTaskGeneratorTests {
     assertSame(project, generator.project());
     assertTrue(generator.verbose());
     var root = generator.get();
-    walk(root, task -> System.out.println(task.toMarkdown()));
+    walk(root, task -> System.out.println(task.title()));
   }
 
   private static void walk(Task task, Consumer<Task> consumer) {
