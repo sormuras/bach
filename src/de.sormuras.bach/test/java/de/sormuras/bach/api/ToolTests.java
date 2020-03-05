@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.api;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
@@ -25,6 +26,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ToolTests {
@@ -70,6 +72,30 @@ class ToolTests {
             "UTF-8",
             "-d",
             "classes"),
-        javac.arguments());
+        List.of(javac.toStrings()));
+  }
+
+  @Nested
+  class Any {
+
+    @Test
+    void empty() {
+      assertArrayEquals(new String[0], Tool.of("any").toStrings());
+    }
+
+    @Test
+    void touchAllAdders() {
+      var args =
+          Tool.of("any", 0x0)
+              .add(1)
+              .add("key", "value")
+              .add(true, "first")
+              .add(true, "second", "more")
+              .add(false, "suppressed")
+              .forEach(List.of('a', 'b', 'c'), Tool.Any::add);
+      assertLinesMatch(
+          List.of("0", "1", "key", "value", "first", "second", "more", "a", "b", "c"),
+          List.of(args.toStrings()));
+    }
   }
 }

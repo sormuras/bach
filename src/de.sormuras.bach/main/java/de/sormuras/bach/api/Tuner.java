@@ -19,6 +19,9 @@ package de.sormuras.bach.api;
 
 /** Tune tool options via side-effects. */
 public /*static*/ class Tuner {
+  /** Tune any tool options according to the given parameters, which may be {@code null}. */
+  public void tune(Tool.Any any, Project project, Realm realm, Unit unit) {}
+
   /** Tune {@code javac} options according to the given parameters, which may be {@code null}. */
   public void tune(Tool.JavaCompiler javac, Project project, Realm realm) {}
 }

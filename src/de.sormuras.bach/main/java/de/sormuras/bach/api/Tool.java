@@ -25,21 +25,89 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /** Interface for {@code String}-based mutable tool options. */
 public interface Tool {
+
+  /** Return new mutable options builder for the specified tool name. */
+  static Any of(String name, Object... arguments) {
+    return new Any(name, arguments);
+  }
 
   /** Return new mutable options builder for {@code javac}. */
   static JavaCompiler javac() {
     return new JavaCompiler();
   }
 
-  /** Return name of the tool. */
+  static String join(Collection<Path> paths) {
+    return paths.stream()
+        .map(Path::toString)
+        .map(string -> string.replace("{MODULE}", "*"))
+        .collect(Collectors.joining(File.pathSeparator));
+  }
+
+  /** Return name of the tool to run. */
   String name();
 
-  /** Return immutable list of arguments compiled from option properties. */
-  List<String> arguments();
+  /** Return array of argument strings compiled from option properties. */
+  String[] toStrings();
+
+  /** Any tool arguments collector. */
+  class Any implements Tool {
+
+    private final String name;
+    private final List<String> args = new ArrayList<>();
+
+    private Any(String name, Object... arguments) {
+      this.name = name;
+      addAll(arguments);
+    }
+
+    @Override
+    public String name() {
+      return name;
+    }
+
+    /** Append a single non-null argument. */
+    public Any add(Object argument) {
+      args.add(argument.toString());
+      return this;
+    }
+
+    /** Append two arguments, a key and a value. */
+    public Any add(String key, Object value) {
+      return add(key).add(value);
+    }
+
+    /** Append three arguments, a key and two values. */
+    public Any add(String key, Object first, Object second) {
+      return add(key).add(first).add(second);
+    }
+
+    /** Conditionally append one or more arguments. */
+    public Any add(boolean predicate, Object first, Object... more) {
+      return predicate ? add(first).addAll(more) : this;
+    }
+
+    /** Append all given arguments, potentially none. */
+    public Any addAll(Object... arguments) {
+      for (var argument : arguments) add(argument);
+      return this;
+    }
+
+    /** Walk the given iterable and expect this instance to be changed by side effects. */
+    public <T> Any forEach(Iterable<T> iterable, BiConsumer<Any, T> visitor) {
+      iterable.forEach(argument -> visitor.accept(this, argument));
+      return this;
+    }
+
+    /** Return a new array of all collected argument strings. */
+    public String[] toStrings() {
+      return args.toArray(String[]::new);
+    }
+  }
 
   /** Mutable options collection for {@code javac}. */
   class JavaCompiler implements Tool {
@@ -65,23 +133,10 @@ public interface Tool {
       return "javac";
     }
 
-    private static boolean isAssigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      return true;
-    }
 
-    private static String join(Collection<Path> paths) {
-      return paths.stream()
-          .map(Path::toString)
-          .map(string -> string.replace("{MODULE}", "*"))
-          .collect(Collectors.joining(File.pathSeparator));
-    }
 
     @Override
-    public List<String> arguments() {
+    public String[] toStrings() {
       var args = new ArrayList<String>();
       if (isAssigned(getCompileModulesCheckingTimestamps())) {
         args.add("--module");
@@ -122,7 +177,7 @@ public interface Tool {
         args.add("-d");
         args.add(String.valueOf(getDestinationDirectory()));
       }
-      return args;
+      return args.toArray(String[]::new);
     }
 
     public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
@@ -241,5 +296,13 @@ public interface Tool {
     public Version getVersionOfModulesThatAreBeingCompiled() {
       return versionOfModulesThatAreBeingCompiled;
     }
+  }
+
+  private static boolean isAssigned(Object object) {
+    if (object == null) return false;
+    if (object instanceof Number) return ((Number) object).intValue() != 0;
+    if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+    if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+    return true;
   }
 }

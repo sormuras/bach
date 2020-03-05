@@ -20,6 +20,7 @@ package de.sormuras.bach.api;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +29,9 @@ class TunerTests {
   @Test
   void compiler() {
     var tool = Tool.javac();
-    var expected = tool.arguments();
+    var expected = List.of(tool.toStrings());
     new Tuner().tune(tool, null, null);
-    assertLinesMatch(expected, tool.arguments());
+    assertLinesMatch(expected, List.of(tool.toStrings()));
   }
 
   @Nested
@@ -45,7 +46,7 @@ class TunerTests {
     void compiler() {
       var tool = Tool.javac();
       tune(tool, null, null);
-      var args = tool.arguments();
+      var args = List.of(tool.toStrings());
       assertTrue(args.contains("-parameters"));
       assertTrue(args.contains("-Werror"));
     }
