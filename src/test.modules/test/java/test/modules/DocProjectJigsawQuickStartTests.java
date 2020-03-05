@@ -49,7 +49,7 @@ class DocProjectJigsawQuickStartTests {
             base,
             List.of(source),
             List.of());
-    var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.CREATE_JAVADOC);
+    var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
     var paths = new Paths(base, temp.resolve("out"), temp.resolve("lib"));
     var project =
         Project.builder()
