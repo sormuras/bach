@@ -48,6 +48,11 @@ public interface Tasks {
         return context.failed(e);
       }
     }
+
+    @Override
+    public Snippet toSnippet() {
+      return Snippet.of(Files.class, "Files.createDirectories(" + $(path) + ");");
+    }
   }
 
   /** Tool-running task. */
@@ -65,11 +70,13 @@ public interface Tasks {
     }
 
     private final ToolProvider[] tool;
+    private final String name;
     private final String[] args;
 
     public RunToolProvider(ToolProvider tool, String... args) {
       super(title(tool.name(), args), false, List.of());
       this.tool = new ToolProvider[] {tool};
+      this.name = tool.name();
       this.args = args;
     }
 
@@ -84,6 +91,11 @@ public interface Tasks {
         System.gc();
       }
       return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
+    }
+
+    @Override
+    public Snippet toSnippet() {
+      return Snippet.of(String.format("run(%s, %s);", $(name), $(args)));
     }
   }
 }

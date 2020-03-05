@@ -19,9 +19,10 @@ package de.sormuras.bach.execution;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /** Executable task definition. */
-public /*static*/ class Task {
+public /*static*/ class Task implements Snippet.Scribe {
 
   private final String title;
   private final boolean parallel;
@@ -49,5 +50,16 @@ public /*static*/ class Task {
   /** Default computation called before executing child tasks. */
   public ExecutionResult execute(ExecutionContext execution) {
     return execution.ok();
+  }
+
+  @Override
+  public Snippet toSnippet() {
+    return Snippet.of("// " + title);
+  }
+
+  /** Visit this task and recurse into all nested tasks. */
+  void walk(Consumer<Task> consumer) {
+    consumer.accept(this);
+    for(var task : children()) task.walk(consumer);
   }
 }

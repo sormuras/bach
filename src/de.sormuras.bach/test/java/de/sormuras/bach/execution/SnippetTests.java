@@ -29,23 +29,23 @@ class SnippetTests {
   @Test
   void empty() {
     var empty = Snippet.of();
-    assertTrue(empty.imports().isEmpty());
+    assertTrue(empty.types().isEmpty());
     assertTrue(empty.lines().isEmpty());
   }
 
   @Test
   void checkSingleImportSingleLine() {
-    var singles = new Snippet(Set.of("java.util.Set"), List.of("Set.of();"));
-    assertEquals(1, singles.imports().size());
+    var singles = new Snippet(Set.of(Set.class), List.of("Set.of();"));
+    assertEquals(1, singles.types().size());
     assertEquals(1, singles.lines().size());
   }
 
   @Test
   void checkMergingFactory() {
-    var set = new Snippet(Set.of("java.lang.Void", "java.util.Set"), List.of("Set.of();"));
-    var list = new Snippet(Set.of("java.lang.Void", "java.util.List"), List.of("List.of();"));
+    var set = new Snippet(Set.of(Void.class, Set.class), List.of("Set.of();"));
+    var list = new Snippet(Set.of(List.class, Void.class), List.of("List.of();"));
     var merged = Snippet.of(List.of(set, list));
-    assertEquals(3, merged.imports().size());
+    assertEquals(3, merged.types().size());
     assertEquals(2, merged.lines().size());
   }
 }

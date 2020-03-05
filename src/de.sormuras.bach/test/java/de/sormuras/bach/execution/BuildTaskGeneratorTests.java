@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.api.Projects;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class BuildTaskGeneratorTests {
@@ -33,11 +32,8 @@ class BuildTaskGeneratorTests {
     assertSame(project, generator.project());
     assertTrue(generator.verbose());
     var root = generator.get();
-    walk(root, task -> System.out.println(task.title()));
-  }
-
-  private static void walk(Task task, Consumer<Task> consumer) {
-    consumer.accept(task);
-    for(var sub : task.children()) walk(sub, consumer);
+    var program = Snippet.program(root);
+    assertTrue(program.size() > 10);
+    // program.forEach(System.out::println);
   }
 }
