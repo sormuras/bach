@@ -17,9 +17,13 @@
 
 /**
  * Bach's base module.
+ *
+ * @uses java.util.spi.ToolProvider
  */
 module de.sormuras.bach {
   exports de.sormuras.bach;
   exports de.sormuras.bach.api;
   exports de.sormuras.bach.execution;
+
+  uses java.util.spi.ToolProvider;
 }
