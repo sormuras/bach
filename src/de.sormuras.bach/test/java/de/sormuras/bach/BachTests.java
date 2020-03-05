@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.ExecutionResult;
+import de.sormuras.bach.execution.NoopToolProvider;
 import de.sormuras.bach.execution.Task;
 import de.sormuras.bach.execution.Tasks;
 import java.lang.System.Logger.Level;

@@ -61,9 +61,6 @@ public interface Tasks {
   /** Tool-running task. */
   class RunToolProvider extends Task {
 
-    /** Implement this marker interface indicating a {@link System#gc()} call is required. */
-    public interface GarbageCollect {}
-
     static String title(String tool, String... args) {
       var length = args.length;
       if (length == 0) return String.format("Run `%s`", tool);

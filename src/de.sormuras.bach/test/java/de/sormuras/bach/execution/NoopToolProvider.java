@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach;
+package de.sormuras.bach.execution;
 
-import de.sormuras.bach.execution.Tasks;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-public class NoopToolProvider implements ToolProvider, Tasks.RunToolProvider.GarbageCollect {
+public class NoopToolProvider implements ToolProvider, GarbageCollect {
 
   private final int code;
   private final boolean printArguments;
