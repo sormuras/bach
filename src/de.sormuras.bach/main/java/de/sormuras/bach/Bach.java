@@ -44,32 +44,30 @@ public class Bach {
   private final Consumer<String> printer;
 
   /** Verbosity flag. */
-  private final boolean verbose;
+  private final boolean debug;
 
-  /** Initialize this instance with the specified line printer and verbosity flag. */
+  /** Dry-run flag. */
+  private final boolean dryRun;
+
+  /** Initialize this instance with the specified line printer and boolean flags. */
   public Bach() {
     this(
         System.out::println,
-        Boolean.getBoolean("verbose") // -D verbose=true
-            || Boolean.getBoolean("ebug") // -Debug=true
-            || "".equals(System.getProperty("ebug")));
+        Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
+        Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Consumer<String> printer, boolean verbose) {
+  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
     this.printer = printer;
-    this.verbose = verbose;
+    this.dryRun = dryRun;
+    this.debug = debug;
     print(Level.TRACE, "Bach initialized");
   }
 
   /** Verbosity flag. */
   public boolean verbose() {
-    return verbose;
-  }
-
-  /** Line printer. */
-  Consumer<String> printer() {
-    return printer;
+    return debug;
   }
 
   /** Print a message at information level. */
@@ -80,7 +78,7 @@ public class Bach {
   /** Print a message at specified level. */
   public String print(Level level, String format, Object... args) {
     var message = String.format(format, args);
-    if (verbose() || level.getSeverity() >= Level.INFO.getSeverity()) printer().accept(message);
+    if (debug || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
   }
 
@@ -91,16 +89,18 @@ public class Bach {
 
   /** Build the specified project using the default build task generator. */
   public Summary build(Project project) {
-    return build(project, new BuildTaskGenerator(project, verbose()));
+    return build(project, new BuildTaskGenerator(project, debug));
   }
 
   /** Build the specified project using the given build task supplier. */
   Summary build(Project project, Supplier<Task> taskSupplier) {
     var start = Instant.now();
-    print("Build %s", project.name());
-    // if (verbose()) project.print(printer());
-    var summary = new Summary(project);
-    execute(taskSupplier.get(), summary);
+    var build = dryRun ? "Dry-run" : "Build";
+    print("%s %s", build, project.toNameAndVersion());
+    var task = taskSupplier.get();
+    var summary = new Summary(project, task);
+    // if (verbose || dryRun) summary.program().forEach(printer);
+    execute(task, summary);
     var markdown = summary.write();
     var duration =
         Duration.between(start, Instant.now())
@@ -109,12 +109,14 @@ public class Bach {
             .substring(2)
             .replaceAll("(\\d[HMS])(?!$)", "$1 ")
             .toLowerCase();
-    print("Build took %s -> %s", duration, markdown.toUri());
+    print("%s took %s -> %s", build, duration, markdown.toUri());
     return summary;
   }
 
   /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
+    if (dryRun) return;
+
     var title = task.title();
     var children = task.children();
 
@@ -122,9 +124,9 @@ public class Bach {
 
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
-    if (verbose()) {
-      result.out().lines().forEach(printer());
-      result.err().lines().forEach(printer());
+    if (debug) {
+      result.out().lines().forEach(printer);
+      result.err().lines().forEach(printer);
     }
     if (result.code() != 0) {
       result.err().lines().forEach(printer);

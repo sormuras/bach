@@ -85,8 +85,9 @@ class BachTests {
   void executeLocalNoopTask() {
     var log = new Log();
     var bach = new Bach(log, true);
-    var summary = new Summary(Project.builder().name("Noop").build());
-    bach.execute(new Task("Noop", false, List.of()), summary);
+    var task = new Task("Noop", false, List.of());
+    var summary = new Summary(Project.builder().name("Noop").build(), task);
+    bach.execute(task, summary);
     summary.assertSuccessful();
   }
 
@@ -110,12 +111,12 @@ class BachTests {
             return failed;
           }
         };
-    var summary = new Summary(Project.builder().name("local").paths(temp).build());
-    bach.execute(new Task("group", false, List.of(noop, fail)), summary);
+    var task = new Task("group", false, List.of(noop, fail));
+    var summary = new Summary(Project.builder().name("local").paths(temp).build(), task);
+    bach.execute(task, summary);
     assertThrows(AssertionError.class, summary::assertSuccessful);
     assertEquals(2, summary.countedChildlessTasks());
     assertEquals(4, summary.countedExecutionEvents());
-    assertEquals("local", summary.project().toNameAndVersion());
     assertLinesMatch(
         List.of(
             "P Bach initialized",
@@ -155,10 +156,10 @@ class BachTests {
   class TasksTests {
     @Test
     void executeLocalToolProvider() {
-      var task = new Tasks.RunToolProvider(new NoopToolProvider(), "a", "b", "c");
       var log = new Log();
       var bach = new Bach(log, true);
-      var summary = new Summary(Project.builder().name("Local").build());
+      var task = new Tasks.RunToolProvider(new NoopToolProvider(), "a", "b", "c");
+      var summary = new Summary(Project.builder().name("Local").build(), task);
       bach.execute(task, summary);
       summary.assertSuccessful();
     }

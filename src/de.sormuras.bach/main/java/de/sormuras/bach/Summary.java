@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.execution.ExecutionResult;
+import de.sormuras.bach.execution.Snippet;
 import de.sormuras.bach.execution.Task;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,16 +41,14 @@ import java.util.stream.Collectors;
 public /*static*/ final class Summary {
 
   private final Project project;
+  private final List<String> program;
   private final Deque<String> executions = new ConcurrentLinkedDeque<>();
   private final Deque<Detail> details = new ConcurrentLinkedDeque<>();
   private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
 
-  public Summary(Project project) {
+  public Summary(Project project, Task root) {
     this.project = project;
-  }
-
-  public Project project() {
-    return project;
+    this.program = Snippet.program(root);
   }
 
   public void addSuppressed(Throwable throwable) {
@@ -105,6 +104,7 @@ public /*static*/ final class Summary {
     var md = new ArrayList<String>();
     md.add("# Summary");
     md.addAll(projectDescription());
+    md.addAll(buildProgram());
     md.addAll(taskExecutionOverview());
     md.addAll(taskExecutionDetails());
     md.addAll(exceptionDetails());
@@ -126,7 +126,19 @@ public /*static*/ final class Summary {
     return md;
   }
 
+  private List<String> buildProgram() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Build Program");
+    md.add("");
+    md.add("```text");
+    md.addAll(program);
+    md.add("```");
+    return md;
+  }
+
   private List<String> taskExecutionOverview() {
+    if (executions.isEmpty()) return List.of();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Task Execution Overview");
@@ -237,6 +249,7 @@ public /*static*/ final class Summary {
       var out = project.paths().out();
       var summaries = out.resolve("summaries");
       Files.createDirectories(summaries);
+      Files.write(project.paths().out("Build.java"), program);
       Files.write(summaries.resolve("summary-" + timestamp + ".md"), markdown);
       return Files.write(out.resolve("summary.md"), markdown);
     } catch (Exception e) {
