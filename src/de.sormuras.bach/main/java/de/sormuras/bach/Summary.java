@@ -51,6 +51,10 @@ public /*static*/ final class Summary {
     this.program = Snippet.program(root);
   }
 
+  public boolean aborted() {
+    return !suppressed.isEmpty();
+  }
+
   public void addSuppressed(Throwable throwable) {
     suppressed.add(throwable);
   }

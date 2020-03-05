@@ -121,8 +121,8 @@ class BachTests {
         List.of(
             "P Bach initialized",
             "P + group",
-            "P * Noop",
-            "P * Fail",
+            "P \t* Noop",
+            "P \t* Fail",
             "P Debug 1",
             "P Error 1",
             "P Error 1",

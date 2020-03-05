@@ -115,12 +115,16 @@ public class Bach {
 
   /** Run the given task and its attached child tasks. */
   void execute(Task task, Summary summary) {
-    if (dryRun) return;
+    execute(0, task, summary);
+  }
 
+  private void execute(int depth, Task task, Summary summary) {
+    if (dryRun || summary.aborted()) return;
+
+    var indent = "\t".repeat(depth);
     var title = task.title();
     var children = task.children();
-
-    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', title);
+    print(Level.DEBUG, "%s%c %s", indent, children.isEmpty() ? '*' : '+', title);
 
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
@@ -138,11 +142,11 @@ public class Bach {
     if (!children.isEmpty()) {
       try {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
-        tasks.forEach(child -> execute(child, summary));
+        tasks.forEach(child -> execute(depth + 1, child, summary));
       } catch (RuntimeException e) {
         summary.addSuppressed(e);
       }
-      print(Level.DEBUG, "= %s", title);
+      print(Level.DEBUG, "%s= %s", indent, title);
     }
 
     summary.executionEnd(task, result);
