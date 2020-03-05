@@ -38,6 +38,7 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -332,7 +333,7 @@ public class Bach {
     public OptionalInt release() {
       return feature == 0 ? OptionalInt.empty() : OptionalInt.of(feature);
     }
-    Optional<Unit> unit(String name) {
+    public Optional<Unit> unit(String name) {
       return units.stream().filter(unit -> unit.name().equals(name)).findAny();
     }
     public List<String> moduleNames() {
@@ -425,11 +426,56 @@ public class Bach {
     }
   }
   public interface Tool {
+    static Any of(String name, Object... arguments) {
+      return new Any(name, arguments);
+    }
     static JavaCompiler javac() {
       return new JavaCompiler();
     }
+    static String join(Collection<Path> paths) {
+      return paths.stream()
+          .map(Path::toString)
+          .map(string -> string.replace("{MODULE}", "*"))
+          .collect(Collectors.joining(File.pathSeparator));
+    }
     String name();
-    List<String> arguments();
+    String[] toStrings();
+    class Any implements Tool {
+      private final String name;
+      private final List<String> args = new ArrayList<>();
+      private Any(String name, Object... arguments) {
+        this.name = name;
+        addAll(arguments);
+      }
+      @Override
+      public String name() {
+        return name;
+      }
+      public Any add(Object argument) {
+        args.add(argument.toString());
+        return this;
+      }
+      public Any add(String key, Object value) {
+        return add(key).add(value);
+      }
+      public Any add(String key, Object first, Object second) {
+        return add(key).add(first).add(second);
+      }
+      public Any add(boolean predicate, Object first, Object... more) {
+        return predicate ? add(first).addAll(more) : this;
+      }
+      public Any addAll(Object... arguments) {
+        for (var argument : arguments) add(argument);
+        return this;
+      }
+      public <T> Any forEach(Iterable<T> iterable, BiConsumer<Any, T> visitor) {
+        iterable.forEach(argument -> visitor.accept(this, argument));
+        return this;
+      }
+      public String[] toStrings() {
+        return args.toArray(String[]::new);
+      }
+    }
     class JavaCompiler implements Tool {
       private List<String> compileModulesCheckingTimestamps;
       private Version versionOfModulesThatAreBeingCompiled;
@@ -449,21 +495,8 @@ public class Bach {
       public String name() {
         return "javac";
       }
-      private static boolean isAssigned(Object object) {
-        if (object == null) return false;
-        if (object instanceof Number) return ((Number) object).intValue() != 0;
-        if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-        if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-        return true;
-      }
-      private static String join(Collection<Path> paths) {
-        return paths.stream()
-            .map(Path::toString)
-            .map(string -> string.replace("{MODULE}", "*"))
-            .collect(Collectors.joining(File.pathSeparator));
-      }
       @Override
-      public List<String> arguments() {
+      public String[] toStrings() {
         var args = new ArrayList<String>();
         if (isAssigned(getCompileModulesCheckingTimestamps())) {
           args.add("--module");
@@ -504,7 +537,7 @@ public class Bach {
           args.add("-d");
           args.add(String.valueOf(getDestinationDirectory()));
         }
-        return args;
+        return args.toArray(String[]::new);
       }
       public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
         this.compileModulesCheckingTimestamps = modules;
@@ -598,8 +631,16 @@ public class Bach {
         return versionOfModulesThatAreBeingCompiled;
       }
     }
+    private static boolean isAssigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      return true;
+    }
   }
   public static class Tuner {
+    public void tune(Tool.Any any, Project project, Realm realm, Unit unit) {}
     public void tune(Tool.JavaCompiler javac, Project project, Realm realm) {}
   }
   public static final class Unit {
@@ -660,7 +701,7 @@ public class Bach {
       return new Task(title, false, List.of(tasks));
     }
     public static Task run(Tool tool) {
-      return run(tool.name(), tool.arguments().toArray(String[]::new));
+      return run(tool.name(), tool.toStrings());
     }
     public static Task run(String name, String... args) {
       var provider = ToolProvider.findFirst(name).orElseThrow();
@@ -738,15 +779,49 @@ public class Bach {
     }
     protected Task packageRealm(Realm realm) {
       var jars = new ArrayList<Task>();
-      var paths = project.paths();
-      var modules = paths.modules(realm);
-      var sources = paths.sources(realm);
-      var title = realm.title();
+      for (var unit : realm.units()) {
+        jars.add(packageUnitModule(realm, unit));
+        jars.add(packageUnitSources(realm, unit));
+      }
       return sequence(
-          "Package " + title + " modules and sources",
-          createDirectories(modules),
-          createDirectories(sources),
-          parallel("Jar each " + title + " module", jars.toArray(Task[]::new)));
+          "Package " + realm.title() + " modules and sources",
+          createDirectories(project.paths().modules(realm)),
+          createDirectories(project.paths().sources(realm)),
+          parallel("Jar each " + realm.title() + " module", jars.toArray(Task[]::new)));
+    }
+    protected Task packageUnitModule(Realm realm, Unit unit) {
+      var paths = project.paths();
+      var module = unit.name();
+      var classes = paths.classes(realm).resolve(module);
+      var jar =
+          Tool.of("jar")
+              .add("--create")
+              .add("--file", project.toModularJar(realm, unit))
+              .add(verbose, "--verbose")
+              .add("-C", classes, ".")
+              .forEach(
+                  realm.requires(),
+                  (args, other) -> {
+                    var patched = other.unit(module).isPresent();
+                    var path = paths.classes(other).resolve(module);
+                    args.add(patched, "-C", path, ".");
+                  })
+              .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+      project.tuner().tune(jar, project, realm, unit);
+      return run(jar);
+    }
+    protected Task packageUnitSources(Realm realm, Unit unit) {
+      var sources = project.paths().sources(realm);
+      var jar =
+          Tool.of("jar")
+              .add("--create")
+              .add("--file", sources.resolve(project.toJarName(unit, "sources")))
+              .add(verbose, "--verbose")
+              .add("--no-manifest")
+              .forEach(unit.sources(Source::path), (any, path) -> any.add("-C", path, "."))
+              .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+      project.tuner().tune(jar, project, realm, unit);
+      return run(jar);
     }
     protected Task compileApiDocumentation() {
       return sequence("Compile API documentation");
