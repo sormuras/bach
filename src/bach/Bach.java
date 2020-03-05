@@ -65,11 +65,11 @@ public class Bach {
   }
   public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
     this.printer = printer;
-    this.dryRun = dryRun;
     this.debug = debug;
+    this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
   }
-  public boolean verbose() {
+  public boolean debug() {
     return debug;
   }
   public String print(String format, Object... args) {
@@ -105,10 +105,14 @@ public class Bach {
     return summary;
   }
   void execute(Task task, Summary summary) {
-    if (dryRun) return;
+    execute(0, task, summary);
+  }
+  private void execute(int depth, Task task, Summary summary) {
+    if (dryRun || summary.aborted()) return;
+    var indent = "\t".repeat(depth);
     var title = task.title();
     var children = task.children();
-    print(Level.DEBUG, "%c %s", children.isEmpty() ? '*' : '+', title);
+    print(Level.DEBUG, "%s%c %s", indent, children.isEmpty() ? '*' : '+', title);
     summary.executionBegin(task);
     var result = task.execute(new ExecutionContext(this));
     if (debug) {
@@ -124,11 +128,11 @@ public class Bach {
     if (!children.isEmpty()) {
       try {
         var tasks = task.parallel() ? children.parallelStream() : children.stream();
-        tasks.forEach(child -> execute(child, summary));
+        tasks.forEach(child -> execute(depth + 1, child, summary));
       } catch (RuntimeException e) {
         summary.addSuppressed(e);
       }
-      print(Level.DEBUG, "= %s", title);
+      print(Level.DEBUG, "%s= %s", indent, title);
     }
     summary.executionEnd(task, result);
   }
@@ -520,7 +524,7 @@ public class Bach {
           args.add(join(getPathsWhereToFindApplicationModules()));
         }
         if (isAssigned(getPathsWhereToFindMoreAssetsPerModule())) {
-          for(var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
+          for (var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
             args.add("--patch-module");
             args.add(patch.getKey() + '=' + join(patch.getValue()));
           }
@@ -829,7 +833,43 @@ public class Bach {
       return run(jar);
     }
     protected Task compileApiDocumentation() {
-      return sequence("Compile API documentation");
+      var realms = project.structure().realms();
+      if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
+      var realm =
+          realms.stream()
+              .filter(candidate -> candidate.flags().contains(Realm.Flag.CREATE_JAVADOC))
+              .findFirst();
+      if (realm.isEmpty()) return sequence("No realm wants javadoc: " + realms);
+      return compileApiDocumentation(realm.get());
+    }
+    protected Task compileApiDocumentation(Realm realm) {
+      var modules = realm.moduleNames();
+      if (modules.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
+      var name = project.name();
+      var version = Optional.ofNullable(project.version());
+      var file = name + version.map(v -> "-" + v).orElse("");
+      var moduleSourcePath = realm.moduleSourcePaths();
+      var modulePath = realm.modulePaths(project.paths());
+      var javadoc = project.paths().javadoc();
+      return sequence(
+          "Generate API documentation and jar generated site",
+          createDirectories(javadoc),
+          run(
+              Tool.of("javadoc")
+                  .add("--module", String.join(",", modules))
+                  .add("--module-source-path", Tool.join(moduleSourcePath))
+                  .add(!modulePath.isEmpty(), "--module-path", Tool.join(modulePath))
+                  .add("-d", javadoc)
+                  .add(!verbose, "-quiet")
+                  .add("-Xdoclint:-missing")),
+          run(
+              Tool.of("jar")
+                  .add("--create")
+                  .add("--file", javadoc.getParent().resolve(file + "-javadoc.jar"))
+                  .add(verbose, "--verbose")
+                  .add("--no-manifest")
+                  .add("-C", javadoc)
+                  .add(".")));
     }
     protected Task launchAllTests() {
       return sequence("Launch all tests");
@@ -853,7 +893,7 @@ public class Bach {
       return start;
     }
     public void print(Level level, String format, Object... args) {
-      if (bach().verbose() || level.getSeverity() >= Level.INFO.getSeverity()) {
+      if (bach().debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
         writer.write(String.format(format, args));
         writer.write(System.lineSeparator());
@@ -1070,6 +1110,9 @@ public class Bach {
     public Summary(Project project, Task root) {
       this.project = project;
       this.program = Snippet.program(root);
+    }
+    public boolean aborted() {
+      return !suppressed.isEmpty();
     }
     public void addSuppressed(Throwable throwable) {
       suppressed.add(throwable);
