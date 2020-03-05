@@ -70,14 +70,18 @@ public interface Tasks {
     }
 
     private final ToolProvider[] tool;
-    private final String name;
     private final String[] args;
+    private final Snippet snippet;
 
     public RunToolProvider(ToolProvider tool, String... args) {
       super(title(tool.name(), args), false, List.of());
       this.tool = new ToolProvider[] {tool};
-      this.name = tool.name();
       this.args = args;
+      var empty = args.length == 0;
+      this.snippet =
+          tool instanceof Snippet.Scribe
+              ? ((Snippet.Scribe) tool).toSnippet()
+              : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
     }
 
     @Override
@@ -95,7 +99,7 @@ public interface Tasks {
 
     @Override
     public Snippet toSnippet() {
-      return Snippet.of(String.format("run(%s, %s);", $(name), $(args)));
+      return snippet;
     }
   }
 }
