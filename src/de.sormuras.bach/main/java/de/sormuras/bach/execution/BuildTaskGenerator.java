@@ -25,6 +25,7 @@ import de.sormuras.bach.api.Unit;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
@@ -181,7 +182,44 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
   }
 
   protected Task compileApiDocumentation() {
-    return sequence("Compile API documentation");
+    var realms = project.structure().realms();
+    if (realms.isEmpty()) return sequence("Cannot generate API documentation: 0 realms");
+    var realm =
+        realms.stream()
+            .filter(candidate -> candidate.flags().contains(Realm.Flag.CREATE_JAVADOC))
+            .findFirst();
+    if (realm.isEmpty()) return sequence("No realm wants javadoc: " + realms);
+    return compileApiDocumentation(realm.get());
+  }
+
+  protected Task compileApiDocumentation(Realm realm) {
+    var modules = realm.moduleNames();
+    if (modules.isEmpty()) return sequence("Cannot generate API documentation: 0 modules");
+    var name = project.name();
+    var version = Optional.ofNullable(project.version());
+    var file = name + version.map(v -> "-" + v).orElse("");
+    var moduleSourcePath = realm.moduleSourcePaths();
+    var modulePath = realm.modulePaths(project.paths());
+    var javadoc = project.paths().javadoc();
+    return sequence(
+        "Generate API documentation and jar generated site",
+        createDirectories(javadoc),
+        run(
+            Tool.of("javadoc")
+                .add("--module", String.join(",", modules))
+                .add("--module-source-path", Tool.join(moduleSourcePath))
+                .add(!modulePath.isEmpty(), "--module-path", Tool.join(modulePath))
+                .add("-d", javadoc)
+                .add(!verbose, "-quiet")
+                .add("-Xdoclint:-missing")),
+        run(
+            Tool.of("jar")
+                .add("--create")
+                .add("--file", javadoc.getParent().resolve(file + "-javadoc.jar"))
+                .add(verbose, "--verbose")
+                .add("--no-manifest")
+                .add("-C", javadoc)
+                .add(".")));
   }
 
   protected Task launchAllTests() {

@@ -49,7 +49,7 @@ class DocProjectJigsawQuickStartTests {
             base,
             List.of(source),
             List.of());
-    var realm = new Realm("", 0, List.of(unit), List.of());
+    var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.CREATE_JAVADOC);
     var paths = new Paths(base, temp.resolve("out"), temp.resolve("lib"));
     var project =
         Project.builder()
@@ -66,10 +66,13 @@ class DocProjectJigsawQuickStartTests {
     Tree.walk(temp, files::add);
     try {
       summary.assertSuccessful();
+      assertTrue(files.contains("out/Build.java"));
       assertTrue(files.contains("out/classes/com.greetings/com/greetings/Main.class"));
       assertTrue(files.contains("out/classes/com.greetings/module-info.class"));
+      assertTrue(files.contains("out/documentation/" + name + "-javadoc.jar"));
       assertTrue(files.contains("out/modules/com.greetings.jar"));
       assertTrue(files.contains("out/sources/com.greetings-sources.jar"));
+      assertTrue(files.contains("out/summary.md"));
     } catch (Throwable throwable) {
       files.forEach(System.err::println);
       System.err.println();
