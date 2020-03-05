@@ -48,7 +48,7 @@ public /*static*/ final class ExecutionContext {
 
   /** Print message if verbose flag is set. */
   public void print(Level level, String format, Object... args) {
-    if (bach().verbose() || level.getSeverity() >= Level.INFO.getSeverity()) {
+    if (bach().debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       writer.write(String.format(format, args));
       writer.write(System.lineSeparator());

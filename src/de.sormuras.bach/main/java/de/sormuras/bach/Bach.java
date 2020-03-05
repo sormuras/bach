@@ -60,13 +60,13 @@ public class Bach {
   /** Initialize this instance with the specified line printer and verbosity flag. */
   public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
     this.printer = printer;
-    this.dryRun = dryRun;
     this.debug = debug;
+    this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
   }
 
   /** Verbosity flag. */
-  public boolean verbose() {
+  public boolean debug() {
     return debug;
   }
 
