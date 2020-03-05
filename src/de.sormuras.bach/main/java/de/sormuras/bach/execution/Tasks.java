@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 
 /** Collection of tasks. */
@@ -51,7 +52,9 @@ public interface Tasks {
 
     @Override
     public Snippet toSnippet() {
-      return Snippet.of(Files.class, "Files.createDirectories(" + $(path) + ");");
+      return new Snippet(
+          Set.of(Files.class, Path.class),
+          List.of(String.format("Files.createDirectories(%s);", $(path))));
     }
   }
 
