@@ -26,8 +26,8 @@ import de.sormuras.bach.api.Realm;
 import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Unit;
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,9 +40,6 @@ class DocProjectJigsawQuickStartTests {
   void build(@TempDir Path temp) {
     var name = "jigsaw.quick.start";
     var base = Path.of("doc", "project", name);
-
-    assertTrue(Files.isDirectory(base), "Directory not found: " + base);
-
     var module = "com.greetings";
     var source = Source.of(base.resolve(module));
     var unit =
@@ -61,13 +58,23 @@ class DocProjectJigsawQuickStartTests {
             .units(List.of(unit))
             .realms(List.of(realm))
             .build();
+
     var log = new Log();
     var bach = new Bach(log, true);
     var summary = bach.build(project);
-
-    summary.assertSuccessful();
-
-    Tree.walk(temp, System.out::println);
-    summary.toMarkdown().forEach(System.out::println);
+    var files = new ArrayList<String>();
+    Tree.walk(temp, files::add);
+    try {
+      summary.assertSuccessful();
+      assertTrue(files.contains("out/classes/com.greetings/com/greetings/Main.class"));
+      assertTrue(files.contains("out/classes/com.greetings/module-info.class"));
+      assertTrue(files.contains("out/modules/com.greetings.jar"));
+      assertTrue(files.contains("out/sources/com.greetings-sources.jar"));
+    } catch (Throwable throwable) {
+      files.forEach(System.err::println);
+      System.err.println();
+      summary.toMarkdown().forEach(System.err::println);
+      throw throwable;
+    }
   }
 }
