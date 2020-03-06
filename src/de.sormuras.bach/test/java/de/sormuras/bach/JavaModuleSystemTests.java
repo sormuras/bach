@@ -19,6 +19,9 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.jar.JarFile;
 import org.junit.jupiter.api.Test;
 
 class JavaModuleSystemTests {
@@ -27,5 +30,32 @@ class JavaModuleSystemTests {
   void runningOnTheModulePath() {
     var module = getClass().getModule();
     assertEquals("de.sormuras.bach", module.getName());
+  }
+
+  @Test
+  void checkJUnitJupiterVersion() throws Exception {
+    var expected = "5.6.0";
+    // Java Class API
+    assertEquals(expected, Test.class.getPackage().getImplementationVersion());
+    // Module System
+    var jupiter = Test.class.getModule();
+    if (jupiter.isNamed()) {
+      var actual = jupiter.getDescriptor().version().orElseThrow().toString();
+      assertEquals(expected, actual);
+    }
+    // JAR Manifest
+    var location = Test.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+    try (var jar = new JarFile(Path.of(location).toFile())) {
+      var attributes = jar.getManifest().getMainAttributes();
+      var actual = attributes.getValue("Implementation-Version");
+      assertEquals(expected, actual);
+    }
+    // Reflection
+    var engine = Class.forName("org.junit.jupiter.engine.JupiterTestEngine");
+    var method = engine.getMethod("getVersion");
+    var result = method.invoke(engine.getConstructor().newInstance());
+    @SuppressWarnings("unchecked")
+    var actual = ((Optional<String>) result).orElseThrow();
+    assertEquals(expected, actual);
   }
 }
