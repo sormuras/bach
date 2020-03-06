@@ -18,5 +18,6 @@
 open /*test*/ module test.base {
   exports test.base;
 
+  requires java.compiler;
   requires org.junit.jupiter;
 }

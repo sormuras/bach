@@ -4,7 +4,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/src/test.base">
       <sourceFolder url="file://$MODULE_DIR$/src/test.base/test/java" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test.base/test/resources" type="java-test-resource" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit Jupiter" level="project" />
