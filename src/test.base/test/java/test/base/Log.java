@@ -21,6 +21,7 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -53,6 +54,17 @@ public class Log implements System.Logger, Consumer<String> {
   @Override
   public void log(Level level, ResourceBundle bundle, String format, Object... params) {
     entries.add(new Entry("L", level, MessageFormat.format(format, params), null));
+  }
+
+  public void assertThatEverythingIsFine() {
+    var issues =
+        entries.stream()
+            .filter(entry -> entry.level.getSeverity() >= Level.WARNING.getSeverity())
+            .collect(Collectors.toList());
+    if (issues.isEmpty()) return;
+    var messages = new StringJoiner(System.lineSeparator());
+    for (var issue : issues) messages.add(issue.message);
+    throw new AssertionError("Not ok!\n" + messages);
   }
 
   public List<String> lines() {
