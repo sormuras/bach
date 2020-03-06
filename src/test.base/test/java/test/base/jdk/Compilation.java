@@ -48,10 +48,9 @@ public interface Compilation {
 
   /** Compile Java source, guess its type name return it as a Class instance. */
   static Class<?> compile(String charContent) {
-    var packageName = "";
     var packagePattern = Pattern.compile("package\\s+([\\w.]+);");
     var packageMatcher = packagePattern.matcher(charContent);
-    if (packageMatcher.find()) packageName = packageMatcher.group(1) + ".";
+    var packageName = packageMatcher.find() ? packageMatcher.group(1) + "." : "";
     var namePattern = Pattern.compile("(class|interface|enum)\\s+(.+)\\s*\\{.*");
     var nameMatcher = namePattern.matcher(charContent);
     if (!nameMatcher.find())
