@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$/src/de.sormuras.bach">
       <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/de.sormuras.bach/test/resources" type="java-test-resource" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="test.base" scope="TEST" />
