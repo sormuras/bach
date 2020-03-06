@@ -983,7 +983,9 @@ public class Bach {
       if (strings.length == 0) return "";
       if (strings.length == 1) return $(strings[0]);
       if (strings.length == 2) return $(strings[0]) + ", " + $(strings[1]);
-      return String.join(", ", strings);
+      var joiner = new StringJoiner(", ");
+      for(var string : strings) joiner.add($(string));
+      return joiner.toString();
     }
     Snippet toSnippet();
   }
