@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /** Executable task definition. */
-public /*static*/ class Task implements Snippet.Scribe {
+public /*static*/ class Task implements Scribe {
 
   private final String title;
   private final boolean parallel;

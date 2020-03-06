@@ -79,8 +79,8 @@ public interface Tasks {
       this.args = args;
       var empty = args.length == 0;
       this.snippet =
-          tool instanceof Snippet.Scribe
-              ? ((Snippet.Scribe) tool).toSnippet()
+          tool instanceof Scribe
+              ? ((Scribe) tool).toSnippet()
               : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
     }
 

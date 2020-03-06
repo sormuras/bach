@@ -971,25 +971,23 @@ public class Bach {
     }
   }
   interface GarbageCollect {}
-  public static final class Snippet {
-    interface Scribe {
-      Snippet toSnippet();
-      default String $(Object object) {
-        if (object == null) return "null";
-        return '"' + object.toString().replace("\\", "\\\\") + '"';
-      }
-      default String $(Path path) {
-        return "Path.of(" + $((Object) path) + ")";
-      }
-      default String $(String[] strings) {
-        if (strings.length == 0) return "";
-        if (strings.length == 1) return $(strings[0]);
-        if (strings.length == 2) return $(strings[0]) + ", " + $(strings[1]);
-        var joiner = new StringJoiner(", ");
-        for (var string : strings) joiner.add($(string));
-        return joiner.toString();
-      }
+  interface Scribe {
+    default String $(Object object) {
+      if (object == null) return "null";
+      return '"' + object.toString().replace("\\", "\\\\") + '"';
     }
+    default String $(Path path) {
+      return "Path.of(" + $((Object) path) + ")";
+    }
+    default String $(String[] strings) {
+      if (strings.length == 0) return "";
+      if (strings.length == 1) return $(strings[0]);
+      if (strings.length == 2) return $(strings[0]) + ", " + $(strings[1]);
+      return String.join(", ", strings);
+    }
+    Snippet toSnippet();
+  }
+  public static final class Snippet {
     public static Snippet of(String... lines) {
       return new Snippet(Set.of(), List.of(lines));
     }
@@ -1040,7 +1038,7 @@ public class Bach {
       return lines;
     }
   }
-  public static class Task implements Snippet.Scribe {
+  public static class Task implements Scribe {
     private final String title;
     private final boolean parallel;
     private final List<Task> children;
@@ -1110,8 +1108,8 @@ public class Bach {
         this.args = args;
         var empty = args.length == 0;
         this.snippet =
-            tool instanceof Snippet.Scribe
-                ? ((Snippet.Scribe) tool).toSnippet()
+            tool instanceof Scribe
+                ? ((Scribe) tool).toSnippet()
                 : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
       }
       @Override
@@ -1132,7 +1130,7 @@ public class Bach {
       }
     }
   }
-  abstract static class TestLauncher implements ToolProvider, GarbageCollect, Snippet.Scribe {
+  abstract static class TestLauncher implements ToolProvider, GarbageCollect, Scribe {
     static class ToolTester extends TestLauncher {
       ToolTester(Project project, Realm realm, Unit unit) {
         super("test(" + unit.name() + ")", project, realm, unit);

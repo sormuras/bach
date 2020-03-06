@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /** Provide test launch support. */
-abstract /*static*/ class TestLauncher implements ToolProvider, GarbageCollect, Snippet.Scribe {
+abstract /*static*/ class TestLauncher implements ToolProvider, GarbageCollect, Scribe {
 
   /** Test launcher running provided test tools. */
   static class ToolTester extends TestLauncher {
