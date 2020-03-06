@@ -17,11 +17,13 @@
 
 package de.sormuras.bach.execution;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.api.Projects;
 import org.junit.jupiter.api.Test;
+import test.base.jdk.Compilation;
 
 class BuildTaskGeneratorTests {
 
@@ -31,9 +33,12 @@ class BuildTaskGeneratorTests {
     var generator = new BuildTaskGenerator(project, true);
     assertSame(project, generator.project());
     assertTrue(generator.verbose());
-    var root = generator.get();
-    var program = Snippet.program(root);
-    assertTrue(program.size() > 10);
-    // program.forEach(System.out::println);
+    var program = Snippet.program(generator.get());
+    try {
+      assertDoesNotThrow(() -> Compilation.compile(program));
+    } catch (AssertionError e) {
+      program.forEach(System.err::println);
+      throw e;
+    }
   }
 }
