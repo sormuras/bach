@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.lang.System.Logger;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
@@ -1232,79 +1233,6 @@ public class Bach {
       return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
-  public static class Resources {
-    private final HttpClient client;
-    public Resources(HttpClient client) {
-      this.client = client;
-    }
-    public HttpResponse<Void> head(URI uri, int timeout) throws Exception {
-      var nobody = HttpRequest.BodyPublishers.noBody();
-      var duration = Duration.ofSeconds(timeout);
-      var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
-      return client.send(request, BodyHandlers.discarding());
-    }
-    public Path copy(URI uri, Path path, CopyOption... options) throws Exception {
-      Files.createDirectories(path.getParent());
-      if ("file".equals(uri.getScheme())) {
-        try {
-          return Files.copy(Path.of(uri), path, options);
-        } catch (Exception e) {
-          throw new IllegalArgumentException("copy file failed:" + uri, e);
-        }
-      }
-      var request = HttpRequest.newBuilder(uri).GET();
-      if (Files.exists(path) && Files.getFileStore(path).supportsFileAttributeView("user")) {
-        try {
-          var etagBytes = (byte[]) Files.getAttribute(path, "user:etag");
-          var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
-          request.setHeader("If-None-Match", etag);
-        } catch (Exception e) {
-        }
-      }
-      var handler = BodyHandlers.ofFile(path);
-      var response = client.send(request.build(), handler);
-      if (response.statusCode() == 200) {
-        if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
-          var etagHeader = response.headers().firstValue("etag");
-          if (etagHeader.isPresent()) {
-            if (Files.getFileStore(path).supportsFileAttributeView("user")) {
-              try {
-                var etag = etagHeader.get();
-                Files.setAttribute(path, "user:etag", StandardCharsets.UTF_8.encode(etag));
-              } catch (Exception e) {
-              }
-            }
-          } // else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
-          var lastModifiedHeader = response.headers().firstValue("last-modified");
-          if (lastModifiedHeader.isPresent()) {
-            try {
-              @SuppressWarnings("SpellCheckingInspection")
-              var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
-              var current = System.currentTimeMillis();
-              var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
-              var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
-              Files.setLastModifiedTime(path, fileTime);
-            } catch (Exception e) {
-            }
-          }
-        }
-        return path;
-      }
-      if (response.statusCode() == 304 /*Not Modified*/) return path;
-      throw new RuntimeException("response=" + response);
-    }
-    public String read(URI uri) throws Exception {
-      if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
-      var request = HttpRequest.newBuilder(uri).GET();
-      return client.send(request.build(), BodyHandlers.ofString()).body();
-    }
-  }
-  static class Main {
-    public static void main(String... args) {
-      System.out.println("Bach.java " + Bach.VERSION);
-      new Bach().build(project -> project.name("project")).assertSuccessful();
-    }
-  }
   public interface Modules {
     interface Patterns {
       Pattern NAME =
@@ -1374,6 +1302,87 @@ public class Bach {
       } catch (NullPointerException | URISyntaxException ignore) {
         return module.toString();
       }
+    }
+  }
+  public static class Resources {
+    private final Logger logger;
+    private final HttpClient client;
+    Resources(Logger logger, HttpClient client) {
+      this.logger = logger != null ? logger : System.getLogger(getClass().getName());
+      this.client = client;
+    }
+    public HttpResponse<Void> head(URI uri, int timeout) throws Exception {
+      var nobody = HttpRequest.BodyPublishers.noBody();
+      var duration = Duration.ofSeconds(timeout);
+      var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
+      return client.send(request, BodyHandlers.discarding());
+    }
+    public Path copy(URI uri, Path file, CopyOption... options) throws Exception {
+      logger.log(Level.DEBUG, "Copy {0} to {1}", uri, file);
+      Files.createDirectories(file.getParent());
+      if ("file".equals(uri.getScheme())) {
+        try {
+          return Files.copy(Path.of(uri), file, options);
+        } catch (Exception e) {
+          throw new IllegalArgumentException("copy file failed:" + uri, e);
+        }
+      }
+      var request = HttpRequest.newBuilder(uri).GET();
+      if (Files.exists(file) && Files.getFileStore(file).supportsFileAttributeView("user")) {
+        try {
+          var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
+          var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
+          request.setHeader("If-None-Match", etag);
+        } catch (Exception e) {
+          logger.log(Level.WARNING, "Couldn't get 'user:etag' file attribute: {0}", e);
+        }
+      }
+      var handler = BodyHandlers.ofFile(file);
+      var response = client.send(request.build(), handler);
+      if (response.statusCode() == 200) {
+        if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+          var etagHeader = response.headers().firstValue("etag");
+          if (etagHeader.isPresent()) {
+            if (Files.getFileStore(file).supportsFileAttributeView("user")) {
+              try {
+                var etag = etagHeader.get();
+                Files.setAttribute(file, "user:etag", StandardCharsets.UTF_8.encode(etag));
+              } catch (Exception e) {
+                logger.log(Level.WARNING, "Couldn't set 'user:etag' file attribute: {0}", e);
+              }
+            }
+          } else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
+          var lastModifiedHeader = response.headers().firstValue("last-modified");
+          if (lastModifiedHeader.isPresent()) {
+            try {
+              @SuppressWarnings("SpellCheckingInspection")
+              var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+              var current = System.currentTimeMillis();
+              var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
+              var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
+              Files.setLastModifiedTime(file, fileTime);
+            } catch (Exception e) {
+              logger.log(Level.WARNING, "Couldn't set last modified file attribute: {0}", e);
+            }
+          }
+        }
+        logger.log(Level.DEBUG, "{0} <- {1}", file, uri);
+        return file;
+      }
+      if (response.statusCode() == 304 /*Not Modified*/) return file;
+      throw new RuntimeException("response=" + response);
+    }
+    public String read(URI uri) throws Exception {
+      logger.log(Level.DEBUG, "Read {0}", uri);
+      if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
+      var request = HttpRequest.newBuilder(uri).GET();
+      return client.send(request.build(), BodyHandlers.ofString()).body();
+    }
+  }
+  static class Main {
+    public static void main(String... args) {
+      System.out.println("Bach.java " + Bach.VERSION);
+      new Bach().build(project -> project.name("project")).assertSuccessful();
     }
   }
   public static final class Summary {
