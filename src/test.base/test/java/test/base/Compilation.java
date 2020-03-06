@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package test.base.jdk;
+package test.base;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.api.Projects;
 import org.junit.jupiter.api.Test;
-import test.base.jdk.Compilation;
+import test.base.Compilation;
 
 class BuildTaskGeneratorTests {
 
