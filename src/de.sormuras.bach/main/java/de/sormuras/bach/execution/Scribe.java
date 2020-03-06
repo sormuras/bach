@@ -1,6 +1,7 @@
 package de.sormuras.bach.execution;
 
 import java.nio.file.Path;
+import java.util.StringJoiner;
 
 /** Snippet producer and default Java source code helpers. */
 interface Scribe {
@@ -21,7 +22,9 @@ interface Scribe {
     if (strings.length == 0) return "";
     if (strings.length == 1) return $(strings[0]);
     if (strings.length == 2) return $(strings[0]) + ", " + $(strings[1]);
-    return String.join(", ", strings);
+    var joiner = new StringJoiner(", ");
+    for(var string : strings) joiner.add($(string));
+    return joiner.toString();
   }
 
   /** Return source code snippet. */
