@@ -22,100 +22,85 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
 
-  final Project project =
-      Project.builder()
-          .name("name")
-          .version("99")
-          .base("")
-          .units(List.of())
-          .realms(List.of())
-          .tuner(new Tuner())
-          .build();
+  @Nested
+  class Project99 {
 
-  @Test
-  void name() {
-    assertEquals("name", project.name());
-  }
+    final Project project = Projects.newProject("project", "99");
 
-  @Test
-  void version() {
-    assertEquals("99", project.version().toString());
-  }
+    @Test
+    void name() {
+      assertEquals("project", project.name());
+    }
 
-  @Test
-  void toNameAndVersion() {
-    assertEquals("name 99", project.toNameAndVersion());
-  }
+    @Test
+    void version() {
+      assertEquals("99", project.version().toString());
+    }
 
-  @Test
-  void toJarName() {
-    var unit =
-        new Unit(
-            Path.of("module-info.java"),
-            ModuleDescriptor.newModule("unit").build(),
-            Path.of("."),
-            List.of(Source.of(Path.of(""))),
-            List.of());
-    assertEquals("unit-99.jar", project.toJarName(unit, ""));
-    assertEquals("unit-99-classifier.jar", project.toJarName(unit, "classifier"));
-  }
+    @Test
+    void toNameAndVersion() {
+      assertEquals("project 99", project.toNameAndVersion());
+    }
 
-  @Test
-  void toModularJar() {
-    var realm = new Realm("realm", 0, List.of(), List.of());
-    var unit =
-        new Unit(
-            Path.of("module-info.java"),
-            ModuleDescriptor.newModule("unit").build(),
-            Path.of("."),
-            List.of(Source.of(Path.of(""))),
-            List.of());
-    assertEquals(Path.of(".bach/modules/realm", "unit-99.jar"), project.toModularJar(realm, unit));
-  }
+    @Test
+    void toJarName() {
+      var unit = Projects.unit("unit", "");
+      assertEquals("unit-99.jar", project.toJarName(unit, ""));
+      assertEquals("unit-99-classifier.jar", project.toJarName(unit, "classifier"));
+    }
 
-  @Test
-  void paths() {
-    var realm = new Realm("realm", 0, List.of(), List.of());
-    var paths = project.paths();
-    assertEquals(Path.of(""), paths.base());
-    assertEquals(Path.of(".bach"), paths.out());
-    assertEquals(Path.of("lib"), paths.lib());
-    assertEquals(Path.of(".bach/first/more"), paths.out("first", "more"));
-    assertEquals(Path.of(".bach/classes/realm"), paths.classes(realm));
-    assertEquals(Path.of(".bach/modules/realm"), paths.modules(realm));
-    assertEquals(Path.of(".bach/sources/realm"), paths.sources(realm));
-    assertEquals(Path.of(".bach/documentation/javadoc"), paths.javadoc());
-  }
+    @Test
+    void toModularJar() {
+      var realm = Projects.realm("");
+      var unit = Projects.unit("unit", "");
+      var actual = project.toModularJar(realm, unit);
+      assertEquals(Path.of(".bach/modules", "unit-99.jar"), actual);
+    }
 
-  @Test
-  void units() {
-    assertTrue(project.structure().units().isEmpty());
-  }
+    @Test
+    void paths() {
+      var realm = new Realm("realm", 0, List.of(), List.of());
+      var paths = project.paths();
+      assertEquals(Path.of(""), paths.base());
+      assertEquals(Path.of(".bach"), paths.out());
+      assertEquals(Path.of("lib"), paths.lib());
+      assertEquals(Path.of(".bach/first/more"), paths.out("first", "more"));
+      assertEquals(Path.of(".bach/classes/realm"), paths.classes(realm));
+      assertEquals(Path.of(".bach/modules/realm"), paths.modules(realm));
+      assertEquals(Path.of(".bach/sources/realm"), paths.sources(realm));
+      assertEquals(Path.of(".bach/documentation/javadoc"), paths.javadoc());
+    }
 
-  @Test
-  void realms() {
-    assertTrue(project.structure().realms().isEmpty());
-  }
+    @Test
+    void units() {
+      assertTrue(project.structure().units().isEmpty());
+    }
 
-  @Test
-  void tuner() {
-    var tuner = project.tuner();
-    assertNotNull(tuner);
-    assertSame(Tuner.class, tuner.getClass());
-  }
+    @Test
+    void realms() {
+      assertTrue(project.structure().realms().isEmpty());
+    }
 
-  @Test
-  void library() {
-    var library = project.library();
-    assertNotNull(library);
-    assertTrue(library.requires().isEmpty());
-    assertTrue(library.map().isEmpty());
+    @Test
+    void tuner() {
+      var tuner = project.tuner();
+      assertNotNull(tuner);
+      assertSame(Tuner.class, tuner.getClass());
+    }
+
+    @Test
+    void library() {
+      var library = project.library();
+      assertNotNull(library);
+      assertTrue(library.requires().isEmpty());
+      assertTrue(library.map().isEmpty());
+    }
   }
 }

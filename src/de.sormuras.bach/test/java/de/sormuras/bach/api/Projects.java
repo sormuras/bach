@@ -29,31 +29,20 @@ import java.util.stream.Stream;
 /** Bach API helpers. */
 public class Projects {
 
-  public static Realm newRealm(
-      String name, int feature, List<String> modules, List<Realm> requires, Flag... flags) {
-    var units = modules.stream().map(module -> newUnit(module, name)).collect(Collectors.toList());
-    return new Realm(name, feature, units, requires, flags);
-  }
-
-  public static Unit newUnit(String module, String realm) {
-    return new Unit(
-        Path.of("src", module, realm, "java", "module-info.java"),
-        ModuleDescriptor.newModule(module).build(),
-        Path.of("src", "{MODULE}", realm, "java"),
-        List.of(Source.of(Path.of("src", module, realm, "java"))),
-        List.of(Path.of("src", module, realm, "resources")));
+  public static Project newProject(String name, String version) {
+    return Project.builder().name(name).version(version).build();
   }
 
   public static Project newProjectWithAllBellsAndWhistles() {
     var main =
-        newRealm(
+        realm(
             "main",
             0,
             List.of("alpha", "beta", "gamma", "delta", "omega"),
             List.of(),
             Flag.CREATE_JAVADOC);
     var test =
-        newRealm(
+        realm(
             "test",
             0,
             List.of("test", "beta"),
@@ -76,5 +65,24 @@ public class Projects {
                 "foo",
                 Maven.central("org.foo", "foo", "2")))
         .build();
+  }
+
+  static Realm realm(String name) {
+    return realm(name, 0, List.of(), List.of());
+  }
+
+  static Realm realm(
+      String name, int feature, List<String> modules, List<Realm> requires, Flag... flags) {
+    var units = modules.stream().map(module -> unit(module, name)).collect(Collectors.toList());
+    return new Realm(name, feature, units, requires, flags);
+  }
+
+  static Unit unit(String module, String realm) {
+    return new Unit(
+        Path.of("src", module, realm, "java", "module-info.java"),
+        ModuleDescriptor.newModule(module).build(),
+        Path.of("src", "{MODULE}", realm, "java"),
+        List.of(Source.of(Path.of("src", module, realm, "java"))),
+        List.of(Path.of("src", module, realm, "resources")));
   }
 }
