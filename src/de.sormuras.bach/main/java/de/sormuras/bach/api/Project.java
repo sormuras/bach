@@ -18,10 +18,15 @@
 package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /** Bach's project model. */
 public /*static*/ final class Project {
@@ -34,11 +39,13 @@ public /*static*/ final class Project {
   private final String name;
   private final Version version;
   private final Structure structure;
+  private final Library library;
 
-  private Project(String name, Version version, Structure structure) {
+  private Project(String name, Version version, Structure structure, Library library) {
     this.name = Objects.requireNonNull(name, "name");
     this.version = version;
     this.structure = Objects.requireNonNull(structure, "structure");
+    this.library = Objects.requireNonNull(library, "library");
   }
 
   public String name() {
@@ -51,6 +58,10 @@ public /*static*/ final class Project {
 
   public Structure structure() {
     return structure;
+  }
+
+  public Library library() {
+    return library;
   }
 
   public Paths paths() {
@@ -85,10 +96,14 @@ public /*static*/ final class Project {
 
     private String name;
     private Version version;
+
     private Paths paths;
     private List<Unit> units;
     private List<Realm> realms;
     private Tuner tuner;
+
+    private Set<String> libraryRequires;
+    private Map<String, URI> libraryMap;
 
     private Builder() {
       name(null);
@@ -97,11 +112,14 @@ public /*static*/ final class Project {
       units(List.of());
       realms(List.of());
       tuner(new Tuner());
+      requires(Set.of());
+      map(Map.of());
     }
 
     public Project build() {
       var structure = new Structure(paths, units, realms, tuner);
-      return new Project(name, version, structure);
+      var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryMap));
+      return new Project(name, version, structure, library);
     }
 
     public Builder name(String name) {
@@ -143,6 +161,16 @@ public /*static*/ final class Project {
 
     public Builder tuner(Tuner tuner) {
       this.tuner = tuner;
+      return this;
+    }
+
+    public Builder requires(Set<String> libraryRequires) {
+      this.libraryRequires = libraryRequires;
+      return this;
+    }
+
+    public Builder map(Map<String, URI> libraryMap) {
+      this.libraryMap = libraryMap;
       return this;
     }
   }

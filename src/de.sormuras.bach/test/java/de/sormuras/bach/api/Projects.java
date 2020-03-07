@@ -21,6 +21,8 @@ import de.sormuras.bach.api.Realm.Flag;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,6 +67,13 @@ public class Projects {
         .version("0.1-ea+3")
         .units(units)
         .realms(List.of(main, test))
+        .requires(Set.of("foo", "bar"))
+        .map(
+            Map.of(
+                "bar",
+                Maven.central("com.bar", "bar", "1"),
+                "foo",
+                Maven.central("org.foo", "foo", "2")))
         .build();
   }
 }

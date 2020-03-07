@@ -110,4 +110,12 @@ class ProjectTests {
     assertNotNull(tuner);
     assertSame(Tuner.class, tuner.getClass());
   }
+
+  @Test
+  void library() {
+    var library = project.library();
+    assertNotNull(library);
+    assertTrue(library.requires().isEmpty());
+    assertTrue(library.map().isEmpty());
+  }
 }
