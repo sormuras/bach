@@ -33,7 +33,7 @@ class ProjectTests {
       Project.builder()
           .name("name")
           .version("99")
-          .paths("")
+          .base("")
           .units(List.of())
           .realms(List.of())
           .tuner(new Tuner())

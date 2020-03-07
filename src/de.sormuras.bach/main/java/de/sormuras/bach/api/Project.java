@@ -108,7 +108,7 @@ public /*static*/ final class Project {
     private Builder() {
       name(null);
       version((Version) null);
-      paths("");
+      base("");
       units(List.of());
       realms(List.of());
       tuner(new Tuner());
@@ -141,12 +141,12 @@ public /*static*/ final class Project {
       return this;
     }
 
-    public Builder paths(Path base) {
+    public Builder base(Path base) {
       return paths(Paths.of(base));
     }
 
-    public Builder paths(String base) {
-      return paths(Path.of(base));
+    public Builder base(String base) {
+      return base(Path.of(base));
     }
 
     public Builder units(List<Unit> units) {

@@ -63,6 +63,7 @@ public class Projects {
     var units =
         Stream.of(main.units(), test.units()).flatMap(List::stream).collect(Collectors.toList());
     return Project.builder()
+        .base("")
         .name("bells.and.whistles")
         .version("0.1-ea+3")
         .units(units)
