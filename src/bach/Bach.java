@@ -59,6 +59,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -185,6 +186,20 @@ public class Bach {
           .filter(triggers::contains)
           .findAny()
           .ifPresent(__ -> modules.put("org.junit.platform.console", null));
+    }
+  }
+  public static final class Library {
+    private final Set<String> requires;
+    private final Map<String, URI> map;
+    public Library(Set<String> requires, Map<String, URI> map) {
+      this.requires = Objects.requireNonNull(requires,"requires");
+      this.map = Objects.requireNonNull(map, "map");
+    }
+    public Set<String> requires() {
+      return requires;
+    }
+    public Map<String, URI> map() {
+      return map;
     }
   }
   public interface Maven {
@@ -320,10 +335,12 @@ public class Bach {
     private final String name;
     private final Version version;
     private final Structure structure;
-    private Project(String name, Version version, Structure structure) {
+    private final Library library;
+    private Project(String name, Version version, Structure structure, Library library) {
       this.name = Objects.requireNonNull(name, "name");
       this.version = version;
       this.structure = Objects.requireNonNull(structure, "structure");
+      this.library = Objects.requireNonNull(library, "library");
     }
     public String name() {
       return name;
@@ -333,6 +350,9 @@ public class Bach {
     }
     public Structure structure() {
       return structure;
+    }
+    public Library library() {
+      return library;
     }
     public Paths paths() {
       return structure().paths();
@@ -361,17 +381,22 @@ public class Bach {
       private List<Unit> units;
       private List<Realm> realms;
       private Tuner tuner;
+      private Set<String> libraryRequires;
+      private Map<String, URI> libraryMap;
       private Builder() {
         name(null);
         version((Version) null);
-        paths("");
+        base("");
         units(List.of());
         realms(List.of());
         tuner(new Tuner());
+        requires(Set.of());
+        map(Map.of());
       }
       public Project build() {
         var structure = new Structure(paths, units, realms, tuner);
-        return new Project(name, version, structure);
+        var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryMap));
+        return new Project(name, version, structure, library);
       }
       public Builder name(String name) {
         this.name = name;
@@ -388,11 +413,11 @@ public class Bach {
         this.paths = paths;
         return this;
       }
-      public Builder paths(Path base) {
+      public Builder base(Path base) {
         return paths(Paths.of(base));
       }
-      public Builder paths(String base) {
-        return paths(Path.of(base));
+      public Builder base(String base) {
+        return base(Path.of(base));
       }
       public Builder units(List<Unit> units) {
         this.units = units;
@@ -404,6 +429,14 @@ public class Bach {
       }
       public Builder tuner(Tuner tuner) {
         this.tuner = tuner;
+        return this;
+      }
+      public Builder requires(Set<String> libraryRequires) {
+        this.libraryRequires = libraryRequires;
+        return this;
+      }
+      public Builder map(Map<String, URI> libraryMap) {
+        this.libraryMap = libraryMap;
         return this;
       }
     }
