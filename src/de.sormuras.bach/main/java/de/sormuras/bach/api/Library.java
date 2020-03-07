@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.api;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -26,18 +25,18 @@ import java.util.Set;
 public /*static*/ final class Library {
 
   private final Set<String> requires;
-  private final Map<String, URI> map;
+  private final Map<String, Link> links;
 
-  public Library(Set<String> requires, Map<String, URI> map) {
+  public Library(Set<String> requires, Map<String, Link> links) {
     this.requires = Objects.requireNonNull(requires,"requires");
-    this.map = Objects.requireNonNull(map, "map");
+    this.links = Objects.requireNonNull(links, "links");
   }
 
   public Set<String> requires() {
     return requires;
   }
 
-  public Map<String, URI> map() {
-    return map;
+  public Map<String, Link> links() {
+    return links;
   }
 }

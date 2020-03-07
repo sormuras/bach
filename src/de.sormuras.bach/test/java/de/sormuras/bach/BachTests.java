@@ -157,13 +157,13 @@ class BachTests {
   class ExceptionTests {
 
     @Test
-    void checkUnmappedModuleException() {
-      var exception = assertThrows(UnmappedModuleException.class, this::throwUnmappedFooException);
-      assertEquals("Module foo is not mapped", exception.getMessage());
+    void checkUnlinkedModuleException() {
+      var exception = assertThrows(UnlinkedModuleException.class, this::throwUnlinkedFooException);
+      assertEquals("Module foo is not linked", exception.getMessage());
     }
 
-    private void throwUnmappedFooException() {
-      throw new UnmappedModuleException("foo");
+    private void throwUnlinkedFooException() {
+      throw new UnlinkedModuleException("foo");
     }
   }
 

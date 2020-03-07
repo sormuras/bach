@@ -19,11 +19,13 @@ package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -100,7 +102,41 @@ class ProjectTests {
       var library = project.library();
       assertNotNull(library);
       assertTrue(library.requires().isEmpty());
-      assertTrue(library.map().isEmpty());
+      assertTrue(library.links().isEmpty());
+    }
+  }
+
+  @Nested
+  class ProjectWithAllBellsAndWhistles {
+
+    final Project project = Projects.newProjectWithAllBellsAndWhistles();
+
+    @Test
+    void library() {
+      var library = project.library();
+      assertEquals(Set.of("bar", "foo"), library.requires());
+      var links = library.links();
+      assertEquals(Set.of("bar", "foo", "foo.core", "foo.fighter"), links.keySet());
+      var bar = links.get("bar");
+      assertEquals(Maven.central("com.bar", "bar", "1"), bar.uri());
+      assertNull(bar.group());
+      assertNull(bar.artifact());
+      assertNull(bar.version());
+      var foo = links.get("foo");
+      assertNull(foo.uri());
+      assertEquals("org.foo", foo.group());
+      assertEquals("foo", foo.artifact());
+      assertEquals("2", foo.version());
+      var fooCore = links.get("foo.core");
+      assertNull(fooCore.uri());
+      assertEquals("org.foo", fooCore.group());
+      assertEquals("core", fooCore.artifact());
+      assertNull(fooCore.version()); // latest version
+      var fooFighter = links.get("foo.fighter");
+      assertNull(fooFighter.uri());
+      assertNull(fooFighter.group()); // well-know group
+      assertNull(fooFighter.artifact()); // well-known artifact
+      assertEquals("3", fooFighter.version());
     }
   }
 }

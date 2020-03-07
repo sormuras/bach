@@ -18,7 +18,6 @@
 package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +102,7 @@ public /*static*/ final class Project {
     private Tuner tuner;
 
     private Set<String> libraryRequires;
-    private Map<String, URI> libraryMap;
+    private Map<String, Link> libraryLinks;
 
     private Builder() {
       name(null);
@@ -113,12 +112,12 @@ public /*static*/ final class Project {
       realms(List.of());
       tuner(new Tuner());
       requires(Set.of());
-      map(Map.of());
+      links(Map.of());
     }
 
     public Project build() {
       var structure = new Structure(paths, units, realms, tuner);
-      var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryMap));
+      var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryLinks));
       return new Project(name, version, structure, library);
     }
 
@@ -169,8 +168,8 @@ public /*static*/ final class Project {
       return this;
     }
 
-    public Builder map(Map<String, URI> libraryMap) {
-      this.libraryMap = libraryMap;
+    public Builder links(Map<String, Link> libraryLinks) {
+      this.libraryLinks = libraryLinks;
       return this;
     }
   }

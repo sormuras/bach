@@ -17,11 +17,11 @@
 
 package de.sormuras.bach;
 
-/** Unchecked exception thrown when a module is not mapped. */
-public /*static*/ class UnmappedModuleException extends RuntimeException {
+/** Unchecked exception thrown when a module is not linked. */
+public /*static*/ class UnlinkedModuleException extends RuntimeException {
   private static final long serialVersionUID = 0L;
 
-  public UnmappedModuleException(String module) {
-    super("Module " + module + " is not mapped");
+  public UnlinkedModuleException(String module) {
+    super("Module " + module + " is not linked");
   }
 }

@@ -57,13 +57,18 @@ public class Projects {
         .version("0.1-ea+3")
         .units(units)
         .realms(List.of(main, test))
+        .tuner(new Tuner())
         .requires(Set.of("foo", "bar"))
-        .map(
+        .links(
             Map.of(
                 "bar",
-                Maven.central("com.bar", "bar", "1"),
+                Link.direct(Maven.central("com.bar", "bar", "1")),
                 "foo",
-                Maven.central("org.foo", "foo", "2")))
+                Link.maven("org.foo", "foo", "2"),
+                "foo.core", // "latest" version
+                Link.maven("org.foo", "core"),
+                "foo.fighter", // "group:artifact" are well-known
+                Link.version("3")))
         .build();
   }
 
