@@ -187,6 +187,89 @@ public class Bach {
           .ifPresent(__ -> modules.put("org.junit.platform.console", null));
     }
   }
+  public interface Maven {
+    static Resource.Builder newResource() {
+      return new Resource.Builder();
+    }
+    static URI central(String group, String artifact, String version) {
+      var resource = newResource().repository("https://repo.maven.apache.org/maven2");
+      return resource.group(group).artifact(artifact).version(version).build().get();
+    }
+    final class Resource implements Supplier<URI> {
+      private final String repository;
+      private final String group;
+      private final String artifact;
+      private final String version;
+      private final String classifier;
+      private final String type;
+      public Resource(
+          String repository,
+          String group,
+          String artifact,
+          String version,
+          String classifier,
+          String type) {
+        this.repository = repository;
+        this.group = group;
+        this.artifact = artifact;
+        this.version = version;
+        this.classifier = classifier;
+        this.type = type;
+      }
+      @Override
+      public URI get() {
+        Objects.requireNonNull(repository, "repository");
+        Objects.requireNonNull(group, "group");
+        Objects.requireNonNull(artifact, "artifact");
+        Objects.requireNonNull(version, "version");
+        var filename = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
+        return URI.create(
+            new StringJoiner("/")
+                .add(repository)
+                .add(group.replace('.', '/'))
+                .add(artifact)
+                .add(version)
+                .add(filename + '.' + type)
+                .toString());
+      }
+      public static class Builder {
+        private String repository;
+        private String group;
+        private String artifact;
+        private String version;
+        private String classifier = "";
+        private String type = "jar";
+        private Builder() {}
+        public Resource build() {
+          return new Resource(repository, group, artifact, version, classifier, type);
+        }
+        public Builder repository(String repository) {
+          this.repository = Objects.requireNonNull(repository, "repository");
+          return this;
+        }
+        public Builder group(String group) {
+          this.group = Objects.requireNonNull(group, "group");
+          return this;
+        }
+        public Builder artifact(String artifact) {
+          this.artifact = Objects.requireNonNull(artifact, "artifact");
+          return this;
+        }
+        public Builder version(String version) {
+          this.version = Objects.requireNonNull(version, "version");
+          return this;
+        }
+        public Builder classifier(String classifier) {
+          this.classifier = Objects.requireNonNull(classifier, "classifier");
+          return this;
+        }
+        public Builder type(String type) {
+          this.type = Objects.requireNonNull(type, "type");
+          return this;
+        }
+      }
+    }
+  }
   public static final class Paths {
     private static final Path CLASSES = Path.of("classes");
     private static final Path MODULES = Path.of("modules");
