@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -190,24 +191,51 @@ public class Bach {
   }
   public static final class Library {
     private final Set<String> requires;
-    private final Map<String, URI> map;
-    public Library(Set<String> requires, Map<String, URI> map) {
-      this.requires = Objects.requireNonNull(requires,"requires");
-      this.map = Objects.requireNonNull(map, "map");
+    private final List<Locator> locators;
+    public Library(Set<String> requires, List<Locator> locators) {
+      this.requires = Objects.requireNonNull(requires, "requires");
+      this.locators = Objects.requireNonNull(locators, "locators");
     }
     public Set<String> requires() {
       return requires;
     }
-    public Map<String, URI> map() {
-      return map;
+    public List<Locator> locators() {
+      return locators;
+    }
+    public URI uri(String module) {
+      for (var locator : locators) {
+        var located = locator.locate(module);
+        if (located.isPresent()) return located.get();
+      }
+      throw new FindException("Module " + module + " not locatable via: " + locators());
+    }
+  }
+  @FunctionalInterface
+  public interface Locator {
+    Optional<URI> locate(String module);
+    static Locator direct(Map<String, URI> uris) {
+      return new DirectLocator(uris);
+    }
+    static Locator dynamicCentral(Map<String, String> variants) {
+      return dynamicRepository(Maven.CENTRAL_REPOSITORY, variants);
+    }
+    static Locator dynamicRepository(String repository, Map<String, String> variants) {
+      return new DynamicLocator(repository, variants);
+    }
+    static Locator mavenCentral(Map<String, String> coordinates) {
+      return mavenRepository(Maven.CENTRAL_REPOSITORY, coordinates);
+    }
+    static Locator mavenRepository(String repository, Map<String, String> coordinates) {
+      return new CoordinatesLocator(repository, coordinates);
     }
   }
   public interface Maven {
+    String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
     static Resource.Builder newResource() {
       return new Resource.Builder();
     }
     static URI central(String group, String artifact, String version) {
-      var resource = newResource().repository("https://repo.maven.apache.org/maven2");
+      var resource = newResource().repository(CENTRAL_REPOSITORY);
       return resource.group(group).artifact(artifact).version(version).build().get();
     }
     final class Resource implements Supplier<URI> {
@@ -381,8 +409,8 @@ public class Bach {
       private List<Unit> units;
       private List<Realm> realms;
       private Tuner tuner;
-      private Set<String> libraryRequires;
-      private Map<String, URI> libraryMap;
+      private Set<String> requires;
+      private List<Locator> locators;
       private Builder() {
         name(null);
         version((Version) null);
@@ -391,11 +419,11 @@ public class Bach {
         realms(List.of());
         tuner(new Tuner());
         requires(Set.of());
-        map(Map.of());
+        locators(List.of());
       }
       public Project build() {
         var structure = new Structure(paths, units, realms, tuner);
-        var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryMap));
+        var library = new Library(new TreeSet<>(requires), locators);
         return new Project(name, version, structure, library);
       }
       public Builder name(String name) {
@@ -432,11 +460,11 @@ public class Bach {
         return this;
       }
       public Builder requires(Set<String> libraryRequires) {
-        this.libraryRequires = libraryRequires;
+        this.requires = libraryRequires;
         return this;
       }
-      public Builder map(Map<String, URI> libraryMap) {
-        this.libraryMap = libraryMap;
+      public Builder locators(List<Locator> libraryLocators) {
+        this.locators = libraryLocators;
         return this;
       }
     }
@@ -1349,6 +1377,92 @@ public class Bach {
       return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
+  public static class CoordinatesLocator implements Locator {
+    private final String repository;
+    private final Map<String, String> coordinates;
+    public CoordinatesLocator(String repository, Map<String, String> coordinates) {
+      this.repository = Objects.requireNonNull(repository, "repository");
+      this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
+    }
+    @Override
+    public Optional<URI> locate(String module) {
+      var coordinate = coordinates.get(module);
+      if (coordinate == null) return Optional.empty();
+      var split = coordinate.split(":");
+      var resource = Maven.newResource().repository(repository);
+      resource.group(split[0]).artifact(split[1]).version(split[2]);
+      resource.classifier(split.length < 4 ? "" : split[3]);
+      return Optional.of(resource.build().get());
+    }
+  }
+  public static class DirectLocator implements Locator {
+    private final Map<String, URI> uris;
+    public DirectLocator(Map<String, URI> uris) {
+      this.uris = Objects.requireNonNull(uris, "uris");
+    }
+    @Override
+    public Optional<URI> locate(String module) {
+      return Optional.ofNullable(uris.get(module));
+    }
+  }
+  public static class DynamicLocator implements Locator {
+    private final String repository;
+    private final Map<String, String> variants;
+    public DynamicLocator(String repository, Map<String, String> variants) {
+      this.repository = repository;
+      this.variants = variants;
+    }
+    @Override
+    public Optional<URI> locate(String module) {
+      var group = computeGroup(module);
+      if (group == null) return Optional.empty();
+      var artifact = computeArtifact(module, group);
+      if (artifact == null) return Optional.empty();
+      var version = variants.getOrDefault(module, computeVersion(module, group, artifact));
+      if (version == null) return Optional.empty();
+      var resource =
+          Maven.newResource()
+              .repository(repository)
+              .group(group)
+              .artifact(artifact)
+              .version(version)
+              .classifier(computeClassifier(module, group, artifact, version));
+      return Optional.of(resource.build().get());
+    }
+    String computeGroup(String module) {
+      if (module.startsWith("org.junit.platform")) return "org.junit.platform";
+      if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+      if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
+      switch (module) {
+        case "junit":
+          return "junit";
+      }
+      return null;
+    }
+    String computeArtifact(String module, String group) {
+      if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
+      switch (module) {
+        case "junit":
+          return "junit";
+      }
+      return null;
+    }
+    String computeVersion(String module, String group, String artifact) {
+      switch (group) {
+        case "junit":
+          return "4.13";
+        case "org.junit.jupiter":
+        case "org.junit.vintage":
+          return "5.6.0";
+        case "org.junit.platform":
+          return "1.6.0";
+      }
+      return null;
+    }
+    String computeClassifier(String module, String group, String artifact, String version) {
+      return "";
+    }
+  }
   public interface Modules {
     interface Patterns {
       Pattern NAME =
@@ -1423,7 +1537,7 @@ public class Bach {
   public static class Resources {
     private final Logger logger;
     private final HttpClient client;
-    Resources(Logger logger, HttpClient client) {
+    public Resources(Logger logger, HttpClient client) {
       this.logger = logger != null ? logger : System.getLogger(getClass().getName());
       this.client = client;
     }
@@ -1493,6 +1607,62 @@ public class Bach {
       if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
+    }
+  }
+  public static class SormurasModulesLocator implements Locator {
+    private final Map<String, String> moduleMaven;
+    private final Map<String, String> moduleVersion;
+    private final Map<String, String> variants;
+    public SormurasModulesLocator(Map<String, String> variants, Resources resources) {
+      this.variants = variants;
+      try {
+        this.moduleMaven = load(resources, "module-maven.properties");
+        this.moduleVersion = load(resources, "module-version.properties");
+      } catch (Exception e) {
+        throw new IllegalStateException();
+      }
+    }
+    @Override
+    public Optional<URI> locate(String module) {
+      var maven = moduleMaven.get(module);
+      if (maven == null) return Optional.empty();
+      var indexOfColon = maven.indexOf(':');
+      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+      var version = variants.getOrDefault(module, moduleVersion.get(module));
+      if (version == null) return Optional.empty();
+      var resource =
+          Maven.newResource()
+              .repository(Maven.CENTRAL_REPOSITORY)
+              .group(maven.substring(0, indexOfColon))
+              .artifact(maven.substring(indexOfColon + 1))
+              .version(version);
+      return Optional.of(resource.build().get());
+    }
+    private static final String ROOT = "https://github.com/sormuras/modules";
+    private static Map<String, String> load(Resources resources, String properties) throws Exception {
+      var user = Path.of(System.getProperty("user.home"));
+      var cache = Files.createDirectories(user.resolve(".bach/modules"));
+      var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+      var target = cache.resolve(properties);
+      var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+      return map(load(new Properties(), path));
+    }
+    private static Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (Exception e) {
+          throw new RuntimeException("Load properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+    private static Map<String, String> map(Properties properties) {
+      var map = new TreeMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        map.put(name, properties.getProperty(name));
+      }
+      return map;
     }
   }
   static class Main {
@@ -1711,12 +1881,6 @@ public class Bach {
         this.task = task;
         this.result = result;
       }
-    }
-  }
-  public static class UnmappedModuleException extends RuntimeException {
-    private static final long serialVersionUID = 0L;
-    public UnmappedModuleException(String module) {
-      super("Module " + module + " is not mapped");
     }
   }
 }
