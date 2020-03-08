@@ -52,7 +52,12 @@ class BachTests {
   @Test
   @SwallowSystem
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
-    Bach.main();
+    try {
+      System.setProperty("ry-run", "");
+      Bach.main();
+    } finally {
+      System.clearProperty("ry-run");
+    }
     assertTrue(streams.errors().isEmpty());
     assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
   }

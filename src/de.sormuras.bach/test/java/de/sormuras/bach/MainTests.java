@@ -33,7 +33,12 @@ class MainTests {
   @Test
   @SwallowSystem
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
-    Main.main();
+    try {
+      System.setProperty("ry-run", "");
+      Main.main();
+    } finally {
+      System.clearProperty("ry-run");
+    }
     assertTrue(streams.errors().isEmpty());
     assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
   }
