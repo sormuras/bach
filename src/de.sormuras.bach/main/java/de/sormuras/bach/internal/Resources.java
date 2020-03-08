@@ -42,7 +42,7 @@ public /*static*/ class Resources {
   private final Logger logger;
   private final HttpClient client;
 
-  Resources(Logger logger, HttpClient client) {
+  public Resources(Logger logger, HttpClient client) {
     this.logger = logger != null ? logger : System.getLogger(getClass().getName());
     this.client = client;
   }
