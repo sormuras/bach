@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import test.base.SwallowSystem;
 
 class MainTests {
@@ -32,6 +34,7 @@ class MainTests {
 
   @Test
   @SwallowSystem
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
     try {
       System.setProperty("ry-run", "");

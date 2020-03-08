@@ -39,6 +39,8 @@ import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import test.base.Log;
 import test.base.SwallowSystem;
 
@@ -51,6 +53,7 @@ class BachTests {
 
   @Test
   @SwallowSystem
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
     try {
       System.setProperty("ry-run", "");
@@ -98,6 +101,7 @@ class BachTests {
   }
 
   @Test
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void executeLocalTasks(@TempDir Path temp) throws Exception {
     var log = new Log();
     var bach = new Bach(log, true, false);
