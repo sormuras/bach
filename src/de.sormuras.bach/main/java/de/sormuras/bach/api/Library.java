@@ -17,7 +17,9 @@
 
 package de.sormuras.bach.api;
 
-import java.util.Map;
+import java.lang.module.FindException;
+import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -25,18 +27,26 @@ import java.util.Set;
 public /*static*/ final class Library {
 
   private final Set<String> requires;
-  private final Map<String, Link> links;
+  private final List<Locator> locators;
 
-  public Library(Set<String> requires, Map<String, Link> links) {
-    this.requires = Objects.requireNonNull(requires,"requires");
-    this.links = Objects.requireNonNull(links, "links");
+  public Library(Set<String> requires, List<Locator> locators) {
+    this.requires = Objects.requireNonNull(requires, "requires");
+    this.locators = Objects.requireNonNull(locators, "locators");
   }
 
   public Set<String> requires() {
     return requires;
   }
 
-  public Map<String, Link> links() {
-    return links;
+  public List<Locator> locators() {
+    return locators;
+  }
+
+  public URI uri(String module) {
+    for (var locator : locators) {
+      var located = locator.locate(module);
+      if (located.isPresent()) return located.get();
+    }
+    throw new FindException("Module " + module + " not locatable via: " + locators());
   }
 }

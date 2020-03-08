@@ -101,8 +101,8 @@ public /*static*/ final class Project {
     private List<Realm> realms;
     private Tuner tuner;
 
-    private Set<String> libraryRequires;
-    private Map<String, Link> libraryLinks;
+    private Set<String> requires;
+    private List<Locator> locators;
 
     private Builder() {
       name(null);
@@ -112,12 +112,12 @@ public /*static*/ final class Project {
       realms(List.of());
       tuner(new Tuner());
       requires(Set.of());
-      links(Map.of());
+      locators(List.of());
     }
 
     public Project build() {
       var structure = new Structure(paths, units, realms, tuner);
-      var library = new Library(new TreeSet<>(libraryRequires), new TreeMap<>(libraryLinks));
+      var library = new Library(new TreeSet<>(requires), locators);
       return new Project(name, version, structure, library);
     }
 
@@ -164,12 +164,12 @@ public /*static*/ final class Project {
     }
 
     public Builder requires(Set<String> libraryRequires) {
-      this.libraryRequires = libraryRequires;
+      this.requires = libraryRequires;
       return this;
     }
 
-    public Builder links(Map<String, Link> libraryLinks) {
-      this.libraryLinks = libraryLinks;
+    public Builder locators(List<Locator> libraryLocators) {
+      this.locators = libraryLocators;
       return this;
     }
   }
