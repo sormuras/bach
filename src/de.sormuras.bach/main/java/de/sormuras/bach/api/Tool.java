@@ -43,7 +43,7 @@ public interface Tool {
 
   static String join(Collection<Path> paths) {
     return paths.stream()
-        .map(Path::toString)
+        .map(Path::toString) // TODO Move replace() to after join()
         .map(string -> string.replace("{MODULE}", "*"))
         .collect(Collectors.joining(File.pathSeparator));
   }

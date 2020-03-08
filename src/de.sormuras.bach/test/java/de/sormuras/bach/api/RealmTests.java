@@ -39,7 +39,6 @@ class RealmTests {
         new Unit(
             Path.of("src/a/main/java/module-info.java"),
             ModuleDescriptor.newModule("a").build(),
-            Path.of("src/{MODULE}/main/java"),
             List.of(Source.of(Path.of("src/a/main/java"))),
             List.of(Path.of("src/a/main/resources")));
 
@@ -69,7 +68,6 @@ class RealmTests {
                 .requires("a")
                 .requires("org.junit.jupiter")
                 .build(),
-            Path.of("src/{MODULE}/test/java"),
             List.of(Source.of(Path.of("src/a/main/java"))),
             List.of(Path.of("src/a/main/resources")));
 
@@ -79,7 +77,6 @@ class RealmTests {
             ModuleDescriptor.newModule("a", Set.of(ModuleDescriptor.Modifier.OPEN))
                 .requires("org.junit.jupiter")
                 .build(),
-            Path.of("src/{MODULE}/test/java"),
             List.of(Source.of(Path.of("src/a/test/java"))),
             List.of(Path.of("src/a/test/resources")));
 

@@ -38,7 +38,6 @@ public class Projects {
         new Unit(
             source.path().resolve("module-info.java"),
             ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
-            base,
             List.of(source),
             List.of());
     var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
@@ -104,7 +103,6 @@ public class Projects {
     return new Unit(
         Path.of("src", module, realm, "java", "module-info.java"),
         ModuleDescriptor.newModule(module).build(),
-        Path.of("src", "{MODULE}", realm, "java"),
         List.of(Source.of(Path.of("src", module, realm, "java"))),
         List.of(Path.of("src", module, realm, "resources")));
   }

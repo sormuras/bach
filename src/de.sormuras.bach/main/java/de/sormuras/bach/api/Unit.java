@@ -12,19 +12,12 @@ public /*static*/ final class Unit {
 
   private final Path info;
   private final ModuleDescriptor descriptor;
-  private final Path moduleSourcePath;
   private final List<Source> sources;
   private final List<Path> resources;
 
-  public Unit(
-      Path info,
-      ModuleDescriptor descriptor,
-      Path moduleSourcePath,
-      List<Source> sources,
-      List<Path> resources) {
+  public Unit(Path info, ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
     this.info = Objects.requireNonNull(info, "info");
     this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-    this.moduleSourcePath = Objects.requireNonNull(moduleSourcePath, "moduleSourcePath");
     this.sources = List.copyOf(sources);
     this.resources = List.copyOf(resources);
   }
@@ -35,10 +28,6 @@ public /*static*/ final class Unit {
 
   public ModuleDescriptor descriptor() {
     return descriptor;
-  }
-
-  public Path moduleSourcePath() {
-    return moduleSourcePath;
   }
 
   public List<Source> sources() {

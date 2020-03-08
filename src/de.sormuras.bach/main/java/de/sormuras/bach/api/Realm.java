@@ -96,9 +96,33 @@ public /*static*/ final class Realm {
   /** Generate {@code --module-source-path} argument for this realm. */
   public List<Path> moduleSourcePaths() {
     return units.stream()
-        .map(Unit::moduleSourcePath)
+        .map(this::moduleSourcePath)
         .distinct()
         .collect(Collectors.toList());
+  }
+
+  public Path moduleSourcePath(Unit unit) {
+    var info = unit.info();
+    var module = unit.name();
+    var names = new ArrayList<String>();
+    var found = false;
+    for (var element : info.subpath(0, info.getNameCount() - 1)) {
+      var name = element.toString();
+      if (!found && name.equals(module)) {
+        // if (found) throw new IllegalArgumentException(
+        //      String.format("Name '%s' not unique in path: %s", module, info));
+        found = true;
+        if (names.isEmpty()) names.add("."); // leading '*' are bad
+        if (names.size() < info.getNameCount() - 2) names.add("{MODULE}"); // avoid trailing '*'
+        continue;
+      }
+      names.add(name);
+    }
+    if (!found)
+      throw new IllegalStateException(
+          String.format("Name of module '%s' not found in path's elements: %s", module, info));
+    if (names.isEmpty()) return Path.of(".");
+    return Path.of(String.join("/", names));
   }
 
   /** Generate list of path for this realm and the specified paths instance. */

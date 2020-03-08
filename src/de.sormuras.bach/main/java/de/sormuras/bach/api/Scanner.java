@@ -80,7 +80,7 @@ public /*static*/ class Scanner {
   public Unit scanUnit(Path info) {
     var descriptor = Modules.describe(info);
     var source = Source.of(info.getParent());
-    return new Unit(info, descriptor, info, List.of(source), List.of());
+    return new Unit(info, descriptor, List.of(source), List.of());
   }
 
   /** Source directory tree layout. */
