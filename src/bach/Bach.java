@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.System.Logger;
 import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -537,9 +538,30 @@ public class Bach {
     }
     public List<Path> moduleSourcePaths() {
       return units.stream()
-          .map(Unit::moduleSourcePath)
+          .map(this::moduleSourcePath)
           .distinct()
           .collect(Collectors.toList());
+    }
+    public Path moduleSourcePath(Unit unit) {
+      var info = unit.info();
+      var module = unit.name();
+      var names = new ArrayList<String>();
+      var found = false;
+      for (var element : info.subpath(0, info.getNameCount() - 1)) {
+        var name = element.toString();
+        if (!found && name.equals(module)) {
+          found = true;
+          if (names.isEmpty()) names.add("."); // leading '*' are bad
+          if (names.size() < info.getNameCount() - 2) names.add("{MODULE}"); // avoid trailing '*'
+          continue;
+        }
+        names.add(name);
+      }
+      if (!found)
+        throw new IllegalStateException(
+            String.format("Name of module '%s' not found in path's elements: %s", module, info));
+      if (names.isEmpty()) return Path.of(".");
+      return Path.of(String.join("/", names));
     }
     public List<Path> modulePaths(Paths paths) {
       var list = new ArrayList<Path>();
@@ -600,7 +622,7 @@ public class Bach {
     public Unit scanUnit(Path info) {
       var descriptor = Modules.describe(info);
       var source = Source.of(info.getParent());
-      return new Unit(info, descriptor, info, List.of(source), List.of());
+      return new Unit(info, descriptor, List.of(source), List.of());
     }
     interface Layout {
       String realmOf(Unit unit);
@@ -728,6 +750,50 @@ public class Bach {
       return tuner;
     }
   }
+  public static final class Survey {
+    public static Survey of(ModuleFinder finder) {
+      return of(finder.findAll().stream().map(ModuleReference::descriptor));
+    }
+    public static Survey of(Stream<ModuleDescriptor> descriptors) {
+      var declaredModules = new TreeSet<String>();
+      var requiredModules = new TreeMap<String, Version>();
+      descriptors
+          .peek(descriptor -> declaredModules.add(descriptor.name()))
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+          .forEach(
+              requires -> {
+                var module = requires.name();
+                var version = requires.compiledVersion().orElse(null);
+                var previous = requiredModules.putIfAbsent(module, version);
+                if (previous == null || version == null || previous.equals(version)) return;
+                throw new IllegalArgumentException(previous + " != " + version);
+              });
+      return new Survey(declaredModules, requiredModules);
+    }
+    final Set<String> declaredModules;
+    final Map<String, Version> requiredModules;
+    Survey(Set<String> declaredModules, Map<String, Version> requiredModules) {
+      this.declaredModules = declaredModules;
+      this.requiredModules = requiredModules;
+    }
+    public Set<String> declaredModules() {
+      return declaredModules;
+    }
+    public Map<String, Version> requiredModules() {
+      return requiredModules;
+    }
+    public Set<String> requiredModuleNames() {
+      return requiredModules.keySet();
+    }
+    public Optional<Version> requiredVersion(String requiredModule) {
+      var unmapped = !requiredModules.containsKey(requiredModule);
+      if (unmapped) throw new FindException(requiredModule);
+      return Optional.ofNullable(requiredModules.get(requiredModule));
+    }
+  }
   public interface Tool {
     static Any of(String name, Object... arguments) {
       return new Any(name, arguments);
@@ -737,7 +803,7 @@ public class Bach {
     }
     static String join(Collection<Path> paths) {
       return paths.stream()
-          .map(Path::toString)
+          .map(Path::toString) // TODO Move replace() to after join()
           .map(string -> string.replace("{MODULE}", "*"))
           .collect(Collectors.joining(File.pathSeparator));
     }
@@ -949,18 +1015,11 @@ public class Bach {
   public static final class Unit {
     private final Path info;
     private final ModuleDescriptor descriptor;
-    private final Path moduleSourcePath;
     private final List<Source> sources;
     private final List<Path> resources;
-    public Unit(
-        Path info,
-        ModuleDescriptor descriptor,
-        Path moduleSourcePath,
-        List<Source> sources,
-        List<Path> resources) {
+    public Unit(Path info, ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
       this.info = Objects.requireNonNull(info, "info");
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-      this.moduleSourcePath = Objects.requireNonNull(moduleSourcePath, "moduleSourcePath");
       this.sources = List.copyOf(sources);
       this.resources = List.copyOf(resources);
     }
@@ -969,9 +1028,6 @@ public class Bach {
     }
     public ModuleDescriptor descriptor() {
       return descriptor;
-    }
-    public Path moduleSourcePath() {
-      return moduleSourcePath;
     }
     public List<Source> sources() {
       return sources;

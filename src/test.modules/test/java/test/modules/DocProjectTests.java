@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.api.Paths;
-import de.sormuras.bach.api.Project;
+import de.sormuras.bach.api.Scanner;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Nested;
@@ -40,7 +40,7 @@ class DocProjectTests {
       var name = "jigsaw.quick.start";
       var base = Path.of("doc", "project", name);
       var paths = new Paths(base, temp.resolve("out"), temp.resolve("lib"));
-      var project = new Project.Scanner(paths).scan().build();
+      var project = new Scanner(paths).scan().build();
 
       var log = new Log();
       var bach = new Bach(log, true, false);
