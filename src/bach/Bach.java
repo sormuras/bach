@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -106,7 +107,11 @@ public class Bach {
     return message;
   }
   public Summary build(Consumer<Project.Builder> projectBuilderConsumer) {
-    return build(project(projectBuilderConsumer));
+    var base = Path.of("");
+    var builder = Project.scanner(base).scan();
+    projectBuilderConsumer.accept(builder);
+    var project = builder.build();
+    return build(project);
   }
   public Summary build(Project project) {
     return build(project, new BuildTaskGenerator(project, debug));
@@ -160,11 +165,6 @@ public class Bach {
       print(Level.DEBUG, "%s= %s", indent, title);
     }
     summary.executionEnd(task, result);
-  }
-  Project project(Consumer<Project.Builder> projectBuilderConsumer) {
-    var projectBuilder = Project.builder();
-    projectBuilderConsumer.accept(projectBuilder);
-    return projectBuilder.build();
   }
   interface Convention {
     static Optional<String> mainClass(Path info, String module) {
@@ -360,6 +360,9 @@ public class Bach {
     public static Builder builder() {
       return new Builder();
     }
+    public static Scanner scanner(Path base) {
+      return new Scanner(Paths.of(base));
+    }
     private final String name;
     private final Version version;
     private final Structure structure;
@@ -401,6 +404,23 @@ public class Bach {
     }
     public Path toModularJar(Realm realm, Unit unit) {
       return paths().modules(realm).resolve(toJarName(unit, ""));
+    }
+    public List<String> toStrings() {
+      var list = new ArrayList<String>();
+      list.add("Project " + toNameAndVersion());
+      list.add("\tname: " + name);
+      list.add("\tversion: " + version);
+      list.add("\trealms: " + structure.realms().size());
+      list.add("\tunits: " + structure.units().size());
+      for (var realm : structure.realms()) {
+        list.add("\tRealm " + realm.title());
+        for (var unit : realm.units()) {
+          list.add("\t\tUnit " + unit.name());
+          list.add("\t\t\tmodule: " + unit.name());
+          list.add("\t\t\tinfo: " + unit.info());
+        }
+      }
+      return list;
     }
     public static class Builder {
       private String name;
@@ -541,6 +561,113 @@ public class Bach {
         }
       }
       return patches;
+    }
+  }
+  public static class Scanner {
+    private final Paths paths;
+    public Scanner(Paths paths) {
+      this.paths = paths;
+    }
+    public Path base() {
+      return paths.base();
+    }
+    public Project.Builder scan() {
+      var units = scanUnits();
+      var layout = Layout.find(units).orElseThrow();
+      return Project.builder()
+          .paths(paths)
+          .name(scanName().orElse("unnamed"))
+          .units(units)
+          .realms(layout.realmsOf(units));
+    }
+    public Optional<String> scanName() {
+      return Optional.ofNullable(base().toAbsolutePath().getFileName())
+          .map(Object::toString)
+          .map(name -> name.replace(' ', '.'))
+          .map(name -> name.replace('-', '.'))
+          .map(name -> name.replace('_', '.'));
+    }
+    public List<Unit> scanUnits() {
+      var base = paths.base();
+      var src = base.resolve("src"); // More subdirectory candidates? E.g. "modules", "sources"?
+      var root = Files.isDirectory(src) ? src : base;
+      try (var stream = Files.find(root, 5, (path, __) -> path.endsWith("module-info.java"))) {
+        return stream.map(this::scanUnit).collect(Collectors.toList());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+    public Unit scanUnit(Path info) {
+      var descriptor = Modules.describe(info);
+      var source = Source.of(info.getParent());
+      return new Unit(info, descriptor, info, List.of(source), List.of());
+    }
+    interface Layout {
+      String realmOf(Unit unit);
+      List<Realm> realmsOf(List<Unit> units);
+      static Optional<Layout> find(Collection<Unit> units) {
+        if (units.isEmpty()) return Optional.empty();
+        var layouts = List.of(new MainTest(), new Default());
+        for (var layout : layouts)
+          if (units.stream().allMatch(unit -> Objects.nonNull(layout.realmOf(unit))))
+            return Optional.of(layout);
+        return Optional.empty();
+      }
+      final class Default implements Layout {
+        @Override
+        public String realmOf(Unit unit) {
+          return "";
+        }
+        @Override
+        public List<Realm> realmsOf(List<Unit> units) {
+          return List.of(new Realm("", 0, units, List.of(), Realm.Flag.CREATE_JAVADOC));
+        }
+      }
+      final class MainTest implements Layout {
+        @Override
+        public String realmOf(Unit unit) {
+          var info = unit.info();
+          var deque = new ArrayDeque<String>();
+          info.forEach(path -> deque.addFirst(path.toString()));
+          var found = deque.pop().equals("module-info.java");
+          if (!found) throw new IllegalArgumentException("No module-info.java?! " + info);
+          var category = deque.pop();
+          if (category.equals("java") || category.equals("module") || category.matches("java-\\d+")) {
+            var realm = deque.pop();
+            if (realm.equals("main") || realm.equals("test")) return realm;
+          }
+          return null;
+        }
+        @Override
+        public List<Realm> realmsOf(List<Unit> units) {
+          if (units.isEmpty()) return List.of();
+          var mainUnits = new ArrayList<Unit>();
+          var testUnits = new ArrayList<Unit>();
+          var uncharted = new TreeSet<String>();
+          for (var unit : units) {
+            var realm = realmOf(unit);
+            if (realm == null) throw new IllegalArgumentException("Unknown realm: " + unit);
+            if (realm.equals("main")) {
+              mainUnits.add(unit);
+              continue;
+            }
+            if (realm.equals("test")) {
+              testUnits.add(unit);
+              continue;
+            }
+            uncharted.add(realm);
+          }
+          if (!uncharted.isEmpty()) throw new IllegalArgumentException("Realms? " + uncharted);
+          var realms = new ArrayList<Realm>();
+          if (!mainUnits.isEmpty())
+            realms.add(new Realm("main", 0, mainUnits, List.of(), Realm.Flag.CREATE_JAVADOC));
+          if (!testUnits.isEmpty())
+            realms.add(new Realm("test", 0, testUnits, realms, Realm.Flag.LAUNCH_TESTS));
+          if (realms.isEmpty())
+            throw new IllegalArgumentException("No main nor test units: " + units);
+          return realms;
+        }
+      }
     }
   }
   public static final class Source {
@@ -1745,7 +1872,7 @@ public class Bach {
       md.add("- version: " + version.map(Object::toString).orElse("_none_"));
       md.add("");
       md.add("```text");
-      md.add(project.toString());
+      md.addAll(project.toStrings());
       md.add("```");
       return md;
     }
