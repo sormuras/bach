@@ -59,16 +59,12 @@ public class Projects {
         .realms(List.of(main, test))
         .tuner(new Tuner())
         .requires(Set.of("foo", "bar"))
-        .links(
-            Map.of(
-                "bar",
-                Link.direct(Maven.central("com.bar", "bar", "1")),
-                "foo",
-                Link.maven("org.foo", "foo", "2"),
-                "foo.core", // "latest" version
-                Link.maven("org.foo", "core"),
-                "foo.fighter", // "group:artifact" are well-known
-                Link.version("3")))
+        .locators(
+            List.of(
+                Locator.direct(Map.of("bar", Maven.central("com.bar", "bar", "1"))),
+                Locator.mavenCentral(Map.of("foo", "org.foo:foo:2")),
+                Locator.dynamicCentral(Map.of("junit", "3.7"))
+        ))
         .build();
   }
 

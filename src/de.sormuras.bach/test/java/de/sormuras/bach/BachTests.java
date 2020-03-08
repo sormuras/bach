@@ -154,20 +154,6 @@ class BachTests {
   }
 
   @Nested
-  class ExceptionTests {
-
-    @Test
-    void checkUnlinkedModuleException() {
-      var exception = assertThrows(UnlinkedModuleException.class, this::throwUnlinkedFooException);
-      assertEquals("Module foo is not linked", exception.getMessage());
-    }
-
-    private void throwUnlinkedFooException() {
-      throw new UnlinkedModuleException("foo");
-    }
-  }
-
-  @Nested
   class TasksTests {
     @Test
     void executeLocalToolProvider() {
