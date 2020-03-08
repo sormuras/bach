@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -68,7 +67,7 @@ class ProjectTests {
 
     @Test
     void paths() {
-      var realm = new Realm("realm", 0, List.of(), List.of());
+      var realm = Projects.realm("realm");
       var paths = project.paths();
       assertEquals(Path.of(""), paths.base());
       assertEquals(Path.of(".bach"), paths.out());
