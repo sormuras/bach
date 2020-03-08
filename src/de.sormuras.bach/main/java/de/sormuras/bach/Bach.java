@@ -23,6 +23,7 @@ import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.Task;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -84,7 +85,11 @@ public class Bach {
 
   /** Build default project potentially modified by the passed project builder consumer. */
   public Summary build(Consumer<Project.Builder> projectBuilderConsumer) {
-    return build(project(projectBuilderConsumer));
+    var base = Path.of("");
+    var builder = Project.scanner(base).scan();
+    projectBuilderConsumer.accept(builder);
+    var project = builder.build();
+    return build(project);
   }
 
   /** Build the specified project using the default build task generator. */
@@ -150,13 +155,5 @@ public class Bach {
     }
 
     summary.executionEnd(task, result);
-  }
-
-  /** Create new default project potentially modified by the passed project builder consumer. */
-  Project project(Consumer<Project.Builder> projectBuilderConsumer) {
-    // var projectBuilder = new ProjectScanner(paths).scan();
-    var projectBuilder = Project.builder();
-    projectBuilderConsumer.accept(projectBuilder);
-    return projectBuilder.build();
   }
 }

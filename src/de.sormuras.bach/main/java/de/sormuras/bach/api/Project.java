@@ -19,6 +19,7 @@ package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +32,10 @@ public /*static*/ final class Project {
   /** Return a mutable builder for creating a project instance. */
   public static Builder builder() {
     return new Builder();
+  }
+
+  public static Scanner scanner(Path base) {
+    return new Scanner(Paths.of(base));
   }
 
   private final String name;
@@ -86,6 +91,25 @@ public /*static*/ final class Project {
   /** Compose path to the Java module specified by its realm and modular unit. */
   public Path toModularJar(Realm realm, Unit unit) {
     return paths().modules(realm).resolve(toJarName(unit, ""));
+  }
+
+  /** Return multi-line string representation of this project's components. */
+  public List<String> toStrings() {
+    var list = new ArrayList<String>();
+    list.add("Project " + toNameAndVersion());
+    list.add("\tname: " + name);
+    list.add("\tversion: " + version);
+    list.add("\trealms: " + structure.realms().size());
+    list.add("\tunits: " + structure.units().size());
+    for (var realm : structure.realms()) {
+      list.add("\tRealm " + realm.title());
+      for (var unit : realm.units()) {
+        list.add("\t\tUnit " + unit.name());
+        list.add("\t\t\tmodule: " + unit.name());
+        list.add("\t\t\tinfo: " + unit.info());
+      }
+    }
+    return list;
   }
 
   /** A mutable builder for a {@link Project}. */

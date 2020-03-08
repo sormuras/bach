@@ -125,7 +125,7 @@ public /*static*/ final class Summary {
     md.add("- version: " + version.map(Object::toString).orElse("_none_"));
     md.add("");
     md.add("```text");
-    md.add(project.toString());
+    md.addAll(project.toStrings());
     md.add("```");
     return md;
   }
