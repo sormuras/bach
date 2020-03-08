@@ -22,13 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.api.Paths;
 import de.sormuras.bach.api.Project;
-import de.sormuras.bach.api.Realm;
-import de.sormuras.bach.api.Source;
-import de.sormuras.bach.api.Unit;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,24 +39,8 @@ class DocProjectTests {
     void build(@TempDir Path temp) {
       var name = "jigsaw.quick.start";
       var base = Path.of("doc", "project", name);
-      var module = "com.greetings";
-      var source = Source.of(base.resolve(module));
-      var unit =
-          new Unit(
-              source.path().resolve("module-info.java"),
-              ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
-              base,
-              List.of(source),
-              List.of());
-      var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
       var paths = new Paths(base, temp.resolve("out"), temp.resolve("lib"));
-      var project =
-          Project.builder()
-              .paths(paths)
-              .name(name)
-              .units(List.of(unit))
-              .realms(List.of(realm))
-              .build();
+      var project = new Project.Scanner(paths).scan().build();
 
       var log = new Log();
       var bach = new Bach(log, true, false);

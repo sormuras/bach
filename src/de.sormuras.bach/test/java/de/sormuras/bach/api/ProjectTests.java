@@ -19,14 +19,21 @@ package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 class ProjectTests {
 
@@ -103,6 +110,18 @@ class ProjectTests {
       assertTrue(library.requires().isEmpty());
       assertTrue(library.locators().isEmpty());
     }
+
+    @Test
+    void toStrings() {
+      assertLinesMatch(
+          List.of(
+              "Project project 99",
+              "\tname: project",
+              "\tversion: 99",
+              "\trealms: 0",
+              "\tunits: 0"),
+          project.toStrings());
+    }
   }
 
   @Nested
@@ -121,6 +140,33 @@ class ProjectTests {
       assertEquals(Maven.central("org.foo", "foo", "2"), foo);
       var junit = library.uri("junit");
       assertEquals(Maven.central("junit", "junit", "3.7"), junit);
+    }
+  }
+
+  @Nested
+  class DocumentationProject {
+
+    final Path root = Path.of("doc/project");
+
+    @TestFactory
+    Stream<DynamicTest> scan() throws Exception {
+      return Files.walk(root, 1)
+          .filter(Files::isDirectory)
+          .filter(Predicate.not(root::equals))
+          .map(this::scan);
+    }
+
+    private DynamicTest scan(Path base) {
+      var scanner = Project.scanner(base);
+      return DynamicTest.dynamicTest(base.toString(), base.toUri(), scanner::scan);
+    }
+
+    @Test
+    void scanJigsawQuickStart() {
+      var base = Path.of("doc/project", "jigsaw.quick.start");
+      assertLinesMatch(
+          Projects.docProjectJigsawQuickStart().toStrings(),
+          Project.scanner(base).scan().build().toStrings());
     }
   }
 }

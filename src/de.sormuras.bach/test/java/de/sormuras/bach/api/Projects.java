@@ -29,6 +29,28 @@ import java.util.stream.Stream;
 /** Bach API helpers. */
 public class Projects {
 
+  public static Project docProjectJigsawQuickStart() {
+    var name = "jigsaw.quick.start";
+    var base = Path.of("doc", "project", name);
+    var module = "com.greetings";
+    var source = Source.of(base.resolve(module));
+    var unit =
+        new Unit(
+            source.path().resolve("module-info.java"),
+            ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
+            base,
+            List.of(source),
+            List.of());
+    var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
+    return
+        Project.builder()
+            .base(base)
+            .name(name)
+            .units(List.of(unit))
+            .realms(List.of(realm))
+            .build();
+  }
+
   public static Project newProject(String name, String version) {
     return Project.builder().name(name).version(version).build();
   }
