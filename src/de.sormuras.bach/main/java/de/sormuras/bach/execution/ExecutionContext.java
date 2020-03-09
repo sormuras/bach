@@ -18,6 +18,7 @@
 package de.sormuras.bach.execution;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Summary;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
@@ -27,12 +28,14 @@ import java.time.Instant;
 public /*static*/ final class ExecutionContext {
 
   private final Bach bach;
+  private final Summary summary;
   private final Instant start;
   private final StringWriter out;
   private final StringWriter err;
 
-  public ExecutionContext(Bach bach) {
+  public ExecutionContext(Bach bach, Summary summary) {
     this.bach = bach;
+    this.summary = summary;
     this.start = Instant.now();
     this.out = new StringWriter();
     this.err = new StringWriter();
@@ -42,13 +45,17 @@ public /*static*/ final class ExecutionContext {
     return bach;
   }
 
+  public Summary summary() {
+    return summary;
+  }
+
   public Instant start() {
     return start;
   }
 
   /** Print message if verbose flag is set. */
   public void print(Level level, String format, Object... args) {
-    if (bach().debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
+    if (bach.debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       writer.write(String.format(format, args));
       writer.write(System.lineSeparator());

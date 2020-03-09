@@ -51,6 +51,10 @@ public /*static*/ final class Summary {
     this.program = Snippet.program(root);
   }
 
+  public Project project() {
+    return project;
+  }
+
   public boolean aborted() {
     return !suppressed.isEmpty();
   }

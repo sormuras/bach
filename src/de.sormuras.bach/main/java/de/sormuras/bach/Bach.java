@@ -143,7 +143,7 @@ public class Bach {
     print(Level.DEBUG, "%s%c %s", indent, children.isEmpty() ? '*' : '+', title);
 
     summary.executionBegin(task);
-    var result = task.execute(new ExecutionContext(this));
+    var result = task.execute(new ExecutionContext(this, summary));
     if (debug) {
       result.out().lines().forEach(printer);
       result.err().lines().forEach(printer);
