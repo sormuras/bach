@@ -26,6 +26,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -41,6 +42,9 @@ public class Bach {
     Main.main(args);
   }
 
+  /** Shared heavyweight singletons. */
+  private final Atomics atomics;
+
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
@@ -50,20 +54,27 @@ public class Bach {
   /** Dry-run flag. */
   private final boolean dryRun;
 
-  /** Initialize this instance with the specified line printer and boolean flags. */
+  /** Initialize this instance with default values. */
   public Bach() {
     this(
+        new Atomics(),
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
-    this.printer = printer;
+  public Bach(Atomics atomics, Consumer<String> printer, boolean debug, boolean dryRun) {
+    this.atomics = Objects.requireNonNull(atomics, "atomics");
+    this.printer = Objects.requireNonNull(printer, "printer");
     this.debug = debug;
     this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
+  }
+
+  /** Shared heavyweight singletons. */
+  public Atomics atomics() {
+    return atomics;
   }
 
   /** Verbosity flag. */

@@ -19,6 +19,7 @@ package test.modules;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.Atomics;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.api.Paths;
 import de.sormuras.bach.api.Scanner;
@@ -43,7 +44,7 @@ class DocProjectTests {
       var project = new Scanner(paths).scan().build();
 
       var log = new Log();
-      var bach = new Bach(log, true, false);
+      var bach = new Bach(new Atomics(), log, true, false);
       var summary = bach.build(project);
       var files = new ArrayList<String>();
       Tree.walk(temp, files::add);
