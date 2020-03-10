@@ -20,13 +20,14 @@ import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.System.Logger;
 import java.lang.module.FindException;
-import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -66,6 +67,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -81,20 +83,26 @@ public class Bach {
   public static void main(String... args) {
     Main.main(args);
   }
+  private final Atomics atomics;
   private final Consumer<String> printer;
   private final boolean debug;
   private final boolean dryRun;
   public Bach() {
     this(
+        new Atomics(),
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
-  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
-    this.printer = printer;
+  public Bach(Atomics atomics, Consumer<String> printer, boolean debug, boolean dryRun) {
+    this.atomics = Objects.requireNonNull(atomics, "atomics");
+    this.printer = Objects.requireNonNull(printer, "printer");
     this.debug = debug;
     this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
+  }
+  public Atomics atomics() {
+    return atomics;
   }
   public boolean debug() {
     return debug;
@@ -145,7 +153,7 @@ public class Bach {
     var children = task.children();
     print(Level.DEBUG, "%s%c %s", indent, children.isEmpty() ? '*' : '+', title);
     summary.executionBegin(task);
-    var result = task.execute(new ExecutionContext(this));
+    var result = task.execute(new ExecutionContext(this, summary));
     if (debug) {
       result.out().lines().forEach(printer);
       result.err().lines().forEach(printer);
@@ -203,7 +211,7 @@ public class Bach {
     public List<Locator> locators() {
       return locators;
     }
-    public URI uri(String module) {
+    public URL url(String module) {
       for (var locator : locators) {
         var located = locator.locate(module);
         if (located.isPresent()) return located.get();
@@ -213,9 +221,9 @@ public class Bach {
   }
   @FunctionalInterface
   public interface Locator {
-    Optional<URI> locate(String module);
-    static Locator direct(Map<String, URI> uris) {
-      return new DirectLocator(uris);
+    Optional<URL> locate(String module);
+    static Locator direct(Map<String, URL> urls) {
+      return new DirectLocator(urls);
     }
     static Locator dynamicCentral(Map<String, String> variants) {
       return dynamicRepository(Maven.CENTRAL_REPOSITORY, variants);
@@ -235,11 +243,11 @@ public class Bach {
     static Resource.Builder newResource() {
       return new Resource.Builder();
     }
-    static URI central(String group, String artifact, String version) {
+    static URL central(String group, String artifact, String version) {
       var resource = newResource().repository(CENTRAL_REPOSITORY);
       return resource.group(group).artifact(artifact).version(version).build().get();
     }
-    final class Resource implements Supplier<URI> {
+    final class Resource implements Supplier<URL> {
       private final String repository;
       private final String group;
       private final String artifact;
@@ -261,20 +269,25 @@ public class Bach {
         this.type = type;
       }
       @Override
-      public URI get() {
+      public URL get() {
         Objects.requireNonNull(repository, "repository");
         Objects.requireNonNull(group, "group");
         Objects.requireNonNull(artifact, "artifact");
         Objects.requireNonNull(version, "version");
         var filename = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
-        return URI.create(
+        var string =
             new StringJoiner("/")
                 .add(repository)
                 .add(group.replace('.', '/'))
                 .add(artifact)
                 .add(version)
                 .add(filename + '.' + type)
-                .toString());
+                .toString();
+        try {
+          return new URL(string);
+        } catch (MalformedURLException e) {
+          throw new RuntimeException("malformed URL string representation: " + string);
+        }
       }
       public static class Builder {
         private String repository;
@@ -750,50 +763,6 @@ public class Bach {
       return tuner;
     }
   }
-  public static final class Survey {
-    public static Survey of(ModuleFinder finder) {
-      return of(finder.findAll().stream().map(ModuleReference::descriptor));
-    }
-    public static Survey of(Stream<ModuleDescriptor> descriptors) {
-      var declaredModules = new TreeSet<String>();
-      var requiredModules = new TreeMap<String, Version>();
-      descriptors
-          .peek(descriptor -> declaredModules.add(descriptor.name()))
-          .map(ModuleDescriptor::requires)
-          .flatMap(Set::stream)
-          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
-          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-          .forEach(
-              requires -> {
-                var module = requires.name();
-                var version = requires.compiledVersion().orElse(null);
-                var previous = requiredModules.putIfAbsent(module, version);
-                if (previous == null || version == null || previous.equals(version)) return;
-                throw new IllegalArgumentException(previous + " != " + version);
-              });
-      return new Survey(declaredModules, requiredModules);
-    }
-    final Set<String> declaredModules;
-    final Map<String, Version> requiredModules;
-    Survey(Set<String> declaredModules, Map<String, Version> requiredModules) {
-      this.declaredModules = declaredModules;
-      this.requiredModules = requiredModules;
-    }
-    public Set<String> declaredModules() {
-      return declaredModules;
-    }
-    public Map<String, Version> requiredModules() {
-      return requiredModules;
-    }
-    public Set<String> requiredModuleNames() {
-      return requiredModules.keySet();
-    }
-    public Optional<Version> requiredVersion(String requiredModule) {
-      var unmapped = !requiredModules.containsKey(requiredModule);
-      if (unmapped) throw new FindException(requiredModule);
-      return Optional.ofNullable(requiredModules.get(requiredModule));
-    }
-  }
   public interface Tool {
     static Any of(String name, Object... arguments) {
       return new Any(name, arguments);
@@ -1052,6 +1021,21 @@ public class Bach {
       return sources.stream().allMatch(Source::isTargeted);
     }
   }
+  public static class Atomics {
+    private final AtomicReference<HttpClient> atomicHttpClient = new AtomicReference<>();
+    public HttpClient getHttpClient() {
+      var atomic = atomicHttpClient.get();
+      if (atomic != null) return atomic;
+      var logger = System.getLogger(Atomics.class.getName());
+      logger.log(System.Logger.Level.DEBUG, "Creating new HttpClient instance...");
+      var object = newHttpClient();
+      logger.log(System.Logger.Level.DEBUG, "Created new HttpClient instance");
+      return atomicHttpClient.compareAndSet(null, object) ? object : atomicHttpClient.get();
+    }
+    protected HttpClient newHttpClient() {
+      return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    }
+  }
   public static class BuildTaskGenerator implements Supplier<Task> {
     public static Task parallel(String title, Task... tasks) {
       return new Task(title, true, List.of(tasks));
@@ -1250,11 +1234,13 @@ public class Bach {
   }
   public static final class ExecutionContext {
     private final Bach bach;
+    private final Summary summary;
     private final Instant start;
     private final StringWriter out;
     private final StringWriter err;
-    public ExecutionContext(Bach bach) {
+    public ExecutionContext(Bach bach, Summary summary) {
       this.bach = bach;
+      this.summary = summary;
       this.start = Instant.now();
       this.out = new StringWriter();
       this.err = new StringWriter();
@@ -1262,11 +1248,14 @@ public class Bach {
     public Bach bach() {
       return bach;
     }
+    public Summary summary() {
+      return summary;
+    }
     public Instant start() {
       return start;
     }
     public void print(Level level, String format, Object... args) {
-      if (bach().debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
+      if (bach.debug() || level.getSeverity() >= Level.INFO.getSeverity()) {
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
         writer.write(String.format(format, args));
         writer.write(System.lineSeparator());
@@ -1568,7 +1557,7 @@ public class Bach {
       this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<URL> locate(String module) {
       var coordinate = coordinates.get(module);
       if (coordinate == null) return Optional.empty();
       var split = coordinate.split(":");
@@ -1579,12 +1568,12 @@ public class Bach {
     }
   }
   public static class DirectLocator implements Locator {
-    private final Map<String, URI> uris;
-    public DirectLocator(Map<String, URI> uris) {
-      this.uris = Objects.requireNonNull(uris, "uris");
+    private final Map<String, URL> uris;
+    public DirectLocator(Map<String, URL> urls) {
+      this.uris = Objects.requireNonNull(urls, "urls");
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<URL> locate(String module) {
       return Optional.ofNullable(uris.get(module));
     }
   }
@@ -1596,7 +1585,7 @@ public class Bach {
       this.variants = variants;
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<URL> locate(String module) {
       var group = computeGroup(module);
       if (group == null) return Optional.empty();
       var artifact = computeArtifact(module, group);
@@ -1806,7 +1795,7 @@ public class Bach {
       }
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<URL> locate(String module) {
       var maven = moduleMaven.get(module);
       if (maven == null) return Optional.empty();
       var indexOfColon = maven.indexOf(':');
@@ -1863,6 +1852,9 @@ public class Bach {
     public Summary(Project project, Task root) {
       this.project = project;
       this.program = Snippet.program(root);
+    }
+    public Project project() {
+      return project;
     }
     public boolean aborted() {
       return !suppressed.isEmpty();
