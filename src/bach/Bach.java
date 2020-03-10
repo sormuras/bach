@@ -1192,7 +1192,7 @@ public class Bach {
       return run(ToolProvider.findFirst(name).orElseThrow(), args);
     }
     public static Task run(ToolProvider provider, String... args) {
-      return new Tasks.RunToolProvider(provider, args);
+      return new RunToolProvider(provider, args);
     }
     private final Project project;
     private final boolean verbose;
@@ -1220,7 +1220,7 @@ public class Bach {
           launchAllTests());
     }
     protected Task createDirectories(Path path) {
-      return new Tasks.CreateDirectories(path);
+      return new CreateDirectories(path);
     }
     protected Task printVersionInformationOfFoundationTools() {
       return verbose()
@@ -1441,8 +1441,7 @@ public class Bach {
       return throwable;
     }
   }
-  interface GarbageCollect {}
-  interface Scribe {
+  public interface Scribe {
     default String $(Object object) {
       if (object == null) return "null";
       return '"' + object.toString().replace("\\", "\\\\") + '"';
@@ -1541,66 +1540,64 @@ public class Bach {
       for(var task : children()) task.walk(consumer);
     }
   }
-  public interface Tasks {
-    class CreateDirectories extends Task {
-      private final Path path;
-      public CreateDirectories(Path path) {
-        super("Create directories " + path, false, List.of());
-        this.path = path;
-      }
-      @Override
-      public ExecutionResult execute(ExecutionContext context) {
-        try {
-          Files.createDirectories(path);
-          return context.ok();
-        } catch (Exception e) {
-          return context.failed(e);
-        }
-      }
-      @Override
-      public Snippet toSnippet() {
-        return new Snippet(
-            Set.of(Files.class, Path.class),
-            List.of(String.format("Files.createDirectories(%s);", $(path))));
+  public static class CreateDirectories extends Task {
+    private final Path path;
+    public CreateDirectories(Path path) {
+      super("Create directories " + path, false, List.of());
+      this.path = path;
+    }
+    @Override
+    public ExecutionResult execute(ExecutionContext context) {
+      try {
+        Files.createDirectories(path);
+        return context.ok();
+      } catch (Exception e) {
+        return context.failed(e);
       }
     }
-    class RunToolProvider extends Task {
-      static String title(String tool, String... args) {
-        var length = args.length;
-        if (length == 0) return String.format("Run `%s`", tool);
-        if (length == 1) return String.format("Run `%s %s`", tool, args[0]);
-        if (length == 2) return String.format("Run `%s %s %s`", tool, args[0], args[1]);
-        return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
+    @Override
+    public Snippet toSnippet() {
+      return new Snippet(
+          Set.of(Files.class, Path.class),
+          List.of(String.format("Files.createDirectories(%s);", $(path))));
+    }
+  }
+  public static class RunToolProvider extends Task {
+    static String title(String tool, String... args) {
+      var length = args.length;
+      if (length == 0) return String.format("Run `%s`", tool);
+      if (length == 1) return String.format("Run `%s %s`", tool, args[0]);
+      if (length == 2) return String.format("Run `%s %s %s`", tool, args[0], args[1]);
+      return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
+    }
+    private final ToolProvider[] tool;
+    private final String[] args;
+    private final Snippet snippet;
+    public RunToolProvider(ToolProvider tool, String... args) {
+      super(title(tool.name(), args), false, List.of());
+      this.tool = new ToolProvider[] {tool};
+      this.args = args;
+      var empty = args.length == 0;
+      this.snippet =
+          tool instanceof Scribe
+              ? ((Scribe) tool).toSnippet()
+              : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
+    }
+    @Override
+    public ExecutionResult execute(ExecutionContext context) {
+      var out = new StringWriter();
+      var err = new StringWriter();
+      var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+      var duration = Duration.between(context.start(), Instant.now());
+      if (tool[0] instanceof GarbageCollect) {
+        tool[0] = null;
+        System.gc();
       }
-      private final ToolProvider[] tool;
-      private final String[] args;
-      private final Snippet snippet;
-      public RunToolProvider(ToolProvider tool, String... args) {
-        super(title(tool.name(), args), false, List.of());
-        this.tool = new ToolProvider[] {tool};
-        this.args = args;
-        var empty = args.length == 0;
-        this.snippet =
-            tool instanceof Scribe
-                ? ((Scribe) tool).toSnippet()
-                : Snippet.of("run(" + $(tool.name()) + (empty ? "" : ", " + $(args)) + ");");
-      }
-      @Override
-      public ExecutionResult execute(ExecutionContext context) {
-        var out = new StringWriter();
-        var err = new StringWriter();
-        var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
-        var duration = Duration.between(context.start(), Instant.now());
-        if (tool[0] instanceof GarbageCollect) {
-          tool[0] = null;
-          System.gc();
-        }
-        return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
-      }
-      @Override
-      public Snippet toSnippet() {
-        return snippet;
-      }
+      return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
+    }
+    @Override
+    public Snippet toSnippet() {
+      return snippet;
     }
   }
   abstract static class TestLauncher implements ToolProvider, GarbageCollect, Scribe {
@@ -1691,6 +1688,7 @@ public class Bach {
       return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
+  public interface GarbageCollect {}
   public interface Modules {
     interface Patterns {
       Pattern NAME =
