@@ -57,15 +57,6 @@ public /*static*/ class Resources {
 
   /** Copy all content from a uri to a target file. */
   public Path copy(URI uri, Path file, CopyOption... options) throws Exception {
-    logger.log(Level.DEBUG, "Copy {0} to {1}", uri, file);
-    Files.createDirectories(file.getParent());
-    if ("file".equals(uri.getScheme())) {
-      try {
-        return Files.copy(Path.of(uri), file, options);
-      } catch (Exception e) {
-        throw new IllegalArgumentException("copy file failed:" + uri, e);
-      }
-    }
     var request = HttpRequest.newBuilder(uri).GET();
     if (Files.exists(file) && Files.getFileStore(file).supportsFileAttributeView("user")) {
       try {
@@ -73,9 +64,10 @@ public /*static*/ class Resources {
         var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
         request.setHeader("If-None-Match", etag);
       } catch (Exception e) {
-        logger.log(Level.WARNING, "Couldn't get 'user:etag' file attribute: {0}", e);
+        logger.log(Level.DEBUG, "couldn't get 'user:etag' file attribute: " + e);
       }
     }
+    Files.createDirectories(file.getParent());
     var handler = BodyHandlers.ofFile(file);
     var response = client.send(request.build(), handler);
     if (response.statusCode() == 200) {
@@ -87,10 +79,10 @@ public /*static*/ class Resources {
               var etag = etagHeader.get();
               Files.setAttribute(file, "user:etag", StandardCharsets.UTF_8.encode(etag));
             } catch (Exception e) {
-              logger.log(Level.WARNING, "Couldn't set 'user:etag' file attribute: {0}", e);
+              logger.log(Level.DEBUG, "couldn't set 'user:etag' file attribute: " + e.getMessage());
             }
           }
-        } else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
+        } else logger.log(Level.DEBUG, "No etag provided in response: {0}", response);
         var lastModifiedHeader = response.headers().firstValue("last-modified");
         if (lastModifiedHeader.isPresent()) {
           try {
@@ -101,21 +93,25 @@ public /*static*/ class Resources {
             var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
             Files.setLastModifiedTime(file, fileTime);
           } catch (Exception e) {
-            logger.log(Level.WARNING, "Couldn't set last modified file attribute: {0}", e);
+            logger.log(Level.DEBUG, "couldn't set last modified file attribute: " + e.getMessage());
           }
         }
       }
-      logger.log(Level.DEBUG, "{0} <- {1}", file, uri);
+      if (logger.isLoggable(Level.DEBUG)) {
+        var size = Files.size(file);
+        logger.log(Level.DEBUG, "{0} copied {1} bytes from {2}", file, size, uri);
+      }
       return file;
     }
-    if (response.statusCode() == 304 /*Not Modified*/) return file;
-    throw new RuntimeException("response=" + response);
+    if (response.statusCode() == 304 /*Not Modified*/) {
+      logger.log(Level.DEBUG, "{0} not modified", uri);
+      return file;
+    }
+    throw new IllegalStateException("copy " + uri + " failed: response=" + response);
   }
 
   /** Read all content from a uri into a string. */
   public String read(URI uri) throws Exception {
-    logger.log(Level.DEBUG, "Read {0}", uri);
-    if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
     var request = HttpRequest.newBuilder(uri).GET();
     return client.send(request.build(), BodyHandlers.ofString()).body();
   }

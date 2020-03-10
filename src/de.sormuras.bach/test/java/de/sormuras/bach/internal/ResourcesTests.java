@@ -19,13 +19,17 @@ package de.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,43 +39,59 @@ class ResourcesTests {
 
   final HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).build();
 
-  @Test
+  @Nested
   @DisabledIfSystemProperty(named = "offline", matches = "true")
-  void requestHeadOfHttpsGoogleComUsingSystemUrisIsRespondedWithStatus200() throws Exception {
-    var log = new Log();
-    var resources = new Resources(log, client);
-    assertEquals(200, resources.head(URI.create("https://google.com"), 9).statusCode());
-    log.assertThatEverythingIsFine();
-    assertLinesMatch(List.of(), log.lines());
-  }
+  class MavenApacheOrg {
 
-  @Test
-  void copyFilesUsingFileScheme(@TempDir Path temp) throws Exception {
-    var source = Files.createDirectories(temp.resolve("source"));
-    var sa = Files.writeString(source.resolve("a.txt"), "a");
-    var sb = Files.writeString(source.resolve("b.txt"), "b");
-    var sc = Files.writeString(source.resolve("c.txt"), "c");
-    var target = Files.createDirectories(temp.resolve("target"));
-    var ta = target.resolve("a.txt");
-    var tb = target.resolve("b.txt");
-    var tc = target.resolve("c.txt");
-    var log = new Log();
-    var resources = new Resources(log, client);
-    resources.copy(sa.toUri(), ta);
-    resources.copy(sb.toUri(), tb);
-    resources.copy(sc.toUri(), tc);
-    assertEquals(Files.readString(sa), resources.read(ta.toUri()));
-    assertEquals(Files.readString(sb), resources.read(tb.toUri()));
-    assertEquals(Files.readString(sc), resources.read(tc.toUri()));
-    log.assertThatEverythingIsFine();
-    assertLinesMatch(
-        List.of(
-            "L Copy .+source/a.txt to \\Q" + ta,
-            "L Copy .+source/b.txt to \\Q" + tb,
-            "L Copy .+source/c.txt to \\Q" + tc,
-            "L Read .+target/a.txt",
-            "L Read .+target/b.txt",
-            "L Read .+target/c.txt"),
-        log.lines());
+    final URI uri =
+        URI.create(
+            "https://repo.maven.apache.org/maven2"
+                + "/org/junit/jupiter"
+                + "/junit-jupiter"
+                + "/5.4.0"
+                + "/junit-jupiter-5.4.0.jar");
+
+    @Test
+    void head() throws Exception {
+      var log = new Log();
+      var resources = new Resources(log, client);
+      assertEquals(200, resources.head(uri, 9).statusCode());
+      log.assertThatEverythingIsFine();
+      assertLinesMatch(List.of(), log.lines());
+    }
+
+    @Test
+    void copy(@TempDir Path temp) throws Exception {
+      var log = new Log();
+      var resources = new Resources(log, client);
+      var jar =
+          resources.copy(uri, temp.resolve("jupiter.jar"), StandardCopyOption.COPY_ATTRIBUTES);
+      assertTrue(Files.exists(jar));
+      resources.copy(uri, temp.resolve("jupiter.jar"));
+      log.assertThatEverythingIsFine();
+      assertLinesMatch(
+          List.of("L " + jar + " copied 5.929 bytes from " + uri, "L " + uri + " not modified"),
+          log.lines());
+    }
+
+    @Test
+    void read() throws Exception {
+      var asc = URI.create(this.uri + ".asc");
+      var log = new Log();
+      var resources = new Resources(log, client);
+      var string = resources.read(asc);
+      assertLinesMatch(
+          List.of(
+              "-----BEGIN PGP SIGNATURE-----",
+              "Version: BCPG v1.60",
+              "",
+              ">> BASE 64 LINES >>",
+              "HQGc6jYj9npZZekwuOyp",
+              "=aGW0",
+              "-----END PGP SIGNATURE-----"),
+          string.lines().collect(Collectors.toList()));
+      log.assertThatEverythingIsFine();
+      assertLinesMatch(List.of(), log.lines());
+    }
   }
 }
