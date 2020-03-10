@@ -17,9 +17,9 @@
 
 package de.sormuras.bach.api;
 
-import de.sormuras.bach.internal.CoordinatesLocator;
-import de.sormuras.bach.internal.DirectLocator;
-import de.sormuras.bach.internal.DynamicLocator;
+import de.sormuras.bach.api.locator.CoordinatesLocator;
+import de.sormuras.bach.api.locator.DirectLocator;
+import de.sormuras.bach.api.locator.DynamicLocator;
 import java.net.URL;
 import java.util.Map;
 import java.util.Optional;

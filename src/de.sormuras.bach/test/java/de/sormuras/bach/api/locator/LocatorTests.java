@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.internal;
+package de.sormuras.bach.api.locator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.sormuras.bach.api.Maven;
+import de.sormuras.bach.internal.Resources;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;

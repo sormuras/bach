@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.internal;
+package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
+import de.sormuras.bach.internal.Resources;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;

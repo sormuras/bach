@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.internal;
+package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import java.net.URL;
