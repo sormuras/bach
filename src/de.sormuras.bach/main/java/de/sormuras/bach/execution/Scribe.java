@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.StringJoiner;
 
 /** Snippet producer and default Java source code helpers. */
-interface Scribe {
+public interface Scribe {
 
   /** Convert the string representation of the given object into a {@code String} literal. */
   default String $(Object object) {

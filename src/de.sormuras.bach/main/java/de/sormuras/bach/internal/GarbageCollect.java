@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.execution;
+package de.sormuras.bach.internal;
 
 /** Implement this marker interface indicating a {@link System#gc()} call is required. */
-interface GarbageCollect {}
+public interface GarbageCollect {}

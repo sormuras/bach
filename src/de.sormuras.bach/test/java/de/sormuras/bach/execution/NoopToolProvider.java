@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.execution;
 
+import de.sormuras.bach.internal.GarbageCollect;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.spi.ToolProvider;

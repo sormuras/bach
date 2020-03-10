@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.execution;
+package de.sormuras.bach.execution.task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.execution.NoopToolProvider;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,7 @@ class TasksTests {
   @Test
   void checkCreateDirectoriesWithEmptyPath() {
     var path = Path.of("");
-    var task = new Tasks.CreateDirectories(path);
+    var task = new CreateDirectories(path);
     assertEquals("Create directories " + path, task.title());
     assertFalse(task.parallel());
     assertTrue(task.children().isEmpty());
@@ -37,7 +38,7 @@ class TasksTests {
 
   @Test
   void checkRunToolProvider() {
-    var task = new Tasks.RunToolProvider(new NoopToolProvider(0, true), "a", "b", "c");
+    var task = new RunToolProvider(new NoopToolProvider(0, true), "a", "b", "c");
     assertEquals("Run `noop a b ...` (3 arguments)", task.title());
     assertFalse(task.parallel());
     assertTrue(task.children().isEmpty());

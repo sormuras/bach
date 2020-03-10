@@ -30,7 +30,7 @@ import de.sormuras.bach.execution.ExecutionContext;
 import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.NoopToolProvider;
 import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.execution.Tasks;
+import de.sormuras.bach.execution.task.RunToolProvider;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -167,8 +167,8 @@ class BachTests {
     @Test
     void executeLocalToolProvider() {
       var log = new Log();
-      var bach = new Bach(new Atomics(),log, true, true);
-      var task = new Tasks.RunToolProvider(new NoopToolProvider(), "a", "b", "c");
+      var bach = new Bach(new Atomics(), log, true, true);
+      var task = new RunToolProvider(new NoopToolProvider(), "a", "b", "c");
       var summary = new Summary(Project.builder().name("Local").build(), task);
       bach.execute(task, summary);
       summary.assertSuccessful();

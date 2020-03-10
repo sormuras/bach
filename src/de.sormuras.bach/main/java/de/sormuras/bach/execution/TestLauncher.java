@@ -20,6 +20,7 @@ package de.sormuras.bach.execution;
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.api.Realm;
 import de.sormuras.bach.api.Unit;
+import de.sormuras.bach.internal.GarbageCollect;
 import java.io.PrintWriter;
 import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;

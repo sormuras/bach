@@ -22,6 +22,8 @@ import de.sormuras.bach.api.Realm;
 import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Tool;
 import de.sormuras.bach.api.Unit;
+import de.sormuras.bach.execution.task.CreateDirectories;
+import de.sormuras.bach.execution.task.RunToolProvider;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +55,7 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
 
   /** Create new tool-running task for the given tool and its options. */
   public static Task run(ToolProvider provider, String... args) {
-    return new Tasks.RunToolProvider(provider, args);
+    return new RunToolProvider(provider, args);
   }
 
   private final Project project;
@@ -87,7 +89,7 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
   }
 
   protected Task createDirectories(Path path) {
-    return new Tasks.CreateDirectories(path);
+    return new CreateDirectories(path);
   }
 
   protected Task printVersionInformationOfFoundationTools() {
