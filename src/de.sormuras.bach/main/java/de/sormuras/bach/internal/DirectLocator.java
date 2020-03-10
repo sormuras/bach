@@ -18,21 +18,21 @@
 package de.sormuras.bach.internal;
 
 import de.sormuras.bach.api.Locator;
-import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 /** Map-based locator implementation. */
 public /*static*/ class DirectLocator implements Locator {
-  private final Map<String, URI> uris;
+  private final Map<String, URL> uris;
 
-  public DirectLocator(Map<String, URI> uris) {
-    this.uris = Objects.requireNonNull(uris, "uris");
+  public DirectLocator(Map<String, URL> urls) {
+    this.uris = Objects.requireNonNull(urls, "urls");
   }
 
   @Override
-  public Optional<URI> locate(String module) {
+  public Optional<URL> locate(String module) {
     return Optional.ofNullable(uris.get(module));
   }
 }

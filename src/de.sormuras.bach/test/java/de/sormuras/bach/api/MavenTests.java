@@ -19,7 +19,7 @@ package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.URI;
+import java.net.URL;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,16 +32,16 @@ class MavenTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"3.7", "4.13"})
-    void centralJUnit(String version) {
-      var uri = "https://repo.maven.apache.org/maven2/junit/junit/{VERSION}/junit-{VERSION}.jar";
-      var expected = URI.create(uri.replace("{VERSION}", version));
+    void centralJUnit(String version) throws Exception {
+      var file = "/maven2/junit/junit/{VERSION}/junit-{VERSION}.jar";
+      var expected = new URL("https", "repo.maven.apache.org", file.replace("{VERSION}", version));
       var actual = Maven.central("junit", "junit", version);
       assertEquals(expected, actual);
     }
 
     @Test
     void customBuiltMavenResource() throws Exception {
-      var expected = new URI("https", "host", "/path/g/a/v/a-v-c.t", null);
+      var expected = new URL("https", "host", "/path/g/a/v/a-v-c.t");
       var actual =
           Maven.newResource()
               .repository("https://host/path")

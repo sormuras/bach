@@ -20,19 +20,19 @@ package de.sormuras.bach.api;
 import de.sormuras.bach.internal.CoordinatesLocator;
 import de.sormuras.bach.internal.DirectLocator;
 import de.sormuras.bach.internal.DynamicLocator;
-import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
 
-/** Module name to URI function. */
+/** Module name to {@link URL} instance function. */
 @FunctionalInterface
 public interface Locator {
 
   /** Compute an optional URI for the given module name. */
-  Optional<URI> locate(String module);
+  Optional<URL> locate(String module);
 
-  static Locator direct(Map<String, URI> uris) {
-    return new DirectLocator(uris);
+  static Locator direct(Map<String, URL> urls) {
+    return new DirectLocator(urls);
   }
 
   static Locator dynamicCentral(Map<String, String> variants) {
