@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -111,6 +112,7 @@ class BachTests {
           @Override
           public ExecutionResult execute(ExecutionContext execution) {
             assertSame(bach, execution.bach());
+            assertFalse(execution.summary().aborted());
             execution.print(Level.DEBUG, "Debug %d", 1);
             execution.print(Level.ERROR, "Error %d", 1);
             var failed = execution.failed(new Error("X"));

@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.Atomics;
+import de.sormuras.bach.Bach;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -34,6 +36,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.io.TempDir;
+import test.base.Log;
 
 class ProjectTests {
 
@@ -161,12 +165,28 @@ class ProjectTests {
       return DynamicTest.dynamicTest(base.toString(), base.toUri(), scanner::scan);
     }
 
-    @Test
-    void scanJigsawQuickStart() {
-      var base = Path.of("doc/project", "jigsaw.quick.start");
-      assertLinesMatch(
-          Projects.docProjectJigsawQuickStart().toStrings(),
-          Project.scanner(base).scan().build().toStrings());
+    @Nested
+    class JigsawQuickStart {
+
+      @Test
+      void checkCraftedProjectMatchesScannedProject() {
+        var base = Path.of("doc/project", "jigsaw.quick.start");
+        assertLinesMatch(
+            Projects.docProjectJigsawQuickStart().toStrings(),
+            Project.scanner(base).scan().build().toStrings());
+      }
+
+      @Test
+      void runBuildAndCheckCreatedAssets(@TempDir Path out) {
+        var base = Path.of("doc/project", "jigsaw.quick.start");
+        var project = new Scanner(new Paths(base, out, out)).scan().build();
+        var log = new Log();
+        var bach = new Bach(new Atomics(), log, true, false);
+        assertNotNull(bach.atomics());
+        var summary = bach.build(project);
+        summary.assertSuccessful();
+        assertSame(project, summary.project());
+      }
     }
   }
 }
