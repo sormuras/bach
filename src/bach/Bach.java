@@ -238,6 +238,148 @@ public class Bach {
       return new CoordinatesLocator(repository, coordinates);
     }
   }
+  public static class CoordinatesLocator implements Locator {
+    private final String repository;
+    private final Map<String, String> coordinates;
+    public CoordinatesLocator(String repository, Map<String, String> coordinates) {
+      this.repository = Objects.requireNonNull(repository, "repository");
+      this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
+    }
+    @Override
+    public Optional<URL> locate(String module) {
+      var coordinate = coordinates.get(module);
+      if (coordinate == null) return Optional.empty();
+      var split = coordinate.split(":");
+      var resource = Maven.newResource().repository(repository);
+      resource.group(split[0]).artifact(split[1]).version(split[2]);
+      resource.classifier(split.length < 4 ? "" : split[3]);
+      return Optional.of(resource.build().get());
+    }
+  }
+  public static class DirectLocator implements Locator {
+    private final Map<String, URL> uris;
+    public DirectLocator(Map<String, URL> urls) {
+      this.uris = Objects.requireNonNull(urls, "urls");
+    }
+    @Override
+    public Optional<URL> locate(String module) {
+      return Optional.ofNullable(uris.get(module));
+    }
+  }
+  public static class DynamicLocator implements Locator {
+    private final String repository;
+    private final Map<String, String> variants;
+    public DynamicLocator(String repository, Map<String, String> variants) {
+      this.repository = repository;
+      this.variants = variants;
+    }
+    @Override
+    public Optional<URL> locate(String module) {
+      var group = computeGroup(module);
+      if (group == null) return Optional.empty();
+      var artifact = computeArtifact(module, group);
+      if (artifact == null) return Optional.empty();
+      var version = variants.getOrDefault(module, computeVersion(module, group, artifact));
+      if (version == null) return Optional.empty();
+      var resource =
+          Maven.newResource()
+              .repository(repository)
+              .group(group)
+              .artifact(artifact)
+              .version(version)
+              .classifier(computeClassifier(module, group, artifact, version));
+      return Optional.of(resource.build().get());
+    }
+    String computeGroup(String module) {
+      if (module.startsWith("org.junit.platform")) return "org.junit.platform";
+      if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
+      if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
+      switch (module) {
+        case "junit":
+          return "junit";
+      }
+      return null;
+    }
+    String computeArtifact(String module, String group) {
+      if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
+      switch (module) {
+        case "junit":
+          return "junit";
+      }
+      return null;
+    }
+    String computeVersion(String module, String group, String artifact) {
+      switch (group) {
+        case "junit":
+          return "4.13";
+        case "org.junit.jupiter":
+        case "org.junit.vintage":
+          return "5.6.0";
+        case "org.junit.platform":
+          return "1.6.0";
+      }
+      return null;
+    }
+    String computeClassifier(String module, String group, String artifact, String version) {
+      return "";
+    }
+  }
+  public static class SormurasModulesLocator implements Locator {
+    private final Map<String, String> moduleMaven;
+    private final Map<String, String> moduleVersion;
+    private final Map<String, String> variants;
+    public SormurasModulesLocator(Map<String, String> variants, Resources resources) {
+      this.variants = variants;
+      try {
+        this.moduleMaven = load(resources, "module-maven.properties");
+        this.moduleVersion = load(resources, "module-version.properties");
+      } catch (Exception e) {
+        throw new IllegalStateException();
+      }
+    }
+    @Override
+    public Optional<URL> locate(String module) {
+      var maven = moduleMaven.get(module);
+      if (maven == null) return Optional.empty();
+      var indexOfColon = maven.indexOf(':');
+      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+      var version = variants.getOrDefault(module, moduleVersion.get(module));
+      if (version == null) return Optional.empty();
+      var resource =
+          Maven.newResource()
+              .repository(Maven.CENTRAL_REPOSITORY)
+              .group(maven.substring(0, indexOfColon))
+              .artifact(maven.substring(indexOfColon + 1))
+              .version(version);
+      return Optional.of(resource.build().get());
+    }
+    private static final String ROOT = "https://github.com/sormuras/modules";
+    private static Map<String, String> load(Resources resources, String properties) throws Exception {
+      var user = Path.of(System.getProperty("user.home"));
+      var cache = Files.createDirectories(user.resolve(".bach/modules"));
+      var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+      var target = cache.resolve(properties);
+      var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+      return map(load(new Properties(), path));
+    }
+    private static Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (Exception e) {
+          throw new RuntimeException("Load properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+    private static Map<String, String> map(Properties properties) {
+      var map = new TreeMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        map.put(name, properties.getProperty(name));
+      }
+      return map;
+    }
+  }
   public interface Maven {
     String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
     static Resource.Builder newResource() {
@@ -1549,92 +1691,6 @@ public class Bach {
       return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
-  public static class CoordinatesLocator implements Locator {
-    private final String repository;
-    private final Map<String, String> coordinates;
-    public CoordinatesLocator(String repository, Map<String, String> coordinates) {
-      this.repository = Objects.requireNonNull(repository, "repository");
-      this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
-    }
-    @Override
-    public Optional<URL> locate(String module) {
-      var coordinate = coordinates.get(module);
-      if (coordinate == null) return Optional.empty();
-      var split = coordinate.split(":");
-      var resource = Maven.newResource().repository(repository);
-      resource.group(split[0]).artifact(split[1]).version(split[2]);
-      resource.classifier(split.length < 4 ? "" : split[3]);
-      return Optional.of(resource.build().get());
-    }
-  }
-  public static class DirectLocator implements Locator {
-    private final Map<String, URL> uris;
-    public DirectLocator(Map<String, URL> urls) {
-      this.uris = Objects.requireNonNull(urls, "urls");
-    }
-    @Override
-    public Optional<URL> locate(String module) {
-      return Optional.ofNullable(uris.get(module));
-    }
-  }
-  public static class DynamicLocator implements Locator {
-    private final String repository;
-    private final Map<String, String> variants;
-    public DynamicLocator(String repository, Map<String, String> variants) {
-      this.repository = repository;
-      this.variants = variants;
-    }
-    @Override
-    public Optional<URL> locate(String module) {
-      var group = computeGroup(module);
-      if (group == null) return Optional.empty();
-      var artifact = computeArtifact(module, group);
-      if (artifact == null) return Optional.empty();
-      var version = variants.getOrDefault(module, computeVersion(module, group, artifact));
-      if (version == null) return Optional.empty();
-      var resource =
-          Maven.newResource()
-              .repository(repository)
-              .group(group)
-              .artifact(artifact)
-              .version(version)
-              .classifier(computeClassifier(module, group, artifact, version));
-      return Optional.of(resource.build().get());
-    }
-    String computeGroup(String module) {
-      if (module.startsWith("org.junit.platform")) return "org.junit.platform";
-      if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
-      if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
-      switch (module) {
-        case "junit":
-          return "junit";
-      }
-      return null;
-    }
-    String computeArtifact(String module, String group) {
-      if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
-      switch (module) {
-        case "junit":
-          return "junit";
-      }
-      return null;
-    }
-    String computeVersion(String module, String group, String artifact) {
-      switch (group) {
-        case "junit":
-          return "4.13";
-        case "org.junit.jupiter":
-        case "org.junit.vintage":
-          return "5.6.0";
-        case "org.junit.platform":
-          return "1.6.0";
-      }
-      return null;
-    }
-    String computeClassifier(String module, String group, String artifact, String version) {
-      return "";
-    }
-  }
   public interface Modules {
     interface Patterns {
       Pattern NAME =
@@ -1779,62 +1835,6 @@ public class Bach {
       if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
-    }
-  }
-  public static class SormurasModulesLocator implements Locator {
-    private final Map<String, String> moduleMaven;
-    private final Map<String, String> moduleVersion;
-    private final Map<String, String> variants;
-    public SormurasModulesLocator(Map<String, String> variants, Resources resources) {
-      this.variants = variants;
-      try {
-        this.moduleMaven = load(resources, "module-maven.properties");
-        this.moduleVersion = load(resources, "module-version.properties");
-      } catch (Exception e) {
-        throw new IllegalStateException();
-      }
-    }
-    @Override
-    public Optional<URL> locate(String module) {
-      var maven = moduleMaven.get(module);
-      if (maven == null) return Optional.empty();
-      var indexOfColon = maven.indexOf(':');
-      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
-      var version = variants.getOrDefault(module, moduleVersion.get(module));
-      if (version == null) return Optional.empty();
-      var resource =
-          Maven.newResource()
-              .repository(Maven.CENTRAL_REPOSITORY)
-              .group(maven.substring(0, indexOfColon))
-              .artifact(maven.substring(indexOfColon + 1))
-              .version(version);
-      return Optional.of(resource.build().get());
-    }
-    private static final String ROOT = "https://github.com/sormuras/modules";
-    private static Map<String, String> load(Resources resources, String properties) throws Exception {
-      var user = Path.of(System.getProperty("user.home"));
-      var cache = Files.createDirectories(user.resolve(".bach/modules"));
-      var source = URI.create(String.join("/", ROOT, "raw/master", properties));
-      var target = cache.resolve(properties);
-      var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
-      return map(load(new Properties(), path));
-    }
-    private static Properties load(Properties properties, Path path) {
-      if (Files.isRegularFile(path)) {
-        try (var reader = Files.newBufferedReader(path)) {
-          properties.load(reader);
-        } catch (Exception e) {
-          throw new RuntimeException("Load properties failed: " + path, e);
-        }
-      }
-      return properties;
-    }
-    private static Map<String, String> map(Properties properties) {
-      var map = new TreeMap<String, String>();
-      for (var name : properties.stringPropertyNames()) {
-        map.put(name, properties.getProperty(name));
-      }
-      return map;
     }
   }
   static class Main {
