@@ -24,10 +24,8 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -211,7 +209,7 @@ public class Bach {
     public List<Locator> locators() {
       return locators;
     }
-    public URL url(String module) {
+    public URI uri(String module) {
       for (var locator : locators) {
         var located = locator.locate(module);
         if (located.isPresent()) return located.get();
@@ -221,9 +219,9 @@ public class Bach {
   }
   @FunctionalInterface
   public interface Locator {
-    Optional<URL> locate(String module);
-    static Locator direct(Map<String, URL> urls) {
-      return new DirectLocator(urls);
+    Optional<URI> locate(String module);
+    static Locator direct(Map<String, URI> uris) {
+      return new DirectLocator(uris);
     }
     static Locator dynamicCentral(Map<String, String> variants) {
       return dynamicRepository(Maven.CENTRAL_REPOSITORY, variants);
@@ -246,7 +244,7 @@ public class Bach {
       this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
     }
     @Override
-    public Optional<URL> locate(String module) {
+    public Optional<URI> locate(String module) {
       var coordinate = coordinates.get(module);
       if (coordinate == null) return Optional.empty();
       var split = coordinate.split(":");
@@ -257,12 +255,12 @@ public class Bach {
     }
   }
   public static class DirectLocator implements Locator {
-    private final Map<String, URL> uris;
-    public DirectLocator(Map<String, URL> urls) {
-      this.uris = Objects.requireNonNull(urls, "urls");
+    private final Map<String, URI> uris;
+    public DirectLocator(Map<String, URI> uris) {
+      this.uris = Objects.requireNonNull(uris, "uris");
     }
     @Override
-    public Optional<URL> locate(String module) {
+    public Optional<URI> locate(String module) {
       return Optional.ofNullable(uris.get(module));
     }
   }
@@ -274,7 +272,7 @@ public class Bach {
       this.variants = variants;
     }
     @Override
-    public Optional<URL> locate(String module) {
+    public Optional<URI> locate(String module) {
       var group = computeGroup(module);
       if (group == null) return Optional.empty();
       var artifact = computeArtifact(module, group);
@@ -338,7 +336,7 @@ public class Bach {
       }
     }
     @Override
-    public Optional<URL> locate(String module) {
+    public Optional<URI> locate(String module) {
       var maven = moduleMaven.get(module);
       if (maven == null) return Optional.empty();
       var indexOfColon = maven.indexOf(':');
@@ -385,11 +383,11 @@ public class Bach {
     static Resource.Builder newResource() {
       return new Resource.Builder();
     }
-    static URL central(String group, String artifact, String version) {
+    static URI central(String group, String artifact, String version) {
       var resource = newResource().repository(CENTRAL_REPOSITORY);
       return resource.group(group).artifact(artifact).version(version).build().get();
     }
-    final class Resource implements Supplier<URL> {
+    final class Resource implements Supplier<URI> {
       private final String repository;
       private final String group;
       private final String artifact;
@@ -411,25 +409,20 @@ public class Bach {
         this.type = type;
       }
       @Override
-      public URL get() {
+      public URI get() {
         Objects.requireNonNull(repository, "repository");
         Objects.requireNonNull(group, "group");
         Objects.requireNonNull(artifact, "artifact");
         Objects.requireNonNull(version, "version");
         var filename = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
-        var string =
+        return URI.create(
             new StringJoiner("/")
                 .add(repository)
                 .add(group.replace('.', '/'))
                 .add(artifact)
                 .add(version)
                 .add(filename + '.' + type)
-                .toString();
-        try {
-          return new URL(string);
-        } catch (MalformedURLException e) {
-          throw new RuntimeException("malformed URL string representation: " + string);
-        }
+                .toString());
       }
       public static class Builder {
         private String repository;
@@ -1774,15 +1767,6 @@ public class Bach {
       return client.send(request, BodyHandlers.discarding());
     }
     public Path copy(URI uri, Path file, CopyOption... options) throws Exception {
-      logger.log(Level.DEBUG, "Copy {0} to {1}", uri, file);
-      Files.createDirectories(file.getParent());
-      if ("file".equals(uri.getScheme())) {
-        try {
-          return Files.copy(Path.of(uri), file, options);
-        } catch (Exception e) {
-          throw new IllegalArgumentException("copy file failed:" + uri, e);
-        }
-      }
       var request = HttpRequest.newBuilder(uri).GET();
       if (Files.exists(file) && Files.getFileStore(file).supportsFileAttributeView("user")) {
         try {
@@ -1790,9 +1774,10 @@ public class Bach {
           var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
           request.setHeader("If-None-Match", etag);
         } catch (Exception e) {
-          logger.log(Level.WARNING, "Couldn't get 'user:etag' file attribute: {0}", e);
+          logger.log(Level.DEBUG, "couldn't get 'user:etag' file attribute: " + e);
         }
       }
+      Files.createDirectories(file.getParent());
       var handler = BodyHandlers.ofFile(file);
       var response = client.send(request.build(), handler);
       if (response.statusCode() == 200) {
@@ -1804,10 +1789,10 @@ public class Bach {
                 var etag = etagHeader.get();
                 Files.setAttribute(file, "user:etag", StandardCharsets.UTF_8.encode(etag));
               } catch (Exception e) {
-                logger.log(Level.WARNING, "Couldn't set 'user:etag' file attribute: {0}", e);
+                logger.log(Level.DEBUG, "couldn't set 'user:etag' file attribute: " + e.getMessage());
               }
             }
-          } else logger.log(Level.WARNING, "No etag provided in response: {0}", response);
+          } else logger.log(Level.DEBUG, "No etag provided in response: {0}", response);
           var lastModifiedHeader = response.headers().firstValue("last-modified");
           if (lastModifiedHeader.isPresent()) {
             try {
@@ -1818,19 +1803,23 @@ public class Bach {
               var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
               Files.setLastModifiedTime(file, fileTime);
             } catch (Exception e) {
-              logger.log(Level.WARNING, "Couldn't set last modified file attribute: {0}", e);
+              logger.log(Level.DEBUG, "couldn't set last modified file attribute: " + e.getMessage());
             }
           }
         }
-        logger.log(Level.DEBUG, "{0} <- {1}", file, uri);
+        if (logger.isLoggable(Level.DEBUG)) {
+          var size = Files.size(file);
+          logger.log(Level.DEBUG, "{0} copied {1} bytes from {2}", file, size, uri);
+        }
         return file;
       }
-      if (response.statusCode() == 304 /*Not Modified*/) return file;
-      throw new RuntimeException("response=" + response);
+      if (response.statusCode() == 304 /*Not Modified*/) {
+        logger.log(Level.DEBUG, "{0} not modified", uri);
+        return file;
+      }
+      throw new IllegalStateException("copy " + uri + " failed: response=" + response);
     }
     public String read(URI uri) throws Exception {
-      logger.log(Level.DEBUG, "Read {0}", uri);
-      if ("file".equals(uri.getScheme())) return Files.readString(Path.of(uri));
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
     }
