@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.System.Logger;
 import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -212,14 +213,28 @@ public class Bach {
     public URI uri(String module) {
       for (var locator : locators) {
         var located = locator.locate(module);
-        if (located.isPresent()) return located.get();
+        if (located.isPresent()) return located.get().uri();
       }
       throw new FindException("Module " + module + " not locatable via: " + locators());
     }
   }
   @FunctionalInterface
   public interface Locator {
-    Optional<URI> locate(String module);
+    final class Location {
+      private final URI uri;
+      private final String version;
+      public Location(URI uri, String version) {
+        this.uri = uri;
+        this.version = version;
+      }
+      public URI uri() {
+        return uri;
+      }
+      public String toVersionString() {
+        return version == null || version.isEmpty() ? "" : '-' + version;
+      }
+    }
+    Optional<Location> locate(String module);
     static Locator direct(Map<String, URI> uris) {
       return new DirectLocator(uris);
     }
@@ -244,14 +259,19 @@ public class Bach {
       this.coordinates = Objects.requireNonNull(coordinates, "coordinates");
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<Location> locate(String module) {
       var coordinate = coordinates.get(module);
       if (coordinate == null) return Optional.empty();
       var split = coordinate.split(":");
+      if (split.length < 3) throw new RuntimeException("Expected Maven GAV, but got: " + coordinate);
+      var group = split[0];
+      var artifact = split[1];
+      var version = split[2];
       var resource = Maven.newResource().repository(repository);
-      resource.group(split[0]).artifact(split[1]).version(split[2]);
+      resource.group(group).artifact(artifact).version(version);
       resource.classifier(split.length < 4 ? "" : split[3]);
-      return Optional.of(resource.build().get());
+      var uri = resource.build().get();
+      return Optional.of(new Location(uri, version));
     }
   }
   public static class DirectLocator implements Locator {
@@ -260,8 +280,10 @@ public class Bach {
       this.uris = Objects.requireNonNull(uris, "uris");
     }
     @Override
-    public Optional<URI> locate(String module) {
-      return Optional.ofNullable(uris.get(module));
+    public Optional<Location> locate(String module) {
+      var uri = uris.get(module);
+      if (uri == null) return Optional.empty();
+      return Optional.of(new Location(uri, null));
     }
   }
   public static class DynamicLocator implements Locator {
@@ -272,7 +294,7 @@ public class Bach {
       this.variants = variants;
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<Location> locate(String module) {
       var group = computeGroup(module);
       if (group == null) return Optional.empty();
       var artifact = computeArtifact(module, group);
@@ -286,13 +308,18 @@ public class Bach {
               .artifact(artifact)
               .version(version)
               .classifier(computeClassifier(module, group, artifact, version));
-      return Optional.of(resource.build().get());
+      var uri = resource.build().get();
+      return Optional.of(new Location(uri, version));
     }
     String computeGroup(String module) {
       if (module.startsWith("org.junit.platform")) return "org.junit.platform";
       if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
       if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
       switch (module) {
+        case "org.apiguardian.api":
+          return "org.apiguardian";
+        case "org.opentest4j":
+          return "org.opentest4j";
         case "junit":
           return "junit";
       }
@@ -301,12 +328,24 @@ public class Bach {
     String computeArtifact(String module, String group) {
       if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
       switch (module) {
+        case "org.apiguardian.api":
+          return "apiguardian-api";
+        case "org.opentest4j":
+          return "opentest4j";
         case "junit":
           return "junit";
       }
       return null;
     }
     String computeVersion(String module, String group, String artifact) {
+      switch (module) {
+        case "org.apiguardian.api":
+          return "1.1.0";
+        case "org.opentest4j":
+          return "1.2.0";
+        case "junit":
+          return "junit";
+      }
       switch (group) {
         case "junit":
           return "4.13";
@@ -336,7 +375,7 @@ public class Bach {
       }
     }
     @Override
-    public Optional<URI> locate(String module) {
+    public Optional<Location> locate(String module) {
       var maven = moduleMaven.get(module);
       if (maven == null) return Optional.empty();
       var indexOfColon = maven.indexOf(':');
@@ -349,7 +388,8 @@ public class Bach {
               .group(maven.substring(0, indexOfColon))
               .artifact(maven.substring(indexOfColon + 1))
               .version(version);
-      return Optional.of(resource.build().get());
+      var uri = resource.build().get();
+      return Optional.of(new Location(uri, version));
     }
     private static final String ROOT = "https://github.com/sormuras/modules";
     private static Map<String, String> load(Resources resources, String properties) throws Exception {
@@ -761,8 +801,13 @@ public class Bach {
       var base = paths.base();
       var src = base.resolve("src"); // More subdirectory candidates? E.g. "modules", "sources"?
       var root = Files.isDirectory(src) ? src : base;
-      try (var stream = Files.find(root, 5, (path, __) -> path.endsWith("module-info.java"))) {
-        return stream.map(this::scanUnit).collect(Collectors.toList());
+      try (var stream = Files.find(root, 9, (path, __) -> path.endsWith("module-info.java"))) {
+        var paths = stream.collect(Collectors.toCollection(ArrayList::new));
+        var count = paths.stream().mapToInt(Path::getNameCount).min().orElseThrow();
+        return paths.stream()
+            .filter(path -> path.getNameCount() == count)
+            .map(this::scanUnit)
+            .collect(Collectors.toList());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -1682,6 +1727,64 @@ public class Bach {
     }
   }
   public interface GarbageCollect {}
+  public static class ModuleResolver {
+    private final Path lib;
+    private final Set<String> declared;
+    private final BiConsumer<Set<String>, Path> downloader;
+    private final Set<String> system;
+    public ModuleResolver(Path lib, Set<String> declared, BiConsumer<Set<String>, Path> downloader) {
+      this.lib = Objects.requireNonNull(lib, "lib");
+      this.declared = new TreeSet<>(declared);
+      this.downloader = Objects.requireNonNull(downloader, "downloader");
+      this.system = declared(ModuleFinder.ofSystem());
+    }
+    public void resolve(Set<String> required) throws Exception {
+      resolveModules(required);
+      resolveLibraryModules();
+    }
+    public void resolveModules(Set<String> required) throws Exception {
+      var missing = missing(required);
+      if (missing.isEmpty()) return;
+      Files.createDirectories(lib);
+      downloader.accept(missing, lib);
+      var unresolved = missing(required);
+      if (unresolved.isEmpty()) return;
+      throw new IllegalStateException("Unresolved modules: " + unresolved);
+    }
+    public void resolveLibraryModules() throws Exception {
+      do {
+        var missing = missing(required(ModuleFinder.of(lib)));
+        if (missing.isEmpty()) return;
+        resolveModules(missing);
+      } while (true);
+    }
+    Set<String> missing(Set<String> required) {
+      var missing = new TreeSet<>(required);
+      missing.removeAll(declared);
+      if (required.isEmpty()) return Set.of();
+      missing.removeAll(system);
+      if (required.isEmpty()) return Set.of();
+      var library = declared(ModuleFinder.of(lib));
+      missing.removeAll(library);
+      return missing;
+    }
+    static Set<String> declared(ModuleFinder finder) {
+      return finder.findAll().stream()
+          .map(ModuleReference::descriptor)
+          .map(ModuleDescriptor::name)
+          .collect(Collectors.toCollection(TreeSet::new));
+    }
+    static Set<String> required(ModuleFinder finder) {
+      return finder.findAll().stream()
+          .map(ModuleReference::descriptor)
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+          .map(Requires::name)
+          .collect(Collectors.toCollection(TreeSet::new));
+    }
+  }
   public interface Modules {
     interface Patterns {
       Pattern NAME =
