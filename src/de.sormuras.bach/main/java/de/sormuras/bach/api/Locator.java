@@ -24,17 +24,31 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 
-/** Module name to URI function. */
+/** Module name to location information function. */
 @FunctionalInterface
 public interface Locator {
 
-  /** Compute an optional URI for the given module name. */
-  Optional<URI> locate(String module);
+  /** Location information record. */
+  final class Location {
+    private final URI uri;
+    private final String version;
 
-  /** Compute an optional raw version for the given module name. */
-  default Optional<String> version(String module) {
-    return Optional.empty();
+    public Location(URI uri, String version) {
+      this.uri = uri;
+      this.version = version;
+    }
+
+    public URI uri() {
+      return uri;
+    }
+
+    public String toVersionString() {
+      return version == null || version.isEmpty() ? "" : '-' + version;
+    }
   }
+
+  /** Compute an optional location information for the given module name. */
+  Optional<Location> locate(String module);
 
   static Locator direct(Map<String, URI> uris) {
     return new DirectLocator(uris);

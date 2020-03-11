@@ -19,7 +19,6 @@ package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
-import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,13 +35,18 @@ public /*static*/ class CoordinatesLocator implements Locator {
   }
 
   @Override
-  public Optional<URI> locate(String module) {
+  public Optional<Location> locate(String module) {
     var coordinate = coordinates.get(module);
     if (coordinate == null) return Optional.empty();
     var split = coordinate.split(":");
+    if (split.length < 3) throw new RuntimeException("Expected Maven GAV, but got: " + coordinate);
+    var group = split[0];
+    var artifact = split[1];
+    var version = split[2];
     var resource = Maven.newResource().repository(repository);
-    resource.group(split[0]).artifact(split[1]).version(split[2]);
+    resource.group(group).artifact(artifact).version(version);
     resource.classifier(split.length < 4 ? "" : split[3]);
-    return Optional.of(resource.build().get());
+    var uri = resource.build().get();
+    return Optional.of(new Location(uri, version));
   }
 }

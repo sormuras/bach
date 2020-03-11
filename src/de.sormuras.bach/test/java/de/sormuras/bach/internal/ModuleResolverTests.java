@@ -39,14 +39,15 @@ class ModuleResolverTests {
     final Resources resources = new Resources(null, HttpClient.newHttpClient());
 
     @Override
-    public void accept(Set<String> modules, Path lib) {
+    public void accept(Set<String> modules, Path directory) {
       System.out.println(modules);
       for (var module : modules) {
-        var uri = locator.locate(module);
-        if (uri.isEmpty()) continue;
-        var version = locator.version(module).map(v -> "-" + v).orElse("");
+        var location = locator.locate(module);
+        if (location.isEmpty()) continue;
+        var uri = location.get().uri();
+        var version = location.get().toVersionString();
         try {
-          resources.copy(uri.get(), lib.resolve(module + version + ".jar"));
+          resources.copy(uri, directory.resolve(module + version + ".jar"));
         } catch (Exception e) {
           System.err.println(e.getMessage());
         }
@@ -65,14 +66,14 @@ class ModuleResolverTests {
     try {
       assertLinesMatch(
           List.of(
-              "org.apiguardian.api.jar",
-              "org.junit.jupiter.api.jar",
-              "org.junit.jupiter.engine.jar",
-              "org.junit.jupiter.jar",
-              "org.junit.jupiter.params.jar",
-              "org.junit.platform.commons.jar",
-              "org.junit.platform.engine.jar",
-              "org.opentest4j.jar"),
+              "org.apiguardian.api-.+.jar",
+              "org.junit.jupiter-.+.jar",
+              "org.junit.jupiter.api-.+.jar",
+              "org.junit.jupiter.engine-.+.jar",
+              "org.junit.jupiter.params-.+.jar",
+              "org.junit.platform.commons-.+.jar",
+              "org.junit.platform.engine-.+.jar",
+              "org.opentest4j-.+.jar"),
           files);
     } catch (Throwable throwable) {
       files.forEach(System.err::println);

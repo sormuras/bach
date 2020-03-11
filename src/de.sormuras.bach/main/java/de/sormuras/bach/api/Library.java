@@ -45,7 +45,7 @@ public /*static*/ final class Library {
   public URI uri(String module) {
     for (var locator : locators) {
       var located = locator.locate(module);
-      if (located.isPresent()) return located.get();
+      if (located.isPresent()) return located.get().uri();
     }
     throw new FindException("Module " + module + " not locatable via: " + locators());
   }

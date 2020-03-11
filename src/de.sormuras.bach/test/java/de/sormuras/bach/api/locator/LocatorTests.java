@@ -43,13 +43,13 @@ class LocatorTests {
     @Test
     void checkDirectLocator() {
       var locator = new DirectLocator(Map.of(module, uri));
-      assertEquals(uri, locator.locate(module).orElseThrow());
+      assertEquals(uri, locator.locate(module).orElseThrow().uri());
     }
 
     @Test
     void checkDynamicLocator() {
       var locator = new DynamicLocator(Maven.CENTRAL_REPOSITORY, Map.of());
-      assertEquals(uri, locator.locate(module).orElseThrow());
+      assertEquals(uri, locator.locate(module).orElseThrow().uri());
     }
 
     @Test
@@ -58,7 +58,7 @@ class LocatorTests {
       var log = new Log();
       var resources = new Resources(log, client);
       var locator = new SormurasModulesLocator(Map.of(), resources);
-      assertEquals(uri, locator.locate(module).orElseThrow());
+      assertEquals(uri, locator.locate(module).orElseThrow().uri());
       log.assertThatEverythingIsFine();
     }
   }

@@ -47,7 +47,7 @@ public /*static*/ class SormurasModulesLocator implements Locator {
   }
 
   @Override
-  public Optional<URI> locate(String module) {
+  public Optional<Location> locate(String module) {
     var maven = moduleMaven.get(module);
     if (maven == null) return Optional.empty();
     var indexOfColon = maven.indexOf(':');
@@ -60,7 +60,8 @@ public /*static*/ class SormurasModulesLocator implements Locator {
             .group(maven.substring(0, indexOfColon))
             .artifact(maven.substring(indexOfColon + 1))
             .version(version);
-    return Optional.of(resource.build().get());
+    var uri = resource.build().get();
+    return Optional.of(new Location(uri, version));
   }
 
   private static final String ROOT = "https://github.com/sormuras/modules";

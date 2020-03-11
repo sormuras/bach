@@ -32,7 +32,9 @@ public /*static*/ class DirectLocator implements Locator {
   }
 
   @Override
-  public Optional<URI> locate(String module) {
-    return Optional.ofNullable(uris.get(module));
+  public Optional<Location> locate(String module) {
+    var uri = uris.get(module);
+    if (uri == null) return Optional.empty();
+    return Optional.of(new Location(uri, null));
   }
 }

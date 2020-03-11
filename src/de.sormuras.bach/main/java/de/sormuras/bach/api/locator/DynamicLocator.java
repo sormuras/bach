@@ -22,6 +22,7 @@ import de.sormuras.bach.api.Maven;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 /** Compute a modular JAR URI based on educated guesses. */
 public /*static*/ class DynamicLocator implements Locator {
@@ -35,7 +36,7 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   @Override
-  public Optional<URI> locate(String module) {
+  public Optional<Location> locate(String module) {
     var group = computeGroup(module);
     if (group == null) return Optional.empty();
     var artifact = computeArtifact(module, group);
@@ -49,7 +50,8 @@ public /*static*/ class DynamicLocator implements Locator {
             .artifact(artifact)
             .version(version)
             .classifier(computeClassifier(module, group, artifact, version));
-    return Optional.of(resource.build().get());
+    var uri = resource.build().get();
+    return Optional.of(new Location(uri, version));
   }
 
   String computeGroup(String module) {
