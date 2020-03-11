@@ -57,6 +57,10 @@ public /*static*/ class DynamicLocator implements Locator {
     if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
     if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
     switch (module) {
+      case "org.apiguardian.api":
+        return "org.apiguardian";
+      case "org.opentest4j":
+        return "org.opentest4j";
       case "junit":
         return "junit";
     }
@@ -67,6 +71,10 @@ public /*static*/ class DynamicLocator implements Locator {
     // Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
     if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
     switch (module) {
+      case "org.apiguardian.api":
+        return "apiguardian-api";
+      case "org.opentest4j":
+        return "opentest4j";
       case "junit":
         return "junit";
     }
@@ -74,6 +82,14 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   String computeVersion(String module, String group, String artifact) {
+    switch (module) {
+      case "org.apiguardian.api":
+        return "1.1.0";
+      case "org.opentest4j":
+        return "1.2.0";
+      case "junit":
+        return "junit";
+    }
     switch (group) {
       case "junit":
         return "4.13";
