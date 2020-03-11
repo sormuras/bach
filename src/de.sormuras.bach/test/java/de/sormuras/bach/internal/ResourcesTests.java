@@ -70,7 +70,7 @@ class ResourcesTests {
       resources.copy(uri, temp.resolve("jupiter.jar"));
       log.assertThatEverythingIsFine();
       assertLinesMatch(
-          List.of("L " + jar + " copied 5.929 bytes from " + uri, "L " + uri + " not modified"),
+          List.of("L " + jar + " copied 5929 bytes from " + uri, "L " + uri + " not modified"),
           log.lines());
     }
 

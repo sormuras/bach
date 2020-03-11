@@ -98,7 +98,7 @@ public /*static*/ class Resources {
         }
       }
       if (logger.isLoggable(Level.DEBUG)) {
-        var size = Files.size(file);
+        var size = String.valueOf(Files.size(file));
         logger.log(Level.DEBUG, "{0} copied {1} bytes from {2}", file, size, uri);
       }
       return file;
