@@ -69,8 +69,13 @@ public /*static*/ class Scanner {
     var base = paths.base();
     var src = base.resolve("src"); // More subdirectory candidates? E.g. "modules", "sources"?
     var root = Files.isDirectory(src) ? src : base;
-    try (var stream = Files.find(root, 5, (path, __) -> path.endsWith("module-info.java"))) {
-      return stream.map(this::scanUnit).collect(Collectors.toList());
+    try (var stream = Files.find(root, 9, (path, __) -> path.endsWith("module-info.java"))) {
+      var paths = stream.collect(Collectors.toCollection(ArrayList::new));
+      var count = paths.stream().mapToInt(Path::getNameCount).min().orElseThrow();
+      return paths.stream()
+          .filter(path -> path.getNameCount() == count)
+          .map(this::scanUnit)
+          .collect(Collectors.toList());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
