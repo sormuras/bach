@@ -31,6 +31,11 @@ public interface Locator {
   /** Compute an optional URI for the given module name. */
   Optional<URI> locate(String module);
 
+  /** Compute an optional raw version for the given module name. */
+  default Optional<String> version(String module) {
+    return Optional.empty();
+  }
+
   static Locator direct(Map<String, URI> uris) {
     return new DirectLocator(uris);
   }
