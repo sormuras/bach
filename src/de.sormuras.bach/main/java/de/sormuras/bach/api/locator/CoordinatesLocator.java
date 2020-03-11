@@ -19,7 +19,7 @@ package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
-import java.net.URL;
+import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public /*static*/ class CoordinatesLocator implements Locator {
   }
 
   @Override
-  public Optional<URL> locate(String module) {
+  public Optional<URI> locate(String module) {
     var coordinate = coordinates.get(module);
     if (coordinate == null) return Optional.empty();
     var split = coordinate.split(":");

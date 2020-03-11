@@ -21,7 +21,6 @@ import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
 import de.sormuras.bach.internal.Resources;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -48,7 +47,7 @@ public /*static*/ class SormurasModulesLocator implements Locator {
   }
 
   @Override
-  public Optional<URL> locate(String module) {
+  public Optional<URI> locate(String module) {
     var maven = moduleMaven.get(module);
     if (maven == null) return Optional.empty();
     var indexOfColon = maven.indexOf(':');

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.sormuras.bach.api.Maven;
 import de.sormuras.bach.internal.Resources;
-import java.net.URL;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.util.Map;
@@ -38,18 +38,18 @@ class LocatorTests {
   class Jupiter {
 
     final String module = "org.junit.jupiter";
-    final URL url = Maven.central("org.junit.jupiter", "junit-jupiter", "5.6.0");
+    final URI uri = Maven.central("org.junit.jupiter", "junit-jupiter", "5.6.0");
 
     @Test
     void checkDirectLocator() {
-      var locator = new DirectLocator(Map.of(module, url));
-      assertEquals(url, locator.locate(module).orElseThrow());
+      var locator = new DirectLocator(Map.of(module, uri));
+      assertEquals(uri, locator.locate(module).orElseThrow());
     }
 
     @Test
     void checkDynamicLocator() {
       var locator = new DynamicLocator(Maven.CENTRAL_REPOSITORY, Map.of());
-      assertEquals(url, locator.locate(module).orElseThrow());
+      assertEquals(uri, locator.locate(module).orElseThrow());
     }
 
     @Test
@@ -58,7 +58,7 @@ class LocatorTests {
       var log = new Log();
       var resources = new Resources(log, client);
       var locator = new SormurasModulesLocator(Map.of(), resources);
-      assertEquals(url, locator.locate(module).orElseThrow());
+      assertEquals(uri, locator.locate(module).orElseThrow());
       log.assertThatEverythingIsFine();
     }
   }

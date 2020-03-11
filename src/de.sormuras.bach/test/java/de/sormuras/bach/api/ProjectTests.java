@@ -138,11 +138,11 @@ class ProjectTests {
       var library = project.library();
       assertEquals(Set.of("bar", "foo"), library.requires());
       assertFalse(library.locators().isEmpty());
-      var bar = library.url("bar");
+      var bar = library.uri("bar");
       assertEquals(Maven.central("com.bar", "bar", "1"), bar);
-      var foo = library.url("foo");
+      var foo = library.uri("foo");
       assertEquals(Maven.central("org.foo", "foo", "2"), foo);
-      var junit = library.url("junit");
+      var junit = library.uri("junit");
       assertEquals(Maven.central("junit", "junit", "3.7"), junit);
     }
   }

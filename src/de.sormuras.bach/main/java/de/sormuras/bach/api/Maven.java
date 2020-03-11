@@ -17,9 +17,10 @@
 
 package de.sormuras.bach.api;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
 
@@ -33,14 +34,15 @@ public interface Maven {
     return new Resource.Builder();
   }
 
-  /** Maven Central URL. */
-  static URL central(String group, String artifact, String version) {
+  /** Maven Central URI. */
+  static URI central(String group, String artifact, String version) {
     var resource = newResource().repository(CENTRAL_REPOSITORY);
     return resource.group(group).artifact(artifact).version(version).build().get();
   }
 
-  /** Maven unified resource locator supplier. */
-  final class Resource implements Supplier<URL> {
+
+  /** Maven unified resource identifier supplier. */
+  final class Resource implements Supplier<URI> {
 
     private final String repository;
     private final String group;
@@ -65,25 +67,20 @@ public interface Maven {
     }
 
     @Override
-    public URL get() {
+    public URI get() {
       Objects.requireNonNull(repository, "repository");
       Objects.requireNonNull(group, "group");
       Objects.requireNonNull(artifact, "artifact");
       Objects.requireNonNull(version, "version");
       var filename = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
-      var string =
+      return URI.create(
           new StringJoiner("/")
               .add(repository)
               .add(group.replace('.', '/'))
               .add(artifact)
               .add(version)
               .add(filename + '.' + type)
-              .toString();
-      try {
-        return new URL(string);
-      } catch (MalformedURLException e) {
-        throw new RuntimeException("malformed URL string representation: " + string);
-      }
+              .toString());
     }
 
     public static class Builder {

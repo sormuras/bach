@@ -19,7 +19,7 @@ package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
-import java.net.URL;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,7 +35,7 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   @Override
-  public Optional<URL> locate(String module) {
+  public Optional<URI> locate(String module) {
     var group = computeGroup(module);
     if (group == null) return Optional.empty();
     var artifact = computeArtifact(module, group);
