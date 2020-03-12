@@ -17,8 +17,6 @@
 
 package de.sormuras.bach.api;
 
-import java.lang.module.FindException;
-import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -40,13 +38,5 @@ public /*static*/ final class Library {
 
   public List<Locator> locators() {
     return locators;
-  }
-
-  public URI uri(String module) {
-    for (var locator : locators) {
-      var located = locator.locate(module);
-      if (located.isPresent()) return located.get().uri();
-    }
-    throw new FindException("Module " + module + " not locatable via: " + locators());
   }
 }

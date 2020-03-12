@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
+import java.lang.module.FindException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -137,12 +139,20 @@ class ProjectTests {
       var library = project.library();
       assertEquals(Set.of("bar", "foo"), library.requires());
       assertFalse(library.locators().isEmpty());
-      var bar = library.uri("bar");
+      var bar = uri(library,"bar");
       assertEquals(Maven.central("com.bar", "bar", "1"), bar);
-      var foo = library.uri("foo");
+      var foo = uri(library, "foo");
       assertEquals(Maven.central("org.foo", "foo", "2"), foo);
-      var junit = library.uri("junit");
+      var junit = uri(library, "junit");
       assertEquals(Maven.central("junit", "junit", "3.7"), junit);
+    }
+
+    public URI uri(Library library, String module) {
+      for (var locator : library.locators()) {
+        var located = locator.locate(module);
+        if (located.isPresent()) return located.get().uri();
+      }
+      throw new FindException("Module " + module + " not locatable");
     }
   }
 
