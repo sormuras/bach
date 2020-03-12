@@ -24,6 +24,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -46,13 +47,12 @@ public /*static*/ class Scanner {
   public Project.Builder scan() {
     var units = scanUnits();
     var layout = Layout.find(units).orElseThrow();
-    // var survey = ModuleSurvey.of(units.stream().map(Unit::descriptor));
     return Project.builder()
         .paths(paths)
         .name(scanName().orElse("unnamed"))
         .units(units)
-        .realms(layout.realmsOf(units));
-    // .survey(survey);
+        .realms(layout.realmsOf(units))
+        .locators(List.of(Locator.dynamicCentral(Map.of())));
   }
 
   /** Return name of the project. */

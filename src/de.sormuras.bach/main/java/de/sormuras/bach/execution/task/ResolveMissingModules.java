@@ -29,6 +29,7 @@ import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 
 /** Determine and load missing library modules. */
@@ -43,9 +44,13 @@ public /*static*/ class ResolveMissingModules extends Task {
     var downloader = new Downloader(execution.summary().project());
     var project = execution.summary().project();
     var lib = project.paths().lib();
-    var resolver = new ModuleResolver(lib, Set.of(), downloader);
+    var declared = project.toDeclaredModuleNames();
+    var requires = new TreeSet<String>();
+    requires.addAll(project.toRequiredModuleNames());
+    requires.addAll(project.library().requires());
     try {
-      resolver.resolve(project.library().requires());
+      var resolver = new ModuleResolver(lib, declared, downloader);
+      resolver.resolve(requires);
       return execution.ok();
     } catch (Exception e) {
       return execution.failed(e);

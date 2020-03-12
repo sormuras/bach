@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.api;
 
+import de.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** Bach's project model. */
 public /*static*/ final class Project {
@@ -72,6 +74,16 @@ public /*static*/ final class Project {
 
   public Tuner tuner() {
     return structure().tuner();
+  }
+
+  public Set<String> toDeclaredModuleNames() {
+    return structure.units().stream()
+        .map(Unit::name)
+        .collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public Set<String> toRequiredModuleNames() {
+    return Modules.required(structure.units().stream().map(Unit::descriptor));
   }
 
   public String toNameAndVersion() {
