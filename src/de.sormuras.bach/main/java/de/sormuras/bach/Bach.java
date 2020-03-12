@@ -42,9 +42,6 @@ public class Bach {
     Main.main(args);
   }
 
-  /** Shared heavyweight singletons. */
-  private final Atomics atomics;
-
   /** Line-based message printing consumer. */
   private final Consumer<String> printer;
 
@@ -57,24 +54,17 @@ public class Bach {
   /** Initialize this instance with default values. */
   public Bach() {
     this(
-        new Atomics(),
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Atomics atomics, Consumer<String> printer, boolean debug, boolean dryRun) {
-    this.atomics = Objects.requireNonNull(atomics, "atomics");
+  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.debug = debug;
     this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
-  }
-
-  /** Shared heavyweight singletons. */
-  public Atomics atomics() {
-    return atomics;
   }
 
   /** Verbosity flag. */

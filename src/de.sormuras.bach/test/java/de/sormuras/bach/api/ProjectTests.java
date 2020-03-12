@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.Atomics;
 import de.sormuras.bach.Bach;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -181,8 +180,7 @@ class ProjectTests {
         var base = Path.of("doc/project", "jigsaw.quick.start");
         var project = new Scanner(new Paths(base, out, out)).scan().build();
         var log = new Log();
-        var bach = new Bach(new Atomics(), log, true, false);
-        assertNotNull(bach.atomics());
+        var bach = new Bach(log, true, false);
         var summary = bach.build(project);
         summary.assertSuccessful();
         assertSame(project, summary.project());
