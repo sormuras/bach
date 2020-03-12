@@ -18,12 +18,16 @@
 package de.sormuras.bach.internal;
 
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Module-related utilities. */
 public interface Modules {
@@ -80,5 +84,21 @@ public interface Modules {
               () -> builder.requires(requiredName));
     }
     return builder;
+  }
+
+  /** Return distinct names of the given descriptors. */
+  static Set<String> declared(Stream<ModuleDescriptor> descriptors) {
+    return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  /** Return distinct names of the required modules of each given descriptor. */
+  static Set<String> required(Stream<ModuleDescriptor> descriptors) {
+    return descriptors
+        .map(ModuleDescriptor::requires)
+        .flatMap(Set::stream)
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+        .map(Requires::name)
+        .collect(Collectors.toCollection(TreeSet::new));
   }
 }

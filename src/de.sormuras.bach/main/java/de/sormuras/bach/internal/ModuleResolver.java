@@ -17,8 +17,6 @@
 
 package de.sormuras.bach.internal;
 
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Files;
@@ -27,7 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 /** Resolve missing external modules. */
 public /*static*/ class ModuleResolver {
@@ -78,21 +75,10 @@ public /*static*/ class ModuleResolver {
   }
 
   static Set<String> declared(ModuleFinder finder) {
-    return finder.findAll().stream()
-        .map(ModuleReference::descriptor)
-        .map(ModuleDescriptor::name)
-        .collect(Collectors.toCollection(TreeSet::new));
+    return Modules.declared(finder.findAll().stream().map(ModuleReference::descriptor));
   }
 
   static Set<String> required(ModuleFinder finder) {
-    return finder.findAll().stream()
-        .map(ModuleReference::descriptor)
-        .map(ModuleDescriptor::requires)
-        .flatMap(Set::stream)
-        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-        // .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
-        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
-        .map(Requires::name)
-        .collect(Collectors.toCollection(TreeSet::new));
+    return Modules.required(finder.findAll().stream().map(ModuleReference::descriptor));
   }
 }

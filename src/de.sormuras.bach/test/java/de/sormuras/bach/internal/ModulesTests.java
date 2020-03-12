@@ -19,6 +19,7 @@ package de.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -81,5 +83,34 @@ class ModulesTests {
       var actual = describe("open /*test*/ module a /*extends a*/ {}");
       assertEquals(describe("a", a -> {}), actual);
     }
+  }
+
+  @Nested
+  class DeclaredAndRequired {
+    @Test
+    void empty() {
+      assertTrue(Modules.declared(Stream.empty()).isEmpty());
+      assertTrue(Modules.required(Stream.empty()).isEmpty());
+    }
+
+    @Test
+    void modulesWithoutRequires() {
+      var modules = Set.of(module("a"), module("b"), module("c"));
+      assertEquals(Set.of("a", "b", "c"), Modules.declared(modules.stream()));
+      assertEquals(Set.of(), Modules.required(modules.stream()));
+    }
+
+    @Test
+    void modulesWithRequires() {
+      var modules = Set.of(module("a"), module("b", "a"), module("c", "b", "x"));
+      assertEquals(Set.of("a", "b", "c"), Modules.declared(modules.stream()));
+      assertEquals(Set.of("a", "b", "x"), Modules.required(modules.stream()));
+    }
+  }
+
+  static ModuleDescriptor module(String name, String... requires) {
+    var builder = ModuleDescriptor.newModule(name);
+    for(var require : requires) builder.requires(require);
+    return builder.build();
   }
 }
