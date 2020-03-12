@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Log;
+import test.base.Tree;
 
 class ProjectTests {
 
@@ -139,7 +140,7 @@ class ProjectTests {
       var library = project.library();
       assertEquals(Set.of("bar", "foo"), library.requires());
       assertFalse(library.locators().isEmpty());
-      var bar = uri(library,"bar");
+      var bar = uri(library, "bar");
       assertEquals(Maven.central("com.bar", "bar", "1"), bar);
       var foo = uri(library, "foo");
       assertEquals(Maven.central("org.foo", "foo", "2"), foo);
@@ -194,6 +195,37 @@ class ProjectTests {
         var summary = bach.build(project);
         summary.assertSuccessful();
         assertSame(project, summary.project());
+      }
+    }
+
+    @Nested
+    class JigsawQuickStartWithJUnit {
+
+      @Test
+      void runBuildAndCheckCreatedAssets(@TempDir Path out) {
+        var base = Path.of("doc/project", "jigsaw.quick.start.with.junit");
+        var paths = new Paths(base, out.resolve("out"), out.resolve("lib"));
+        var project = new Scanner(paths).scan().build();
+        var log = new Log();
+        var bach = new Bach(log, true, false);
+        var summary = bach.build(project);
+        summary.assertSuccessful();
+        assertLinesMatch(
+            List.of(
+                "org.apiguardian.api-1.1.0.jar",
+                "org.junit.jupiter-5.6.0.jar",
+                "org.junit.jupiter.api-5.6.0.jar",
+                "org.junit.jupiter.engine-5.6.0.jar",
+                "org.junit.jupiter.params-5.6.0.jar",
+                "org.junit.platform.commons-1.6.0.jar",
+                "org.junit.platform.engine-1.6.0.jar",
+                "org.opentest4j-1.2.0.jar"),
+            Tree.walk(paths.lib()));
+        assertLinesMatch(
+            List.of("com.greetings.jar", "org.astro.jar"), Tree.walk(paths.out("modules", "main")));
+        assertLinesMatch(
+            List.of("org.astro.jar", "test.base.jar", "test.modules.jar"),
+            Tree.walk(paths.out("modules", "test")));
       }
     }
   }

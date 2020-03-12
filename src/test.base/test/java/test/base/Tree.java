@@ -19,18 +19,27 @@ package test.base;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public interface Tree {
+  /** Walk directory tree structure. */
+  static List<String> walk(Path root) {
+    var list = new ArrayList<String>();
+    walk(root, list::add);
+    return list;
+  }
+
   /** Walk directory tree structure. */
   static void walk(Path root, Consumer<String> out) {
     try (var stream = Files.walk(root)) {
       stream
           .map(root::relativize)
           .map(path -> path.toString().replace('\\', '/'))
-          .sorted()
           .filter(Predicate.not(String::isEmpty))
+          .sorted()
           .forEach(out);
     } catch (Exception e) {
       throw new RuntimeException("Files walk failed: " + root, e);

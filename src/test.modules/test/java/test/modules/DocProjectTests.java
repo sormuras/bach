@@ -23,7 +23,6 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.api.Paths;
 import de.sormuras.bach.api.Scanner;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,8 +44,7 @@ class DocProjectTests {
       var log = new Log();
       var bach = new Bach(log, true, false);
       var summary = bach.build(project);
-      var files = new ArrayList<String>();
-      Tree.walk(temp, files::add);
+      var files = Tree.walk(temp);
       try {
         summary.assertSuccessful();
         assertTrue(files.contains("out/Build.java"));
