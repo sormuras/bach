@@ -20,7 +20,6 @@ package de.sormuras.bach.internal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
 import java.lang.module.ModuleDescriptor.Version;
@@ -33,22 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class ModulesTests {
-
-  @Nested
-  class Origin {
-
-    @Test
-    void originOfJavaLangObjectIsJavaBase() {
-      var expected = Object.class.getModule().getDescriptor().toNameAndVersion();
-      assertEquals(expected, Modules.origin(new Object()));
-    }
-
-    @Test
-    void originOfThisObjectIsTheLocationOfTheClassFileContainer() {
-      var expected = getClass().getModule().getDescriptor().toNameAndVersion();
-      assertEquals(expected, Modules.origin(this));
-    }
-  }
 
   @Nested
   class Describe {
@@ -97,50 +80,6 @@ class ModulesTests {
     void moduleDeclarationWithComments() {
       var actual = describe("open /*test*/ module a /*extends a*/ {}");
       assertEquals(describe("a", a -> {}), actual);
-    }
-  }
-
-  @Nested
-  class ModuleSourcePath {
-
-    @Test
-    void moduleSourcePathWithModuleNameAtTheBeginning() {
-      var info = Path.of("a.b.c/module-info.java");
-      var actual = Modules.moduleSourcePath(info, "a.b.c");
-      assertEquals(Path.of(".").toString(), actual);
-    }
-
-    @Test
-    void moduleSourcePathWithModuleNameAtTheBeginningWithOffset() {
-      var info = Path.of("a.b.c/offset/module-info.java");
-      var actual = Modules.moduleSourcePath(info, "a.b.c");
-      assertEquals(Path.of(".", "offset").toString(), actual);
-    }
-
-    @Test
-    void moduleSourcePathWithModuleNameAtTheEnd() {
-      var info = Path.of("src/main/a.b.c/module-info.java");
-      var actual = Modules.moduleSourcePath(info, "a.b.c");
-      assertEquals(Path.of("src/main").toString(), actual);
-    }
-
-    @Test
-    void moduleSourcePathWithNestedModuleName() {
-      var info = Path.of("src/a.b.c/main/java/module-info.java");
-      var actual = Modules.moduleSourcePath(info, "a.b.c");
-      assertEquals(String.join(File.separator, "src", "*", "main", "java"), actual);
-    }
-
-    @Test
-    void moduleSourcePathWithNonUniqueModuleNameInPath() {
-      var info = Path.of("a/a/module-info.java");
-      assertThrows(IllegalArgumentException.class, () -> Modules.moduleSourcePath(info, "a"));
-    }
-
-    @Test
-    void moduleSourcePathWithoutModuleNameInPath() {
-      var info = Path.of("a/a/module-info.java");
-      assertThrows(IllegalArgumentException.class, () -> Modules.moduleSourcePath(info, "b"));
     }
   }
 }

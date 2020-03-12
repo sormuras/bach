@@ -17,16 +17,12 @@
 
 package de.sormuras.bach.internal;
 
-import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /** Module-related utilities. */
@@ -84,40 +80,5 @@ public interface Modules {
               () -> builder.requires(requiredName));
     }
     return builder;
-  }
-
-  /** Return module source path by combining a module-info.java path and a module name. */
-  static String moduleSourcePath(Path info, String module) {
-    var names = new ArrayList<String>();
-    var found = new AtomicBoolean(false);
-    for (var element : info.subpath(0, info.getNameCount() - 1)) {
-      var name = element.toString();
-      if (name.equals(module)) {
-        if (found.getAndSet(true))
-          throw new IllegalArgumentException(
-              String.format("Name '%s' not unique in path: %s", module, info));
-        if (names.isEmpty()) names.add("."); // leading '*' are bad
-        if (names.size() < info.getNameCount() - 2) names.add("*"); // avoid trailing '*'
-        continue;
-      }
-      names.add(name);
-    }
-    if (!found.get())
-      throw new IllegalArgumentException(
-          String.format("Name of module '%s' not found in path's elements: %s", module, info));
-    if (names.isEmpty()) return ".";
-    return String.join(File.separator, names);
-  }
-
-  /** Return modular origin of the given object. */
-  static String origin(Object object) {
-    var type = object.getClass();
-    var module = type.getModule();
-    if (module.isNamed()) return module.getDescriptor().toNameAndVersion();
-    try {
-      return type.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
-    } catch (NullPointerException | URISyntaxException ignore) {
-      return module.toString();
-    }
   }
 }
