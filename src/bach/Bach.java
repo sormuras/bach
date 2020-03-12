@@ -26,7 +26,6 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -65,7 +64,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -566,6 +564,14 @@ public class Bach {
     public Tuner tuner() {
       return structure().tuner();
     }
+    public Set<String> toDeclaredModuleNames() {
+      return structure.units().stream()
+          .map(Unit::name)
+          .collect(Collectors.toCollection(TreeSet::new));
+    }
+    public Set<String> toRequiredModuleNames() {
+      return Modules.required(structure.units().stream().map(Unit::descriptor));
+    }
     public String toNameAndVersion() {
       if (version == null) return name;
       return name + ' ' + version;
@@ -774,7 +780,8 @@ public class Bach {
           .paths(paths)
           .name(scanName().orElse("unnamed"))
           .units(units)
-          .realms(layout.realmsOf(units));
+          .realms(layout.realmsOf(units))
+          .locators(List.of(Locator.dynamicCentral(Map.of())));
     }
     public Optional<String> scanName() {
       return Optional.ofNullable(base().toAbsolutePath().getFileName())
@@ -1580,9 +1587,13 @@ public class Bach {
       var downloader = new Downloader(execution.summary().project());
       var project = execution.summary().project();
       var lib = project.paths().lib();
-      var resolver = new ModuleResolver(lib, Set.of(), downloader);
+      var declared = project.toDeclaredModuleNames();
+      var requires = new TreeSet<String>();
+      requires.addAll(project.toRequiredModuleNames());
+      requires.addAll(project.library().requires());
       try {
-        resolver.resolve(project.library().requires());
+        var resolver = new ModuleResolver(lib, declared, downloader);
+        resolver.resolve(requires);
         return execution.ok();
       } catch (Exception e) {
         return execution.failed(e);
@@ -1790,20 +1801,10 @@ public class Bach {
       return missing;
     }
     static Set<String> declared(ModuleFinder finder) {
-      return finder.findAll().stream()
-          .map(ModuleReference::descriptor)
-          .map(ModuleDescriptor::name)
-          .collect(Collectors.toCollection(TreeSet::new));
+      return Modules.declared(finder.findAll().stream().map(ModuleReference::descriptor));
     }
     static Set<String> required(ModuleFinder finder) {
-      return finder.findAll().stream()
-          .map(ModuleReference::descriptor)
-          .map(ModuleDescriptor::requires)
-          .flatMap(Set::stream)
-          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
-          .map(Requires::name)
-          .collect(Collectors.toCollection(TreeSet::new));
+      return Modules.required(finder.findAll().stream().map(ModuleReference::descriptor));
     }
   }
   public interface Modules {
@@ -1845,36 +1846,17 @@ public class Bach {
       }
       return builder;
     }
-    static String moduleSourcePath(Path info, String module) {
-      var names = new ArrayList<String>();
-      var found = new AtomicBoolean(false);
-      for (var element : info.subpath(0, info.getNameCount() - 1)) {
-        var name = element.toString();
-        if (name.equals(module)) {
-          if (found.getAndSet(true))
-            throw new IllegalArgumentException(
-                String.format("Name '%s' not unique in path: %s", module, info));
-          if (names.isEmpty()) names.add("."); // leading '*' are bad
-          if (names.size() < info.getNameCount() - 2) names.add("*"); // avoid trailing '*'
-          continue;
-        }
-        names.add(name);
-      }
-      if (!found.get())
-        throw new IllegalArgumentException(
-            String.format("Name of module '%s' not found in path's elements: %s", module, info));
-      if (names.isEmpty()) return ".";
-      return String.join(File.separator, names);
+    static Set<String> declared(Stream<ModuleDescriptor> descriptors) {
+      return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
     }
-    static String origin(Object object) {
-      var type = object.getClass();
-      var module = type.getModule();
-      if (module.isNamed()) return module.getDescriptor().toNameAndVersion();
-      try {
-        return type.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
-      } catch (NullPointerException | URISyntaxException ignore) {
-        return module.toString();
-      }
+    static Set<String> required(Stream<ModuleDescriptor> descriptors) {
+      return descriptors
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+          .map(Requires::name)
+          .collect(Collectors.toCollection(TreeSet::new));
     }
   }
   public static class Resources {
