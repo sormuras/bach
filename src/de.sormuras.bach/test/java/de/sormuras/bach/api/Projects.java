@@ -41,13 +41,12 @@ public class Projects {
             List.of(source),
             List.of());
     var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
-    return
-        Project.builder()
-            .base(base)
-            .name(name)
-            .units(List.of(unit))
-            .realms(List.of(realm))
-            .build();
+    return Project.builder()
+        .base(base)
+        .name(name)
+        .units(List.of(unit))
+        .realms(List.of(realm))
+        .build();
   }
 
   public static Project newProject(String name, String version) {
@@ -84,8 +83,7 @@ public class Projects {
             List.of(
                 Locator.direct(Map.of("bar", Maven.central("com.bar", "bar", "1"))),
                 Locator.mavenCentral(Map.of("foo", "org.foo:foo:2")),
-                Locator.dynamicCentral(Map.of("junit", "3.7"))
-        ))
+                Locator.dynamicCentral(Map.of("junit", "3.7"))))
         .build();
   }
 
