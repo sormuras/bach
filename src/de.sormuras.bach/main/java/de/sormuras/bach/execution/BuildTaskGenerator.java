@@ -23,6 +23,7 @@ import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Tool;
 import de.sormuras.bach.api.Unit;
 import de.sormuras.bach.execution.task.CreateDirectories;
+import de.sormuras.bach.execution.task.ResolveMissingModules;
 import de.sormuras.bach.execution.task.RunToolProvider;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
   }
 
   protected Task resolveMissingModules() {
-    return sequence("Resolve missing modules");
+    return new ResolveMissingModules();
   }
 
   protected Task compileAllRealms() {
