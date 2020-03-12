@@ -66,7 +66,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -82,26 +81,20 @@ public class Bach {
   public static void main(String... args) {
     Main.main(args);
   }
-  private final Atomics atomics;
   private final Consumer<String> printer;
   private final boolean debug;
   private final boolean dryRun;
   public Bach() {
     this(
-        new Atomics(),
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
-  public Bach(Atomics atomics, Consumer<String> printer, boolean debug, boolean dryRun) {
-    this.atomics = Objects.requireNonNull(atomics, "atomics");
+  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.debug = debug;
     this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
-  }
-  public Atomics atomics() {
-    return atomics;
   }
   public boolean debug() {
     return debug;
@@ -209,13 +202,6 @@ public class Bach {
     }
     public List<Locator> locators() {
       return locators;
-    }
-    public URI uri(String module) {
-      for (var locator : locators) {
-        var located = locator.locate(module);
-        if (located.isPresent()) return located.get().uri();
-      }
-      throw new FindException("Module " + module + " not locatable via: " + locators());
     }
   }
   @FunctionalInterface
@@ -1201,21 +1187,6 @@ public class Bach {
       return sources.stream().allMatch(Source::isTargeted);
     }
   }
-  public static class Atomics {
-    private final AtomicReference<HttpClient> atomicHttpClient = new AtomicReference<>();
-    public HttpClient getHttpClient() {
-      var atomic = atomicHttpClient.get();
-      if (atomic != null) return atomic;
-      var logger = System.getLogger(Atomics.class.getName());
-      logger.log(System.Logger.Level.DEBUG, "Creating new HttpClient instance...");
-      var object = newHttpClient();
-      logger.log(System.Logger.Level.DEBUG, "Created new HttpClient instance");
-      return atomicHttpClient.compareAndSet(null, object) ? object : atomicHttpClient.get();
-    }
-    protected HttpClient newHttpClient() {
-      return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-    }
-  }
   public static class BuildTaskGenerator implements Supplier<Task> {
     public static Task parallel(String title, Task... tasks) {
       return new Task(title, true, List.of(tasks));
@@ -1270,7 +1241,7 @@ public class Bach {
           : sequence("Print version of javac", run("javac", "--version"));
     }
     protected Task resolveMissingModules() {
-      return sequence("Resolve missing modules");
+      return new ResolveMissingModules();
     }
     protected Task compileAllRealms() {
       var realms = project.structure().realms();
@@ -1600,6 +1571,56 @@ public class Bach {
           List.of(String.format("Files.createDirectories(%s);", $(path))));
     }
   }
+  public static class ResolveMissingModules extends Task {
+    public ResolveMissingModules() {
+      super("Resolve missing modules", false, List.of());
+    }
+    @Override
+    public ExecutionResult execute(ExecutionContext execution) {
+      var downloader = new Downloader(execution.summary().project());
+      var project = execution.summary().project();
+      var lib = project.paths().lib();
+      var resolver = new ModuleResolver(lib, Set.of(), downloader);
+      try {
+        resolver.resolve(project.library().requires());
+        return execution.ok();
+      } catch (Exception e) {
+        return execution.failed(e);
+      }
+    }
+    private static class Downloader implements BiConsumer<Set<String>, Path> {
+      final Project project;
+      Resources resources;
+      Downloader(Project project) {
+        this.project = project;
+      }
+      Locator.Location locate(String module) {
+        var locators = project.library().locators();
+        for (var locator : locators) {
+          var located = locator.locate(module);
+          if (located.isPresent()) return located.get();
+        }
+        throw new FindException("Module " + module + " not locatable via: " + locators);
+      }
+      @Override
+      public void accept(Set<String> modules, Path directory) {
+        if (resources == null) {
+          var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+          resources = new Resources(null, http);
+        }
+        for (var module : modules) {
+          var location = locate(module);
+          var uri = location.uri();
+          var version = location.toVersionString();
+          try {
+            resources.copy(uri, directory.resolve(module + version + ".jar"));
+          } catch (Exception e) {
+            System.err.println(e.getMessage());
+          }
+        }
+      }
+    }
+  }
   public static class RunToolProvider extends Task {
     static String title(String tool, String... args) {
       var length = args.length;
@@ -1911,7 +1932,7 @@ public class Bach {
           }
         }
         if (logger.isLoggable(Level.DEBUG)) {
-          var size = Files.size(file);
+          var size = String.valueOf(Files.size(file));
           logger.log(Level.DEBUG, "{0} copied {1} bytes from {2}", file, size, uri);
         }
         return file;
