@@ -119,6 +119,10 @@ public /*static*/ final class Project {
         list.add("\t\tUnit " + unit.name());
         list.add("\t\t\tmodule: " + unit.name());
         list.add("\t\t\tinfo: " + unit.info());
+        var module = unit.descriptor();
+        list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
+        list.add("\t\t\t\t main: " + module.mainClass().orElse("-"));
+        list.add("\t\t\t\t requires: " + new TreeSet<>(module.requires()));
       }
     }
     return list;

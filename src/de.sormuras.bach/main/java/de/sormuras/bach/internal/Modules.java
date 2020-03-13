@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.internal;
 
+import de.sormuras.bach.Convention;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
@@ -60,7 +61,10 @@ public interface Modules {
   /** Module descriptor parser. */
   static ModuleDescriptor describe(Path info) {
     try {
-      return newModule(Files.readString(info)).build();
+      var module = newModule(Files.readString(info));
+      var temporary = module.build();
+      Convention.mainClass(info, temporary.name()).ifPresent(module::mainClass);
+      return module.build();
     } catch (Exception e) {
       throw new RuntimeException("Describe failed", e);
     }
