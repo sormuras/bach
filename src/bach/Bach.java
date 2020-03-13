@@ -1940,7 +1940,7 @@ public class Bach {
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
-      new Bach().build(project -> project.name("project")).assertSuccessful();
+      new Bach().build(project -> {}).assertSuccessful();
     }
   }
   public static final class Summary {
