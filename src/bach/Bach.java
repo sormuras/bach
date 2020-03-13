@@ -165,29 +165,6 @@ public class Bach {
     }
     summary.executionEnd(task, result);
   }
-  interface Convention {
-    static Optional<String> mainClass(Path info, String module) {
-      var main = Path.of(module.replace('.', '/'), "Main.java");
-      var exists = Files.isRegularFile(info.resolveSibling(main));
-      return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
-    }
-    static void amendJUnitTestEngines(Map<String, Version> modules) {
-      var names = modules.keySet();
-      if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
-        modules.putIfAbsent("org.junit.jupiter.engine", null);
-      if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
-    }
-    static void amendJUnitPlatformConsole(Map<String, Version> modules) {
-      var names = modules.keySet();
-      if (names.contains("org.junit.platform.console")) return;
-      var triggers =
-          Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
-      names.stream()
-          .filter(triggers::contains)
-          .findAny()
-          .ifPresent(__ -> modules.put("org.junit.platform.console", null));
-    }
-  }
   public static final class Library {
     private final Set<String> requires;
     private final List<Locator> locators;
@@ -599,6 +576,10 @@ public class Bach {
           list.add("\t\tUnit " + unit.name());
           list.add("\t\t\tmodule: " + unit.name());
           list.add("\t\t\tinfo: " + unit.info());
+          var module = unit.descriptor();
+          list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
+          list.add("\t\t\t\t main: " + module.mainClass().orElse("-"));
+          list.add("\t\t\t\t requires: " + new TreeSet<>(module.requires()));
         }
       }
       return list;
@@ -1192,6 +1173,29 @@ public class Bach {
       if (sources.isEmpty()) return false;
       if (sources.size() == 1) return sources.get(0).isTargeted();
       return sources.stream().allMatch(Source::isTargeted);
+    }
+  }
+  public interface Convention {
+    static Optional<String> mainClass(Path info, String module) {
+      var main = Path.of(module.replace('.', '/'), "Main.java");
+      var exists = Files.isRegularFile(info.resolveSibling(main));
+      return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+    }
+    static void amendJUnitTestEngines(Map<String, Version> modules) {
+      var names = modules.keySet();
+      if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
+        modules.putIfAbsent("org.junit.jupiter.engine", null);
+      if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
+    }
+    static void amendJUnitPlatformConsole(Map<String, Version> modules) {
+      var names = modules.keySet();
+      if (names.contains("org.junit.platform.console")) return;
+      var triggers =
+          Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
+      names.stream()
+          .filter(triggers::contains)
+          .findAny()
+          .ifPresent(__ -> modules.put("org.junit.platform.console", null));
     }
   }
   public static class BuildTaskGenerator implements Supplier<Task> {
@@ -1825,7 +1829,10 @@ public class Bach {
     }
     static ModuleDescriptor describe(Path info) {
       try {
-        return newModule(Files.readString(info)).build();
+        var module = newModule(Files.readString(info));
+        var temporary = module.build();
+        Convention.mainClass(info, temporary.name()).ifPresent(module::mainClass);
+        return module.build();
       } catch (Exception e) {
         throw new RuntimeException("Describe failed", e);
       }
