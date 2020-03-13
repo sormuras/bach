@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * @see <a href="https://github.com/sormuras/bach#common-conventions">Common Conventions</a>
  */
-interface Convention {
+public interface Convention {
 
   /** Return name of main class of the specified module. */
   static Optional<String> mainClass(Path info, String module) {
