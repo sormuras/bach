@@ -19,6 +19,7 @@ package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -53,6 +54,7 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   String computeGroup(String module) {
+    if (module.startsWith("javafx.")) return "org.openjfx";
     if (module.startsWith("org.junit.platform")) return "org.junit.platform";
     if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
     if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
@@ -78,6 +80,10 @@ public /*static*/ class DynamicLocator implements Locator {
       case "junit":
         return "junit";
     }
+    switch (group) {
+      case "org.openjfx":
+        return "javafx-" + module.substring(7);
+    }
     return null;
   }
 
@@ -91,6 +97,8 @@ public /*static*/ class DynamicLocator implements Locator {
         return "4.13";
     }
     switch (group) {
+      case "org.openjfx":
+        return "14";
       case "junit":
         return "4.13";
       case "org.junit.jupiter":
@@ -103,6 +111,10 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   String computeClassifier(String module, String group, String artifact, String version) {
+    var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    var win = os.contains("win");
+    var mac = os.contains("mac");
+    if (group.equals("org.openjfx")) return win ? "win" : mac ? "mac" : "linux";
     return "";
   }
 }

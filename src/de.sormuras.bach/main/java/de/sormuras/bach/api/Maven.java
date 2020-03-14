@@ -18,9 +18,7 @@
 package de.sormuras.bach.api;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Supplier;
 
@@ -36,10 +34,15 @@ public interface Maven {
 
   /** Maven Central URI. */
   static URI central(String group, String artifact, String version) {
-    var resource = newResource().repository(CENTRAL_REPOSITORY);
-    return resource.group(group).artifact(artifact).version(version).build().get();
+    return central(group, artifact, version, "");
   }
 
+  /** Maven Central URI. */
+  static URI central(String group, String artifact, String version, String classifier) {
+    var central = newResource().repository(CENTRAL_REPOSITORY);
+    var builder = central.group(group).artifact(artifact).version(version).classifier(classifier);
+    return builder.build().get();
+  }
 
   /** Maven unified resource identifier supplier. */
   final class Resource implements Supplier<URI> {
