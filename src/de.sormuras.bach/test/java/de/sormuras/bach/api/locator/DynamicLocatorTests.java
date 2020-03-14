@@ -36,6 +36,6 @@ class DynamicLocatorTests {
     var actual = locator.locate(module).orElseThrow().uri().toString();
     var expected = Maven.central("org.openjfx", "javafx-" + id, "14").toString();
     var regex = "\\Q" + expected.substring(0, expected.length() - 4) + "\\E-(win|mac|linux)\\.jar";
-    assertTrue(actual.matches(regex), "\n" + actual + "\n" + regex);
+    assertTrue(actual.matches(regex), "\n  " + actual + "\n" + regex);
   }
 }
