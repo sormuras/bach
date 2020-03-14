@@ -593,8 +593,8 @@ public class Bach {
           list.add("\t\t\tinfo: " + unit.info());
           var module = unit.descriptor();
           list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
-          list.add("\t\t\t\t main: " + module.mainClass().orElse("-"));
-          list.add("\t\t\t\t requires: " + new TreeSet<>(module.requires()));
+          list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
+          list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
         }
       }
       return list;
