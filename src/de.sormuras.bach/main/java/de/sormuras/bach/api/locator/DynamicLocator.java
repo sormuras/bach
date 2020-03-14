@@ -19,10 +19,8 @@ package de.sormuras.bach.api.locator;
 
 import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
-import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /** Compute a modular JAR URI based on educated guesses. */
 public /*static*/ class DynamicLocator implements Locator {
@@ -70,7 +68,7 @@ public /*static*/ class DynamicLocator implements Locator {
   }
 
   String computeArtifact(String module, String group) {
-    // Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
+    // JUnit Group ID pattern: "org.junit.[jupiter|platform|vintage|.*]"
     if (group.startsWith("org.junit.")) return module.substring(4).replace('.', '-');
     switch (module) {
       case "org.apiguardian.api":
@@ -90,7 +88,7 @@ public /*static*/ class DynamicLocator implements Locator {
       case "org.opentest4j":
         return "1.2.0";
       case "junit":
-        return "junit";
+        return "4.13";
     }
     switch (group) {
       case "junit":
