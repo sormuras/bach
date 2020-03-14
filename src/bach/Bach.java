@@ -273,6 +273,7 @@ public class Bach {
       return Optional.of(new Location(uri, version));
     }
     String computeGroup(String module) {
+      if (module.startsWith("javafx.")) return "org.openjfx";
       if (module.startsWith("org.junit.platform")) return "org.junit.platform";
       if (module.startsWith("org.junit.jupiter")) return "org.junit.jupiter";
       if (module.startsWith("org.junit.vintage")) return "org.junit.vintage";
@@ -296,6 +297,10 @@ public class Bach {
         case "junit":
           return "junit";
       }
+      switch (group) {
+        case "org.openjfx":
+          return "javafx-" + module.substring(7);
+      }
       return null;
     }
     String computeVersion(String module, String group, String artifact) {
@@ -305,9 +310,11 @@ public class Bach {
         case "org.opentest4j":
           return "1.2.0";
         case "junit":
-          return "junit";
+          return "4.13";
       }
       switch (group) {
+        case "org.openjfx":
+          return "14";
         case "junit":
           return "4.13";
         case "org.junit.jupiter":
@@ -319,6 +326,10 @@ public class Bach {
       return null;
     }
     String computeClassifier(String module, String group, String artifact, String version) {
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      var win = os.contains("win");
+      var mac = os.contains("mac");
+      if (group.equals("org.openjfx")) return win ? "win" : mac ? "mac" : "linux";
       return "";
     }
   }
@@ -385,8 +396,12 @@ public class Bach {
       return new Resource.Builder();
     }
     static URI central(String group, String artifact, String version) {
-      var resource = newResource().repository(CENTRAL_REPOSITORY);
-      return resource.group(group).artifact(artifact).version(version).build().get();
+      return central(group, artifact, version, "");
+    }
+    static URI central(String group, String artifact, String version, String classifier) {
+      var central = newResource().repository(CENTRAL_REPOSITORY);
+      var builder = central.group(group).artifact(artifact).version(version).classifier(classifier);
+      return builder.build().get();
     }
     final class Resource implements Supplier<URI> {
       private final String repository;
