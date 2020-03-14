@@ -156,11 +156,13 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
     var paths = project.paths();
     var module = unit.name();
     var classes = paths.classes(realm).resolve(module);
+    var mainClass = unit.descriptor().mainClass();
     var jar =
         Tool.of("jar")
             .add("--create")
             .add("--file", project.toModularJar(realm, unit))
             .add(verbose, "--verbose")
+            .add(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
             .add("-C", classes, ".")
             .forEach(
                 realm.requires(),
