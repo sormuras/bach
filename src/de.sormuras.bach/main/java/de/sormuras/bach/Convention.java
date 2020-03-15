@@ -17,12 +17,15 @@
 
 package de.sormuras.bach;
 
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Common conventions.
@@ -36,6 +39,12 @@ public interface Convention {
     var main = Path.of(module.replace('.', '/'), "Main.java");
     var exists = Files.isRegularFile(info.resolveSibling(main));
     return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+  }
+
+  /** Return name of the main module by finding a single main class containing descriptor. */
+  static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
+    var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
+    return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
   }
 
   /** Extend the passed map of modules with missing JUnit test engine implementations. */
