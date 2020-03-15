@@ -669,6 +669,7 @@ public class Bach {
   public static final class Realm {
     public enum Flag {
       ENABLE_PREVIEW,
+      CREATE_IMAGE,
       CREATE_JAVADOC,
       LAUNCH_TESTS
     }
@@ -676,12 +677,14 @@ public class Bach {
     private final int feature;
     private final List<Unit> units;
     private final List<Realm> requires;
+    private final String mainModule;
     private final Set<Flag> flags;
     public Realm(
-        String name, int feature, List<Unit> units, List<Realm> requires, Flag... flags) {
+        String name, int feature, List<Unit> units, String mainModule, List<Realm> requires, Flag... flags) {
       this.name = Objects.requireNonNull(name, "name");
       this.feature = Objects.checkIndex(feature, Runtime.version().feature() + 1);
       this.units = List.copyOf(units);
+      this.mainModule = mainModule; // may be null
       this.requires = List.copyOf(requires);
       this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     }
@@ -693,6 +696,9 @@ public class Bach {
     }
     public List<Unit> units() {
       return units;
+    }
+    public String mainModule() {
+      return mainModule;
     }
     public List<Realm> requires() {
       return requires;
@@ -824,7 +830,7 @@ public class Bach {
         }
         @Override
         public List<Realm> realmsOf(List<Unit> units) {
-          return List.of(new Realm("", 0, units, List.of(), Realm.Flag.CREATE_JAVADOC));
+          return List.of(new Realm("", 0, units, null, List.of(), Realm.Flag.CREATE_JAVADOC));
         }
       }
       final class MainTest implements Layout {
@@ -864,9 +870,17 @@ public class Bach {
           if (!uncharted.isEmpty()) throw new IllegalArgumentException("Realms? " + uncharted);
           var realms = new ArrayList<Realm>();
           if (!mainUnits.isEmpty())
-            realms.add(new Realm("main", 0, mainUnits, List.of(), Realm.Flag.CREATE_JAVADOC));
+            realms.add(
+                new Realm(
+                    "main",
+                    0,
+                    mainUnits,
+                    Convention.mainModule(mainUnits.stream().map(Unit::descriptor)).orElse(null),
+                    List.of(),
+                    Realm.Flag.CREATE_JAVADOC,
+                    Realm.Flag.CREATE_IMAGE));
           if (!testUnits.isEmpty())
-            realms.add(new Realm("test", 0, testUnits, realms, Realm.Flag.LAUNCH_TESTS));
+            realms.add(new Realm("test", 0, testUnits, null, realms, Realm.Flag.LAUNCH_TESTS));
           if (realms.isEmpty())
             throw new IllegalArgumentException("No main nor test units: " + units);
           return realms;
@@ -1196,6 +1210,10 @@ public class Bach {
       var exists = Files.isRegularFile(info.resolveSibling(main));
       return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
     }
+    static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
+      var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
+      return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+    }
     static void amendJUnitTestEngines(Map<String, Version> modules) {
       var names = modules.keySet();
       if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
@@ -1297,7 +1315,11 @@ public class Bach {
               .setTerminateCompilationIfWarningsOccur(true)
               .setDestinationDirectory(paths.classes(realm));
       project.tuner().tune(javac, project, realm);
-      return sequence("Compile " + realm.title() + " realm", run(javac), packageRealm(realm));
+      return sequence(
+          "Compile " + realm.title() + " realm",
+          run(javac),
+          packageRealm(realm),
+          createCustomRuntimeImage(realm));
     }
     protected Task packageRealm(Realm realm) {
       var jars = new ArrayList<Task>();
@@ -1346,6 +1368,29 @@ public class Bach {
               .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
       project.tuner().tune(jar, project, realm, unit);
       return run(jar);
+    }
+    protected Task createCustomRuntimeImage(Realm realm) {
+      if (!realm.flags().contains(Realm.Flag.CREATE_IMAGE))
+        return sequence("No custom runtime image: create image flag not set");
+      var main = Optional.ofNullable(realm.mainModule());
+      if (main.isEmpty()) return sequence("No custom runtime image: no main module present");
+      var unit = realm.unit(main.get());
+      if (unit.isEmpty()) throw new AssertionError("invalid name of main module: " + main);
+      var paths = project.paths();
+      var output = paths.out("images", realm.name());
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(paths.modules(realm));
+      modulePaths.addAll(realm.modulePaths(paths));
+      var jlink =
+          Tool.of("jlink")
+              .add("--output", output)
+              .add("--add-modules", String.join(",", realm.moduleNames()))
+              .add("--launcher", project.name() + '=' + main.get())
+              .add("--module-path", Tool.join(modulePaths))
+              .add("--compress", "2")
+              .add("--no-header-files");
+      project.tuner().tune(jlink, project, realm, unit.get());
+      return sequence("Create custom runtime image", /* deleteDirectoryTree(output), */ run(jlink));
     }
     protected Task compileApiDocumentation() {
       var realms = project.structure().realms();
