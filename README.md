@@ -67,6 +67,11 @@ Have fun!
   A modular Java project that show-cases inter-module (black-box) and in-module (white-box) testing.
   It also provides IntelliJ IDEA configuration files with shared test run launchers for both scenarios.
 
+- [⭐ bach-javafx](https://github.com/sormuras/bach-javafx) - Demo based on [HelloFX/CLI](https://github.com/openjfx/samples/tree/master/HelloFX/CLI) by OpenJFX
+
+  A single-module Java application leveraging [OpenJFX](https://openjfx.io).
+  A custom runtime image is created via [jlink] for the current platform.
+
 All example projects usually contain a `.github/workflows/build.yml` configuration file that builds the project using `Bach.java` on push events.
 
 ## Build your project with Bach.java 11.0-ea on-the-fly 
@@ -160,4 +165,5 @@ Find a Travis CI matrix configuration at [sormuras.github.io/.travis.yml](https:
 [Apache Ant]: https://ant.apache.org
 [install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
 [JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
+[jlink]: https://docs.oracle.com/en/java/javase/11/tools/jlink.html
 [jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
