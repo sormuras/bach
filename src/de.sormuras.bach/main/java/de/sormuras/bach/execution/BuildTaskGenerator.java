@@ -136,7 +136,11 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
             .setTerminateCompilationIfWarningsOccur(true)
             .setDestinationDirectory(paths.classes(realm));
     project.tuner().tune(javac, project, realm);
-    return sequence("Compile " + realm.title() + " realm", run(javac), packageRealm(realm));
+    return sequence(
+        "Compile " + realm.title() + " realm",
+        run(javac),
+        packageRealm(realm),
+        createCustomRuntimeImage(realm));
   }
 
   protected Task packageRealm(Realm realm) {
@@ -188,6 +192,30 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
             .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
     project.tuner().tune(jar, project, realm, unit);
     return run(jar);
+  }
+
+  protected Task createCustomRuntimeImage(Realm realm) {
+    if (!realm.flags().contains(Realm.Flag.CREATE_IMAGE))
+      return sequence("No custom runtime image: create image flag not set");
+    var main = Optional.ofNullable(realm.mainModule());
+    if (main.isEmpty()) return sequence("No custom runtime image: no main module present");
+    var unit = realm.unit(main.get());
+    if (unit.isEmpty()) throw new AssertionError("invalid name of main module: " + main);
+    var paths = project.paths();
+    var output = paths.out("images", realm.name());
+    var modulePaths = new ArrayList<Path>();
+    modulePaths.add(paths.modules(realm));
+    modulePaths.addAll(realm.modulePaths(paths));
+    var jlink =
+        Tool.of("jlink")
+            .add("--output", output)
+            .add("--add-modules", String.join(",", realm.moduleNames()))
+            .add("--launcher", project.name() + '=' + main.get())
+            .add("--module-path", Tool.join(modulePaths))
+            .add("--compress", "2")
+            .add("--no-header-files");
+    project.tuner().tune(jlink, project, realm, unit.get());
+    return sequence("Create custom runtime image", /* deleteDirectoryTree(output), */ run(jlink));
   }
 
   protected Task compileApiDocumentation() {
