@@ -84,9 +84,13 @@ public /*static*/ class Scanner {
 
   /** Return a unit for the given info. */
   public Unit scanUnit(Path info) {
-    var descriptor = Modules.describe(info);
-    var source = Source.of(info.getParent());
-    return new Unit(info, descriptor, List.of(source), List.of());
+    var parent = info.getParent();
+    var resources = parent.resolveSibling("resources");
+    return new Unit(
+        info,
+        Modules.describe(info),
+        List.of(Source.of(parent)),
+        Files.isDirectory(resources) ? List.of(resources) : List.of());
   }
 
   /** Source directory tree layout. */
