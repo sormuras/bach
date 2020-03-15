@@ -40,7 +40,7 @@ public class Projects {
             ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
             List.of(source),
             List.of());
-    var realm = new Realm("", 0, List.of(unit), List.of(), Realm.Flag.values());
+    var realm = new Realm("", 0, List.of(unit), module, List.of(), Realm.Flag.values());
     return Project.builder()
         .base(base)
         .name(name)
@@ -94,7 +94,7 @@ public class Projects {
   static Realm realm(
       String name, int feature, List<String> modules, List<Realm> requires, Flag... flags) {
     var units = modules.stream().map(module -> unit(module, name)).collect(Collectors.toList());
-    return new Realm(name, feature, units, requires, flags);
+    return new Realm(name, feature, units, null, requires, flags);
   }
 
   static Unit unit(String module, String realm) {

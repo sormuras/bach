@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.api;
 
+import de.sormuras.bach.Convention;
 import de.sormuras.bach.internal.Modules;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -116,7 +117,7 @@ public /*static*/ class Scanner {
 
       @Override
       public List<Realm> realmsOf(List<Unit> units) {
-        return List.of(new Realm("", 0, units, List.of(), Realm.Flag.CREATE_JAVADOC));
+        return List.of(new Realm("", 0, units, null, List.of(), Realm.Flag.CREATE_JAVADOC));
       }
     }
 
@@ -159,9 +160,17 @@ public /*static*/ class Scanner {
         if (!uncharted.isEmpty()) throw new IllegalArgumentException("Realms? " + uncharted);
         var realms = new ArrayList<Realm>();
         if (!mainUnits.isEmpty())
-          realms.add(new Realm("main", 0, mainUnits, List.of(), Realm.Flag.CREATE_JAVADOC));
+          realms.add(
+              new Realm(
+                  "main",
+                  0,
+                  mainUnits,
+                  Convention.mainModule(mainUnits.stream().map(Unit::descriptor)).orElse(null),
+                  List.of(),
+                  Realm.Flag.CREATE_JAVADOC,
+                  Realm.Flag.CREATE_IMAGE));
         if (!testUnits.isEmpty())
-          realms.add(new Realm("test", 0, testUnits, realms, Realm.Flag.LAUNCH_TESTS));
+          realms.add(new Realm("test", 0, testUnits, null, realms, Realm.Flag.LAUNCH_TESTS));
         if (realms.isEmpty())
           throw new IllegalArgumentException("No main nor test units: " + units);
         return realms;

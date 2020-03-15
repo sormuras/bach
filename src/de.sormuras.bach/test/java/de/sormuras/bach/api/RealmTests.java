@@ -20,6 +20,7 @@ package de.sormuras.bach.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,12 +45,20 @@ class RealmTests {
 
     var main =
         new Realm(
-            "main", Runtime.version().feature(), List.of(a), List.of(), Realm.Flag.CREATE_JAVADOC);
+            "main",
+            Runtime.version().feature(),
+            List.of(a),
+            null,
+            List.of(),
+            Realm.Flag.CREATE_IMAGE,
+            Realm.Flag.CREATE_JAVADOC);
 
     assertEquals("main", main.name());
     assertEquals(Runtime.version().feature(), main.feature());
+    assertNull(main.mainModule());
     assertSame(a, main.unit("a").orElseThrow());
     assertTrue(main.requires().isEmpty());
+    assertTrue(main.flags().contains(Realm.Flag.CREATE_IMAGE));
     assertTrue(main.flags().contains(Realm.Flag.CREATE_JAVADOC));
     assertFalse(main.flags().contains(Realm.Flag.ENABLE_PREVIEW));
     assertFalse(main.flags().contains(Realm.Flag.LAUNCH_TESTS));
@@ -85,16 +94,19 @@ class RealmTests {
             "test",
             Runtime.version().feature(),
             List.of(t, a2),
+            null,
             List.of(main),
             Realm.Flag.ENABLE_PREVIEW,
             Realm.Flag.LAUNCH_TESTS);
 
     assertEquals("test", test.name());
     assertEquals(Runtime.version().feature(), test.feature());
+    assertNull(test.mainModule());
     assertSame(t, test.unit("t").orElseThrow());
     assertSame(a2, test.unit("a").orElseThrow());
     assertFalse(test.requires().isEmpty());
     assertSame(main, test.requires().get(0));
+    assertFalse(test.flags().contains(Realm.Flag.CREATE_IMAGE));
     assertFalse(test.flags().contains(Realm.Flag.CREATE_JAVADOC));
     assertTrue(test.flags().contains(Realm.Flag.ENABLE_PREVIEW));
     assertTrue(test.flags().contains(Realm.Flag.LAUNCH_TESTS));

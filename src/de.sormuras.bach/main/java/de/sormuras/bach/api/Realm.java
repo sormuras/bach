@@ -36,6 +36,7 @@ public /*static*/ final class Realm {
   /** Realm-related flags controlling the build process. */
   public enum Flag {
     ENABLE_PREVIEW,
+    CREATE_IMAGE,
     CREATE_JAVADOC,
     LAUNCH_TESTS
   }
@@ -44,13 +45,15 @@ public /*static*/ final class Realm {
   private final int feature;
   private final List<Unit> units;
   private final List<Realm> requires;
+  private final String mainModule;
   private final Set<Flag> flags;
 
   public Realm(
-      String name, int feature, List<Unit> units, List<Realm> requires, Flag... flags) {
+      String name, int feature, List<Unit> units, String mainModule, List<Realm> requires, Flag... flags) {
     this.name = Objects.requireNonNull(name, "name");
     this.feature = Objects.checkIndex(feature, Runtime.version().feature() + 1);
     this.units = List.copyOf(units);
+    this.mainModule = mainModule; // may be null
     this.requires = List.copyOf(requires);
     this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
   }
@@ -65,6 +68,10 @@ public /*static*/ final class Realm {
 
   public List<Unit> units() {
     return units;
+  }
+
+  public String mainModule() {
+    return mainModule;
   }
 
   public List<Realm> requires() {
