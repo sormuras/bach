@@ -218,7 +218,10 @@ class ProjectTests {
                 "org.junit.jupiter.engine-5.6.0.jar",
                 "org.junit.jupiter.params-5.6.0.jar",
                 "org.junit.platform.commons-1.6.0.jar",
+                "org.junit.platform.console-1.6.0.jar",
                 "org.junit.platform.engine-1.6.0.jar",
+                "org.junit.platform.launcher-1.6.0.jar",
+                "org.junit.platform.reporting-1.6.0.jar",
                 "org.opentest4j-1.2.0.jar"),
             Tree.walk(paths.lib()));
         assertLinesMatch(

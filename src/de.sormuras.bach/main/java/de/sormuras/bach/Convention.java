@@ -18,10 +18,8 @@
 package de.sormuras.bach;
 
 import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,23 +45,21 @@ public interface Convention {
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
   }
 
-  /** Extend the passed map of modules with missing JUnit test engine implementations. */
-  static void amendJUnitTestEngines(Map<String, Version> modules) {
-    var names = modules.keySet();
-    if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
-      modules.putIfAbsent("org.junit.jupiter.engine", null);
-    if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
+  /** Extend the passed set of modules with missing JUnit test engine implementations. */
+  static void amendJUnitTestEngines(Set<String> modules) {
+    if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
+      modules.add("org.junit.jupiter.engine");
+    if (modules.contains("junit")) modules.add("org.junit.vintage.engine");
   }
 
-  /** Extend the passed map of modules with the JUnit Platform Console module. */
-  static void amendJUnitPlatformConsole(Map<String, Version> modules) {
-    var names = modules.keySet();
-    if (names.contains("org.junit.platform.console")) return;
+  /** Extend the passed set of modules with the JUnit Platform Console module. */
+  static void amendJUnitPlatformConsole(Set<String> modules) {
+    if (modules.contains("org.junit.platform.console")) return;
     var triggers =
         Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
-    names.stream()
+    modules.stream()
         .filter(triggers::contains)
         .findAny()
-        .ifPresent(__ -> modules.put("org.junit.platform.console", null));
+        .ifPresent(__ -> modules.add("org.junit.platform.console"));
   }
 }

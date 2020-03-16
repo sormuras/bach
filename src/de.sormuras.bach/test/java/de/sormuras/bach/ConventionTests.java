@@ -21,10 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.TreeMap;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,31 +54,31 @@ class ConventionTests {
   class AmendJUnitTestEnginesConvention {
     @Test
     void emptyRemainsEmpty() {
-      var map = new TreeMap<String, Version>();
-      Convention.amendJUnitTestEngines(map);
-      assertTrue(map.isEmpty());
+      var set = new TreeSet<String>();
+      Convention.amendJUnitTestEngines(set);
+      assertTrue(set.isEmpty());
     }
 
     @Test
     void junitTriggersVintageEngine() {
-      var actual = new TreeMap<String, Version>();
-      actual.put("junit", null);
+      var actual = new TreeSet<String>();
+      actual.add("junit");
       Convention.amendJUnitTestEngines(actual);
-      var expected = new TreeMap<String, Version>();
-      expected.put("junit", null);
-      expected.put("org.junit.vintage.engine", null);
+      var expected = new TreeSet<String>();
+      expected.add("junit");
+      expected.add("org.junit.vintage.engine");
       assertEquals(expected, actual);
     }
 
     @ParameterizedTest(name = "module={0}")
     @ValueSource(strings = {"org.junit.jupiter", "org.junit.jupiter.api"})
     void moduleTriggersJupiterEngine(String module) {
-      var actual = new TreeMap<String, Version>();
-      actual.put(module, null);
+      var actual = new TreeSet<String>();
+      actual.add(module);
       Convention.amendJUnitTestEngines(actual);
-      var expected = new TreeMap<String, Version>();
-      expected.put(module, null);
-      expected.put("org.junit.jupiter.engine", null);
+      var expected = new TreeSet<String>();
+      expected.add(module);
+      expected.add("org.junit.jupiter.engine");
       assertEquals(expected, actual);
     }
   }
@@ -88,7 +87,7 @@ class ConventionTests {
   class AmendJUnitPlatformConsoleConvention {
     @Test
     void emptyRemainsEmpty() {
-      var empty = new TreeMap<String, Version>();
+      var empty = new TreeSet<String>();
       Convention.amendJUnitPlatformConsole(empty);
       assertTrue(empty.isEmpty());
     }
@@ -101,12 +100,12 @@ class ConventionTests {
           "org.junit.platform.engine"
         })
     void moduleTriggersJUnitPlatformConsole(String module) {
-      var actual = new TreeMap<String, Version>();
-      actual.put(module, null);
+      var actual = new TreeSet<String>();
+      actual.add(module);
       Convention.amendJUnitPlatformConsole(actual);
-      var expected = new TreeMap<String, Version>();
-      expected.put(module, null);
-      expected.put("org.junit.platform.console", null);
+      var expected = new TreeSet<String>();
+      expected.add(module);
+      expected.add("org.junit.platform.console");
       assertEquals(expected, actual);
     }
   }
