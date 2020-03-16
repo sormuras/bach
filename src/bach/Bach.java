@@ -779,12 +779,14 @@ public class Bach {
     }
     public Project.Builder scan() {
       var units = scanUnits();
+      var requires = Modules.required(units.stream().map(Unit::descriptor));
       var layout = Layout.find(units).orElseThrow();
       return Project.builder()
           .paths(paths)
           .name(scanName().orElse("unnamed"))
           .units(units)
           .realms(layout.realmsOf(units))
+          .requires(scanRequires(requires))
           .locators(List.of(Locator.dynamicCentral(Map.of())));
     }
     public Optional<String> scanName() {
@@ -817,6 +819,12 @@ public class Bach {
           Modules.describe(info),
           List.of(Source.of(parent)),
           Files.isDirectory(resources) ? List.of(resources) : List.of());
+    }
+    public Set<String> scanRequires(Set<String> requires) {
+      var modules = new TreeSet<>(requires);
+      Convention.amendJUnitTestEngines(modules);
+      Convention.amendJUnitPlatformConsole(modules);
+      return modules;
     }
     interface Layout {
       String realmOf(Unit unit);
@@ -1222,21 +1230,19 @@ public class Bach {
       var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
     }
-    static void amendJUnitTestEngines(Map<String, Version> modules) {
-      var names = modules.keySet();
-      if (names.contains("org.junit.jupiter") || names.contains("org.junit.jupiter.api"))
-        modules.putIfAbsent("org.junit.jupiter.engine", null);
-      if (names.contains("junit")) modules.putIfAbsent("org.junit.vintage.engine", null);
+    static void amendJUnitTestEngines(Set<String> modules) {
+      if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
+        modules.add("org.junit.jupiter.engine");
+      if (modules.contains("junit")) modules.add("org.junit.vintage.engine");
     }
-    static void amendJUnitPlatformConsole(Map<String, Version> modules) {
-      var names = modules.keySet();
-      if (names.contains("org.junit.platform.console")) return;
+    static void amendJUnitPlatformConsole(Set<String> modules) {
+      if (modules.contains("org.junit.platform.console")) return;
       var triggers =
           Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
-      names.stream()
+      modules.stream()
           .filter(triggers::contains)
           .findAny()
-          .ifPresent(__ -> modules.put("org.junit.platform.console", null));
+          .ifPresent(__ -> modules.add("org.junit.platform.console"));
     }
   }
   public static class BuildTaskGenerator implements Supplier<Task> {
