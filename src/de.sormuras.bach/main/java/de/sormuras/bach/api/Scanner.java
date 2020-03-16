@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -47,12 +48,14 @@ public /*static*/ class Scanner {
   /** Scan base directory for project components. */
   public Project.Builder scan() {
     var units = scanUnits();
+    var requires = Modules.required(units.stream().map(Unit::descriptor));
     var layout = Layout.find(units).orElseThrow();
     return Project.builder()
         .paths(paths)
         .name(scanName().orElse("unnamed"))
         .units(units)
         .realms(layout.realmsOf(units))
+        .requires(scanRequires(requires))
         .locators(List.of(Locator.dynamicCentral(Map.of())));
   }
 
@@ -91,6 +94,13 @@ public /*static*/ class Scanner {
         Modules.describe(info),
         List.of(Source.of(parent)),
         Files.isDirectory(resources) ? List.of(resources) : List.of());
+  }
+
+  public Set<String> scanRequires(Set<String> requires) {
+    var modules = new TreeSet<>(requires);
+    Convention.amendJUnitTestEngines(modules);
+    Convention.amendJUnitPlatformConsole(modules);
+    return modules;
   }
 
   /** Source directory tree layout. */
