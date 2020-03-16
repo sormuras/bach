@@ -33,6 +33,7 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -68,6 +69,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
@@ -834,7 +836,9 @@ public class Bach {
         }
         @Override
         public List<Realm> realmsOf(List<Unit> units) {
-          return List.of(new Realm("", 0, units, null, List.of(), Realm.Flag.CREATE_JAVADOC));
+          var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+          var main = Convention.mainModule(units.stream().map(Unit::descriptor)).orElse(null);
+          return List.of(new Realm("", 0, units, main, List.of(), flags));
         }
       }
       final class MainTest implements Layout {
@@ -1279,6 +1283,9 @@ public class Bach {
     protected Task createDirectories(Path path) {
       return new CreateDirectories(path);
     }
+    protected Task deleteDirectories(Path path) {
+      return new DeleteDirectories(path);
+    }
     protected Task printVersionInformationOfFoundationTools() {
       return verbose()
           ? parallel(
@@ -1394,7 +1401,7 @@ public class Bach {
               .add("--compress", "2")
               .add("--no-header-files");
       project.tuner().tune(jlink, project, realm, unit.get());
-      return sequence("Create custom runtime image", /* deleteDirectoryTree(output), */ run(jlink));
+      return sequence("Create custom runtime image", deleteDirectories(output), run(jlink));
     }
     protected Task compileApiDocumentation() {
       var realms = project.structure().realms();
@@ -1646,6 +1653,35 @@ public class Bach {
       return new Snippet(
           Set.of(Files.class, Path.class),
           List.of(String.format("Files.createDirectories(%s);", $(path))));
+    }
+  }
+  public static class DeleteDirectories extends Task {
+    private final Path path;
+    public DeleteDirectories(Path path) {
+      super("Delete directories " + path, false, List.of());
+      this.path = path;
+    }
+    @Override
+    public ExecutionResult execute(ExecutionContext context) {
+      try {
+        delete(path, __ -> true);
+        return context.ok();
+      } catch (Exception e) {
+        return context.failed(e);
+      }
+    }
+    static void delete(Path directory, Predicate<Path> filter) throws Exception {
+      try {
+        Files.deleteIfExists(directory);
+        return;
+      } catch (DirectoryNotEmptyException ignored) {
+      }
+      try (var stream = Files.walk(directory)) {
+        var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.collect(Collectors.toList())) {
+          Files.deleteIfExists(path);
+        }
+      }
     }
   }
   public static class ResolveMissingModules extends Task {
