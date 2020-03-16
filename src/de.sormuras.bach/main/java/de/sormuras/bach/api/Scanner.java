@@ -121,7 +121,9 @@ public /*static*/ class Scanner {
 
       @Override
       public List<Realm> realmsOf(List<Unit> units) {
-        return List.of(new Realm("", 0, units, null, List.of(), Realm.Flag.CREATE_JAVADOC));
+        var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+        var main = Convention.mainModule(units.stream().map(Unit::descriptor)).orElse(null);
+        return List.of(new Realm("", 0, units, main, List.of(), flags));
       }
     }
 
