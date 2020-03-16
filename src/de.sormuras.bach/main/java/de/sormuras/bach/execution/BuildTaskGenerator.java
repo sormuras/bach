@@ -23,6 +23,7 @@ import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Tool;
 import de.sormuras.bach.api.Unit;
 import de.sormuras.bach.execution.task.CreateDirectories;
+import de.sormuras.bach.execution.task.DeleteDirectories;
 import de.sormuras.bach.execution.task.ResolveMissingModules;
 import de.sormuras.bach.execution.task.RunToolProvider;
 import java.nio.file.Path;
@@ -91,6 +92,10 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
 
   protected Task createDirectories(Path path) {
     return new CreateDirectories(path);
+  }
+
+  protected Task deleteDirectories(Path path) {
+    return new DeleteDirectories(path);
   }
 
   protected Task printVersionInformationOfFoundationTools() {
@@ -215,7 +220,7 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
             .add("--compress", "2")
             .add("--no-header-files");
     project.tuner().tune(jlink, project, realm, unit.get());
-    return sequence("Create custom runtime image", /* deleteDirectoryTree(output), */ run(jlink));
+    return sequence("Create custom runtime image", deleteDirectories(output), run(jlink));
   }
 
   protected Task compileApiDocumentation() {
