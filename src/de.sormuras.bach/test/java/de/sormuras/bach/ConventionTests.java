@@ -66,6 +66,7 @@ class ConventionTests {
       Convention.amendJUnitTestEngines(actual);
       var expected = new TreeSet<String>();
       expected.add("junit");
+      expected.add("org.hamcrest");
       expected.add("org.junit.vintage.engine");
       assertEquals(expected, actual);
     }
