@@ -213,6 +213,9 @@ public class Bach {
     static Locator mavenRepository(String repository, Map<String, String> coordinates) {
       return new CoordinatesLocator(repository, coordinates);
     }
+    static Locator sormurasModules(Map<String, String> variants) {
+      return new SormurasModulesLocator(variants);
+    }
   }
   public static class CoordinatesLocator implements Locator {
     private final String repository;
@@ -336,20 +339,25 @@ public class Bach {
     }
   }
   public static class SormurasModulesLocator implements Locator {
-    private final Map<String, String> moduleMaven;
-    private final Map<String, String> moduleVersion;
+    private Map<String, String> moduleMaven;
+    private Map<String, String> moduleVersion;
     private final Map<String, String> variants;
-    public SormurasModulesLocator(Map<String, String> variants, Resources resources) {
+    public SormurasModulesLocator(Map<String, String> variants) {
       this.variants = variants;
-      try {
-        this.moduleMaven = load(resources, "module-maven.properties");
-        this.moduleVersion = load(resources, "module-version.properties");
-      } catch (Exception e) {
-        throw new IllegalStateException();
-      }
     }
     @Override
     public Optional<Location> locate(String module) {
+      if (moduleMaven == null && moduleVersion == null)
+        try {
+          var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+          var resources = new Resources(null, http);
+          moduleMaven = load(resources, "module-maven.properties");
+          moduleVersion = load(resources, "module-version.properties");
+        } catch (Exception e) {
+          throw new RuntimeException("load module properties failed", e);
+        }
+      if (moduleMaven == null) throw new IllegalStateException("module-maven map is null");
+      if (moduleVersion == null) throw new IllegalStateException("module-version map is null");
       var maven = moduleMaven.get(module);
       if (maven == null) return Optional.empty();
       var indexOfColon = maven.indexOf(':');
@@ -787,7 +795,7 @@ public class Bach {
           .units(units)
           .realms(layout.realmsOf(units))
           .requires(scanRequires(requires))
-          .locators(List.of(Locator.dynamicCentral(Map.of())));
+          .locators(List.of(Locator.dynamicCentral(Map.of()), Locator.sormurasModules(Map.of())));
     }
     public Optional<String> scanName() {
       return Optional.ofNullable(base().toAbsolutePath().getFileName())
