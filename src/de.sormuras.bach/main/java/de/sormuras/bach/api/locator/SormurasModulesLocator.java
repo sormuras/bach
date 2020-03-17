@@ -21,6 +21,7 @@ import de.sormuras.bach.api.Locator;
 import de.sormuras.bach.api.Maven;
 import de.sormuras.bach.internal.Resources;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -32,22 +33,29 @@ import java.util.TreeMap;
 /** https://github.com/sormuras/modules */
 public /*static*/ class SormurasModulesLocator implements Locator {
 
-  private final Map<String, String> moduleMaven;
-  private final Map<String, String> moduleVersion;
+  private Map<String, String> moduleMaven;
+  private Map<String, String> moduleVersion;
   private final Map<String, String> variants;
 
-  public SormurasModulesLocator(Map<String, String> variants, Resources resources) {
+  public SormurasModulesLocator(Map<String, String> variants) {
     this.variants = variants;
-    try {
-      this.moduleMaven = load(resources, "module-maven.properties");
-      this.moduleVersion = load(resources, "module-version.properties");
-    } catch (Exception e) {
-      throw new IllegalStateException();
-    }
   }
 
   @Override
   public Optional<Location> locate(String module) {
+    if (moduleMaven == null && moduleVersion == null)
+      try {
+        // TODO var http = project.library().supplier().get();
+        var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+        var resources = new Resources(null, http);
+        moduleMaven = load(resources, "module-maven.properties");
+        moduleVersion = load(resources, "module-version.properties");
+      } catch (Exception e) {
+        throw new RuntimeException("load module properties failed", e);
+      }
+    if (moduleMaven == null) throw new IllegalStateException("module-maven map is null");
+    if (moduleVersion == null) throw new IllegalStateException("module-version map is null");
+
     var maven = moduleMaven.get(module);
     if (maven == null) return Optional.empty();
     var indexOfColon = maven.indexOf(':');

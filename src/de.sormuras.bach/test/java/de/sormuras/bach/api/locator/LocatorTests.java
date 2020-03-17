@@ -20,10 +20,7 @@ package de.sormuras.bach.api.locator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.sormuras.bach.api.Maven;
-import de.sormuras.bach.internal.Resources;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Redirect;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,8 +28,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import test.base.Log;
 
 class LocatorTests {
-
-  final HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).build();
 
   @Nested
   class Jupiter {
@@ -56,8 +51,7 @@ class LocatorTests {
     @DisabledIfSystemProperty(named = "offline", matches = "true")
     void checkSormurasModulesLocator() {
       var log = new Log();
-      var resources = new Resources(log, client);
-      var locator = new SormurasModulesLocator(Map.of(), resources);
+      var locator = new SormurasModulesLocator(Map.of());
       assertEquals(uri, locator.locate(module).orElseThrow().uri());
       log.assertThatEverythingIsFine();
     }
