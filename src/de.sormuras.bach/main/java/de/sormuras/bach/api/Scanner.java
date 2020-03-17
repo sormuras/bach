@@ -56,7 +56,7 @@ public /*static*/ class Scanner {
         .units(units)
         .realms(layout.realmsOf(units))
         .requires(scanRequires(requires))
-        .locators(List.of(Locator.dynamicCentral(Map.of())));
+        .locators(List.of(Locator.dynamicCentral(Map.of()), Locator.sormurasModules(Map.of())));
   }
 
   /** Return name of the project. */

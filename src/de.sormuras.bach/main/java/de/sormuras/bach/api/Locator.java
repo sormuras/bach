@@ -20,6 +20,7 @@ package de.sormuras.bach.api;
 import de.sormuras.bach.api.locator.CoordinatesLocator;
 import de.sormuras.bach.api.locator.DirectLocator;
 import de.sormuras.bach.api.locator.DynamicLocator;
+import de.sormuras.bach.api.locator.SormurasModulesLocator;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -68,5 +69,9 @@ public interface Locator {
 
   static Locator mavenRepository(String repository, Map<String, String> coordinates) {
     return new CoordinatesLocator(repository, coordinates);
+  }
+
+  static Locator sormurasModules(Map<String, String> variants) {
+    return new SormurasModulesLocator(variants);
   }
 }
