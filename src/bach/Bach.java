@@ -1241,7 +1241,10 @@ public class Bach {
     static void amendJUnitTestEngines(Set<String> modules) {
       if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
         modules.add("org.junit.jupiter.engine");
-      if (modules.contains("junit")) modules.add("org.junit.vintage.engine");
+      if (modules.contains("junit")) {
+        modules.add("org.hamcrest");
+        modules.add("org.junit.vintage.engine");
+      }
     }
     static void amendJUnitPlatformConsole(Set<String> modules) {
       if (modules.contains("org.junit.platform.console")) return;
