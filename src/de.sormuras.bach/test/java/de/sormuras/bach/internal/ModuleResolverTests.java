@@ -40,7 +40,6 @@ class ModuleResolverTests {
 
     @Override
     public void accept(Set<String> modules, Path directory) {
-      System.out.println(modules);
       for (var module : modules) {
         var location = locator.locate(module);
         if (location.isEmpty()) continue;
