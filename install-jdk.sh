@@ -199,7 +199,8 @@ function determine_url() {
        11) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
        12) url="${DOWNLOAD}/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_${os}_bin.tar.gz"; return;;
        13) url="${DOWNLOAD}/GA/jdk13.0.2/d4173c853231432d94f001e99d882ca7/8/GPL/openjdk-13.0.2_${os}_bin.tar.gz"; return;;
-    #  14) is still available from its EA/RC location determined below
+       14) url="${DOWNLOAD}/GA/jdk14/076bab302c7b4508975440c56f6cc26a/36/GPL/openjdk-14_${os}_bin.tar.gz"; return;;
+    #  15) is still available from its EA/RC location determined below
     esac
 
     # EA or RC build? Grab URL from HTML source of jdk.java.net/${feature}
