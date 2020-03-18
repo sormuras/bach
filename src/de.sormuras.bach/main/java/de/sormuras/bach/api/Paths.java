@@ -61,7 +61,12 @@ public /*static*/ final class Paths {
   }
 
   public Path classes(Realm realm) {
-    return out.resolve(CLASSES).resolve(realm.name());
+    return classes(realm, 0);
+  }
+
+  public Path classes(Realm realm, int feature) {
+    var version = "" + (feature == 0 ? "" : feature);
+    return out.resolve(CLASSES).resolve(version).resolve(realm.name());
   }
 
   public Path javadoc() {

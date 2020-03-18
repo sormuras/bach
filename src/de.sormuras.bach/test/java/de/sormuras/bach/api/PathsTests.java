@@ -56,11 +56,15 @@ class PathsTests {
 
   private static void assertPaths(Path base, Paths paths) {
     var realm = Projects.realm("");
+    var feature = Runtime.version().feature();
     assertEquals(base.resolve(""), paths.base());
     assertEquals(base.resolve(".bach"), paths.out());
     assertEquals(base.resolve("lib"), paths.lib());
     assertEquals(base.resolve(".bach/first/more"), paths.out("first", "more"));
     assertEquals(base.resolve(".bach/classes"), paths.classes(realm));
+    assertEquals(base.resolve(".bach/classes"), paths.classes(realm, 0));
+    assertEquals(base.resolve(".bach/classes/1"), paths.classes(realm, 1));
+    assertEquals(base.resolve(".bach/classes/" + feature), paths.classes(realm, feature));
     assertEquals(base.resolve(".bach/modules"), paths.modules(realm));
     assertEquals(base.resolve(".bach/sources"), paths.sources(realm));
     assertEquals(base.resolve(".bach/documentation/javadoc"), paths.javadoc());
