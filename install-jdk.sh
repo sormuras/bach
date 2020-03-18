@@ -12,7 +12,7 @@
 #   JAVA_HOME is set to the extracted JDK directory
 #   PATH is prepended with ${JAVA_HOME}/bin
 #
-# (C) 2019 Christian Stein
+# (C) 2020 Christian Stein
 #
 # https://github.com/sormuras/bach/blob/master/install-jdk.sh
 #
@@ -23,7 +23,7 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2020-01-14'
+    readonly script_version='2020-03-17'
 
     dry=false
     silent=false
