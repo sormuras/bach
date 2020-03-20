@@ -40,7 +40,8 @@ public class Projects {
             ModuleDescriptor.newModule(module).mainClass(module + ".Main").build(),
             List.of(source),
             List.of());
-    var realm = new Realm("", 0, List.of(unit), module, List.of(), Realm.Flag.values());
+    var flags = Set.of(Flag.CREATE_IMAGE, Flag.CREATE_JAVADOC);
+    var realm = new Realm("", 0, List.of(unit), module, List.of(), flags.toArray(Flag[]::new));
     return Project.builder()
         .base(base)
         .name(name)

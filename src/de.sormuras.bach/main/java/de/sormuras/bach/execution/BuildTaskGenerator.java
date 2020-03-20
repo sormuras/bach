@@ -19,7 +19,6 @@ package de.sormuras.bach.execution;
 
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.api.Realm;
-import de.sormuras.bach.api.Source;
 import de.sormuras.bach.api.Tool;
 import de.sormuras.bach.api.Unit;
 import de.sormuras.bach.execution.task.CreateDirectories;
@@ -27,6 +26,7 @@ import de.sormuras.bach.execution.task.DeleteDirectories;
 import de.sormuras.bach.execution.task.ResolveMissingModules;
 import de.sormuras.bach.execution.task.RunToolProvider;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -123,7 +123,7 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
     if (realm.units().isEmpty()) return sequence("No units in " + realm.title() + " realm?!");
     var paths = project.paths();
     var enablePreview = realm.flags().contains(Realm.Flag.ENABLE_PREVIEW);
-    var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
+    var feature = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
     var patches = realm.patches((other, unit) -> List.of(project.toModularJar(other, unit)));
     var javac =
         Tool.javac()
@@ -133,13 +133,13 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
             .setPathsWhereToFindApplicationModules(realm.modulePaths(paths))
             .setPathsWhereToFindMoreAssetsPerModule(patches)
             .setEnablePreviewLanguageFeatures(enablePreview)
-            .setCompileForVirtualMachineVersion(release.orElse(0))
+            .setCompileForVirtualMachineVersion(feature.orElse(0))
             .setCharacterEncodingUsedBySourceFiles("UTF-8")
             .setOutputMessagesAboutWhatTheCompilerIsDoing(false)
             .setGenerateMetadataForMethodParameters(true)
             .setOutputSourceLocationsOfDeprecatedUsages(true)
             .setTerminateCompilationIfWarningsOccur(true)
-            .setDestinationDirectory(paths.classes(realm));
+            .setDestinationDirectory(paths.classes(realm, feature.orElse(0)));
     project.tuner().tune(javac, project, realm);
     return sequence(
         "Compile " + realm.title() + " realm",
@@ -186,15 +186,22 @@ public /*static*/ class BuildTaskGenerator implements Supplier<Task> {
   }
 
   protected Task packageUnitSources(Realm realm, Unit unit) {
-    var sources = project.paths().sources(realm);
+    var directory = project.paths().sources(realm);
+    var file = directory.resolve(project.toJarName(unit, "sources"));
+    var sources = new ArrayDeque<>(unit.sources());
     var jar =
         Tool.of("jar")
             .add("--create")
-            .add("--file", sources.resolve(project.toJarName(unit, "sources")))
+            .add("--file", file)
             .add(verbose, "--verbose")
             .add("--no-manifest")
-            .forEach(unit.sources(Source::path), (any, path) -> any.add("-C", path, "."))
+            .add("-C", sources.removeFirst().path(), ".")
             .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+    for (var source : sources) {
+      jar.add("--release", source.release());
+      jar.add("-C", source.path());
+      jar.add(".");
+    }
     project.tuner().tune(jar, project, realm, unit);
     return run(jar);
   }

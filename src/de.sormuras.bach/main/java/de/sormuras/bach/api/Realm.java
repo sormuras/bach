@@ -120,7 +120,7 @@ public /*static*/ final class Realm {
         //      String.format("Name '%s' not unique in path: %s", module, info));
         found = true;
         if (names.isEmpty()) names.add("."); // leading '*' are bad
-        if (names.size() < info.getNameCount() - 2) names.add("{MODULE}"); // avoid trailing '*'
+        names.add("{MODULE}");
         continue;
       }
       names.add(name);
@@ -129,6 +129,8 @@ public /*static*/ final class Realm {
       throw new IllegalStateException(
           String.format("Name of module '%s' not found in path's elements: %s", module, info));
     if (names.isEmpty()) return Path.of(".");
+    int lastIndex = names.size() - 1; // avoid trailing '*'
+    if ("{MODULE}".equals(names.get(lastIndex))) names.remove(lastIndex);
     return Path.of(String.join("/", names));
   }
 

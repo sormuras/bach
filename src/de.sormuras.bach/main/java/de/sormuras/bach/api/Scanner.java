@@ -92,8 +92,25 @@ public /*static*/ class Scanner {
     return new Unit(
         info,
         Modules.describe(info),
-        List.of(Source.of(parent)),
+        scanUnitSources(parent),
         Files.isDirectory(resources) ? List.of(resources) : List.of());
+  }
+
+  /** Scan the parent directory of a {@code module-info.java} file for sources. */
+  public List<Source> scanUnitSources(Path path) {
+    if (path.getFileName().toString().matches("java-\\d+")) {
+      var sources = new ArrayList<Source>();
+      for (int feature = 7; feature <= Runtime.version().feature(); feature++) {
+        var javaN = path.resolveSibling("java-" + feature);
+        if (Files.notExists(javaN)) continue; // feature
+        var source =
+            new Source(
+                javaN, feature, sources.isEmpty() ? Set.of() : Set.of(Source.Flag.VERSIONED));
+        sources.add(source);
+      }
+      return List.copyOf(sources);
+    }
+    return List.of(Source.of(path));
   }
 
   public Set<String> scanRequires(Set<String> requires) {
