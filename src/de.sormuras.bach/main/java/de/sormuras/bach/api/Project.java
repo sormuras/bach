@@ -115,14 +115,23 @@ public /*static*/ final class Project {
     list.add("\tunits: " + structure.units().size());
     for (var realm : structure.realms()) {
       list.add("\tRealm " + realm.title());
+      list.add("\t\tflags: " + realm.flags());
       for (var unit : realm.units()) {
         list.add("\t\tUnit " + unit.name());
         list.add("\t\t\tmodule: " + unit.name());
         list.add("\t\t\tinfo: " + unit.info());
+        list.add("\t\t\tmulti-release: " + unit.isMultiRelease());
+        list.add("\t\t\tmain-class-present: " + unit.isMainClassPresent());
         var module = unit.descriptor();
         list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
         list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
         list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
+        for (var source : unit.sources()) {
+          list.add("\t\t\tSource " + source.path().getFileName());
+          list.add("\t\t\t\tpath: " + source.path());
+          list.add("\t\t\t\trelease: " + source.release());
+          list.add("\t\t\t\tflags: " + source.flags());
+        }
       }
     }
     return list;
