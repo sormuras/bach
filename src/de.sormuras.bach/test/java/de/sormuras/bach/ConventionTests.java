@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +49,36 @@ class ConventionTests {
     @Test
     void mainClassOfNotExistingModuleInfoIsNotPresent() {
       assertFalse(Convention.mainClass(Path.of("module-info.java"), "a.b.c").isPresent());
+    }
+  }
+
+  @Nested
+  class MainModuleConvention {
+    @Test
+    void empty() {
+      assertTrue(Convention.mainModule(Stream.empty()).isEmpty());
+    }
+
+    @Test
+    void single() {
+      var a = ModuleDescriptor.newModule("a").mainClass("a.A").build();
+      assertEquals("a", Convention.mainModule(Stream.of(a)).orElseThrow());
+    }
+
+    @Test
+    void multipleModuleWithSingletonMainClass() {
+      var a = ModuleDescriptor.newModule("a").build();
+      var b = ModuleDescriptor.newModule("b").mainClass("b.B").build();
+      var c = ModuleDescriptor.newModule("c").build();
+      assertEquals("b", Convention.mainModule(Stream.of(a, b, c)).orElseThrow());
+    }
+
+    @Test
+    void multipleModuleWithMultipleMainClasses() {
+      var a = ModuleDescriptor.newModule("a").mainClass("a.A").build();
+      var b = ModuleDescriptor.newModule("b").mainClass("b.B").build();
+      var c = ModuleDescriptor.newModule("c").mainClass("c.C").build();
+      assertTrue(Convention.mainModule(Stream.of(a, b, c)).isEmpty());
     }
   }
 
