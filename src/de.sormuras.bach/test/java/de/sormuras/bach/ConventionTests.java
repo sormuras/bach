@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ConventionTests {
@@ -79,6 +80,52 @@ class ConventionTests {
       var b = ModuleDescriptor.newModule("b").mainClass("b.B").build();
       var c = ModuleDescriptor.newModule("c").mainClass("c.C").build();
       assertTrue(Convention.mainModule(Stream.of(a, b, c)).isEmpty());
+    }
+  }
+
+  @Nested
+  class JavaReleaseConvention {
+    @ParameterizedTest
+    @ValueSource(strings = {"", "1", "abc", "java", "module"})
+    void returnsZero(String string) {
+      assertEquals(0, Convention.javaReleaseFeatureNumber(string));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,java-0", "1,java-1", "9,java-9", "10,java-10", "99,java-99"})
+    void returnsNumber(int expected, String string) {
+      assertEquals(expected, Convention.javaReleaseFeatureNumber(string));
+    }
+
+    @Test
+    void emptyPathsStatistics() {
+      var statistics = Convention.javaReleaseStatistics(Stream.empty());
+      assertEquals(0, statistics.getCount());
+      assertEquals(Integer.MAX_VALUE, statistics.getMin());
+      assertEquals(Integer.MIN_VALUE, statistics.getMax());
+      assertEquals(0.0, statistics.getAverage());
+      assertEquals(0, statistics.getSum());
+    }
+
+    @Test
+    void singlePathStatistics() {
+      var statistics = Convention.javaReleaseStatistics(Stream.of(Path.of("java-17")));
+      assertEquals(1, statistics.getCount());
+      assertEquals(17, statistics.getMin());
+      assertEquals(17, statistics.getMax());
+      assertEquals(17.0, statistics.getAverage());
+      assertEquals(17, statistics.getSum());
+    }
+
+    @Test
+    void multiplePathsStatistics() {
+      var paths = Stream.of(Path.of("java-8"), Path.of("java-10"), Path.of("java-06"));
+      var statistics = Convention.javaReleaseStatistics(paths);
+      assertEquals(3, statistics.getCount());
+      assertEquals(6, statistics.getMin());
+      assertEquals(10, statistics.getMax());
+      assertEquals(8.0, statistics.getAverage());
+      assertEquals(24, statistics.getSum());
     }
   }
 

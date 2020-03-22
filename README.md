@@ -113,6 +113,10 @@ For example: the `TestProvider` class is instantiated and run if module `test.mo
 If a project declares dependence to members of a set of well-known "API" modules, that for themselves require more modules to be present at runtime, those additional modules are implicitly declared as a dependence.
 For example: a project module declares `requires org.junit.jupiter.api;` then `org.junit.jupiter.engine` is added to the set of required modules.
 
+- **Java Release Feature Number** Convention\
+A source path file name starting `java-` and ending with a number that can be parsed with `Integer.parseInt` indicates that ...
+For example: `src/com.greetings/main/java-8` and `src/com.greetings/main/java-11`, with the latter containing the `module-info.java` compilation unit.
+
 ## Motivation
 
 > No need to be a maven to be able to use a build tool - [forax/pro](https://github.com/forax/pro)

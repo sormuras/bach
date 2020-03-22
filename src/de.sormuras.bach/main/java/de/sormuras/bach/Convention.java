@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.IntSummaryStatistics;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,6 +44,18 @@ public interface Convention {
   static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
     var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+  }
+
+  /** Return trailing integer part of {@code "java-{NUMBER}"} or zero. */
+  static int javaReleaseFeatureNumber(String string) {
+    if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
+    return 0;
+  }
+
+  /** Return statistics summarizing over the passed {@code "java-{NUMBER}"} paths. */
+  static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
+    var names = paths.map(Path::getFileName).map(Path::toString);
+    return names.collect(Collectors.summarizingInt(Convention::javaReleaseFeatureNumber));
   }
 
   /** Extend the passed set of modules with missing JUnit test engine implementations. */
