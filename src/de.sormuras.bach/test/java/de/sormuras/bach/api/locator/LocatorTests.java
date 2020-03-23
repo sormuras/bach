@@ -33,7 +33,7 @@ class LocatorTests {
   class Jupiter {
 
     final String module = "org.junit.jupiter";
-    final URI uri = Maven.central("org.junit.jupiter", "junit-jupiter", "5.6.0");
+    final URI uri = Maven.central("org.junit.jupiter", "junit-jupiter", "5.6.1");
 
     @Test
     void checkDirectLocator() {

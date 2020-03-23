@@ -103,9 +103,9 @@ public /*static*/ class DynamicLocator implements Locator {
         return "4.13";
       case "org.junit.jupiter":
       case "org.junit.vintage":
-        return "5.6.0";
+        return "5.6.1";
       case "org.junit.platform":
-        return "1.6.0";
+        return "1.6.1";
     }
     return null;
   }
