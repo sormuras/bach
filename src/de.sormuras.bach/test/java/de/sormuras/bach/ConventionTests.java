@@ -98,7 +98,7 @@ class ConventionTests {
     }
 
     @Test
-    void emptyPathsStatistics() {
+    void statisticsForEmptyStreamOfPaths() {
       var statistics = Convention.javaReleaseStatistics(Stream.empty());
       assertEquals(0, statistics.getCount());
       assertEquals(Integer.MAX_VALUE, statistics.getMin());
@@ -108,7 +108,17 @@ class ConventionTests {
     }
 
     @Test
-    void singlePathStatistics() {
+    void statisticsForSinglePathWithoutNumber() {
+      var statistics = Convention.javaReleaseStatistics(Stream.of(Path.of("java")));
+      assertEquals(1, statistics.getCount());
+      assertEquals(0, statistics.getMin());
+      assertEquals(0, statistics.getMax());
+      assertEquals(0.0, statistics.getAverage());
+      assertEquals(0, statistics.getSum());
+    }
+
+    @Test
+    void statisticsForSinglePathWithNumber() {
       var statistics = Convention.javaReleaseStatistics(Stream.of(Path.of("java-17")));
       assertEquals(1, statistics.getCount());
       assertEquals(17, statistics.getMin());
@@ -118,7 +128,7 @@ class ConventionTests {
     }
 
     @Test
-    void multiplePathsStatistics() {
+    void statisticsForMultiplePaths() {
       var paths = Stream.of(Path.of("java-8"), Path.of("java-10"), Path.of("java-06"));
       var statistics = Convention.javaReleaseStatistics(paths);
       assertEquals(3, statistics.getCount());
