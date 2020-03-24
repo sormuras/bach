@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** A module source description unit. */
 public /*static*/ final class Unit {
@@ -46,10 +46,10 @@ public /*static*/ final class Unit {
     return descriptor.mainClass().isPresent();
   }
 
-  public <T> List<T> sources(Function<Source, T> mapper) {
-    if (sources.isEmpty()) return List.of();
-    if (sources.size() == 1) return List.of(mapper.apply(sources.get(0)));
-    return sources.stream().map(mapper).collect(Collectors.toList());
+  public <T> Stream<T> sources(Function<Source, T> mapper) {
+    if (sources.isEmpty()) return Stream.empty();
+    if (sources.size() == 1) return Stream.of(mapper.apply(sources.get(0)));
+    return sources.stream().map(mapper);
   }
 
   public boolean isMultiRelease() {

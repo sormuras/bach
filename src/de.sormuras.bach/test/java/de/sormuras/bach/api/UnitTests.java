@@ -46,6 +46,6 @@ class UnitTests {
     assertEquals("a", unit.name());
     assertTrue(unit.isMainClassPresent());
     assertFalse(unit.isMultiRelease());
-    assertEquals(List.of(0), unit.sources(Source::release));
+    assertEquals(0, unit.sources(Source::release).mapToInt(Integer::intValue).sum());
   }
 }
