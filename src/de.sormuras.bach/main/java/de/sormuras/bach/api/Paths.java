@@ -61,7 +61,7 @@ public /*static*/ final class Paths {
   }
 
   public Path classes(Realm realm) {
-    return classes(realm, 0);
+    return classes(realm, realm.feature());
   }
 
   public Path classes(Realm realm, int feature) {

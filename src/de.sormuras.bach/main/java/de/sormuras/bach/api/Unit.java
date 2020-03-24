@@ -2,6 +2,7 @@ package de.sormuras.bach.api;
 
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -9,6 +10,11 @@ import java.util.stream.Stream;
 
 /** A module source description unit. */
 public /*static*/ final class Unit {
+
+  /** Return all source paths of the given units. */
+  public static Stream<Path> paths(Collection<Unit> units) {
+    return units.stream().flatMap(unit -> unit.sources(Source::path));
+  }
 
   private final Path info;
   private final ModuleDescriptor descriptor;

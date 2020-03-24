@@ -116,6 +116,7 @@ public /*static*/ final class Project {
     for (var realm : structure.realms()) {
       list.add("\tRealm " + realm.title());
       list.add("\t\tflags: " + realm.flags());
+      list.add("\t\tfeature: " + realm.feature());
       for (var unit : realm.units()) {
         list.add("\t\tUnit " + unit.name());
         list.add("\t\t\tmodule: " + unit.name());

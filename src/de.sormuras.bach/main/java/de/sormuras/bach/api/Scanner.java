@@ -148,9 +148,10 @@ public /*static*/ class Scanner {
 
       @Override
       public List<Realm> realmsOf(List<Unit> units) {
-        var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+        var release = Convention.javaReleaseStatistics(Unit.paths(units)).getMax();
         var main = Convention.mainModule(units.stream().map(Unit::descriptor)).orElse(null);
-        return List.of(new Realm("", 0, units, main, List.of(), flags));
+        var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+        return List.of(new Realm("", release, units, main, List.of(), flags));
       }
     }
 
@@ -196,14 +197,21 @@ public /*static*/ class Scanner {
           realms.add(
               new Realm(
                   "main",
-                  0,
+                  Convention.javaReleaseStatistics(Unit.paths(mainUnits)).getMax(),
                   mainUnits,
                   Convention.mainModule(mainUnits.stream().map(Unit::descriptor)).orElse(null),
                   List.of(),
                   Realm.Flag.CREATE_JAVADOC,
                   Realm.Flag.CREATE_IMAGE));
         if (!testUnits.isEmpty())
-          realms.add(new Realm("test", 0, testUnits, null, realms, Realm.Flag.LAUNCH_TESTS));
+          realms.add(
+              new Realm(
+                  "test",
+                  Convention.javaReleaseStatistics(Unit.paths(testUnits)).getMax(),
+                  testUnits,
+                  null,
+                  realms,
+                  Realm.Flag.LAUNCH_TESTS));
         if (realms.isEmpty())
           throw new IllegalArgumentException("No main nor test units: " + units);
         return realms;
