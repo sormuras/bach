@@ -51,6 +51,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -324,9 +325,9 @@ public class Bach {
           return "4.13";
         case "org.junit.jupiter":
         case "org.junit.vintage":
-          return "5.6.0";
+          return "5.6.1";
         case "org.junit.platform":
-          return "1.6.0";
+          return "1.6.1";
       }
       return null;
     }
@@ -519,7 +520,11 @@ public class Bach {
       return out.resolve(path);
     }
     public Path classes(Realm realm) {
-      return out.resolve(CLASSES).resolve(realm.name());
+      return classes(realm, realm.feature());
+    }
+    public Path classes(Realm realm, int feature) {
+      var version = "" + (feature == 0 ? "" : feature);
+      return out.resolve(CLASSES).resolve(version).resolve(realm.name());
     }
     public Path javadoc() {
       return out.resolve(JAVADOC);
@@ -597,14 +602,24 @@ public class Bach {
       list.add("\tunits: " + structure.units().size());
       for (var realm : structure.realms()) {
         list.add("\tRealm " + realm.title());
+        list.add("\t\tflags: " + realm.flags());
+        list.add("\t\tfeature: " + realm.feature());
         for (var unit : realm.units()) {
           list.add("\t\tUnit " + unit.name());
           list.add("\t\t\tmodule: " + unit.name());
           list.add("\t\t\tinfo: " + unit.info());
+          list.add("\t\t\tmulti-release: " + unit.isMultiRelease());
+          list.add("\t\t\tmain-class-present: " + unit.isMainClassPresent());
           var module = unit.descriptor();
           list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
           list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
           list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
+          for (var source : unit.sources()) {
+            list.add("\t\t\tSource " + source.path().getFileName());
+            list.add("\t\t\t\tpath: " + source.path());
+            list.add("\t\t\t\trelease: " + source.release());
+            list.add("\t\t\t\tflags: " + source.flags());
+          }
         }
       }
       return list;
@@ -744,7 +759,7 @@ public class Bach {
         if (!found && name.equals(module)) {
           found = true;
           if (names.isEmpty()) names.add("."); // leading '*' are bad
-          if (names.size() < info.getNameCount() - 2) names.add("{MODULE}"); // avoid trailing '*'
+          names.add("{MODULE}");
           continue;
         }
         names.add(name);
@@ -753,6 +768,8 @@ public class Bach {
         throw new IllegalStateException(
             String.format("Name of module '%s' not found in path's elements: %s", module, info));
       if (names.isEmpty()) return Path.of(".");
+      int lastIndex = names.size() - 1; // avoid trailing '*'
+      if ("{MODULE}".equals(names.get(lastIndex))) names.remove(lastIndex);
       return Path.of(String.join("/", names));
     }
     public List<Path> modulePaths(Paths paths) {
@@ -825,8 +842,23 @@ public class Bach {
       return new Unit(
           info,
           Modules.describe(info),
-          List.of(Source.of(parent)),
+          scanUnitSources(parent),
           Files.isDirectory(resources) ? List.of(resources) : List.of());
+    }
+    public List<Source> scanUnitSources(Path path) {
+      if (path.getFileName().toString().matches("java-\\d+")) {
+        var sources = new ArrayList<Source>();
+        for (int feature = 7; feature <= Runtime.version().feature(); feature++) {
+          var javaN = path.resolveSibling("java-" + feature);
+          if (Files.notExists(javaN)) continue; // feature
+          var source =
+              new Source(
+                  javaN, feature, sources.isEmpty() ? Set.of() : Set.of(Source.Flag.VERSIONED));
+          sources.add(source);
+        }
+        return List.copyOf(sources);
+      }
+      return List.of(Source.of(path));
     }
     public Set<String> scanRequires(Set<String> requires) {
       var modules = new TreeSet<>(requires);
@@ -852,9 +884,10 @@ public class Bach {
         }
         @Override
         public List<Realm> realmsOf(List<Unit> units) {
-          var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+          var release = Convention.javaReleaseStatistics(Unit.paths(units)).getMax();
           var main = Convention.mainModule(units.stream().map(Unit::descriptor)).orElse(null);
-          return List.of(new Realm("", 0, units, main, List.of(), flags));
+          var flags = new Realm.Flag[] {Realm.Flag.CREATE_JAVADOC, Realm.Flag.CREATE_IMAGE};
+          return List.of(new Realm("", release, units, main, List.of(), flags));
         }
       }
       final class MainTest implements Layout {
@@ -897,14 +930,21 @@ public class Bach {
             realms.add(
                 new Realm(
                     "main",
-                    0,
+                    Convention.javaReleaseStatistics(Unit.paths(mainUnits)).getMax(),
                     mainUnits,
                     Convention.mainModule(mainUnits.stream().map(Unit::descriptor)).orElse(null),
                     List.of(),
                     Realm.Flag.CREATE_JAVADOC,
                     Realm.Flag.CREATE_IMAGE));
           if (!testUnits.isEmpty())
-            realms.add(new Realm("test", 0, testUnits, null, realms, Realm.Flag.LAUNCH_TESTS));
+            realms.add(
+                new Realm(
+                    "test",
+                    Convention.javaReleaseStatistics(Unit.paths(testUnits)).getMax(),
+                    testUnits,
+                    null,
+                    realms,
+                    Realm.Flag.LAUNCH_TESTS));
           if (realms.isEmpty())
             throw new IllegalArgumentException("No main nor test units: " + units);
           return realms;
@@ -1189,6 +1229,9 @@ public class Bach {
     public void tune(Tool.JavaCompiler javac, Project project, Realm realm) {}
   }
   public static final class Unit {
+    public static Stream<Path> paths(Collection<Unit> units) {
+      return units.stream().flatMap(unit -> unit.sources(Source::path));
+    }
     private final Path info;
     private final ModuleDescriptor descriptor;
     private final List<Source> sources;
@@ -1217,10 +1260,10 @@ public class Bach {
     public boolean isMainClassPresent() {
       return descriptor.mainClass().isPresent();
     }
-    public <T> List<T> sources(Function<Source, T> mapper) {
-      if (sources.isEmpty()) return List.of();
-      if (sources.size() == 1) return List.of(mapper.apply(sources.get(0)));
-      return sources.stream().map(mapper).collect(Collectors.toList());
+    public <T> Stream<T> sources(Function<Source, T> mapper) {
+      if (sources.isEmpty()) return Stream.empty();
+      if (sources.size() == 1) return Stream.of(mapper.apply(sources.get(0)));
+      return sources.stream().map(mapper);
     }
     public boolean isMultiRelease() {
       if (sources.isEmpty()) return false;
@@ -1237,6 +1280,14 @@ public class Bach {
     static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
       var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+    }
+    static int javaReleaseFeatureNumber(String string) {
+      if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
+      return 0;
+    }
+    static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
+      var names = paths.map(Path::getFileName).map(Path::toString);
+      return names.collect(Collectors.summarizingInt(Convention::javaReleaseFeatureNumber));
     }
     static void amendJUnitTestEngines(Set<String> modules) {
       if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
@@ -1325,7 +1376,7 @@ public class Bach {
       if (realm.units().isEmpty()) return sequence("No units in " + realm.title() + " realm?!");
       var paths = project.paths();
       var enablePreview = realm.flags().contains(Realm.Flag.ENABLE_PREVIEW);
-      var release = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
+      var feature = enablePreview ? OptionalInt.of(Runtime.version().feature()) : realm.release();
       var patches = realm.patches((other, unit) -> List.of(project.toModularJar(other, unit)));
       var javac =
           Tool.javac()
@@ -1335,13 +1386,13 @@ public class Bach {
               .setPathsWhereToFindApplicationModules(realm.modulePaths(paths))
               .setPathsWhereToFindMoreAssetsPerModule(patches)
               .setEnablePreviewLanguageFeatures(enablePreview)
-              .setCompileForVirtualMachineVersion(release.orElse(0))
+              .setCompileForVirtualMachineVersion(feature.orElse(0))
               .setCharacterEncodingUsedBySourceFiles("UTF-8")
               .setOutputMessagesAboutWhatTheCompilerIsDoing(false)
               .setGenerateMetadataForMethodParameters(true)
               .setOutputSourceLocationsOfDeprecatedUsages(true)
               .setTerminateCompilationIfWarningsOccur(true)
-              .setDestinationDirectory(paths.classes(realm));
+              .setDestinationDirectory(paths.classes(realm, feature.orElse(0)));
       project.tuner().tune(javac, project, realm);
       return sequence(
           "Compile " + realm.title() + " realm",
@@ -1385,15 +1436,22 @@ public class Bach {
       return run(jar);
     }
     protected Task packageUnitSources(Realm realm, Unit unit) {
-      var sources = project.paths().sources(realm);
+      var directory = project.paths().sources(realm);
+      var file = directory.resolve(project.toJarName(unit, "sources"));
+      var sources = new ArrayDeque<>(unit.sources());
       var jar =
           Tool.of("jar")
               .add("--create")
-              .add("--file", sources.resolve(project.toJarName(unit, "sources")))
+              .add("--file", file)
               .add(verbose, "--verbose")
               .add("--no-manifest")
-              .forEach(unit.sources(Source::path), (any, path) -> any.add("-C", path, "."))
+              .add("-C", sources.removeFirst().path(), ".")
               .forEach(unit.resources(), (any, path) -> any.add("-C", path, "."));
+      for (var source : sources) {
+        jar.add("--release", source.release());
+        jar.add("-C", source.path());
+        jar.add(".");
+      }
       project.tuner().tune(jar, project, realm, unit);
       return run(jar);
     }
