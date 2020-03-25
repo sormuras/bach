@@ -210,6 +210,7 @@ class ProjectTests {
         var bach = new Bach(log, true, false);
         var summary = bach.build(project);
         summary.assertSuccessful();
+        System.gc();
         assertLinesMatch(
             List.of(
                 "org.apiguardian.api-1.1.0.jar",
