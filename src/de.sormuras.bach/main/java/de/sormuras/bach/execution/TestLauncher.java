@@ -20,7 +20,6 @@ package de.sormuras.bach.execution;
 import de.sormuras.bach.api.Project;
 import de.sormuras.bach.api.Realm;
 import de.sormuras.bach.api.Unit;
-import de.sormuras.bach.internal.GarbageCollect;
 import java.io.PrintWriter;
 import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;
@@ -36,7 +35,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /** Provide test launch support. */
-abstract /*static*/ class TestLauncher implements ToolProvider, GarbageCollect, Scribe {
+abstract /*static*/ class TestLauncher implements ToolProvider, Scribe {
 
   /** Test launcher running provided test tools. */
   static class ToolTester extends TestLauncher {

@@ -22,7 +22,6 @@ import de.sormuras.bach.execution.ExecutionResult;
 import de.sormuras.bach.execution.Scribe;
 import de.sormuras.bach.execution.Snippet;
 import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.internal.GarbageCollect;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -41,13 +40,13 @@ public /*static*/ class RunToolProvider extends Task {
     return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
   }
 
-  private final ToolProvider[] tool;
+  private final ToolProvider tool;
   private final String[] args;
   private final Snippet snippet;
 
   public RunToolProvider(ToolProvider tool, String... args) {
     super(title(tool.name(), args), false, List.of());
-    this.tool = new ToolProvider[] {tool};
+    this.tool = tool;
     this.args = args;
     var empty = args.length == 0;
     this.snippet =
@@ -60,12 +59,8 @@ public /*static*/ class RunToolProvider extends Task {
   public ExecutionResult execute(ExecutionContext context) {
     var out = new StringWriter();
     var err = new StringWriter();
-    var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+    var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
     var duration = Duration.between(context.start(), Instant.now());
-    if (tool[0] instanceof GarbageCollect) {
-      tool[0] = null;
-      System.gc();
-    }
     return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
   }
 
