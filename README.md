@@ -12,7 +12,7 @@ No additional `.xml`, `.yml`, or `.z...` configuration files required.
 On top of that, `Bach.java` supports an installation-free on-the-fly run mode via:
 
 ```shell script
-jshell https://bit.do/bach-build
+jshell https://sormuras.de/bach-build
 ```
 
 Declare your own custom build program in `src/.bach/Build.java` and override various project properties using a builder API.
@@ -53,7 +53,7 @@ Legend
 
 ## Example Projects
 
-After cloning or downloading an example project, open a shell in the base directory of the project and call `jshell https://bit.do/bach-build`.
+After cloning or downloading an example project, open a shell in the base directory of the project and call `jshell https://sormuras.de/bach-build`.
 
 That's all.
 Have fun!
@@ -76,18 +76,18 @@ All example projects usually contain a `.github/workflows/build.yml` configurati
 
 ## Build your project with Bach.java 11.0-ea on-the-fly 
 
-Use `https://bit.do/bach-build` as `<load-file>` argument for `jshell`:
+Use `https://sormuras.de/bach-build` as `<load-file>` argument for `jshell`:
 
-- `jshell https://bit.do/bach-build`
+- `jshell https://sormuras.de/bach-build`
 
-The shortened URL expands to:
+The `bach-build` load-file content is a copy of:
 
 - `jshell https://github.com/sormuras/bach/raw/master/src/bit.do/bach-build.jsh`
 
 Set system property `debug` to `""` (an empty string) or `true` to enable verbose output of the build run.
 The prefix `-R` is required when running `Bach.java` on-the-fly via [jshell] as it launches a remote runtime system per default.
 
-- `jshell -R-Debug https://bit.do/bach-build`
+- `jshell -R-Debug https://sormuras.de/bach-build`
 
 ### Build with Bach.java 2.1 on-the-fly
 
