@@ -27,10 +27,16 @@
 System.out.println("| /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java")
 /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
 
-System.out.println("| Bach.main(\"build\")")
+System.out.println("| /open https://github.com/sormuras/bach/raw/master/src/bach/Build.default")
+/open https://github.com/sormuras/bach/raw/master/src/bach/Build.default
+
+System.out.println("| /open src/bach/Build.java")
+/open src/bach/Build.java
+
+System.out.println("| Build.main()")
 var code = 0
 try {
-  Bach.main("build");
+  Build.main();
 } catch (Throwable throwable) {
   throwable.printStackTrace();
   code = 1;
