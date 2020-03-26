@@ -22,18 +22,19 @@
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
 //   a) to the "master" tag/branch and
-//   b) to "src/.bach-11/Bach.java", which requires JDK 11 or later.
+//   b) to "src/bach/Bach.java", which requires JDK 11 or later.
 
-/open https://github.com/sormuras/bach/raw/master/src/.bach-11/Bach.java
+System.out.println("| /open src/bach/Bach.java")
+/open src/bach/Bach.java
 
-var args = System.getProperty("args", "build").split(" ")
+System.out.println("| Bach.main(\"build\")")
 var code = 0
 try {
-  Bach.main(args);
+  Bach.main("build");
 } catch (Throwable throwable) {
-  System.err.println(throwable.getMessage());
   throwable.printStackTrace();
   code = 1;
 }
 
+System.out.println("| /exit " + code)
 /exit code
