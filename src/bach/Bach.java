@@ -1821,12 +1821,12 @@ public class Bach {
       if (length == 2) return String.format("Run `%s %s %s`", tool, args[0], args[1]);
       return String.format("Run `%s %s %s ...` (%d arguments)", tool, args[0], args[1], length);
     }
-    private final ToolProvider[] tool;
+    private final ToolProvider tool;
     private final String[] args;
     private final Snippet snippet;
     public RunToolProvider(ToolProvider tool, String... args) {
       super(title(tool.name(), args), false, List.of());
-      this.tool = new ToolProvider[] {tool};
+      this.tool = tool;
       this.args = args;
       var empty = args.length == 0;
       this.snippet =
@@ -1838,12 +1838,8 @@ public class Bach {
     public ExecutionResult execute(ExecutionContext context) {
       var out = new StringWriter();
       var err = new StringWriter();
-      var code = tool[0].run(new PrintWriter(out), new PrintWriter(err), args);
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
       var duration = Duration.between(context.start(), Instant.now());
-      if (tool[0] instanceof GarbageCollect) {
-        tool[0] = null;
-        System.gc();
-      }
       return new ExecutionResult(code, duration, out.toString(), err.toString(), null);
     }
     @Override
@@ -1851,7 +1847,7 @@ public class Bach {
       return snippet;
     }
   }
-  abstract static class TestLauncher implements ToolProvider, GarbageCollect, Scribe {
+  abstract static class TestLauncher implements ToolProvider, Scribe {
     static class ToolTester extends TestLauncher {
       ToolTester(Project project, Realm realm, Unit unit) {
         super("test(" + unit.name() + ")", project, realm, unit);
@@ -1939,7 +1935,6 @@ public class Bach {
       return Snippet.of("// TODO Launch " + $(name()) + " in class " + getClass().getSimpleName());
     }
   }
-  public interface GarbageCollect {}
   public static class ModuleResolver {
     private final Path lib;
     private final Set<String> declared;
