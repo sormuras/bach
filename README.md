@@ -72,6 +72,11 @@ Have fun!
   A single-module Java application leveraging [OpenJFX](https://openjfx.io).
   A custom runtime image is created via [jlink] for the current platform.
 
+- [👾 bach-hansolos-spacefx](https://github.com/sormuras/bach-hansolos-spacefx) - Demo based on [HanSolo/SpaceFX](https://github.com/HanSolo/SpaceFX) by Gerrit Grunwald
+
+  A simple tiny space game written in JavaFX, also known as [OpenJFX](https://openjfx.io).
+  A custom runtime image is created via [jlink] for the current platform.
+
 All example projects usually contain a `.github/workflows/build.yml` configuration file that builds the project using `Bach.java` on push events.
 
 ## Build your project with Bach.java 11.0-ea on-the-fly 
@@ -82,7 +87,7 @@ Use `https://sormuras.de/bach-build` as `<load-file>` argument for `jshell`:
 
 The `bach-build` load-file content is a copy of:
 
-- `jshell https://github.com/sormuras/bach/raw/master/src/bit.do/bach-build.jsh`
+- `jshell https://github.com/sormuras/bach/raw/master/src/bach/bach-build.jsh`
 
 Set system property `debug` to `""` (an empty string) or `true` to enable verbose output of the build run.
 The prefix `-R` is required when running `Bach.java` on-the-fly via [jshell] as it launches a remote runtime system per default.
