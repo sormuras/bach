@@ -2,6 +2,48 @@
 
 Ideas, thoughts, and more on the architecture of `Bach.java`.
 
+## Multi-realm, multi-module, multi-release, and preview features
+
+- Java SE release: `14` by `Runtime.version().feature()`
+  - Project: `13`
+    - Realm: `"main-11"` = `11`
+      - Module: `"a"` = `.`
+      - Module: `"b"` = `8` + `9` + `10`
+      - Module: `"c"` = `7` + `module` // defaults to `9`
+    - Realm: `"test"` = `.`
+      - Module: `"x"` = `.`
+      - Module: `"y"` = `12`
+    - Realm: `"test-preview"` = `14` // mandates Java SE release
+      - Module: `"z"` = `.`
+
+```text
+javac 14               // 14
+
+project                // 13
+  src
+    a
+      main-11          // 11
+        java           // 11 (from "main")
+    b
+      main-11          // 11
+        java-8         //  8
+        java-9         //  9
+        java-10        // 10
+    c
+      main-11          // 11
+        java-7         //  7
+        java-module    //  9 (from "java-module")
+    x
+      test             // 13 (from project)
+        java           // 13 (from "test")
+    y
+      test             // 13 (from project)
+        java-12        // 12
+    z
+      test-preview     // 14 (from preview)
+        java           // 14 (from "test-preview")
+```
+
 ## Singe-File Source-Code program or modular library?
 
 - `Bach.java`
