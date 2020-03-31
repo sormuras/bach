@@ -16,7 +16,7 @@
  */
 
 open /*test*/ module de.sormuras.bach {
-  exports de.sormuras.bach;
+  exports de.sormuras.bach.api;
 
   requires java.net.http;
   requires org.junit.jupiter;
