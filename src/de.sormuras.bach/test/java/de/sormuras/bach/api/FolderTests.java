@@ -18,6 +18,7 @@
 package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class FolderTests {
     var folder = new Folder(Path.of("src"), 0);
     assertEquals(Path.of("src"), folder.path());
     assertEquals(0, folder.release());
+    assertTrue(folder.toString().contains("src"));
   }
 
   @Test
