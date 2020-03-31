@@ -85,6 +85,36 @@ public class Bach {
           .toString();
     }
   }
+  public static class Project {
+    private final String name;
+    private final Version version;
+    private final Structure structure;
+    public Project(String name, Version version, Structure structure) {
+      this.name = name;
+      this.version = version;
+      this.structure = structure;
+    }
+    public String name() {
+      return name;
+    }
+    public Version version() {
+      return version;
+    }
+    public Structure structure() {
+      return structure;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("version=" + version)
+          .add("structure=" + structure)
+          .toString();
+    }
+    public String toNameAndVersion() {
+      return name + ' ' + version;
+    }
+  }
   public static class Realm {
     private final String name;
     private final int release;
@@ -115,6 +145,21 @@ public class Bach {
           .add("release=" + release)
           .add("preview=" + preview)
           .add("units=" + units)
+          .toString();
+    }
+  }
+  public static class Structure {
+    private final List<Realm> realms;
+    public Structure(List<Realm> realms) {
+      this.realms = realms;
+    }
+    public List<Realm> realms() {
+      return realms;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
+          .add("realms=" + realms)
           .toString();
     }
   }
