@@ -20,11 +20,9 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.System.Logger.Level;
-import java.lang.module.ModuleDescriptor.Version;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -35,8 +33,9 @@ import test.base.SwallowSystem;
 class BachTests {
 
   @Test
-  void versionNotZero() {
-    assertNotEquals(Version.parse("0"), Bach.VERSION);
+  void defaults() {
+    var bach = new Bach();
+    assertEquals("Bach.java " + Bach.VERSION, bach.toString());
   }
 
   @Test
