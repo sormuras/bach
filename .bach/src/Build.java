@@ -15,37 +15,68 @@
  * limitations under the License.
  */
 
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Bach's own build program. */
 class Build {
+
   public static void main(String... args) {
+    var project = project();
     var bach = new Bach();
     bach.print("Build Bach.java using %s", bach);
-    var project = newProjectDescriptor();
     bach.print("%s", project);
     // bach.build(project).assertSuccessful();
   }
 
-  private static Object newProjectDescriptor() {
-    var folders = new ArrayList<Bach.Folder>();
-    folders.addAll(mainFolders());
-    folders.addAll(testFolders());
-    return folders;
+  private static Object project() {
+    return List.of(mainRealm(), testRealm(), testPreviewRealm());
   }
 
-  private static List<Bach.Folder> mainFolders() {
-    return List.of(new Bach.Folder(Path.of("src/de.sormuras.bach/main/java"), 11));
+  private static Bach.Realm mainRealm() {
+    return new Bach.Realm(
+        "main",
+        11,
+        false,
+        List.of(
+            new Bach.Unit(
+                ModuleDescriptor.newModule("de.sormuras.bach").build(),
+                List.of(new Bach.Folder(Path.of("src/de.sormuras.bach/main/java"), 0)) //
+                ) //
+            ) //
+        );
   }
 
-  private static List<Bach.Folder> testFolders() {
-    return List.of(
-        new Bach.Folder(Path.of("src/de.sormuras.bach/test/java"), 14),
-        new Bach.Folder(Path.of("src/de.sormuras.bach/test/java-module"), 9),
-        new Bach.Folder(Path.of("src/test.base/test/java"), 14),
-        new Bach.Folder(Path.of("src/test.module/test/java"), 14),
-        new Bach.Folder(Path.of("src/test.preview/test-preview/java"), 14));
+  private static Bach.Realm testRealm() {
+    return new Bach.Realm(
+        "test",
+        11,
+        false,
+        List.of(
+            //
+            new Bach.Unit(
+                ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
+                List.of(
+                    new Bach.Folder(Path.of("src/de.sormuras.bach/test/java"), 0),
+                    new Bach.Folder(Path.of("src/de.sormuras.bach/test/java-module"), 0))),
+            //
+            new Bach.Unit(
+                ModuleDescriptor.newOpenModule("test.base").build(),
+                List.of(new Bach.Folder(Path.of("src/test.base/test/java"), 0))),
+            //
+            new Bach.Unit(
+                ModuleDescriptor.newOpenModule("test.modules").build(),
+                List.of(new Bach.Folder(Path.of("src/test.modules/test/java"), 0)))
+            //
+            ));
+  }
+
+  private static Bach.Realm testPreviewRealm() {
+    var descriptor = ModuleDescriptor.newOpenModule("test.preview").build();
+    var release = Runtime.version().feature();
+    var folders = List.of(new Bach.Folder(Path.of("src/test.preview/test-preview/java"), release));
+    var unit = new Bach.Unit(descriptor, folders);
+    return new Bach.Realm("test-preview", release, true, List.of(unit));
   }
 }
