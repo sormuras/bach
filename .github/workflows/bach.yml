@@ -7,14 +7,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        java: [11]
+        java: [14, 15-ea]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: 'Checkout'
+    - name: 'Checkout sources'
       uses: actions/checkout@v2
     - name: 'Set up JDK'
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Build'
+    - name: 'Emit version of JShell (may create user''s preferences directory)'
+      run: jshell --version
+    - name: 'Build Bach.java'
       run: jshell -R-Debug build.jsh
