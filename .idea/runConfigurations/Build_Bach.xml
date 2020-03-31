@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Bach (single-file source-code)" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="Bach" />
+  <configuration default="false" name="Build Bach" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="Build" />
     <module name="bach" />
     <method v="2">
       <option name="Make" enabled="true" />

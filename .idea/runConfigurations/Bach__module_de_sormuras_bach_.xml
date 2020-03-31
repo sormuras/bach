@@ -1,9 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Bach (module de.sormuras.bach)" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="de.sormuras.bach.Bach" />
-    <module name="de.sormuras.bach" />
-    <method v="2">
-      <option name="Make" enabled="true" />
-    </method>
-  </configuration>
-</component>

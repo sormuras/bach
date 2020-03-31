@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+System.out.println("| /open src/bach/SingleFileSourceCodeGenerator.java")
 /open src/bach/SingleFileSourceCodeGenerator.java
 SingleFileSourceCodeGenerator.main()
 
-/open src/bach/Bach.java
+System.out.println("| /open .bach/src/Bach.java")
+/open .bach/src/Bach.java
 System.out.println()
 System.out.println("Bach.java " + Bach.VERSION)
 

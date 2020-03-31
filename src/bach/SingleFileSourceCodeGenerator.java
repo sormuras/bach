@@ -30,7 +30,7 @@ class SingleFileSourceCodeGenerator {
   public static void main(String... args) throws Exception {
     var directory = Path.of("src", "de.sormuras.bach", "main", "java");
     var template = directory.resolve("de/sormuras/bach/Bach.java");
-    var target = Path.of("src", "bach", "Bach.java");
+    var target = Path.of(".bach", "src", "Bach.java");
     generate(template, target, directory);
   }
 

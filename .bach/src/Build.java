@@ -18,6 +18,7 @@
 /** Bach's own build program. */
 class Build {
   public static void main(String... args) {
-    new Bach().build(project -> project.version("11.0-ea")).assertSuccessful();
+    System.out.println("Build Bach.java using Bach.java " + Bach.VERSION);
+    // new Bach().build(project -> project.version("11.0-ea")).assertSuccessful();
   }
 }
