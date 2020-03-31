@@ -15,10 +15,37 @@
  * limitations under the License.
  */
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
 /** Bach's own build program. */
 class Build {
   public static void main(String... args) {
-    System.out.println("Build Bach.java using Bach.java " + Bach.VERSION);
-    // new Bach().build(project -> project.version("11.0-ea")).assertSuccessful();
+    var bach = new Bach();
+    bach.print("Build Bach.java using %s", bach);
+    var project = newProjectDescriptor();
+    bach.print("%s", project);
+    // bach.build(project).assertSuccessful();
+  }
+
+  private static Object newProjectDescriptor() {
+    var folders = new ArrayList<Bach.Folder>();
+    folders.addAll(mainFolders());
+    folders.addAll(testFolders());
+    return folders;
+  }
+
+  private static List<Bach.Folder> mainFolders() {
+    return List.of(new Bach.Folder(Path.of("src/de.sormuras.bach/main/java"), 11));
+  }
+
+  private static List<Bach.Folder> testFolders() {
+    return List.of(
+        new Bach.Folder(Path.of("src/de.sormuras.bach/test/java"), 14),
+        new Bach.Folder(Path.of("src/de.sormuras.bach/test/java-module"), 9),
+        new Bach.Folder(Path.of("src/test.base/test/java"), 14),
+        new Bach.Folder(Path.of("src/test.module/test/java"), 14),
+        new Bach.Folder(Path.of("src/test.preview/test-preview/java"), 14));
   }
 }
