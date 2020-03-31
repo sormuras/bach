@@ -54,6 +54,10 @@ public class Bach {
     if (debug || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
   }
+  @Override
+  public String toString() {
+    return "Bach.java " + VERSION;
+  }
   public interface Convention {
     static Optional<String> mainClass(Path info, String module) {
       var main = Path.of(module.replace('.', '/'), "Main.java");

@@ -17,9 +17,4 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
     - name: 'Build'
-      run: jshell -R-Debug src/bach/.local/bach-build.jsh
-    - name: 'Upload build summary'
-      uses: actions/upload-artifact@v1
-      with:
-        name: summary.md
-        path: .bach/summary.md
+      run: jshell -R-Debug build.jsh
