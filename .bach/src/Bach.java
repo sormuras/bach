@@ -85,6 +85,39 @@ public class Bach {
           .toString();
     }
   }
+  public static class Realm {
+    private final String name;
+    private final int release;
+    private final boolean preview;
+    private final List<Unit> units;
+    public Realm(String name, int release, boolean preview, List<Unit> units) {
+      this.name = name;
+      this.release = release;
+      this.preview = preview;
+      this.units = units;
+    }
+    public String name() {
+      return name;
+    }
+    public int release() {
+      return release;
+    }
+    public boolean preview() {
+      return preview;
+    }
+    public List<Unit> units() {
+      return units;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("release=" + release)
+          .add("preview=" + preview)
+          .add("units=" + units)
+          .toString();
+    }
+  }
   public static class Unit {
     public static Unit of(String name, Folder... folders) {
       var descriptor = ModuleDescriptor.newModule(name).build();
