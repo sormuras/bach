@@ -17,21 +17,12 @@
 
 package test.modules;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.api.Project;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
-
-  @Test
-  void createBachProject() {
-    var project = Project.builder().name("test.modules").version("123").build();
-    assertEquals("test.modules", project.name());
-    assertEquals("123", project.version().toString());
-  }
 
   @Test
   void versionIsAccessible() {

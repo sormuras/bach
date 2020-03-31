@@ -22,8 +22,6 @@
  */
 module de.sormuras.bach {
   exports de.sormuras.bach;
-  exports de.sormuras.bach.api;
-  exports de.sormuras.bach.execution;
 
   requires java.net.http;
 

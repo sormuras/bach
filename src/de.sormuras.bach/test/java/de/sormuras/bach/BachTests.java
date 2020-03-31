@@ -19,27 +19,14 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.api.Project;
-import de.sormuras.bach.execution.ExecutionContext;
-import de.sormuras.bach.execution.ExecutionResult;
-import de.sormuras.bach.execution.NoopToolProvider;
-import de.sormuras.bach.execution.Task;
-import de.sormuras.bach.execution.task.RunToolProvider;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import test.base.Log;
@@ -89,91 +76,5 @@ class BachTests {
             "P error",
             "P off"),
         log.lines());
-  }
-
-  @Test
-  void executeLocalNoopTask() {
-    var log = new Log();
-    var bach = new Bach(log, true, true);
-    var task = new Task("Noop", false, List.of());
-    var summary = new Summary(Project.builder().name("Noop").build(), task);
-    bach.execute(task, summary);
-    summary.assertSuccessful();
-  }
-
-  @Test
-  @ResourceLock(Resources.SYSTEM_PROPERTIES)
-  void executeLocalTasks(@TempDir Path temp) throws Exception {
-    var log = new Log();
-    var bach = new Bach(log, true, false);
-    var noop = new Task("Noop", false, List.of());
-    var fail =
-        new Task("Fail", false, List.of()) {
-          @Override
-          public ExecutionResult execute(ExecutionContext execution) {
-            assertSame(bach, execution.bach());
-            assertFalse(execution.summary().aborted());
-            execution.print(Level.DEBUG, "Debug %d", 1);
-            execution.print(Level.ERROR, "Error %d", 1);
-            var failed = execution.failed(new Error("X"));
-            assertEquals(1, failed.code());
-            assertEquals("Debug 1" + System.lineSeparator(), failed.out());
-            assertEquals("Error 1" + System.lineSeparator(), failed.err());
-            assertEquals("X", failed.throwable().getMessage());
-            return failed;
-          }
-        };
-    var task = new Task("group", false, List.of(noop, fail));
-    var summary = new Summary(Project.builder().name("local").base(temp).build(), task);
-    bach.execute(task, summary);
-    assertThrows(AssertionError.class, summary::assertSuccessful);
-    assertEquals(2, summary.countedChildlessTasks());
-    assertEquals(4, summary.countedExecutionEvents());
-    assertLinesMatch(
-        List.of(
-            "P Bach initialized",
-            "P + group",
-            "P \t* Noop",
-            "P \t* Fail",
-            "P Debug 1",
-            "P Error 1",
-            "P Error 1",
-            "P = group"),
-        log.lines());
-    var markdown = summary.toMarkdown();
-    assertLinesMatch(
-        List.of(
-            "# Summary",
-            "",
-            "## Project",
-            ">> PROJECT >>",
-            "## Task Execution Overview",
-            "|    |Thread|Duration|Caption",
-            "|----|-----:|-------:|-------",
-            "\\Q|   +|\\E.+\\Q| group\\E", // Thread and Duration are dynamic
-            "\\Q|    |\\E.+\\Q| **Noop** [...](#task-execution-details-\\E.+",
-            "\\Q|   X|\\E.+\\Q| **Fail** [...](#task-execution-details-\\E.+",
-            "\\Q|   =|\\E.+\\Q| group",
-            ">> LEGEND >>",
-            "## Task Execution Details",
-            ">> TASK DETAILS >>",
-            "## System Properties",
-            ">> SYSTEM PROPERTIES LISTING >>"),
-        markdown);
-    var path = summary.write();
-    assertEquals(markdown, Files.readAllLines(path));
-  }
-
-  @Nested
-  class TasksTests {
-    @Test
-    void executeLocalToolProvider() {
-      var log = new Log();
-      var bach = new Bach(log, true, true);
-      var task = new RunToolProvider(new NoopToolProvider(), "a", "b", "c");
-      var summary = new Summary(Project.builder().name("Local").build(), task);
-      bach.execute(task, summary);
-      summary.assertSuccessful();
-    }
   }
 }
