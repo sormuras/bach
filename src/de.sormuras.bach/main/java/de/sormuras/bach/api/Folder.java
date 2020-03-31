@@ -19,6 +19,7 @@ package de.sormuras.bach.api;
 
 import de.sormuras.bach.Convention;
 import java.nio.file.Path;
+import java.util.StringJoiner;
 
 /** A source folder description: {@code src/foo/main/java}. */
 public /*static*/ class Folder {
@@ -42,5 +43,13 @@ public /*static*/ class Folder {
 
   public int release() {
     return release;
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", Folder.class.getSimpleName() + "[", "]")
+        .add("path=" + path)
+        .add("release=" + release)
+        .toString();
   }
 }
