@@ -21,20 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class UnitTests {
 
   @Test
-  void canonical() {
-    var descriptor = ModuleDescriptor.newModule("foo").build();
-    var unit = new Unit(descriptor, List.of());
-    assertEquals("foo", unit.descriptor().name());
+  void empty() {
+    var unit = API.emptyUnit();
+    assertEquals("empty", unit.descriptor().name());
     assertEquals(0, unit.folders().size());
-    assertTrue(unit.toString().contains("foo"));
+    assertTrue(unit.toString().contains("empty"));
   }
 
   @Test

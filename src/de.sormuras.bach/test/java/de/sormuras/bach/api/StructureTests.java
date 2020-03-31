@@ -20,23 +20,13 @@ package de.sormuras.bach.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class FolderTests {
-
+class StructureTests {
   @Test
   void empty() {
-    var empty = API.emptyFolder();
-    assertEquals(Path.of("empty"), empty.path());
-    assertEquals(0, empty.release());
-    assertTrue(empty.toString().contains(Folder.class.getSimpleName()));
-  }
-
-  @Test
-  void factory() {
-    var folder = Folder.of(Path.of("java-123"));
-    assertEquals(Path.of("java-123"), folder.path());
-    assertEquals(123, folder.release());
+    var empty = API.emptyStructure();
+    assertEquals(0, empty.realms().size());
+    assertTrue(empty.toString().contains("realms"));
   }
 }

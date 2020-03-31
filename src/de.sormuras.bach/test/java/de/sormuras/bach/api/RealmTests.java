@@ -21,18 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class RealmTests {
 
   @Test
-  void canonical() {
-    var realm = new Realm("realm", 0, false, List.of());
-    assertEquals("realm", realm.name());
-    assertEquals(0, realm.release());
-    assertFalse(realm.preview());
-    assertEquals(0, realm.units().size());
-    assertTrue(realm.toString().contains("realm"));
+  void empty() {
+    var empty = API.emptyRealm();
+    assertEquals("empty", empty.name());
+    assertEquals(0, empty.release());
+    assertFalse(empty.preview());
+    assertEquals(0, empty.units().size());
+    assertTrue(empty.toString().contains("empty"));
   }
 }
