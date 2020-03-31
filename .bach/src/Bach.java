@@ -20,9 +20,11 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.IntSummaryStatistics;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,6 +60,56 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
+  public static class Folder {
+    public static Folder of(Path path) {
+      var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
+      return new Folder(path, release);
+    }
+    private final Path path;
+    private final int release;
+    public Folder(Path path, int release) {
+      this.path = path;
+      this.release = release;
+    }
+    public Path path() {
+      return path;
+    }
+    public int release() {
+      return release;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Folder.class.getSimpleName() + "[", "]")
+          .add("path=" + path)
+          .add("release=" + release)
+          .toString();
+    }
+  }
+  public static class Unit {
+    public static Unit of(String name, Folder... folders) {
+      var descriptor = ModuleDescriptor.newModule(name).build();
+      return new Unit(descriptor, List.of(folders));
+    }
+    private final ModuleDescriptor descriptor;
+    private final List<Folder> folders;
+    public Unit(ModuleDescriptor descriptor, List<Folder> folders) {
+      this.descriptor = descriptor;
+      this.folders = folders;
+    }
+    public ModuleDescriptor descriptor() {
+      return descriptor;
+    }
+    public List<Folder> folders() {
+      return folders;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
+          .add("descriptor=" + descriptor)
+          .add("folders=" + folders)
+          .toString();
+    }
+  }
   public interface Convention {
     static Optional<String> mainClass(Path info, String module) {
       var main = Path.of(module.replace('.', '/'), "Main.java");
@@ -69,6 +121,8 @@ public class Bach {
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
     }
     static int javaReleaseFeatureNumber(String string) {
+      if (string.endsWith("-module")) return 9;
+      if (string.endsWith("-preview")) return Runtime.version().feature();
       if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
       return 0;
     }
