@@ -32,7 +32,7 @@ println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
 println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
 
-println("| Java " + Runtime.version())
+println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
 
 println("| /open src/bach/SingleFileSourceCodeGenerator.java")
 /open src/bach/SingleFileSourceCodeGenerator.java
