@@ -16,6 +16,7 @@
  */
 
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -23,15 +24,18 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    var project = project();
+    var project = project("Bach.java", "11.0-ea");
     var bach = new Bach();
-    bach.print("Build Bach.java using %s", bach);
+    bach.print("Build %s using %s", project.toNameAndVersion(), bach);
     bach.print("%s", project);
     // bach.build(project).assertSuccessful();
   }
 
-  private static Object project() {
-    return List.of(mainRealm(), testRealm(), testPreviewRealm());
+  private static Bach.Project project(String name, String version) {
+    return new Bach.Project(
+        name,
+        Version.parse(version),
+        new Bach.Structure(List.of(mainRealm(), testRealm(), testPreviewRealm())));
   }
 
   private static Bach.Realm mainRealm() {
