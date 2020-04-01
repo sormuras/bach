@@ -24,21 +24,21 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    var project = project("Bach.java", "11.0-ea");
+    var project = newProject("Bach.java", "11.0-ea");
     var bach = new Bach();
     bach.print("Build %s using %s", project.toNameAndVersion(), bach);
     project.toStrings().forEach(bach::print);
     // bach.build(project).assertSuccessful();
   }
 
-  private static Bach.Project project(String name, String version) {
+  static Bach.Project newProject(String name, String version) {
     return new Bach.Project(
         name,
         Version.parse(version),
-        new Bach.Structure(List.of(mainRealm(), testRealm(), testPreviewRealm())));
+        new Bach.Structure(List.of(newMain(), newTest(), newTestPreview())));
   }
 
-  private static Bach.ModuleCollection mainRealm() {
+  static Bach.ModuleCollection newMain() {
     return new Bach.ModuleCollection(
         "main",
         11,
@@ -49,7 +49,7 @@ class Build {
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))));
   }
 
-  private static Bach.ModuleCollection testRealm() {
+  static Bach.ModuleCollection newTest() {
     return new Bach.ModuleCollection(
         "test",
         11,
@@ -69,7 +69,7 @@ class Build {
                 Bach.Directory.listOf(Path.of("src/test.modules/test")))));
   }
 
-  private static Bach.ModuleCollection testPreviewRealm() {
+  static Bach.ModuleCollection newTestPreview() {
     return new Bach.ModuleCollection(
         "test-preview",
         Runtime.version().feature(),
