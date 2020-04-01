@@ -69,6 +69,8 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
+            "P \tverbose=true",
+            "P \tdry-run=true",
             "P all",
             "P trace",
             "P debug",
@@ -87,6 +89,8 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
+            "P \tverbose=true",
+            "P \tdry-run=true",
             "P Project empty 0",
             "P \tModule Collections: []",
             "P No module collection present"),

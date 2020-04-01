@@ -50,7 +50,9 @@ public class Bach {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
-    print(Level.TRACE, "%s initialized", this);
+    print(Level.DEBUG, "%s initialized", this);
+    print(Level.TRACE, "\tverbose=%s", verbose);
+    print(Level.TRACE, "\tdry-run=%s", dryRun);
   }
   public String print(String format, Object... args) {
     return print(Level.INFO, format, args);
@@ -64,7 +66,7 @@ public class Bach {
     if (verbose) project.toStrings().forEach(this::print);
     if (project.structure().collections().isEmpty()) print("No module collection present");
     if (dryRun) return;
-    print(Level.DEBUG, "build(%s)", project.toNameAndVersion());
+    print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
   }
   public String toString() {
     return "Bach.java " + VERSION;

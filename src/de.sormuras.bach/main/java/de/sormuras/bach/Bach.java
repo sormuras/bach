@@ -57,7 +57,9 @@ public class Bach {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
-    print(Level.TRACE, "%s initialized", this);
+    print(Level.DEBUG, "%s initialized", this);
+    print(Level.TRACE, "\tverbose=%s", verbose);
+    print(Level.TRACE, "\tdry-run=%s", dryRun);
   }
 
   /** Print a message at information level. */
