@@ -24,11 +24,7 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    var project = newProject("Bach.java", "11.0-ea");
-    var bach = new Bach();
-    bach.print("Build %s using %s", project.toNameAndVersion(), bach);
-    project.toStrings().forEach(bach::print);
-    // bach.build(project).assertSuccessful();
+    new Bach(System.out::println, true, false).build(newProject("Bach.java", "11.0-ea"));
   }
 
   static Bach.Project newProject(String name, String version) {
