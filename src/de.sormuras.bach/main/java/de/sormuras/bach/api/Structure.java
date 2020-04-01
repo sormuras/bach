@@ -19,6 +19,7 @@ package de.sormuras.bach.api;
 
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 /** A modular structure. */
 public /*static*/ class Structure {
@@ -38,5 +39,9 @@ public /*static*/ class Structure {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
         .add("collections=" + collections)
         .toString();
+  }
+
+  public List<String> toCollectionNames() {
+    return collections.stream().map(ModuleCollection::name).collect(Collectors.toList());
   }
 }

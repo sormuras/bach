@@ -18,8 +18,12 @@
 package de.sormuras.bach.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -31,5 +35,40 @@ class ProjectTests {
     assertEquals(0, empty.structure().collections().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
+    assertLinesMatch(List.of("Project empty 0", "\tModule Collections: []"), empty.toStrings());
+  }
+
+  @Test
+  void oneOfEach() {
+    var one =
+        new Project(
+            "one",
+            Version.parse("1"),
+            new Structure(
+                List.of(
+                    new ModuleCollection(
+                        "one",
+                        1,
+                        true,
+                        List.of(ModuleDescription.of("one", Directory.of(Path.of("one")))) //
+                        ) //
+                    ) //
+                ) //
+            );
+    assertLinesMatch(
+        List.of(
+            "Project one 1",
+            "\tModule Collections: [one]",
+            "\t\tModule Collection \"one\"",
+            "\t\t\trelease=1",
+            "\t\t\tpreview=true",
+            "\t\t\tModule Descriptions: [1]",
+            "\t\t\t\tModule one",
+            "\t\t\t\t\tmainClass=<empty>",
+            "\t\t\t\t\trequires=[java.base]",
+            "\t\t\t\t\tDirectories: [1]",
+            "\t\t\t\t\t\tpath=one",
+            "\t\t\t\t\t\trelease=0"),
+        one.toStrings());
   }
 }

@@ -20,6 +20,8 @@ package de.sormuras.bach.api;
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** A module source description wrapping a module descriptor and associated source directories. */
 public /*static*/ class ModuleDescription {
@@ -51,5 +53,10 @@ public /*static*/ class ModuleDescription {
         .add("descriptor=" + descriptor)
         .add("directories=" + directories)
         .toString();
+  }
+
+  public List<String> toRequiresNames() {
+    var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+    return names.sorted().collect(Collectors.toList());
   }
 }
