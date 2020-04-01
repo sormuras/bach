@@ -27,7 +27,7 @@ class Build {
     var project = project("Bach.java", "11.0-ea");
     var bach = new Bach();
     bach.print("Build %s using %s", project.toNameAndVersion(), bach);
-    bach.print("%s", project);
+    project.toStrings().forEach(bach::print);
     // bach.build(project).assertSuccessful();
   }
 
