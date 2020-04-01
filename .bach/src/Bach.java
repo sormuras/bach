@@ -14,11 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Objects;
@@ -64,6 +68,17 @@ public class Bach {
     public static Directory of(Path path) {
       var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
       return new Directory(path, release);
+    }
+    public static List<Directory> listOf(Path root) {
+      if (Files.notExists(root)) return List.of();
+      var directories = new ArrayList<Directory>();
+      try (var stream = Files.newDirectoryStream(root, Files::isDirectory)) {
+        stream.forEach(path -> directories.add(of(path)));
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+      directories.sort(Comparator.comparingInt(Directory::release));
+      return List.copyOf(directories);
     }
     private final Path path;
     private final int release;
