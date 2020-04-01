@@ -37,7 +37,7 @@ public class Bach {
   private final Consumer<String> printer;
 
   /** Verbosity flag. */
-  private final boolean debug;
+  private final boolean verbose;
 
   /** Dry-run flag. */
   private final boolean dryRun;
@@ -51,9 +51,9 @@ public class Bach {
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
+  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun) {
     this.printer = Objects.requireNonNull(printer, "printer");
-    this.debug = debug;
+    this.verbose = verbose;
     this.dryRun = dryRun;
     print(Level.TRACE, "Bach initialized");
   }
@@ -66,7 +66,7 @@ public class Bach {
   /** Print a message at specified level. */
   public String print(Level level, String format, Object... args) {
     var message = String.format(format, args);
-    if (debug || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
+    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
   }
 
