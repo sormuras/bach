@@ -48,7 +48,7 @@ public interface Convention {
 
   /** Return trailing integer part of {@code "java-{NUMBER}"} or zero. */
   static int javaReleaseFeatureNumber(String string) {
-    if (string.endsWith("-module")) return 9;
+    if (string.endsWith("-module")) return 0;
     if (string.endsWith("-preview")) return Runtime.version().feature();
     if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
     return 0;

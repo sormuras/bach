@@ -214,7 +214,7 @@ public class Bach {
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
     }
     static int javaReleaseFeatureNumber(String string) {
-      if (string.endsWith("-module")) return 9;
+      if (string.endsWith("-module")) return 0;
       if (string.endsWith("-preview")) return Runtime.version().feature();
       if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
       return 0;

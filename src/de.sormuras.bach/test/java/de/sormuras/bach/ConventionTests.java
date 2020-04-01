@@ -92,7 +92,7 @@ class ConventionTests {
     }
 
     @ParameterizedTest
-    @CsvSource({"0,java-0", "1,java-1", "9,java-module", "10,java-10", "99,java-99"})
+    @CsvSource({"0,java-0", "0,java-module", "1,java-1", "9,java-9", "10,java-10", "99,java-99"})
     void returnsNumber(int expected, String string) {
       assertEquals(expected, Convention.javaReleaseFeatureNumber(string));
     }
