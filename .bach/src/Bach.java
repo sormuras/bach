@@ -38,7 +38,7 @@ public class Bach {
     Main.main(args);
   }
   private final Consumer<String> printer;
-  private final boolean debug;
+  private final boolean verbose;
   private final boolean dryRun;
   public Bach() {
     this(
@@ -46,19 +46,25 @@ public class Bach {
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
   }
-  public Bach(Consumer<String> printer, boolean debug, boolean dryRun) {
+  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun) {
     this.printer = Objects.requireNonNull(printer, "printer");
-    this.debug = debug;
+    this.verbose = verbose;
     this.dryRun = dryRun;
-    print(Level.TRACE, "Bach initialized");
+    print(Level.TRACE, "%s initialized", this);
   }
   public String print(String format, Object... args) {
     return print(Level.INFO, format, args);
   }
   public String print(Level level, String format, Object... args) {
     var message = String.format(format, args);
-    if (debug || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
+    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
+  }
+  public void build(Project project) {
+    if (verbose) project.toStrings().forEach(this::print);
+    if (project.structure().collections().isEmpty()) print("No module collection present");
+    if (dryRun) return;
+    print(Level.DEBUG, "build(%s)", project.toNameAndVersion());
   }
   public String toString() {
     return "Bach.java " + VERSION;
