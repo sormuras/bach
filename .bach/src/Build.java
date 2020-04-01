@@ -38,49 +38,48 @@ class Build {
         new Bach.Structure(List.of(mainRealm(), testRealm(), testPreviewRealm())));
   }
 
-  private static Bach.Realm mainRealm() {
-    return new Bach.Realm(
+  private static Bach.ModuleCollection mainRealm() {
+    return new Bach.ModuleCollection(
         "main",
         11,
         false,
         List.of(
-            new Bach.Unit(
+            new Bach.ModuleDescription(
                 ModuleDescriptor.newModule("de.sormuras.bach").build(),
-                List.of(new Bach.Folder(Path.of("src/de.sormuras.bach/main/java"), 0)) //
-                ) //
+                List.of(new Bach.Directory(Path.of("src/de.sormuras.bach/main/java"), 0))) //
             ) //
         );
   }
 
-  private static Bach.Realm testRealm() {
-    return new Bach.Realm(
+  private static Bach.ModuleCollection testRealm() {
+    return new Bach.ModuleCollection(
         "test",
         11,
         false,
         List.of(
             //
-            new Bach.Unit(
+            new Bach.ModuleDescription(
                 ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
                 List.of(
-                    new Bach.Folder(Path.of("src/de.sormuras.bach/test/java"), 0),
-                    new Bach.Folder(Path.of("src/de.sormuras.bach/test/java-module"), 0))),
+                    new Bach.Directory(Path.of("src/de.sormuras.bach/test/java"), 0),
+                    new Bach.Directory(Path.of("src/de.sormuras.bach/test/java-module"), 0))),
             //
-            new Bach.Unit(
+            new Bach.ModuleDescription(
                 ModuleDescriptor.newOpenModule("test.base").build(),
-                List.of(new Bach.Folder(Path.of("src/test.base/test/java"), 0))),
+                List.of(new Bach.Directory(Path.of("src/test.base/test/java"), 0))),
             //
-            new Bach.Unit(
+            new Bach.ModuleDescription(
                 ModuleDescriptor.newOpenModule("test.modules").build(),
-                List.of(new Bach.Folder(Path.of("src/test.modules/test/java"), 0)))
+                List.of(new Bach.Directory(Path.of("src/test.modules/test/java"), 0)))
             //
             ));
   }
 
-  private static Bach.Realm testPreviewRealm() {
+  private static Bach.ModuleCollection testPreviewRealm() {
     var descriptor = ModuleDescriptor.newOpenModule("test.preview").build();
     var release = Runtime.version().feature();
-    var folders = List.of(new Bach.Folder(Path.of("src/test.preview/test-preview/java"), release));
-    var unit = new Bach.Unit(descriptor, folders);
-    return new Bach.Realm("test-preview", release, true, List.of(unit));
+    var directory = new Bach.Directory(Path.of("src/test.preview/test-preview/java"), release);
+    var unit = new Bach.ModuleDescription(descriptor, List.of(directory));
+    return new Bach.ModuleCollection("test-preview", release, true, List.of(unit));
   }
 }
