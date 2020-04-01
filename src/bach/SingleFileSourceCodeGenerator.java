@@ -59,6 +59,7 @@ class SingleFileSourceCodeGenerator {
   private static boolean isRedundant(String trim) {
     if (trim.startsWith("//")) return true;
     if (trim.startsWith("/**") && trim.endsWith("*/")) return true;
+    if (trim.equals("@Override")) return true;
     return trim.isEmpty();
   }
 

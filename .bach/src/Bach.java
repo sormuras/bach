@@ -60,7 +60,6 @@ public class Bach {
     if (debug || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
   }
-  @Override
   public String toString() {
     return "Bach.java " + VERSION;
   }
@@ -92,7 +91,6 @@ public class Bach {
     public int release() {
       return release;
     }
-    @Override
     public String toString() {
       return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
           .add("path=" + path)
@@ -123,7 +121,6 @@ public class Bach {
     public List<ModuleDescription> modules() {
       return modules;
     }
-    @Override
     public String toString() {
       return new StringJoiner(", ", ModuleCollection.class.getSimpleName() + "[", "]")
           .add("name='" + name + "'")
@@ -150,7 +147,6 @@ public class Bach {
     public List<Directory> directories() {
       return directories;
     }
-    @Override
     public String toString() {
       return new StringJoiner(", ", ModuleDescription.class.getSimpleName() + "[", "]")
           .add("descriptor=" + descriptor)
@@ -176,7 +172,6 @@ public class Bach {
     public Structure structure() {
       return structure;
     }
-    @Override
     public String toString() {
       return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
           .add("name='" + name + "'")
@@ -196,7 +191,6 @@ public class Bach {
     public List<ModuleCollection> collections() {
       return collections;
     }
-    @Override
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
           .add("collections=" + collections)
