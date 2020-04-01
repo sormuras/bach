@@ -23,20 +23,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class FolderTests {
+class DirectoryTests {
 
   @Test
   void empty() {
-    var empty = API.emptyFolder();
+    var empty = API.emptyDirectory();
     assertEquals(Path.of("empty"), empty.path());
     assertEquals(0, empty.release());
-    assertTrue(empty.toString().contains(Folder.class.getSimpleName()));
+    assertTrue(empty.toString().contains(Directory.class.getSimpleName()));
   }
 
   @Test
   void factory() {
-    var folder = Folder.of(Path.of("java-123"));
-    assertEquals(Path.of("java-123"), folder.path());
-    assertEquals(123, folder.release());
+    var directory = Directory.of(Path.of("java-123"));
+    assertEquals(Path.of("java-123"), directory.path());
+    assertEquals(123, directory.release());
   }
 }

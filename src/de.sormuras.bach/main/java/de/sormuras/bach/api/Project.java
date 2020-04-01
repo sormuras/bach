@@ -20,7 +20,7 @@ package de.sormuras.bach.api;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.StringJoiner;
 
-/** A modular project description. */
+/** A named and versioned modular Java project. */
 public /*static*/ class Project {
 
   private final String name;

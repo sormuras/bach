@@ -28,7 +28,7 @@ class ProjectTests {
     var empty = API.emptyProject();
     assertEquals("empty", empty.name());
     assertEquals("0", empty.version().toString());
-    assertEquals(0, empty.structure().realms().size());
+    assertEquals(0, empty.structure().collections().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
   }

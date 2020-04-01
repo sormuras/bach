@@ -26,7 +26,7 @@ class StructureTests {
   @Test
   void empty() {
     var empty = API.emptyStructure();
-    assertEquals(0, empty.realms().size());
-    assertTrue(empty.toString().contains("realms"));
+    assertEquals(0, empty.collections().size());
+    assertTrue(empty.toString().contains("collections"));
   }
 }

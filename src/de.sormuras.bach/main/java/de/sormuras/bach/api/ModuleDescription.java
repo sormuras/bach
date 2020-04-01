@@ -21,35 +21,35 @@ import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.StringJoiner;
 
-/** A module source description. */
-public /*static*/ class Unit {
+/** A module source description wrapping a module descriptor and associated source directories. */
+public /*static*/ class ModuleDescription {
 
-  public static Unit of(String name, Folder... folders) {
+  public static ModuleDescription of(String name, Directory... directories) {
     var descriptor = ModuleDescriptor.newModule(name).build();
-    return new Unit(descriptor, List.of(folders));
+    return new ModuleDescription(descriptor, List.of(directories));
   }
 
   private final ModuleDescriptor descriptor;
-  private final List<Folder> folders;
+  private final List<Directory> directories;
 
-  public Unit(ModuleDescriptor descriptor, List<Folder> folders) {
+  public ModuleDescription(ModuleDescriptor descriptor, List<Directory> directories) {
     this.descriptor = descriptor;
-    this.folders = folders;
+    this.directories = directories;
   }
 
   public ModuleDescriptor descriptor() {
     return descriptor;
   }
 
-  public List<Folder> folders() {
-    return folders;
+  public List<Directory> directories() {
+    return directories;
   }
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
+    return new StringJoiner(", ", ModuleDescription.class.getSimpleName() + "[", "]")
         .add("descriptor=" + descriptor)
-        .add("folders=" + folders)
+        .add("directories=" + directories)
         .toString();
   }
 }

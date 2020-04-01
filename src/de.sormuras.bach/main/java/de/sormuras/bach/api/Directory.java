@@ -17,47 +17,39 @@
 
 package de.sormuras.bach.api;
 
-import java.util.List;
+import de.sormuras.bach.Convention;
+import java.nio.file.Path;
 import java.util.StringJoiner;
 
-/** A modular realm description. */
-public /*static*/ class Realm {
+/** An optionally targeted directory of Java source files: {@code src/foo/main/java[-11]}. */
+public /*static*/ class Directory {
 
-  private final String name;
-  private final int release;
-  private final boolean preview;
-  private final List<Unit> units;
-
-  public Realm(String name, int release, boolean preview, List<Unit> units) {
-    this.name = name;
-    this.release = release;
-    this.preview = preview;
-    this.units = units;
+  public static Directory of(Path path) {
+    var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
+    return new Directory(path, release);
   }
 
-  public String name() {
-    return name;
+  private final Path path;
+  private final int release;
+
+  public Directory(Path path, int release) {
+    this.path = path;
+    this.release = release;
+  }
+
+  public Path path() {
+    return path;
   }
 
   public int release() {
     return release;
   }
 
-  public boolean preview() {
-    return preview;
-  }
-
-  public List<Unit> units() {
-    return units;
-  }
-
   @Override
   public String toString() {
-    return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
-        .add("name='" + name + "'")
+    return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
+        .add("path=" + path)
         .add("release=" + release)
-        .add("preview=" + preview)
-        .add("units=" + units)
         .toString();
   }
 }

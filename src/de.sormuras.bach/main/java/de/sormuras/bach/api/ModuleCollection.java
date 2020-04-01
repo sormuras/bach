@@ -17,39 +17,47 @@
 
 package de.sormuras.bach.api;
 
-import de.sormuras.bach.Convention;
-import java.nio.file.Path;
+import java.util.List;
 import java.util.StringJoiner;
 
-/** A source folder description: {@code src/foo/main/java}. */
-public /*static*/ class Folder {
+/** A named collection of module descriptions sharing compilation-related properties. */
+public /*static*/ class ModuleCollection {
 
-  public static Folder of(Path path) {
-    var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
-    return new Folder(path, release);
-  }
-
-  private final Path path;
+  private final String name;
   private final int release;
+  private final boolean preview;
+  private final List<ModuleDescription> modules;
 
-  public Folder(Path path, int release) {
-    this.path = path;
+  public ModuleCollection(String name, int release, boolean preview, List<ModuleDescription> modules) {
+    this.name = name;
     this.release = release;
+    this.preview = preview;
+    this.modules = modules;
   }
 
-  public Path path() {
-    return path;
+  public String name() {
+    return name;
   }
 
   public int release() {
     return release;
   }
 
+  public boolean preview() {
+    return preview;
+  }
+
+  public List<ModuleDescription> modules() {
+    return modules;
+  }
+
   @Override
   public String toString() {
-    return new StringJoiner(", ", Folder.class.getSimpleName() + "[", "]")
-        .add("path=" + path)
+    return new StringJoiner(", ", ModuleCollection.class.getSimpleName() + "[", "]")
+        .add("name='" + name + "'")
         .add("release=" + release)
+        .add("preview=" + preview)
+        .add("modules=" + modules)
         .toString();
   }
 }

@@ -23,15 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-class RealmTests {
+class ModuleCollectionTests {
 
   @Test
   void empty() {
-    var empty = API.emptyRealm();
+    var empty = API.emptyModuleCollection();
     assertEquals("empty", empty.name());
     assertEquals(0, empty.release());
     assertFalse(empty.preview());
-    assertEquals(0, empty.units().size());
+    assertEquals(0, empty.modules().size());
     assertTrue(empty.toString().contains("empty"));
   }
 }

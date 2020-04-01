@@ -21,24 +21,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class UnitTests {
+class ModuleDescriptionTests {
 
   @Test
   void empty() {
-    var unit = API.emptyUnit();
-    assertEquals("empty", unit.descriptor().name());
-    assertEquals(0, unit.folders().size());
-    assertTrue(unit.toString().contains("empty"));
+    var empty = API.emptyModuleDescription();
+    assertEquals("empty", empty.descriptor().name());
+    assertEquals(0, empty.directories().size());
+    assertTrue(empty.toString().contains("empty"));
   }
 
   @Test
   void factory() {
-    var folder = Folder.of(Path.of("java-123"));
-    var unit = Unit.of("foo", folder);
-    assertEquals("foo", unit.descriptor().name());
-    assertSame(folder, unit.folders().get(0));
+    var directory = API.emptyDirectory();
+    var description = ModuleDescription.of("foo", directory);
+    assertEquals("foo", description.descriptor().name());
+    assertSame(directory, description.directories().get(0));
   }
 }

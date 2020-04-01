@@ -32,16 +32,16 @@ public interface API {
     return new Structure(List.of());
   }
 
-  static Realm emptyRealm() {
-    return new Realm("empty", 0, false, List.of());
+  static ModuleCollection emptyModuleCollection() {
+    return new ModuleCollection("empty", 0, false, List.of());
   }
 
-  static Unit emptyUnit() {
-    return new Unit(emptyModuleDescriptor(), List.of());
+  static ModuleDescription emptyModuleDescription() {
+    return new ModuleDescription(emptyModuleDescriptor(), List.of());
   }
 
-  static Folder emptyFolder() {
-    return new Folder(Path.of("empty"), 0);
+  static Directory emptyDirectory() {
+    return new Directory(Path.of("empty"), 0);
   }
 
   static ModuleDescriptor emptyModuleDescriptor() {

@@ -23,20 +23,20 @@ import java.util.StringJoiner;
 /** A modular structure. */
 public /*static*/ class Structure {
 
-  private final List<Realm> realms;
+  private final List<ModuleCollection> collections;
 
-  public Structure(List<Realm> realms) {
-    this.realms = realms;
+  public Structure(List<ModuleCollection> collections) {
+    this.collections = collections;
   }
 
-  public List<Realm> realms() {
-    return realms;
+  public List<ModuleCollection> collections() {
+    return collections;
   }
 
   @Override
   public String toString() {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-        .add("realms=" + realms)
+        .add("collections=" + collections)
         .toString();
   }
 }
