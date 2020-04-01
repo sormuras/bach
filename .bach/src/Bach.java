@@ -60,14 +60,14 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
-  public static class Folder {
-    public static Folder of(Path path) {
+  public static class Directory {
+    public static Directory of(Path path) {
       var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
-      return new Folder(path, release);
+      return new Directory(path, release);
     }
     private final Path path;
     private final int release;
-    public Folder(Path path, int release) {
+    public Directory(Path path, int release) {
       this.path = path;
       this.release = release;
     }
@@ -79,9 +79,67 @@ public class Bach {
     }
     @Override
     public String toString() {
-      return new StringJoiner(", ", Folder.class.getSimpleName() + "[", "]")
+      return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
           .add("path=" + path)
           .add("release=" + release)
+          .toString();
+    }
+  }
+  public static class ModuleCollection {
+    private final String name;
+    private final int release;
+    private final boolean preview;
+    private final List<ModuleDescription> modules;
+    public ModuleCollection(String name, int release, boolean preview, List<ModuleDescription> modules) {
+      this.name = name;
+      this.release = release;
+      this.preview = preview;
+      this.modules = modules;
+    }
+    public String name() {
+      return name;
+    }
+    public int release() {
+      return release;
+    }
+    public boolean preview() {
+      return preview;
+    }
+    public List<ModuleDescription> modules() {
+      return modules;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", ModuleCollection.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("release=" + release)
+          .add("preview=" + preview)
+          .add("modules=" + modules)
+          .toString();
+    }
+  }
+  public static class ModuleDescription {
+    public static ModuleDescription of(String name, Directory... directories) {
+      var descriptor = ModuleDescriptor.newModule(name).build();
+      return new ModuleDescription(descriptor, List.of(directories));
+    }
+    private final ModuleDescriptor descriptor;
+    private final List<Directory> directories;
+    public ModuleDescription(ModuleDescriptor descriptor, List<Directory> directories) {
+      this.descriptor = descriptor;
+      this.directories = directories;
+    }
+    public ModuleDescriptor descriptor() {
+      return descriptor;
+    }
+    public List<Directory> directories() {
+      return directories;
+    }
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", ModuleDescription.class.getSimpleName() + "[", "]")
+          .add("descriptor=" + descriptor)
+          .add("directories=" + directories)
           .toString();
     }
   }
@@ -115,76 +173,18 @@ public class Bach {
       return name + ' ' + version;
     }
   }
-  public static class Realm {
-    private final String name;
-    private final int release;
-    private final boolean preview;
-    private final List<Unit> units;
-    public Realm(String name, int release, boolean preview, List<Unit> units) {
-      this.name = name;
-      this.release = release;
-      this.preview = preview;
-      this.units = units;
-    }
-    public String name() {
-      return name;
-    }
-    public int release() {
-      return release;
-    }
-    public boolean preview() {
-      return preview;
-    }
-    public List<Unit> units() {
-      return units;
-    }
-    @Override
-    public String toString() {
-      return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
-          .add("name='" + name + "'")
-          .add("release=" + release)
-          .add("preview=" + preview)
-          .add("units=" + units)
-          .toString();
-    }
-  }
   public static class Structure {
-    private final List<Realm> realms;
-    public Structure(List<Realm> realms) {
-      this.realms = realms;
+    private final List<ModuleCollection> collections;
+    public Structure(List<ModuleCollection> collections) {
+      this.collections = collections;
     }
-    public List<Realm> realms() {
-      return realms;
+    public List<ModuleCollection> collections() {
+      return collections;
     }
     @Override
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-          .add("realms=" + realms)
-          .toString();
-    }
-  }
-  public static class Unit {
-    public static Unit of(String name, Folder... folders) {
-      var descriptor = ModuleDescriptor.newModule(name).build();
-      return new Unit(descriptor, List.of(folders));
-    }
-    private final ModuleDescriptor descriptor;
-    private final List<Folder> folders;
-    public Unit(ModuleDescriptor descriptor, List<Folder> folders) {
-      this.descriptor = descriptor;
-      this.folders = folders;
-    }
-    public ModuleDescriptor descriptor() {
-      return descriptor;
-    }
-    public List<Folder> folders() {
-      return folders;
-    }
-    @Override
-    public String toString() {
-      return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
-          .add("descriptor=" + descriptor)
-          .add("folders=" + folders)
+          .add("collections=" + collections)
           .toString();
     }
   }
