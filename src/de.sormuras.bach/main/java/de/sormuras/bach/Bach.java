@@ -17,6 +17,8 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.api.Project;
+
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.Objects;
@@ -55,7 +57,7 @@ public class Bach {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
-    print(Level.TRACE, "Bach initialized");
+    print(Level.TRACE, "%s initialized", this);
   }
 
   /** Print a message at information level. */
@@ -68,6 +70,14 @@ public class Bach {
     var message = String.format(format, args);
     if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
     return message;
+  }
+
+  /** Build the given project using default settings. */
+  public void build(Project project) {
+    if (verbose) project.toStrings().forEach(this::print);
+    if (project.structure().collections().isEmpty()) print("No module collection present");
+    if (dryRun) return;
+    print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
   }
 
   @Override

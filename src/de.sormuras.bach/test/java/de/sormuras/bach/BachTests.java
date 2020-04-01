@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.System.Logger.Level;
 import java.util.List;
+
+import de.sormuras.bach.api.API;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -66,7 +68,7 @@ class BachTests {
     assertEquals("off", bach.print(Level.OFF, "off"));
     assertLinesMatch(
         List.of(
-            "P Bach initialized",
+            "P Bach.java .+ initialized",
             "P all",
             "P trace",
             "P debug",
@@ -74,6 +76,20 @@ class BachTests {
             "P warning",
             "P error",
             "P off"),
+        log.lines());
+  }
+
+  @Test
+  void buildEmptyProjectInDryRunMode() {
+    var log = new Log();
+    var bach = new Bach(log, true, true);
+    bach.build(API.emptyProject());
+    assertLinesMatch(
+        List.of(
+            "P Bach.java .+ initialized",
+            "P Project empty 0",
+            "P \tModule Collections: []",
+            "P No module collection present"),
         log.lines());
   }
 }
