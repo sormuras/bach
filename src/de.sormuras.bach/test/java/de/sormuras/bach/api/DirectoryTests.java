@@ -17,11 +17,19 @@
 
 package de.sormuras.bach.api;
 
+import static de.sormuras.bach.api.Assertions.assertToStringEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class DirectoryTests {
 
@@ -34,9 +42,46 @@ class DirectoryTests {
   }
 
   @Test
-  void factory() {
+  void ofPath() {
     var directory = Directory.of(Path.of("java-123"));
     assertEquals(Path.of("java-123"), directory.path());
     assertEquals(123, directory.release());
+  }
+
+  @Test
+  void listOfNonexistentPathReturnsAnEmptyList() {
+    var directories = Directory.listOf(Path.of("nonexistent"));
+    assertTrue(directories.isEmpty());
+  }
+
+  @Test
+  void listOfPathToRegularFileFails(@TempDir Path temp) throws Exception {
+    var file = Files.createFile(temp.resolve("file"));
+    assertThrows(UncheckedIOException.class, () -> Directory.listOf(file));
+  }
+
+  @Test
+  void listOfPathWithNoSubdirectoryReturnsAnEmptyList(@TempDir Path temp) {
+    var directories = Directory.listOf(temp);
+    assertTrue(directories.isEmpty());
+  }
+
+  @Test
+  void listOfPathWithSingleSubdirectoryReturnsIt(@TempDir Path temp) throws Exception {
+    var java = Files.createDirectories(temp.resolve("java"));
+    var directories = Directory.listOf(temp);
+    assertToStringEquals(new Directory(java, 0), directories.get(0));
+  }
+
+  @Test
+  void listOfPathWithMultipleSubdirectoriesReturnsThem(@TempDir Path temp) throws Exception {
+    var java8 = new Directory(Files.createDirectories(temp.resolve("java-8")), 8);
+    var java9 = new Directory(Files.createDirectories(temp.resolve("java-9")), 9);
+    var javaA = new Directory(Files.createDirectories(temp.resolve("java-10")), 10);
+    var N = Runtime.version().feature();
+    var javaN = new Directory(Files.createDirectories(temp.resolve("java-preview")), N);
+    assertLinesMatch(
+        List.of(java8.toString(), java9.toString(), javaA.toString(), javaN.toString()),
+        Directory.listOf(temp).stream().map(Directory::toString).collect(Collectors.toList()));
   }
 }

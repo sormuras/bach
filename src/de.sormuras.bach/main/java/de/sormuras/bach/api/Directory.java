@@ -18,15 +18,35 @@
 package de.sormuras.bach.api;
 
 import de.sormuras.bach.Convention;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.StringJoiner;
 
 /** An optionally targeted directory of Java source files: {@code src/foo/main/java[-11]}. */
 public /*static*/ class Directory {
 
+  /** Return directory instance for the given path. */
   public static Directory of(Path path) {
     var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
     return new Directory(path, release);
+  }
+
+  /** Return list of directories by scanning the given common root path: {@code src/foo/main}. */
+  public static List<Directory> listOf(Path root) {
+    if (Files.notExists(root)) return List.of();
+    var directories = new ArrayList<Directory>();
+    try (var stream = Files.newDirectoryStream(root, Files::isDirectory)) {
+      stream.forEach(path -> directories.add(of(path)));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    directories.sort(Comparator.comparingInt(Directory::release));
+    return List.copyOf(directories);
   }
 
   private final Path path;
