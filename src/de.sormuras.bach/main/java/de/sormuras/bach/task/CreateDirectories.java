@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 
-/**
- * Bach's base module.
- *
- * @uses java.util.spi.ToolProvider
- */
-module de.sormuras.bach {
-  exports de.sormuras.bach;
-  exports de.sormuras.bach.api;
-  exports de.sormuras.bach.task;
+package de.sormuras.bach.task;
 
-  requires java.net.http;
+import de.sormuras.bach.Task;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-  uses java.util.spi.ToolProvider;
+/** Create a directory by creating all nonexistent parent directories first. */
+public /*static*/ class CreateDirectories extends Task {
+
+  private final Path path;
+
+  public CreateDirectories(Path path) {
+    super("Create directories " + path);
+    this.path = path;
+  }
+
+  @Override
+  public void execute(Execution context) throws Exception {
+    Files.createDirectories(path);
+  }
 }
