@@ -82,6 +82,21 @@ public class Bach {
     print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
   }
 
+  /** Execute the given task recursively. */
+  public void execute(Task task) {
+    var executor = new Task.Executor(this);
+    print(Level.TRACE, "Execute task: " + task.name());
+    var summary = executor.execute(task).assertSuccessful();
+    if (verbose) {
+      print("Task Execution Overview");
+      print("|    |Thread|Duration| Task");
+      summary.getOverviewLines().forEach(this::print);
+      var count = summary.getTaskCount();
+      var duration = summary.getDuration().toMillis();
+      print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
+    }
+  }
+
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
