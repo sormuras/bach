@@ -17,12 +17,13 @@
 
 package de.sormuras.bach.api;
 
-import static de.sormuras.bach.api.Assertions.assertToStringEquals;
+import static de.sormuras.bach.Assertions.assertToStringEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.API;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

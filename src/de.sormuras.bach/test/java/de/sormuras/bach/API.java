@@ -15,8 +15,13 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach;
 
+import de.sormuras.bach.api.Directory;
+import de.sormuras.bach.api.ModuleCollection;
+import de.sormuras.bach.api.ModuleDescription;
+import de.sormuras.bach.api.Project;
+import de.sormuras.bach.api.Structure;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -46,5 +51,24 @@ public interface API {
 
   static ModuleDescriptor emptyModuleDescriptor() {
     return ModuleDescriptor.newModule("empty").build();
+  }
+
+  @FunctionalInterface
+  interface Executable {
+    void execute(Task.Execution execution) throws Exception;
+  }
+
+  static Task taskOf(String name, Executable executable) {
+    class Named extends Task {
+      Named() {
+        super(name);
+      }
+
+      @Override
+      public void execute(Execution execution) throws Exception {
+        executable.execute(execution);
+      }
+    }
+    return new Named();
   }
 }

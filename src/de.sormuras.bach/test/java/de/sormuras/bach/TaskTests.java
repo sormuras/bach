@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -30,7 +31,7 @@ class TaskTests {
   void executeTask() {
     var log = new Log();
     var bach = new Bach(log, true, false);
-    bach.execute(new Task());
+    bach.execute(new Task("Task"));
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
@@ -56,7 +57,7 @@ class TaskTests {
       }
 
       Wait(int millis) {
-        super("Thread.sleep(" + millis + ")", false, List.of());
+        super("Thread.sleep(" + millis + ")");
         this.millis = millis;
       }
 
@@ -88,17 +89,11 @@ class TaskTests {
 
   @Test
   void executeThrowingTask() {
-
-    class Throw extends Task {
-      @Override
-      public void execute(Execution execution) throws Exception {
-        throw new Exception("BäMM!");
-      }
-    }
-
     var log = new Log();
     var bach = new Bach(log, true, false);
-    assertThrows(AssertionError.class, () -> bach.execute(new Throw()));
+    var task = API.taskOf("Throw", __ -> throwException("BäMM!"));
+    var error = assertThrows(AssertionError.class, () -> bach.execute(task));
+    assertEquals("BäMM!", error.getSuppressed()[0].getMessage());
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
@@ -107,5 +102,9 @@ class TaskTests {
             "P Execute task: Throw",
             "P * Throw"),
         log.lines());
+  }
+
+  private void throwException(String message) throws Exception {
+    throw new Exception(message);
   }
 }
