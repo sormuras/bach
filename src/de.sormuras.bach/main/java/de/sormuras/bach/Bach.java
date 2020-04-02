@@ -18,7 +18,6 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.api.Project;
-
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.Objects;
@@ -77,7 +76,8 @@ public class Bach {
   /** Build the given project using default settings. */
   public void build(Project project) {
     if (verbose) project.toStrings().forEach(this::print);
-    if (project.structure().collections().isEmpty()) print("No module collection present");
+    if (project.structure().collections().isEmpty())
+      print(Level.WARNING, "No module collection present");
     if (dryRun) return;
     print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
   }

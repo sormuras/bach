@@ -82,18 +82,19 @@ class BachTests {
   }
 
   @Test
-  void buildEmptyProjectInDryRunMode() {
+  void buildEmptyProject() {
     var log = new Log();
-    var bach = new Bach(log, true, true);
+    var bach = new Bach(log, true, false);
     bach.build(API.emptyProject());
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
             "P \tverbose=true",
-            "P \tdry-run=true",
+            "P \tdry-run=false",
             "P Project empty 0",
             "P \tModule Collections: []",
-            "P No module collection present"),
+            "P No module collection present",
+            "P TODO build(empty 0)"),
         log.lines());
   }
 }
