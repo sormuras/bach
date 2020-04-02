@@ -30,15 +30,15 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
-/** Executable task definition. */
+/** An executable task definition. */
 public /*static*/ class Task {
 
   private final String name;
   private final boolean parallel;
   private final List<Task> subs;
 
-  public Task() {
-    this(null, false, List.of());
+  public Task(String name) {
+    this(name, false, List.of());
   }
 
   public Task(String name, boolean parallel, List<Task> subs) {
@@ -52,6 +52,14 @@ public /*static*/ class Task {
   }
 
   public void execute(Execution execution) throws Exception {}
+
+  public static Task parallel(String name, Task... tasks) {
+    return new Task(name, true, List.of(tasks));
+  }
+
+  public static Task sequence(String name, Task... tasks) {
+    return new Task(name, false, List.of(tasks));
+  }
 
   public static class Execution {
     private final String hash = Integer.toHexString(System.identityHashCode(this));
