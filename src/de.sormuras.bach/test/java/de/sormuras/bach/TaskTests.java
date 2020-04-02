@@ -27,6 +27,24 @@ import test.base.Log;
 class TaskTests {
 
   @Test
+  void executeTask() {
+    var log = new Log();
+    var bach = new Bach(log, true, false);
+    bach.execute(new Task());
+    assertLinesMatch(
+        List.of(
+            "P Bach.java .+ initialized",
+            "P \tverbose=true",
+            "P \tdry-run=false",
+            "P Execute task: Task",
+            "P * Task",
+            "P Task Execution Overview",
+            ">> OVERVIEW >>",
+            "P Execution of 1 tasks took .+ ms"),
+        log.lines());
+  }
+
+  @Test
   void executeThreeWaitTasksInParallel() {
 
     class Wait extends Task {
