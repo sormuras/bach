@@ -15,20 +15,26 @@
  * limitations under the License.
  */
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,9 +70,23 @@ public class Bach {
   }
   public void build(Project project) {
     if (verbose) project.toStrings().forEach(this::print);
-    if (project.structure().collections().isEmpty()) print("No module collection present");
+    if (project.structure().collections().isEmpty())
+      print(Level.WARNING, "No module collection present");
     if (dryRun) return;
     print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
+  }
+  public void execute(Task task) {
+    var executor = new Task.Executor(this);
+    print(Level.TRACE, "Execute task: " + task.name());
+    var summary = executor.execute(task).assertSuccessful();
+    if (verbose) {
+      print("Task Execution Overview");
+      print("|    |Thread|Duration| Task");
+      summary.getOverviewLines().forEach(this::print);
+      var count = summary.getTaskCount();
+      var duration = summary.getDuration().toMillis();
+      print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
+    }
   }
   public String toString() {
     return "Bach.java " + VERSION;
@@ -275,6 +295,128 @@ public class Bach {
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
+    }
+  }
+  public static class Task {
+    private final String name;
+    private final boolean parallel;
+    private final List<Task> subs;
+    public Task() {
+      this(null, false, List.of());
+    }
+    public Task(String name, boolean parallel, List<Task> subs) {
+      this.name = Objects.requireNonNullElse(name, getClass().getSimpleName());
+      this.parallel = parallel;
+      this.subs = subs;
+    }
+    public String name() {
+      return name;
+    }
+    public void execute(Execution execution) throws Exception {}
+    public static class Execution {
+      private final String hash = Integer.toHexString(System.identityHashCode(this));
+      public final StringWriter out = new StringWriter();
+      public final StringWriter err = new StringWriter();
+      private final Instant start = Instant.now();
+    }
+    static class Executor {
+      private final Bach bach;
+      private final Deque<String> overview = new ConcurrentLinkedDeque<>();
+      private final Deque<Execution> executions = new ConcurrentLinkedDeque<>();
+      private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
+      Executor(Bach bach) {
+        this.bach = bach;
+      }
+      Summary execute(Task root) {
+        var execution = execute(0, root);
+        return new Summary(Duration.between(execution.start, Instant.now()));
+      }
+      private Execution execute(int depth, Task task) {
+        var indent = "\t".repeat(depth);
+        var name = task.name;
+        var subs = task.subs;
+        var flat = subs.isEmpty(); // i.e. no sub tasks
+        bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
+        executionBegin(task);
+        var execution = new Execution();
+        try {
+          task.execute(execution);
+          if (!flat) {
+            var stream = task.parallel ? subs.parallelStream() : subs.stream();
+            stream.forEach(sub -> execute(depth + 1, sub));
+            bach.print(Level.TRACE, "%s= %s", indent, name);
+          }
+          executionEnd(task, execution);
+        } catch (Exception e) {
+          suppressed.add(e);
+        }
+        return execution;
+      }
+      private void executionBegin(Task task) {
+        if (task.subs.isEmpty()) return;
+        var format = "|   +|%6X|        | %s";
+        var thread = Thread.currentThread().getId();
+        overview.add(String.format(format, thread, task.name));
+      }
+      private void executionEnd(Task task, Execution execution) {
+        var format = "|%4c|%6X|%8d| %s";
+        var flat = task.subs.isEmpty();
+        var kind = flat ? ' ' : '=';
+        var thread = Thread.currentThread().getId();
+        var millis = Duration.between(execution.start, Instant.now()).toMillis();
+        var name = flat ? task.name : "**" + task.name + "**";
+        var line = String.format(format, kind, thread, millis, name);
+        if (flat) {
+          overview.add(line + " [...](#task-execution-details-" + execution.hash + ")");
+          executions.add(execution);
+          return;
+        }
+        overview.add(line);
+      }
+      class Summary {
+        private final Duration duration;
+        Summary(Duration duration) {
+          this.duration = duration;
+        }
+        Summary assertSuccessful() {
+          if (suppressed.isEmpty()) return this;
+          var message = new StringJoiner("\n");
+          message.add(String.format("collected %d suppressed throwable(s)", suppressed.size()));
+          message.add(String.join("\n", toExceptionDetails()));
+          var error = new AssertionError(message.toString());
+          suppressed.forEach(error::addSuppressed);
+          throw error;
+        }
+        Duration getDuration() {
+          return duration;
+        }
+        Deque<String> getOverviewLines() {
+          return overview;
+        }
+        int getTaskCount() {
+          return executions.size();
+        }
+        private List<String> toExceptionDetails() {
+          if (suppressed.isEmpty()) return List.of();
+          var md = new ArrayList<String>();
+          md.add("");
+          md.add("## Exception Details");
+          md.add("");
+          md.add("- Caught " + suppressed.size() + " throwable(s).");
+          md.add("");
+          for (var throwable : suppressed) {
+            var lines = throwable.getMessage().lines().collect(Collectors.toList());
+            md.add("### " + (lines.isEmpty() ? throwable.getClass() : lines.get(0)));
+            if (lines.size() > 1) md.addAll(lines);
+            var stackTrace = new StringWriter();
+            throwable.printStackTrace(new PrintWriter(stackTrace));
+            md.add("```text");
+            stackTrace.toString().lines().forEach(md::add);
+            md.add("```");
+          }
+          return md;
+        }
+      }
     }
   }
 }
