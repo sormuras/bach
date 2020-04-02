@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 public class Bach {
@@ -301,8 +303,8 @@ public class Bach {
     private final String name;
     private final boolean parallel;
     private final List<Task> subs;
-    public Task() {
-      this(null, false, List.of());
+    public Task(String name) {
+      this(name, false, List.of());
     }
     public Task(String name, boolean parallel, List<Task> subs) {
       this.name = Objects.requireNonNullElse(name, getClass().getSimpleName());
@@ -313,6 +315,12 @@ public class Bach {
       return name;
     }
     public void execute(Execution execution) throws Exception {}
+    public static Task parallel(String name, Task... tasks) {
+      return new Task(name, true, List.of(tasks));
+    }
+    public static Task sequence(String name, Task... tasks) {
+      return new Task(name, false, List.of(tasks));
+    }
     public static class Execution {
       private final String hash = Integer.toHexString(System.identityHashCode(this));
       public final StringWriter out = new StringWriter();
@@ -416,6 +424,37 @@ public class Bach {
           }
           return md;
         }
+      }
+    }
+  }
+  public static class CreateDirectories extends Task {
+    private final Path path;
+    public CreateDirectories(Path path) {
+      super("Create directories " + path);
+      this.path = path;
+    }
+    public void execute(Execution context) throws Exception {
+      Files.createDirectories(path);
+    }
+  }
+  public static class DeleteDirectories extends Task {
+    private final Path path;
+    public DeleteDirectories(Path path) {
+      super("Delete directories " + path);
+      this.path = path;
+    }
+    public void execute(Execution context) throws Exception {
+      delete(path, __ -> true);
+    }
+    static void delete(Path directory, Predicate<Path> filter) throws Exception {
+      try {
+        Files.deleteIfExists(directory);
+        return;
+      } catch (DirectoryNotEmptyException __) {
+      }
+      try (var stream = Files.walk(directory)) {
+        var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
     }
   }
