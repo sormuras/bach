@@ -41,15 +41,21 @@ public interface API {
   }
 
   static Unit emptyUnit() {
-    return new Unit(emptyModuleDescriptor(), List.of());
+    return new Unit(newModuleDescriptor("empty"), List.of());
   }
 
   static Directory emptyDirectory() {
-    return new Directory(Path.of("empty"), 0);
+    return new Directory(Path.of("empty"), Directory.Type.UNDEFINED, 0);
   }
 
-  static ModuleDescriptor emptyModuleDescriptor() {
-    return ModuleDescriptor.newModule("empty").build();
+  static ModuleDescriptor newModuleDescriptor(String name, String... requires) {
+    var descriptor = ModuleDescriptor.newModule(name);
+    for(var required : requires) descriptor.requires(required);
+    return descriptor.build();
+  }
+
+  static Unit newUnit(String name, Directory... directories) {
+    return new Unit(newModuleDescriptor(name), List.of(directories));
   }
 
   @FunctionalInterface

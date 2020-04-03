@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.project.structure.Realm;
-import de.sormuras.bach.project.structure.Unit;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -54,7 +53,7 @@ class ProjectTests {
                         "one",
                         1,
                         true,
-                        List.of(Unit.of("one", Directory.of(Path.of("one")))) //
+                        List.of(API.newUnit("one", Directory.of(Path.of("one")))) //
                         ) //
                     ) //
                 ) //
@@ -67,12 +66,11 @@ class ProjectTests {
             "\t\t\trelease=1",
             "\t\t\tpreview=true",
             "\t\t\tUnits: [1]",
-            "\t\t\t\tUnit one",
+            "\t\t\t\tUnit \"one\"",
             "\t\t\t\t\tmain-class=<empty>",
             "\t\t\t\t\trequires=[java.base]",
             "\t\t\t\t\tDirectories: [1]",
-            "\t\t\t\t\t\tpath=one",
-            "\t\t\t\t\t\trelease=0"),
+            "\t\t\t\t\t\tDirectory[path=one, type=UNDEFINED, release=0]"),
         one.toStrings());
   }
 }

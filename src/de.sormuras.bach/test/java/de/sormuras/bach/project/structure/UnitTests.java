@@ -37,7 +37,7 @@ class UnitTests {
   @Test
   void factory() {
     var directory = API.emptyDirectory();
-    var unit = Unit.of("foo", directory);
+    var unit = API.newUnit("foo", directory);
     assertEquals("foo", unit.descriptor().name());
     assertSame(directory, unit.directories().get(0));
   }
