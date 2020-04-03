@@ -25,11 +25,6 @@ import java.util.stream.Collectors;
 /** A modular source description wrapping a module descriptor and associated source directories. */
 public /*static*/ class Unit {
 
-  public static Unit of(String name, Directory... directories) {
-    var descriptor = ModuleDescriptor.newModule(name).build();
-    return new Unit(descriptor, List.of(directories));
-  }
-
   private final ModuleDescriptor descriptor;
   private final List<Directory> directories;
 
