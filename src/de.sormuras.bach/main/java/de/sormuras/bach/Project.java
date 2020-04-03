@@ -74,7 +74,8 @@ public /*static*/ class Project {
         var module = unit.descriptor();
         strings.add("\t\t\t\tUnit \"" + module.toNameAndVersion() + '"');
         module.mainClass().ifPresent(it -> strings.add("\t\t\t\t\tmain-class=" + it));
-        strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
+        var requires = unit.toRequiresNames();
+        if (!requires.isEmpty()) strings.add("\t\t\t\t\trequires=" + requires);
         strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
         for (var directory : unit.directories()) {
           strings.add("\t\t\t\t\t\t" + directory);
