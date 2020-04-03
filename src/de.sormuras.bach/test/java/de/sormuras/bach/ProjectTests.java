@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.project.structure.Location;
 import de.sormuras.bach.project.structure.Realm;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -35,10 +36,19 @@ class ProjectTests {
     var empty = API.emptyProject();
     assertEquals("empty", empty.name());
     assertEquals("0", empty.version().toString());
+    assertEquals("", empty.structure().location().base().toString());
     assertEquals(0, empty.structure().realms().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
-    assertLinesMatch(List.of("Project empty 0", "\tRealms: []"), empty.toStrings());
+    assertLinesMatch(
+        List.of(
+            "Project empty 0",
+            "\tLocation",
+            "\t\tbase='' -> .+/",
+            "\t\tout=.bach[/\\\\]out",
+            "\t\tlib=lib",
+            "\tRealms: []"),
+        empty.toStrings());
   }
 
   @Test
@@ -48,6 +58,7 @@ class ProjectTests {
             "one",
             Version.parse("1"),
             new Structure(
+                Location.of(),
                 List.of(
                     new Realm(
                         "one",
@@ -55,12 +66,15 @@ class ProjectTests {
                         true,
                         List.of(API.newUnit("one", Directory.of(Path.of("one")))) //
                         ) //
-                    ) //
-                ) //
+                    )) //
             );
     assertLinesMatch(
         List.of(
             "Project one 1",
+            "\tLocation",
+            "\t\tbase='' -> .+/",
+            "\t\tout=.bach[/\\\\]out",
+            "\t\tlib=lib",
             "\tRealms: [one]",
             "\t\tRealm \"one\"",
             "\t\t\trelease=1",

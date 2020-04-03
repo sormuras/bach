@@ -64,6 +64,11 @@ public /*static*/ class Project {
   public List<String> toStrings() {
     var strings = new ArrayList<String>();
     strings.add("Project " + toNameAndVersion());
+    var location = structure.location();
+    strings.add("\tLocation");
+    strings.add("\t\tbase='" + location.base() + "' -> " + location.base().toUri());
+    strings.add("\t\tout=" + location.out());
+    strings.add("\t\tlib=" + location.lib());
     strings.add("\tRealms: " + structure.toRealmNames());
     for (var realm : structure.realms()) {
       strings.add("\t\tRealm \"" + realm.name() + '"');

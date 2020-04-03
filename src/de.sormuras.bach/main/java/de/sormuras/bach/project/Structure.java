@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.project.structure.Location;
 import de.sormuras.bach.project.structure.Realm;
 import java.util.List;
 import java.util.StringJoiner;
@@ -25,10 +26,16 @@ import java.util.stream.Collectors;
 /** A modular project structure consisting of realms and other components. */
 public /*static*/ class Structure {
 
+  private final Location location;
   private final List<Realm> realms;
 
-  public Structure(List<Realm> realms) {
+  public Structure(Location location, List<Realm> realms) {
+    this.location = location;
     this.realms = realms;
+  }
+
+  public Location location() {
+    return location;
   }
 
   public List<Realm> realms() {
@@ -38,6 +45,7 @@ public /*static*/ class Structure {
   @Override
   public String toString() {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
+        .add("location=" + location)
         .add("realms=" + realms)
         .toString();
   }
