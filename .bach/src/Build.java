@@ -24,55 +24,42 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    new Bach(System.out::println, true, false).build(newProject("Bach.java", "11.0-ea"));
+    new Bach(System.out::println, true, false).build(project("Bach.java", "11.0-ea"));
   }
 
-  static Bach.Project newProject(String name, String version) {
+  static Bach.Project project(String name, String version) {
     return new Bach.Project(
-        name,
-        Version.parse(version),
-        new Bach.Structure(List.of(newMain(), newTest(), newTestPreview())));
+        name, Version.parse(version), new Bach.Structure(List.of(mainRealm(), testRealm())));
   }
 
-  static Bach.ModuleCollection newMain() {
-    return new Bach.ModuleCollection(
+  static Bach.Realm mainRealm() {
+    return new Bach.Realm(
         "main",
         11,
         false,
         List.of(
-            new Bach.ModuleDescription(
+            new Bach.Unit(
                 ModuleDescriptor.newModule("de.sormuras.bach").build(),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))));
   }
 
-  static Bach.ModuleCollection newTest() {
-    return new Bach.ModuleCollection(
+  static Bach.Realm testRealm() {
+    return new Bach.Realm(
         "test",
         11,
         false,
         List.of(
             //
-            new Bach.ModuleDescription(
+            new Bach.Unit(
                 ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test"))),
             //
-            new Bach.ModuleDescription(
+            new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.base").build(),
                 Bach.Directory.listOf(Path.of("src/test.base/test"))),
             //
-            new Bach.ModuleDescription(
+            new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.modules").build(),
                 Bach.Directory.listOf(Path.of("src/test.modules/test")))));
-  }
-
-  static Bach.ModuleCollection newTestPreview() {
-    return new Bach.ModuleCollection(
-        "test-preview",
-        Runtime.version().feature(),
-        true,
-        List.of(
-            new Bach.ModuleDescription(
-                ModuleDescriptor.newOpenModule("test.preview").build(),
-                Bach.Directory.listOf(Path.of("src/test.preview/test-preview/java")))));
   }
 }
