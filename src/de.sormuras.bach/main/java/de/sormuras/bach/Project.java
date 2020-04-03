@@ -71,13 +71,12 @@ public /*static*/ class Project {
       strings.add("\t\t\tpreview=" + realm.preview());
       strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
       for (var unit : realm.units()) {
-        strings.add("\t\t\t\tUnit " + unit.descriptor().toNameAndVersion());
+        strings.add("\t\t\t\tUnit \"" + unit.descriptor().toNameAndVersion() + '"');
         strings.add("\t\t\t\t\tmain-class=" + unit.descriptor().mainClass().orElse("<empty>"));
         strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
         strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
         for (var directory : unit.directories()) {
-          strings.add("\t\t\t\t\t\tpath=" + directory.path());
-          strings.add("\t\t\t\t\t\trelease=" + directory.release());
+          strings.add("\t\t\t\t\t\t" + directory);
         }
       }
     }
