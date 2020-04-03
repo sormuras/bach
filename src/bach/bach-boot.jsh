@@ -19,15 +19,13 @@
  * Read input and declare constants.
  */
 var version = System.getProperty("version", "master")
-var feature = System.getProperty("feature", "11")
-var preview = Boolean.parseBoolean(System.getProperty("preview", "false"))
 var upgrade = Boolean.parseBoolean(System.getProperty("upgrade", "false"))
 
 /*
  * Compute and set variables.
  */
-var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/src/.bach-" + feature + "/")
-var target = Path.of(System.getProperty("target", "src/.bach"))
+var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/.bach/src/")
+var target = Path.of(System.getProperty("target", ".bach/src"))
 var bach = target.resolve("Bach.java")
 var build = target.resolve("Build.java")
 
@@ -47,18 +45,18 @@ println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
 println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
-println("     Java Shell Builder - " + version + " - " + feature)
+println("     Java Shell Builder Boot (" + version + ")")
 println("     https://github.com/sormuras/bach")
 println()
 
 /*
- * Download build tool and other assets from GitHub to local project directory.
+ * Download Bach.java and other assets from GitHub to local project directory.
  */
 println()
 println("Download assets to " + target.toAbsolutePath() + "...")
 Files.createDirectories(target)
-for (var asset : Set.of(bach, build)) {
-  if (Files.notExists(asset) || (upgrade && bach.equals(asset))) {
+for (var asset : Set.of(bach)) {
+  if (Files.notExists(asset) || upgrade) {
     var remote = new URL(source, asset.getFileName().toString());
     println("  | " + remote + "...");
     try (var stream = remote.openStream()) {
@@ -71,30 +69,41 @@ for (var asset : Set.of(bach, build)) {
 }
 
 /*
+ * Generate default build program.
+ */
+if (Files.notExists(build)) {
+  println();
+  println("Write default build program " + build);
+  Files.createDirectories(build.getParent());
+  Files.write(build, List.of(
+      "class Build {",
+      "\tpublic static void main(String... args) {",
+      "\t\tBach.main(\"build\");",
+      "\t}",
+      "}"));
+  Files.readAllLines(build).forEach(line -> println("\t" + line));
+}
+
+/*
  * Generate local launchers.
  */
+var root = target.getParent()
+var boot = root.resolve("boot")
 var directly = "java " + bach
-if (preview) {
-    directly = "java --enable-preview --source " + feature + " " + bach;
-}
-var compiler = "javac -d .bach/boot " + bach + " " + build
-var launcher = "java -cp .bach/boot Build"
-if (preview) {
-    compiler = "javac -d .bach/boot --enable-preview --release " + feature + " " + bach + " " + build;
-    launcher = "java -cp .bach/boot --enable-preview Build";
-}
-var root = target
+var compiler = "javac -d " + boot + " " + bach + " " + build
+var launcher = "java -cp " + boot + " Build"
+
 println()
-println("Generate local launchers...")
+println("Generate local launchers")
 Files.write(root.resolve("bach"), List.of("/usr/bin/env " + directly + " \"$@\"")).toFile().setExecutable(true)
 Files.write(root.resolve("bach.bat"), List.of("@ECHO OFF", directly + " %*"))
-Files.write(root.resolve("build"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"")).toFile().setExecutable(true)
-Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher + " %*"))
+Files.write(root.resolve("build"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"", "rm -rf " + boot)).toFile().setExecutable(true)
+Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher + " %*", "rmdir /Q/S " + boot))
 
 /*
  * Smoke test Bach.java by printing its version and help text.
  */
-/open src/.bach/Bach.java
+/open .bach/src/Bach.java
 println()
 Bach.main("help")
 
@@ -104,10 +113,10 @@ Bach.main("help")
 println()
 println("Bach.java bootstrap finished. Use the following commands to build your project:")
 println()
-println("- " + root.resolve("bach"))
+println("- " + root.resolve("bach") + "[.bat]")
 println("    Launch Bach.java's default build program.")
 println()
-println("- " + root.resolve("build"))
+println("- " + root.resolve("build") + "[.bat]")
 println("    Launch your custom build program.")
 println("    Edit " + build.toUri())
 println("    to customize your build program even further.")
