@@ -67,7 +67,6 @@ class ProjectTests {
             "\t\t\tpreview=true",
             "\t\t\tUnits: [1]",
             "\t\t\t\tUnit \"one\"",
-            "\t\t\t\t\tmain-class=<empty>",
             "\t\t\t\t\trequires=[java.base]",
             "\t\t\t\t\tDirectories: [1]",
             "\t\t\t\t\t\tDirectory[path=one, type=UNDEFINED, release=0]"),

@@ -71,8 +71,9 @@ public /*static*/ class Project {
       strings.add("\t\t\tpreview=" + realm.preview());
       strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
       for (var unit : realm.units()) {
-        strings.add("\t\t\t\tUnit \"" + unit.descriptor().toNameAndVersion() + '"');
-        strings.add("\t\t\t\t\tmain-class=" + unit.descriptor().mainClass().orElse("<empty>"));
+        var module = unit.descriptor();
+        strings.add("\t\t\t\tUnit \"" + module.toNameAndVersion() + '"');
+        module.mainClass().ifPresent(it -> strings.add("\t\t\t\t\tmain-class=" + it));
         strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
         strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
         for (var directory : unit.directories()) {
