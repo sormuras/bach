@@ -29,7 +29,9 @@ class Build {
 
   static Bach.Project project(String name, String version) {
     return new Bach.Project(
-        name, Version.parse(version), new Bach.Structure(List.of(mainRealm(), testRealm())));
+        name,
+        Version.parse(version),
+        new Bach.Structure(Bach.Location.of(), List.of(mainRealm(), testRealm())));
   }
 
   static Bach.Realm mainRealm() {

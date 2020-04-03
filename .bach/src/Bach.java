@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.DirectoryNotEmptyException;
@@ -166,6 +167,11 @@ public class Bach {
     public List<String> toStrings() {
       var strings = new ArrayList<String>();
       strings.add("Project " + toNameAndVersion());
+      var location = structure.location();
+      strings.add("\tLocation");
+      strings.add("\t\tbase='" + location.base() + "' -> " + location.base().toUri());
+      strings.add("\t\tout=" + location.out());
+      strings.add("\t\tlib=" + location.lib());
       strings.add("\tRealms: " + structure.toRealmNames());
       for (var realm : structure.realms()) {
         strings.add("\t\tRealm \"" + realm.name() + '"');
@@ -173,9 +179,11 @@ public class Bach {
         strings.add("\t\t\tpreview=" + realm.preview());
         strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
         for (var unit : realm.units()) {
-          strings.add("\t\t\t\tUnit \"" + unit.descriptor().toNameAndVersion() + '"');
-          strings.add("\t\t\t\t\tmain-class=" + unit.descriptor().mainClass().orElse("<empty>"));
-          strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
+          var module = unit.descriptor();
+          strings.add("\t\t\t\tUnit \"" + module.toNameAndVersion() + '"');
+          module.mainClass().ifPresent(it -> strings.add("\t\t\t\t\tmain-class=" + it));
+          var requires = unit.toRequiresNames();
+          if (!requires.isEmpty()) strings.add("\t\t\t\t\trequires=" + requires);
           strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
           for (var directory : unit.directories()) {
             strings.add("\t\t\t\t\t\t" + directory);
@@ -186,15 +194,21 @@ public class Bach {
     }
   }
   public static class Structure {
+    private final Location location;
     private final List<Realm> realms;
-    public Structure(List<Realm> realms) {
+    public Structure(Location location, List<Realm> realms) {
+      this.location = location;
       this.realms = realms;
+    }
+    public Location location() {
+      return location;
     }
     public List<Realm> realms() {
       return realms;
     }
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
+          .add("location=" + location)
           .add("realms=" + realms)
           .toString();
     }
@@ -253,6 +267,52 @@ public class Bach {
           .toString();
     }
   }
+  public static final class Location {
+    public static Location of() {
+      return of(Path.of(""));
+    }
+    public static Location of(Path base) {
+      return new Location(base, base.resolve(".bach/out"), base.resolve("lib"));
+    }
+    private final Path base;
+    private final Path out;
+    private final Path lib;
+    public Location(Path base, Path out, Path lib) {
+      this.base = base;
+      this.out = out;
+      this.lib = lib;
+    }
+    public Path base() {
+      return base;
+    }
+    public Path out() {
+      return out;
+    }
+    public Path lib() {
+      return lib;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Location.class.getSimpleName() + "[", "]")
+          .add("base=" + base)
+          .add("out=" + out)
+          .add("lib=" + lib)
+          .toString();
+    }
+    public Path out(String first, String... more) {
+      var path = Path.of(first, more);
+      return out.resolve(path);
+    }
+    public Path classes(Realm realm) {
+      return classes(realm, realm.release());
+    }
+    public Path classes(Realm realm, int release) {
+      var version = "" + (release == 0 ? Runtime.version().feature() : release);
+      return out.resolve("classes").resolve(version).resolve(realm.name());
+    }
+    public Path modules(Realm realm) {
+      return out.resolve("modules").resolve(realm.name());
+    }
+  }
   public static class Realm {
     private final String name;
     private final int release;
@@ -305,7 +365,10 @@ public class Bach {
           .toString();
     }
     public List<String> toRequiresNames() {
-      var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+      var names =
+          descriptor.requires().stream()
+              .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+              .map(Requires::name);
       return names.sorted().collect(Collectors.toList());
     }
   }
@@ -440,7 +503,8 @@ public class Bach {
   public static class BuildProject extends Task {
     public static BuildProject of(Project project) {
       var tasks = new ArrayList<Task>();
-      tasks.add(new CreateDirectories(Path.of(".bach/out")));
+      var out = project.structure().location().out();
+      tasks.add(new CreateDirectories(out));
       tasks.add(new DescribeModules(project.structure().realms().get(0)));
       return new BuildProject(project, tasks);
     }
