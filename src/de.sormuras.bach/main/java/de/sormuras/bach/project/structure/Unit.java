@@ -18,6 +18,7 @@
 package de.sormuras.bach.project.structure;
 
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -50,7 +51,10 @@ public /*static*/ class Unit {
   }
 
   public List<String> toRequiresNames() {
-    var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+    var names =
+        descriptor.requires().stream()
+            .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+            .map(Requires::name);
     return names.sorted().collect(Collectors.toList());
   }
 }
