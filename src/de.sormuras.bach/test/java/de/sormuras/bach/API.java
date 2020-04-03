@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.project.structure.Location;
 import de.sormuras.bach.project.structure.Realm;
 import de.sormuras.bach.project.structure.Unit;
 import de.sormuras.bach.project.Structure;
@@ -33,11 +34,11 @@ public interface API {
   }
 
   static Structure emptyStructure() {
-    return new Structure(List.of());
+    return new Structure(Location.of(), List.of());
   }
 
   static Realm emptyRealm() {
-    return new Realm("empty", 0, false, List.of());
+    return newRealm("empty");
   }
 
   static Unit emptyUnit() {
@@ -52,6 +53,10 @@ public interface API {
     var descriptor = ModuleDescriptor.newModule(name);
     for(var required : requires) descriptor.requires(required);
     return descriptor.build();
+  }
+
+  static Realm newRealm(String name, Unit... units) {
+    return new Realm(name, 0, false, List.of(units));
   }
 
   static Unit newUnit(String name, Directory... directories) {
