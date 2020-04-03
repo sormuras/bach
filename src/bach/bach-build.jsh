@@ -19,28 +19,52 @@
  * Zero-installation Bach.java build script.
  */
 
+/open PRINTING
+
+println("    ___      ___      ___      ___   ")
+println("   /\\  \\    /\\  \\    /\\  \\    /\\__\\")
+println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
+println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
+println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
+println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
+println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
+println()
+
+println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
 //   a) to the "master" tag/branch and
-//   b) to "src/bach/Bach.java", which requires JDK 11 or later.
+//   b) to ".bach/src/Bach.java", which requires JDK 11 or later.
 
-System.out.println("| /open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java")
-/open https://github.com/sormuras/bach/raw/master/src/bach/Bach.java
+println("| /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java")
+/open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java
+println("| Bach.java " + Bach.VERSION)
 
-System.out.println("| /open https://github.com/sormuras/bach/raw/master/src/bach/Build.java.default")
-/open https://github.com/sormuras/bach/raw/master/src/bach/Build.java.default
+var build = Path.of(".bach/src/Build.java")
+if (Files.notExists(build)) {
+  println("| Create default build program " + build);
+  Files.createDirectories(build.getParent());
+  Files.write(build, List.of(
+      "class Build {",
+      "\tpublic static void main(String... args) {",
+      "\t\tBach.main(\"build\");",
+      "\t}",
+      "}"));
+  Files.readAllLines(build).forEach(line -> println("| " + line));
+}
 
-System.out.println("| /open src/bach/Build.java")
-/open src/bach/Build.java
+println("| /open " + build)
+/open .bach/src/Build.java
 
-System.out.println("| Build.main()")
+println("| Build.main()")
 var code = 0
 try {
   Build.main();
 } catch (Throwable throwable) {
-  throwable.printStackTrace();
+  println(throwable);
   code = 1;
 }
 
-System.out.println("| /exit " + code)
+println("| /exit " + code)
 /exit code
