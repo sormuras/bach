@@ -72,8 +72,7 @@ public class Bach {
   }
   public void build(Project project) {
     if (verbose) project.toStrings().forEach(this::print);
-    if (project.structure().collections().isEmpty())
-      print(Level.WARNING, "No module collection present");
+    if (project.structure().realms().isEmpty()) print(Level.WARNING, "No realm present");
     if (dryRun) return;
     print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
   }
@@ -92,169 +91,6 @@ public class Bach {
   }
   public String toString() {
     return "Bach.java " + VERSION;
-  }
-  public static class Directory {
-    public static Directory of(Path path) {
-      var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
-      return new Directory(path, release);
-    }
-    public static List<Directory> listOf(Path root) {
-      if (Files.notExists(root)) return List.of();
-      var directories = new ArrayList<Directory>();
-      try (var stream = Files.newDirectoryStream(root, Files::isDirectory)) {
-        stream.forEach(path -> directories.add(of(path)));
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-      directories.sort(Comparator.comparingInt(Directory::release));
-      return List.copyOf(directories);
-    }
-    private final Path path;
-    private final int release;
-    public Directory(Path path, int release) {
-      this.path = path;
-      this.release = release;
-    }
-    public Path path() {
-      return path;
-    }
-    public int release() {
-      return release;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
-          .add("path=" + path)
-          .add("release=" + release)
-          .toString();
-    }
-  }
-  public static class ModuleCollection {
-    private final String name;
-    private final int release;
-    private final boolean preview;
-    private final List<ModuleDescription> modules;
-    public ModuleCollection(String name, int release, boolean preview, List<ModuleDescription> modules) {
-      this.name = name;
-      this.release = release;
-      this.preview = preview;
-      this.modules = modules;
-    }
-    public String name() {
-      return name;
-    }
-    public int release() {
-      return release;
-    }
-    public boolean preview() {
-      return preview;
-    }
-    public List<ModuleDescription> modules() {
-      return modules;
-    }
-    public String toString() {
-      return new StringJoiner(", ", ModuleCollection.class.getSimpleName() + "[", "]")
-          .add("name='" + name + "'")
-          .add("release=" + release)
-          .add("preview=" + preview)
-          .add("modules=" + modules)
-          .toString();
-    }
-  }
-  public static class ModuleDescription {
-    public static ModuleDescription of(String name, Directory... directories) {
-      var descriptor = ModuleDescriptor.newModule(name).build();
-      return new ModuleDescription(descriptor, List.of(directories));
-    }
-    private final ModuleDescriptor descriptor;
-    private final List<Directory> directories;
-    public ModuleDescription(ModuleDescriptor descriptor, List<Directory> directories) {
-      this.descriptor = descriptor;
-      this.directories = directories;
-    }
-    public ModuleDescriptor descriptor() {
-      return descriptor;
-    }
-    public List<Directory> directories() {
-      return directories;
-    }
-    public String toString() {
-      return new StringJoiner(", ", ModuleDescription.class.getSimpleName() + "[", "]")
-          .add("descriptor=" + descriptor)
-          .add("directories=" + directories)
-          .toString();
-    }
-    public List<String> toRequiresNames() {
-      var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
-      return names.sorted().collect(Collectors.toList());
-    }
-  }
-  public static class Project {
-    private final String name;
-    private final Version version;
-    private final Structure structure;
-    public Project(String name, Version version, Structure structure) {
-      this.name = name;
-      this.version = version;
-      this.structure = structure;
-    }
-    public String name() {
-      return name;
-    }
-    public Version version() {
-      return version;
-    }
-    public Structure structure() {
-      return structure;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
-          .add("name='" + name + "'")
-          .add("version=" + version)
-          .add("structure=" + structure)
-          .toString();
-    }
-    public String toNameAndVersion() {
-      return name + ' ' + version;
-    }
-    public List<String> toStrings() {
-      var strings = new ArrayList<String>();
-      strings.add("Project " + toNameAndVersion());
-      strings.add("\tModule Collections: " + structure.toCollectionNames());
-      for (var collection : structure.collections()) {
-        strings.add("\t\tModule Collection \"" + collection.name() + '"');
-        strings.add("\t\t\trelease=" + collection.release());
-        strings.add("\t\t\tpreview=" + collection.preview());
-        strings.add("\t\t\tModule Descriptions: [" + collection.modules().size() + ']');
-        for (var module : collection.modules()) {
-          strings.add("\t\t\t\tModule " + module.descriptor().toNameAndVersion());
-          strings.add("\t\t\t\t\tmainClass=" + module.descriptor().mainClass().orElse("<empty>"));
-          strings.add("\t\t\t\t\trequires=" + module.toRequiresNames());
-          strings.add("\t\t\t\t\tDirectories: [" + module.directories().size() + ']');
-          for (var directory : module.directories()) {
-            strings.add("\t\t\t\t\t\tpath=" + directory.path());
-            strings.add("\t\t\t\t\t\trelease=" + directory.release());
-          }
-        }
-      }
-      return List.copyOf(strings);
-    }
-  }
-  public static class Structure {
-    private final List<ModuleCollection> collections;
-    public Structure(List<ModuleCollection> collections) {
-      this.collections = collections;
-    }
-    public List<ModuleCollection> collections() {
-      return collections;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-          .add("collections=" + collections)
-          .toString();
-    }
-    public List<String> toCollectionNames() {
-      return collections.stream().map(ModuleCollection::name).collect(Collectors.toList());
-    }
   }
   public interface Convention {
     static Optional<String> mainClass(Path info, String module) {
@@ -297,6 +133,169 @@ public class Bach {
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
+    }
+  }
+  public static class Project {
+    private final String name;
+    private final Version version;
+    private final Structure structure;
+    public Project(String name, Version version, Structure structure) {
+      this.name = name;
+      this.version = version;
+      this.structure = structure;
+    }
+    public String name() {
+      return name;
+    }
+    public Version version() {
+      return version;
+    }
+    public Structure structure() {
+      return structure;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("version=" + version)
+          .add("structure=" + structure)
+          .toString();
+    }
+    public String toNameAndVersion() {
+      return name + ' ' + version;
+    }
+    public List<String> toStrings() {
+      var strings = new ArrayList<String>();
+      strings.add("Project " + toNameAndVersion());
+      strings.add("\tRealms: " + structure.toRealmNames());
+      for (var realm : structure.realms()) {
+        strings.add("\t\tRealm \"" + realm.name() + '"');
+        strings.add("\t\t\trelease=" + realm.release());
+        strings.add("\t\t\tpreview=" + realm.preview());
+        strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
+        for (var unit : realm.units()) {
+          strings.add("\t\t\t\tUnit " + unit.descriptor().toNameAndVersion());
+          strings.add("\t\t\t\t\tmain-class=" + unit.descriptor().mainClass().orElse("<empty>"));
+          strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
+          strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
+          for (var directory : unit.directories()) {
+            strings.add("\t\t\t\t\t\tpath=" + directory.path());
+            strings.add("\t\t\t\t\t\trelease=" + directory.release());
+          }
+        }
+      }
+      return List.copyOf(strings);
+    }
+  }
+  public static class Structure {
+    private final List<Realm> realms;
+    public Structure(List<Realm> realms) {
+      this.realms = realms;
+    }
+    public List<Realm> realms() {
+      return realms;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
+          .add("realms=" + realms)
+          .toString();
+    }
+    public List<String> toRealmNames() {
+      return realms.stream().map(Realm::name).collect(Collectors.toList());
+    }
+  }
+  public static class Directory {
+    public static Directory of(Path path) {
+      var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
+      return new Directory(path, release);
+    }
+    public static List<Directory> listOf(Path root) {
+      if (Files.notExists(root)) return List.of();
+      var directories = new ArrayList<Directory>();
+      try (var stream = Files.newDirectoryStream(root, Files::isDirectory)) {
+        stream.forEach(path -> directories.add(of(path)));
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+      directories.sort(Comparator.comparingInt(Directory::release));
+      return List.copyOf(directories);
+    }
+    private final Path path;
+    private final int release;
+    public Directory(Path path, int release) {
+      this.path = path;
+      this.release = release;
+    }
+    public Path path() {
+      return path;
+    }
+    public int release() {
+      return release;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
+          .add("path=" + path)
+          .add("release=" + release)
+          .toString();
+    }
+  }
+  public static class Realm {
+    private final String name;
+    private final int release;
+    private final boolean preview;
+    private final List<Unit> units;
+    public Realm(String name, int release, boolean preview, List<Unit> units) {
+      this.name = name;
+      this.release = release;
+      this.preview = preview;
+      this.units = units;
+    }
+    public String name() {
+      return name;
+    }
+    public int release() {
+      return release;
+    }
+    public boolean preview() {
+      return preview;
+    }
+    public List<Unit> units() {
+      return units;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("release=" + release)
+          .add("preview=" + preview)
+          .add("units=" + units)
+          .toString();
+    }
+  }
+  public static class Unit {
+    public static Unit of(String name, Directory... directories) {
+      var descriptor = ModuleDescriptor.newModule(name).build();
+      return new Unit(descriptor, List.of(directories));
+    }
+    private final ModuleDescriptor descriptor;
+    private final List<Directory> directories;
+    public Unit(ModuleDescriptor descriptor, List<Directory> directories) {
+      this.descriptor = descriptor;
+      this.directories = directories;
+    }
+    public ModuleDescriptor descriptor() {
+      return descriptor;
+    }
+    public List<Directory> directories() {
+      return directories;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
+          .add("descriptor=" + descriptor)
+          .add("directories=" + directories)
+          .toString();
+    }
+    public List<String> toRequiresNames() {
+      var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+      return names.sorted().collect(Collectors.toList());
     }
   }
   public static class Task {
@@ -427,6 +426,17 @@ public class Bach {
       }
     }
   }
+  public static class BuildProject extends Task {
+    public static BuildProject of(Project project) {
+      var tasks = new ArrayList<Task>();
+      tasks.add(new CreateDirectories(Path.of(".bach/out")));
+      tasks.add(new DescribeModules(project.structure().realms().get(0)));
+      return new BuildProject(project, tasks);
+    }
+    private BuildProject(Project project, List<Task> tasks) {
+      super("Build project " + project.toNameAndVersion(), false, tasks);
+    }
+  }
   public static class CreateDirectories extends Task {
     private final Path path;
     public CreateDirectories(Path path) {
@@ -456,6 +466,16 @@ public class Bach {
         var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
         for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
+    }
+  }
+  public static class DescribeModules extends Task {
+    private final Realm realm;
+    public DescribeModules(Realm realm) {
+      super("Describe modules of " + realm);
+      this.realm = realm;
+    }
+    public void execute(Execution context) {
+      realm.units().forEach(module -> context.out.write(module.toString()));
     }
   }
 }
