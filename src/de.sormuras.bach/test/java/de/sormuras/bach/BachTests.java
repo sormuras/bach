@@ -91,8 +91,8 @@ class BachTests {
             "P \tverbose=true",
             "P \tdry-run=false",
             "P Project empty 0",
-            "P \tModule Collections: []",
-            "P No module collection present",
+            "P \tRealms: []",
+            "P No realm present",
             "P TODO build(empty 0)"),
         log.lines());
   }

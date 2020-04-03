@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project.structure;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,15 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.API;
 import org.junit.jupiter.api.Test;
 
-class ModuleCollectionTests {
+class RealmTests {
 
   @Test
   void empty() {
-    var empty = API.emptyModuleCollection();
+    var empty = API.emptyRealm();
     assertEquals("empty", empty.name());
     assertEquals(0, empty.release());
     assertFalse(empty.preview());
-    assertEquals(0, empty.modules().size());
+    assertEquals(0, empty.units().size());
     assertTrue(empty.toString().contains("empty"));
   }
 }

@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.API;
+import de.sormuras.bach.project.Structure;
+import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.project.structure.Realm;
+import de.sormuras.bach.project.structure.Unit;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,10 +36,10 @@ class ProjectTests {
     var empty = API.emptyProject();
     assertEquals("empty", empty.name());
     assertEquals("0", empty.version().toString());
-    assertEquals(0, empty.structure().collections().size());
+    assertEquals(0, empty.structure().realms().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
-    assertLinesMatch(List.of("Project empty 0", "\tModule Collections: []"), empty.toStrings());
+    assertLinesMatch(List.of("Project empty 0", "\tRealms: []"), empty.toStrings());
   }
 
   @Test
@@ -47,11 +50,11 @@ class ProjectTests {
             Version.parse("1"),
             new Structure(
                 List.of(
-                    new ModuleCollection(
+                    new Realm(
                         "one",
                         1,
                         true,
-                        List.of(ModuleDescription.of("one", Directory.of(Path.of("one")))) //
+                        List.of(Unit.of("one", Directory.of(Path.of("one")))) //
                         ) //
                     ) //
                 ) //
@@ -59,13 +62,13 @@ class ProjectTests {
     assertLinesMatch(
         List.of(
             "Project one 1",
-            "\tModule Collections: [one]",
-            "\t\tModule Collection \"one\"",
+            "\tRealms: [one]",
+            "\t\tRealm \"one\"",
             "\t\t\trelease=1",
             "\t\t\tpreview=true",
-            "\t\t\tModule Descriptions: [1]",
-            "\t\t\t\tModule one",
-            "\t\t\t\t\tmainClass=<empty>",
+            "\t\t\tUnits: [1]",
+            "\t\t\t\tUnit one",
+            "\t\t\t\t\tmain-class=<empty>",
             "\t\t\t\t\trequires=[java.base]",
             "\t\t\t\t\tDirectories: [1]",
             "\t\t\t\t\t\tpath=one",

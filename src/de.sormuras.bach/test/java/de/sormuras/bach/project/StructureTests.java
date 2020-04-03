@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +27,7 @@ class StructureTests {
   @Test
   void empty() {
     var empty = API.emptyStructure();
-    assertEquals(0, empty.collections().size());
-    assertTrue(empty.toString().contains("collections"));
+    assertEquals(0, empty.realms().size());
+    assertTrue(empty.toString().contains("realms"));
   }
 }

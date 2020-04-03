@@ -15,33 +15,34 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project;
 
+import de.sormuras.bach.project.structure.Realm;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-/** A modular structure. */
+/** A modular project structure consisting of realms and other components. */
 public /*static*/ class Structure {
 
-  private final List<ModuleCollection> collections;
+  private final List<Realm> realms;
 
-  public Structure(List<ModuleCollection> collections) {
-    this.collections = collections;
+  public Structure(List<Realm> realms) {
+    this.realms = realms;
   }
 
-  public List<ModuleCollection> collections() {
-    return collections;
+  public List<Realm> realms() {
+    return realms;
   }
 
   @Override
   public String toString() {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-        .add("collections=" + collections)
+        .add("realms=" + realms)
         .toString();
   }
 
-  public List<String> toCollectionNames() {
-    return collections.stream().map(ModuleCollection::name).collect(Collectors.toList());
+  public List<String> toRealmNames() {
+    return realms.stream().map(Realm::name).collect(Collectors.toList());
   }
 }

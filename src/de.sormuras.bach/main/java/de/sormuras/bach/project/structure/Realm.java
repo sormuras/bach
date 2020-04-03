@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project.structure;
 
 import java.util.List;
 import java.util.StringJoiner;
 
-/** A named collection of module descriptions sharing compilation-related properties. */
-public /*static*/ class ModuleCollection {
+/** A named collection of modular units sharing compilation-related properties. */
+public /*static*/ class Realm {
 
   private final String name;
   private final int release;
   private final boolean preview;
-  private final List<ModuleDescription> modules;
+  private final List<Unit> units;
 
-  public ModuleCollection(String name, int release, boolean preview, List<ModuleDescription> modules) {
+  public Realm(String name, int release, boolean preview, List<Unit> units) {
     this.name = name;
     this.release = release;
     this.preview = preview;
-    this.modules = modules;
+    this.units = units;
   }
 
   public String name() {
@@ -47,17 +47,17 @@ public /*static*/ class ModuleCollection {
     return preview;
   }
 
-  public List<ModuleDescription> modules() {
-    return modules;
+  public List<Unit> units() {
+    return units;
   }
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", ModuleCollection.class.getSimpleName() + "[", "]")
+    return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
         .add("name='" + name + "'")
         .add("release=" + release)
         .add("preview=" + preview)
-        .add("modules=" + modules)
+        .add("units=" + units)
         .toString();
   }
 }

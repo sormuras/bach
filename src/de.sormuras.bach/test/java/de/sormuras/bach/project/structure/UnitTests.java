@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project.structure;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.API;
 import org.junit.jupiter.api.Test;
 
-class ModuleDescriptionTests {
+class UnitTests {
 
   @Test
   void empty() {
-    var empty = API.emptyModuleDescription();
+    var empty = API.emptyUnit();
     assertEquals("empty", empty.descriptor().name());
     assertEquals(0, empty.directories().size());
     assertTrue(empty.toString().contains("empty"));
@@ -37,8 +37,8 @@ class ModuleDescriptionTests {
   @Test
   void factory() {
     var directory = API.emptyDirectory();
-    var description = ModuleDescription.of("foo", directory);
-    assertEquals("foo", description.descriptor().name());
-    assertSame(directory, description.directories().get(0));
+    var unit = Unit.of("foo", directory);
+    assertEquals("foo", unit.descriptor().name());
+    assertSame(directory, unit.directories().get(0));
   }
 }

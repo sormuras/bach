@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project.structure;
 
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-/** A module source description wrapping a module descriptor and associated source directories. */
-public /*static*/ class ModuleDescription {
+/** A modular source description wrapping a module descriptor and associated source directories. */
+public /*static*/ class Unit {
 
-  public static ModuleDescription of(String name, Directory... directories) {
+  public static Unit of(String name, Directory... directories) {
     var descriptor = ModuleDescriptor.newModule(name).build();
-    return new ModuleDescription(descriptor, List.of(directories));
+    return new Unit(descriptor, List.of(directories));
   }
 
   private final ModuleDescriptor descriptor;
   private final List<Directory> directories;
 
-  public ModuleDescription(ModuleDescriptor descriptor, List<Directory> directories) {
+  public Unit(ModuleDescriptor descriptor, List<Directory> directories) {
     this.descriptor = descriptor;
     this.directories = directories;
   }
@@ -49,7 +48,7 @@ public /*static*/ class ModuleDescription {
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", ModuleDescription.class.getSimpleName() + "[", "]")
+    return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
         .add("descriptor=" + descriptor)
         .add("directories=" + directories)
         .toString();

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.api;
+package de.sormuras.bach.project.structure;
 
 import static de.sormuras.bach.Assertions.assertToStringEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

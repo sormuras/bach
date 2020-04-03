@@ -17,11 +17,10 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.api.Directory;
-import de.sormuras.bach.api.ModuleCollection;
-import de.sormuras.bach.api.ModuleDescription;
-import de.sormuras.bach.api.Project;
-import de.sormuras.bach.api.Structure;
+import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.project.structure.Realm;
+import de.sormuras.bach.project.structure.Unit;
+import de.sormuras.bach.project.Structure;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -37,12 +36,12 @@ public interface API {
     return new Structure(List.of());
   }
 
-  static ModuleCollection emptyModuleCollection() {
-    return new ModuleCollection("empty", 0, false, List.of());
+  static Realm emptyRealm() {
+    return new Realm("empty", 0, false, List.of());
   }
 
-  static ModuleDescription emptyModuleDescription() {
-    return new ModuleDescription(emptyModuleDescriptor(), List.of());
+  static Unit emptyUnit() {
+    return new Unit(emptyModuleDescriptor(), List.of());
   }
 
   static Directory emptyDirectory() {
