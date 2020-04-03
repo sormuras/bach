@@ -173,13 +173,12 @@ public class Bach {
         strings.add("\t\t\tpreview=" + realm.preview());
         strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
         for (var unit : realm.units()) {
-          strings.add("\t\t\t\tUnit " + unit.descriptor().toNameAndVersion());
+          strings.add("\t\t\t\tUnit \"" + unit.descriptor().toNameAndVersion() + '"');
           strings.add("\t\t\t\t\tmain-class=" + unit.descriptor().mainClass().orElse("<empty>"));
           strings.add("\t\t\t\t\trequires=" + unit.toRequiresNames());
           strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
           for (var directory : unit.directories()) {
-            strings.add("\t\t\t\t\t\tpath=" + directory.path());
-            strings.add("\t\t\t\t\t\trelease=" + directory.release());
+            strings.add("\t\t\t\t\t\t" + directory);
           }
         }
       }
@@ -204,9 +203,19 @@ public class Bach {
     }
   }
   public static class Directory {
+    public enum Type {
+      SOURCE, RESOURCE, UNDEFINED;
+      public static Type of(String name) {
+        if (name.startsWith("java")) return SOURCE;
+        if (name.contains("resource")) return RESOURCE;
+        return UNDEFINED;
+      }
+    }
     public static Directory of(Path path) {
-      var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
-      return new Directory(path, release);
+      var name = String.valueOf(path.getFileName());
+      var type = Type.of(name);
+      var release = Convention.javaReleaseFeatureNumber(name);
+      return new Directory(path, type, release);
     }
     public static List<Directory> listOf(Path root) {
       if (Files.notExists(root)) return List.of();
@@ -220,13 +229,18 @@ public class Bach {
       return List.copyOf(directories);
     }
     private final Path path;
+    private final Type type;
     private final int release;
-    public Directory(Path path, int release) {
+    public Directory(Path path, Type type, int release) {
       this.path = path;
+      this.type = type;
       this.release = release;
     }
     public Path path() {
       return path;
+    }
+    public Type type() {
+      return type;
     }
     public int release() {
       return release;
@@ -234,6 +248,7 @@ public class Bach {
     public String toString() {
       return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
           .add("path=" + path)
+          .add("type=" + type)
           .add("release=" + release)
           .toString();
     }
@@ -271,10 +286,6 @@ public class Bach {
     }
   }
   public static class Unit {
-    public static Unit of(String name, Directory... directories) {
-      var descriptor = ModuleDescriptor.newModule(name).build();
-      return new Unit(descriptor, List.of(directories));
-    }
     private final ModuleDescriptor descriptor;
     private final List<Directory> directories;
     public Unit(ModuleDescriptor descriptor, List<Directory> directories) {
