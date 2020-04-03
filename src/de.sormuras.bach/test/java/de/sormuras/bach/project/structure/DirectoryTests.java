@@ -38,6 +38,7 @@ class DirectoryTests {
   void empty() {
     var empty = API.emptyDirectory();
     assertEquals(Path.of("empty"), empty.path());
+    assertEquals(Directory.Type.UNDEFINED, empty.type());
     assertEquals(0, empty.release());
     assertTrue(empty.toString().contains(Directory.class.getSimpleName()));
   }
@@ -69,20 +70,24 @@ class DirectoryTests {
 
   @Test
   void listOfPathWithSingleSubdirectoryReturnsIt(@TempDir Path temp) throws Exception {
-    var java = Files.createDirectories(temp.resolve("java"));
+    var java = mkdir(temp, "java");
     var directories = Directory.listOf(temp);
-    assertToStringEquals(new Directory(java, 0), directories.get(0));
+    assertToStringEquals(new Directory(java, Directory.Type.SOURCE, 0), directories.get(0));
   }
 
   @Test
   void listOfPathWithMultipleSubdirectoriesReturnsThem(@TempDir Path temp) throws Exception {
-    var java8 = new Directory(Files.createDirectories(temp.resolve("java-8")), 8);
-    var java9 = new Directory(Files.createDirectories(temp.resolve("java-9")), 9);
-    var javaA = new Directory(Files.createDirectories(temp.resolve("java-10")), 10);
+    var java8 = new Directory(mkdir(temp, "java-8"), Directory.Type.SOURCE, 8);
+    var java9 = new Directory(mkdir(temp, "java-9"), Directory.Type.SOURCE, 9);
     var N = Runtime.version().feature();
-    var javaN = new Directory(Files.createDirectories(temp.resolve("java-preview")), N);
+    var javaN = new Directory(mkdir(temp, "java-preview"), Directory.Type.SOURCE, N);
+    var resources = new Directory(mkdir(temp, "resources"), Directory.Type.RESOURCE, 0);
     assertLinesMatch(
-        List.of(java8.toString(), java9.toString(), javaA.toString(), javaN.toString()),
-        Directory.listOf(temp).stream().map(Directory::toString).collect(Collectors.toList()));
+        List.of(java8.toString(), java9.toString(), javaN.toString(), resources.toString()),
+        Directory.listOf(temp).stream().map(Directory::toString).sorted().collect(Collectors.toList()));
+  }
+
+  static Path mkdir(Path root, String other) throws Exception {
+    return Files.createDirectories(root.resolve(other));
   }
 }

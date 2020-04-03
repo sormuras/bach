@@ -30,10 +30,23 @@ import java.util.StringJoiner;
 /** An optionally targeted directory of Java source files: {@code src/foo/main/java[-11]}. */
 public /*static*/ class Directory {
 
+  /** Directory kind. */
+  public enum Type {
+    SOURCE, RESOURCE, UNDEFINED;
+
+    public static Type of(String name) {
+      if (name.startsWith("java")) return SOURCE;
+      if (name.contains("resource")) return RESOURCE;
+      return UNDEFINED;
+    }
+  }
+
   /** Return directory instance for the given path. */
   public static Directory of(Path path) {
-    var release = Convention.javaReleaseFeatureNumber(String.valueOf(path.getFileName()));
-    return new Directory(path, release);
+    var name = String.valueOf(path.getFileName());
+    var type = Type.of(name);
+    var release = Convention.javaReleaseFeatureNumber(name);
+    return new Directory(path, type, release);
   }
 
   /** Return list of directories by scanning the given common root path: {@code src/foo/main}. */
@@ -50,15 +63,21 @@ public /*static*/ class Directory {
   }
 
   private final Path path;
+  private final Type type;
   private final int release;
 
-  public Directory(Path path, int release) {
+  public Directory(Path path, Type type, int release) {
     this.path = path;
+    this.type = type;
     this.release = release;
   }
 
   public Path path() {
     return path;
+  }
+
+  public Type type() {
+    return type;
   }
 
   public int release() {
@@ -69,6 +88,7 @@ public /*static*/ class Directory {
   public String toString() {
     return new StringJoiner(", ", Directory.class.getSimpleName() + "[", "]")
         .add("path=" + path)
+        .add("type=" + type)
         .add("release=" + release)
         .toString();
   }
