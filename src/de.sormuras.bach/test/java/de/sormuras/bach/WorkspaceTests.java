@@ -31,16 +31,25 @@ import org.junit.jupiter.api.TestFactory;
 class WorkspaceTests {
 
   @Test
-  void defaultWorkspace() {
+  void defaults() {
     var N = Runtime.version().feature();
     var workspace = Workspace.of();
+    var realm = API.newRealm("realm");
     assertEquals(Path.of(""), workspace.base());
     assertEquals(Path.of(".bach/workspace"), workspace.workspace());
     assertEquals(Path.of(".bach/workspace", "first"), workspace.workspace("first"));
     assertEquals(Path.of(".bach/workspace", "first/more"), workspace.workspace("first", "more"));
-    assertEquals(Path.of(".bach/workspace", "classes/realm/9"), workspace.classes("realm", 9));
-    assertEquals(Path.of(".bach/workspace", "classes/realm/" + N), workspace.classes("realm", 0));
-    assertEquals(Path.of(".bach/workspace", "modules/realm"), workspace.modules("realm"));
+    assertEquals(Path.of(".bach/workspace", "classes/realm/" + N), workspace.classes(realm));
+    assertEquals(Path.of(".bach/workspace", "classes/realm/" + N), workspace.classes(realm, 0));
+    assertEquals(Path.of(".bach/workspace", "classes/realm/9"), workspace.classes(realm, 9));
+    assertEquals(Path.of(".bach/workspace", "modules/realm"), workspace.modules(realm));
+    var project = API.emptyProject();
+    var unit = API.newUnit("unit");
+    assertEquals("unit-0.jar", workspace.jarFileName(project, unit, ""));
+    assertEquals("unit-0-classifier.jar", workspace.jarFileName(project, unit, "classifier"));
+    assertEquals(
+        Path.of(".bach/workspace", "modules/realm/unit-0.jar"),
+        workspace.jarFilePath(project, realm, unit));
   }
 
   @TestFactory

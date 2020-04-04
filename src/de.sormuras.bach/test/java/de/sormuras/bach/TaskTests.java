@@ -30,15 +30,16 @@ class TaskTests {
   @Test
   void executeTask() {
     var log = new Log();
-    var bach = new Bach(log, true, false);
+    var bach = new Bach(log, true, false, Workspace.of());
     bach.execute(new Task("Task"));
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
-            "P \tverbose=true",
-            "P \tdry-run=false",
+            ">> CONFIGURATION >>",
+            "P ",
             "P Execute task: Task",
             "P * Task",
+            "P ",
             "P Task Execution Overview",
             ">> OVERVIEW >>",
             "P Execution of 1 tasks took .+ ms"),
@@ -68,19 +69,20 @@ class TaskTests {
     }
 
     var log = new Log();
-    var bach = new Bach(log, true, false);
+    var bach = new Bach(log, true, false, Workspace.of());
     bach.execute(new Task("3x Wait", true, List.of(new Wait(), new Wait(), new Wait())));
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
-            "P \tverbose=true",
-            "P \tdry-run=false",
+            ">> CONFIGURATION >>",
+            "P ",
             "P Execute task: 3x Wait",
             "P + 3x Wait",
             "P \t* Thread.sleep(10)",
             "P \t* Thread.sleep(10)",
             "P \t* Thread.sleep(10)",
             "P = 3x Wait",
+            "P ",
             "P Task Execution Overview",
             ">> OVERVIEW >>",
             "P Execution of 3 tasks took .+ ms"),
@@ -90,17 +92,19 @@ class TaskTests {
   @Test
   void executeThrowingTask() {
     var log = new Log();
-    var bach = new Bach(log, true, false);
+    var bach = new Bach(log, true, false, Workspace.of());
     var task = API.taskOf("Throw", __ -> throwException("BäMM!"));
     var error = assertThrows(AssertionError.class, () -> bach.execute(task));
-    assertEquals("BäMM!", error.getSuppressed()[0].getMessage());
+    assertEquals("Throw failed", error.getMessage());
+    assertEquals("BäMM!", error.getCause().getMessage());
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
-            "P \tverbose=true",
-            "P \tdry-run=false",
+            ">> CONFIGURATION >>",
+            "P ",
             "P Execute task: Throw",
-            "P * Throw"),
+            "P * Throw",
+            "P Task execution failed: java.lang.Exception: BäMM!"),
         log.lines());
   }
 

@@ -19,7 +19,10 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.System.Logger.Level;
@@ -34,9 +37,13 @@ import test.base.SwallowSystem;
 class BachTests {
 
   @Test
+  @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void defaults() {
     var bach = new Bach();
     assertEquals("Bach.java " + Bach.VERSION, bach.toString());
+    assertFalse(bach.isVerbose());
+    assertFalse(bach.isDryRun());
+    assertNotNull(bach.getWorkspace());
   }
 
   @Test
@@ -56,7 +63,7 @@ class BachTests {
   @Test
   void printMessagesAtAllLevelsInVerboseMode() {
     var log = new Log();
-    var bach = new Bach(log, true, true);
+    var bach = new Bach(log, true, true, Workspace.of());
     assertDoesNotThrow(bach::hashCode);
     assertEquals("all", bach.print(Level.ALL, "all"));
     assertEquals("trace", bach.print(Level.TRACE, "trace"));
@@ -68,8 +75,7 @@ class BachTests {
     assertLinesMatch(
         List.of(
             "P Bach.java .+ initialized",
-            "P \tverbose=true",
-            "P \tdry-run=true",
+            ">> CONFIGURATION >>",
             "P all",
             "P trace",
             "P debug",
@@ -81,23 +87,37 @@ class BachTests {
   }
 
   @Test
-  void buildEmptyProject() {
+  void buildEmptyProjectWithNoopBuildTask() {
     var log = new Log();
-    var bach = new Bach(log, true, false);
-    bach.build(API.emptyProject());
+    var bach = new Bach(log, true, false, Workspace.of());
+    assertDoesNotThrow(() -> bach.build(API.emptyProject(), API.taskOf("NOOP", __ -> {})));
     assertLinesMatch(
         List.of(
-            "P Bach.java .+ initialized",
-            "P \tverbose=true",
-            "P \tdry-run=false",
-            "P Project empty 0",
-            "P \tLocation",
-            "P \t\tbase='' -> .+/",
-            "P \t\tout=.bach[/\\\\]out",
-            "P \t\tlib=lib",
-            "P \tRealms: []",
-            "P No realm present",
-            "P TODO build(empty 0)"),
+            ">> BACH INIT >>",
+            "P ",
+            "P Execute task: NOOP",
+            ">> EXECUTION >>",
+            "P Execution of 1 tasks took .+ ms"),
+        log.lines());
+  }
+
+  @Test
+  void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError() {
+    var log = new Log();
+    var bach = new Bach(log, true, false, Workspace.of());
+    var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
+    assertEquals("Build project empty 0 failed", error.getMessage());
+    assertEquals("project validation failed: no unit present", error.getCause().getMessage());
+    assertLinesMatch(
+        List.of(
+            ">> BACH INIT >>",
+            "P ",
+            "P Execute task: Build project empty 0",
+            "P + Build project empty 0",
+            "P \t* Print project",
+            ">> PROJECT COMPONENTS >>",
+            "P \t* Check project state",
+            "P Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present"),
         log.lines());
   }
 }
