@@ -87,17 +87,12 @@ public class Bach {
   }
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
-    if (verbose) tasks.add(new PrintProject(printer, project));
+    tasks.add(new PrintProject(project));
     tasks.add(new CheckProjectState(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
-    tasks.add(new PrintModules(printer, project));
-    build(project, new Task("Build project " + project.toNameAndVersion(), false, tasks));
-  }
-  public void build(Project project, Task build) {
-    print(Level.DEBUG, "Build project: %s", project.toNameAndVersion());
-    print(Level.DEBUG, "Build task: %s", build.name());
+    tasks.add(new PrintModules(project));
     if (dryRun) return;
-    execute(build);
+    execute(new Task("Build project " + project.toNameAndVersion(), false, tasks));
   }
   public void execute(Task task) {
     var executor = new Task.Executor(this);
@@ -376,13 +371,25 @@ public class Bach {
       return new Task(name, false, List.of(tasks));
     }
     public static class Execution {
-      public final Bach bach;
+      private final Bach bach;
+      private final String indent;
       private final String hash = Integer.toHexString(System.identityHashCode(this));
-      public final StringWriter out = new StringWriter();
-      public final StringWriter err = new StringWriter();
+      private final StringWriter out = new StringWriter();
+      private final StringWriter err = new StringWriter();
       private final Instant start = Instant.now();
-      private Execution(Bach bach) {
+      private Execution(Bach bach, String indent) {
         this.bach = bach;
+        this.indent = indent;
+      }
+      public Bach getBach() {
+        return bach;
+      }
+      public void print(Level level, List<String> lines) {
+        var LS = System.lineSeparator();
+        bach.print(level, indent + "|%s", String.join(LS + indent + "|", lines));
+        var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
+        var enable = writer == err || level == Level.INFO || bach.isVerbose();
+        if (enable) writer.write(String.join(LS, lines) + LS);
       }
     }
     static class Executor {
@@ -404,7 +411,7 @@ public class Bach {
         var flat = subs.isEmpty(); // i.e. no sub tasks
         bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
         executionBegin(task);
-        var execution = new Execution(bach);
+        var execution = new Execution(bach, indent);
         try {
           task.execute(execution);
           if (!flat) {
@@ -512,32 +519,29 @@ public class Bach {
     }
   }
   public static class PrintModules extends Task {
-    private final Consumer<String> printer;
     private final Project project;
-    public PrintModules(Consumer<String> printer, Project project) {
+    public PrintModules(Project project) {
       super("Print modules");
-      this.printer = printer;
       this.project = project;
     }
-    public void execute(Execution context) {
+    public void execute(Execution execution) {
       var realm = project.structure().realms().get(0);
       for (var unit : realm.units()) {
-        var jar = context.bach.getWorkspace().jarFilePath(project, realm, unit);
-        printer.accept("Unit " + unit.descriptor().toNameAndVersion());
-        printer.accept("jar=" + jar);
+        var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
+        execution.print(
+            Level.INFO,
+            List.of("Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri()));
       }
     }
   }
   public static class PrintProject extends Task {
-    private final Consumer<String> printer;
     private final Project project;
-    public PrintProject(Consumer<String> printer, Project project) {
+    public PrintProject(Project project) {
       super("Print project");
-      this.printer = printer;
       this.project = project;
     }
-    public void execute(Execution context) {
-      project.toStrings().forEach(printer);
+    public void execute(Execution execution) {
+      execution.print(Level.INFO, project.toStrings());
     }
   }
   public static final class Workspace {
