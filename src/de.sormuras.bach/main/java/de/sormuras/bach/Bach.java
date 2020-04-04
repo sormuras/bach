@@ -99,25 +99,40 @@ public class Bach {
 
   /** Build the given project using default settings. */
   public void build(Project project) {
-    if (verbose) project.toStrings().forEach(this::print);
-    if (project.structure().realms().isEmpty()) print(Level.WARNING, "No realm present");
+    var tasks = new ArrayList<Task>();
+    if (verbose) tasks.add(new PrintProject(printer, project));
+    tasks.add(new CheckProjectState(project));
+    tasks.add(new CreateDirectories(workspace.workspace()));
+    // javac/jar main realm | javadoc
+    // jlink    | javac/jar test realm
+    // jpackage | junit test realm
+    tasks.add(new PrintModules(printer, project));
+    build(project, new Task("Build project " + project.toNameAndVersion(), false, tasks));
+  }
+
+  /** Build the given project using the provided task. */
+  public void build(Project project, Task build) {
+    print(Level.DEBUG, "Build project: %s", project.toNameAndVersion());
+    print(Level.DEBUG, "Build task: %s", build.name());
     if (dryRun) return;
-    print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
+    execute(build);
   }
 
   /** Execute the given task recursively. */
   public void execute(Task task) {
     var executor = new Task.Executor(this);
+    print(Level.TRACE, "");
     print(Level.TRACE, "Execute task: " + task.name());
     var summary = executor.execute(task).assertSuccessful();
     if (verbose) {
+      print("");
       print("Task Execution Overview");
       print("|    |Thread|Duration| Task");
       summary.getOverviewLines().forEach(this::print);
-      var count = summary.getTaskCount();
-      var duration = summary.getDuration().toMillis();
-      print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
     }
+    var count = summary.getTaskCount();
+    var duration = summary.getDuration().toMillis();
+    print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
   }
 
   @Override

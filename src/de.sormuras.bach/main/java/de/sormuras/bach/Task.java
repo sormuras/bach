@@ -17,18 +17,14 @@
 
 package de.sormuras.bach;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.stream.Collectors;
 
 /** An executable task definition. */
 public /*static*/ class Task {
@@ -62,10 +58,15 @@ public /*static*/ class Task {
   }
 
   public static class Execution {
+    public final Bach bach;
     private final String hash = Integer.toHexString(System.identityHashCode(this));
     public final StringWriter out = new StringWriter();
     public final StringWriter err = new StringWriter();
     private final Instant start = Instant.now();
+
+    private Execution(Bach bach) {
+      this.bach = bach;
+    }
   }
 
   static class Executor {
@@ -73,37 +74,40 @@ public /*static*/ class Task {
     private final Bach bach;
     private final Deque<String> overview = new ConcurrentLinkedDeque<>();
     private final Deque<Execution> executions = new ConcurrentLinkedDeque<>();
-    private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
 
     Executor(Bach bach) {
       this.bach = bach;
     }
 
     Summary execute(Task root) {
-      var execution = execute(0, root);
-      return new Summary(Duration.between(execution.start, Instant.now()));
+      var start = Instant.now();
+      var throwable = execute(0, root);
+      return new Summary(root.name, Duration.between(start, Instant.now()), throwable);
     }
 
-    private Execution execute(int depth, Task task) {
+    private Throwable execute(int depth, Task task) {
       var indent = "\t".repeat(depth);
       var name = task.name;
       var subs = task.subs;
       var flat = subs.isEmpty(); // i.e. no sub tasks
       bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
       executionBegin(task);
-      var execution = new Execution();
+      var execution = new Execution(bach);
       try {
         task.execute(execution);
         if (!flat) {
           var stream = task.parallel ? subs.parallelStream() : subs.stream();
-          stream.forEach(sub -> execute(depth + 1, sub));
+          var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
+          var error = errors.findFirst();
+          if (error.isPresent()) return error.get();
           bach.print(Level.TRACE, "%s= %s", indent, name);
         }
         executionEnd(task, execution);
-      } catch (Exception e) {
-        suppressed.add(e);
+      } catch (Exception exception) {
+        bach.print(Level.ERROR, "Task execution failed: %s", exception);
+        return exception;
       }
-      return execution;
+      return null;
     }
 
     private void executionBegin(Task task) {
@@ -131,20 +135,19 @@ public /*static*/ class Task {
 
     class Summary {
 
+      private final String title;
       private final Duration duration;
+      private final Throwable throwable;
 
-      Summary(Duration duration) {
+      Summary(String title, Duration duration, Throwable throwable) {
+        this.title = title;
         this.duration = duration;
+        this.throwable = throwable;
       }
 
       Summary assertSuccessful() {
-        if (suppressed.isEmpty()) return this;
-        var message = new StringJoiner("\n");
-        message.add(String.format("collected %d suppressed throwable(s)", suppressed.size()));
-        message.add(String.join("\n", toExceptionDetails()));
-        var error = new AssertionError(message.toString());
-        suppressed.forEach(error::addSuppressed);
-        throw error;
+        if (throwable == null) return this;
+        throw new AssertionError(title + " failed", throwable);
       }
 
       Duration getDuration() {
@@ -157,27 +160,6 @@ public /*static*/ class Task {
 
       int getTaskCount() {
         return executions.size();
-      }
-
-      private List<String> toExceptionDetails() {
-        if (suppressed.isEmpty()) return List.of();
-        var md = new ArrayList<String>();
-        md.add("");
-        md.add("## Exception Details");
-        md.add("");
-        md.add("- Caught " + suppressed.size() + " throwable(s).");
-        md.add("");
-        for (var throwable : suppressed) {
-          var lines = throwable.getMessage().lines().collect(Collectors.toList());
-          md.add("### " + (lines.isEmpty() ? throwable.getClass() : lines.get(0)));
-          if (lines.size() > 1) md.addAll(lines);
-          var stackTrace = new StringWriter();
-          throwable.printStackTrace(new PrintWriter(stackTrace));
-          md.add("```text");
-          stackTrace.toString().lines().forEach(md::add);
-          md.add("```");
-        }
-        return md;
       }
     }
   }
