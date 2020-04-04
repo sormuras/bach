@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
@@ -49,19 +48,34 @@ public class Bach {
   private final Consumer<String> printer;
   private final boolean verbose;
   private final boolean dryRun;
+  private final Workspace workspace;
   public Bach() {
     this(
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
-        Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
+        Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")),
+        Workspace.of());
   }
-  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun) {
+  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
+    this.workspace = workspace;
     print(Level.DEBUG, "%s initialized", this);
     print(Level.TRACE, "\tverbose=%s", verbose);
     print(Level.TRACE, "\tdry-run=%s", dryRun);
+    print(Level.TRACE, "\tWorkspace");
+    print(Level.TRACE, "\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri());
+    print(Level.TRACE, "\t\tworkspace=%s", workspace.workspace());
+  }
+  public boolean isVerbose() {
+    return verbose;
+  }
+  public boolean isDryRun() {
+    return dryRun;
+  }
+  public Workspace getWorkspace() {
+    return workspace;
   }
   public String print(String format, Object... args) {
     return print(Level.INFO, format, args);
@@ -72,23 +86,33 @@ public class Bach {
     return message;
   }
   public void build(Project project) {
-    if (verbose) project.toStrings().forEach(this::print);
-    if (project.structure().realms().isEmpty()) print(Level.WARNING, "No realm present");
+    var tasks = new ArrayList<Task>();
+    if (verbose) tasks.add(new PrintProject(printer, project));
+    tasks.add(new CheckProjectState(project));
+    tasks.add(new CreateDirectories(workspace.workspace()));
+    tasks.add(new PrintModules(printer, project));
+    build(project, new Task("Build project " + project.toNameAndVersion(), false, tasks));
+  }
+  public void build(Project project, Task build) {
+    print(Level.DEBUG, "Build project: %s", project.toNameAndVersion());
+    print(Level.DEBUG, "Build task: %s", build.name());
     if (dryRun) return;
-    print(Level.DEBUG, "TODO build(%s)", project.toNameAndVersion());
+    execute(build);
   }
   public void execute(Task task) {
     var executor = new Task.Executor(this);
+    print(Level.TRACE, "");
     print(Level.TRACE, "Execute task: " + task.name());
     var summary = executor.execute(task).assertSuccessful();
     if (verbose) {
+      print("");
       print("Task Execution Overview");
       print("|    |Thread|Duration| Task");
       summary.getOverviewLines().forEach(this::print);
-      var count = summary.getTaskCount();
-      var duration = summary.getDuration().toMillis();
-      print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
     }
+    var count = summary.getTaskCount();
+    var duration = summary.getDuration().toMillis();
+    print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
   }
   public String toString() {
     return "Bach.java " + VERSION;
@@ -166,12 +190,10 @@ public class Bach {
     }
     public List<String> toStrings() {
       var strings = new ArrayList<String>();
-      strings.add("Project " + toNameAndVersion());
-      var location = structure.location();
-      strings.add("\tLocation");
-      strings.add("\t\tbase='" + location.base() + "' -> " + location.base().toUri());
-      strings.add("\t\tout=" + location.out());
-      strings.add("\t\tlib=" + location.lib());
+      strings.add("Project");
+      strings.add("\tname=" + name);
+      strings.add("\tversion=" + version);
+      strings.add("\tUnits: " + structure.toUnitNames());
       strings.add("\tRealms: " + structure.toRealmNames());
       for (var realm : structure.realms()) {
         strings.add("\t\tRealm \"" + realm.name() + '"');
@@ -194,26 +216,28 @@ public class Bach {
     }
   }
   public static class Structure {
-    private final Location location;
     private final List<Realm> realms;
-    public Structure(Location location, List<Realm> realms) {
-      this.location = location;
+    public Structure(List<Realm> realms) {
       this.realms = realms;
-    }
-    public Location location() {
-      return location;
     }
     public List<Realm> realms() {
       return realms;
     }
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-          .add("location=" + location)
           .add("realms=" + realms)
           .toString();
     }
     public List<String> toRealmNames() {
       return realms.stream().map(Realm::name).collect(Collectors.toList());
+    }
+    public List<String> toUnitNames() {
+      return realms.stream()
+          .flatMap(realm -> realm.units().stream())
+          .map(Unit::name)
+          .distinct()
+          .sorted()
+          .collect(Collectors.toList());
     }
   }
   public static class Directory {
@@ -267,52 +291,6 @@ public class Bach {
           .toString();
     }
   }
-  public static final class Location {
-    public static Location of() {
-      return of(Path.of(""));
-    }
-    public static Location of(Path base) {
-      return new Location(base, base.resolve(".bach/out"), base.resolve("lib"));
-    }
-    private final Path base;
-    private final Path out;
-    private final Path lib;
-    public Location(Path base, Path out, Path lib) {
-      this.base = base;
-      this.out = out;
-      this.lib = lib;
-    }
-    public Path base() {
-      return base;
-    }
-    public Path out() {
-      return out;
-    }
-    public Path lib() {
-      return lib;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Location.class.getSimpleName() + "[", "]")
-          .add("base=" + base)
-          .add("out=" + out)
-          .add("lib=" + lib)
-          .toString();
-    }
-    public Path out(String first, String... more) {
-      var path = Path.of(first, more);
-      return out.resolve(path);
-    }
-    public Path classes(Realm realm) {
-      return classes(realm, realm.release());
-    }
-    public Path classes(Realm realm, int release) {
-      var version = "" + (release == 0 ? Runtime.version().feature() : release);
-      return out.resolve("classes").resolve(version).resolve(realm.name());
-    }
-    public Path modules(Realm realm) {
-      return out.resolve("modules").resolve(realm.name());
-    }
-  }
   public static class Realm {
     private final String name;
     private final int release;
@@ -364,6 +342,9 @@ public class Bach {
           .add("directories=" + directories)
           .toString();
     }
+    public String name() {
+      return descriptor.name();
+    }
     public List<String> toRequiresNames() {
       var names =
           descriptor.requires().stream()
@@ -395,43 +376,50 @@ public class Bach {
       return new Task(name, false, List.of(tasks));
     }
     public static class Execution {
+      public final Bach bach;
       private final String hash = Integer.toHexString(System.identityHashCode(this));
       public final StringWriter out = new StringWriter();
       public final StringWriter err = new StringWriter();
       private final Instant start = Instant.now();
+      private Execution(Bach bach) {
+        this.bach = bach;
+      }
     }
     static class Executor {
       private final Bach bach;
       private final Deque<String> overview = new ConcurrentLinkedDeque<>();
       private final Deque<Execution> executions = new ConcurrentLinkedDeque<>();
-      private final Deque<Throwable> suppressed = new ConcurrentLinkedDeque<>();
       Executor(Bach bach) {
         this.bach = bach;
       }
       Summary execute(Task root) {
-        var execution = execute(0, root);
-        return new Summary(Duration.between(execution.start, Instant.now()));
+        var start = Instant.now();
+        var throwable = execute(0, root);
+        return new Summary(root.name, Duration.between(start, Instant.now()), throwable);
       }
-      private Execution execute(int depth, Task task) {
+      private Throwable execute(int depth, Task task) {
         var indent = "\t".repeat(depth);
         var name = task.name;
         var subs = task.subs;
         var flat = subs.isEmpty(); // i.e. no sub tasks
         bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
         executionBegin(task);
-        var execution = new Execution();
+        var execution = new Execution(bach);
         try {
           task.execute(execution);
           if (!flat) {
             var stream = task.parallel ? subs.parallelStream() : subs.stream();
-            stream.forEach(sub -> execute(depth + 1, sub));
+            var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
+            var error = errors.findFirst();
+            if (error.isPresent()) return error.get();
             bach.print(Level.TRACE, "%s= %s", indent, name);
           }
           executionEnd(task, execution);
-        } catch (Exception e) {
-          suppressed.add(e);
+        } catch (Exception exception) {
+          bach.print(Level.ERROR, "Task execution failed: %s", exception);
+          return exception;
         }
-        return execution;
+        return null;
       }
       private void executionBegin(Task task) {
         if (task.subs.isEmpty()) return;
@@ -455,18 +443,17 @@ public class Bach {
         overview.add(line);
       }
       class Summary {
+        private final String title;
         private final Duration duration;
-        Summary(Duration duration) {
+        private final Throwable throwable;
+        Summary(String title, Duration duration, Throwable throwable) {
+          this.title = title;
           this.duration = duration;
+          this.throwable = throwable;
         }
         Summary assertSuccessful() {
-          if (suppressed.isEmpty()) return this;
-          var message = new StringJoiner("\n");
-          message.add(String.format("collected %d suppressed throwable(s)", suppressed.size()));
-          message.add(String.join("\n", toExceptionDetails()));
-          var error = new AssertionError(message.toString());
-          suppressed.forEach(error::addSuppressed);
-          throw error;
+          if (throwable == null) return this;
+          throw new AssertionError(title + " failed", throwable);
         }
         Duration getDuration() {
           return duration;
@@ -477,39 +464,20 @@ public class Bach {
         int getTaskCount() {
           return executions.size();
         }
-        private List<String> toExceptionDetails() {
-          if (suppressed.isEmpty()) return List.of();
-          var md = new ArrayList<String>();
-          md.add("");
-          md.add("## Exception Details");
-          md.add("");
-          md.add("- Caught " + suppressed.size() + " throwable(s).");
-          md.add("");
-          for (var throwable : suppressed) {
-            var lines = throwable.getMessage().lines().collect(Collectors.toList());
-            md.add("### " + (lines.isEmpty() ? throwable.getClass() : lines.get(0)));
-            if (lines.size() > 1) md.addAll(lines);
-            var stackTrace = new StringWriter();
-            throwable.printStackTrace(new PrintWriter(stackTrace));
-            md.add("```text");
-            stackTrace.toString().lines().forEach(md::add);
-            md.add("```");
-          }
-          return md;
-        }
       }
     }
   }
-  public static class BuildProject extends Task {
-    public static BuildProject of(Project project) {
-      var tasks = new ArrayList<Task>();
-      var out = project.structure().location().out();
-      tasks.add(new CreateDirectories(out));
-      tasks.add(new DescribeModules(project.structure().realms().get(0)));
-      return new BuildProject(project, tasks);
+  public static class CheckProjectState extends Task {
+    private final Project project;
+    public CheckProjectState(Project project) {
+      super("Check project state");
+      this.project = project;
     }
-    private BuildProject(Project project, List<Task> tasks) {
-      super("Build project " + project.toNameAndVersion(), false, tasks);
+    public void execute(Execution context) throws IllegalStateException {
+      if (project.structure().toUnitNames().isEmpty()) fail("no unit present");
+    }
+    private static void fail(String message) {
+      throw new IllegalStateException("project validation failed: " + message);
     }
   }
   public static class CreateDirectories extends Task {
@@ -543,14 +511,82 @@ public class Bach {
       }
     }
   }
-  public static class DescribeModules extends Task {
-    private final Realm realm;
-    public DescribeModules(Realm realm) {
-      super("Describe modules of " + realm);
-      this.realm = realm;
+  public static class PrintModules extends Task {
+    private final Consumer<String> printer;
+    private final Project project;
+    public PrintModules(Consumer<String> printer, Project project) {
+      super("Print modules");
+      this.printer = printer;
+      this.project = project;
     }
     public void execute(Execution context) {
-      realm.units().forEach(module -> context.out.write(module.toString()));
+      var realm = project.structure().realms().get(0);
+      for (var unit : realm.units()) {
+        var jar = context.bach.getWorkspace().jarFilePath(project, realm, unit);
+        printer.accept("Unit " + unit.descriptor().toNameAndVersion());
+        printer.accept("jar=" + jar);
+      }
+    }
+  }
+  public static class PrintProject extends Task {
+    private final Consumer<String> printer;
+    private final Project project;
+    public PrintProject(Consumer<String> printer, Project project) {
+      super("Print project");
+      this.printer = printer;
+      this.project = project;
+    }
+    public void execute(Execution context) {
+      project.toStrings().forEach(printer);
+    }
+  }
+  public static final class Workspace {
+    public static Workspace of() {
+      return of(Path.of(""));
+    }
+    public static Workspace of(Path base) {
+      return new Workspace(base, base.resolve(".bach/workspace"));
+    }
+    private final Path base;
+    private final Path workspace;
+    public Workspace(Path base, Path workspace) {
+      this.base = base;
+      this.workspace = workspace;
+    }
+    public Path base() {
+      return base;
+    }
+    public Path workspace() {
+      return workspace;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Workspace.class.getSimpleName() + "[", "]")
+          .add("base=" + base)
+          .add("workspace=" + workspace)
+          .toString();
+    }
+    public Path workspace(String first, String... more) {
+      return workspace.resolve(Path.of(first, more));
+    }
+    public Path classes(Realm realm) {
+      return classes(realm, realm.release());
+    }
+    public Path classes(Realm realm, int release) {
+      var version = String.valueOf(release == 0 ? Runtime.version().feature() : release);
+      return workspace.resolve("classes").resolve(realm.name()).resolve(version);
+    }
+    public Path modules(Realm realm) {
+      return workspace.resolve("modules").resolve(realm.name());
+    }
+    public String jarFileName(Project project, Unit unit, String classifier) {
+      var unitVersion = unit.descriptor().version();
+      var moduleVersion = unitVersion.isPresent() ? unitVersion : Optional.ofNullable(project.version());
+      var versionSuffix = moduleVersion.map(v -> "-" + v).orElse("");
+      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
+      return unit.name() + versionSuffix + classifierSuffix + ".jar";
+    }
+    public Path jarFilePath(Project project, Realm realm, Unit unit) {
+      return modules(realm).resolve(jarFileName(project, unit, ""));
     }
   }
 }
