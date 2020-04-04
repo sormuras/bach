@@ -58,14 +58,28 @@ public /*static*/ class Task {
   }
 
   public static class Execution {
-    public final Bach bach;
+    private final Bach bach;
+    private final String indent;
     private final String hash = Integer.toHexString(System.identityHashCode(this));
-    public final StringWriter out = new StringWriter();
-    public final StringWriter err = new StringWriter();
+    private final StringWriter out = new StringWriter();
+    private final StringWriter err = new StringWriter();
     private final Instant start = Instant.now();
 
-    private Execution(Bach bach) {
+    private Execution(Bach bach, String indent) {
       this.bach = bach;
+      this.indent = indent;
+    }
+
+    public Bach getBach() {
+      return bach;
+    }
+
+    public void print(Level level, List<String> lines) {
+      var LS = System.lineSeparator();
+      bach.print(level, "%s", String.join(LS + indent + "| ", lines));
+      var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
+      var enable = writer == err || level == Level.INFO || bach.isVerbose();
+      if (enable) writer.write(String.join(LS, lines) + LS);
     }
   }
 
@@ -92,7 +106,7 @@ public /*static*/ class Task {
       var flat = subs.isEmpty(); // i.e. no sub tasks
       bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
       executionBegin(task);
-      var execution = new Execution(bach);
+      var execution = new Execution(bach, indent);
       try {
         task.execute(execution);
         if (!flat) {

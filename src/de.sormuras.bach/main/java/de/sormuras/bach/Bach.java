@@ -100,13 +100,13 @@ public class Bach {
   /** Build the given project using default settings. */
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
-    if (verbose) tasks.add(new PrintProject(printer, project));
+    tasks.add(new PrintProject(project));
     tasks.add(new CheckProjectState(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
     // javac/jar main realm | javadoc
     // jlink    | javac/jar test realm
     // jpackage | junit test realm
-    tasks.add(new PrintModules(printer, project));
+    tasks.add(new PrintModules(project));
     build(project, new Task("Build project " + project.toNameAndVersion(), false, tasks));
   }
 

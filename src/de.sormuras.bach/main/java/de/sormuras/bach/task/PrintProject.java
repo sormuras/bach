@@ -19,23 +19,20 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
-import java.nio.file.Files;
-import java.util.function.Consumer;
+import java.lang.System.Logger.Level;
 
-/** Print the strings-representation of project. */
+/** Print the strings-representation of a project. */
 public /*static*/ class PrintProject extends Task {
 
-  private final Consumer<String> printer;
   private final Project project;
 
-  public PrintProject(Consumer<String> printer, Project project) {
+  public PrintProject(Project project) {
     super("Print project");
-    this.printer = printer;
     this.project = project;
   }
 
   @Override
-  public void execute(Execution context) {
-    project.toStrings().forEach(printer);
+  public void execute(Execution execution) {
+    execution.print(Level.INFO, project.toStrings());
   }
 }

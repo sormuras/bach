@@ -19,27 +19,27 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
-import java.util.function.Consumer;
+import java.lang.System.Logger.Level;
+import java.util.List;
 
-/** Print information about the compiled modules. */
+/** Print information about all compiled modules. */
 public /*static*/ class PrintModules extends Task {
 
-  private final Consumer<String> printer;
   private final Project project;
 
-  public PrintModules(Consumer<String> printer, Project project) {
+  public PrintModules(Project project) {
     super("Print modules");
-    this.printer = printer;
     this.project = project;
   }
 
   @Override
-  public void execute(Execution context) {
+  public void execute(Execution execution) {
     var realm = project.structure().realms().get(0);
     for (var unit : realm.units()) {
-      var jar = context.bach.getWorkspace().jarFilePath(project, realm, unit);
-      printer.accept("Unit " + unit.descriptor().toNameAndVersion());
-      printer.accept("jar=" + jar);
+      var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
+      execution.print(
+          Level.INFO,
+          List.of("Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri()));
     }
   }
 }
