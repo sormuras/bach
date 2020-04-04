@@ -17,8 +17,13 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.task.CheckProjectState;
+import de.sormuras.bach.task.CreateDirectories;
+import de.sormuras.bach.task.PrintModules;
+import de.sormuras.bach.task.PrintProject;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -42,22 +47,42 @@ public class Bach {
   /** Dry-run flag. */
   private final boolean dryRun;
 
+  /** Directory for storing generated assets into. */
+  private final Workspace workspace;
+
   /** Initialize this instance with default values. */
   public Bach() {
     this(
         System.out::println,
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
-        Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")));
+        Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")),
+        Workspace.of());
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun) {
+  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
+    this.workspace = workspace;
     print(Level.DEBUG, "%s initialized", this);
     print(Level.TRACE, "\tverbose=%s", verbose);
     print(Level.TRACE, "\tdry-run=%s", dryRun);
+    print(Level.TRACE, "\tWorkspace");
+    print(Level.TRACE, "\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri());
+    print(Level.TRACE, "\t\tworkspace=%s", workspace.workspace());
+  }
+
+  public boolean isVerbose() {
+    return verbose;
+  }
+
+  public boolean isDryRun() {
+    return dryRun;
+  }
+
+  public Workspace getWorkspace() {
+    return workspace;
   }
 
   /** Print a message at information level. */
