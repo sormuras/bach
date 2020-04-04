@@ -87,21 +87,6 @@ class BachTests {
   }
 
   @Test
-  void buildEmptyProjectWithNoopBuildTask() {
-    var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of());
-    assertDoesNotThrow(() -> bach.build(API.emptyProject(), API.taskOf("NOOP", __ -> {})));
-    assertLinesMatch(
-        List.of(
-            ">> BACH INIT >>",
-            "P ",
-            "P Execute task: NOOP",
-            ">> EXECUTION >>",
-            "P Execution of 1 tasks took .+ ms"),
-        log.lines());
-  }
-
-  @Test
   void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError() {
     var log = new Log();
     var bach = new Bach(log, true, false, Workspace.of());

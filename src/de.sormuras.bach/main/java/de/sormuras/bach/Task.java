@@ -76,7 +76,7 @@ public /*static*/ class Task {
 
     public void print(Level level, List<String> lines) {
       var LS = System.lineSeparator();
-      bach.print(level, "%s", String.join(LS + indent + "| ", lines));
+      bach.print(level, indent + "|%s", String.join(LS + indent + "|", lines));
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       var enable = writer == err || level == Level.INFO || bach.isVerbose();
       if (enable) writer.write(String.join(LS, lines) + LS);

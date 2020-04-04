@@ -107,15 +107,8 @@ public class Bach {
     // jlink    | javac/jar test realm
     // jpackage | junit test realm
     tasks.add(new PrintModules(project));
-    build(project, new Task("Build project " + project.toNameAndVersion(), false, tasks));
-  }
-
-  /** Build the given project using the provided task. */
-  public void build(Project project, Task build) {
-    print(Level.DEBUG, "Build project: %s", project.toNameAndVersion());
-    print(Level.DEBUG, "Build task: %s", build.name());
     if (dryRun) return;
-    execute(build);
+    execute(new Task("Build project " + project.toNameAndVersion(), false, tasks));
   }
 
   /** Execute the given task recursively. */
