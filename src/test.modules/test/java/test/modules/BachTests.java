@@ -17,7 +17,7 @@
 
 package test.modules;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import de.sormuras.bach.Bach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class BachTests {
 
   @Test
-  void versionIsAccessible() {
-    assertNotNull(Bach.VERSION.toString());
+  void checkStringRepresentationIsLegit() {
+    assertEquals("Bach.java " + Bach.VERSION, new Bach().toString());
   }
 }
