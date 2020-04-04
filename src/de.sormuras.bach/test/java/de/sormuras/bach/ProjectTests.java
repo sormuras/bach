@@ -47,6 +47,7 @@ class ProjectTests {
             "\t\tbase='' -> .+/",
             "\t\tout=.bach[/\\\\]out",
             "\t\tlib=lib",
+            "\tUnits: []",
             "\tRealms: []"),
         empty.toStrings());
   }
@@ -75,6 +76,7 @@ class ProjectTests {
             "\t\tbase='' -> .+/",
             "\t\tout=.bach[/\\\\]out",
             "\t\tlib=lib",
+            "\tUnits: [one]",
             "\tRealms: [one]",
             "\t\tRealm \"one\"",
             "\t\t\trelease=1",

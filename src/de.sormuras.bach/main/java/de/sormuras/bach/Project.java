@@ -69,6 +69,7 @@ public /*static*/ class Project {
     strings.add("\t\tbase='" + location.base() + "' -> " + location.base().toUri());
     strings.add("\t\tout=" + location.out());
     strings.add("\t\tlib=" + location.lib());
+    strings.add("\tUnits: " + structure.toUnitNames());
     strings.add("\tRealms: " + structure.toRealmNames());
     for (var realm : structure.realms()) {
       strings.add("\t\tRealm \"" + realm.name() + '"');

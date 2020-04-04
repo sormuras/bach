@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.API;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class UnitTests {
@@ -32,13 +33,17 @@ class UnitTests {
     assertEquals("empty", empty.descriptor().name());
     assertEquals(0, empty.directories().size());
     assertTrue(empty.toString().contains("empty"));
+    assertEquals("empty", empty.name());
+    assertEquals(List.of(), empty.toRequiresNames());
   }
 
   @Test
   void factory() {
     var directory = API.emptyDirectory();
-    var unit = API.newUnit("foo", directory);
-    assertEquals("foo", unit.descriptor().name());
-    assertSame(directory, unit.directories().get(0));
+    var foo = API.newUnit("foo", directory);
+    assertEquals("foo", foo.descriptor().name());
+    assertEquals("foo", foo.name());
+    assertSame(directory, foo.directories().get(0));
+    assertEquals(List.of(), foo.toRequiresNames());
   }
 }

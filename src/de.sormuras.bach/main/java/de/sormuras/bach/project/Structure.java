@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.project.structure.Location;
 import de.sormuras.bach.project.structure.Realm;
+import de.sormuras.bach.project.structure.Unit;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -52,5 +53,14 @@ public /*static*/ class Structure {
 
   public List<String> toRealmNames() {
     return realms.stream().map(Realm::name).collect(Collectors.toList());
+  }
+
+  public List<String> toUnitNames() {
+    return realms.stream()
+        .flatMap(realm -> realm.units().stream())
+        .map(Unit::name)
+        .distinct()
+        .sorted()
+        .collect(Collectors.toList());
   }
 }

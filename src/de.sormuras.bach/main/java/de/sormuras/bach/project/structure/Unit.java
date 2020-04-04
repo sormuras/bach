@@ -50,6 +50,10 @@ public /*static*/ class Unit {
         .toString();
   }
 
+  public String name() {
+    return descriptor.name();
+  }
+
   public List<String> toRequiresNames() {
     var names =
         descriptor.requires().stream()
