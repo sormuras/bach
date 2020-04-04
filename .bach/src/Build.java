@@ -24,14 +24,15 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    new Bach(System.out::println, true, false).build(project("Bach.java", "11.0-ea"));
+    var bach = new Bach(System.out::println, true, false, Bach.Workspace.of());
+    bach.build(project("Bach.java", "11.0-ea"));
   }
 
   static Bach.Project project(String name, String version) {
     return new Bach.Project(
         name,
         Version.parse(version),
-        new Bach.Structure(Bach.Location.of(), List.of(mainRealm(), testRealm())));
+        new Bach.Structure(List.of(mainRealm(), testRealm())));
   }
 
   static Bach.Realm mainRealm() {
