@@ -26,6 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
@@ -59,7 +62,7 @@ public class Bach {
         this + " initialized",
         "\tprinter=" + printer,
         "\tWorkspace",
-        "\t\tbase='"+ workspace.base()+"' -> " + workspace.base().toUri(),
+        "\t\tbase='" + workspace.base() + "' -> " + workspace.base().toUri(),
         "\t\tworkspace=" + workspace.workspace());
   }
   public Printer getPrinter() {
@@ -74,21 +77,25 @@ public class Bach {
     tasks.add(new CheckProjectState(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
     tasks.add(new PrintModules(project));
-    execute(new Task("Build project " + project.toNameAndVersion(), false, tasks));
+    var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
+    @SuppressWarnings("SpellCheckingInspection")
+    var pattern = "yyyyMMddHHmmss";
+    var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+    var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+    var summary =
+        execute(new Task.Executor(this), build)
+            .write(workspace, workspace.workspace("summary", "build-summary-" + timestamp + ".md"))
+            .assertSuccessful();
+    printer.print(Level.INFO, String.format("Build took %d ms", summary.getDuration().toMillis()));
   }
   public void execute(Task task) {
-    var executor = new Task.Executor(this);
-    printer.print(Level.TRACE, "", "Execute task: " + task.name());
-    var summary = executor.execute(task).assertSuccessful();
-    printer.print(
-        Level.TRACE,
-        "",
-        "Task Execution Overview",
-        "|    |Thread|Duration| Task",
-        String.join(System.lineSeparator(), summary.getOverviewLines()));
-    var count = summary.getTaskCount();
-    var duration = summary.getDuration().toMillis();
-    printer.print(Level.INFO, String.format("Execution of %d tasks took %d ms", count, duration));
+    execute(new Task.Executor(this), task).assertSuccessful();
+  }
+  Task.Executor.Summary execute(Task.Executor executor, Task task) {
+    printer.print(Level.DEBUG, "", "Execute task: " + task.name());
+    var summary = executor.execute(task);
+    printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    return summary;
   }
   public String toString() {
     return "Bach.java " + VERSION;
@@ -179,7 +186,7 @@ public class Bach {
       public String toString() {
         var levels = EnumSet.range(Level.TRACE, Level.ERROR).stream();
         var map = levels.map(level -> level + ":" + isPrintable(level));
-        return "Default[threshold=" + threshold + "] = " + map.collect(Collectors.joining(" "));
+        return "Default[threshold=" + threshold + "] -> " + map.collect(Collectors.joining(" "));
       }
     }
   }
@@ -480,26 +487,34 @@ public class Bach {
         overview.add(line);
       }
       class Summary {
-        private final String title;
+        private final String task;
         private final Duration duration;
         private final Throwable throwable;
-        Summary(String title, Duration duration, Throwable throwable) {
-          this.title = title;
+        Summary(String task, Duration duration, Throwable throwable) {
+          this.task = task;
           this.duration = duration;
           this.throwable = throwable;
         }
         Summary assertSuccessful() {
           if (throwable == null) return this;
-          throw new AssertionError(title + " failed", throwable);
+          throw new AssertionError(task + " failed", throwable);
         }
         Duration getDuration() {
           return duration;
         }
-        Deque<String> getOverviewLines() {
-          return overview;
-        }
         int getTaskCount() {
           return executions.size();
+        }
+        Summary write(Workspace workspace, Path summary) {
+          var markdown = List.of("# Summary for " + task); // TODO toMarkdown();
+          try {
+            Files.createDirectories(summary.getParent());
+            Files.write(summary, markdown);
+            Files.write(workspace.workspace("summary.md"), markdown); // replace existing
+            return this;
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
         }
       }
     }
