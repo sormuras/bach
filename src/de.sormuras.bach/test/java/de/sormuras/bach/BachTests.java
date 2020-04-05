@@ -26,9 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.System.Logger.Level;
+import java.nio.file.Path;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import test.base.Log;
@@ -87,9 +88,9 @@ class BachTests {
   }
 
   @Test
-  void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError() {
+  void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError(@TempDir Path temp) {
     var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
     var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
     assertEquals("Build project empty 0 failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
@@ -102,7 +103,9 @@ class BachTests {
             "\t* Print project",
             ">> PROJECT COMPONENTS >>",
             "\t* Check project state",
-            "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present"),
+            "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present",
+            "",
+            "Executed tasks: 1"),
         log.lines());
   }
 }

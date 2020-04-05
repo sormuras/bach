@@ -19,6 +19,8 @@ package de.sormuras.bach;
 
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Deque;
@@ -154,31 +156,39 @@ public /*static*/ class Task {
 
     class Summary {
 
-      private final String title;
+      private final String task;
       private final Duration duration;
       private final Throwable throwable;
 
-      Summary(String title, Duration duration, Throwable throwable) {
-        this.title = title;
+      Summary(String task, Duration duration, Throwable throwable) {
+        this.task = task;
         this.duration = duration;
         this.throwable = throwable;
       }
 
       Summary assertSuccessful() {
         if (throwable == null) return this;
-        throw new AssertionError(title + " failed", throwable);
+        throw new AssertionError(task + " failed", throwable);
       }
 
       Duration getDuration() {
         return duration;
       }
 
-      Deque<String> getOverviewLines() {
-        return overview;
-      }
-
       int getTaskCount() {
         return executions.size();
+      }
+
+      Summary write(Workspace workspace, Path summary) {
+        var markdown = List.of("# Summary for " + task); // TODO toMarkdown();
+        try {
+          Files.createDirectories(summary.getParent());
+          Files.write(summary, markdown);
+          Files.write(workspace.workspace("summary.md"), markdown); // replace existing
+          return this;
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
       }
     }
   }

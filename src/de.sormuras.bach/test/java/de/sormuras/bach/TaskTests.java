@@ -35,16 +35,7 @@ class TaskTests {
     var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     bach.execute(new Task("Task"));
     assertLinesMatch(
-        List.of(
-            "Bach.java .+ initialized",
-            ">> CONFIGURATION >>",
-            "",
-            "Execute task: Task",
-            "* Task",
-            "",
-            "Task Execution Overview",
-            ">> OVERVIEW >>",
-            "Execution of 1 tasks took .+ ms"),
+        List.of(">> BACH INIT >>", "", "Execute task: Task", "* Task", "", "Executed tasks: 1"),
         log.lines());
   }
 
@@ -85,9 +76,7 @@ class TaskTests {
             "\t* Thread.sleep(10)",
             "= 3x Wait",
             "",
-            "Task Execution Overview",
-            ">> OVERVIEW >>",
-            "Execution of 3 tasks took .+ ms"),
+            "Executed tasks: 3"),
         log.lines());
   }
 
@@ -105,7 +94,9 @@ class TaskTests {
             "",
             "Execute task: Throw",
             "* Throw",
-            "Task execution failed: java.lang.Exception: BäMM!"),
+            "Task execution failed: java.lang.Exception: BäMM!",
+            "",
+            "Executed tasks: 0"),
         log.lines());
   }
 

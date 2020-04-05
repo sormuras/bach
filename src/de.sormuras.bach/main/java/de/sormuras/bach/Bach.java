@@ -23,10 +23,12 @@ import de.sormuras.bach.task.PrintModules;
 import de.sormuras.bach.task.PrintProject;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -59,7 +61,7 @@ public class Bach {
         this + " initialized",
         "\tprinter=" + printer,
         "\tWorkspace",
-        "\t\tbase='"+ workspace.base()+"' -> " + workspace.base().toUri(),
+        "\t\tbase='" + workspace.base() + "' -> " + workspace.base().toUri(),
         "\t\tworkspace=" + workspace.workspace());
   }
 
@@ -81,23 +83,28 @@ public class Bach {
     // jlink    | javac/jar test realm
     // jpackage | junit test realm
     tasks.add(new PrintModules(project));
-    execute(new Task("Build project " + project.toNameAndVersion(), false, tasks));
+    var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
+    @SuppressWarnings("SpellCheckingInspection")
+    var pattern = "yyyyMMddHHmmss";
+    var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+    var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+    var summary =
+        execute(new Task.Executor(this), build)
+            .write(workspace, workspace.workspace("summary", "build-summary-" + timestamp + ".md"))
+            .assertSuccessful();
+    printer.print(Level.INFO, String.format("Build took %d ms", summary.getDuration().toMillis()));
   }
 
   /** Execute the given task recursively. */
   public void execute(Task task) {
-    var executor = new Task.Executor(this);
-    printer.print(Level.TRACE, "", "Execute task: " + task.name());
-    var summary = executor.execute(task).assertSuccessful();
-    printer.print(
-        Level.TRACE,
-        "",
-        "Task Execution Overview",
-        "|    |Thread|Duration| Task",
-        String.join(System.lineSeparator(), summary.getOverviewLines()));
-    var count = summary.getTaskCount();
-    var duration = summary.getDuration().toMillis();
-    printer.print(Level.INFO, String.format("Execution of %d tasks took %d ms", count, duration));
+    execute(new Task.Executor(this), task).assertSuccessful();
+  }
+
+  Task.Executor.Summary execute(Task.Executor executor, Task task) {
+    printer.print(Level.DEBUG, "", "Execute task: " + task.name());
+    var summary = executor.execute(task);
+    printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    return summary;
   }
 
   @Override
