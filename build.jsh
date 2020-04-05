@@ -40,15 +40,7 @@ SingleFileSourceCodeGenerator.main()
 
 println("| /open .bach/src/Bach.java")
 /open .bach/src/Bach.java
-var bach = new Bach()
-println("| Script uses " + bach)
-
-println("| Declare default build program class")
-class Build {
-  public static void main(String... args) {
-    throw new UnsupportedOperationException("Default build program is not yet implemented");
-  }
-}
+println("| Bach " + Bach.VERSION)
 
 println("| /open .bach/src/Build.java")
 /open .bach/src/Build.java
