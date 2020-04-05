@@ -44,8 +44,7 @@ class PrinterTests {
   void printMessagesAtAllLevelsInVerboseMode() {
     var log = new Log();
     var printer = new Printer.Default(log, Level.ALL);
-    assertTrue(printer.isEnabled(Level.OFF));
-    assertTrue(printer.isVerbose());
+    assertTrue(printer.isPrintable(Level.OFF));
     printer.print(Level.TRACE, "trace");
     printer.print(Level.DEBUG, "debug");
     printer.print(Level.INFO, "info");

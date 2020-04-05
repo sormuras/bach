@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.lang.System.Logger.Level;
+import java.util.EnumSet;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,23 +27,21 @@ import java.util.stream.Stream;
 public interface Printer {
 
   default void print(Level level, String... message) {
-    if (!isEnabled(level)) return;
+    if (!isPrintable(level)) return;
     print(level, String.join(System.lineSeparator(), message));
   }
 
   default void print(Level level, Iterable<? extends CharSequence> message) {
-    if (!isEnabled(level)) return;
+    if (!isPrintable(level)) return;
     print(level, String.join(System.lineSeparator(), message));
   }
 
   default void print(Level level, Stream<? extends CharSequence> message) {
-    if (!isEnabled(level)) return;
+    if (!isPrintable(level)) return;
     print(level, message.collect(Collectors.joining(System.lineSeparator())));
   }
 
-  boolean isEnabled(Level level);
-
-  boolean isVerbose();
+  boolean isPrintable(Level level);
 
   void print(Level level, String message);
 
@@ -71,19 +70,21 @@ public interface Printer {
     }
 
     @Override
-    public boolean isEnabled(Level level) {
+    public boolean isPrintable(Level level) {
       if (threshold == Level.OFF) return false;
-      return isVerbose() || threshold.getSeverity() <= level.getSeverity();
-    }
-
-    @Override
-    public boolean isVerbose() {
-      return threshold == Level.ALL;
+      return threshold == Level.ALL || threshold.getSeverity() <= level.getSeverity();
     }
 
     @Override
     public void print(Level level, String message) {
-      if (isEnabled(level)) consumer.accept(level, message);
+      if (isPrintable(level)) consumer.accept(level, message);
+    }
+
+    @Override
+    public String toString() {
+      var levels = EnumSet.range(Level.TRACE, Level.ERROR).stream();
+      var map = levels.map(level -> level + ":" + isPrintable(level));
+      return "Default[threshold=" + threshold + "] -> " + map.collect(Collectors.joining(" "));
     }
   }
 }

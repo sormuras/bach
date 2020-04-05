@@ -57,14 +57,9 @@ public class Bach {
     printer.print(
         Level.DEBUG,
         this + " initialized",
-        "\tPrinter",
-        "\t\tverbose=" + printer.isVerbose(),
-        "\t\tlevels="
-            + Stream.of(Level.values())
-                .map(level -> level + "=" + printer.isEnabled(level))
-                .collect(Collectors.joining(", ")),
+        "\tprinter=" + printer,
         "\tWorkspace",
-        String.format("\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri()),
+        "\t\tbase='"+ workspace.base()+"' -> " + workspace.base().toUri(),
         "\t\tworkspace=" + workspace.workspace());
   }
 

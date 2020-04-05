@@ -75,13 +75,8 @@ public /*static*/ class Task {
     }
 
     @Override
-    public boolean isEnabled(Level level) {
+    public boolean isPrintable(Level level) {
       return true;
-    }
-
-    @Override
-    public boolean isVerbose() {
-      return bach.getPrinter().isVerbose();
     }
 
     @Override

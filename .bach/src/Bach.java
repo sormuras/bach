@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Objects;
@@ -56,14 +57,9 @@ public class Bach {
     printer.print(
         Level.DEBUG,
         this + " initialized",
-        "\tPrinter",
-        "\t\tverbose=" + printer.isVerbose(),
-        "\t\tlevels="
-            + Stream.of(Level.values())
-                .map(level -> level + "=" + printer.isEnabled(level))
-                .collect(Collectors.joining(", ")),
+        "\tprinter=" + printer,
         "\tWorkspace",
-        String.format("\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri()),
+        "\t\tbase='"+ workspace.base()+"' -> " + workspace.base().toUri(),
         "\t\tworkspace=" + workspace.workspace());
   }
   public Printer getPrinter() {
@@ -142,19 +138,18 @@ public class Bach {
   }
   public interface Printer {
     default void print(Level level, String... message) {
-      if (!isEnabled(level)) return;
+      if (!isPrintable(level)) return;
       print(level, String.join(System.lineSeparator(), message));
     }
     default void print(Level level, Iterable<? extends CharSequence> message) {
-      if (!isEnabled(level)) return;
+      if (!isPrintable(level)) return;
       print(level, String.join(System.lineSeparator(), message));
     }
     default void print(Level level, Stream<? extends CharSequence> message) {
-      if (!isEnabled(level)) return;
+      if (!isPrintable(level)) return;
       print(level, message.collect(Collectors.joining(System.lineSeparator())));
     }
-    boolean isEnabled(Level level);
-    boolean isVerbose();
+    boolean isPrintable(Level level);
     void print(Level level, String message);
     static Printer ofSystem() {
       var verbose = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
@@ -174,15 +169,17 @@ public class Bach {
         this.consumer = consumer;
         this.threshold = threshold;
       }
-      public boolean isEnabled(Level level) {
+      public boolean isPrintable(Level level) {
         if (threshold == Level.OFF) return false;
-        return isVerbose() || threshold.getSeverity() <= level.getSeverity();
-      }
-      public boolean isVerbose() {
-        return threshold == Level.ALL;
+        return threshold == Level.ALL || threshold.getSeverity() <= level.getSeverity();
       }
       public void print(Level level, String message) {
-        if (isEnabled(level)) consumer.accept(level, message);
+        if (isPrintable(level)) consumer.accept(level, message);
+      }
+      public String toString() {
+        var levels = EnumSet.range(Level.TRACE, Level.ERROR).stream();
+        var map = levels.map(level -> level + ":" + isPrintable(level));
+        return "Default[threshold=" + threshold + "] = " + map.collect(Collectors.joining(" "));
       }
     }
   }
@@ -415,11 +412,8 @@ public class Bach {
       public Bach getBach() {
         return bach;
       }
-      public boolean isEnabled(Level level) {
+      public boolean isPrintable(Level level) {
         return true;
-      }
-      public boolean isVerbose() {
-        return bach.getPrinter().isVerbose();
       }
       public void print(Level level, String message) {
         bach.getPrinter().print(level, message.lines().map(line -> indent + line));

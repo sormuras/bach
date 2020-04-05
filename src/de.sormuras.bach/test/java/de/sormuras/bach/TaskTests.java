@@ -67,9 +67,7 @@ class TaskTests {
       @Override
       public void execute(Execution execution) throws Exception {
         Thread.sleep(millis);
-        assertTrue(execution.getBach().getPrinter().isVerbose());
-        assertTrue(execution.isEnabled(null)); // all levels
-        assertTrue(execution.isVerbose());
+        assertTrue(execution.isPrintable(Level.ALL));
       }
     }
 
