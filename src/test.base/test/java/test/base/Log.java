@@ -17,43 +17,23 @@
 
 package test.base;
 
-import java.text.MessageFormat;
+import java.lang.System.Logger.Level;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /** Collecting logger and message line consumer implementation. */
-public class Log implements System.Logger, Consumer<String> {
+public class Log implements BiConsumer<Level, String> {
 
   private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
 
   @Override
-  public void accept(String message) {
-    entries.add(new Entry("P", Level.ALL, message, null));
-  }
-
-  @Override
-  public String getName() {
-    return "Log";
-  }
-
-  @Override
-  public boolean isLoggable(Level level) {
-    return true;
-  }
-
-  @Override
-  public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
-    entries.add(new Entry("L", level, msg, thrown));
-  }
-
-  @Override
-  public void log(Level level, ResourceBundle bundle, String format, Object... params) {
-    entries.add(new Entry("L", level, MessageFormat.format(format, params), null));
+  public void accept(Level level, String message) {
+    entries.add(new Entry(level, message));
   }
 
   public void assertThatEverythingIsFine() {
@@ -68,20 +48,18 @@ public class Log implements System.Logger, Consumer<String> {
   }
 
   public List<String> lines() {
-    return entries.stream().map(e -> e.source + " " + e.message).collect(Collectors.toList());
+    var lines = new ArrayList<String>();
+    for (var entry : entries) lines.addAll(entry.message.lines().collect(Collectors.toList()));
+    return lines;
   }
 
   public static final class Entry {
-    private final String source;
     private final Level level;
     private final String message;
-    private final Throwable thrown;
 
-    public Entry(String source, Level level, String message, Throwable thrown) {
-      this.source = source;
+    public Entry(Level level, String message) {
       this.level = level;
       this.message = message;
-      this.thrown = thrown;
     }
   }
 }

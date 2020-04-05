@@ -65,24 +65,24 @@ class BachTests {
     var log = new Log();
     var bach = new Bach(log, true, true, Workspace.of());
     assertDoesNotThrow(bach::hashCode);
-    assertEquals("all", bach.print(Level.ALL, "all"));
-    assertEquals("trace", bach.print(Level.TRACE, "trace"));
-    assertEquals("debug", bach.print(Level.DEBUG, "debug"));
-    assertEquals("info 123", bach.print(Level.INFO, "info %d", 123));
-    assertEquals("warning", bach.print(Level.WARNING, "warning"));
-    assertEquals("error", bach.print(Level.ERROR, "error"));
-    assertEquals("off", bach.print(Level.OFF, "off"));
+    bach.print(Level.ALL, "all");
+    bach.print(Level.TRACE, "trace");
+    bach.print(Level.DEBUG, "debug");
+    bach.print(Level.INFO, "info");
+    bach.print(Level.WARNING, "warning");
+    bach.print(Level.ERROR, "error");
+    bach.print(Level.OFF, "off");
     assertLinesMatch(
         List.of(
-            "P Bach.java .+ initialized",
+            "Bach.java .+ initialized",
             ">> CONFIGURATION >>",
-            "P all",
-            "P trace",
-            "P debug",
-            "P info 123",
-            "P warning",
-            "P error",
-            "P off"),
+            "all",
+            "trace",
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "off"),
         log.lines());
   }
 
@@ -96,13 +96,13 @@ class BachTests {
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
-            "P ",
-            "P Execute task: Build project empty 0",
-            "P + Build project empty 0",
-            "P \t* Print project",
+            "",
+            "Execute task: Build project empty 0",
+            "+ Build project empty 0",
+            "\t* Print project",
             ">> PROJECT COMPONENTS >>",
-            "P \t* Check project state",
-            "P Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present"),
+            "\t* Check project state",
+            "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present"),
         log.lines());
   }
 }
