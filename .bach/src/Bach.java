@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,28 +45,33 @@ public class Bach {
   public static void main(String... args) {
     Main.main(args);
   }
-  private final Consumer<String> printer;
+  private final BiConsumer<Level, String> printer;
   private final boolean verbose;
   private final boolean dryRun;
   private final Workspace workspace;
   public Bach() {
     this(
-        System.out::println,
+        (__, message) -> System.out.println(message),
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")),
         Workspace.of());
   }
-  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
+  public Bach(
+      BiConsumer<Level, String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
     this.workspace = workspace;
-    print(Level.DEBUG, "%s initialized", this);
-    print(Level.TRACE, "\tverbose=%s", verbose);
-    print(Level.TRACE, "\tdry-run=%s", dryRun);
-    print(Level.TRACE, "\tWorkspace");
-    print(Level.TRACE, "\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri());
-    print(Level.TRACE, "\t\tworkspace=%s", workspace.workspace());
+    print(
+        Level.DEBUG,
+        String.join(
+            System.lineSeparator(),
+            this + " initialized",
+            "\tverbose=" + verbose,
+            "\tdry-run=" + dryRun,
+            "\tWorkspace",
+            String.format("\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri()),
+            "\t\tworkspace=" + workspace.workspace()));
   }
   public boolean isVerbose() {
     return verbose;
@@ -77,13 +82,8 @@ public class Bach {
   public Workspace getWorkspace() {
     return workspace;
   }
-  public String print(String format, Object... args) {
-    return print(Level.INFO, format, args);
-  }
-  public String print(Level level, String format, Object... args) {
-    var message = String.format(format, args);
-    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
-    return message;
+  public void print(Level level, String message) {
+    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(level, message);
   }
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
@@ -96,18 +96,25 @@ public class Bach {
   }
   public void execute(Task task) {
     var executor = new Task.Executor(this);
-    print(Level.TRACE, "");
-    print(Level.TRACE, "Execute task: " + task.name());
+    print(Level.TRACE, String.join(System.lineSeparator(), "", "Execute task: " + task.name()));
     var summary = executor.execute(task).assertSuccessful();
     if (verbose) {
-      print("");
-      print("Task Execution Overview");
-      print("|    |Thread|Duration| Task");
-      summary.getOverviewLines().forEach(this::print);
+      print(
+          Level.TRACE,
+          String.join(
+              System.lineSeparator(),
+              "",
+              "Task Execution Overview",
+              "|    |Thread|Duration| Task",
+              String.join(System.lineSeparator(), summary.getOverviewLines())));
     }
     var count = summary.getTaskCount();
     var duration = summary.getDuration().toMillis();
-    print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
+    print(
+        Level.DEBUG,
+        String.join(
+            System.lineSeparator(),
+            String.format("Execution of %d tasks took %d ms", count, duration)));
   }
   public String toString() {
     return "Bach.java " + VERSION;
@@ -384,12 +391,12 @@ public class Bach {
       public Bach getBach() {
         return bach;
       }
-      public void print(Level level, List<String> lines) {
+      public void print(Level level, String message) {
         var LS = System.lineSeparator();
-        bach.print(level, indent + "|%s", String.join(LS + indent + "|", lines));
+        bach.print(level, message.lines().map(line -> indent + line).collect(Collectors.joining(LS)));
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
         var enable = writer == err || level == Level.INFO || bach.isVerbose();
-        if (enable) writer.write(String.join(LS, lines) + LS);
+        if (enable) writer.write(message + LS);
       }
     }
     static class Executor {
@@ -409,7 +416,7 @@ public class Bach {
         var name = task.name;
         var subs = task.subs;
         var flat = subs.isEmpty(); // i.e. no sub tasks
-        bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
+        bach.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
         executionBegin(task);
         var execution = new Execution(bach, indent);
         try {
@@ -419,11 +426,11 @@ public class Bach {
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
             var error = errors.findFirst();
             if (error.isPresent()) return error.get();
-            bach.print(Level.TRACE, "%s= %s", indent, name);
+            bach.print(Level.TRACE, indent + "= " + name);
           }
           executionEnd(task, execution);
         } catch (Exception exception) {
-          bach.print(Level.ERROR, "Task execution failed: %s", exception);
+          bach.print(Level.ERROR, "Task execution failed: " + exception);
           return exception;
         }
         return null;
@@ -440,8 +447,7 @@ public class Bach {
         var kind = flat ? ' ' : '=';
         var thread = Thread.currentThread().getId();
         var millis = Duration.between(execution.start, Instant.now()).toMillis();
-        var name = flat ? task.name : "**" + task.name + "**";
-        var line = String.format(format, kind, thread, millis, name);
+        var line = String.format(format, kind, thread, millis, task.name);
         if (flat) {
           overview.add(line + " [...](#task-execution-details-" + execution.hash + ")");
           executions.add(execution);
@@ -530,7 +536,10 @@ public class Bach {
         var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
         execution.print(
             Level.INFO,
-            List.of("Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri()));
+            String.join(
+                System.lineSeparator(),
+                "Unit " + unit.descriptor().toNameAndVersion(),
+                "\t-> " + jar.toUri()));
       }
     }
   }
@@ -541,7 +550,7 @@ public class Bach {
       this.project = project;
     }
     public void execute(Execution execution) {
-      execution.print(Level.INFO, project.toStrings());
+      execution.print(Level.INFO, String.join(System.lineSeparator(), project.toStrings()));
     }
   }
   public static final class Workspace {
