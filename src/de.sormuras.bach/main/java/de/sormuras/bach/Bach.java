@@ -85,11 +85,6 @@ public class Bach {
     return workspace;
   }
 
-  /** Print a message at information level. */
-  public String print(String format, Object... args) {
-    return print(Level.INFO, format, args);
-  }
-
   /** Print a message at specified level. */
   public String print(Level level, String format, Object... args) {
     var message = String.format(format, args);
@@ -118,10 +113,10 @@ public class Bach {
     print(Level.TRACE, "Execute task: " + task.name());
     var summary = executor.execute(task).assertSuccessful();
     if (verbose) {
-      print("");
-      print("Task Execution Overview");
-      print("|    |Thread|Duration| Task");
-      summary.getOverviewLines().forEach(this::print);
+      print(Level.TRACE, "");
+      print(Level.TRACE, "Task Execution Overview");
+      print(Level.TRACE, "|    |Thread|Duration| Task");
+      print(Level.TRACE, "%s", String.join(System.lineSeparator(), summary.getOverviewLines()));
     }
     var count = summary.getTaskCount();
     var duration = summary.getDuration().toMillis();

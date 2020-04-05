@@ -68,7 +68,7 @@ class BachTests {
     assertEquals("all", bach.print(Level.ALL, "all"));
     assertEquals("trace", bach.print(Level.TRACE, "trace"));
     assertEquals("debug", bach.print(Level.DEBUG, "debug"));
-    assertEquals("info 123", bach.print("info %d", 123));
+    assertEquals("info 123", bach.print(Level.INFO, "info %d", 123));
     assertEquals("warning", bach.print(Level.WARNING, "warning"));
     assertEquals("error", bach.print(Level.ERROR, "error"));
     assertEquals("off", bach.print(Level.OFF, "off"));
