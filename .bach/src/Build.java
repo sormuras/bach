@@ -24,8 +24,7 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    var bach =
-        new Bach((__, message) -> System.out.println(message), true, false, Bach.Workspace.of());
+    var bach = new Bach(Bach.Printer.ofSystem(), Bach.Workspace.of());
     bach.build(project("Bach.java", "11.0-ea"));
   }
 
