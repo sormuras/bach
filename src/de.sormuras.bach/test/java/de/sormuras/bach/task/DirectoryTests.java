@@ -22,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.API;
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Printer;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.Workspace;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,7 +39,7 @@ class DirectoryTests {
   @Test
   void createAndDeleteAnEmptyDirectory(@TempDir Path temp) {
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of(temp));
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
     var empty = temp.resolve("empty");
     bach.execute(new CreateDirectories(empty));
     assertTrue(Files.isDirectory(empty));
@@ -66,7 +68,7 @@ class DirectoryTests {
     }
 
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of(temp));
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
     var root = temp.resolve("root");
     var nest = root.resolve("sub/nest");
     var task =

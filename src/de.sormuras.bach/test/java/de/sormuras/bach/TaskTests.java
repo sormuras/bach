@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.System.Logger.Level;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import test.base.Log;
@@ -31,7 +32,7 @@ class TaskTests {
   @Test
   void executeTask() {
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     bach.execute(new Task("Task"));
     assertLinesMatch(
         List.of(
@@ -66,12 +67,14 @@ class TaskTests {
       @Override
       public void execute(Execution execution) throws Exception {
         Thread.sleep(millis);
-        assertTrue(execution.getBach().isVerbose());
+        assertTrue(execution.getBach().getPrinter().isVerbose());
+        assertTrue(execution.isEnabled(null)); // all levels
+        assertTrue(execution.isVerbose());
       }
     }
 
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     bach.execute(new Task("3x Wait", true, List.of(new Wait(), new Wait(), new Wait())));
     assertLinesMatch(
         List.of(
@@ -93,7 +96,7 @@ class TaskTests {
   @Test
   void executeThrowingTask() {
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     var task = API.taskOf("Throw", __ -> throwException("BäMM!"));
     var error = assertThrows(AssertionError.class, () -> bach.execute(task));
     assertEquals("Throw failed", error.getMessage());

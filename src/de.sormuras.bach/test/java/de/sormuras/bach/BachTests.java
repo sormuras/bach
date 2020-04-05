@@ -41,8 +41,7 @@ class BachTests {
   void defaults() {
     var bach = new Bach();
     assertEquals("Bach.java " + Bach.VERSION, bach.toString());
-    assertFalse(bach.isVerbose());
-    assertFalse(bach.isDryRun());
+    assertFalse(bach.getPrinter().isVerbose());
     assertNotNull(bach.getWorkspace());
   }
 
@@ -50,12 +49,7 @@ class BachTests {
   @SwallowSystem
   @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
-    try {
-      System.setProperty("ry-run", "");
-      Bach.main();
-    } finally {
-      System.clearProperty("ry-run");
-    }
+    Bach.main();
     assertTrue(streams.errors().isEmpty());
     assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
   }
@@ -63,15 +57,16 @@ class BachTests {
   @Test
   void printMessagesAtAllLevelsInVerboseMode() {
     var log = new Log();
-    var bach = new Bach(log, true, true, Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     assertDoesNotThrow(bach::hashCode);
-    bach.print(Level.ALL, "all");
-    bach.print(Level.TRACE, "trace");
-    bach.print(Level.DEBUG, "debug");
-    bach.print(Level.INFO, "info");
-    bach.print(Level.WARNING, "warning");
-    bach.print(Level.ERROR, "error");
-    bach.print(Level.OFF, "off");
+    var printer = bach.getPrinter();
+    printer.print(Level.ALL, "all");
+    printer.print(Level.TRACE, "trace");
+    printer.print(Level.DEBUG, "debug");
+    printer.print(Level.INFO, "info");
+    printer.print(Level.WARNING, "warning");
+    printer.print(Level.ERROR, "error");
+    printer.print(Level.OFF, "off");
     assertLinesMatch(
         List.of(
             "Bach.java .+ initialized",
@@ -89,7 +84,7 @@ class BachTests {
   @Test
   void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError() {
     var log = new Log();
-    var bach = new Bach(log, true, false, Workspace.of());
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
     assertEquals("Build project empty 0 failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
