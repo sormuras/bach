@@ -25,7 +25,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.stream.Collectors;
 
 /** An executable task definition. */
 public /*static*/ class Task {
@@ -58,7 +57,7 @@ public /*static*/ class Task {
     return new Task(name, false, List.of(tasks));
   }
 
-  public static class Execution {
+  public static class Execution implements Printer {
     private final Bach bach;
     private final String indent;
     private final String hash = Integer.toHexString(System.identityHashCode(this));
@@ -75,12 +74,22 @@ public /*static*/ class Task {
       return bach;
     }
 
+    @Override
+    public boolean isEnabled(Level level) {
+      return true;
+    }
+
+    @Override
+    public boolean isVerbose() {
+      return bach.getPrinter().isVerbose();
+    }
+
+    @Override
     public void print(Level level, String message) {
-      var LS = System.lineSeparator();
-      bach.print(level, message.lines().map(line -> indent + line).collect(Collectors.joining(LS)));
+      bach.getPrinter().print(level, message.lines().map(line -> indent + line));
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
-      var enable = writer == err || level == Level.INFO || bach.isVerbose();
-      if (enable) writer.write(message + LS);
+      writer.write(message);
+      writer.write(System.lineSeparator());
     }
   }
 
@@ -105,7 +114,8 @@ public /*static*/ class Task {
       var name = task.name;
       var subs = task.subs;
       var flat = subs.isEmpty(); // i.e. no sub tasks
-      bach.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
+      var printer = bach.getPrinter();
+      printer.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
       executionBegin(task);
       var execution = new Execution(bach, indent);
       try {
@@ -115,11 +125,11 @@ public /*static*/ class Task {
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
           var error = errors.findFirst();
           if (error.isPresent()) return error.get();
-          bach.print(Level.TRACE, indent + "= " + name);
+          printer.print(Level.TRACE, indent + "= " + name);
         }
         executionEnd(task, execution);
       } catch (Exception exception) {
-        bach.print(Level.ERROR, "Task execution failed: " + exception);
+        printer.print(Level.ERROR, "Task execution failed: " + exception);
         return exception;
       }
       return null;

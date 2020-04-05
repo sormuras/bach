@@ -20,7 +20,6 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
 import java.lang.System.Logger.Level;
-import java.util.List;
 
 /** Print information about all compiled modules. */
 public /*static*/ class PrintModules extends Task {
@@ -38,11 +37,7 @@ public /*static*/ class PrintModules extends Task {
     for (var unit : realm.units()) {
       var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
       execution.print(
-          Level.INFO,
-          String.join(
-              System.lineSeparator(),
-              "Unit " + unit.descriptor().toNameAndVersion(),
-              "\t-> " + jar.toUri()));
+          Level.INFO, "Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri());
     }
   }
 }
