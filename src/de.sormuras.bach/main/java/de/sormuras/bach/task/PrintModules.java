@@ -39,7 +39,10 @@ public /*static*/ class PrintModules extends Task {
       var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
       execution.print(
           Level.INFO,
-          List.of("Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri()));
+          String.join(
+              System.lineSeparator(),
+              "Unit " + unit.descriptor().toNameAndVersion(),
+              "\t-> " + jar.toUri()));
     }
   }
 }

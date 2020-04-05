@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 /** An executable task definition. */
 public /*static*/ class Task {
@@ -74,12 +75,12 @@ public /*static*/ class Task {
       return bach;
     }
 
-    public void print(Level level, List<String> lines) {
+    public void print(Level level, String message) {
       var LS = System.lineSeparator();
-      bach.print(level, indent + "|%s", String.join(LS + indent + "|", lines));
+      bach.print(level, message.lines().map(line -> indent + line).collect(Collectors.joining(LS)));
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       var enable = writer == err || level == Level.INFO || bach.isVerbose();
-      if (enable) writer.write(String.join(LS, lines) + LS);
+      if (enable) writer.write(message + LS);
     }
   }
 
@@ -104,7 +105,7 @@ public /*static*/ class Task {
       var name = task.name;
       var subs = task.subs;
       var flat = subs.isEmpty(); // i.e. no sub tasks
-      bach.print(Level.TRACE, "%s%c %s", indent, flat ? '*' : '+', name);
+      bach.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
       executionBegin(task);
       var execution = new Execution(bach, indent);
       try {
@@ -114,11 +115,11 @@ public /*static*/ class Task {
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
           var error = errors.findFirst();
           if (error.isPresent()) return error.get();
-          bach.print(Level.TRACE, "%s= %s", indent, name);
+          bach.print(Level.TRACE, indent + "= " + name);
         }
         executionEnd(task, execution);
       } catch (Exception exception) {
-        bach.print(Level.ERROR, "Task execution failed: %s", exception);
+        bach.print(Level.ERROR, "Task execution failed: " + exception);
         return exception;
       }
       return null;
@@ -137,8 +138,7 @@ public /*static*/ class Task {
       var kind = flat ? ' ' : '=';
       var thread = Thread.currentThread().getId();
       var millis = Duration.between(execution.start, Instant.now()).toMillis();
-      var name = flat ? task.name : "**" + task.name + "**";
-      var line = String.format(format, kind, thread, millis, name);
+      var line = String.format(format, kind, thread, millis, task.name);
       if (flat) {
         overview.add(line + " [...](#task-execution-details-" + execution.hash + ")");
         executions.add(execution);

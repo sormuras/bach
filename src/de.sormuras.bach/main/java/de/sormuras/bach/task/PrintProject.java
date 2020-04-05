@@ -33,6 +33,6 @@ public /*static*/ class PrintProject extends Task {
 
   @Override
   public void execute(Execution execution) {
-    execution.print(Level.INFO, project.toStrings());
+    execution.print(Level.INFO, String.join(System.lineSeparator(), project.toStrings()));
   }
 }

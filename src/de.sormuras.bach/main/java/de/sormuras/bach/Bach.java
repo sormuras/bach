@@ -25,7 +25,7 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -39,7 +39,7 @@ public class Bach {
   }
 
   /** Line-based message printing consumer. */
-  private final Consumer<String> printer;
+  private final BiConsumer<Level, String> printer;
 
   /** Verbosity flag. */
   private final boolean verbose;
@@ -53,24 +53,29 @@ public class Bach {
   /** Initialize this instance with default values. */
   public Bach() {
     this(
-        System.out::println,
+        (__, message) -> System.out.println(message),
         Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug")),
         Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run")),
         Workspace.of());
   }
 
   /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Consumer<String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
+  public Bach(
+      BiConsumer<Level, String> printer, boolean verbose, boolean dryRun, Workspace workspace) {
     this.printer = Objects.requireNonNull(printer, "printer");
     this.verbose = verbose;
     this.dryRun = dryRun;
     this.workspace = workspace;
-    print(Level.DEBUG, "%s initialized", this);
-    print(Level.TRACE, "\tverbose=%s", verbose);
-    print(Level.TRACE, "\tdry-run=%s", dryRun);
-    print(Level.TRACE, "\tWorkspace");
-    print(Level.TRACE, "\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri());
-    print(Level.TRACE, "\t\tworkspace=%s", workspace.workspace());
+    print(
+        Level.DEBUG,
+        String.join(
+            System.lineSeparator(),
+            this + " initialized",
+            "\tverbose=" + verbose,
+            "\tdry-run=" + dryRun,
+            "\tWorkspace",
+            String.format("\t\tbase='%s' -> %s", workspace.base(), workspace.base().toUri()),
+            "\t\tworkspace=" + workspace.workspace()));
   }
 
   public boolean isVerbose() {
@@ -86,10 +91,8 @@ public class Bach {
   }
 
   /** Print a message at specified level. */
-  public String print(Level level, String format, Object... args) {
-    var message = String.format(format, args);
-    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(message);
-    return message;
+  public void print(Level level, String message) {
+    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) printer.accept(level, message);
   }
 
   /** Build the given project using default settings. */
@@ -109,18 +112,25 @@ public class Bach {
   /** Execute the given task recursively. */
   public void execute(Task task) {
     var executor = new Task.Executor(this);
-    print(Level.TRACE, "");
-    print(Level.TRACE, "Execute task: " + task.name());
+    print(Level.TRACE, String.join(System.lineSeparator(), "", "Execute task: " + task.name()));
     var summary = executor.execute(task).assertSuccessful();
     if (verbose) {
-      print(Level.TRACE, "");
-      print(Level.TRACE, "Task Execution Overview");
-      print(Level.TRACE, "|    |Thread|Duration| Task");
-      print(Level.TRACE, "%s", String.join(System.lineSeparator(), summary.getOverviewLines()));
+      print(
+          Level.TRACE,
+          String.join(
+              System.lineSeparator(),
+              "",
+              "Task Execution Overview",
+              "|    |Thread|Duration| Task",
+              String.join(System.lineSeparator(), summary.getOverviewLines())));
     }
     var count = summary.getTaskCount();
     var duration = summary.getDuration().toMillis();
-    print(Level.DEBUG, "Execution of %d tasks took %d ms", count, duration);
+    print(
+        Level.DEBUG,
+        String.join(
+            System.lineSeparator(),
+            String.format("Execution of %d tasks took %d ms", count, duration)));
   }
 
   @Override
