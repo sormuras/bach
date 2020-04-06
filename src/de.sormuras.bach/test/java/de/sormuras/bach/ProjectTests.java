@@ -39,12 +39,7 @@ class ProjectTests {
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
     assertLinesMatch(
-        List.of(
-            "Project",
-            "\tname=empty",
-            "\tversion=0",
-            "\tUnits: []",
-            "\tRealms: []"),
+        List.of("Project", "\tname=empty", "\tversion=0", "\tUnits: []", "\tRealms: []"),
         empty.toStrings());
   }
 
@@ -77,7 +72,7 @@ class ProjectTests {
             "\t\t\tUnits: [1]",
             "\t\t\t\tUnit \"one\"",
             "\t\t\t\t\tDirectories: [1]",
-            "\t\t\t\t\t\tDirectory[path=one, type=UNDEFINED, release=0]"),
+            "\t\t\t\t\t\tDirectory[path=one, type=UNKNOWN, release=0]"),
         one.toStrings());
   }
 }

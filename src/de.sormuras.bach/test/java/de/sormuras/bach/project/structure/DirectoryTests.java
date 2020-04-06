@@ -38,9 +38,10 @@ class DirectoryTests {
   void empty() {
     var empty = API.emptyDirectory();
     assertEquals(Path.of("empty"), empty.path());
-    assertEquals(Directory.Type.UNDEFINED, empty.type());
+    assertEquals(Directory.Type.UNKNOWN, empty.type());
     assertEquals(0, empty.release());
     assertTrue(empty.toString().contains(Directory.class.getSimpleName()));
+    assertEquals("? `empty`", empty.toMarkdown());
   }
 
   @Test

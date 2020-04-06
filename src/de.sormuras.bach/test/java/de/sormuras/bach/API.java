@@ -45,7 +45,7 @@ public interface API {
   }
 
   static Directory emptyDirectory() {
-    return new Directory(Path.of("empty"), Directory.Type.UNDEFINED, 0);
+    return new Directory(Path.of("empty"), Directory.Type.UNKNOWN, 0);
   }
 
   static ModuleDescriptor newModuleDescriptor(String name, String... requires) {

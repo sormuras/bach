@@ -32,12 +32,18 @@ public /*static*/ class Directory {
 
   /** Directory kind. */
   public enum Type {
-    SOURCE, RESOURCE, UNDEFINED;
+    UNKNOWN,
+    SOURCE,
+    RESOURCE;
 
-    public static Type of(String name) {
-      if (name.startsWith("java")) return SOURCE;
-      if (name.contains("resource")) return RESOURCE;
-      return UNDEFINED;
+    public static Type of(String string) {
+      if (string.startsWith("java")) return SOURCE;
+      if (string.contains("resource")) return RESOURCE;
+      return UNKNOWN;
+    }
+
+    public String toMarkdown() {
+      return this == SOURCE ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
     }
   }
 
@@ -91,5 +97,9 @@ public /*static*/ class Directory {
         .add("type=" + type)
         .add("release=" + release)
         .toString();
+  }
+
+  public String toMarkdown() {
+    return type.toMarkdown() + " `" + path + "`" + (release == 0 ? "" : "@" + release);
   }
 }
