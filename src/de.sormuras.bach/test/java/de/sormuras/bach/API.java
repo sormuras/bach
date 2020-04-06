@@ -68,8 +68,8 @@ public interface API {
   }
 
   static Task taskOf(String name, Executable executable) {
-    class Named extends Task {
-      Named() {
+    class NamedTask extends Task {
+      NamedTask() {
         super(name);
       }
 
@@ -78,6 +78,6 @@ public interface API {
         executable.execute(execution);
       }
     }
-    return new Named();
+    return new NamedTask();
   }
 }

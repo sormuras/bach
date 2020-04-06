@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -58,6 +59,7 @@ class TaskTests {
       @Override
       public void execute(Execution execution) throws Exception {
         Thread.sleep(millis);
+        assertNotNull(execution.getBach());
         assertTrue(execution.isPrintable(Level.ALL));
       }
     }
@@ -86,7 +88,7 @@ class TaskTests {
     var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     var task = API.taskOf("Throw", __ -> throwException("BäMM!"));
     var error = assertThrows(AssertionError.class, () -> bach.execute(task));
-    assertEquals("Throw failed", error.getMessage());
+    assertEquals("Throw (NamedTask) failed", error.getMessage());
     assertEquals("BäMM!", error.getCause().getMessage());
     assertLinesMatch(
         List.of(

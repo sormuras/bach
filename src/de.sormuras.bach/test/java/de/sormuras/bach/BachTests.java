@@ -92,7 +92,7 @@ class BachTests {
     var log = new Log();
     var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
     var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
-    assertEquals("Build project empty 0 failed", error.getMessage());
+    assertEquals("Build project empty 0 (Task) failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
     assertLinesMatch(
         List.of(
