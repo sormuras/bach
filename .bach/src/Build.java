@@ -18,6 +18,7 @@
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -31,7 +32,12 @@ class Build {
 
   static Bach.Project project(String name, String version) {
     return new Bach.Project(
-        name, Version.parse(version), new Bach.Structure(List.of(mainRealm(), testRealm())));
+        name,
+        Version.parse(version),
+        new Bach.Information(
+            "\uD83C\uDFBC Java Shell Builder - Use jshell/java to build your modular Java project",
+            URI.create("https://github.com/sormuras/bach")),
+        new Bach.Structure(List.of(mainRealm(), testRealm())));
   }
 
   static Bach.Realm mainRealm() {

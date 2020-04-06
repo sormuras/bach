@@ -22,6 +22,7 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
+import java.net.URI;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -190,10 +191,12 @@ public class Bach {
   public static class Project {
     private final String name;
     private final Version version;
+    private final Information information;
     private final Structure structure;
-    public Project(String name, Version version, Structure structure) {
+    public Project(String name, Version version, Information information, Structure structure) {
       this.name = name;
       this.version = version;
+      this.information = information;
       this.structure = structure;
     }
     public String name() {
@@ -201,6 +204,9 @@ public class Bach {
     }
     public Version version() {
       return version;
+    }
+    public Information information() {
+      return information;
     }
     public Structure structure() {
       return structure;
@@ -220,6 +226,8 @@ public class Bach {
       strings.add("Project");
       strings.add("\tname=" + name);
       strings.add("\tversion=" + version);
+      strings.add("\tdescription=" + information.description());
+      strings.add("\turi=" + information.uri());
       strings.add("\tUnits: " + structure.toUnitNames());
       strings.add("\tRealms: " + structure.toRealmNames());
       for (var realm : structure.realms()) {
@@ -240,6 +248,29 @@ public class Bach {
         }
       }
       return List.copyOf(strings);
+    }
+  }
+  public static class Information {
+    public static Information of() {
+      return new Information("", null);
+    }
+    private final String description;
+    private final URI uri;
+    public Information(String description, URI uri) {
+      this.description = description;
+      this.uri = uri;
+    }
+    public String description() {
+      return description;
+    }
+    public URI uri() {
+      return uri;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Information.class.getSimpleName() + "[", "]")
+          .add("description='" + description + "'")
+          .add("uri=" + uri)
+          .toString();
     }
   }
   public static class Structure {
@@ -536,7 +567,7 @@ public class Bach {
           md.add("# Summary");
           md.add("- Java " + Runtime.version());
           md.add("- " + System.getProperty("os.name"));
-          md.add("- Task: `" + task.name + "`");
+          md.add("- Executed task `" + task.name + "`");
           md.add("- Build took " + toDurationString());
           md.addAll(exceptionDetails());
           md.addAll(projectDescription());
@@ -567,6 +598,8 @@ public class Bach {
           md.add("## Project");
           md.add("- `name` = `\"" + project.name() + "\"`");
           md.add("- `version` = `" + project.version() + "`");
+          md.add("- `uri` = " + project.information().uri());
+          md.add("- `description` = " + project.information().description());
           md.add("");
           md.add("|Realm|Unit|Directories|");
           md.add("|-----|----|-----------|");
