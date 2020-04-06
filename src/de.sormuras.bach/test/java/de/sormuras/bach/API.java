@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.project.structure.Realm;
 import de.sormuras.bach.project.structure.Unit;
@@ -29,7 +30,11 @@ import java.util.List;
 /** Bach API type factories for testing purposes. */
 public interface API {
   static Project emptyProject() {
-    return new Project("empty", Version.parse("0"), emptyStructure());
+    return new Project("empty", Version.parse("0"), Information.of(), emptyStructure());
+  }
+
+  static Information emptyInformation() {
+    return Information.of();
   }
 
   static Structure emptyStructure() {
@@ -50,7 +55,7 @@ public interface API {
 
   static ModuleDescriptor newModuleDescriptor(String name, String... requires) {
     var descriptor = ModuleDescriptor.newModule(name);
-    for(var required : requires) descriptor.requires(required);
+    for (var required : requires) descriptor.requires(required);
     return descriptor.build();
   }
 

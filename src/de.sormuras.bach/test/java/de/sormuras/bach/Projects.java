@@ -17,11 +17,14 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.project.structure.Realm;
 import de.sormuras.bach.project.structure.Unit;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -69,8 +72,11 @@ public interface Projects {
     return new Example(
         new Project(
             "Jigsaw Quick Start: Greetings",
-            // https://openjdk.java.net/projects/jigsaw/quick-start
-            ModuleDescriptor.Version.parse("1"),
+            Version.parse("1"),
+            new Information(
+                "This example is a module named com.greetings that simply prints \"Greetings!\"."
+                    + " The module consists of two source files: the module declaration and the main class.",
+                URI.create("https://openjdk.java.net/projects/jigsaw/quick-start")),
             new Structure(List.of(realm))),
         Map.of(
             Path.of("src/com.greetings", "module-info.java"),

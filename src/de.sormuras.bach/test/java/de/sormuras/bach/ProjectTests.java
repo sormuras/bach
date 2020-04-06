@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.project.structure.Realm;
@@ -49,6 +50,7 @@ class ProjectTests {
         new Project(
             "one",
             Version.parse("1"),
+            Information.of(),
             new Structure(
                 List.of(
                     new Realm(
@@ -57,7 +59,8 @@ class ProjectTests {
                         true,
                         List.of(API.newUnit("one", Directory.of(Path.of("one")))) //
                         ) //
-                    )) //
+                    ) //
+                ) //
             );
     assertLinesMatch(
         List.of(

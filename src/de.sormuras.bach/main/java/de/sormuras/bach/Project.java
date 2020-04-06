@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
@@ -28,11 +29,14 @@ public /*static*/ class Project {
 
   private final String name;
   private final Version version;
+
+  private final Information information;
   private final Structure structure;
 
-  public Project(String name, Version version, Structure structure) {
+  public Project(String name, Version version, Information information, Structure structure) {
     this.name = name;
     this.version = version;
+    this.information = information;
     this.structure = structure;
   }
 
@@ -42,6 +46,10 @@ public /*static*/ class Project {
 
   public Version version() {
     return version;
+  }
+
+  public Information information() {
+    return information;
   }
 
   public Structure structure() {
@@ -66,6 +74,8 @@ public /*static*/ class Project {
     strings.add("Project");
     strings.add("\tname=" + name);
     strings.add("\tversion=" + version);
+    strings.add("\tdescription=" + information.description());
+    strings.add("\turi=" + information.uri());
     strings.add("\tUnits: " + structure.toUnitNames());
     strings.add("\tRealms: " + structure.toRealmNames());
     for (var realm : structure.realms()) {

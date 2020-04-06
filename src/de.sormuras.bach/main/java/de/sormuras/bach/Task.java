@@ -214,7 +214,7 @@ public /*static*/ class Task {
         md.add("# Summary");
         md.add("- Java " + Runtime.version());
         md.add("- " + System.getProperty("os.name"));
-        md.add("- Task: `" + task.name + "`");
+        md.add("- Executed task `" + task.name + "`");
         md.add("- Build took " + toDurationString());
         md.addAll(exceptionDetails());
         md.addAll(projectDescription());
@@ -247,6 +247,8 @@ public /*static*/ class Task {
         md.add("## Project");
         md.add("- `name` = `\"" + project.name() + "\"`");
         md.add("- `version` = `" + project.version() + "`");
+        md.add("- `uri` = " + project.information().uri());
+        md.add("- `description` = " + project.information().description());
         md.add("");
         md.add("|Realm|Unit|Directories|");
         md.add("|-----|----|-----------|");
