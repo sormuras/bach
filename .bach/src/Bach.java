@@ -269,11 +269,16 @@ public class Bach {
   }
   public static class Directory {
     public enum Type {
-      SOURCE, RESOURCE, UNDEFINED;
-      public static Type of(String name) {
-        if (name.startsWith("java")) return SOURCE;
-        if (name.contains("resource")) return RESOURCE;
-        return UNDEFINED;
+      UNKNOWN,
+      SOURCE,
+      RESOURCE;
+      public static Type of(String string) {
+        if (string.startsWith("java")) return SOURCE;
+        if (string.contains("resource")) return RESOURCE;
+        return UNKNOWN;
+      }
+      public String toMarkdown() {
+        return this == SOURCE ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
       }
     }
     public static Directory of(Path path) {
@@ -316,6 +321,9 @@ public class Bach {
           .add("type=" + type)
           .add("release=" + release)
           .toString();
+    }
+    public String toMarkdown() {
+      return type.toMarkdown() + " `" + path + "`" + (release == 0 ? "" : "@" + release);
     }
   }
   public static class Realm {
@@ -428,10 +436,12 @@ public class Bach {
     }
     static class Executor {
       private static final class Detail {
+        private final Task task;
         private final Execution execution;
         private final String caption;
         private final Duration duration;
-        private Detail(Execution execution, String caption, Duration duration) {
+        private Detail(Task task, Execution execution, String caption, Duration duration) {
+          this.task = task;
           this.execution = execution;
           this.caption = caption;
           this.duration = duration;
@@ -491,7 +501,7 @@ public class Bach {
         if (flat) {
           var caption = "task-execution-details-" + execution.hash;
           overview.add(line + " [...](#" + caption + ")");
-          executions.add(new Detail(execution, caption, duration));
+          executions.add(new Detail(task, execution, caption, duration));
           return;
         }
         overview.add(line);
@@ -524,6 +534,9 @@ public class Bach {
         List<String> toMarkdown() {
           var md = new ArrayList<String>();
           md.add("# Summary");
+          md.add("- Java " + Runtime.version());
+          md.add("- " + System.getProperty("os.name"));
+          md.add("- Task: `" + task.name + "`");
           md.add("- Build took " + toDurationString());
           md.addAll(exceptionDetails());
           md.addAll(projectDescription());
@@ -552,9 +565,20 @@ public class Bach {
           var md = new ArrayList<String>();
           md.add("");
           md.add("## Project");
-          md.add("```text");
-          md.addAll(project.toStrings());
-          md.add("```");
+          md.add("- `name` = `\"" + project.name() + "\"`");
+          md.add("- `version` = `" + project.version() + "`");
+          md.add("");
+          md.add("|Realm|Unit|Directories|");
+          md.add("|-----|----|-----------|");
+          for (var realm : project.structure().realms()) {
+            for (var unit : realm.units()) {
+              var directories =
+                  unit.directories().stream()
+                      .map(Directory::toMarkdown)
+                      .collect(Collectors.joining("<br>"));
+              md.add(String.format("| %s | %s | %s", realm.name(), unit.name(), directories));
+            }
+          }
           return md;
         }
         List<String> taskExecutionOverview() {
@@ -575,7 +599,8 @@ public class Bach {
           md.add("");
           for (var result : executions) {
             md.add("### " + result.caption);
-            md.add(" - Execution Start Instant = " + result.execution.start);
+            md.add(" - **" + result.task.name() + "**");
+            md.add(" - Started = " + result.execution.start);
             md.add(" - Duration = " + result.duration);
             md.add("");
             var out = result.execution.out.toString();
