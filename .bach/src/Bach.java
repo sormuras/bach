@@ -294,21 +294,14 @@ public class Bach {
           .toString();
     }
     public Optional<Realm> toMainRealm() {
-      if (realms.isEmpty()) return Optional.empty();
-      if (realms.size() == 1) return Optional.of(realms.get(0));
-      if (mainRealm == null) return Optional.empty();
       return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
     }
     public List<String> toRealmNames() {
       return realms.stream().map(Realm::name).collect(Collectors.toList());
     }
     public List<String> toUnitNames() {
-      return realms.stream()
-          .flatMap(realm -> realm.units().stream())
-          .map(Unit::name)
-          .distinct()
-          .sorted()
-          .collect(Collectors.toList());
+      var names = realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::name);
+      return names.distinct().sorted().collect(Collectors.toList());
     }
   }
   public static class Directory {

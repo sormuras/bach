@@ -35,7 +35,7 @@ class Build {
         name,
         Version.parse(version),
         new Bach.Information(
-            "\uD83C\uDFBC Java Shell Builder - Build modular projects with Java's foundation tools",
+            "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
             URI.create("https://github.com/sormuras/bach")),
         new Bach.Structure(List.of(mainRealm(), testRealm()), "main"));
   }
