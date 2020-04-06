@@ -17,16 +17,22 @@
 
 package de.sormuras.bach;
 
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /** An executable task definition. */
 public /*static*/ class Task {
@@ -92,18 +98,32 @@ public /*static*/ class Task {
 
   static class Executor {
 
-    private final Bach bach;
-    private final Deque<String> overview = new ConcurrentLinkedDeque<>();
-    private final Deque<Execution> executions = new ConcurrentLinkedDeque<>();
+    private static final class Detail {
+      private final Execution execution;
+      private final String caption;
+      private final Duration duration;
 
-    Executor(Bach bach) {
-      this.bach = bach;
+      private Detail(Execution execution, String caption, Duration duration) {
+        this.execution = execution;
+        this.caption = caption;
+        this.duration = duration;
+      }
     }
 
-    Summary execute(Task root) {
+    private final Bach bach;
+    private final Project project;
+    private final Deque<String> overview = new ConcurrentLinkedDeque<>();
+    private final Deque<Detail> executions = new ConcurrentLinkedDeque<>();
+
+    Executor(Bach bach, Project project) {
+      this.bach = bach;
+      this.project = project;
+    }
+
+    Summary execute(Task task) {
       var start = Instant.now();
-      var throwable = execute(0, root);
-      return new Summary(root.name, Duration.between(start, Instant.now()), throwable);
+      var throwable = execute(0, task);
+      return new Summary(task, Duration.between(start, Instant.now()), throwable);
     }
 
     private Throwable execute(int depth, Task task) {
@@ -144,11 +164,12 @@ public /*static*/ class Task {
       var flat = task.subs.isEmpty();
       var kind = flat ? ' ' : '=';
       var thread = Thread.currentThread().getId();
-      var millis = Duration.between(execution.start, Instant.now()).toMillis();
-      var line = String.format(format, kind, thread, millis, task.name);
+      var duration = Duration.between(execution.start, Instant.now());
+      var line = String.format(format, kind, thread, duration.toMillis(), task.name);
       if (flat) {
-        overview.add(line + " [...](#task-execution-details-" + execution.hash + ")");
-        executions.add(execution);
+        var caption = "task-execution-details-" + execution.hash;
+        overview.add(line + " [...](#" + caption + ")");
+        executions.add(new Detail(execution, caption, duration));
         return;
       }
       overview.add(line);
@@ -156,36 +177,147 @@ public /*static*/ class Task {
 
     class Summary {
 
-      private final String task;
+      private final Task task;
       private final Duration duration;
-      private final Throwable throwable;
+      private final Throwable exception;
 
-      Summary(String task, Duration duration, Throwable throwable) {
+      Summary(Task task, Duration duration, Throwable exception) {
         this.task = task;
         this.duration = duration;
-        this.throwable = throwable;
+        this.exception = exception;
       }
 
-      Summary assertSuccessful() {
-        if (throwable == null) return this;
-        throw new AssertionError(task + " failed", throwable);
+      void assertSuccessful() {
+        if (exception == null) return;
+        var message = task.name + " (" + task.getClass().getSimpleName() + ") failed";
+        throw new AssertionError(message, exception);
       }
 
-      Duration getDuration() {
-        return duration;
+      String toDurationString() {
+        return duration
+            .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
+            .toString()
+            .substring(2)
+            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+            .toLowerCase();
       }
 
       int getTaskCount() {
         return executions.size();
       }
 
-      Summary write(Workspace workspace, Path summary) {
-        var markdown = List.of("# Summary for " + task); // TODO toMarkdown();
+      List<String> toMarkdown() {
+        var md = new ArrayList<String>();
+        md.add("# Summary");
+        md.add("- Build took " + toDurationString());
+        md.addAll(exceptionDetails());
+        md.addAll(projectDescription());
+        md.addAll(taskExecutionOverview());
+        md.addAll(taskExecutionDetails());
+        md.addAll(systemProperties());
+        return md;
+      }
+
+      List<String> exceptionDetails() {
+        if (exception == null) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Exception Details");
+        var lines = String.valueOf(exception.getMessage()).lines().collect(Collectors.toList());
+        md.add("### " + (lines.isEmpty() ? exception.getClass() : lines.get(0)));
+        if (lines.size() > 1) md.addAll(lines);
+        var stackTrace = new StringWriter();
+        exception.printStackTrace(new PrintWriter(stackTrace));
+        md.add("```text");
+        stackTrace.toString().lines().forEach(md::add);
+        md.add("```");
+        return md;
+      }
+
+      List<String> projectDescription() {
+        if (project == null) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Project");
+        md.add("```text");
+        md.addAll(project.toStrings());
+        md.add("```");
+        return md;
+      }
+
+      List<String> taskExecutionOverview() {
+        if (overview.isEmpty()) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Task Execution Overview");
+        md.add("|    |Thread|Duration|Caption");
+        md.add("|----|-----:|-------:|-------");
+        md.addAll(overview);
+        return md;
+      }
+
+      List<String> taskExecutionDetails() {
+        if (executions.isEmpty()) return List.of();
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## Task Execution Details");
+        md.add("");
+        for (var result : executions) {
+          md.add("### " + result.caption);
+          md.add(" - Execution Start Instant = " + result.execution.start);
+          md.add(" - Duration = " + result.duration);
+          md.add("");
+          var out = result.execution.out.toString();
+          if (!out.isBlank()) {
+            md.add("Normal (expected) output");
+            md.add("```");
+            md.add(out.strip());
+            md.add("```");
+          }
+          var err = result.execution.err.toString();
+          if (!err.isBlank()) {
+            md.add("Error output");
+            md.add("```");
+            md.add(err.strip());
+            md.add("```");
+          }
+        }
+        return md;
+      }
+
+      List<String> systemProperties() {
+        var md = new ArrayList<String>();
+        md.add("");
+        md.add("## System Properties");
+        System.getProperties().stringPropertyNames().stream()
+            .sorted()
+            .forEach(key -> md.add(String.format("- `%s`: `%s`", key, systemProperty(key))));
+        return md;
+      }
+
+      String systemProperty(String systemPropertyKey) {
+        var value = System.getProperty(systemPropertyKey);
+        // if (value.endsWith("\\")) return value + ' '; // make trailing backslash visible
+        if (!"line.separator".equals(systemPropertyKey)) return value;
+        var builder = new StringBuilder();
+        for (char c : value.toCharArray()) {
+          builder.append("0x").append(Integer.toHexString(c).toUpperCase());
+        }
+        return builder.toString();
+      }
+
+      void write(String prefix) {
+        @SuppressWarnings("SpellCheckingInspection")
+        var pattern = "yyyyMMddHHmmss";
+        var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+        var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+        var workspace = bach.getWorkspace();
+        var summary = workspace.workspace("summary", prefix + "-" + timestamp + ".md");
+        var markdown = toMarkdown();
         try {
           Files.createDirectories(summary.getParent());
           Files.write(summary, markdown);
           Files.write(workspace.workspace("summary.md"), markdown); // replace existing
-          return this;
         } catch (Exception e) {
           throw new RuntimeException(e);
         }

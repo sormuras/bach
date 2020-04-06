@@ -23,10 +23,6 @@ import de.sormuras.bach.task.PrintModules;
 import de.sormuras.bach.task.PrintProject;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -84,20 +80,15 @@ public class Bach {
     // jpackage | junit test realm
     tasks.add(new PrintModules(project));
     var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
-    @SuppressWarnings("SpellCheckingInspection")
-    var pattern = "yyyyMMddHHmmss";
-    var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
-    var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
-    var summary =
-        execute(new Task.Executor(this), build)
-            .write(workspace, workspace.workspace("summary", "build-summary-" + timestamp + ".md"))
-            .assertSuccessful();
-    printer.print(Level.INFO, String.format("Build took %d ms", summary.getDuration().toMillis()));
+    var summary = execute(new Task.Executor(this, project), build);
+    summary.write("build");
+    summary.assertSuccessful();
+    printer.print(Level.INFO, "Build took " + summary.toDurationString());
   }
 
   /** Execute the given task recursively. */
   public void execute(Task task) {
-    execute(new Task.Executor(this), task).assertSuccessful();
+    execute(new Task.Executor(this, null), task).assertSuccessful();
   }
 
   Task.Executor.Summary execute(Task.Executor executor, Task task) {
