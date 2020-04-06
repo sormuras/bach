@@ -229,6 +229,7 @@ public class Bach {
       strings.add("\tdescription=" + information.description());
       strings.add("\turi=" + information.uri());
       strings.add("\tUnits: " + structure.toUnitNames());
+      structure.toMainRealm().ifPresent(it -> strings.add("\tmain-realm=" + it.name()));
       strings.add("\tRealms: " + structure.toRealmNames());
       for (var realm : structure.realms()) {
         strings.add("\t\tRealm \"" + realm.name() + '"');
@@ -275,16 +276,28 @@ public class Bach {
   }
   public static class Structure {
     private final List<Realm> realms;
-    public Structure(List<Realm> realms) {
+    private final String mainRealm;
+    public Structure(List<Realm> realms, String mainRealm) {
       this.realms = realms;
+      this.mainRealm = mainRealm;
     }
     public List<Realm> realms() {
       return realms;
     }
+    public String mainRealm() {
+      return mainRealm;
+    }
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
           .add("realms=" + realms)
+          .add("mainRealm='" + mainRealm + "'")
           .toString();
+    }
+    public Optional<Realm> toMainRealm() {
+      if (realms.isEmpty()) return Optional.empty();
+      if (realms.size() == 1) return Optional.of(realms.get(0));
+      if (mainRealm == null) return Optional.empty();
+      return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
     }
     public List<String> toRealmNames() {
       return realms.stream().map(Realm::name).collect(Collectors.toList());

@@ -35,9 +35,9 @@ class Build {
         name,
         Version.parse(version),
         new Bach.Information(
-            "\uD83C\uDFBC Java Shell Builder - Use jshell/java to build your modular Java project",
+            "\uD83C\uDFBC Java Shell Builder - Build modular projects with Java's foundation tools",
             URI.create("https://github.com/sormuras/bach")),
-        new Bach.Structure(List.of(mainRealm(), testRealm())));
+        new Bach.Structure(List.of(mainRealm(), testRealm()), "main"));
   }
 
   static Bach.Realm mainRealm() {
