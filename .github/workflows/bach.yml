@@ -19,4 +19,9 @@ jobs:
     - name: 'Emit version of JShell (may create user''s preferences directory)'
       run: jshell --version
     - name: 'Build Bach.java'
-      run: jshell -R-Debug build.jsh
+      run: jshell build.jsh
+    - name: 'Upload build summary'
+      uses: actions/upload-artifact@v1
+      with:
+        name: summary.md
+        path: .bach/workspace/summary.md
