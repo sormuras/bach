@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.structure.Directory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
@@ -99,11 +100,13 @@ public /*static*/ class Task {
   static class Executor {
 
     private static final class Detail {
+      private final Task task;
       private final Execution execution;
       private final String caption;
       private final Duration duration;
 
-      private Detail(Execution execution, String caption, Duration duration) {
+      private Detail(Task task, Execution execution, String caption, Duration duration) {
+        this.task = task;
         this.execution = execution;
         this.caption = caption;
         this.duration = duration;
@@ -169,7 +172,7 @@ public /*static*/ class Task {
       if (flat) {
         var caption = "task-execution-details-" + execution.hash;
         overview.add(line + " [...](#" + caption + ")");
-        executions.add(new Detail(execution, caption, duration));
+        executions.add(new Detail(task, execution, caption, duration));
         return;
       }
       overview.add(line);
@@ -209,6 +212,9 @@ public /*static*/ class Task {
       List<String> toMarkdown() {
         var md = new ArrayList<String>();
         md.add("# Summary");
+        md.add("- Java " + Runtime.version());
+        md.add("- " + System.getProperty("os.name"));
+        md.add("- Task: `" + task.name + "`");
         md.add("- Build took " + toDurationString());
         md.addAll(exceptionDetails());
         md.addAll(projectDescription());
@@ -239,9 +245,20 @@ public /*static*/ class Task {
         var md = new ArrayList<String>();
         md.add("");
         md.add("## Project");
-        md.add("```text");
-        md.addAll(project.toStrings());
-        md.add("```");
+        md.add("- `name` = `\"" + project.name() + "\"`");
+        md.add("- `version` = `" + project.version() + "`");
+        md.add("");
+        md.add("|Realm|Unit|Directories|");
+        md.add("|-----|----|-----------|");
+        for (var realm : project.structure().realms()) {
+          for (var unit : realm.units()) {
+            var directories =
+                unit.directories().stream()
+                    .map(Directory::toMarkdown)
+                    .collect(Collectors.joining("<br>"));
+            md.add(String.format("| %s | %s | %s", realm.name(), unit.name(), directories));
+          }
+        }
         return md;
       }
 
@@ -264,7 +281,8 @@ public /*static*/ class Task {
         md.add("");
         for (var result : executions) {
           md.add("### " + result.caption);
-          md.add(" - Execution Start Instant = " + result.execution.start);
+          md.add(" - **" + result.task.name() + "**");
+          md.add(" - Started = " + result.execution.start);
           md.add(" - Duration = " + result.duration);
           md.add("");
           var out = result.execution.out.toString();
