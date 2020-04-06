@@ -20,6 +20,7 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.project.structure.Realm;
 import de.sormuras.bach.project.structure.Unit;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -27,20 +28,34 @@ import java.util.stream.Collectors;
 public /*static*/ class Structure {
 
   private final List<Realm> realms;
+  private final String mainRealm;
 
-  public Structure(List<Realm> realms) {
+  public Structure(List<Realm> realms, String mainRealm) {
     this.realms = realms;
+    this.mainRealm = mainRealm;
   }
 
   public List<Realm> realms() {
     return realms;
   }
 
+  public String mainRealm() {
+    return mainRealm;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
         .add("realms=" + realms)
+        .add("mainRealm='" + mainRealm + "'")
         .toString();
+  }
+
+  public Optional<Realm> toMainRealm() {
+    if (realms.isEmpty()) return Optional.empty();
+    if (realms.size() == 1) return Optional.of(realms.get(0));
+    if (mainRealm == null) return Optional.empty();
+    return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
   }
 
   public List<String> toRealmNames() {

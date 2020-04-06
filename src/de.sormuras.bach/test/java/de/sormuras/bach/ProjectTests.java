@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.project.Information;
@@ -26,6 +27,7 @@ import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.project.structure.Realm;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -36,11 +38,20 @@ class ProjectTests {
     var empty = API.emptyProject();
     assertEquals("empty", empty.name());
     assertEquals("0", empty.version().toString());
+    assertTrue(empty.information().description().isEmpty());
+    assertNull(empty.information().uri());
     assertEquals(0, empty.structure().realms().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty 0", empty.toNameAndVersion());
     assertLinesMatch(
-        List.of("Project", "\tname=empty", "\tversion=0", "\tUnits: []", "\tRealms: []"),
+        List.of(
+            "Project",
+            "\tname=empty",
+            "\tversion=0",
+            "\tdescription=",
+            "\turi=null",
+            "\tUnits: []",
+            "\tRealms: []"),
         empty.toStrings());
   }
 
@@ -50,7 +61,7 @@ class ProjectTests {
         new Project(
             "one",
             Version.parse("1"),
-            Information.of(),
+            new Information("one", URI.create("one")),
             new Structure(
                 List.of(
                     new Realm(
@@ -59,15 +70,18 @@ class ProjectTests {
                         true,
                         List.of(API.newUnit("one", Directory.of(Path.of("one")))) //
                         ) //
-                    ) //
-                ) //
+                    ), //
+                "one") //
             );
     assertLinesMatch(
         List.of(
             "Project",
             "\tname=one",
             "\tversion=1",
+            "\tdescription=one",
+            "\turi=one",
             "\tUnits: [one]",
+            "\tmain-realm=one",
             "\tRealms: [one]",
             "\t\tRealm \"one\"",
             "\t\t\trelease=1",

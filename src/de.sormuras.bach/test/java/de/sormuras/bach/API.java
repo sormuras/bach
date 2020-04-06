@@ -38,7 +38,7 @@ public interface API {
   }
 
   static Structure emptyStructure() {
-    return new Structure(List.of());
+    return new Structure(List.of(), null);
   }
 
   static Realm emptyRealm() {
