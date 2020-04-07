@@ -75,8 +75,9 @@ public class Bach {
   }
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
+    tasks.add(new ValidateWorkspace());
     tasks.add(new PrintProject(project));
-    tasks.add(new CheckProjectState(project));
+    tasks.add(new ValidateProject(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
     tasks.add(new PrintModules(project));
     var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
@@ -92,6 +93,8 @@ public class Bach {
     printer.print(Level.DEBUG, "", "Execute task: " + task.name());
     var summary = executor.execute(task);
     printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
+    if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
   }
   public String toString() {
@@ -687,19 +690,6 @@ public class Bach {
       }
     }
   }
-  public static class CheckProjectState extends Task {
-    private final Project project;
-    public CheckProjectState(Project project) {
-      super("Check project state");
-      this.project = project;
-    }
-    public void execute(Execution context) throws IllegalStateException {
-      if (project.structure().toUnitNames().isEmpty()) fail("no unit present");
-    }
-    private static void fail(String message) {
-      throw new IllegalStateException("project validation failed: " + message);
-    }
-  }
   public static class CreateDirectories extends Task {
     private final Path path;
     public CreateDirectories(Path path) {
@@ -753,8 +743,46 @@ public class Bach {
       this.project = project;
     }
     public void execute(Execution execution) {
-      execution.print(Level.INFO, project.toStrings());
+      var structure = project.structure();
+      execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toUnitNames());
+      execution.print(Level.DEBUG, project.toStrings());
     }
+  }
+  public static class ValidateProject extends Task {
+    private final Project project;
+    public ValidateProject(Project project) {
+      super("Validate project");
+      this.project = project;
+    }
+    public void execute(Execution execution) throws IllegalStateException {
+      if (project.structure().toUnitNames().isEmpty()) fail(execution, "no unit present");
+    }
+    private static void fail(Execution execution, String message) {
+      execution.print(Level.ERROR, message);
+      throw new IllegalStateException("project validation failed: " + message);
+    }
+  }
+  public static class ValidateWorkspace extends Task {
+    public ValidateWorkspace() {
+      super("Validate workspace");
+    }
+    public void execute(Execution execution) {
+      var base = execution.getBach().getWorkspace().base();
+      if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base.toUri());
+    }
+  }
+  public static class Paths {
+    public static boolean isEmpty(Path path) {
+      try {
+        if (Files.isRegularFile(path)) return Files.size(path) == 0L;
+        try (var stream = Files.list(path)) {
+          return stream.findAny().isEmpty();
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+    private Paths() {}
   }
   public static final class Workspace {
     public static Workspace of() {
