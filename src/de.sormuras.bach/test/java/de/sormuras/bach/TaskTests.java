@@ -95,7 +95,9 @@ class TaskTests {
       public void execute(Execution execution) throws Exception {
         Thread.sleep(millis);
         assertNotNull(execution.getBach());
-        assertTrue(execution.isPrintable(Level.ALL));
+        assertNotNull(execution.getOut());
+        assertNotNull(execution.getErr());
+        assertTrue(execution.printable(Level.ALL));
       }
     }
 

@@ -42,12 +42,12 @@ class BachTests {
   void defaults() {
     var bach = new Bach();
     assertEquals("Bach.java " + Bach.VERSION, bach.toString());
-    assertFalse(bach.getPrinter().isPrintable(Level.ALL));
-    assertFalse(bach.getPrinter().isPrintable(Level.TRACE));
-    assertFalse(bach.getPrinter().isPrintable(Level.DEBUG));
-    assertTrue(bach.getPrinter().isPrintable(Level.INFO));
-    assertTrue(bach.getPrinter().isPrintable(Level.WARNING));
-    assertTrue(bach.getPrinter().isPrintable(Level.ERROR));
+    assertFalse(bach.getPrinter().printable(Level.ALL));
+    assertFalse(bach.getPrinter().printable(Level.TRACE));
+    assertFalse(bach.getPrinter().printable(Level.DEBUG));
+    assertTrue(bach.getPrinter().printable(Level.INFO));
+    assertTrue(bach.getPrinter().printable(Level.WARNING));
+    assertTrue(bach.getPrinter().printable(Level.ERROR));
     assertNotNull(bach.getWorkspace());
   }
 
