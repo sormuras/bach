@@ -252,13 +252,21 @@ public /*static*/ class Task {
         md.add("");
         md.add("|Realm|Unit|Directories|");
         md.add("|-----|----|-----------|");
-        for (var realm : project.structure().realms()) {
+        var structure = project.structure();
+        for (var realm : structure.realms()) {
           for (var unit : realm.units()) {
             var directories =
                 unit.directories().stream()
                     .map(Directory::toMarkdown)
                     .collect(Collectors.joining("<br>"));
-            md.add(String.format("| %s | %s | %s", realm.name(), unit.name(), directories));
+            var realmName = realm.name();
+            var unitName = unit.name();
+            md.add(
+                String.format(
+                    "| %s | %s | %s",
+                    realmName.equals(structure.mainRealm()) ? "**" + realmName + "**" : realmName,
+                    unitName.equals(realm.mainUnit()) ? "**" + unitName + "**" : unitName,
+                    directories));
           }
         }
         return md;

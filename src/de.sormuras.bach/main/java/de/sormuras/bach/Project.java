@@ -72,27 +72,30 @@ public /*static*/ class Project {
   public List<String> toStrings() {
     var strings = new ArrayList<String>();
     strings.add("Project");
-    strings.add("\tname=" + name);
+    strings.add("\tname=\"" + name + '"');
     strings.add("\tversion=" + version);
-    strings.add("\tdescription=" + information.description());
+    strings.add("Information");
+    strings.add("\tdescription=\"" + information.description() + '"');
     strings.add("\turi=" + information.uri());
+    strings.add("Structure");
     strings.add("\tUnits: " + structure.toUnitNames());
-    structure.toMainRealm().ifPresent(it -> strings.add("\tmain-realm=" + it.name()));
     strings.add("\tRealms: " + structure.toRealmNames());
+    structure.toMainRealm().ifPresent(realm -> strings.add("\tmain-realm=\"" + realm.name() + '"'));
     for (var realm : structure.realms()) {
-      strings.add("\t\tRealm \"" + realm.name() + '"');
-      strings.add("\t\t\trelease=" + realm.release());
-      strings.add("\t\t\tpreview=" + realm.preview());
-      strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
+      strings.add("\tRealm \"" + realm.name() + '"');
+      strings.add("\t\trelease=" + realm.release());
+      strings.add("\t\tpreview=" + realm.preview());
+      realm.toMainUnit().ifPresent(unit -> strings.add("\t\tmain-unit=" + unit.name()));
+      strings.add("\t\tUnits: [" + realm.units().size() + ']');
       for (var unit : realm.units()) {
         var module = unit.descriptor();
-        strings.add("\t\t\t\tUnit \"" + module.toNameAndVersion() + '"');
-        module.mainClass().ifPresent(it -> strings.add("\t\t\t\t\tmain-class=" + it));
+        strings.add("\t\tUnit \"" + module.toNameAndVersion() + '"');
+        module.mainClass().ifPresent(it -> strings.add("\t\t\tmain-class=" + it));
         var requires = unit.toRequiresNames();
-        if (!requires.isEmpty()) strings.add("\t\t\t\t\trequires=" + requires);
-        strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
+        if (!requires.isEmpty()) strings.add("\t\t\trequires=" + requires);
+        strings.add("\t\t\tDirectories: [" + unit.directories().size() + ']');
         for (var directory : unit.directories()) {
-          strings.add("\t\t\t\t\t\t" + directory);
+          strings.add("\t\t\t" + directory);
         }
       }
     }
