@@ -130,7 +130,7 @@ public /*static*/ class Task {
     }
 
     @Override
-    public boolean isPrintable(Level level) {
+    public boolean printable(Level level) {
       return true;
     }
 

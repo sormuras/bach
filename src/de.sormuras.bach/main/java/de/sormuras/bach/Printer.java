@@ -27,21 +27,21 @@ import java.util.stream.Stream;
 public interface Printer {
 
   default void print(Level level, String... message) {
-    if (!isPrintable(level)) return;
+    if (!printable(level)) return;
     print(level, String.join(System.lineSeparator(), message));
   }
 
   default void print(Level level, Iterable<? extends CharSequence> message) {
-    if (!isPrintable(level)) return;
+    if (!printable(level)) return;
     print(level, String.join(System.lineSeparator(), message));
   }
 
   default void print(Level level, Stream<? extends CharSequence> message) {
-    if (!isPrintable(level)) return;
+    if (!printable(level)) return;
     print(level, message.collect(Collectors.joining(System.lineSeparator())));
   }
 
-  boolean isPrintable(Level level);
+  boolean printable(Level level);
 
   void print(Level level, String message);
 
@@ -70,20 +70,20 @@ public interface Printer {
     }
 
     @Override
-    public boolean isPrintable(Level level) {
+    public boolean printable(Level level) {
       if (threshold == Level.OFF) return false;
       return threshold == Level.ALL || threshold.getSeverity() <= level.getSeverity();
     }
 
     @Override
     public void print(Level level, String message) {
-      if (isPrintable(level)) consumer.accept(level, message);
+      if (printable(level)) consumer.accept(level, message);
     }
 
     @Override
     public String toString() {
       var levels = EnumSet.range(Level.TRACE, Level.ERROR).stream();
-      var map = levels.map(level -> level + ":" + isPrintable(level));
+      var map = levels.map(level -> level + ":" + printable(level));
       return "Default[threshold=" + threshold + "] -> " + map.collect(Collectors.joining(" "));
     }
   }
