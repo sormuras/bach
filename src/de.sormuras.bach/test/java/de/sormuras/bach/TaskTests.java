@@ -36,7 +36,7 @@ class TaskTests {
     var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
     bach.execute(new Task("Task"));
     assertLinesMatch(
-        List.of(">> BACH INIT >>", "", "Execute task: Task", "* Task", "", "Executed tasks: 1"),
+        List.of(">> BACH INIT >>", "Execute 1 tasks", "* Task", "Executed 1 of 1 tasks"),
         log.lines());
   }
 
@@ -70,15 +70,13 @@ class TaskTests {
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
-            "",
-            "Execute task: 3x Wait",
+            "Execute 4 tasks",
             "+ 3x Wait",
             "\t* Thread.sleep(10)",
             "\t* Thread.sleep(10)",
             "\t* Thread.sleep(10)",
             "= 3x Wait",
-            "",
-            "Executed tasks: 3"),
+            "Executed 4 of 4 tasks"),
         log.lines());
   }
 
@@ -93,12 +91,10 @@ class TaskTests {
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
-            "",
-            "Execute task: Throw",
+            "Execute 1 tasks",
             "* Throw",
             "Task execution failed: java.lang.Exception: BäMM!",
-            "",
-            "Executed tasks: 0",
+            "Executed 0 of 1 tasks",
             ">> ERROR >>"),
         log.lines());
   }

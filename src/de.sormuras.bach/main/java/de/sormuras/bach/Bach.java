@@ -94,9 +94,10 @@ public class Bach {
   }
 
   private Task.Executor.Summary execute(Task.Executor executor, Task task) {
-    printer.print(Level.DEBUG, "", "Execute task: " + task.name());
+    var size = task.size();
+    printer.print(Level.DEBUG, "Execute " + size + " tasks");
     var summary = executor.execute(task);
-    printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    printer.print(Level.DEBUG, "Executed " + summary.getTaskCounter() + " of " + size + " tasks");
     var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
     if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
