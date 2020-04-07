@@ -17,17 +17,15 @@
 
 package de.sormuras.bach;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-/** Mark a conventional method. */
-@Documented
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.CLASS)
-public @interface Convention {
-  @Convention("Self-annotation convention")
-  String[] value() default {};
+import org.junit.jupiter.api.Test;
+
+class ConventionTests {
+
+  @Test
+  void buildJigsawQuickStartGreetings() throws Exception {
+    //noinspection ReflectionForUnavailableAnnotation
+    assertNull(Convention.class.getMethod("value").getAnnotation(Convention.class));
+  }
 }
