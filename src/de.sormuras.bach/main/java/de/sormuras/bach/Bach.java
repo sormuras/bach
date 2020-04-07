@@ -93,7 +93,7 @@ public class Bach {
     execute(new Task.Executor(this, null), task).assertSuccessful();
   }
 
-  Task.Executor.Summary execute(Task.Executor executor, Task task) {
+  private Task.Executor.Summary execute(Task.Executor executor, Task task) {
     printer.print(Level.DEBUG, "", "Execute task: " + task.name());
     var summary = executor.execute(task);
     printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
