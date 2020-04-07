@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** An executable task definition. */
@@ -57,6 +59,17 @@ public /*static*/ class Task {
   }
 
   public void execute(Execution execution) throws Exception {}
+
+  public int size() {
+    var counter = new AtomicInteger();
+    walk(task -> counter.incrementAndGet());
+    return counter.get();
+  }
+
+  void walk(Consumer<Task> consumer) {
+    consumer.accept(this);
+    for (var sub : subs) sub.walk(consumer);
+  }
 
   public static Task parallel(String name, Task... tasks) {
     return new Task(name, true, List.of(tasks));
@@ -115,6 +128,7 @@ public /*static*/ class Task {
 
     private final Bach bach;
     private final Project project;
+    private final AtomicInteger counter = new AtomicInteger(0);
     private final Deque<String> overview = new ConcurrentLinkedDeque<>();
     private final Deque<Detail> executions = new ConcurrentLinkedDeque<>();
 
@@ -163,6 +177,7 @@ public /*static*/ class Task {
     }
 
     private void executionEnd(Task task, Execution execution) {
+      counter.incrementAndGet();
       var format = "|%4c|%6X|%8d| %s";
       var flat = task.subs.isEmpty();
       var kind = flat ? ' ' : '=';
@@ -205,8 +220,8 @@ public /*static*/ class Task {
             .toLowerCase();
       }
 
-      int getTaskCount() {
-        return executions.size();
+      int getTaskCounter() {
+        return counter.get();
       }
 
       List<String> toMarkdown() {
