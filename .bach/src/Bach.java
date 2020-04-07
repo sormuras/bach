@@ -39,7 +39,6 @@ import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -97,44 +96,6 @@ public class Bach {
   }
   public String toString() {
     return "Bach.java " + VERSION;
-  }
-  public interface Convention {
-    static Optional<String> mainClass(Path info, String module) {
-      var main = Path.of(module.replace('.', '/'), "Main.java");
-      var exists = Files.isRegularFile(info.resolveSibling(main));
-      return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
-    }
-    static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
-      var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
-      return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
-    }
-    static int javaReleaseFeatureNumber(String string) {
-      if (string.endsWith("-module")) return 0;
-      if (string.endsWith("-preview")) return Runtime.version().feature();
-      if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
-      return 0;
-    }
-    static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
-      var names = paths.map(Path::getFileName).map(Path::toString);
-      return names.collect(Collectors.summarizingInt(Convention::javaReleaseFeatureNumber));
-    }
-    static void amendJUnitTestEngines(Set<String> modules) {
-      if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
-        modules.add("org.junit.jupiter.engine");
-      if (modules.contains("junit")) {
-        modules.add("org.hamcrest");
-        modules.add("org.junit.vintage.engine");
-      }
-    }
-    static void amendJUnitPlatformConsole(Set<String> modules) {
-      if (modules.contains("org.junit.platform.console")) return;
-      var triggers =
-          Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
-      modules.stream()
-          .filter(triggers::contains)
-          .findAny()
-          .ifPresent(__ -> modules.add("org.junit.platform.console"));
-    }
   }
   static class Main {
     public static void main(String... args) {
@@ -324,7 +285,7 @@ public class Bach {
     public static Directory of(Path path) {
       var name = String.valueOf(path.getFileName());
       var type = Type.of(name);
-      var release = Convention.javaReleaseFeatureNumber(name);
+      var release = javaReleaseFeatureNumber(name);
       return new Directory(path, type, release);
     }
     public static List<Directory> listOf(Path root) {
@@ -337,6 +298,16 @@ public class Bach {
       }
       directories.sort(Comparator.comparingInt(Directory::release));
       return List.copyOf(directories);
+    }
+    static int javaReleaseFeatureNumber(String string) {
+      if (string.endsWith("-module")) return 0;
+      if (string.endsWith("-preview")) return Runtime.version().feature();
+      if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
+      return 0;
+    }
+    static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
+      var names = paths.map(Path::getFileName).map(Path::toString);
+      return names.collect(Collectors.summarizingInt(Directory::javaReleaseFeatureNumber));
     }
     private final Path path;
     private final Type type;
