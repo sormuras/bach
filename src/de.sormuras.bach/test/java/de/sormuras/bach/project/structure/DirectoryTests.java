@@ -29,8 +29,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DirectoryTests {
 
@@ -44,51 +49,119 @@ class DirectoryTests {
     assertEquals("? `empty`", empty.toMarkdown());
   }
 
-  @Test
-  void ofPath() {
-    var directory = Directory.of(Path.of("java-123"));
-    assertEquals(Path.of("java-123"), directory.path());
-    assertEquals(123, directory.release());
+  @Nested
+  class JavaReleaseConvention {
+    @ParameterizedTest
+    @ValueSource(strings = {"", "1", "abc", "java", "module"})
+    void returnsZero(String string) {
+      assertEquals(0, Directory.javaReleaseFeatureNumber(string));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,java-0", "0,java-module", "1,java-1", "9,java-9", "10,java-10", "99,java-99"})
+    void returnsNumber(int expected, String string) {
+      assertEquals(expected, Directory.javaReleaseFeatureNumber(string));
+    }
+
+    @Test
+    void returnRuntimeVersionFeature() {
+      var expected = Runtime.version().feature();
+      assertEquals(expected, Directory.javaReleaseFeatureNumber("java-preview"));
+    }
+
+    @Test
+    void statisticsForEmptyStreamOfPaths() {
+      var statistics = Directory.javaReleaseStatistics(Stream.empty());
+      assertEquals(0, statistics.getCount());
+      assertEquals(Integer.MAX_VALUE, statistics.getMin());
+      assertEquals(Integer.MIN_VALUE, statistics.getMax());
+      assertEquals(0.0, statistics.getAverage());
+      assertEquals(0, statistics.getSum());
+    }
+
+    @Test
+    void statisticsForSinglePathWithoutNumber() {
+      var statistics = Directory.javaReleaseStatistics(Stream.of(Path.of("java")));
+      assertEquals(1, statistics.getCount());
+      assertEquals(0, statistics.getMin());
+      assertEquals(0, statistics.getMax());
+      assertEquals(0.0, statistics.getAverage());
+      assertEquals(0, statistics.getSum());
+    }
+
+    @Test
+    void statisticsForSinglePathWithNumber() {
+      var statistics = Directory.javaReleaseStatistics(Stream.of(Path.of("java-17")));
+      assertEquals(1, statistics.getCount());
+      assertEquals(17, statistics.getMin());
+      assertEquals(17, statistics.getMax());
+      assertEquals(17.0, statistics.getAverage());
+      assertEquals(17, statistics.getSum());
+    }
+
+    @Test
+    void statisticsForMultiplePaths() {
+      var paths = Stream.of(Path.of("java-8"), Path.of("java-10"), Path.of("java-06"));
+      var statistics = Directory.javaReleaseStatistics(paths);
+      assertEquals(3, statistics.getCount());
+      assertEquals(6, statistics.getMin());
+      assertEquals(10, statistics.getMax());
+      assertEquals(8.0, statistics.getAverage());
+      assertEquals(24, statistics.getSum());
+    }
   }
 
-  @Test
-  void listOfNonexistentPathReturnsAnEmptyList() {
-    var directories = Directory.listOf(Path.of("nonexistent"));
-    assertTrue(directories.isEmpty());
-  }
+  @Nested
+  class Factory {
+    @Test
+    void ofPath() {
+      var directory = Directory.of(Path.of("java-123"));
+      assertEquals(Path.of("java-123"), directory.path());
+      assertEquals(123, directory.release());
+    }
 
-  @Test
-  void listOfPathToRegularFileFails(@TempDir Path temp) throws Exception {
-    var file = Files.createFile(temp.resolve("file"));
-    assertThrows(UncheckedIOException.class, () -> Directory.listOf(file));
-  }
+    @Test
+    void listOfNonexistentPathReturnsAnEmptyList() {
+      var directories = Directory.listOf(Path.of("nonexistent"));
+      assertTrue(directories.isEmpty());
+    }
 
-  @Test
-  void listOfPathWithNoSubdirectoryReturnsAnEmptyList(@TempDir Path temp) {
-    var directories = Directory.listOf(temp);
-    assertTrue(directories.isEmpty());
-  }
+    @Test
+    void listOfPathToRegularFileFails(@TempDir Path temp) throws Exception {
+      var file = Files.createFile(temp.resolve("file"));
+      assertThrows(UncheckedIOException.class, () -> Directory.listOf(file));
+    }
 
-  @Test
-  void listOfPathWithSingleSubdirectoryReturnsIt(@TempDir Path temp) throws Exception {
-    var java = mkdir(temp, "java");
-    var directories = Directory.listOf(temp);
-    assertToStringEquals(new Directory(java, Directory.Type.SOURCE, 0), directories.get(0));
-  }
+    @Test
+    void listOfPathWithNoSubdirectoryReturnsAnEmptyList(@TempDir Path temp) {
+      var directories = Directory.listOf(temp);
+      assertTrue(directories.isEmpty());
+    }
 
-  @Test
-  void listOfPathWithMultipleSubdirectoriesReturnsThem(@TempDir Path temp) throws Exception {
-    var java8 = new Directory(mkdir(temp, "java-8"), Directory.Type.SOURCE, 8);
-    var java9 = new Directory(mkdir(temp, "java-9"), Directory.Type.SOURCE, 9);
-    var N = Runtime.version().feature();
-    var javaN = new Directory(mkdir(temp, "java-preview"), Directory.Type.SOURCE, N);
-    var resources = new Directory(mkdir(temp, "resources"), Directory.Type.RESOURCE, 0);
-    assertLinesMatch(
-        List.of(java8.toString(), java9.toString(), javaN.toString(), resources.toString()),
-        Directory.listOf(temp).stream().map(Directory::toString).sorted().collect(Collectors.toList()));
-  }
+    @Test
+    void listOfPathWithSingleSubdirectoryReturnsIt(@TempDir Path temp) throws Exception {
+      var java = mkdir(temp, "java");
+      var directories = Directory.listOf(temp);
+      assertToStringEquals(new Directory(java, Directory.Type.SOURCE, 0), directories.get(0));
+    }
 
-  static Path mkdir(Path root, String other) throws Exception {
-    return Files.createDirectories(root.resolve(other));
+    @Test
+    void listOfPathWithMultipleSubdirectoriesReturnsThem(@TempDir Path temp) throws Exception {
+      var java8 = new Directory(mkdir(temp, "java-8"), Directory.Type.SOURCE, 8);
+      var java9 = new Directory(mkdir(temp, "java-9"), Directory.Type.SOURCE, 9);
+      var N = Runtime.version().feature();
+      var javaN = new Directory(mkdir(temp, "java-preview"), Directory.Type.SOURCE, N);
+      var resources = new Directory(mkdir(temp, "resources"), Directory.Type.RESOURCE, 0);
+      assertLinesMatch(
+          List.of(java8.toString(), java9.toString(), javaN.toString(), resources.toString()),
+          Directory.listOf(temp).stream()
+              .map(Directory::toString)
+              .sorted()
+              .collect(Collectors.toList()));
+    }
+
+    Path mkdir(Path root, String other) throws Exception {
+      return Files.createDirectories(root.resolve(other));
+    }
   }
 }

@@ -17,67 +17,14 @@
 
 package de.sormuras.bach;
 
-import java.lang.module.ModuleDescriptor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.IntSummaryStatistics;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Common conventions.
- *
- * @see <a href="https://github.com/sormuras/bach#common-conventions">Common Conventions</a>
- */
-public interface Convention {
-
-  /** Return name of main class of the specified module. */
-  static Optional<String> mainClass(Path info, String module) {
-    var main = Path.of(module.replace('.', '/'), "Main.java");
-    var exists = Files.isRegularFile(info.resolveSibling(main));
-    return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
-  }
-
-  /** Return name of the main module by finding a single main class containing descriptor. */
-  static Optional<String> mainModule(Stream<ModuleDescriptor> descriptors) {
-    var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
-    return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
-  }
-
-  /** Return trailing integer part of {@code "java-{NUMBER}"} or zero. */
-  static int javaReleaseFeatureNumber(String string) {
-    if (string.endsWith("-module")) return 0;
-    if (string.endsWith("-preview")) return Runtime.version().feature();
-    if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
-    return 0;
-  }
-
-  /** Return statistics summarizing over the passed {@code "java-{NUMBER}"} paths. */
-  static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
-    var names = paths.map(Path::getFileName).map(Path::toString);
-    return names.collect(Collectors.summarizingInt(Convention::javaReleaseFeatureNumber));
-  }
-
-  /** Extend the passed set of modules with missing JUnit test engine implementations. */
-  static void amendJUnitTestEngines(Set<String> modules) {
-    if (modules.contains("org.junit.jupiter") || modules.contains("org.junit.jupiter.api"))
-      modules.add("org.junit.jupiter.engine");
-    if (modules.contains("junit")) {
-      modules.add("org.hamcrest");
-      modules.add("org.junit.vintage.engine");
-    }
-  }
-
-  /** Extend the passed set of modules with the JUnit Platform Console module. */
-  static void amendJUnitPlatformConsole(Set<String> modules) {
-    if (modules.contains("org.junit.platform.console")) return;
-    var triggers =
-        Set.of("org.junit.jupiter.engine", "org.junit.vintage.engine", "org.junit.platform.engine");
-    modules.stream()
-        .filter(triggers::contains)
-        .findAny()
-        .ifPresent(__ -> modules.add("org.junit.platform.console"));
-  }
-}
+/** Mark a conventional method. */
+@Documented
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Convention {}

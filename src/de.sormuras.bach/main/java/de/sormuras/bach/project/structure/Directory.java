@@ -24,8 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** An optionally targeted directory of Java source files: {@code src/foo/main/java[-11]}. */
 public /*static*/ class Directory {
@@ -36,6 +39,7 @@ public /*static*/ class Directory {
     SOURCE,
     RESOURCE;
 
+    @Convention
     public static Type of(String string) {
       if (string.startsWith("java")) return SOURCE;
       if (string.contains("resource")) return RESOURCE;
@@ -51,7 +55,7 @@ public /*static*/ class Directory {
   public static Directory of(Path path) {
     var name = String.valueOf(path.getFileName());
     var type = Type.of(name);
-    var release = Convention.javaReleaseFeatureNumber(name);
+    var release = javaReleaseFeatureNumber(name);
     return new Directory(path, type, release);
   }
 
@@ -66,6 +70,22 @@ public /*static*/ class Directory {
     }
     directories.sort(Comparator.comparingInt(Directory::release));
     return List.copyOf(directories);
+  }
+
+  /** Return trailing integer part of {@code "java-{NUMBER}"} or zero. */
+  @Convention
+  static int javaReleaseFeatureNumber(String string) {
+    if (string.endsWith("-module")) return 0;
+    if (string.endsWith("-preview")) return Runtime.version().feature();
+    if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
+    return 0;
+  }
+
+  /** Return statistics summarizing over the passed {@code "java-{NUMBER}"} paths. */
+  @Convention
+  static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
+    var names = paths.map(Path::getFileName).map(Path::toString);
+    return names.collect(Collectors.summarizingInt(Directory::javaReleaseFeatureNumber));
   }
 
   private final Path path;
