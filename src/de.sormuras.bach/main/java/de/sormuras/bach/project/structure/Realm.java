@@ -18,6 +18,7 @@
 package de.sormuras.bach.project.structure;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 /** A named collection of modular units sharing compilation-related properties. */
@@ -27,12 +28,14 @@ public /*static*/ class Realm {
   private final int release;
   private final boolean preview;
   private final List<Unit> units;
+  private final String mainUnit;
 
-  public Realm(String name, int release, boolean preview, List<Unit> units) {
+  public Realm(String name, int release, boolean preview, List<Unit> units, String mainUnit) {
     this.name = name;
     this.release = release;
     this.preview = preview;
     this.units = units;
+    this.mainUnit = mainUnit;
   }
 
   public String name() {
@@ -51,6 +54,10 @@ public /*static*/ class Realm {
     return units;
   }
 
+  public String mainUnit() {
+    return mainUnit;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
@@ -58,6 +65,11 @@ public /*static*/ class Realm {
         .add("release=" + release)
         .add("preview=" + preview)
         .add("units=" + units)
+        .add("mainUnit=" + mainUnit)
         .toString();
+  }
+
+  public Optional<Unit> toMainUnit() {
+    return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
   }
 }
