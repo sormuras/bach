@@ -224,27 +224,30 @@ public class Bach {
     public List<String> toStrings() {
       var strings = new ArrayList<String>();
       strings.add("Project");
-      strings.add("\tname=" + name);
+      strings.add("\tname=\"" + name + '"');
       strings.add("\tversion=" + version);
-      strings.add("\tdescription=" + information.description());
+      strings.add("Information");
+      strings.add("\tdescription=\"" + information.description() + '"');
       strings.add("\turi=" + information.uri());
+      strings.add("Structure");
       strings.add("\tUnits: " + structure.toUnitNames());
-      structure.toMainRealm().ifPresent(it -> strings.add("\tmain-realm=" + it.name()));
       strings.add("\tRealms: " + structure.toRealmNames());
+      structure.toMainRealm().ifPresent(realm -> strings.add("\tmain-realm=\"" + realm.name() + '"'));
       for (var realm : structure.realms()) {
-        strings.add("\t\tRealm \"" + realm.name() + '"');
-        strings.add("\t\t\trelease=" + realm.release());
-        strings.add("\t\t\tpreview=" + realm.preview());
-        strings.add("\t\t\tUnits: [" + realm.units().size() + ']');
+        strings.add("\tRealm \"" + realm.name() + '"');
+        strings.add("\t\trelease=" + realm.release());
+        strings.add("\t\tpreview=" + realm.preview());
+        realm.toMainUnit().ifPresent(unit -> strings.add("\t\tmain-unit=" + unit.name()));
+        strings.add("\t\tUnits: [" + realm.units().size() + ']');
         for (var unit : realm.units()) {
           var module = unit.descriptor();
-          strings.add("\t\t\t\tUnit \"" + module.toNameAndVersion() + '"');
-          module.mainClass().ifPresent(it -> strings.add("\t\t\t\t\tmain-class=" + it));
+          strings.add("\t\tUnit \"" + module.toNameAndVersion() + '"');
+          module.mainClass().ifPresent(it -> strings.add("\t\t\tmain-class=" + it));
           var requires = unit.toRequiresNames();
-          if (!requires.isEmpty()) strings.add("\t\t\t\t\trequires=" + requires);
-          strings.add("\t\t\t\t\tDirectories: [" + unit.directories().size() + ']');
+          if (!requires.isEmpty()) strings.add("\t\t\trequires=" + requires);
+          strings.add("\t\t\tDirectories: [" + unit.directories().size() + ']');
           for (var directory : unit.directories()) {
-            strings.add("\t\t\t\t\t\t" + directory);
+            strings.add("\t\t\t" + directory);
           }
         }
       }
@@ -368,11 +371,13 @@ public class Bach {
     private final int release;
     private final boolean preview;
     private final List<Unit> units;
-    public Realm(String name, int release, boolean preview, List<Unit> units) {
+    private final String mainUnit;
+    public Realm(String name, int release, boolean preview, List<Unit> units, String mainUnit) {
       this.name = name;
       this.release = release;
       this.preview = preview;
       this.units = units;
+      this.mainUnit = mainUnit;
     }
     public String name() {
       return name;
@@ -386,13 +391,20 @@ public class Bach {
     public List<Unit> units() {
       return units;
     }
+    public String mainUnit() {
+      return mainUnit;
+    }
     public String toString() {
       return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
           .add("name='" + name + "'")
           .add("release=" + release)
           .add("preview=" + preview)
           .add("units=" + units)
+          .add("mainUnit=" + mainUnit)
           .toString();
+    }
+    public Optional<Unit> toMainUnit() {
+      return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
     }
   }
   public static class Unit {
@@ -609,13 +621,21 @@ public class Bach {
           md.add("");
           md.add("|Realm|Unit|Directories|");
           md.add("|-----|----|-----------|");
-          for (var realm : project.structure().realms()) {
+          var structure = project.structure();
+          for (var realm : structure.realms()) {
             for (var unit : realm.units()) {
               var directories =
                   unit.directories().stream()
                       .map(Directory::toMarkdown)
                       .collect(Collectors.joining("<br>"));
-              md.add(String.format("| %s | %s | %s", realm.name(), unit.name(), directories));
+              var realmName = realm.name();
+              var unitName = unit.name();
+              md.add(
+                  String.format(
+                      "| %s | %s | %s",
+                      realmName.equals(structure.mainRealm()) ? "**" + realmName + "**" : realmName,
+                      unitName.equals(realm.mainUnit()) ? "**" + unitName + "**" : unitName,
+                      directories));
             }
           }
           return md;

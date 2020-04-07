@@ -48,7 +48,8 @@ class Build {
         List.of(
             new Bach.Unit(
                 ModuleDescriptor.newModule("de.sormuras.bach").build(),
-                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))));
+                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))),
+        "de.sormuras.bach");
   }
 
   static Bach.Realm testRealm() {
@@ -68,6 +69,7 @@ class Build {
             //
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.modules").build(),
-                Bach.Directory.listOf(Path.of("src/test.modules/test")))));
+                Bach.Directory.listOf(Path.of("src/test.modules/test")))),
+        null);
   }
 }
