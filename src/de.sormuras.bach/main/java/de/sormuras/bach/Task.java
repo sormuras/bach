@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import de.sormuras.bach.project.structure.Directory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -127,6 +128,14 @@ public /*static*/ class Task {
 
     public Bach getBach() {
       return bach;
+    }
+
+    public Writer getOut() {
+      return out;
+    }
+
+    public Writer getErr() {
+      return err;
     }
 
     @Override
