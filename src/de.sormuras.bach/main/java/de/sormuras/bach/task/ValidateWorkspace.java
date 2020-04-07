@@ -17,25 +17,20 @@
 
 package de.sormuras.bach.task;
 
-import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.util.Paths;
+import java.lang.System.Logger.Level;
 
 /** Validate all project components are in a legal and sane state. */
-public /*static*/ class CheckProjectState extends Task {
+public /*static*/ class ValidateWorkspace extends Task {
 
-  private final Project project;
-
-  public CheckProjectState(Project project) {
-    super("Check project state");
-    this.project = project;
+  public ValidateWorkspace() {
+    super("Validate workspace");
   }
 
   @Override
-  public void execute(Execution context) throws IllegalStateException {
-    if (project.structure().toUnitNames().isEmpty()) fail("no unit present");
-  }
-
-  private static void fail(String message) {
-    throw new IllegalStateException("project validation failed: " + message);
+  public void execute(Execution execution) {
+    var base = execution.getBach().getWorkspace().base();
+    if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base.toUri());
   }
 }

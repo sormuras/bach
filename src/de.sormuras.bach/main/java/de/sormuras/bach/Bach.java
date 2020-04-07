@@ -17,10 +17,11 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.task.CheckProjectState;
+import de.sormuras.bach.task.ValidateProject;
 import de.sormuras.bach.task.CreateDirectories;
 import de.sormuras.bach.task.PrintModules;
 import de.sormuras.bach.task.PrintProject;
+import de.sormuras.bach.task.ValidateWorkspace;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
@@ -72,8 +73,9 @@ public class Bach {
   /** Build the given project using default settings. */
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
+    tasks.add(new ValidateWorkspace());
     tasks.add(new PrintProject(project));
-    tasks.add(new CheckProjectState(project));
+    tasks.add(new ValidateProject(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
     // javac/jar main realm | javadoc
     // jlink    | javac/jar test realm
@@ -95,6 +97,8 @@ public class Bach {
     printer.print(Level.DEBUG, "", "Execute task: " + task.name());
     var summary = executor.execute(task);
     printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
+    if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
   }
 

@@ -21,20 +21,23 @@ import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
 import java.lang.System.Logger.Level;
 
-/** Print the strings-representation of a project. */
-public /*static*/ class PrintProject extends Task {
+/** Validate all project components are in a legal and sane state. */
+public /*static*/ class ValidateProject extends Task {
 
   private final Project project;
 
-  public PrintProject(Project project) {
-    super("Print project");
+  public ValidateProject(Project project) {
+    super("Validate project");
     this.project = project;
   }
 
   @Override
-  public void execute(Execution execution) {
-    var structure = project.structure();
-    execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toUnitNames());
-    execution.print(Level.DEBUG, project.toStrings());
+  public void execute(Execution execution) throws IllegalStateException {
+    if (project.structure().toUnitNames().isEmpty()) fail(execution, "no unit present");
+  }
+
+  private static void fail(Execution execution, String message) {
+    execution.print(Level.ERROR, message);
+    throw new IllegalStateException("project validation failed: " + message);
   }
 }
