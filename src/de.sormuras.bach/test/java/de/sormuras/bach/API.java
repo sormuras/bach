@@ -60,7 +60,7 @@ public interface API {
   }
 
   static Realm newRealm(String name, Unit... units) {
-    return new Realm(name, 0, false, List.of(units));
+    return new Realm(name, 0, false, List.of(units), null);
   }
 
   static Unit newUnit(String name, Directory... directories) {

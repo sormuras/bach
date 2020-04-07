@@ -44,6 +44,9 @@ class BuildTests {
     var log = new Log();
     var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(base));
     bach.build(example.project());
+
+    log.assertThatEverythingIsFine();
+    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), log.lines());
     assertLinesMatch(
         List.of(".bach", ">> PATHS >>", ".bach/workspace/summary.md", ">> PATHS >>"),
         Tree.walk(base));

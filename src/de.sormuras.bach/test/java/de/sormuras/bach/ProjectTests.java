@@ -46,10 +46,12 @@ class ProjectTests {
     assertLinesMatch(
         List.of(
             "Project",
-            "\tname=empty",
+            "\tname=\"empty\"",
             "\tversion=0",
-            "\tdescription=",
+            "Information",
+            "\tdescription=\"\"",
             "\turi=null",
+            "Structure",
             "\tUnits: []",
             "\tRealms: []"),
         empty.toStrings());
@@ -68,28 +70,30 @@ class ProjectTests {
                         "one",
                         1,
                         true,
-                        List.of(API.newUnit("one", Directory.of(Path.of("one")))) //
-                        ) //
+                        List.of(API.newUnit("one", Directory.of(Path.of("one")))), //
+                        null) //
                     ), //
                 "one") //
             );
     assertLinesMatch(
         List.of(
             "Project",
-            "\tname=one",
+            "\tname=\"one\"",
             "\tversion=1",
-            "\tdescription=one",
+            "Information",
+            "\tdescription=\"one\"",
             "\turi=one",
+            "Structure",
             "\tUnits: [one]",
-            "\tmain-realm=one",
             "\tRealms: [one]",
-            "\t\tRealm \"one\"",
-            "\t\t\trelease=1",
-            "\t\t\tpreview=true",
-            "\t\t\tUnits: [1]",
-            "\t\t\t\tUnit \"one\"",
-            "\t\t\t\t\tDirectories: [1]",
-            "\t\t\t\t\t\tDirectory[path=one, type=UNKNOWN, release=0]"),
+            "\tmain-realm=\"one\"",
+            "\tRealm \"one\"",
+            "\t\trelease=1",
+            "\t\tpreview=true",
+            "\t\tUnits: [1]",
+            "\t\tUnit \"one\"",
+            "\t\t\tDirectories: [1]",
+            "\t\t\tDirectory[path=one, type=UNKNOWN, release=0]"),
         one.toStrings());
   }
 }

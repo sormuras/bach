@@ -19,9 +19,11 @@ package de.sormuras.bach.project.structure;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.API;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class RealmTests {
@@ -33,6 +35,8 @@ class RealmTests {
     assertEquals(0, empty.release());
     assertFalse(empty.preview());
     assertEquals(0, empty.units().size());
+    assertNull(empty.mainUnit());
     assertTrue(empty.toString().contains("empty"));
+    assertEquals(Optional.empty(), empty.toMainUnit());
   }
 }

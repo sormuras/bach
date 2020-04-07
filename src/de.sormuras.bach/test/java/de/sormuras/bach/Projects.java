@@ -68,7 +68,7 @@ public interface Projects {
     var module = ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main");
     var directory = new Directory(Path.of("src/com.greetings"), Directory.Type.SOURCE, 0);
     var unit = new Unit(module.build(), List.of(directory));
-    var realm = new Realm("", 0, false, List.of(unit));
+    var realm = new Realm("", 0, false, List.of(unit), "com.greetings");
     return new Example(
         new Project(
             "Jigsaw Quick Start: Greetings",
