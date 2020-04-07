@@ -17,7 +17,9 @@
 
 package de.sormuras.bach;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,6 +31,39 @@ import org.junit.jupiter.api.Test;
 import test.base.Log;
 
 class TaskTests {
+
+  @Test
+  void emptyLeaf() {
+    var empty = new Task("empty");
+    assertEmpty(empty, false);
+  }
+
+  @Test
+  void emptyCompositeParallel() {
+    var empty = Task.parallel("empty");
+    assertEmpty(empty, true);
+    assertTrue(empty.parallel());
+  }
+
+  @Test
+  void emptyCompositeSequence() {
+    var empty = Task.sequence("empty");
+    assertEmpty(empty, true);
+    assertFalse(empty.parallel());
+  }
+
+  private static void assertEmpty(Task empty, boolean expectComposite) {
+    assertEquals("empty", empty.name());
+    assertEquals(expectComposite, empty.composite());
+    assertTrue(empty.subs().isEmpty());
+    assertTrue(empty.toString().contains("name"));
+    assertTrue(empty.toString().contains("composite"));
+    assertTrue(empty.toString().contains("parallel"));
+    assertTrue(empty.toString().contains("subs"));
+    assertEquals(!expectComposite, empty.leaf());
+    assertDoesNotThrow(() -> empty.execute(null));
+    assertEquals(1, empty.size());
+  }
 
   @Test
   void executeTask() {

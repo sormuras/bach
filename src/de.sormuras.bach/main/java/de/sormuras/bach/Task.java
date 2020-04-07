@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,21 +42,53 @@ import java.util.stream.Collectors;
 public /*static*/ class Task {
 
   private final String name;
+  private final boolean composite;
   private final boolean parallel;
   private final List<Task> subs;
 
   public Task(String name) {
-    this(name, false, List.of());
+    this(name, false, false, List.of());
   }
 
   public Task(String name, boolean parallel, List<Task> subs) {
+    this(name, true, parallel, subs);
+  }
+
+  public Task(String name, boolean composite, boolean parallel, List<Task> subs) {
     this.name = Objects.requireNonNullElse(name, getClass().getSimpleName());
+    this.composite = composite;
     this.parallel = parallel;
     this.subs = subs;
   }
 
   public String name() {
     return name;
+  }
+
+  public boolean composite() {
+    return composite;
+  }
+
+  public boolean parallel() {
+    return parallel;
+  }
+
+  public List<Task> subs() {
+    return subs;
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", Task.class.getSimpleName() + "[", "]")
+        .add("name='" + name + "'")
+        .add("composite=" + composite)
+        .add("parallel=" + parallel)
+        .add("subs=" + subs)
+        .toString();
+  }
+
+  public boolean leaf() {
+    return !composite;
   }
 
   public void execute(Execution execution) throws Exception {}
@@ -146,16 +179,14 @@ public /*static*/ class Task {
     private Throwable execute(int depth, Task task) {
       var indent = "\t".repeat(depth);
       var name = task.name;
-      var subs = task.subs;
-      var flat = subs.isEmpty(); // i.e. no sub tasks
       var printer = bach.getPrinter();
-      printer.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
+      printer.print(Level.TRACE, String.format("%s%c %s", indent, task.leaf() ? '*' : '+', name));
       executionBegin(task);
       var execution = new Execution(bach, indent);
       try {
         task.execute(execution);
-        if (!flat) {
-          var stream = task.parallel ? subs.parallelStream() : subs.stream();
+        if (task.composite()) {
+          var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
           var error = errors.findFirst();
           if (error.isPresent()) return error.get();
@@ -170,7 +201,7 @@ public /*static*/ class Task {
     }
 
     private void executionBegin(Task task) {
-      if (task.subs.isEmpty()) return;
+      if (task.leaf()) return;
       var format = "|   +|%6X|        | %s";
       var thread = Thread.currentThread().getId();
       overview.add(String.format(format, thread, task.name));
@@ -179,12 +210,11 @@ public /*static*/ class Task {
     private void executionEnd(Task task, Execution execution) {
       counter.incrementAndGet();
       var format = "|%4c|%6X|%8d| %s";
-      var flat = task.subs.isEmpty();
-      var kind = flat ? ' ' : '=';
+      var kind = task.leaf() ? ' ' : '=';
       var thread = Thread.currentThread().getId();
       var duration = Duration.between(execution.start, Instant.now());
       var line = String.format(format, kind, thread, duration.toMillis(), task.name);
-      if (flat) {
+      if (task.leaf()) {
         var caption = "task-execution-details-" + execution.hash;
         overview.add(line + " [...](#" + caption + ")");
         executions.add(new Detail(task, execution, caption, duration));
