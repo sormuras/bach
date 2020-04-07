@@ -17,7 +17,9 @@
 
 package de.sormuras.bach;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
@@ -28,6 +30,21 @@ import test.base.Log;
 import test.base.Tree;
 
 class BuildTests {
+
+  @Test
+  void buildEmptyDirectoryFails(@TempDir Path temp) {
+    var log = new Log();
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
+    var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
+    assertEquals("Build project empty 0 (Task) failed", error.getMessage());
+    assertEquals("project validation failed: no unit present", error.getCause().getMessage());
+    assertLinesMatch(
+        List.of(
+            ">> BUILD >>",
+            "java.lang.IllegalStateException: project validation failed: no unit present",
+            ">> ERROR >>"),
+        log.lines());
+  }
 
   @Test
   void buildJigsawQuickStartGreetings(@TempDir Path temp) throws Exception {

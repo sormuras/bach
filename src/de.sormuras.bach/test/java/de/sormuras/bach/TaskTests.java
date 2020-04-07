@@ -98,7 +98,8 @@ class TaskTests {
             "* Throw",
             "Task execution failed: java.lang.Exception: BäMM!",
             "",
-            "Executed tasks: 0"),
+            "Executed tasks: 0",
+            ">> ERROR >>"),
         log.lines());
   }
 

@@ -100,12 +100,16 @@ class BachTests {
             "",
             "Execute task: Build project empty 0",
             "+ Build project empty 0",
+            "\t* Validate workspace",
+            "\tEmpty base directory " + temp.toUri(),
             "\t* Print project",
             ">> PROJECT COMPONENTS >>",
-            "\t* Check project state",
+            "\t* Validate project",
+            "\tno unit present",
             "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present",
             "",
-            "Executed tasks: 1"),
+            "Executed tasks: 2",
+            ">> ERROR >>"),
         log.lines());
   }
 }
