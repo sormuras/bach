@@ -31,15 +31,20 @@ class SingleFileSourceCodeGenerator {
     var directory = Path.of("src", "de.sormuras.bach", "main", "java");
     var template = directory.resolve("de/sormuras/bach/Bach.java");
     var target = Path.of(".bach", "src", "Bach.java");
-    generate(template, target, directory);
+    var ignore = Set.of(directory.resolve("de/sormuras/bach/Convention.java"));
+    generate(template, target, ignore, directory);
   }
 
-  public static void generate(Path template, Path target, Path... paths) throws Exception {
+  public static void generate(Path template, Path target, Set<Path> ignore, Path... directories)
+      throws Exception {
     System.out.printf("Generate %s from %s%n", target.getFileName(), template.toUri());
     var files = new ArrayList<Path>();
-    for (var path : paths) {
-      try (var stream = Files.walk(path)) {
-        stream.filter(SingleFileSourceCodeGenerator::isRegularJavaSourceFile).forEach(files::add);
+    for (var directory : directories) {
+      try (var stream = Files.walk(directory)) {
+        stream
+            .filter(SingleFileSourceCodeGenerator::isRegularJavaSourceFile)
+            .filter(path -> !ignore.contains(path))
+            .forEach(files::add);
       }
     }
     var sources = files.stream().sorted().map(Source::of).collect(Collectors.toList());
@@ -59,6 +64,7 @@ class SingleFileSourceCodeGenerator {
   private static boolean isRedundant(String trim) {
     if (trim.startsWith("//")) return true;
     if (trim.startsWith("/**") && trim.endsWith("*/")) return true;
+    if (trim.equals("@Convention")) return true;
     if (trim.equals("@Override")) return true;
     return trim.isEmpty();
   }
