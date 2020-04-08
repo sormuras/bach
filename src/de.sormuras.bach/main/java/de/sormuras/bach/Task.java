@@ -18,6 +18,8 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.task.RunTool;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** An executable task definition. */
@@ -111,6 +114,21 @@ public /*static*/ class Task {
 
   public static Task sequence(String name, Task... tasks) {
     return new Task(name, false, List.of(tasks));
+  }
+
+  /** Create new tool-running task for the given tool instance. */
+  public static Task run(Tool tool) {
+    return run(tool.name(), tool.args().toArray(String[]::new));
+  }
+
+  /** Create new tool-running task for the name and arguments. */
+  public static Task run(String name, String... args) {
+    return run(ToolProvider.findFirst(name).orElseThrow(), args);
+  }
+
+  /** Create new tool-running task for the given tool and its options. */
+  public static Task run(ToolProvider provider, String... args) {
+    return new RunTool(provider, args);
   }
 
   public static class Execution implements Printer {
