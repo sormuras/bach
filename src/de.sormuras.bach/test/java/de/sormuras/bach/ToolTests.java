@@ -31,40 +31,6 @@ import org.junit.jupiter.api.Test;
 
 class ToolTests {
 
-  @Nested
-  class ToStrings {
-
-    @Test
-    void withZeroArgumentsReturnsListOfSizeOne() {
-      var strings = Tool.toStrings("tool");
-      assertEquals(1, strings.size(), strings.toString());
-      assertEquals("tool", strings.get(0));
-    }
-
-    @Test
-    void withOneArgumentReturnsListOfSizeOne() {
-      var strings = Tool.toStrings("tool", "--version");
-      assertEquals(1, strings.size(), strings.toString());
-      assertEquals("tool --version", strings.get(0));
-    }
-
-    @Test
-    void withTwoArgumentReturnsListOfSizeThree() {
-      var strings = Tool.toStrings("tool", "--option", "value");
-      assertEquals(3, strings.size(), strings.toString());
-      assertLinesMatch(List.of("tool with 2 arguments:", "\t--option", "\t\tvalue"), strings);
-    }
-
-    @Test
-    void withMoreThenTwoArgumentsReturnsListOfManyIndentedStrings() {
-      var strings = Tool.toStrings("tool", "-a", "1", "--b", "2", "-c", "--d");
-      assertEquals(7, strings.size(), strings.toString());
-      assertLinesMatch(
-          List.of("tool with 6 arguments:", "\t-a", "\t\t1", "\t--b", "\t\t2", "\t-c", "\t--d"),
-          strings);
-    }
-  }
-
   @Test
   void javac() {
     var javac =

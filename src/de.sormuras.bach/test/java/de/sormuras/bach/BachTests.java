@@ -104,7 +104,7 @@ class BachTests {
             ">> RUN TOOLS >>",
             "\t= Versions",
             "\t* Validate workspace",
-            "\tEmpty base directory " + temp,
+            "\t\tEmpty base directory " + temp,
             "\t* Print project",
             ">> PROJECT COMPONENTS >>",
             "\t* Validate project",
