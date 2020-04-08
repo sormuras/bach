@@ -61,5 +61,13 @@ public class Log implements BiConsumer<Level, String> {
       this.level = level;
       this.message = message;
     }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", "Log.Entry[", "]")
+          .add("level=" + level)
+          .add("message='" + message + "'")
+          .toString();
+    }
   }
 }
