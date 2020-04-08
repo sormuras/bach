@@ -138,47 +138,46 @@ public interface Tool {
 
     @Override
     public List<String> args() {
-      var args = new ArrayList<>(super.args());
-      if (isAssigned(getCompileModulesCheckingTimestamps())) {
-        args.add("--module");
-        args.add(String.join(",", getCompileModulesCheckingTimestamps()));
-      }
-      if (isAssigned(getVersionOfModulesThatAreBeingCompiled())) {
-        args.add("--module-version");
-        args.add(String.valueOf(getVersionOfModulesThatAreBeingCompiled()));
-      }
-      if (isAssigned(getPathsWhereToFindSourceFilesForModules())) {
-        args.add("--module-source-path");
-        args.add(join(getPathsWhereToFindSourceFilesForModules()));
-      }
-      if (isAssigned(getPathsWhereToFindApplicationModules())) {
-        args.add("--module-path");
-        args.add(join(getPathsWhereToFindApplicationModules()));
-      }
-      if (isAssigned(getPathsWhereToFindMoreAssetsPerModule())) {
-        for (var patch : getPathsWhereToFindMoreAssetsPerModule().entrySet()) {
-          args.add("--patch-module");
-          args.add(patch.getKey() + '=' + join(patch.getValue()));
-        }
-      }
-      if (isAssigned(getCompileForVirtualMachineVersion())) {
-        args.add("--release");
-        args.add(String.valueOf(getCompileForVirtualMachineVersion()));
-      }
-      if (isEnablePreviewLanguageFeatures()) args.add("--enable-preview");
-      if (isGenerateMetadataForMethodParameters()) args.add("-parameters");
-      if (isOutputSourceLocationsOfDeprecatedUsages()) args.add("-deprecation");
-      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) args.add("-verbose");
-      if (isTerminateCompilationIfWarningsOccur()) args.add("-Werror");
-      if (isAssigned(getCharacterEncodingUsedBySourceFiles())) {
-        args.add("-encoding");
-        args.add(getCharacterEncodingUsedBySourceFiles());
-      }
-      if (isAssigned(getDestinationDirectory())) {
-        args.add("-d");
-        args.add(String.valueOf(getDestinationDirectory()));
-      }
-      return args;
+      var any = new Any("<internal any instance>");
+      super.args.forEach(any::add);
+
+      var module = getCompileModulesCheckingTimestamps();
+      if (isAssigned(module)) any.add("--module", String.join(",", module));
+
+      var moduleVersion = getVersionOfModulesThatAreBeingCompiled();
+      if (isAssigned(moduleVersion)) any.add("--module-version", moduleVersion);
+
+      var moduleSourcePath = getPathsWhereToFindSourceFilesForModules();
+      if (isAssigned(moduleSourcePath)) any.add("--module-source-path", join(moduleSourcePath));
+
+      var modulePath = getPathsWhereToFindApplicationModules();
+      if (isAssigned(modulePath)) any.add("--module-path", join(modulePath));
+
+      var modulePatches = getPathsWhereToFindMoreAssetsPerModule();
+      if (isAssigned(modulePatches))
+        for (var patch : modulePatches.entrySet())
+          any.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+
+      var release = getCompileForVirtualMachineVersion();
+      if (isAssigned(release)) any.add("--release", release);
+
+      if (isEnablePreviewLanguageFeatures()) any.add("--enable-preview");
+
+      if (isGenerateMetadataForMethodParameters()) any.add("-parameters");
+
+      if (isOutputSourceLocationsOfDeprecatedUsages()) any.add("-deprecation");
+
+      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) any.add("-verbose");
+
+      if (isTerminateCompilationIfWarningsOccur()) any.add("-Werror");
+
+      var encoding = getCharacterEncodingUsedBySourceFiles();
+      if (isAssigned(encoding)) any.add("-encoding", encoding);
+
+      var destination = getDestinationDirectory();
+      if (isAssigned(destination)) any.add("-d", destination);
+
+      return any.args();
     }
 
     public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
