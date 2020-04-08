@@ -17,13 +17,14 @@
 
 package de.sormuras.bach.tool;
 
+import de.sormuras.bach.Tool;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 /** Mutable options collection for {@code javac}. */
-public /*static*/ class JavaCompiler extends AnyTool {
+public /*static*/ class JavaCompiler extends Tool {
 
   private List<String> compileModulesCheckingTimestamps;
   private Version versionOfModulesThatAreBeingCompiled;
@@ -45,46 +46,46 @@ public /*static*/ class JavaCompiler extends AnyTool {
 
   @Override
   public List<String> args() {
-    var any = new AnyTool("<local>");
-    super.args.forEach(any::add);
+    var tool = new Tool("<local>");
+    super.args().forEach(tool::add);
 
     var module = getCompileModulesCheckingTimestamps();
-    if (isAssigned(module)) any.add("--module", String.join(",", module));
+    if (isAssigned(module)) tool.add("--module", String.join(",", module));
 
     var moduleVersion = getVersionOfModulesThatAreBeingCompiled();
-    if (isAssigned(moduleVersion)) any.add("--module-version", moduleVersion);
+    if (isAssigned(moduleVersion)) tool.add("--module-version", moduleVersion);
 
     var moduleSourcePath = getPathsWhereToFindSourceFilesForModules();
-    if (isAssigned(moduleSourcePath)) any.add("--module-source-path", join(moduleSourcePath));
+    if (isAssigned(moduleSourcePath)) tool.add("--module-source-path", join(moduleSourcePath));
 
     var modulePath = getPathsWhereToFindApplicationModules();
-    if (isAssigned(modulePath)) any.add("--module-path", join(modulePath));
+    if (isAssigned(modulePath)) tool.add("--module-path", join(modulePath));
 
     var modulePatches = getPathsWhereToFindMoreAssetsPerModule();
     if (isAssigned(modulePatches))
       for (var patch : modulePatches.entrySet())
-        any.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+        tool.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
 
     var release = getCompileForVirtualMachineVersion();
-    if (isAssigned(release)) any.add("--release", release);
+    if (isAssigned(release)) tool.add("--release", release);
 
-    if (isEnablePreviewLanguageFeatures()) any.add("--enable-preview");
+    if (isEnablePreviewLanguageFeatures()) tool.add("--enable-preview");
 
-    if (isGenerateMetadataForMethodParameters()) any.add("-parameters");
+    if (isGenerateMetadataForMethodParameters()) tool.add("-parameters");
 
-    if (isOutputSourceLocationsOfDeprecatedUsages()) any.add("-deprecation");
+    if (isOutputSourceLocationsOfDeprecatedUsages()) tool.add("-deprecation");
 
-    if (isOutputMessagesAboutWhatTheCompilerIsDoing()) any.add("-verbose");
+    if (isOutputMessagesAboutWhatTheCompilerIsDoing()) tool.add("-verbose");
 
-    if (isTerminateCompilationIfWarningsOccur()) any.add("-Werror");
+    if (isTerminateCompilationIfWarningsOccur()) tool.add("-Werror");
 
     var encoding = getCharacterEncodingUsedBySourceFiles();
-    if (isAssigned(encoding)) any.add("-encoding", encoding);
+    if (isAssigned(encoding)) tool.add("-encoding", encoding);
 
     var destination = getDestinationDirectory();
-    if (isAssigned(destination)) any.add("-d", destination);
+    if (isAssigned(destination)) tool.add("-d", destination);
 
-    return any.args();
+    return tool.args();
   }
 
   public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {

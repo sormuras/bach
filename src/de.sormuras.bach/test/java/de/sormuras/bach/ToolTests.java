@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.tool;
+package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class AnyToolTests {
+class ToolTests {
 
   @Test
   void empty() {
-    var empty = new AnyTool("any");
+    var empty = new Tool("any");
     assertTrue(empty.args().isEmpty());
     assertLinesMatch(List.of("any"), empty.toStrings());
   }
@@ -36,14 +36,14 @@ class AnyToolTests {
   @Test
   void touchAllAdders() {
     var tool =
-        new AnyTool("any", 0x0)
+        new Tool("any", 0x0)
             .add(1)
             .add("key", "value")
             .add("alpha", "beta", "gamma")
             .add(true, "first")
             .add(true, "second", "more")
             .add(false, "suppressed")
-            .forEach(List.of('a', 'b', 'c'), AnyTool::add);
+            .forEach(List.of('a', 'b', 'c'), Tool::add);
     assertEquals("any", tool.name());
     assertLinesMatch(
         List.of(
