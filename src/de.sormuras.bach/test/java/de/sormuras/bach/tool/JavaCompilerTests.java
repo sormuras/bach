@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach;
+package de.sormuras.bach.tool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class ToolTests {
+class JavaCompilerTests {
 
   @Test
   void javac() {
     var javac =
-        Tool.javac()
+        new JavaCompiler()
             .setCompileModulesCheckingTimestamps(List.of("a", "b", "c"))
             .setVersionOfModulesThatAreBeingCompiled(Version.parse("123"))
             .setPathsWhereToFindSourceFilesForModules(List.of(Path.of("src/{MODULE}/main")))
@@ -74,35 +72,5 @@ class ToolTests {
             "\t-d",
             "\t\tclasses"),
         javac.toStrings());
-  }
-
-  @Nested
-  class Any {
-
-    @Test
-    void empty() {
-      var empty = Tool.of("any");
-      assertTrue(empty.args().isEmpty());
-      assertLinesMatch(List.of("any"), empty.toStrings());
-    }
-
-    @Test
-    void touchAllAdders() {
-      var tool =
-          Tool.of("any", 0x0)
-              .add(1)
-              .add("key", "value")
-              .add("alpha", "beta", "gamma")
-              .add(true, "first")
-              .add(true, "second", "more")
-              .add(false, "suppressed")
-              .forEach(List.of('a', 'b', 'c'), Tool.Any::add);
-      assertEquals("any", tool.name());
-      assertLinesMatch(
-          List.of(
-              "0", "1", "key", "value", "alpha", "beta", "gamma", "first", "second", "more", "a",
-              "b", "c"),
-          tool.args());
-    }
   }
 }
