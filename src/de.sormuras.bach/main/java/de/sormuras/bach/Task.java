@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.task.RunTool;
+import de.sormuras.bach.util.Strings;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -37,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
@@ -211,9 +211,9 @@ public /*static*/ class Task {
       try {
         task.execute(execution);
         var out = execution.out.toString();
-        if (!out.isEmpty()) printer.print(Level.DEBUG, out.lines().map(line -> indent + line));
+        if (!out.isEmpty()) printer.print(Level.DEBUG, Strings.textIndent(indent, out.lines()));
         var err = execution.err.toString();
-        if (!err.isEmpty()) printer.print(Level.WARNING, err.lines().map(line -> indent + line));
+        if (!err.isEmpty()) printer.print(Level.WARNING, Strings.textIndent(indent, err.lines()));
         if (task.composite()) {
           var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
@@ -271,12 +271,7 @@ public /*static*/ class Task {
       }
 
       String toDurationString() {
-        return duration
-            .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
-            .toString()
-            .substring(2)
-            .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-            .toLowerCase();
+        return Strings.toString(duration);
       }
 
       int getTaskCounter() {

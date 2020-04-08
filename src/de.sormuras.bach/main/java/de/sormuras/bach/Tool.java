@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.util.Strings;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -49,24 +50,6 @@ public interface Tool {
         .collect(Collectors.joining(File.pathSeparator));
   }
 
-  static List<String> toStrings(String tool, String... args) {
-    return toStrings(tool, List.of(args));
-  }
-
-  static List<String> toStrings(String tool, List<String> args) {
-    if (args.isEmpty()) return List.of(tool);
-    if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
-    var strings = new ArrayList<String>();
-    strings.add(tool + " with " + args.size() + " arguments:");
-    var simple = true;
-    for (String arg : args) {
-      var minus = arg.startsWith("-");
-      strings.add((simple | minus ? "\t" : "\t\t") + arg);
-      simple = !minus;
-    }
-    return List.copyOf(strings);
-  }
-
   /** Return name of the tool to run. */
   String name();
 
@@ -74,7 +57,7 @@ public interface Tool {
   List<String> args();
 
   default List<String> toStrings() {
-    return toStrings(name(), args());
+    return Strings.list(name(), args());
   }
 
   /** Any tool arguments collector. */

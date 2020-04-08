@@ -17,28 +17,23 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.util.EnumSet;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /** A level-aware message printer. */
 public interface Printer {
 
   default void print(Level level, String... message) {
     if (!printable(level)) return;
-    print(level, String.join(System.lineSeparator(), message));
+    print(level, Strings.text(message));
   }
 
-  default void print(Level level, Iterable<? extends CharSequence> message) {
+  default void print(Level level, Iterable<String> message) {
     if (!printable(level)) return;
-    print(level, String.join(System.lineSeparator(), message));
-  }
-
-  default void print(Level level, Stream<? extends CharSequence> message) {
-    if (!printable(level)) return;
-    print(level, message.collect(Collectors.joining(System.lineSeparator())));
+    print(level, Strings.text(message));
   }
 
   boolean printable(Level level);

@@ -22,6 +22,7 @@ import de.sormuras.bach.task.CreateDirectories;
 import de.sormuras.bach.task.PrintModules;
 import de.sormuras.bach.task.PrintProject;
 import de.sormuras.bach.task.ValidateWorkspace;
+import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
@@ -107,7 +108,7 @@ public class Bach {
     printer.print(Level.DEBUG, "Execute " + size + " tasks");
     var summary = executor.execute(task);
     printer.print(Level.DEBUG, "Executed " + summary.getTaskCounter() + " of " + size + " tasks");
-    var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
+    var exception = Strings.text(summary.exceptionDetails());
     if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
   }

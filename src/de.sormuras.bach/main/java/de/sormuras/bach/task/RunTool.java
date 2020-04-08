@@ -19,10 +19,9 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Convention;
 import de.sormuras.bach.Task;
-import de.sormuras.bach.Tool;
+import de.sormuras.bach.util.Strings;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
 
 /** {@link ToolProvider}-running task. */
 public /*static*/ class RunTool extends Task {
@@ -54,10 +53,9 @@ public /*static*/ class RunTool extends Task {
     if (code != 0) {
       var name = tool.name();
       var caption = "Run of " + name + " failed with exit code: " + code;
-      var indented = Collectors.joining(System.lineSeparator() + "\t");
-      var error = "\t" + err.toString().lines().collect(indented);
-      var lines = "\t" + Tool.toStrings(name, args).stream().collect(indented);
-      var message = String.join(System.lineSeparator(), caption, "Error:", error, "Tool:", lines);
+      var error = Strings.textIndent("\t", Strings.text(err.toString().lines()));
+      var lines = Strings.textIndent("\t", Strings.list(name, args));
+      var message = Strings.text(caption, "Error:", error, "Tool:", lines);
       throw new AssertionError(message);
     }
   }
