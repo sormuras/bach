@@ -24,15 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.EnumSet;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import test.base.FileSystem;
 
 class PathsTests {
 
@@ -56,53 +50,11 @@ class PathsTests {
   void isEmptyFailsForNotReadablePath(@TempDir Path temp) throws Exception {
     var sub = Files.createDirectory(temp.resolve("sub"));
     assertTrue(Paths.isEmpty(sub));
-    chmod(sub, false, false, false);
+    FileSystem.chmod(sub, false, false, false);
     try {
       assertThrows(UncheckedIOException.class, () -> Paths.isEmpty(sub));
     } finally {
-      chmod(sub, true, true, true);
+      FileSystem.chmod(sub, true, true, true);
     }
-  }
-
-  static void chmod(Path path, boolean r, boolean w, boolean x) throws Exception {
-    if (System.getProperty("os.name").toLowerCase().contains("win")) {
-      var principals = path.getFileSystem().getUserPrincipalLookupService();
-      var user = principals.lookupPrincipalByName(System.getProperty("user.name"));
-      var builder = AclEntry.newBuilder();
-      var permissions =
-          EnumSet.of(
-              // AclEntryPermission.EXECUTE, // "x"
-              // AclEntryPermission.READ_DATA, // "r"
-              AclEntryPermission.READ_ATTRIBUTES,
-              AclEntryPermission.READ_NAMED_ATTRS,
-              // AclEntryPermission.WRITE_DATA, // "w"
-              // AclEntryPermission.APPEND_DATA, // "w"
-              AclEntryPermission.WRITE_ATTRIBUTES,
-              AclEntryPermission.WRITE_NAMED_ATTRS,
-              AclEntryPermission.DELETE_CHILD,
-              AclEntryPermission.DELETE,
-              AclEntryPermission.READ_ACL,
-              AclEntryPermission.WRITE_ACL,
-              AclEntryPermission.WRITE_OWNER,
-              AclEntryPermission.SYNCHRONIZE);
-      if (r) {
-        permissions.add(AclEntryPermission.READ_DATA); // == LIST_DIRECTORY
-      }
-      if (w) {
-        permissions.add(AclEntryPermission.WRITE_DATA); // == ADD_FILE
-        permissions.add(AclEntryPermission.APPEND_DATA); // == ADD_SUBDIRECTORY
-      }
-      if (x) {
-        permissions.add(AclEntryPermission.EXECUTE);
-      }
-      builder.setPermissions(permissions);
-      builder.setPrincipal(user);
-      builder.setType(AclEntryType.ALLOW);
-      var aclAttr = Files.getFileAttributeView(path, AclFileAttributeView.class);
-      aclAttr.setAcl(List.of(builder.build()));
-      return;
-    }
-    var user = (r ? "r" : "-") + (w ? "w" : "-") + (x ? "x" : "-");
-    Files.setPosixFilePermissions(path, PosixFilePermissions.fromString(user + "------"));
   }
 }
