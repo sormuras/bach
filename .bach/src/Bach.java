@@ -110,7 +110,7 @@ public class Bach {
     printer.print(Level.DEBUG, "Execute " + size + " tasks");
     var summary = executor.execute(task);
     printer.print(Level.DEBUG, "Executed " + summary.getTaskCounter() + " of " + size + " tasks");
-    var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
+    var exception = Strings.text(summary.exceptionDetails());
     if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
   }
@@ -125,15 +125,11 @@ public class Bach {
   public interface Printer {
     default void print(Level level, String... message) {
       if (!printable(level)) return;
-      print(level, String.join(System.lineSeparator(), message));
+      print(level, Strings.text(message));
     }
-    default void print(Level level, Iterable<? extends CharSequence> message) {
+    default void print(Level level, Iterable<String> message) {
       if (!printable(level)) return;
-      print(level, String.join(System.lineSeparator(), message));
-    }
-    default void print(Level level, Stream<? extends CharSequence> message) {
-      if (!printable(level)) return;
-      print(level, message.collect(Collectors.joining(System.lineSeparator())));
+      print(level, Strings.text(message));
     }
     boolean printable(Level level);
     void print(Level level, String message);
@@ -560,9 +556,9 @@ public class Bach {
         try {
           task.execute(execution);
           var out = execution.out.toString();
-          if (!out.isEmpty()) printer.print(Level.DEBUG, out.lines().map(line -> indent + line));
+          if (!out.isEmpty()) printer.print(Level.DEBUG, Strings.textIndent(indent, out.lines()));
           var err = execution.err.toString();
-          if (!err.isEmpty()) printer.print(Level.WARNING, err.lines().map(line -> indent + line));
+          if (!err.isEmpty()) printer.print(Level.WARNING, Strings.textIndent(indent, err.lines()));
           if (task.composite()) {
             var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
@@ -613,12 +609,7 @@ public class Bach {
           throw new AssertionError(message, exception);
         }
         String toDurationString() {
-          return duration
-              .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
-              .toString()
-              .substring(2)
-              .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-              .toLowerCase();
+          return Strings.toString(duration);
         }
         int getTaskCounter() {
           return counter.get();
@@ -776,18 +767,7 @@ public class Bach {
       this.path = path;
     }
     public void execute(Execution execution) throws Exception {
-      delete(path, __ -> true);
-    }
-    static void delete(Path directory, Predicate<Path> filter) throws Exception {
-      try {
-        Files.deleteIfExists(directory);
-        return;
-      } catch (DirectoryNotEmptyException __) {
-      }
-      try (var stream = Files.walk(directory)) {
-        var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-      }
+      Paths.delete(path, __ -> true);
     }
   }
   public static class PrintModules extends Task {
@@ -839,10 +819,9 @@ public class Bach {
       if (code != 0) {
         var name = tool.name();
         var caption = "Run of " + name + " failed with exit code: " + code;
-        var indented = Collectors.joining(System.lineSeparator() + "\t");
-        var error = "\t" + err.toString().lines().collect(indented);
-        var lines = "\t" + Tool.toStrings(name, args).stream().collect(indented);
-        var message = String.join(System.lineSeparator(), caption, "Error:", error, "Tool:", lines);
+        var error = Strings.textIndent("\t", Strings.text(err.toString().lines()));
+        var lines = Strings.textIndent("\t", Strings.list(name, args));
+        var message = Strings.text(caption, "Error:", error, "Tool:", lines);
         throw new AssertionError(message);
       }
     }
@@ -883,26 +862,10 @@ public class Bach {
           .map(string -> string.replace("{MODULE}", "*"))
           .collect(Collectors.joining(File.pathSeparator));
     }
-    static List<String> toStrings(String tool, String... args) {
-      return toStrings(tool, List.of(args));
-    }
-    static List<String> toStrings(String tool, List<String> args) {
-      if (args.isEmpty()) return List.of(tool);
-      if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
-      var strings = new ArrayList<String>();
-      strings.add(tool + " with " + args.size() + " arguments:");
-      var simple = true;
-      for (String arg : args) {
-        var minus = arg.startsWith("-");
-        strings.add((simple | minus ? "\t" : "\t\t") + arg);
-        simple = !minus;
-      }
-      return List.copyOf(strings);
-    }
     String name();
     List<String> args();
     default List<String> toStrings() {
-      return toStrings(name(), args());
+      return Strings.list(name(), args());
     }
     class Any implements Tool {
       private final String name;
@@ -1110,7 +1073,63 @@ public class Bach {
         throw new UncheckedIOException(e);
       }
     }
+    public static void delete(Path directory, Predicate<Path> filter) throws IOException {
+      try {
+        Files.deleteIfExists(directory);
+        return;
+      } catch (DirectoryNotEmptyException __) {
+      }
+      try (var stream = Files.walk(directory)) {
+        var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+      }
+    }
     private Paths() {}
+  }
+  public static class Strings {
+    public static List<String> list(String tool, String... args) {
+      return list(tool, List.of(args));
+    }
+    public static List<String> list(String tool, List<String> args) {
+      if (args.isEmpty()) return List.of(tool);
+      if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
+      var strings = new ArrayList<String>();
+      strings.add(tool + " with " + args.size() + " arguments:");
+      var simple = true;
+      for (String arg : args) {
+        var minus = arg.startsWith("-");
+        strings.add((simple | minus ? "\t" : "\t\t") + arg);
+        simple = !minus;
+      }
+      return List.copyOf(strings);
+    }
+    public static String text(String... lines) {
+      return String.join(System.lineSeparator(), lines);
+    }
+    public static String text(Iterable<String> lines) {
+      return String.join(System.lineSeparator(), lines);
+    }
+    public static String text(Stream<String> lines) {
+      return String.join(System.lineSeparator(), lines.collect(Collectors.toList()));
+    }
+    public static String textIndent(String indent, String... strings) {
+      return indent + String.join(System.lineSeparator() + indent, strings);
+    }
+    public static String textIndent(String indent, Iterable<String> strings) {
+      return indent + String.join(System.lineSeparator() + indent, strings);
+    }
+    public static String textIndent(String indent, Stream<String> strings) {
+      return indent + text(strings.map(string -> indent + string));
+    }
+    public static String toString(Duration duration) {
+      return duration
+          .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
+          .toString()
+          .substring(2)
+          .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+          .toLowerCase();
+    }
+    private Strings() {}
   }
   public static final class Workspace {
     public static Workspace of() {
