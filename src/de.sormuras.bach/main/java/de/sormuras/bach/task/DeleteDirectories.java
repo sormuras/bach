@@ -34,7 +34,7 @@ public /*static*/ class DeleteDirectories extends Task {
   }
 
   @Override
-  public void execute(Execution context) throws Exception {
+  public void execute(Execution execution) throws Exception {
     delete(path, __ -> true);
   }
 
