@@ -17,8 +17,11 @@
 
 package de.sormuras.bach.util;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -76,6 +79,10 @@ public /*static*/ class Strings {
         .substring(2)
         .replaceAll("(\\d[HMS])(?!$)", "$1 ")
         .toLowerCase();
+  }
+
+  public static String toString(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
   }
 
   private Strings() {}
