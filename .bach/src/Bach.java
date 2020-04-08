@@ -498,14 +498,12 @@ public class Bach {
     }
     public static class Execution implements Printer {
       private final Bach bach;
-      private final String indent;
       private final String hash = Integer.toHexString(System.identityHashCode(this));
       private final StringWriter out = new StringWriter();
       private final StringWriter err = new StringWriter();
       private final Instant start = Instant.now();
-      private Execution(Bach bach, String indent) {
+      private Execution(Bach bach) {
         this.bach = bach;
-        this.indent = indent;
       }
       public Bach getBach() {
         return bach;
@@ -520,7 +518,6 @@ public class Bach {
         return true;
       }
       public void print(Level level, String message) {
-        bach.getPrinter().print(level, message.lines().map(line -> indent + line));
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
         writer.write(message);
         writer.write(System.lineSeparator());
@@ -559,9 +556,13 @@ public class Bach {
         var printer = bach.getPrinter();
         printer.print(Level.TRACE, String.format("%s%c %s", indent, task.leaf() ? '*' : '+', name));
         executionBegin(task);
-        var execution = new Execution(bach, indent);
+        var execution = new Execution(bach);
         try {
           task.execute(execution);
+          var out = execution.out.toString();
+          if (!out.isEmpty()) printer.print(Level.DEBUG, out.lines().map(line -> indent + line));
+          var err = execution.err.toString();
+          if (!err.isEmpty()) printer.print(Level.WARNING, err.lines().map(line -> indent + line));
           if (task.composite()) {
             var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
@@ -764,7 +765,7 @@ public class Bach {
       super("Create directories " + path);
       this.path = path;
     }
-    public void execute(Execution context) throws Exception {
+    public void execute(Execution execution) throws Exception {
       Files.createDirectories(path);
     }
   }
@@ -774,7 +775,7 @@ public class Bach {
       super("Delete directories " + path);
       this.path = path;
     }
-    public void execute(Execution context) throws Exception {
+    public void execute(Execution execution) throws Exception {
       delete(path, __ -> true);
     }
     static void delete(Path directory, Predicate<Path> filter) throws Exception {
@@ -799,8 +800,8 @@ public class Bach {
       var realm = project.structure().realms().get(0);
       for (var unit : realm.units()) {
         var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
-        execution.print(
-            Level.INFO, "Unit " + unit.descriptor().toNameAndVersion(), "\t-> " + jar.toUri());
+        var nameAndVersion = unit.descriptor().toNameAndVersion();
+        execution.print(Level.INFO, "Unit " + nameAndVersion, "\t-> " + jar.toUri());
       }
     }
   }
@@ -835,15 +836,13 @@ public class Bach {
       var out = execution.getOut();
       var err = execution.getErr();
       var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-      var LS = System.lineSeparator();
-      var indented = Collectors.joining(LS + "\t");
-      execution.print(Level.DEBUG, "\t" + out.toString().lines().collect(indented));
       if (code != 0) {
         var name = tool.name();
         var caption = "Run of " + name + " failed with exit code: " + code;
+        var indented = Collectors.joining(System.lineSeparator() + "\t");
         var error = "\t" + err.toString().lines().collect(indented);
         var lines = "\t" + Tool.toStrings(name, args).stream().collect(indented);
-        var message = String.join(LS, caption, "Error:", error, "Tool:", lines);
+        var message = String.join(System.lineSeparator(), caption, "Error:", error, "Tool:", lines);
         throw new AssertionError(message);
       }
     }
@@ -868,7 +867,7 @@ public class Bach {
     }
     public void execute(Execution execution) {
       var base = execution.getBach().getWorkspace().base();
-      if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base.toUri());
+      if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base);
     }
   }
   public interface Tool {
