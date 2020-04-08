@@ -37,10 +37,11 @@ public interface Tool {
   }
 
   /** Return new mutable options builder for {@code javac}. */
-  static JavaCompiler javac() {
-    return new JavaCompiler();
+  static JavaCompiler javac(Object... arguments) {
+    return new JavaCompiler(arguments);
   }
 
+  @Convention
   static String join(Collection<Path> paths) {
     return paths.stream()
         .map(Path::toString) // TODO Move replace() to after join()
@@ -48,19 +49,41 @@ public interface Tool {
         .collect(Collectors.joining(File.pathSeparator));
   }
 
+  static List<String> toStrings(String tool, String... args) {
+    return toStrings(tool, List.of(args));
+  }
+
+  static List<String> toStrings(String tool, List<String> args) {
+    if (args.isEmpty()) return List.of(tool);
+    if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
+    var strings = new ArrayList<String>();
+    strings.add(tool + " with " + args.size() + " arguments:");
+    var simple = true;
+    for (String arg : args) {
+      var minus = arg.startsWith("-");
+      strings.add((simple | minus ? "\t" : "\t\t") + arg);
+      simple = !minus;
+    }
+    return List.copyOf(strings);
+  }
+
   /** Return name of the tool to run. */
   String name();
 
-  /** Return array of argument strings compiled from option properties. */
-  String[] args();
+  /** Return list of argument strings compiled from option properties. */
+  List<String> args();
+
+  default List<String> toStrings() {
+    return toStrings(name(), args());
+  }
 
   /** Any tool arguments collector. */
   class Any implements Tool {
 
     private final String name;
-    private final List<String> args = new ArrayList<>();
+    protected final List<String> args = new ArrayList<>();
 
-    private Any(String name, Object... arguments) {
+    protected Any(String name, Object... arguments) {
       this.name = name;
       addAll(arguments);
     }
@@ -104,13 +127,13 @@ public interface Tool {
     }
 
     /** Return a new array of all collected argument strings. */
-    public String[] args() {
-      return args.toArray(String[]::new);
+    public List<String> args() {
+      return List.copyOf(args);
     }
   }
 
   /** Mutable options collection for {@code javac}. */
-  class JavaCompiler implements Tool {
+  class JavaCompiler extends Any {
 
     private List<String> compileModulesCheckingTimestamps;
     private Version versionOfModulesThatAreBeingCompiled;
@@ -126,16 +149,13 @@ public interface Tool {
     private boolean terminateCompilationIfWarningsOccur;
     private Path destinationDirectory;
 
-    private JavaCompiler() {}
-
-    @Override
-    public String name() {
-      return "javac";
+    private JavaCompiler(Object... arguments) {
+      super("javac", arguments);
     }
 
     @Override
-    public String[] args() {
-      var args = new ArrayList<String>();
+    public List<String> args() {
+      var args = new ArrayList<>(super.args());
       if (isAssigned(getCompileModulesCheckingTimestamps())) {
         args.add("--module");
         args.add(String.join(",", getCompileModulesCheckingTimestamps()));
@@ -175,7 +195,7 @@ public interface Tool {
         args.add("-d");
         args.add(String.valueOf(getDestinationDirectory()));
       }
-      return args.toArray(String[]::new);
+      return args;
     }
 
     public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {

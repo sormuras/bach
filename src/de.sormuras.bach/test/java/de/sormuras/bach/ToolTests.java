@@ -17,9 +17,9 @@
 
 package de.sormuras.bach;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
@@ -30,6 +30,40 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ToolTests {
+
+  @Nested
+  class ToStrings {
+
+    @Test
+    void withZeroArgumentsReturnsListOfSizeOne() {
+      var strings = Tool.toStrings("tool");
+      assertEquals(1, strings.size(), strings.toString());
+      assertEquals("tool", strings.get(0));
+    }
+
+    @Test
+    void withOneArgumentReturnsListOfSizeOne() {
+      var strings = Tool.toStrings("tool", "--version");
+      assertEquals(1, strings.size(), strings.toString());
+      assertEquals("tool --version", strings.get(0));
+    }
+
+    @Test
+    void withTwoArgumentReturnsListOfSizeThree() {
+      var strings = Tool.toStrings("tool", "--option", "value");
+      assertEquals(3, strings.size(), strings.toString());
+      assertLinesMatch(List.of("tool with 2 arguments:", "\t--option", "\t\tvalue"), strings);
+    }
+
+    @Test
+    void withMoreThenTwoArgumentsReturnsListOfManyIndentedStrings() {
+      var strings = Tool.toStrings("tool", "-a", "1", "--b", "2", "-c", "--d");
+      assertEquals(7, strings.size(), strings.toString());
+      assertLinesMatch(
+          List.of("tool with 6 arguments:", "\t-a", "\t\t1", "\t--b", "\t\t2", "\t-c", "\t--d"),
+          strings);
+    }
+  }
 
   @Test
   void javac() {
@@ -51,28 +85,29 @@ class ToolTests {
     assertEquals("javac", javac.name());
     assertLinesMatch(
         List.of(
-            "--module",
-            "a,b,c",
-            "--module-version",
-            "123",
-            "--module-source-path",
-            String.join(File.separator, "src", "*", "main"),
-            "--module-path",
-            "lib",
-            "--patch-module",
-            "b=" + String.join(File.separator, "src", "b", "test"),
-            "--release",
-            String.valueOf(Runtime.version().feature()),
-            "--enable-preview",
-            "-parameters",
-            "-deprecation",
-            "-verbose",
-            "-Werror",
-            "-encoding",
-            "UTF-8",
-            "-d",
-            "classes"),
-        List.of(javac.args()));
+            "javac with 21 arguments:",
+            "\t--module",
+            "\t\ta,b,c",
+            "\t--module-version",
+            "\t\t123",
+            "\t--module-source-path",
+            "\t\t" + String.join(File.separator, "src", "*", "main"),
+            "\t--module-path",
+            "\t\tlib",
+            "\t--patch-module",
+            "\t\tb=" + String.join(File.separator, "src", "b", "test"),
+            "\t--release",
+            "\t\t" + Runtime.version().feature(),
+            "\t--enable-preview",
+            "\t-parameters",
+            "\t-deprecation",
+            "\t-verbose",
+            "\t-Werror",
+            "\t-encoding",
+            "\t\tUTF-8",
+            "\t-d",
+            "\t\tclasses"),
+        javac.toStrings());
   }
 
   @Nested
@@ -80,7 +115,9 @@ class ToolTests {
 
     @Test
     void empty() {
-      assertArrayEquals(new String[0], Tool.of("any").args());
+      var empty = Tool.of("any");
+      assertTrue(empty.args().isEmpty());
+      assertLinesMatch(List.of("any"), empty.toStrings());
     }
 
     @Test
@@ -99,7 +136,7 @@ class ToolTests {
           List.of(
               "0", "1", "key", "value", "alpha", "beta", "gamma", "first", "second", "more", "a",
               "b", "c"),
-          List.of(tool.args()));
+          tool.args());
     }
   }
 }
