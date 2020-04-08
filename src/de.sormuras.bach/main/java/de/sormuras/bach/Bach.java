@@ -73,6 +73,12 @@ public class Bach {
   /** Build the given project using default settings. */
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
+    tasks.add(
+        Task.parallel(
+            "Versions",
+            Task.run(Tool.javac("--version")),
+            Task.run("jar", "--version"),
+            Task.run("javadoc", "--version")));
     tasks.add(new ValidateWorkspace());
     tasks.add(new PrintProject(project));
     tasks.add(new ValidateProject(project));
@@ -81,14 +87,17 @@ public class Bach {
     // jlink    | javac/jar test realm
     // jpackage | junit test realm
     tasks.add(new PrintModules(project));
-    var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
-    var summary = execute(new Task.Executor(this, project), build);
+    var task = new Task("Build project " + project.toNameAndVersion(), false, tasks);
+    build(project, task);
+  }
+
+  void build(Project project, Task task) {
+    var summary = execute(new Task.Executor(this, project), task);
     summary.write("build");
     summary.assertSuccessful();
     printer.print(Level.INFO, "Build took " + summary.toDurationString());
   }
 
-  /** Execute the given task recursively. */
   public void execute(Task task) {
     execute(new Task.Executor(this, null), task).assertSuccessful();
   }

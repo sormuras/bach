@@ -97,8 +97,11 @@ class BachTests {
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
-            "Execute 6 tasks",
+            "Execute 10 tasks",
             "+ Build project empty 0",
+            "\t+ Versions",
+            ">> RUN TOOLS >>",
+            "\t= Versions",
             "\t* Validate workspace",
             "\tEmpty base directory " + temp.toUri(),
             "\t* Print project",
@@ -106,7 +109,7 @@ class BachTests {
             "\t* Validate project",
             "\tno unit present",
             "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present",
-            "Executed 2 of 6 tasks",
+            "Executed 6 of 10 tasks",
             ">> ERROR >>"),
         log.lines());
   }
