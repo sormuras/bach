@@ -22,6 +22,7 @@ import de.sormuras.bach.task.RunTool;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
@@ -220,9 +221,9 @@ public /*static*/ class Task {
           printer.print(Level.TRACE, indent + "= " + name);
         }
         executionEnd(task, execution);
-      } catch (Exception exception) {
-        printer.print(Level.ERROR, "Task execution failed: " + exception);
-        return exception;
+      } catch (Throwable throwable) {
+        printer.print(Level.ERROR, "Task execution failed: " + throwable);
+        return throwable;
       }
       return null;
     }
@@ -417,9 +418,9 @@ public /*static*/ class Task {
         try {
           Files.createDirectories(summary.getParent());
           Files.write(summary, markdown);
-          Files.write(workspace.workspace("summary.md"), markdown); // replace existing
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+          Files.write(workspace.workspace("summary.md"), markdown); // overwrite existing
+        } catch (IOException e) {
+          throw new UncheckedIOException("Write of " + summary + " failed: " + e, e);
         }
       }
     }
