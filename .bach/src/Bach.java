@@ -849,49 +849,39 @@ public class Bach {
       if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base);
     }
   }
-  public interface Tool {
-    String name();
-    List<String> args();
-    default String join(Collection<Path> paths) {
-      return Strings.toString(paths).replace("{MODULE}", "*");
-    }
-    default List<String> toStrings() {
-      return Strings.list(name(), args());
-    }
-  }
-  public static class AnyTool implements Tool {
+  public static class Tool {
     private final String name;
-    protected final List<String> args = new ArrayList<>();
-    public AnyTool(String name, Object... arguments) {
+    private final List<String> args = new ArrayList<>();
+    public Tool(String name, Object... arguments) {
       this.name = name;
       addAll(arguments);
     }
     public String name() {
       return name;
     }
-    public AnyTool add(Object argument) {
+    public List<String> args() {
+      return List.copyOf(args);
+    }
+    public Tool add(Object argument) {
       args.add(argument.toString());
       return this;
     }
-    public AnyTool add(String key, Object value) {
+    public Tool add(String key, Object value) {
       return add(key).add(value);
     }
-    public AnyTool add(String key, Object first, Object second) {
+    public Tool add(String key, Object first, Object second) {
       return add(key).add(first).add(second);
     }
-    public AnyTool add(boolean predicate, Object first, Object... more) {
+    public Tool add(boolean predicate, Object first, Object... more) {
       return predicate ? add(first).addAll(more) : this;
     }
-    public AnyTool addAll(Object... arguments) {
+    public Tool addAll(Object... arguments) {
       for (var argument : arguments) add(argument);
       return this;
     }
-    public <T> AnyTool forEach(Iterable<T> iterable, BiConsumer<AnyTool, T> visitor) {
+    public <T> Tool forEach(Iterable<T> iterable, BiConsumer<Tool, T> visitor) {
       iterable.forEach(argument -> visitor.accept(this, argument));
       return this;
-    }
-    public List<String> args() {
-      return List.copyOf(args);
     }
     protected boolean isAssigned(Object object) {
       if (object == null) return false;
@@ -900,8 +890,14 @@ public class Bach {
       if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
       return true;
     }
+    protected String join(Collection<Path> paths) {
+      return Strings.toString(paths).replace("{MODULE}", "*");
+    }
+    public List<String> toStrings() {
+      return Strings.list(name(), args());
+    }
   }
-  public static class JavaCompiler extends AnyTool {
+  public static class JavaCompiler extends Tool {
     private List<String> compileModulesCheckingTimestamps;
     private Version versionOfModulesThatAreBeingCompiled;
     private List<Path> pathsWhereToFindSourceFilesForModules;
@@ -919,32 +915,32 @@ public class Bach {
       super("javac", arguments);
     }
     public List<String> args() {
-      var any = new AnyTool("<local>");
-      super.args.forEach(any::add);
+      var tool = new Tool("<local>");
+      super.args().forEach(tool::add);
       var module = getCompileModulesCheckingTimestamps();
-      if (isAssigned(module)) any.add("--module", String.join(",", module));
+      if (isAssigned(module)) tool.add("--module", String.join(",", module));
       var moduleVersion = getVersionOfModulesThatAreBeingCompiled();
-      if (isAssigned(moduleVersion)) any.add("--module-version", moduleVersion);
+      if (isAssigned(moduleVersion)) tool.add("--module-version", moduleVersion);
       var moduleSourcePath = getPathsWhereToFindSourceFilesForModules();
-      if (isAssigned(moduleSourcePath)) any.add("--module-source-path", join(moduleSourcePath));
+      if (isAssigned(moduleSourcePath)) tool.add("--module-source-path", join(moduleSourcePath));
       var modulePath = getPathsWhereToFindApplicationModules();
-      if (isAssigned(modulePath)) any.add("--module-path", join(modulePath));
+      if (isAssigned(modulePath)) tool.add("--module-path", join(modulePath));
       var modulePatches = getPathsWhereToFindMoreAssetsPerModule();
       if (isAssigned(modulePatches))
         for (var patch : modulePatches.entrySet())
-          any.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+          tool.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
       var release = getCompileForVirtualMachineVersion();
-      if (isAssigned(release)) any.add("--release", release);
-      if (isEnablePreviewLanguageFeatures()) any.add("--enable-preview");
-      if (isGenerateMetadataForMethodParameters()) any.add("-parameters");
-      if (isOutputSourceLocationsOfDeprecatedUsages()) any.add("-deprecation");
-      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) any.add("-verbose");
-      if (isTerminateCompilationIfWarningsOccur()) any.add("-Werror");
+      if (isAssigned(release)) tool.add("--release", release);
+      if (isEnablePreviewLanguageFeatures()) tool.add("--enable-preview");
+      if (isGenerateMetadataForMethodParameters()) tool.add("-parameters");
+      if (isOutputSourceLocationsOfDeprecatedUsages()) tool.add("-deprecation");
+      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) tool.add("-verbose");
+      if (isTerminateCompilationIfWarningsOccur()) tool.add("-Werror");
       var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (isAssigned(encoding)) any.add("-encoding", encoding);
+      if (isAssigned(encoding)) tool.add("-encoding", encoding);
       var destination = getDestinationDirectory();
-      if (isAssigned(destination)) any.add("-d", destination);
-      return any.args();
+      if (isAssigned(destination)) tool.add("-d", destination);
+      return tool.args();
     }
     public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
       this.compileModulesCheckingTimestamps = modules;
