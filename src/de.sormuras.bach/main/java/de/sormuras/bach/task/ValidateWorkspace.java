@@ -31,6 +31,6 @@ public /*static*/ class ValidateWorkspace extends Task {
   @Override
   public void execute(Execution execution) {
     var base = execution.getBach().getWorkspace().base();
-    if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base.toUri());
+    if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base);
   }
 }

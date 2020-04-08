@@ -134,15 +134,13 @@ public /*static*/ class Task {
 
   public static class Execution implements Printer {
     private final Bach bach;
-    private final String indent;
     private final String hash = Integer.toHexString(System.identityHashCode(this));
     private final StringWriter out = new StringWriter();
     private final StringWriter err = new StringWriter();
     private final Instant start = Instant.now();
 
-    private Execution(Bach bach, String indent) {
+    private Execution(Bach bach) {
       this.bach = bach;
-      this.indent = indent;
     }
 
     public Bach getBach() {
@@ -164,7 +162,6 @@ public /*static*/ class Task {
 
     @Override
     public void print(Level level, String message) {
-      bach.getPrinter().print(level, message.lines().map(line -> indent + line));
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       writer.write(message);
       writer.write(System.lineSeparator());
@@ -210,9 +207,13 @@ public /*static*/ class Task {
       var printer = bach.getPrinter();
       printer.print(Level.TRACE, String.format("%s%c %s", indent, task.leaf() ? '*' : '+', name));
       executionBegin(task);
-      var execution = new Execution(bach, indent);
+      var execution = new Execution(bach);
       try {
         task.execute(execution);
+        var out = execution.out.toString();
+        if (!out.isEmpty()) printer.print(Level.DEBUG, out.lines().map(line -> indent + line));
+        var err = execution.err.toString();
+        if (!err.isEmpty()) printer.print(Level.WARNING, err.lines().map(line -> indent + line));
         if (task.composite()) {
           var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);

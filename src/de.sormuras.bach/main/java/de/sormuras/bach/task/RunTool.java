@@ -21,7 +21,6 @@ import de.sormuras.bach.Convention;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.Tool;
 import java.io.PrintWriter;
-import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -52,15 +51,13 @@ public /*static*/ class RunTool extends Task {
     var err = execution.getErr();
     var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
 
-    var LS = System.lineSeparator();
-    var indented = Collectors.joining(LS + "\t");
-    execution.print(Level.DEBUG, "\t" + out.toString().lines().collect(indented));
     if (code != 0) {
       var name = tool.name();
       var caption = "Run of " + name + " failed with exit code: " + code;
+      var indented = Collectors.joining(System.lineSeparator() + "\t");
       var error = "\t" + err.toString().lines().collect(indented);
       var lines = "\t" + Tool.toStrings(name, args).stream().collect(indented);
-      var message = String.join(LS, caption, "Error:", error, "Tool:", lines);
+      var message = String.join(System.lineSeparator(), caption, "Error:", error, "Tool:", lines);
       throw new AssertionError(message);
     }
   }
