@@ -33,6 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import test.base.Log;
+import test.base.FileSystem;
 import test.base.SwallowSystem;
 
 class BachTests {
@@ -112,5 +113,19 @@ class BachTests {
             "Executed 6 of 10 tasks",
             ">> ERROR >>"),
         log.lines());
+  }
+
+  @Test
+  void writeSummaryFailsInReadOnlyDirectory(@TempDir Path temp) throws Exception {
+    var log = new Log();
+    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
+    try {
+      FileSystem.chmod(temp, false, false, false);
+      bach.build(API.emptyProject(), new Task("?"));
+    } catch (Throwable throwable) {
+      assertTrue(throwable.getMessage().contains(temp.toString()));
+    } finally {
+      FileSystem.chmod(temp, true, true, true);
+    }
   }
 }
