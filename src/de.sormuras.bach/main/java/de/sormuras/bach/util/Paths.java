@@ -19,8 +19,10 @@ package de.sormuras.bach.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Predicate;
 
 /** {@link Path}-related utilities. */
 public /*static*/ class Paths {
@@ -33,6 +35,22 @@ public /*static*/ class Paths {
       }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  /** Delete a tree of directories starting with the given root directory. */
+  public static void delete(Path directory, Predicate<Path> filter) throws IOException {
+    // trivial case: delete existing empty directory or single file
+    try {
+      Files.deleteIfExists(directory);
+      return;
+    } catch (DirectoryNotEmptyException __) {
+      // fall-through
+    }
+    // default case: walk the tree from leaves back to root directories...
+    try (var stream = Files.walk(directory)) {
+      var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
     }
   }
 

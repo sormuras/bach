@@ -18,10 +18,8 @@
 package de.sormuras.bach.task;
 
 import de.sormuras.bach.Task;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.Files;
+import de.sormuras.bach.util.Paths;
 import java.nio.file.Path;
-import java.util.function.Predicate;
 
 /** Delete a tree of directories. */
 public /*static*/ class DeleteDirectories extends Task {
@@ -35,21 +33,6 @@ public /*static*/ class DeleteDirectories extends Task {
 
   @Override
   public void execute(Execution execution) throws Exception {
-    delete(path, __ -> true);
-  }
-
-  static void delete(Path directory, Predicate<Path> filter) throws Exception {
-    // trivial case: delete existing empty directory or single file
-    try {
-      Files.deleteIfExists(directory);
-      return;
-    } catch (DirectoryNotEmptyException __) {
-      // fall-through
-    }
-    // default case: walk the tree from leaves back to root directories...
-    try (var stream = Files.walk(directory)) {
-      var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-      for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-    }
+    Paths.delete(path, __ -> true);
   }
 }
