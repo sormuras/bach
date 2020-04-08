@@ -77,7 +77,10 @@ public interface Printer {
 
     @Override
     public void print(Level level, String message) {
-      if (printable(level)) consumer.accept(level, message);
+      if (!printable(level)) return;
+      synchronized (consumer) {
+        consumer.accept(level, message);
+      }
     }
 
     @Override
