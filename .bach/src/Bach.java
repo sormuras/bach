@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
@@ -45,8 +46,11 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 public class Bach {
@@ -78,13 +82,22 @@ public class Bach {
   }
   public void build(Project project) {
     var tasks = new ArrayList<Task>();
+    tasks.add(
+        Task.parallel(
+            "Versions",
+            Task.run(Tool.javac("--version")),
+            Task.run("jar", "--version"),
+            Task.run("javadoc", "--version")));
     tasks.add(new ValidateWorkspace());
     tasks.add(new PrintProject(project));
     tasks.add(new ValidateProject(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
     tasks.add(new PrintModules(project));
-    var build = new Task("Build project " + project.toNameAndVersion(), false, tasks);
-    var summary = execute(new Task.Executor(this, project), build);
+    var task = new Task("Build project " + project.toNameAndVersion(), false, tasks);
+    build(project, task);
+  }
+  void build(Project project, Task task) {
+    var summary = execute(new Task.Executor(this, project), task);
     summary.write("build");
     summary.assertSuccessful();
     printer.print(Level.INFO, "Build took " + summary.toDurationString());
@@ -93,9 +106,10 @@ public class Bach {
     execute(new Task.Executor(this, null), task).assertSuccessful();
   }
   private Task.Executor.Summary execute(Task.Executor executor, Task task) {
-    printer.print(Level.DEBUG, "", "Execute task: " + task.name());
+    var size = task.size();
+    printer.print(Level.DEBUG, "Execute " + size + " tasks");
     var summary = executor.execute(task);
-    printer.print(Level.DEBUG, "", "Executed tasks: " + summary.getTaskCount());
+    printer.print(Level.DEBUG, "Executed " + summary.getTaskCounter() + " of " + size + " tasks");
     var exception = String.join(System.lineSeparator(), summary.exceptionDetails());
     if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
     return summary;
@@ -110,18 +124,18 @@ public class Bach {
   }
   public interface Printer {
     default void print(Level level, String... message) {
-      if (!isPrintable(level)) return;
+      if (!printable(level)) return;
       print(level, String.join(System.lineSeparator(), message));
     }
     default void print(Level level, Iterable<? extends CharSequence> message) {
-      if (!isPrintable(level)) return;
+      if (!printable(level)) return;
       print(level, String.join(System.lineSeparator(), message));
     }
     default void print(Level level, Stream<? extends CharSequence> message) {
-      if (!isPrintable(level)) return;
+      if (!printable(level)) return;
       print(level, message.collect(Collectors.joining(System.lineSeparator())));
     }
-    boolean isPrintable(Level level);
+    boolean printable(Level level);
     void print(Level level, String message);
     static Printer ofSystem() {
       var verbose = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
@@ -141,16 +155,19 @@ public class Bach {
         this.consumer = consumer;
         this.threshold = threshold;
       }
-      public boolean isPrintable(Level level) {
+      public boolean printable(Level level) {
         if (threshold == Level.OFF) return false;
         return threshold == Level.ALL || threshold.getSeverity() <= level.getSeverity();
       }
       public void print(Level level, String message) {
-        if (isPrintable(level)) consumer.accept(level, message);
+        if (!printable(level)) return;
+        synchronized (consumer) {
+          consumer.accept(level, message);
+        }
       }
       public String toString() {
         var levels = EnumSet.range(Level.TRACE, Level.ERROR).stream();
-        var map = levels.map(level -> level + ":" + isPrintable(level));
+        var map = levels.map(level -> level + ":" + printable(level));
         return "Default[threshold=" + threshold + "] -> " + map.collect(Collectors.joining(" "));
       }
     }
@@ -416,25 +433,68 @@ public class Bach {
   }
   public static class Task {
     private final String name;
+    private final boolean composite;
     private final boolean parallel;
     private final List<Task> subs;
     public Task(String name) {
-      this(name, false, List.of());
+      this(name, false, false, List.of());
     }
     public Task(String name, boolean parallel, List<Task> subs) {
+      this(name, true, parallel, subs);
+    }
+    public Task(String name, boolean composite, boolean parallel, List<Task> subs) {
       this.name = Objects.requireNonNullElse(name, getClass().getSimpleName());
+      this.composite = composite;
       this.parallel = parallel;
       this.subs = subs;
     }
     public String name() {
       return name;
     }
+    public boolean composite() {
+      return composite;
+    }
+    public boolean parallel() {
+      return parallel;
+    }
+    public List<Task> subs() {
+      return subs;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Task.class.getSimpleName() + "[", "]")
+          .add("name='" + name + "'")
+          .add("composite=" + composite)
+          .add("parallel=" + parallel)
+          .add("subs=" + subs)
+          .toString();
+    }
+    public boolean leaf() {
+      return !composite;
+    }
     public void execute(Execution execution) throws Exception {}
+    public int size() {
+      var counter = new AtomicInteger();
+      walk(task -> counter.incrementAndGet());
+      return counter.get();
+    }
+    void walk(Consumer<Task> consumer) {
+      consumer.accept(this);
+      for (var sub : subs) sub.walk(consumer);
+    }
     public static Task parallel(String name, Task... tasks) {
       return new Task(name, true, List.of(tasks));
     }
     public static Task sequence(String name, Task... tasks) {
       return new Task(name, false, List.of(tasks));
+    }
+    public static Task run(Tool tool) {
+      return run(tool.name(), tool.args().toArray(String[]::new));
+    }
+    public static Task run(String name, String... args) {
+      return run(ToolProvider.findFirst(name).orElseThrow(), args);
+    }
+    public static Task run(ToolProvider provider, String... args) {
+      return new RunTool(provider, args);
     }
     public static class Execution implements Printer {
       private final Bach bach;
@@ -450,7 +510,13 @@ public class Bach {
       public Bach getBach() {
         return bach;
       }
-      public boolean isPrintable(Level level) {
+      public Writer getOut() {
+        return out;
+      }
+      public Writer getErr() {
+        return err;
+      }
+      public boolean printable(Level level) {
         return true;
       }
       public void print(Level level, String message) {
@@ -475,6 +541,7 @@ public class Bach {
       }
       private final Bach bach;
       private final Project project;
+      private final AtomicInteger counter = new AtomicInteger(0);
       private final Deque<String> overview = new ConcurrentLinkedDeque<>();
       private final Deque<Detail> executions = new ConcurrentLinkedDeque<>();
       Executor(Bach bach, Project project) {
@@ -489,42 +556,40 @@ public class Bach {
       private Throwable execute(int depth, Task task) {
         var indent = "\t".repeat(depth);
         var name = task.name;
-        var subs = task.subs;
-        var flat = subs.isEmpty(); // i.e. no sub tasks
         var printer = bach.getPrinter();
-        printer.print(Level.TRACE, String.format("%s%c %s", indent, flat ? '*' : '+', name));
+        printer.print(Level.TRACE, String.format("%s%c %s", indent, task.leaf() ? '*' : '+', name));
         executionBegin(task);
         var execution = new Execution(bach, indent);
         try {
           task.execute(execution);
-          if (!flat) {
-            var stream = task.parallel ? subs.parallelStream() : subs.stream();
+          if (task.composite()) {
+            var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
             var error = errors.findFirst();
             if (error.isPresent()) return error.get();
             printer.print(Level.TRACE, indent + "= " + name);
           }
           executionEnd(task, execution);
-        } catch (Exception exception) {
-          printer.print(Level.ERROR, "Task execution failed: " + exception);
-          return exception;
+        } catch (Throwable throwable) {
+          printer.print(Level.ERROR, "Task execution failed: " + throwable);
+          return throwable;
         }
         return null;
       }
       private void executionBegin(Task task) {
-        if (task.subs.isEmpty()) return;
+        if (task.leaf()) return;
         var format = "|   +|%6X|        | %s";
         var thread = Thread.currentThread().getId();
         overview.add(String.format(format, thread, task.name));
       }
       private void executionEnd(Task task, Execution execution) {
+        counter.incrementAndGet();
         var format = "|%4c|%6X|%8d| %s";
-        var flat = task.subs.isEmpty();
-        var kind = flat ? ' ' : '=';
+        var kind = task.leaf() ? ' ' : '=';
         var thread = Thread.currentThread().getId();
         var duration = Duration.between(execution.start, Instant.now());
         var line = String.format(format, kind, thread, duration.toMillis(), task.name);
-        if (flat) {
+        if (task.leaf()) {
           var caption = "task-execution-details-" + execution.hash;
           overview.add(line + " [...](#" + caption + ")");
           executions.add(new Detail(task, execution, caption, duration));
@@ -554,8 +619,8 @@ public class Bach {
               .replaceAll("(\\d[HMS])(?!$)", "$1 ")
               .toLowerCase();
         }
-        int getTaskCount() {
-          return executions.size();
+        int getTaskCounter() {
+          return counter.get();
         }
         List<String> toMarkdown() {
           var md = new ArrayList<String>();
@@ -685,9 +750,9 @@ public class Bach {
           try {
             Files.createDirectories(summary.getParent());
             Files.write(summary, markdown);
-            Files.write(workspace.workspace("summary.md"), markdown); // replace existing
-          } catch (Exception e) {
-            throw new RuntimeException(e);
+            Files.write(workspace.workspace("summary.md"), markdown); // overwrite existing
+          } catch (IOException e) {
+            throw new UncheckedIOException("Write of " + summary + " failed: " + e, e);
           }
         }
       }
@@ -751,6 +816,38 @@ public class Bach {
       execution.print(Level.DEBUG, project.toStrings());
     }
   }
+  public static class RunTool extends Task {
+    static String name(String tool, String... args) {
+      var length = args.length;
+      if (length == 0) return String.format("Run %s", tool);
+      if (length == 1) return String.format("Run %s %s", tool, args[0]);
+      if (length == 2) return String.format("Run %s %s %s", tool, args[0], args[1]);
+      return String.format("Run %s %s %s ... (%d arguments)", tool, args[0], args[1], length);
+    }
+    private final ToolProvider tool;
+    private final String[] args;
+    public RunTool(ToolProvider tool, String... args) {
+      super(name(tool.name(), args));
+      this.tool = tool;
+      this.args = args;
+    }
+    public void execute(Execution execution) {
+      var out = execution.getOut();
+      var err = execution.getErr();
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+      var LS = System.lineSeparator();
+      var indented = Collectors.joining(LS + "\t");
+      execution.print(Level.DEBUG, "\t" + out.toString().lines().collect(indented));
+      if (code != 0) {
+        var name = tool.name();
+        var caption = "Run of " + name + " failed with exit code: " + code;
+        var error = "\t" + err.toString().lines().collect(indented);
+        var lines = "\t" + Tool.toStrings(name, args).stream().collect(indented);
+        var message = String.join(LS, caption, "Error:", error, "Tool:", lines);
+        throw new AssertionError(message);
+      }
+    }
+  }
   public static class ValidateProject extends Task {
     private final Project project;
     public ValidateProject(Project project) {
@@ -778,8 +875,8 @@ public class Bach {
     static Any of(String name, Object... arguments) {
       return new Any(name, arguments);
     }
-    static JavaCompiler javac() {
-      return new JavaCompiler();
+    static JavaCompiler javac(Object... arguments) {
+      return new JavaCompiler(arguments);
     }
     static String join(Collection<Path> paths) {
       return paths.stream()
@@ -787,12 +884,31 @@ public class Bach {
           .map(string -> string.replace("{MODULE}", "*"))
           .collect(Collectors.joining(File.pathSeparator));
     }
+    static List<String> toStrings(String tool, String... args) {
+      return toStrings(tool, List.of(args));
+    }
+    static List<String> toStrings(String tool, List<String> args) {
+      if (args.isEmpty()) return List.of(tool);
+      if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
+      var strings = new ArrayList<String>();
+      strings.add(tool + " with " + args.size() + " arguments:");
+      var simple = true;
+      for (String arg : args) {
+        var minus = arg.startsWith("-");
+        strings.add((simple | minus ? "\t" : "\t\t") + arg);
+        simple = !minus;
+      }
+      return List.copyOf(strings);
+    }
     String name();
-    String[] args();
+    List<String> args();
+    default List<String> toStrings() {
+      return toStrings(name(), args());
+    }
     class Any implements Tool {
       private final String name;
-      private final List<String> args = new ArrayList<>();
-      private Any(String name, Object... arguments) {
+      protected final List<String> args = new ArrayList<>();
+      protected Any(String name, Object... arguments) {
         this.name = name;
         addAll(arguments);
       }
@@ -820,11 +936,11 @@ public class Bach {
         iterable.forEach(argument -> visitor.accept(this, argument));
         return this;
       }
-      public String[] args() {
-        return args.toArray(String[]::new);
+      public List<String> args() {
+        return List.copyOf(args);
       }
     }
-    class JavaCompiler implements Tool {
+    class JavaCompiler extends Any {
       private List<String> compileModulesCheckingTimestamps;
       private Version versionOfModulesThatAreBeingCompiled;
       private List<Path> pathsWhereToFindSourceFilesForModules;
@@ -838,12 +954,11 @@ public class Bach {
       private boolean outputSourceLocationsOfDeprecatedUsages;
       private boolean terminateCompilationIfWarningsOccur;
       private Path destinationDirectory;
-      private JavaCompiler() {}
-      public String name() {
-        return "javac";
+      private JavaCompiler(Object... arguments) {
+        super("javac", arguments);
       }
-      public String[] args() {
-        var args = new ArrayList<String>();
+      public List<String> args() {
+        var args = new ArrayList<>(super.args());
         if (isAssigned(getCompileModulesCheckingTimestamps())) {
           args.add("--module");
           args.add(String.join(",", getCompileModulesCheckingTimestamps()));
@@ -883,7 +998,7 @@ public class Bach {
           args.add("-d");
           args.add(String.valueOf(getDestinationDirectory()));
         }
-        return args.toArray(String[]::new);
+        return args;
       }
       public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
         this.compileModulesCheckingTimestamps = modules;
