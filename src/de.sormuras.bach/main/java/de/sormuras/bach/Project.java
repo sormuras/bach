@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
+import de.sormuras.bach.project.structure.Unit;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +68,10 @@ public /*static*/ class Project {
 
   public String toNameAndVersion() {
     return name + ' ' + version;
+  }
+
+  public Version toModuleVersion(Unit unit) {
+    return unit.descriptor().version().orElse(version);
   }
 
   public List<String> toStrings() {

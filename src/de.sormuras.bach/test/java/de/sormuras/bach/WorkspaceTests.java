@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import java.lang.module.ModuleDescriptor;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -32,24 +33,25 @@ class WorkspaceTests {
 
   @Test
   void defaults() {
-    var N = Runtime.version().feature();
     var workspace = Workspace.of();
-    var realm = API.newRealm("realm");
     assertEquals(Path.of(""), workspace.base());
     assertEquals(Path.of(".bach/workspace"), workspace.workspace());
-    assertEquals(Path.of(".bach/workspace", "first"), workspace.workspace("first"));
-    assertEquals(Path.of(".bach/workspace", "first/more"), workspace.workspace("first", "more"));
-    assertEquals(Path.of(".bach/workspace", "classes/realm/" + N), workspace.classes(realm));
-    assertEquals(Path.of(".bach/workspace", "classes/realm/" + N), workspace.classes(realm, 0));
-    assertEquals(Path.of(".bach/workspace", "classes/realm/9"), workspace.classes(realm, 9));
-    assertEquals(Path.of(".bach/workspace", "modules/realm"), workspace.modules(realm));
-    var project = API.emptyProject();
-    var unit = API.newUnit("unit");
-    assertEquals("unit-0.jar", workspace.jarFileName(project, unit, ""));
-    assertEquals("unit-0-classifier.jar", workspace.jarFileName(project, unit, "classifier"));
-    assertEquals(
-        Path.of(".bach/workspace", "modules/realm/unit-0.jar"),
-        workspace.jarFilePath(project, realm, unit));
+
+    var ws = Path.of(".bach/workspace");
+    assertEquals(ws.resolve("first"), workspace.workspace("first"));
+    assertEquals(ws.resolve("first/more"), workspace.workspace("first", "more"));
+
+    var realm = "realm";
+    var N = Runtime.version().feature();
+    var Z = ModuleDescriptor.Version.parse("0");
+    assertEquals(ws.resolve("classes/realm/" + N), workspace.classes(realm, 0));
+    assertEquals(ws.resolve("classes/realm/9"), workspace.classes(realm, 9));
+    assertEquals(ws.resolve("modules/realm"), workspace.modules(realm));
+    assertEquals(ws.resolve("modules/realm/foo-0.jar"), workspace.module(realm, "foo", Z));
+
+    assertEquals("foo.jar", workspace.jarFileName("foo", null, null));
+    assertEquals("foo-0.jar", workspace.jarFileName("foo", Z, ""));
+    assertEquals("foo-0-classifier.jar", workspace.jarFileName("foo", Z, "classifier"));
   }
 
   @TestFactory

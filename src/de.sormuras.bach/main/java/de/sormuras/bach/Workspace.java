@@ -17,10 +17,8 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.project.structure.Realm;
-import de.sormuras.bach.project.structure.Unit;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.StringJoiner;
 
 /** Well-known paths. */
@@ -62,28 +60,22 @@ public /*static*/ final class Workspace {
     return workspace.resolve(Path.of(first, more));
   }
 
-  public Path classes(Realm realm) {
-    return classes(realm, realm.release());
-  }
-
-  public Path classes(Realm realm, int release) {
+  public Path classes(String realm, int release) {
     var version = String.valueOf(release == 0 ? Runtime.version().feature() : release);
-    return workspace.resolve("classes").resolve(realm.name()).resolve(version);
+    return workspace("classes", realm, version);
   }
 
-  public Path modules(Realm realm) {
-    return workspace.resolve("modules").resolve(realm.name());
+  public Path modules(String realm) {
+    return workspace("modules", realm);
   }
 
-  public String jarFileName(Project project, Unit unit, String classifier) {
-    var unitVersion = unit.descriptor().version();
-    var moduleVersion = unitVersion.isPresent() ? unitVersion : Optional.ofNullable(project.version());
-    var versionSuffix = moduleVersion.map(v -> "-" + v).orElse("");
-    var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
-    return unit.name() + versionSuffix + classifierSuffix + ".jar";
+  public Path module(String realm, String module, Version version) {
+    return modules(realm).resolve(jarFileName(module, version, ""));
   }
 
-  public Path jarFilePath(Project project, Realm realm, Unit unit) {
-    return modules(realm).resolve(jarFileName(project, unit, ""));
+  public String jarFileName(String module, Version version, String classifier) {
+    var versionSuffix = version == null ? "" : "-" + version;
+    var classifierSuffix = classifier == null || classifier.isEmpty() ? "" : "-" + classifier;
+    return module + versionSuffix + classifierSuffix + ".jar";
   }
 }

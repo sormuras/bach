@@ -33,11 +33,12 @@ public /*static*/ class PrintModules extends Task {
 
   @Override
   public void execute(Execution execution) {
-    var realm = project.structure().realms().get(0);
+    var workspace = execution.getBach().getWorkspace();
+    var realm = project.structure().toMainRealm().orElseThrow();
     for (var unit : realm.units()) {
-      var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
+      var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
       var nameAndVersion = unit.descriptor().toNameAndVersion();
-      execution.print(Level.INFO, "Unit " + nameAndVersion, "\t-> " + jar.toUri());
+      execution.print(Level.INFO, "Module " + nameAndVersion, "\t-> " + jar.toUri());
     }
   }
 }
