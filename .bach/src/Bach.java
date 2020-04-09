@@ -201,6 +201,9 @@ public class Bach {
     public String toNameAndVersion() {
       return name + ' ' + version;
     }
+    public Version toModuleVersion(Unit unit) {
+      return unit.descriptor().version().orElse(version);
+    }
     public List<String> toStrings() {
       var strings = new ArrayList<String>();
       strings.add("Project");
@@ -777,11 +780,12 @@ public class Bach {
       this.project = project;
     }
     public void execute(Execution execution) {
-      var realm = project.structure().realms().get(0);
+      var workspace = execution.getBach().getWorkspace();
+      var realm = project.structure().toMainRealm().orElseThrow();
       for (var unit : realm.units()) {
-        var jar = execution.getBach().getWorkspace().jarFilePath(project, realm, unit);
+        var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
         var nameAndVersion = unit.descriptor().toNameAndVersion();
-        execution.print(Level.INFO, "Unit " + nameAndVersion, "\t-> " + jar.toUri());
+        execution.print(Level.INFO, "Module " + nameAndVersion, "\t-> " + jar.toUri());
       }
     }
   }
@@ -1134,25 +1138,20 @@ public class Bach {
     public Path workspace(String first, String... more) {
       return workspace.resolve(Path.of(first, more));
     }
-    public Path classes(Realm realm) {
-      return classes(realm, realm.release());
-    }
-    public Path classes(Realm realm, int release) {
+    public Path classes(String realm, int release) {
       var version = String.valueOf(release == 0 ? Runtime.version().feature() : release);
-      return workspace.resolve("classes").resolve(realm.name()).resolve(version);
+      return workspace("classes", realm, version);
     }
-    public Path modules(Realm realm) {
-      return workspace.resolve("modules").resolve(realm.name());
+    public Path modules(String realm) {
+      return workspace("modules", realm);
     }
-    public String jarFileName(Project project, Unit unit, String classifier) {
-      var unitVersion = unit.descriptor().version();
-      var moduleVersion = unitVersion.isPresent() ? unitVersion : Optional.ofNullable(project.version());
-      var versionSuffix = moduleVersion.map(v -> "-" + v).orElse("");
-      var classifierSuffix = classifier.isEmpty() ? "" : "-" + classifier;
-      return unit.name() + versionSuffix + classifierSuffix + ".jar";
+    public Path module(String realm, String module, Version version) {
+      return modules(realm).resolve(jarFileName(module, version, ""));
     }
-    public Path jarFilePath(Project project, Realm realm, Unit unit) {
-      return modules(realm).resolve(jarFileName(project, unit, ""));
+    public String jarFileName(String module, Version version, String classifier) {
+      var versionSuffix = version == null ? "" : "-" + version;
+      var classifierSuffix = classifier == null || classifier.isEmpty() ? "" : "-" + classifier;
+      return module + versionSuffix + classifierSuffix + ".jar";
     }
   }
 }
