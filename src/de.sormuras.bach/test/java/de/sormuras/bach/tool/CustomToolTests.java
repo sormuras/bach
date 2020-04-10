@@ -15,40 +15,30 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach;
+package de.sormuras.bach.tool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.tool.Custom.Granularity;
+import de.sormuras.bach.util.Strings;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-class ToolTests {
+class CustomToolTests {
 
   @Test
-  void empty() {
-    var empty = new Tool("any");
-    assertTrue(empty.args().isEmpty());
-    assertLinesMatch(List.of("any"), empty.toStrings());
-  }
-
-  @Test
-  void touchAllAdders() {
-    var tool =
-        new Tool("any", 0x0)
-            .add(1)
-            .add("key", "value")
-            .add("alpha", "beta", "gamma")
-            .add(true, "first")
-            .add(true, "second", "more")
-            .add(false, "suppressed")
-            .forEach(List.of('a', 'b', 'c'), Tool::add);
-    assertEquals("any", tool.name());
+  void custom() {
+    var custom = new Custom("BEGIN", List.of(new Granularity(TimeUnit.DAYS)));
+    assertThrows(NoSuchElementException.class, () -> custom.get(Option.class));
+    assertEquals(TimeUnit.DAYS, custom.get(Granularity.class).unit());
+    var args = custom.toArgumentStrings();
+    assertLinesMatch(List.of("BEGIN", "--granularity", "DAYS", "END."), args);
     assertLinesMatch(
-        List.of(
-            "0", "1", "key", "value", "alpha", "beta", "gamma", "first", "second", "more", "a", "b",
-            "c"),
-        tool.args());
+        List.of("custom with 4 arguments:", "\tBEGIN", "\t--granularity", "\t\tDAYS", "\tEND."),
+        Strings.list(custom.name(), args));
   }
 }
