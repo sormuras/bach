@@ -22,7 +22,6 @@ import de.sormuras.bach.task.CreateDirectories;
 import de.sormuras.bach.task.PrintModules;
 import de.sormuras.bach.task.PrintProject;
 import de.sormuras.bach.task.ValidateWorkspace;
-import de.sormuras.bach.tool.JavaCompiler;
 import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
@@ -78,7 +77,7 @@ public class Bach {
     tasks.add(
         Task.parallel(
             "Versions",
-            Task.run(new JavaCompiler("--version")),
+            Task.run("javac", "--version"),
             Task.run("jar", "--version"),
             Task.run("javadoc", "--version")));
     tasks.add(new ValidateWorkspace());
