@@ -34,6 +34,8 @@ public /*static*/ class KeyValueOption<V> implements Option {
 
   @Override
   public void visit(Arguments arguments) {
-    arguments.add(key, value);
+    arguments.add(key);
+    if (value == null) return;
+    arguments.add(value);
   }
 }

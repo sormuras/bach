@@ -17,6 +17,8 @@
 
 package de.sormuras.bach.tool;
 
+/** Implementers indicate that they append any number of elements to an instance of arguments. */
+@FunctionalInterface
 public interface Option {
   void visit(Arguments arguments);
 }
