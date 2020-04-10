@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.structure.Directory;
 import de.sormuras.bach.task.RunTool;
+import de.sormuras.bach.tool.Tool;
 import de.sormuras.bach.util.Strings;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -119,7 +120,7 @@ public /*static*/ class Task {
 
   /** Create new tool-running task for the given tool instance. */
   public static Task run(Tool tool) {
-    return run(tool.name(), tool.args().toArray(String[]::new));
+    return run(tool.name(), tool.toArgumentStrings().toArray(String[]::new));
   }
 
   /** Create new tool-running task for the name and arguments. */
