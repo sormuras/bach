@@ -40,7 +40,6 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.IntSummaryStatistics;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -85,7 +84,7 @@ public class Bach {
     tasks.add(
         Task.parallel(
             "Versions",
-            Task.run(new JavaCompiler("--version")),
+            Task.run("javac", "--version"),
             Task.run("jar", "--version"),
             Task.run("javadoc", "--version")));
     tasks.add(new ValidateWorkspace());
@@ -487,7 +486,7 @@ public class Bach {
       return new Task(name, false, List.of(tasks));
     }
     public static Task run(Tool tool) {
-      return run(tool.name(), tool.args().toArray(String[]::new));
+      return run(tool.name(), tool.toArgumentStrings().toArray(String[]::new));
     }
     public static Task run(String name, String... args) {
       return run(ToolProvider.findFirst(name).orElseThrow(), args);
@@ -853,189 +852,119 @@ public class Bach {
       if (Paths.isEmpty(base)) execution.print(Level.WARNING, "Empty base directory " + base);
     }
   }
-  public static class Tool {
-    private final String name;
-    private final List<String> args = new ArrayList<>();
-    public Tool(String name, Object... arguments) {
-      this.name = name;
+  public static class Arguments {
+    private final List<String> list = new ArrayList<>();
+    public Arguments(Object... arguments) {
       addAll(arguments);
+    }
+    public List<String> build() {
+      return List.copyOf(list);
+    }
+    public Arguments add(Object argument) {
+      list.add(argument.toString());
+      return this;
+    }
+    public Arguments add(String key, Object value) {
+      return add(key).add(value);
+    }
+    public Arguments add(String key, Object first, Object second) {
+      return add(key).add(first).add(second);
+    }
+    public Arguments add(boolean predicate, Object first, Object... more) {
+      return predicate ? add(first).addAll(more) : this;
+    }
+    public Arguments addAll(Object... arguments) {
+      for (var argument : arguments) add(argument);
+      return this;
+    }
+    public <T> Arguments forEach(Iterable<T> iterable, BiConsumer<Arguments, T> consumer) {
+      iterable.forEach(argument -> consumer.accept(this, argument));
+      return this;
+    }
+  }
+  public static final class JavaCompiler extends Tool {
+    public JavaCompiler(List<? extends Option> options) {
+      super("javac", options);
+    }
+    public static final class DestinationDirectory extends KeyValueOption<Path> {
+      public DestinationDirectory(Path directory) {
+        super("-d", directory);
+      }
+    }
+    public static final class CompileModulesCheckingTimestamps implements Option {
+      private final List<String> modules;
+      public CompileModulesCheckingTimestamps(List<String> modules) {
+        this.modules = modules;
+      }
+      public List<String> modules() {
+        return modules;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module", String.join(",", modules));
+      }
+    }
+  }
+  public static class KeyValueOption<V> implements Option {
+    private final String key;
+    private final V value;
+    public KeyValueOption(String key, V value) {
+      this.key = key;
+      this.value = value;
+    }
+    public V value() {
+      return value;
+    }
+    public void visit(Arguments arguments) {
+      arguments.add(key, value);
+    }
+  }
+  public interface Option {
+    void visit(Arguments arguments);
+  }
+  public static class Tool {
+    public static Tool of(String name, Option... options) {
+      return new Tool(name, List.of(options));
+    }
+    private final String name;
+    private final List<? extends Option> options;
+    public Tool(String name, List<? extends Option> options) {
+      this.name = name;
+      this.options = options;
+      var type = getClass();
+      var optionsDeclaredInDifferentClass =
+          options.stream()
+              .filter(option -> !type.equals(option.getClass().getDeclaringClass()))
+              .collect(Collectors.toList());
+      if (optionsDeclaredInDifferentClass.isEmpty()) return;
+      var caption = String.format("All options of tool %s must be declared in %s", name, type);
+      var message = new StringJoiner(System.lineSeparator() + "\tbut ").add(caption);
+      optionsDeclaredInDifferentClass.forEach(
+          option -> {
+            var optionClass = option.getClass();
+            message.add(optionClass + " is declared in " + optionClass.getDeclaringClass());
+          });
+      throw new IllegalArgumentException(message.toString());
     }
     public String name() {
       return name;
     }
-    public List<String> args() {
-      return List.copyOf(args);
+    public <O extends Option> Stream<O> filter(Class<O> type) {
+      return options.stream().filter(option -> option.getClass().equals(type)).map(type::cast);
     }
-    public Tool add(Object argument) {
-      args.add(argument.toString());
-      return this;
+    public <O extends Option> Optional<O> find(Class<O> type) {
+      return filter(type).findAny();
     }
-    public Tool add(String key, Object value) {
-      return add(key).add(value);
+    public <O extends Option> O get(Class<O> type) {
+      return find(type).orElseThrow();
     }
-    public Tool add(String key, Object first, Object second) {
-      return add(key).add(first).add(second);
-    }
-    public Tool add(boolean predicate, Object first, Object... more) {
-      return predicate ? add(first).addAll(more) : this;
-    }
-    public Tool addAll(Object... arguments) {
-      for (var argument : arguments) add(argument);
-      return this;
-    }
-    public <T> Tool forEach(Iterable<T> iterable, BiConsumer<Tool, T> visitor) {
-      iterable.forEach(argument -> visitor.accept(this, argument));
-      return this;
-    }
-    protected boolean isAssigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      return true;
-    }
-    protected String join(Collection<Path> paths) {
-      return Strings.toString(paths).replace("{MODULE}", "*");
-    }
-    public List<String> toStrings() {
-      return Strings.list(name(), args());
-    }
-  }
-  public static class JavaCompiler extends Tool {
-    private List<String> compileModulesCheckingTimestamps;
-    private Version versionOfModulesThatAreBeingCompiled;
-    private List<Path> pathsWhereToFindSourceFilesForModules;
-    private List<Path> pathsWhereToFindApplicationModules;
-    private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private String characterEncodingUsedBySourceFiles;
-    private int compileForVirtualMachineVersion;
-    private boolean enablePreviewLanguageFeatures;
-    private boolean generateMetadataForMethodParameters;
-    private boolean outputMessagesAboutWhatTheCompilerIsDoing;
-    private boolean outputSourceLocationsOfDeprecatedUsages;
-    private boolean terminateCompilationIfWarningsOccur;
-    private Path destinationDirectory;
-    public JavaCompiler(Object... arguments) {
-      super("javac", arguments);
-    }
-    public List<String> args() {
-      var tool = new Tool("<local>");
-      super.args().forEach(tool::add);
-      var module = getCompileModulesCheckingTimestamps();
-      if (isAssigned(module)) tool.add("--module", String.join(",", module));
-      var moduleVersion = getVersionOfModulesThatAreBeingCompiled();
-      if (isAssigned(moduleVersion)) tool.add("--module-version", moduleVersion);
-      var moduleSourcePath = getPathsWhereToFindSourceFilesForModules();
-      if (isAssigned(moduleSourcePath)) tool.add("--module-source-path", join(moduleSourcePath));
-      var modulePath = getPathsWhereToFindApplicationModules();
-      if (isAssigned(modulePath)) tool.add("--module-path", join(modulePath));
-      var modulePatches = getPathsWhereToFindMoreAssetsPerModule();
-      if (isAssigned(modulePatches))
-        for (var patch : modulePatches.entrySet())
-          tool.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
-      var release = getCompileForVirtualMachineVersion();
-      if (isAssigned(release)) tool.add("--release", release);
-      if (isEnablePreviewLanguageFeatures()) tool.add("--enable-preview");
-      if (isGenerateMetadataForMethodParameters()) tool.add("-parameters");
-      if (isOutputSourceLocationsOfDeprecatedUsages()) tool.add("-deprecation");
-      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) tool.add("-verbose");
-      if (isTerminateCompilationIfWarningsOccur()) tool.add("-Werror");
-      var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (isAssigned(encoding)) tool.add("-encoding", encoding);
-      var destination = getDestinationDirectory();
-      if (isAssigned(destination)) tool.add("-d", destination);
-      return tool.args();
-    }
-    public JavaCompiler setCompileModulesCheckingTimestamps(List<String> modules) {
-      this.compileModulesCheckingTimestamps = modules;
-      return this;
-    }
-    public List<String> getCompileModulesCheckingTimestamps() {
-      return compileModulesCheckingTimestamps;
-    }
-    public JavaCompiler setPathsWhereToFindSourceFilesForModules(List<Path> moduleSourcePath) {
-      this.pathsWhereToFindSourceFilesForModules = moduleSourcePath;
-      return this;
-    }
-    public List<Path> getPathsWhereToFindSourceFilesForModules() {
-      return pathsWhereToFindSourceFilesForModules;
-    }
-    public JavaCompiler setPathsWhereToFindApplicationModules(List<Path> modulePath) {
-      this.pathsWhereToFindApplicationModules = modulePath;
-      return this;
-    }
-    public List<Path> getPathsWhereToFindApplicationModules() {
-      return pathsWhereToFindApplicationModules;
-    }
-    public JavaCompiler setDestinationDirectory(Path destinationDirectory) {
-      this.destinationDirectory = destinationDirectory;
-      return this;
-    }
-    public Path getDestinationDirectory() {
-      return destinationDirectory;
-    }
-    public JavaCompiler setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> patches) {
-      this.pathsWhereToFindMoreAssetsPerModule = patches;
-      return this;
-    }
-    public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
-      return pathsWhereToFindMoreAssetsPerModule;
-    }
-    public JavaCompiler setCharacterEncodingUsedBySourceFiles(String encoding) {
-      this.characterEncodingUsedBySourceFiles = encoding;
-      return this;
-    }
-    public String getCharacterEncodingUsedBySourceFiles() {
-      return characterEncodingUsedBySourceFiles;
-    }
-    public JavaCompiler setCompileForVirtualMachineVersion(int release) {
-      this.compileForVirtualMachineVersion = release;
-      return this;
-    }
-    public int getCompileForVirtualMachineVersion() {
-      return compileForVirtualMachineVersion;
-    }
-    public JavaCompiler setEnablePreviewLanguageFeatures(boolean enablePreview) {
-      this.enablePreviewLanguageFeatures = enablePreview;
-      return this;
-    }
-    public boolean isEnablePreviewLanguageFeatures() {
-      return enablePreviewLanguageFeatures;
-    }
-    public JavaCompiler setGenerateMetadataForMethodParameters(boolean parameters) {
-      this.generateMetadataForMethodParameters = parameters;
-      return this;
-    }
-    public boolean isGenerateMetadataForMethodParameters() {
-      return generateMetadataForMethodParameters;
-    }
-    public JavaCompiler setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
-      this.outputSourceLocationsOfDeprecatedUsages = deprecation;
-      return this;
-    }
-    public boolean isOutputSourceLocationsOfDeprecatedUsages() {
-      return outputSourceLocationsOfDeprecatedUsages;
-    }
-    public JavaCompiler setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
-      this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
-      return this;
-    }
-    public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
-      return outputMessagesAboutWhatTheCompilerIsDoing;
-    }
-    public JavaCompiler setTerminateCompilationIfWarningsOccur(boolean warningsAreErrors) {
-      this.terminateCompilationIfWarningsOccur = warningsAreErrors;
-      return this;
-    }
-    public boolean isTerminateCompilationIfWarningsOccur() {
-      return terminateCompilationIfWarningsOccur;
-    }
-    public JavaCompiler setVersionOfModulesThatAreBeingCompiled(Version moduleVersion) {
-      this.versionOfModulesThatAreBeingCompiled = moduleVersion;
-      return this;
-    }
-    public Version getVersionOfModulesThatAreBeingCompiled() {
-      return versionOfModulesThatAreBeingCompiled;
+    protected void addInitialArguments(Arguments arguments) {}
+    protected void addMoreArguments(Arguments arguments) {}
+    public List<String> toArgumentStrings() {
+      var arguments = new Arguments();
+      addInitialArguments(arguments);
+      options.forEach(option -> option.visit(arguments));
+      addMoreArguments(arguments);
+      return arguments.build();
     }
   }
   public static class Paths {
