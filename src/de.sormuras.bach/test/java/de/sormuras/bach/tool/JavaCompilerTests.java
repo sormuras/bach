@@ -19,58 +19,66 @@ package de.sormuras.bach.tool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
-import java.lang.module.ModuleDescriptor.Version;
+import de.sormuras.bach.tool.JavaCompiler.CompileModulesCheckingTimestamps;
+import de.sormuras.bach.tool.JavaCompiler.DestinationDirectory;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 class JavaCompilerTests {
 
   @Test
-  void javac() {
+  void canonical() {
+    var modules = List.of("a", "b", "c");
+
     var javac =
-        new JavaCompiler()
-            .setCompileModulesCheckingTimestamps(List.of("a", "b", "c"))
-            .setVersionOfModulesThatAreBeingCompiled(Version.parse("123"))
-            .setPathsWhereToFindSourceFilesForModules(List.of(Path.of("src/{MODULE}/main")))
-            .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
-            .setPathsWhereToFindMoreAssetsPerModule(Map.of("b", List.of(Path.of("src/b/test"))))
-            .setEnablePreviewLanguageFeatures(true)
-            .setCompileForVirtualMachineVersion(Runtime.version().feature())
-            .setCharacterEncodingUsedBySourceFiles("UTF-8")
-            .setOutputMessagesAboutWhatTheCompilerIsDoing(true)
-            .setGenerateMetadataForMethodParameters(true)
-            .setOutputSourceLocationsOfDeprecatedUsages(true)
-            .setTerminateCompilationIfWarningsOccur(true)
-            .setDestinationDirectory(Path.of("classes"));
+        new JavaCompiler(
+            List.of(
+                new CompileModulesCheckingTimestamps(modules),
+                // VersionOfModulesThatAreBeingCompiled(Version.parse("123"))
+                // PathsWhereToFindSourceFilesForModules(List.of(Path.of("src/{MODULE}/main")))
+                // PathsWhereToFindApplicationModules(List.of(Path.of("lib")))
+                // PathsWhereToFindMoreAssetsPerModule(Map.of("b", List.of(Path.of("src/b/test"))))
+                // EnablePreviewLanguageFeatures(true)
+                // CompileForVirtualMachineVersion(Runtime.version().feature())
+                // CharacterEncodingUsedBySourceFiles("UTF-8")
+                // OutputMessagesAboutWhatTheCompilerIsDoing(true)
+                // GenerateMetadataForMethodParameters(true)
+                // OutputSourceLocationsOfDeprecatedUsages(true)
+                // TerminateCompilationIfWarningsOccur(true)
+                // new Tool.Option.KeyValueOption<Integer>("i", 3),
+                new DestinationDirectory(Path.of("classes"))));
+
+    assertThrows(NoSuchElementException.class, () -> javac.get(Option.class));
+    assertEquals(modules, javac.get(CompileModulesCheckingTimestamps.class).modules());
+
     assertEquals("javac", javac.name());
     assertLinesMatch(
         List.of(
-            "javac with 21 arguments:",
-            "\t--module",
-            "\t\ta,b,c",
-            "\t--module-version",
-            "\t\t123",
-            "\t--module-source-path",
-            "\t\t" + String.join(File.separator, "src", "*", "main"),
-            "\t--module-path",
-            "\t\tlib",
-            "\t--patch-module",
-            "\t\tb=" + String.join(File.separator, "src", "b", "test"),
-            "\t--release",
-            "\t\t" + Runtime.version().feature(),
-            "\t--enable-preview",
-            "\t-parameters",
-            "\t-deprecation",
-            "\t-verbose",
-            "\t-Werror",
-            "\t-encoding",
-            "\t\tUTF-8",
-            "\t-d",
-            "\t\tclasses"),
-        javac.toStrings());
+            "--module",
+            "a,b,c",
+            // "--module-version",
+            // "123",
+            // "--module-source-path",
+            // String.join(File.separator, "src", "*", "main"),
+            // "--module-path",
+            // "lib",
+            // "--patch-module",
+            // "b=" + String.join(File.separator, "src", "b", "test"),
+            // "--release",
+            // Runtime.version().feature(),
+            // "--enable-preview",
+            // "-parameters",
+            // "-deprecation",
+            // "-verbose",
+            // "-Werror",
+            // "-encoding",
+            // "UTF-8",
+            "-d",
+            "classes"),
+        javac.toArgumentStrings());
   }
 }
