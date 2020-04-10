@@ -26,8 +26,16 @@ import java.util.stream.Stream;
 /** A tool call configuration. */
 public /*static*/ class Tool {
 
-  public static Tool of(String name, Option... options) {
-    return new Tool(name, List.of(options));
+  public static Tool of(String name, String... arguments) {
+    return new Tool(name, List.of(new ObjectArrayOption<>(arguments)));
+  }
+
+  public static JavaCompiler javac(List<? extends Option> options) {
+    return new JavaCompiler(options);
+  }
+
+  public static JavaDocumentationGenerator javadoc(List<? extends Option> options) {
+    return new JavaDocumentationGenerator(options);
   }
 
   private final String name;
@@ -38,18 +46,20 @@ public /*static*/ class Tool {
     this.options = options;
 
     var type = getClass();
+    if (type == Tool.class) return;
+
     var optionsDeclaredInDifferentClass =
         options.stream()
             .filter(option -> !type.equals(option.getClass().getDeclaringClass()))
             .collect(Collectors.toList());
     if (optionsDeclaredInDifferentClass.isEmpty()) return;
+
     var caption = String.format("All options of tool %s must be declared in %s", name, type);
     var message = new StringJoiner(System.lineSeparator() + "\tbut ").add(caption);
-    optionsDeclaredInDifferentClass.forEach(
-        option -> {
-          var optionClass = option.getClass();
-          message.add(optionClass + " is declared in " + optionClass.getDeclaringClass());
-        });
+    for (var option : optionsDeclaredInDifferentClass) {
+      var optionClass = option.getClass();
+      message.add(optionClass + " is declared in " + optionClass.getDeclaringClass());
+    }
     throw new IllegalArgumentException(message.toString());
   }
 
