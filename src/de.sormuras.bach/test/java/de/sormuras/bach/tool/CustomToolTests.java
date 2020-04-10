@@ -41,4 +41,16 @@ class CustomToolTests {
         List.of("custom with 4 arguments:", "\tBEGIN", "\t--granularity", "\t\tDAYS", "\tEND."),
         Strings.list(custom.name(), args));
   }
+
+  @Test
+  void nonInnerClassAsOptionThrowsAnIllegalArgumentException() {
+    class LocalOption implements Option {
+
+      @Override
+      public void visit(Arguments arguments) {
+        throw new AssertionError("visit should never be called");
+      }
+    }
+    assertThrows(IllegalArgumentException.class, () -> new Custom("", List.of(new LocalOption())));
+  }
 }

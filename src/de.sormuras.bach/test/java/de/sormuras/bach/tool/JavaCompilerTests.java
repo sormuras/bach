@@ -35,7 +35,7 @@ class JavaCompilerTests {
     var modules = List.of("a", "b", "c");
 
     var javac =
-        new JavaCompiler(
+        Tool.javac(
             List.of(
                 new CompileModulesCheckingTimestamps(modules),
                 // VersionOfModulesThatAreBeingCompiled(Version.parse("123"))
@@ -54,6 +54,7 @@ class JavaCompilerTests {
 
     assertThrows(NoSuchElementException.class, () -> javac.get(Option.class));
     assertEquals(modules, javac.get(CompileModulesCheckingTimestamps.class).modules());
+    assertEquals("classes", javac.get(DestinationDirectory.class).value().toString());
 
     assertEquals("javac", javac.name());
     assertLinesMatch(
