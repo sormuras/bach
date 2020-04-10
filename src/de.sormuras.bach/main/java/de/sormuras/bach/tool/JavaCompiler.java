@@ -23,7 +23,7 @@ import java.util.List;
 /** A {@code javac} call configuration. */
 public /*static*/ final class JavaCompiler extends Tool {
 
-  public JavaCompiler(List<? extends Option> options) {
+  JavaCompiler(List<? extends Option> options) {
     super("javac", options);
   }
 

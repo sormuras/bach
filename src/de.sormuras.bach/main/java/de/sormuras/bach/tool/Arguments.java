@@ -56,7 +56,8 @@ public /*static*/ class Arguments {
   }
 
   /** Append all given arguments, potentially none. */
-  public Arguments addAll(Object... arguments) {
+  @SafeVarargs
+  public final <T> Arguments addAll(T... arguments) {
     for (var argument : arguments) add(argument);
     return this;
   }
