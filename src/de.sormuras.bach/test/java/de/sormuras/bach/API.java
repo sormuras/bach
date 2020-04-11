@@ -22,6 +22,7 @@ import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.project.Structure;
+import de.sormuras.bach.tool.Tool;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -60,7 +61,7 @@ public interface API {
   }
 
   static Realm newRealm(String name, Unit... units) {
-    return new Realm(name, 0, false, List.of(units), null);
+    return new Realm(name, List.of(units), null, Tool.javac(List.of()));
   }
 
   static Unit newUnit(String name, Directory... directories) {

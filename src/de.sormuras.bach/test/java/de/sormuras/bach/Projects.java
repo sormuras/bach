@@ -22,6 +22,8 @@ import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.tool.JavaCompiler;
+import de.sormuras.bach.tool.Tool;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
@@ -64,11 +66,18 @@ public interface Projects {
     }
   }
 
-  static Example exampleOfJigsawQuickStartGreetings() {
+  static Example exampleOfJigsawQuickStartGreetings(Workspace workspace) {
+    var src = workspace.base().resolve("src");
     var module = ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main");
-    var directory = new Directory(Path.of("src/com.greetings"), Directory.Type.SOURCE, 0);
+    var directory = new Directory(src.resolve("com.greetings"), Directory.Type.SOURCE, 0);
     var unit = new Unit(module.build(), List.of(directory));
-    var realm = new Realm("", 0, false, List.of(unit), "com.greetings");
+    var javac =
+        Tool.javac(List.of(
+            new JavaCompiler.CompileModulesCheckingTimestamps(List.of("com.greetings")),
+            new JavaCompiler.ModuleSourcePathInModulePatternForm(List.of(src.toString())),
+            new JavaCompiler.DestinationDirectory(workspace.classes("", 0)))
+        );
+    var realm = new Realm("", List.of(unit), "com.greetings", javac);
     return new Example(
         new Project(
             "Jigsaw Quick Start: Greetings",

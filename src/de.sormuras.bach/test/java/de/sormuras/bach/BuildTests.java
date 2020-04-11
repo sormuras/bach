@@ -48,8 +48,10 @@ class BuildTests {
 
   @Test
   void buildJigsawQuickStartGreetings(@TempDir Path temp) throws Exception {
-    var example = Projects.exampleOfJigsawQuickStartGreetings();
-    var base = example.deploy(temp.resolve("greetings"));
+    var base = temp.resolve("greetings");
+    var workspace = Workspace.of(base);
+    var example = Projects.exampleOfJigsawQuickStartGreetings(workspace);
+    example.deploy(base);
     assertLinesMatch(
         List.of(
             "src",
@@ -59,7 +61,7 @@ class BuildTests {
         Tree.walk(base));
 
     var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(base));
+    var bach = new Bach(new Printer.Default(log, Level.ALL), workspace);
     bach.build(example.project());
 
     log.assertThatEverythingIsFine();
