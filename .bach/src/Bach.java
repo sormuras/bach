@@ -236,59 +236,6 @@ public class Bach {
       return List.copyOf(strings);
     }
   }
-  public static class Information {
-    public static Information of() {
-      return new Information("", null);
-    }
-    private final String description;
-    private final URI uri;
-    public Information(String description, URI uri) {
-      this.description = description;
-      this.uri = uri;
-    }
-    public String description() {
-      return description;
-    }
-    public URI uri() {
-      return uri;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Information.class.getSimpleName() + "[", "]")
-          .add("description='" + description + "'")
-          .add("uri=" + uri)
-          .toString();
-    }
-  }
-  public static class Structure {
-    private final List<Realm> realms;
-    private final String mainRealm;
-    public Structure(List<Realm> realms, String mainRealm) {
-      this.realms = realms;
-      this.mainRealm = mainRealm;
-    }
-    public List<Realm> realms() {
-      return realms;
-    }
-    public String mainRealm() {
-      return mainRealm;
-    }
-    public String toString() {
-      return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
-          .add("realms=" + realms)
-          .add("mainRealm='" + mainRealm + "'")
-          .toString();
-    }
-    public Optional<Realm> toMainRealm() {
-      return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
-    }
-    public List<String> toRealmNames() {
-      return realms.stream().map(Realm::name).collect(Collectors.toList());
-    }
-    public List<String> toUnitNames() {
-      var names = realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::name);
-      return names.distinct().sorted().collect(Collectors.toList());
-    }
-  }
   public static class Directory {
     public enum Type {
       UNKNOWN,
@@ -358,6 +305,29 @@ public class Bach {
       return type.toMarkdown() + " `" + path + "`" + (release == 0 ? "" : "@" + release);
     }
   }
+  public static class Information {
+    public static Information of() {
+      return new Information("", null);
+    }
+    private final String description;
+    private final URI uri;
+    public Information(String description, URI uri) {
+      this.description = description;
+      this.uri = uri;
+    }
+    public String description() {
+      return description;
+    }
+    public URI uri() {
+      return uri;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Information.class.getSimpleName() + "[", "]")
+          .add("description='" + description + "'")
+          .add("uri=" + uri)
+          .toString();
+    }
+  }
   public static class Realm {
     private final String name;
     private final int release;
@@ -397,6 +367,36 @@ public class Bach {
     }
     public Optional<Unit> toMainUnit() {
       return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
+    }
+  }
+  public static class Structure {
+    private final List<Realm> realms;
+    private final String mainRealm;
+    public Structure(List<Realm> realms, String mainRealm) {
+      this.realms = realms;
+      this.mainRealm = mainRealm;
+    }
+    public List<Realm> realms() {
+      return realms;
+    }
+    public String mainRealm() {
+      return mainRealm;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
+          .add("realms=" + realms)
+          .add("mainRealm='" + mainRealm + "'")
+          .toString();
+    }
+    public Optional<Realm> toMainRealm() {
+      return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
+    }
+    public List<String> toRealmNames() {
+      return realms.stream().map(Realm::name).collect(Collectors.toList());
+    }
+    public List<String> toUnitNames() {
+      var names = realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::name);
+      return names.distinct().sorted().collect(Collectors.toList());
     }
   }
   public static class Unit {
