@@ -17,6 +17,8 @@
 
 package de.sormuras.bach.tool;
 
+import de.sormuras.bach.util.Strings;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -35,7 +37,24 @@ public /*static*/ final class JavaCompiler extends Tool {
     }
   }
 
-  /** Compiles sources of the named modules that are newer than the corresponding class files. */
+  /** Compile source code for the specified Java SE release. */
+  public static final class CompileForJavaRelease extends KeyValueOption<Integer> {
+
+    public CompileForJavaRelease(Integer release) {
+      super("--release", release);
+    }
+  }
+
+  /** Enable preview language features. */
+  public static final class EnablePreviewLanguageFeatures implements Option {
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--enable-preview");
+    }
+  }
+
+  /** Compile sources of the named modules that are newer than the corresponding class files. */
   public static final class CompileModulesCheckingTimestamps implements Option {
     private final List<String> modules;
 
@@ -50,6 +69,36 @@ public /*static*/ final class JavaCompiler extends Tool {
     @Override
     public void visit(Arguments arguments) {
       arguments.add("--module", String.join(",", modules));
+    }
+  }
+
+  /** Specify where to find input sources in a module-specific form. */
+  public static final class ModuleSourcePathInModuleSpecificForm implements Option {
+    private final String module;
+    private final List<Path> paths;
+
+    public ModuleSourcePathInModuleSpecificForm(String module, List<Path> paths) {
+      this.module = module;
+      this.paths = paths;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
+    }
+  }
+
+  /** Specify where to find input sources in a module-pattern form. */
+  public static final class ModuleSourcePathInModulePatternForm implements Option {
+    private final List<String> patterns;
+
+    public ModuleSourcePathInModulePatternForm(List<String> patterns) {
+      this.patterns = patterns;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
     }
   }
 }
