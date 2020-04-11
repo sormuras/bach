@@ -85,6 +85,9 @@ public class Bach {
     tasks.add(new PrintProject(project));
     tasks.add(new ValidateProject(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
+    for (var realm : project.structure().realms()) {
+      tasks.add(Task.run(realm.javac()));
+    }
     // javac/jar main realm | javadoc
     // jlink    | javac/jar test realm
     // jpackage | junit test realm
