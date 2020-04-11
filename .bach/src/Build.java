@@ -31,32 +31,46 @@ class Build {
   }
 
   static Bach.Project project(String name, String version) {
+    var workspace = Bach.Workspace.of();
     return new Bach.Project(
         name,
         Version.parse(version),
         new Bach.Information(
             "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
             URI.create("https://github.com/sormuras/bach")),
-        new Bach.Structure(List.of(mainRealm(), testRealm(), testPreview()), "main"));
+        new Bach.Structure(
+            List.of(
+                mainRealm(workspace)
+                // , testRealm(workspace) TODO Needs JavaArchive of main realm and library support
+                // , testPreview(workspace) TODO Needs JavaArchive of main and test realm + library
+                ),
+            "main"));
   }
 
-  static Bach.Realm mainRealm() {
+  static Bach.Realm mainRealm(Bach.Workspace workspace) {
+    var classes = workspace.classes("main", 11);
     return new Bach.Realm(
         "main",
-        11,
-        false,
         List.of(
             new Bach.Unit(
                 ModuleDescriptor.newModule("de.sormuras.bach").build(),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))),
-        "de.sormuras.bach");
+        "de.sormuras.bach",
+        Bach.Tool.javac(
+            List.of(
+                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("de.sormuras.bach")),
+                new Bach.JavaCompiler.CompileForJavaRelease(11),
+                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
+                    List.of("src/*/main/java")),
+                new Bach.JavaCompiler.DestinationDirectory(classes) //
+                ) //
+            ));
   }
 
-  static Bach.Realm testRealm() {
+  static Bach.Realm testRealm(Bach.Workspace workspace) {
+    var classes = workspace.classes("test", 11);
     return new Bach.Realm(
         "test",
-        11,
-        false,
         List.of(
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
@@ -64,18 +78,40 @@ class Build {
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.base").build(),
                 Bach.Directory.listOf(Path.of("src/test.base/test")))),
-        null);
+        null,
+        Bach.Tool.javac(
+            List.of(
+                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(
+                    List.of("de.sormuras.bach", "test.base")),
+                new Bach.JavaCompiler.CompileForJavaRelease(11),
+                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
+                    List.of("src/*/test/java", "src/*/test/java-module")),
+                new Bach.JavaCompiler.DestinationDirectory(classes) //
+                ) //
+            )
+        //
+        );
   }
 
-  static Bach.Realm testPreview() {
+  static Bach.Realm testPreview(Bach.Workspace workspace) {
+    var classes = workspace.classes("test-preview", 14);
     return new Bach.Realm(
         "test-preview",
-        14,
-        true,
         List.of(
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.modules").build(),
                 Bach.Directory.listOf(Path.of("src/test.modules/test-preview")))),
-        null);
+        null,
+        Bach.Tool.javac(
+            List.of(
+                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("test.modules")),
+                new Bach.JavaCompiler.CompileForJavaRelease(14),
+                new Bach.JavaCompiler.EnablePreviewLanguageFeatures(),
+                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
+                    List.of("src/*/test-preview/java")),
+                new Bach.JavaCompiler.DestinationDirectory(classes) //
+                ) //
+            ) //
+        );
   }
 }

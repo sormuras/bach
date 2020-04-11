@@ -91,6 +91,9 @@ public class Bach {
     tasks.add(new PrintProject(project));
     tasks.add(new ValidateProject(project));
     tasks.add(new CreateDirectories(workspace.workspace()));
+    for (var realm : project.structure().realms()) {
+      tasks.add(Task.run(realm.javac()));
+    }
     tasks.add(new PrintModules(project));
     var task = new Task("Build project " + project.toNameAndVersion(), false, tasks);
     build(project, task);
@@ -330,25 +333,23 @@ public class Bach {
   }
   public static class Realm {
     private final String name;
-    private final int release;
-    private final boolean preview;
     private final List<Unit> units;
     private final String mainUnit;
-    public Realm(String name, int release, boolean preview, List<Unit> units, String mainUnit) {
+    private final JavaCompiler javac;
+    public Realm(String name, List<Unit> units, String mainUnit, JavaCompiler javac) {
       this.name = name;
-      this.release = release;
-      this.preview = preview;
       this.units = units;
       this.mainUnit = mainUnit;
+      this.javac = javac;
     }
     public String name() {
       return name;
     }
     public int release() {
-      return release;
+      return javac.release();
     }
     public boolean preview() {
-      return preview;
+      return javac.preview();
     }
     public List<Unit> units() {
       return units;
@@ -356,13 +357,17 @@ public class Bach {
     public String mainUnit() {
       return mainUnit;
     }
+    public JavaCompiler javac() {
+      return javac;
+    }
     public String toString() {
       return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
           .add("name='" + name + "'")
-          .add("release=" + release)
-          .add("preview=" + preview)
+          .add("release=" + release())
+          .add("preview=" + preview())
           .add("units=" + units)
           .add("mainUnit=" + mainUnit)
+          .add("javac=" + javac)
           .toString();
     }
     public Optional<Unit> toMainUnit() {
@@ -887,9 +892,25 @@ public class Bach {
     JavaCompiler(List<? extends Option> options) {
       super("javac", options);
     }
+    public int release() {
+      return find(JavaCompiler.CompileForJavaRelease.class).map(KeyValueOption::value).orElse(0);
+    }
+    public boolean preview() {
+      return find(JavaCompiler.EnablePreviewLanguageFeatures.class).isPresent();
+    }
     public static final class DestinationDirectory extends KeyValueOption<Path> {
       public DestinationDirectory(Path directory) {
         super("-d", directory);
+      }
+    }
+    public static final class CompileForJavaRelease extends KeyValueOption<Integer> {
+      public CompileForJavaRelease(Integer release) {
+        super("--release", release);
+      }
+    }
+    public static final class EnablePreviewLanguageFeatures implements Option {
+      public void visit(Arguments arguments) {
+        arguments.add("--enable-preview");
       }
     }
     public static final class CompileModulesCheckingTimestamps implements Option {
@@ -902,6 +923,26 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("--module", String.join(",", modules));
+      }
+    }
+    public static final class ModuleSourcePathInModuleSpecificForm implements Option {
+      private final String module;
+      private final List<Path> paths;
+      public ModuleSourcePathInModuleSpecificForm(String module, List<Path> paths) {
+        this.module = module;
+        this.paths = paths;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
+      }
+    }
+    public static final class ModuleSourcePathInModulePatternForm implements Option {
+      private final List<String> patterns;
+      public ModuleSourcePathInModulePatternForm(List<String> patterns) {
+        this.patterns = patterns;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
       }
     }
   }
