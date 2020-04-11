@@ -17,7 +17,7 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.project.structure.Directory;
+import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.task.RunTool;
 import de.sormuras.bach.tool.Tool;
 import de.sormuras.bach.util.Strings;

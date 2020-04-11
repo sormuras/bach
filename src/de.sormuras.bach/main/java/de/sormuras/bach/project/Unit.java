@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.project.structure;
+package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;

@@ -19,7 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.structure.Unit;
+import de.sormuras.bach.project.Unit;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.List;

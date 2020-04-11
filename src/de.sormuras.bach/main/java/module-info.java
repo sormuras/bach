@@ -23,7 +23,6 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
   exports de.sormuras.bach.project;
-  exports de.sormuras.bach.project.structure;
   exports de.sormuras.bach.task;
   exports de.sormuras.bach.tool;
 

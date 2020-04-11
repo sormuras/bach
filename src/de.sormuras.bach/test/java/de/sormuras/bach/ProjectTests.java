@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.structure.Directory;
-import de.sormuras.bach.project.structure.Realm;
+import de.sormuras.bach.project.Directory;
+import de.sormuras.bach.project.Realm;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.nio.file.Path;

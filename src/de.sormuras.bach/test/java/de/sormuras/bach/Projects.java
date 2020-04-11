@@ -19,9 +19,9 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.structure.Directory;
-import de.sormuras.bach.project.structure.Realm;
-import de.sormuras.bach.project.structure.Unit;
+import de.sormuras.bach.project.Directory;
+import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Unit;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;

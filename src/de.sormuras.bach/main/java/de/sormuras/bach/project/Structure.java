@@ -17,8 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.project.structure.Realm;
-import de.sormuras.bach.project.structure.Unit;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;

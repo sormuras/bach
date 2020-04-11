@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.project.structure;
+package de.sormuras.bach.project;
 
 import de.sormuras.bach.Convention;
 import java.io.IOException;
