@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.tool.JavaCompiler;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -25,17 +26,15 @@ import java.util.StringJoiner;
 public /*static*/ class Realm {
 
   private final String name;
-  private final int release;
-  private final boolean preview;
   private final List<Unit> units;
   private final String mainUnit;
+  private final JavaCompiler javac;
 
-  public Realm(String name, int release, boolean preview, List<Unit> units, String mainUnit) {
+  public Realm(String name, List<Unit> units, String mainUnit, JavaCompiler javac) {
     this.name = name;
-    this.release = release;
-    this.preview = preview;
     this.units = units;
     this.mainUnit = mainUnit;
+    this.javac = javac;
   }
 
   public String name() {
@@ -43,11 +42,11 @@ public /*static*/ class Realm {
   }
 
   public int release() {
-    return release;
+    return javac.release();
   }
 
   public boolean preview() {
-    return preview;
+    return javac.preview();
   }
 
   public List<Unit> units() {
@@ -58,14 +57,19 @@ public /*static*/ class Realm {
     return mainUnit;
   }
 
+  public JavaCompiler javac() {
+    return javac;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", Realm.class.getSimpleName() + "[", "]")
         .add("name='" + name + "'")
-        .add("release=" + release)
-        .add("preview=" + preview)
+        .add("release=" + release())
+        .add("preview=" + preview())
         .add("units=" + units)
         .add("mainUnit=" + mainUnit)
+        .add("javac=" + javac)
         .toString();
   }
 

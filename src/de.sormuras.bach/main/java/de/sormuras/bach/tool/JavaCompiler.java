@@ -29,7 +29,15 @@ public /*static*/ final class JavaCompiler extends Tool {
     super("javac", options);
   }
 
-  /** Sets the destination directory (or class output directory) for class files. */
+  public int release() {
+    return find(JavaCompiler.CompileForJavaRelease.class).map(KeyValueOption::value).orElse(0);
+  }
+
+  public boolean preview() {
+    return find(JavaCompiler.EnablePreviewLanguageFeatures.class).isPresent();
+  }
+
+  /** Set the destination directory (or class output directory) for class files. */
   public static final class DestinationDirectory extends KeyValueOption<Path> {
 
     public DestinationDirectory(Path directory) {
