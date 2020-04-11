@@ -37,7 +37,7 @@ class Build {
         new Bach.Information(
             "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
             URI.create("https://github.com/sormuras/bach")),
-        new Bach.Structure(List.of(mainRealm(), testRealm()), "main"));
+        new Bach.Structure(List.of(mainRealm(), testRealm(), testPreview()), "main"));
   }
 
   static Bach.Realm mainRealm() {
@@ -58,18 +58,24 @@ class Build {
         11,
         false,
         List.of(
-            //
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test"))),
-            //
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.base").build(),
-                Bach.Directory.listOf(Path.of("src/test.base/test"))),
-            //
+                Bach.Directory.listOf(Path.of("src/test.base/test")))),
+        null);
+  }
+
+  static Bach.Realm testPreview() {
+    return new Bach.Realm(
+        "test-preview",
+        14,
+        true,
+        List.of(
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("test.modules").build(),
-                Bach.Directory.listOf(Path.of("src/test.modules/test")))),
+                Bach.Directory.listOf(Path.of("src/test.modules/test-preview")))),
         null);
   }
 }

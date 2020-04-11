@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 
-package test.modules;
+package test.preview;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Project;
+import de.sormuras.bach.project.Information;
+import de.sormuras.bach.project.Structure;
+import java.lang.module.ModuleDescriptor;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -27,5 +34,28 @@ class BachTests {
   @Test
   void checkStringRepresentationIsLegit() {
     assertEquals("Bach.java " + Bach.VERSION, new Bach().toString());
+  }
+
+  @Test
+  void text() {
+    var actualLines = new Project(
+            "Text Blocks",
+             ModuleDescriptor.Version.parse("14-preview"),
+             Information.of(),
+             new Structure(List.of(), null))
+        .toStrings();
+
+    assertLinesMatch("""
+        Project
+        	name="Text Blocks"
+        	version=14-preview
+        Information
+        	description=""
+        	uri=null
+        Structure
+        	Units: []
+        	Realms: []
+        """.lines().collect(Collectors.toList()),
+        actualLines);
   }
 }

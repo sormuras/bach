@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="All in test.modules" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
-    <module name="test.modules" />
+  <configuration default="false" name="All in test.preview" type="JUnit" factoryName="JUnit">
+    <module name="test.preview" />
     <option name="PACKAGE_NAME" value="" />
     <option name="MAIN_CLASS_NAME" value="" />
     <option name="METHOD_NAME" value="" />
