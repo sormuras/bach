@@ -19,7 +19,10 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
+import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
+import java.nio.file.Files;
+import java.util.spi.ToolProvider;
 
 /** Print information about all compiled modules. */
 public /*static*/ class PrintModules extends Task {
@@ -32,13 +35,23 @@ public /*static*/ class PrintModules extends Task {
   }
 
   @Override
-  public void execute(Execution execution) {
+  public void execute(Execution execution) throws Exception {
     var workspace = execution.getBach().getWorkspace();
     var realm = project.structure().toMainRealm().orElseThrow();
     for (var unit : realm.units()) {
       var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
-      var nameAndVersion = unit.descriptor().toNameAndVersion();
-      execution.print(Level.INFO, "Module " + nameAndVersion, "\t-> " + jar.toUri());
+      execution.print(Level.INFO, "file: " + jar.getFileName());
+      execution.print(Level.INFO, "size: " + Files.size(jar));
+      var out = execution.getOut();
+      var err = execution.getErr();
+      ToolProvider.findFirst("jar")
+          .orElseThrow()
+          .run(
+              new PrintWriter(out),
+              new PrintWriter(err),
+              "--describe-module",
+              "--file",
+              jar.toString());
     }
   }
 }
