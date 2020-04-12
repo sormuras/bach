@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.List;
@@ -65,9 +66,18 @@ class BuildTests {
     bach.build(example.project());
 
     log.assertThatEverythingIsFine();
+    var N = Runtime.version().feature();
     assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), log.lines());
     assertLinesMatch(
-        List.of(".bach", ">> PATHS >>", ".bach/workspace/summary.md", ">> PATHS >>"),
-        Tree.walk(base));
+        List.of(
+            ".bach",
+            ">> PATHS >>",
+            ".bach/workspace/classes/" + N + "/com.greetings/com/greetings/Main.class",
+            ".bach/workspace/classes/" + N + "/com.greetings/module-info.class",
+            ">> PATHS >>",
+            ".bach/workspace/summary.md",
+            ">> PATHS >>"),
+        Tree.walk(base),
+        Strings.text(log.lines()));
   }
 }
