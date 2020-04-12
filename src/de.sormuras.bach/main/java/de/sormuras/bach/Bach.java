@@ -17,16 +17,10 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.task.ValidateProject;
-import de.sormuras.bach.task.CreateDirectories;
-import de.sormuras.bach.task.PrintModules;
-import de.sormuras.bach.task.PrintProject;
-import de.sormuras.bach.task.ValidateWorkspace;
-import de.sormuras.bach.tool.Tool;
+import de.sormuras.bach.task.BuildTaskFactory;
 import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.util.ArrayList;
 import java.util.Objects;
 
 /** Bach - Java Shell Builder. */
@@ -72,28 +66,9 @@ public class Bach {
     return workspace;
   }
 
-  /** Build the given project using default settings. */
+  /** Build the specified project using default build task factory. */
   public void build(Project project) {
-    var tasks = new ArrayList<Task>();
-    tasks.add(
-        Task.parallel(
-            "Versions",
-            Task.run(Tool.of("javac", "--version")),
-            Task.run("jar", "--version"),
-            Task.run("javadoc", "--version")));
-    tasks.add(new ValidateWorkspace());
-    tasks.add(new PrintProject(project));
-    tasks.add(new ValidateProject(project));
-    tasks.add(new CreateDirectories(workspace.workspace()));
-    for (var realm : project.structure().realms()) {
-      tasks.add(Task.run(realm.javac()));
-    }
-    // javac/jar main realm | javadoc
-    // jlink    | javac/jar test realm
-    // jpackage | junit test realm
-    tasks.add(new PrintModules(project));
-    var task = new Task("Build project " + project.toNameAndVersion(), false, tasks);
-    build(project, task);
+    build(project, new BuildTaskFactory(workspace, project, printer.printable(Level.DEBUG)).get());
   }
 
   void build(Project project, Task task) {
