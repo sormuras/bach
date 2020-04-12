@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,23 +81,7 @@ public class Bach {
     return workspace;
   }
   public void build(Project project) {
-    var tasks = new ArrayList<Task>();
-    tasks.add(
-        Task.parallel(
-            "Versions",
-            Task.run(Tool.of("javac", "--version")),
-            Task.run("jar", "--version"),
-            Task.run("javadoc", "--version")));
-    tasks.add(new ValidateWorkspace());
-    tasks.add(new PrintProject(project));
-    tasks.add(new ValidateProject(project));
-    tasks.add(new CreateDirectories(workspace.workspace()));
-    for (var realm : project.structure().realms()) {
-      tasks.add(Task.run(realm.javac()));
-    }
-    tasks.add(new PrintModules(project));
-    var task = new Task("Build project " + project.toNameAndVersion(), false, tasks);
-    build(project, task);
+    build(project, new BuildTaskFactory(workspace, project, printer.printable(Level.DEBUG)).get());
   }
   void build(Project project, Task task) {
     var summary = execute(new Task.Executor(this, project), task);
@@ -757,6 +742,65 @@ public class Bach {
       }
     }
   }
+  public static class BuildTaskFactory implements Supplier<Task> {
+    private final Workspace workspace;
+    private final Project project;
+    private final boolean verbose;
+    public BuildTaskFactory(Workspace workspace, Project project, boolean verbose) {
+      this.workspace = workspace;
+      this.project = project;
+      this.verbose = verbose;
+    }
+    public Task get() {
+      return Task.sequence(
+          "Build project " + project.toNameAndVersion(),
+          printVersionInformationOfFoundationTools(),
+          new ValidateWorkspace(),
+          new PrintProject(project),
+          new ValidateProject(project),
+          new CreateDirectories(workspace.workspace()),
+          compileAllRealms(),
+          new PrintModules(project));
+    }
+    protected Task printVersionInformationOfFoundationTools() {
+      return verbose
+          ? Task.parallel(
+              "Print version of various foundation tools",
+              Task.run(Tool.of("javac", "--version")),
+              Task.run("jar", "--version"),
+              Task.run("javadoc", "--version"))
+          : Task.sequence("Print version of javac", Task.run("javac", "--version"));
+    }
+    protected Task compileAllRealms() {
+      var realms = project.structure().realms();
+      var tasks = realms.stream().map(this::compileRealm);
+      return Task.sequence("Compile all realms", tasks.toArray(Task[]::new));
+    }
+    protected Task compileRealm(Realm realm) {
+      return Task.sequence(
+          "Compile " + realm.name() + " realm", Task.run(realm.javac()), createArchives(realm)
+          );
+    }
+    protected Task createArchives(Realm realm) {
+      var jars = new ArrayList<Task>();
+      for (var unit : realm.units()) {
+        jars.add(createArchive(realm, unit));
+      }
+      return Task.sequence(
+          "Package " + realm.name() + " modules and sources",
+          new CreateDirectories(workspace.modules(realm.name())),
+          Task.parallel("Jar each " + realm.name() + " module", jars.toArray(Task[]::new)));
+    }
+    protected Task createArchive(Realm realm, Unit unit) {
+      var file = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
+      var options = new ArrayList<Option>();
+      options.add(new JavaArchiveTool.PerformOperation(JavaArchiveTool.Operation.CREATE));
+      options.add(new JavaArchiveTool.ArchiveFile(file));
+      var root = workspace.classes(realm.name(), realm.release()).resolve(unit.name());
+      options.add(new JavaArchiveTool.ChangeDirectory(root));
+      return Task.run(Tool.jar(options));
+    }
+  }
   public static class CreateDirectories extends Task {
     private final Path path;
     public CreateDirectories(Path path) {
@@ -783,13 +827,23 @@ public class Bach {
       super("Print modules");
       this.project = project;
     }
-    public void execute(Execution execution) {
+    public void execute(Execution execution) throws Exception {
       var workspace = execution.getBach().getWorkspace();
       var realm = project.structure().toMainRealm().orElseThrow();
       for (var unit : realm.units()) {
         var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
-        var nameAndVersion = unit.descriptor().toNameAndVersion();
-        execution.print(Level.INFO, "Module " + nameAndVersion, "\t-> " + jar.toUri());
+        execution.print(Level.INFO, "file: " + jar.getFileName());
+        execution.print(Level.INFO, "size: " + Files.size(jar));
+        var out = execution.getOut();
+        var err = execution.getErr();
+        ToolProvider.findFirst("jar")
+            .orElseThrow()
+            .run(
+                new PrintWriter(out),
+                new PrintWriter(err),
+                "--describe-module",
+                "--file",
+                jar.toString());
       }
     }
   }
@@ -886,6 +940,63 @@ public class Bach {
     public <T> Arguments forEach(Iterable<T> iterable, BiConsumer<Arguments, T> consumer) {
       iterable.forEach(argument -> consumer.accept(this, argument));
       return this;
+    }
+  }
+  public static final class JavaArchiveTool extends Tool {
+    public enum Operation {
+      CREATE,
+      GENERATE_INDEX,
+      LIST,
+      UPDATE,
+      EXTRACT,
+      DESCRIBE_MODULE
+    }
+    JavaArchiveTool(List<? extends Option> options) {
+      super("jar", options);
+    }
+    public static final class PerformOperation implements Option {
+      private final Operation mode;
+      private final List<String> more;
+      public PerformOperation(Operation mode, String... more) {
+        this.mode = mode;
+        this.more = List.of(more);
+      }
+      public Operation mode() {
+        return mode;
+      }
+      public List<String> more() {
+        return more;
+      }
+      public void visit(Arguments arguments) {
+        var key = "--" + mode.toString().toLowerCase().replace('_', '-');
+        var value = more.isEmpty() ? "" : "=" + more.get(0);
+        arguments.add(key + value);
+      }
+    }
+    public static final class ArchiveFile extends KeyValueOption<Path> {
+      public ArchiveFile(Path file) {
+        super("--file", file);
+      }
+    }
+    public static final class ChangeDirectory extends KeyValueOption<Path> {
+      public ChangeDirectory(Path value) {
+        super("-C", value);
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("-C", value(), ".");
+      }
+    }
+    public static final class MultiReleaseVersion implements Option {
+      private final int version;
+      public MultiReleaseVersion(int version) {
+        this.version = version;
+      }
+      public int version() {
+        return version;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--release", version);
+      }
     }
   }
   public static final class JavaCompiler extends Tool {
@@ -1004,6 +1115,9 @@ public class Bach {
   public static class Tool {
     public static Tool of(String name, String... arguments) {
       return new Tool(name, List.of(new ObjectArrayOption<>(arguments)));
+    }
+    public static JavaArchiveTool jar(List<? extends Option> options) {
+      return new JavaArchiveTool(options);
     }
     public static JavaCompiler javac(List<? extends Option> options) {
       return new JavaCompiler(options);
