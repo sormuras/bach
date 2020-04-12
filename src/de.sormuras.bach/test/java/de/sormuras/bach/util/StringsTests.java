@@ -20,14 +20,59 @@ package de.sormuras.bach.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class StringsTests {
 
   @Nested
-  class ToolStrings {
+  class Texts {
+    @Test
+    void threeLines() {
+      var expected = String.join(System.lineSeparator(), "1", "2", "3");
+      assertEquals(expected, Strings.text("1", "2", "3"));
+      assertEquals(expected, Strings.text(List.of("1", "2", "3")));
+      assertEquals(expected, Strings.text(Stream.of("1", "2", "3")));
+    }
+
+    @Test
+    void threeIndentedLines() {
+      var expected = String.join(System.lineSeparator(), "-1", "-2", "-3");
+      assertEquals(expected, Strings.textIndent("-", "1", "2", "3"));
+      assertEquals(expected, Strings.textIndent("-", List.of("1", "2", "3")));
+      assertEquals(expected, Strings.textIndent("-", Stream.of("1", "2", "3")));
+    }
+  }
+
+  @Nested
+  class DurationStrings {
+    @ParameterizedTest
+    @CsvSource({"20.345s,PT20.345S", "26h 3m 4.567s,P1DT2H3M4.567S"})
+    void check(String expected, String duration) {
+      assertEquals(expected, Strings.toString(Duration.parse(duration)));
+    }
+  }
+
+  @Nested
+  class PathsStrings {
+    @Test
+    void examples() {
+      assertEquals("", Strings.toString(List.of()));
+      assertEquals("a", Strings.toString(List.of(Path.of("a"))));
+      assertEquals(
+          "a" + File.pathSeparator + "b", Strings.toString(List.of(Path.of("a"), Path.of("b"))));
+    }
+  }
+
+  @Nested
+  class ListToolNameAndArguments {
 
     @Test
     void withZeroArgumentsReturnsListOfSizeOne() {

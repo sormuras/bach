@@ -69,7 +69,7 @@ public /*static*/ class Strings {
   }
 
   public static String textIndent(String indent, Stream<String> strings) {
-    return indent + text(strings.map(string -> indent + string));
+    return text(strings.map(string -> indent + string));
   }
 
   public static String toString(Duration duration) {

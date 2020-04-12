@@ -103,7 +103,7 @@ class BachTests {
             "\t+ Print version of various foundation tools",
             ">> RUN TOOLS >>",
             "\t* Validate workspace",
-            "\t\tEmpty base directory " + temp,
+            "\tEmpty base directory " + temp,
             "\t* Print project",
             ">> PROJECT COMPONENTS >>",
             "\t* Validate project",
