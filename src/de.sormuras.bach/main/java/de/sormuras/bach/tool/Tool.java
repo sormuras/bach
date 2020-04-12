@@ -30,6 +30,10 @@ public /*static*/ class Tool {
     return new Tool(name, List.of(new ObjectArrayOption<>(arguments)));
   }
 
+  public static JavaArchiveTool jar(List<? extends Option> options) {
+    return new JavaArchiveTool(options);
+  }
+
   public static JavaCompiler javac(List<? extends Option> options) {
     return new JavaCompiler(options);
   }
