@@ -40,18 +40,12 @@ public /*static*/ class PrintModules extends Task {
     var realm = project.structure().toMainRealm().orElseThrow();
     for (var unit : realm.units()) {
       var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
-      execution.print(Level.INFO, "file: " + jar.getFileName());
-      execution.print(Level.INFO, "size: " + Files.size(jar));
-      var out = execution.getOut();
-      var err = execution.getErr();
+      execution.print(Level.INFO, "file: " + jar.getFileName(), "size: " + Files.size(jar));
+      var out = new PrintWriter(execution.getOut());
+      var err = new PrintWriter(execution.getErr());
       ToolProvider.findFirst("jar")
           .orElseThrow()
-          .run(
-              new PrintWriter(out),
-              new PrintWriter(err),
-              "--describe-module",
-              "--file",
-              jar.toString());
+          .run(out, err, "--describe-module", "--file", jar.toString());
     }
   }
 }
