@@ -25,6 +25,7 @@ import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,12 +61,14 @@ public class Bach {
   }
   private final Printer printer;
   private final Workspace workspace;
+  private final Supplier<HttpClient> httpClient;
   public Bach() {
-    this(Printer.ofSystem(), Workspace.of());
+    this(Printer.ofSystem(), Workspace.of(), HttpClient.newBuilder()::build);
   }
-  public Bach(Printer printer, Workspace workspace) {
+  public Bach(Printer printer, Workspace workspace, Supplier<HttpClient> httpClient) {
     this.printer = Objects.requireNonNull(printer, "printer");
-    this.workspace = workspace;
+    this.workspace = Objects.requireNonNull(workspace, "workspace");
+    this.httpClient = Functions.memoize(httpClient);
     printer.print(
         Level.DEBUG,
         this + " initialized",
@@ -79,6 +82,9 @@ public class Bach {
   }
   public Workspace getWorkspace() {
     return workspace;
+  }
+  public HttpClient getHttpClient() {
+    return httpClient.get();
   }
   public void build(Project project) {
     build(project, new BuildTaskFactory(workspace, project, printer.printable(Level.DEBUG)).get());
@@ -1160,6 +1166,27 @@ public class Bach {
       addMoreArguments(arguments);
       return arguments.build();
     }
+  }
+  public static class Functions {
+    public static <T> Supplier<T> memoize(Supplier<T> supplier) {
+      Objects.requireNonNull(supplier, "supplier");
+      return new Supplier<>() {
+        Supplier<T> delegate = this::firstTime;
+        boolean initialized;
+        public T get() {
+          return delegate.get();
+        }
+        private synchronized T firstTime() {
+          if (!initialized) {
+            T value = supplier.get();
+            delegate = () -> value;
+            initialized = true;
+          }
+          return delegate.get();
+        }
+      };
+    }
+    private Functions() {}
   }
   public static class Paths {
     public static boolean isEmpty(Path path) {

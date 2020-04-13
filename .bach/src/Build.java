@@ -19,6 +19,7 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -26,7 +27,9 @@ import java.util.List;
 class Build {
 
   public static void main(String... args) {
-    var bach = new Bach(Bach.Printer.ofSystem(Level.ALL), Bach.Workspace.of());
+    var printer = Bach.Printer.ofSystem(Level.ALL);
+    var workspace = Bach.Workspace.of();
+    var bach = new Bach(printer, workspace, HttpClient::newHttpClient);
     bach.build(project("Bach.java", "11.0-ea"));
   }
 
