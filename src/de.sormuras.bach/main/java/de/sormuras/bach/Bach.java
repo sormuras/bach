@@ -18,10 +18,13 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.task.BuildTaskFactory;
+import de.sormuras.bach.util.Functions;
 import de.sormuras.bach.util.Strings;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.net.http.HttpClient;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -40,15 +43,19 @@ public class Bach {
   /** Directory for storing generated assets into. */
   private final Workspace workspace;
 
+  /** HttpClient supplier. */
+  private final Supplier<HttpClient> httpClient;
+
   /** Initialize this instance with default values. */
   public Bach() {
-    this(Printer.ofSystem(), Workspace.of());
+    this(Printer.ofSystem(), Workspace.of(), HttpClient.newBuilder()::build);
   }
 
-  /** Initialize this instance with the specified line printer and verbosity flag. */
-  public Bach(Printer printer, Workspace workspace) {
+  /** Initialize this instance with the specified line printer, workspace, and other values. */
+  public Bach(Printer printer, Workspace workspace, Supplier<HttpClient> httpClient) {
     this.printer = Objects.requireNonNull(printer, "printer");
-    this.workspace = workspace;
+    this.workspace = Objects.requireNonNull(workspace, "workspace");
+    this.httpClient = Functions.memoize(httpClient);
     printer.print(
         Level.DEBUG,
         this + " initialized",
@@ -64,6 +71,10 @@ public class Bach {
 
   public Workspace getWorkspace() {
     return workspace;
+  }
+
+  public HttpClient getHttpClient() {
+    return httpClient.get();
   }
 
   /** Build the specified project using default build task factory. */

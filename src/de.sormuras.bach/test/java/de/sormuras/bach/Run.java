@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import java.lang.System.Logger.Level;
+import java.net.http.HttpClient;
 import java.nio.file.Path;
 import test.base.Log;
 
@@ -35,7 +36,9 @@ public class Run {
   }
 
   public Run(Path base, Log log, Level threshold) {
-    this.bach = new Bach(new Printer.Default(log, threshold), Workspace.of(base));
+    var printer = new Printer.Default(log, threshold);
+    var workspace = Workspace.of(base);
+    this.bach = new Bach(printer, workspace, HttpClient.newBuilder()::build);
     this.log = log;
   }
 

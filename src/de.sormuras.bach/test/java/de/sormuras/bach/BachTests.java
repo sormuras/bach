@@ -49,6 +49,7 @@ class BachTests {
     assertTrue(bach.getPrinter().printable(Level.WARNING));
     assertTrue(bach.getPrinter().printable(Level.ERROR));
     assertNotNull(bach.getWorkspace());
+    assertNotNull(bach.getHttpClient());
   }
 
   @Test
