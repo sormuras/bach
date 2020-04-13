@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.API;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Printer;
+import de.sormuras.bach.Run;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.Workspace;
 import java.lang.System.Logger.Level;
@@ -38,14 +39,13 @@ class DirectoryTests {
 
   @Test
   void createAndDeleteAnEmptyDirectory(@TempDir Path temp) {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
+    var run = new Run(temp);
     var empty = temp.resolve("empty");
-    bach.execute(new CreateDirectories(empty));
+    run.bach().execute(new CreateDirectories(empty));
     assertTrue(Files.isDirectory(empty));
-    bach.execute(new DeleteDirectories(empty));
+    run.bach().execute(new DeleteDirectories(empty));
     assertTrue(Files.notExists(empty));
-    log.assertThatEverythingIsFine();
+    run.log().assertThatEverythingIsFine();
   }
 
   @Test
@@ -67,8 +67,7 @@ class DirectoryTests {
       }
     }
 
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
+    var run = new Run();
     var root = temp.resolve("root");
     var nest = root.resolve("sub/nest");
     var task =
@@ -95,8 +94,8 @@ class DirectoryTests {
                             "sub/nest/file3"),
                         Tree.walk(root))),
             new DeleteDirectories(root));
-    bach.execute(task);
+    run.bach().execute(task);
     assertTrue(Files.notExists(root));
-    log.assertThatEverythingIsFine();
+    run.log().assertThatEverythingIsFine();
   }
 }

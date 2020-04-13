@@ -22,21 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.util.Strings;
-import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import test.base.Log;
 import test.base.Tree;
 
 class BuildTests {
 
   @Test
   void buildEmptyDirectoryFails(@TempDir Path temp) {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
-    var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
+    var run = new Run(temp);
+    var error = assertThrows(AssertionError.class, () -> run.bach().build(API.emptyProject()));
     assertEquals("Build project empty 0 (Task) failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
     assertLinesMatch(
@@ -44,7 +41,7 @@ class BuildTests {
             ">> BUILD >>",
             "java.lang.IllegalStateException: project validation failed: no unit present",
             ">> ERROR >>"),
-        log.lines());
+        run.log().lines());
   }
 
   @Test
@@ -61,13 +58,12 @@ class BuildTests {
             "src/com.greetings/module-info.java"),
         Tree.walk(base));
 
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), workspace);
-    bach.build(example.project());
+    var run = new Run(workspace.base());
+    run.bach().build(example.project());
 
-    log.assertThatEverythingIsFine();
+    run.log().assertThatEverythingIsFine();
     var N = Runtime.version().feature();
-    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), log.lines());
+    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
     assertLinesMatch(
         List.of(
             ".bach",
@@ -78,6 +74,6 @@ class BuildTests {
             ".bach/workspace/summary.md",
             ">> PATHS >>"),
         Tree.walk(base),
-        Strings.text(log.lines()));
+        Strings.text(run.log().lines()));
   }
 }

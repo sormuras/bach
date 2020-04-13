@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Printer;
+import de.sormuras.bach.Run;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.Workspace;
 import java.lang.System.Logger.Level;
@@ -42,19 +43,17 @@ class RunToolTests {
 
   @Test
   void runNoopTask() {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
+    var run = new Run();
     var noop = new NoopToolProvider();
-    bach.execute(Task.run(noop));
-    log.assertThatEverythingIsFine();
+    run.bach().execute(Task.run(noop));
+    run.log().assertThatEverythingIsFine();
   }
 
   @Test
   void runFailingTask() {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
+    var run = new Run();
     var noop = new NoopToolProvider(-1, true, true);
-    assertThrows(AssertionError.class, () -> bach.execute(Task.run(noop, "a", "b", "c")));
+    assertThrows(AssertionError.class, () -> run.bach().execute(Task.run(noop, "a", "b", "c")));
     assertLinesMatch(
         List.of(
             ">> BACH BEGIN >>",
@@ -67,6 +66,6 @@ class RunToolTests {
             "\t\tb",
             "\t\tc",
             ">> BACH END. >>"),
-        log.lines());
+        run.log().lines());
   }
 }

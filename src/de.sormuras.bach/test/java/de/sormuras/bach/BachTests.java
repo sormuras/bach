@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-import test.base.Log;
 import test.base.FileSystem;
 import test.base.SwallowSystem;
 
@@ -63,10 +62,9 @@ class BachTests {
 
   @Test
   void printMessagesAtAllLevelsInVerboseMode() {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
-    assertDoesNotThrow(bach::hashCode);
-    var printer = bach.getPrinter();
+    var run = new Run();
+    assertDoesNotThrow(run.bach()::hashCode);
+    var printer = run.bach().getPrinter();
     printer.print(Level.ALL, "all");
     printer.print(Level.TRACE, "trace");
     printer.print(Level.DEBUG, "debug");
@@ -85,14 +83,13 @@ class BachTests {
             "warning",
             "error",
             "off"),
-        log.lines());
+        run.log().lines());
   }
 
   @Test
   void buildEmptyProjectWithDefaultBuildTaskFailsWithProjectValidationError(@TempDir Path temp) {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
-    var error = assertThrows(AssertionError.class, () -> bach.build(API.emptyProject()));
+    var run = new Run(temp);
+    var error = assertThrows(AssertionError.class, () -> run.bach().build(API.emptyProject()));
     assertEquals("Build project empty 0 (Task) failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
     assertLinesMatch(
@@ -110,16 +107,14 @@ class BachTests {
             "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present",
             "Executed 6 of 11 tasks",
             ">> ERROR >>"),
-        log.lines());
+        run.log().lines());
   }
 
   @Test
   void writeSummaryFailsInReadOnlyDirectory(@TempDir Path temp) throws Exception {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of(temp));
     try {
       FileSystem.chmod(temp, false, false, false);
-      bach.build(API.emptyProject(), new Task("?"));
+      new Run(temp).bach().build(API.emptyProject(), new Task("?"));
     } catch (Throwable throwable) {
       assertTrue(throwable.getMessage().contains(temp.toString()));
     } finally {

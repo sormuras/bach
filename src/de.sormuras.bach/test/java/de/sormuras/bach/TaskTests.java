@@ -67,12 +67,11 @@ class TaskTests {
 
   @Test
   void executeTask() {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
-    bach.execute(new Task("Task"));
+    var run = new Run();
+    run.bach().execute(new Task("Task"));
     assertLinesMatch(
         List.of(">> BACH INIT >>", "Execute 1 tasks", "* Task", "Executed 1 of 1 tasks"),
-        log.lines());
+        run.log().lines());
   }
 
   @Test
@@ -101,9 +100,8 @@ class TaskTests {
       }
     }
 
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
-    bach.execute(new Task("3x Wait", true, List.of(new Wait(), new Wait(), new Wait())));
+    var run = new Run();
+    run.bach().execute(new Task("3x Wait", true, List.of(new Wait(), new Wait(), new Wait())));
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
@@ -114,15 +112,14 @@ class TaskTests {
             "\t* Thread.sleep(10)",
             "= 3x Wait",
             "Executed 4 of 4 tasks"),
-        log.lines());
+        run.log().lines());
   }
 
   @Test
   void executeThrowingTask() {
-    var log = new Log();
-    var bach = new Bach(new Printer.Default(log, Level.ALL), Workspace.of());
+    var run = new Run();
     var task = API.taskOf("Throw", __ -> throwException("BäMM!"));
-    var error = assertThrows(AssertionError.class, () -> bach.execute(task));
+    var error = assertThrows(AssertionError.class, () -> run.bach().execute(task));
     assertEquals("Throw (NamedTask) failed", error.getMessage());
     assertEquals("BäMM!", error.getCause().getMessage());
     assertLinesMatch(
@@ -133,7 +130,7 @@ class TaskTests {
             "Task execution failed: java.lang.Exception: BäMM!",
             "Executed 0 of 1 tasks",
             ">> ERROR >>"),
-        log.lines());
+        run.log().lines());
   }
 
   private void throwException(String message) throws Exception {
