@@ -65,6 +65,7 @@ class SingleFileSourceCodeGenerator {
     if (trim.startsWith("//")) return true;
     if (trim.startsWith("/**") && trim.endsWith("*/")) return true;
     if (trim.equals("@Convention")) return true;
+    if (trim.equals("@FunctionalInterface")) return true;
     if (trim.equals("@Override")) return true;
     return trim.isEmpty();
   }
