@@ -30,8 +30,10 @@ class StructureTests {
   @Test
   void empty() {
     var empty = API.emptyStructure();
-    assertEquals(0, empty.realms().size());
+    assertTrue(empty.realms().isEmpty());
     assertNull(empty.mainRealm());
+    assertTrue(empty.library().requires().isEmpty());
+    assertTrue(empty.library().locators().isEmpty());
     assertTrue(empty.toString().contains("realms"));
     assertEquals(Optional.empty(), empty.toMainRealm());
     assertEquals(List.of(), empty.toRealmNames());

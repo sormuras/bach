@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.project.Information;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
@@ -86,7 +87,7 @@ public interface Projects {
                 "This example is a module named com.greetings that simply prints \"Greetings!\"."
                     + " The module consists of two source files: the module declaration and the main class.",
                 URI.create("https://openjdk.java.net/projects/jigsaw/quick-start")),
-            new Structure(List.of(realm), "")),
+            new Structure(List.of(realm), "", Library.of())),
         Map.of(
             Path.of("src/com.greetings", "module-info.java"),
             "module com.greetings {}\n",

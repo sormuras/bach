@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Information;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Structure;
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
@@ -42,7 +43,7 @@ class BachTests {
             "Text Blocks",
              ModuleDescriptor.Version.parse("14-preview"),
              Information.of(),
-             new Structure(List.of(), null))
+             new Structure(List.of(), null, Library.of()))
         .toStrings();
 
     assertLinesMatch("""

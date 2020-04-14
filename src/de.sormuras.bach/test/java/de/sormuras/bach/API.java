@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Directory;
+import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.project.Structure;
@@ -39,7 +40,7 @@ public interface API {
   }
 
   static Structure emptyStructure() {
-    return new Structure(List.of(), null);
+    return new Structure(List.of(), null, Library.of());
   }
 
   static Realm emptyRealm() {

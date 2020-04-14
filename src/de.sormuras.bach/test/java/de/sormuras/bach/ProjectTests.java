@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.project.Information;
+import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
@@ -32,6 +34,8 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -55,13 +59,29 @@ class ProjectTests {
             "\turi=null",
             "Structure",
             "\tUnits: []",
-            "\tRealms: []"),
+            "\tRealms: []",
+            "Library",
+            "\trequires=[]",
+            "\tlocators=[]"),
         empty.toStrings());
   }
 
   @Test
   void oneOfEach() {
-    var one =
+    class OneLocator implements Locator {
+
+      @Override
+      public Optional<Location> locate(String module) {
+        return Optional.empty();
+      }
+
+      @Override
+      public String toString() {
+        return "one";
+      }
+    }
+    var oneDirectory = new Directory(Path.of("one"), Directory.Type.UNKNOWN, 1);
+    var oneProject =
         new Project(
             "one",
             Version.parse("1"),
@@ -70,15 +90,14 @@ class ProjectTests {
                 List.of(
                     new Realm(
                         "one",
-                        List.of(API.newUnit("one", Directory.of(Path.of("one")))), //
+                        List.of(API.newUnit("one", oneDirectory)),
                         null,
                         Tool.javac(
                             List.of(
                                 new JavaCompiler.CompileForJavaRelease(1),
-                                new JavaCompiler.EnablePreviewLanguageFeatures()))) //
-                    ), //
-                "one") //
-            );
+                                new JavaCompiler.EnablePreviewLanguageFeatures())))),
+                "one",
+                new Library(Set.of("one"), List.of(new OneLocator()))));
     assertLinesMatch(
         List.of(
             "Project",
@@ -97,7 +116,10 @@ class ProjectTests {
             "\t\tUnits: [1]",
             "\t\tUnit \"one\"",
             "\t\t\tDirectories: [1]",
-            "\t\t\tDirectory[path=one, type=UNKNOWN, release=0]"),
-        one.toStrings());
+            "\t\t\tDirectory[path=one, type=UNKNOWN, release=1]",
+            "Library",
+            "\trequires=[one]",
+            "\tlocators=[one]"),
+        oneProject.toStrings());
   }
 }
