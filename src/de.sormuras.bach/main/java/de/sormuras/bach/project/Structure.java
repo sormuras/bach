@@ -27,10 +27,12 @@ public /*static*/ class Structure {
 
   private final List<Realm> realms;
   private final String mainRealm;
+  private final Library library;
 
-  public Structure(List<Realm> realms, String mainRealm) {
+  public Structure(List<Realm> realms, String mainRealm, Library library) {
     this.realms = realms;
     this.mainRealm = mainRealm;
+    this.library = library;
   }
 
   public List<Realm> realms() {
@@ -41,11 +43,16 @@ public /*static*/ class Structure {
     return mainRealm;
   }
 
+  public Library library() {
+    return library;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
         .add("realms=" + realms)
         .add("mainRealm='" + mainRealm + "'")
+        .add("library=" + library)
         .toString();
   }
 
