@@ -47,7 +47,8 @@ class Build {
                 // , testRealm(workspace) TODO Needs JavaArchive of main realm and library support
                 // , testPreview(workspace) TODO Needs JavaArchive of main and test realm + library
                 ),
-            "main"));
+            "main",
+            Bach.Library.of("org.junit.jupiter", "org.junit.platform.console")));
   }
 
   static Bach.Realm mainRealm(Bach.Workspace workspace) {

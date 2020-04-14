@@ -26,9 +26,18 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -41,8 +50,10 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -227,6 +238,9 @@ public class Bach {
           }
         }
       }
+      strings.add("Library");
+      strings.add("\trequires=" + structure.library().requires());
+      strings.add("\tlocators=" + structure.library().locators());
       return List.copyOf(strings);
     }
   }
@@ -322,6 +336,40 @@ public class Bach {
           .toString();
     }
   }
+  public static final class Library {
+    public static Library of(String... requires) {
+      return new Library(Set.of(requires), List.of());
+    }
+    private final Set<String> requires;
+    private final List<Locator> locators;
+    public Library(Set<String> requires, List<Locator> locators) {
+      this.requires = Objects.requireNonNull(requires, "requires");
+      this.locators = Objects.requireNonNull(locators, "locators");
+    }
+    public Set<String> requires() {
+      return requires;
+    }
+    public List<Locator> locators() {
+      return locators;
+    }
+  }
+  public interface Locator {
+    Optional<Location> locate(String module);
+    class Location {
+      private final URI uri;
+      private final String version;
+      public Location(URI uri, String version) {
+        this.uri = uri;
+        this.version = version;
+      }
+      public URI uri() {
+        return uri;
+      }
+      public String toVersionString() {
+        return version == null || version.isEmpty() ? "" : '-' + version;
+      }
+    }
+  }
   public static class Realm {
     private final String name;
     private final List<Unit> units;
@@ -368,9 +416,11 @@ public class Bach {
   public static class Structure {
     private final List<Realm> realms;
     private final String mainRealm;
-    public Structure(List<Realm> realms, String mainRealm) {
+    private final Library library;
+    public Structure(List<Realm> realms, String mainRealm, Library library) {
       this.realms = realms;
       this.mainRealm = mainRealm;
+      this.library = library;
     }
     public List<Realm> realms() {
       return realms;
@@ -378,10 +428,14 @@ public class Bach {
     public String mainRealm() {
       return mainRealm;
     }
+    public Library library() {
+      return library;
+    }
     public String toString() {
       return new StringJoiner(", ", Structure.class.getSimpleName() + "[", "]")
           .add("realms=" + realms)
           .add("mainRealm='" + mainRealm + "'")
+          .add("library=" + library)
           .toString();
     }
     public Optional<Realm> toMainRealm() {
@@ -1108,7 +1162,6 @@ public class Bach {
       arguments.addAll(values);
     }
   }
-  @FunctionalInterface
   public interface Option {
     void visit(Arguments arguments);
   }
@@ -1211,6 +1264,59 @@ public class Bach {
       }
     }
     private Paths() {}
+  }
+  public static class Resources {
+    private final HttpClient client;
+    public Resources(HttpClient client) {
+      this.client = client;
+    }
+    public HttpResponse<Void> head(URI uri, int timeout) throws Exception {
+      var nobody = HttpRequest.BodyPublishers.noBody();
+      var duration = Duration.ofSeconds(timeout);
+      var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
+      return client.send(request, BodyHandlers.discarding());
+    }
+    public Path copy(URI uri, Path file) throws Exception {
+      return copy(uri, file, StandardCopyOption.COPY_ATTRIBUTES);
+    }
+    public Path copy(URI uri, Path file, CopyOption... options) throws Exception {
+      var request = HttpRequest.newBuilder(uri).GET();
+      if (Files.exists(file) && Files.getFileStore(file).supportsFileAttributeView("user")) {
+        var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
+        var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
+        request.setHeader("If-None-Match", etag);
+      }
+      var directory = file.getParent();
+      if (directory != null) Files.createDirectories(directory);
+      var handler = BodyHandlers.ofFile(file);
+      var response = client.send(request.build(), handler);
+      if (response.statusCode() == 200) {
+        if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
+          var etagHeader = response.headers().firstValue("etag");
+          if (etagHeader.isPresent() && Files.getFileStore(file).supportsFileAttributeView("user")) {
+            var etag = StandardCharsets.UTF_8.encode(etagHeader.get());
+            Files.setAttribute(file, "user:etag", etag);
+          }
+          var lastModifiedHeader = response.headers().firstValue("last-modified");
+          if (lastModifiedHeader.isPresent()) {
+            @SuppressWarnings("SpellCheckingInspection")
+            var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+            var current = System.currentTimeMillis();
+            var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
+            var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
+            Files.setLastModifiedTime(file, fileTime);
+          }
+        }
+        return file;
+      }
+      if (response.statusCode() == 304 /*Not Modified*/) return file;
+      Files.deleteIfExists(file);
+      throw new IllegalStateException("copy " + uri + " failed: response=" + response);
+    }
+    public String read(URI uri) throws Exception {
+      var request = HttpRequest.newBuilder(uri).GET();
+      return client.send(request.build(), BodyHandlers.ofString()).body();
+    }
   }
   public static class Strings {
     public static List<String> list(String tool, String... args) {
