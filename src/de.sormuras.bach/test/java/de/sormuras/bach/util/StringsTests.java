@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -102,6 +103,20 @@ class StringsTests {
       assertLinesMatch(
           List.of("tool with 6 arguments:", "\t-a", "\t\t1", "\t--b", "\t\t2", "\t-c", "\t--d"),
           strings);
+    }
+  }
+
+  @Nested
+  class HexStrings {
+    @Test
+    void empty() {
+      assertEquals("", Strings.hex(new byte[0]));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"'',''", "313233,123", "61206f,a o"})
+    void examples(String expected, String example) {
+      assertEquals(expected, Strings.hex(example.getBytes(StandardCharsets.UTF_8)));
     }
   }
 }

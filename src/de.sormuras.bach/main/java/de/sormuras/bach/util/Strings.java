@@ -85,5 +85,17 @@ public /*static*/ class Strings {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
   }
 
+  private static final char[] HEX_TABLE = "0123456789abcdef".toCharArray();
+
+  public static String hex(byte[] bytes) {
+    var chars = new char[bytes.length * 2];
+    for (int i = 0; i < bytes.length; i++) {
+      int value = bytes[i] & 0xFF;
+      chars[i * 2] = HEX_TABLE[value >>> 4];
+      chars[i * 2 + 1] = HEX_TABLE[value & 0x0F];
+    }
+    return new String(chars);
+  }
+
   private Strings() {}
 }
