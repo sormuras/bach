@@ -19,6 +19,7 @@ package de.sormuras.bach.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,6 +29,7 @@ import java.net.http.HttpClient.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -81,7 +83,16 @@ class ResourcesTests {
       resources.copy(uri, jar);
       assertTrue(Files.exists(jar));
       resources.copy(uri, jar);
-      assertEquals(5929, Files.size(jar));
+      assertSame(
+          jar,
+          Paths.assertFileSizeAndHashes(
+              jar,
+              5929,
+              Map.of(
+                  "md5",
+                  "66739fcadcef76d68975c14c9bd68ea1",
+                  "sha1",
+                  "86152263dcb465a6d25db68aaab15ebbab88c691")));
     }
 
     @Test
