@@ -20,6 +20,7 @@ package de.sormuras.bach.project;
 import static de.sormuras.bach.Assertions.assertToStringEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,6 +48,15 @@ class DirectoryTests {
     assertEquals(0, empty.release());
     assertTrue(empty.toString().contains(Directory.class.getSimpleName()));
     assertEquals("? `empty`", empty.toMarkdown());
+  }
+
+  @Test
+  void types() {
+    assertSame(Directory.Type.UNKNOWN, Directory.Type.of("123"));
+    assertSame(Directory.Type.SOURCE, Directory.Type.of("java"));
+    assertSame(Directory.Type.SOURCE, Directory.Type.of("java-123"));
+    assertSame(Directory.Type.RESOURCE, Directory.Type.of("resource"));
+    assertSame(Directory.Type.RESOURCE, Directory.Type.of("resources"));
   }
 
   @Nested
