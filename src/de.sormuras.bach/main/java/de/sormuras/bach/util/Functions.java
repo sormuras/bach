@@ -30,24 +30,24 @@ public /*static*/ class Functions {
    */
   public static <T> Supplier<T> memoize(Supplier<T> supplier) {
     Objects.requireNonNull(supplier, "supplier");
-    return new Supplier<>() {
-      Supplier<T> delegate = this::firstTime;
-      boolean initialized;
+    class CachingSupplier implements Supplier<T> {
+      Supplier<T> delegate = this::initialize;
+      boolean initialized = false;
 
       @Override
       public T get() {
         return delegate.get();
       }
 
-      private synchronized T firstTime() {
-        if (!initialized) {
-          T value = supplier.get();
-          delegate = () -> value;
-          initialized = true;
-        }
-        return delegate.get();
+      private synchronized T initialize() {
+        if (initialized) return delegate.get();
+        T value = supplier.get();
+        delegate = () -> value;
+        initialized = true;
+        return value;
       }
-    };
+    }
+    return new CachingSupplier();
   }
 
   private Functions() {}
