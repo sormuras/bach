@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.util;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.FileSystem;
@@ -55,6 +58,38 @@ class PathsTests {
       assertThrows(UncheckedIOException.class, () -> Paths.isEmpty(sub));
     } finally {
       FileSystem.chmod(sub, true, true, true);
+    }
+  }
+
+  @Nested
+  class RequireFile {
+    @Test
+    void throwsForNonExistentFile() {
+      var file = Path.of("does", "not", "exist");
+      assertThrows(Exception.class, () -> Paths.assertFileSizeAndHashes(file, 0, Map.of()));
+    }
+
+    @Test
+    void errorsOnSizeMismatch(@TempDir Path temp) throws Exception {
+      var empty = Files.createFile(temp.resolve("file"));
+      assertDoesNotThrow(() -> Paths.assertFileSizeAndHashes(empty, 0, Map.of()));
+      assertThrows(AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 1, Map.of()));
+    }
+
+    @Test
+    void errorsMessageDigestMismatch(@TempDir Path temp) throws Exception {
+      var empty = Files.createFile(temp.resolve("file"));
+      var emptyMD5 = Map.of("md5", "d41d8cd98f00b204e9800998ecf8427e");
+      assertDoesNotThrow(() -> Paths.assertFileSizeAndHashes(empty, 0, emptyMD5));
+      assertThrows(
+          AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 0, Map.of("md5", "0")));
+    }
+
+    @Test
+    void errorsMessageDigestAlgorithmNotFound(@TempDir Path temp) throws Exception {
+      var empty = Files.createFile(temp.resolve("file"));
+      assertThrows(
+          AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 0, Map.of("md0", "0")));
     }
   }
 }

@@ -22,6 +22,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /** {@link Path}-related utilities. */
@@ -52,6 +55,35 @@ public /*static*/ class Paths {
       var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
       for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
     }
+  }
+
+  /** Check the size and message digest hashes of the specified file. */
+  public static Path assertFileSizeAndHashes(Path file, long size, Map<String, String> hashes) {
+    try {
+      long fileSize = Files.size(file);
+      if (size != fileSize) {
+        var details = "expected " + size + " bytes\n\tactual " + fileSize + " bytes";
+        throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    if (hashes.isEmpty()) return file;
+    try {
+      var bytes = Files.readAllBytes(file);
+      for (var expectedDigest : hashes.entrySet()) {
+        var md = MessageDigest.getInstance(expectedDigest.getKey().toUpperCase(Locale.US));
+        md.update(bytes);
+        var actualDigestValue = Strings.hex(md.digest());
+        var expectedDigestValue = expectedDigest.getValue().toLowerCase(Locale.US);
+        if (expectedDigestValue.equals(actualDigestValue)) continue;
+        var details = "expected " + expectedDigestValue + ", but got " + actualDigestValue;
+        throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
+      }
+    } catch (Exception e) {
+      throw new AssertionError("File digest check failed: " + file, e);
+    }
+    return file;
   }
 
   private Paths() {}
