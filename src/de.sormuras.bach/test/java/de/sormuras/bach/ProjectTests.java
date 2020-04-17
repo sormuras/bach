@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.tool.JavaCompiler;
@@ -60,6 +61,7 @@ class ProjectTests {
             "\tRequired modules: []",
             "\tRealms: []",
             "Library",
+            "\tlocator=.+",
             "\trequires=[]"),
         empty.toStrings());
   }
@@ -67,6 +69,18 @@ class ProjectTests {
   @Test
   void oneOfEach() {
     var oneDirectory = new Directory(Path.of("one"), Directory.Type.UNKNOWN, 1);
+    var oneLocator = new Locator() {
+
+      @Override
+      public URI apply(String module) {
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "one";
+      }
+    };
     var oneProject =
         new Project(
             "one",
@@ -83,7 +97,7 @@ class ProjectTests {
                                 new JavaCompiler.CompileForJavaRelease(1),
                                 new JavaCompiler.EnablePreviewLanguageFeatures())))),
                 "one",
-                new Library(Set.of("one"))));
+                new Library(oneLocator, Set.of("one"))));
     assertLinesMatch(
         List.of(
             "Project",
@@ -105,6 +119,7 @@ class ProjectTests {
             "\t\t\tDirectories: [1]",
             "\t\t\tDirectory[path=one, type=UNKNOWN, release=1]",
             "Library",
+            "\tlocator=one",
             "\trequires=[one]"),
         oneProject.toStrings());
   }

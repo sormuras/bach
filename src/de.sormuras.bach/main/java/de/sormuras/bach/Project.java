@@ -106,6 +106,7 @@ public /*static*/ class Project {
       }
     }
     strings.add("Library");
+    strings.add("\tlocator=" + structure.library().locator());
     strings.add("\trequires=" + structure.library().requires());
     return List.copyOf(strings);
   }
