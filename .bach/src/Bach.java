@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -48,20 +49,26 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.IntSummaryStatistics;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -217,7 +224,8 @@ public class Bach {
       strings.add("\tdescription=\"" + information.description() + '"');
       strings.add("\turi=" + information.uri());
       strings.add("Structure");
-      strings.add("\tUnits: " + structure.toUnitNames());
+      strings.add("\tDeclared modules: " + structure.toDeclaredModuleNames());
+      strings.add("\tRequired modules: " + structure.toRequiredModuleNames());
       strings.add("\tRealms: " + structure.toRealmNames());
       structure.toMainRealm().ifPresent(realm -> strings.add("\tmain-realm=\"" + realm.name() + '"'));
       for (var realm : structure.realms()) {
@@ -239,8 +247,8 @@ public class Bach {
         }
       }
       strings.add("Library");
+      strings.add("\tlocator=" + structure.library().locator());
       strings.add("\trequires=" + structure.library().requires());
-      strings.add("\tlocators=" + structure.library().locators());
       return List.copyOf(strings);
     }
   }
@@ -338,36 +346,62 @@ public class Bach {
   }
   public static final class Library {
     public static Library of(String... requires) {
-      return new Library(Set.of(requires), List.of());
+      return new Library(__ -> null, Set.of(requires));
     }
+    private final Locator locator;
     private final Set<String> requires;
-    private final List<Locator> locators;
-    public Library(Set<String> requires, List<Locator> locators) {
-      this.requires = Objects.requireNonNull(requires, "requires");
-      this.locators = Objects.requireNonNull(locators, "locators");
+    public Library(Locator locator, Set<String> requires) {
+      this.locator = locator;
+      this.requires = requires;
+    }
+    public Locator locator() {
+      return locator;
     }
     public Set<String> requires() {
       return requires;
     }
-    public List<Locator> locators() {
-      return locators;
-    }
   }
-  public interface Locator {
-    Optional<Location> locate(String module);
-    class Location {
-      private final URI uri;
-      private final String version;
-      public Location(URI uri, String version) {
-        this.uri = uri;
-        this.version = version;
-      }
-      public URI uri() {
-        return uri;
-      }
-      public String toVersionString() {
-        return version == null || version.isEmpty() ? "" : '-' + version;
-      }
+  public interface Locator extends Function<String, URI> {
+    URI apply(String module);
+    static Map<String, String> parseFragment(String fragment) {
+      if (fragment.isEmpty()) return Map.of();
+      if (fragment.length() < "a=b".length())
+        throw new IllegalArgumentException("Fragment too short: " + fragment);
+      if (fragment.indexOf('=') == -1)
+        throw new IllegalArgumentException("At least one = expected: " + fragment);
+      var map = new LinkedHashMap<String, String>();
+      var parts = fragment.split("[&=]");
+      for (int i = 0; i < parts.length; i += 2) map.put(parts[i], parts[i + 1]);
+      return map;
+    }
+    static String toFragment(Map<String, String> map) {
+      var joiner = new StringJoiner("&");
+      map.forEach((key, value) -> joiner.add(key + '=' + value));
+      return joiner.toString();
+    }
+    String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+    static String central(String gav, String module, long size, String md5) {
+      var parts = gav.split(":");
+      var group = parts[0];
+      var artifact = parts[1];
+      var version = parts[2];
+      var classifier = parts.length < 4 ? "" : parts[3];
+      var ssp = maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
+      var attributes = new LinkedHashMap<String, String>();
+      attributes.put("module", module);
+      attributes.put("version", version);
+      if (size >= 0) attributes.put("size", Long.toString(size));
+      if (!md5.isEmpty()) attributes.put("md5", md5);
+      return ssp + '#' + toFragment(attributes);
+    }
+    static String central(String group, String artifact, String version) {
+      return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+    }
+    static String maven(String repository, String g, String a, String v, String classifier) {
+      var filename = a + '-' + (classifier.isEmpty() ? v : v + '-' + classifier);
+      var joiner = new StringJoiner("/").add(repository);
+      joiner.add(g.replace('.', '/')).add(a).add(v).add(filename + ".jar");
+      return joiner.toString();
     }
   }
   public static class Realm {
@@ -444,9 +478,12 @@ public class Bach {
     public List<String> toRealmNames() {
       return realms.stream().map(Realm::name).collect(Collectors.toList());
     }
-    public List<String> toUnitNames() {
+    public Set<String> toDeclaredModuleNames() {
       var names = realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::name);
-      return names.distinct().sorted().collect(Collectors.toList());
+      return names.sorted().collect(Collectors.toCollection(TreeSet::new));
+    }
+    public Set<String> toRequiredModuleNames() {
+      return Modules.required(realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::descriptor));
     }
   }
   public static class Unit {
@@ -909,7 +946,7 @@ public class Bach {
     }
     public void execute(Execution execution) {
       var structure = project.structure();
-      execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toUnitNames());
+      execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toDeclaredModuleNames());
       execution.print(Level.DEBUG, project.toStrings());
     }
   }
@@ -949,7 +986,7 @@ public class Bach {
       this.project = project;
     }
     public void execute(Execution execution) throws IllegalStateException {
-      if (project.structure().toUnitNames().isEmpty()) fail(execution, "no unit present");
+      if (project.structure().toDeclaredModuleNames().isEmpty()) fail(execution, "no unit present");
     }
     private static void fail(Execution execution, String message) {
       execution.print(Level.ERROR, message);
@@ -1223,23 +1260,88 @@ public class Bach {
   public static class Functions {
     public static <T> Supplier<T> memoize(Supplier<T> supplier) {
       Objects.requireNonNull(supplier, "supplier");
-      return new Supplier<>() {
-        Supplier<T> delegate = this::firstTime;
-        boolean initialized;
+      class CachingSupplier implements Supplier<T> {
+        Supplier<T> delegate = this::initialize;
+        boolean initialized = false;
         public T get() {
           return delegate.get();
         }
-        private synchronized T firstTime() {
-          if (!initialized) {
-            T value = supplier.get();
-            delegate = () -> value;
-            initialized = true;
-          }
-          return delegate.get();
+        private synchronized T initialize() {
+          if (initialized) return delegate.get();
+          T value = supplier.get();
+          delegate = () -> value;
+          initialized = true;
+          return value;
         }
-      };
+      }
+      return new CachingSupplier();
     }
     private Functions() {}
+  }
+  public static class Modules {
+    interface Patterns {
+      Pattern NAME =
+          Pattern.compile(
+              "(?:module)" // key word
+                  + "\\s+([\\w.]+)" // module name
+                  + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                  + "\\s*\\{"); // end marker
+      Pattern REQUIRES =
+          Pattern.compile(
+              "(?:requires)" // key word
+                  + "(?:\\s+[\\w.]+)?" // optional modifiers
+                  + "\\s+([\\w.]+)" // module name
+                  + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                  + "\\s*;"); // end marker
+    }
+    public static Optional<String> findMainClass(Path info, String module) {
+      var main = Path.of(module.replace('.', '/'), "Main.java");
+      var exists = Files.isRegularFile(info.resolveSibling(main));
+      return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+    }
+    public static Optional<String> findMainModule(Stream<ModuleDescriptor> descriptors) {
+      var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
+      return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+    }
+    public static ModuleDescriptor describe(Path info) {
+      try {
+        var module = describe(Files.readString(info));
+        var temporary = module.build();
+        findMainClass(info, temporary.name()).ifPresent(module::mainClass);
+        return module.build();
+      } catch (IOException e) {
+        throw new UncheckedIOException("Describe failed", e);
+      }
+    }
+    public static ModuleDescriptor.Builder describe(String source) {
+      var nameMatcher = Patterns.NAME.matcher(source);
+      if (!nameMatcher.find())
+        throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
+      var name = nameMatcher.group(1).trim();
+      var builder = ModuleDescriptor.newModule(name);
+      var requiresMatcher = Patterns.REQUIRES.matcher(source);
+      while (requiresMatcher.find()) {
+        var requiredName = requiresMatcher.group(1);
+        Optional.ofNullable(requiresMatcher.group(2))
+            .ifPresentOrElse(
+                version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+                () -> builder.requires(requiredName));
+      }
+      return builder;
+    }
+    public static Set<String> declared(Stream<ModuleDescriptor> descriptors) {
+      return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+    }
+    public static Set<String> required(Stream<ModuleDescriptor> descriptors) {
+      return descriptors
+          .map(ModuleDescriptor::requires)
+          .flatMap(Set::stream)
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+          .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+          .map(Requires::name)
+          .collect(Collectors.toCollection(TreeSet::new));
+    }
+    private Modules() {}
   }
   public static class Paths {
     public static boolean isEmpty(Path path) {
@@ -1262,6 +1364,39 @@ public class Bach {
         var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
         for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
+    }
+    public static Path assertFileAttributes(Path file, Map<String, String> attributes) {
+      if (attributes.isEmpty()) return file;
+      var map = new HashMap<>(attributes);
+      var size = map.remove("size");
+      if (size != null) {
+        var expectedSize = Long.parseLong(size);
+        try {
+          long fileSize = Files.size(file);
+          if (expectedSize != fileSize) {
+            var details = "expected " + expectedSize + " bytes\n\tactual " + fileSize + " bytes";
+            throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
+      if (map.isEmpty()) return file;
+      try {
+        var bytes = Files.readAllBytes(file);
+        for (var expectedDigest : map.entrySet()) {
+          var md = MessageDigest.getInstance(expectedDigest.getKey().toUpperCase(Locale.US));
+          md.update(bytes);
+          var actualDigestValue = Strings.hex(md.digest());
+          var expectedDigestValue = expectedDigest.getValue().toLowerCase(Locale.US);
+          if (expectedDigestValue.equals(actualDigestValue)) continue;
+          var details = "expected " + expectedDigestValue + ", but got " + actualDigestValue;
+          throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
+        }
+      } catch (Exception e) {
+        throw new AssertionError("File digest check failed: " + file, e);
+      }
+      return file;
     }
     private Paths() {}
   }
@@ -1363,6 +1498,16 @@ public class Bach {
     }
     public static String toString(Collection<Path> paths) {
       return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+    private static final char[] HEX_TABLE = "0123456789abcdef".toCharArray();
+    public static String hex(byte[] bytes) {
+      var chars = new char[bytes.length * 2];
+      for (int i = 0; i < bytes.length; i++) {
+        int value = bytes[i] & 0xFF;
+        chars[i * 2] = HEX_TABLE[value >>> 4];
+        chars[i * 2 + 1] = HEX_TABLE[value & 0x0F];
+      }
+      return new String(chars);
     }
     private Strings() {}
   }
