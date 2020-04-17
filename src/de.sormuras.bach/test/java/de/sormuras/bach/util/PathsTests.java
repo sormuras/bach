@@ -66,7 +66,10 @@ class PathsTests {
     @Test
     void throwsForNonExistentFile() {
       var file = Path.of("does", "not", "exist");
-      assertThrows(Exception.class, () -> Paths.assertFileAttributes(file, Map.of("size", "?")));
+      var fail = Map.of("size", "?");
+      var zero = Map.of("size", "0");
+      assertThrows(NumberFormatException.class, () -> Paths.assertFileAttributes(file, fail));
+      assertThrows(UncheckedIOException.class, () -> Paths.assertFileAttributes(file, zero));
     }
 
     @Test
