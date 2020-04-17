@@ -33,7 +33,7 @@ public /*static*/ class ValidateProject extends Task {
 
   @Override
   public void execute(Execution execution) throws IllegalStateException {
-    if (project.structure().toUnitNames().isEmpty()) fail(execution, "no unit present");
+    if (project.structure().toDeclaredModuleNames().isEmpty()) fail(execution, "no unit present");
   }
 
   private static void fail(Execution execution, String message) {

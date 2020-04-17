@@ -83,7 +83,8 @@ public /*static*/ class Project {
     strings.add("\tdescription=\"" + information.description() + '"');
     strings.add("\turi=" + information.uri());
     strings.add("Structure");
-    strings.add("\tUnits: " + structure.toUnitNames());
+    strings.add("\tDeclared modules: " + structure.toDeclaredModuleNames());
+    strings.add("\tRequired modules: " + structure.toRequiredModuleNames());
     strings.add("\tRealms: " + structure.toRealmNames());
     structure.toMainRealm().ifPresent(realm -> strings.add("\tmain-realm=\"" + realm.name() + '"'));
     for (var realm : structure.realms()) {

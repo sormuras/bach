@@ -17,9 +17,12 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.util.Modules;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /** A modular project structure consisting of realms and other components. */
@@ -64,8 +67,12 @@ public /*static*/ class Structure {
     return realms.stream().map(Realm::name).collect(Collectors.toList());
   }
 
-  public List<String> toUnitNames() {
+  public Set<String> toDeclaredModuleNames() {
     var names = realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::name);
-    return names.distinct().sorted().collect(Collectors.toList());
+    return names.sorted().collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public Set<String> toRequiredModuleNames() {
+    return Modules.required(realms.stream().flatMap(realm -> realm.units().stream()).map(Unit::descriptor));
   }
 }

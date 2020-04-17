@@ -34,7 +34,7 @@ public /*static*/ class PrintProject extends Task {
   @Override
   public void execute(Execution execution) {
     var structure = project.structure();
-    execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toUnitNames());
+    execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toDeclaredModuleNames());
     execution.print(Level.DEBUG, project.toStrings());
   }
 }
