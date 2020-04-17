@@ -23,6 +23,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -58,20 +59,30 @@ public /*static*/ class Paths {
   }
 
   /** Check the size and message digest hashes of the specified file. */
-  public static Path assertFileSizeAndHashes(Path file, long size, Map<String, String> hashes) {
-    try {
-      long fileSize = Files.size(file);
-      if (size != fileSize) {
-        var details = "expected " + size + " bytes\n\tactual " + fileSize + " bytes";
-        throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
+  public static Path assertFileAttributes(Path file, Map<String, String> attributes) {
+    if (attributes.isEmpty()) return file;
+
+    var map = new HashMap<>(attributes);
+    var size = map.remove("size");
+    if (size != null) {
+      var expectedSize = Long.parseLong(size);
+      try {
+        long fileSize = Files.size(file);
+        if (expectedSize != fileSize) {
+          var details = "expected " + expectedSize + " bytes\n\tactual " + fileSize + " bytes";
+          throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
     }
-    if (hashes.isEmpty()) return file;
+    if (map.isEmpty()) return file;
+
+    // remaining entries are treated as message digest algorithm-value pairs
+    // https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#messagedigest-algorithms
     try {
       var bytes = Files.readAllBytes(file);
-      for (var expectedDigest : hashes.entrySet()) {
+      for (var expectedDigest : map.entrySet()) {
         var md = MessageDigest.getInstance(expectedDigest.getKey().toUpperCase(Locale.US));
         md.update(bytes);
         var actualDigestValue = Strings.hex(md.digest());

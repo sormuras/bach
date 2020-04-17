@@ -62,34 +62,33 @@ class PathsTests {
   }
 
   @Nested
-  class RequireFile {
+  class AssertFileAttributes {
     @Test
     void throwsForNonExistentFile() {
       var file = Path.of("does", "not", "exist");
-      assertThrows(Exception.class, () -> Paths.assertFileSizeAndHashes(file, 0, Map.of()));
+      assertThrows(Exception.class, () -> Paths.assertFileAttributes(file, Map.of("size", "?")));
     }
 
     @Test
     void errorsOnSizeMismatch(@TempDir Path temp) throws Exception {
       var empty = Files.createFile(temp.resolve("file"));
-      assertDoesNotThrow(() -> Paths.assertFileSizeAndHashes(empty, 0, Map.of()));
-      assertThrows(AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 1, Map.of()));
+      assertDoesNotThrow(() -> Paths.assertFileAttributes(empty, Map.of("size", "0")));
+      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, Map.of("size", "1")));
     }
 
     @Test
     void errorsMessageDigestMismatch(@TempDir Path temp) throws Exception {
       var empty = Files.createFile(temp.resolve("file"));
-      var emptyMD5 = Map.of("md5", "d41d8cd98f00b204e9800998ecf8427e");
-      assertDoesNotThrow(() -> Paths.assertFileSizeAndHashes(empty, 0, emptyMD5));
-      assertThrows(
-          AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 0, Map.of("md5", "0")));
+      var zeroMD5 = Map.of("size", "0", "md5", "d41d8cd98f00b204e9800998ecf8427e");
+      var failMD5 = Map.of("size", "0", "md5", "0");
+      assertDoesNotThrow(() -> Paths.assertFileAttributes(empty, zeroMD5));
+      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, failMD5));
     }
 
     @Test
     void errorsMessageDigestAlgorithmNotFound(@TempDir Path temp) throws Exception {
       var empty = Files.createFile(temp.resolve("file"));
-      assertThrows(
-          AssertionError.class, () -> Paths.assertFileSizeAndHashes(empty, 0, Map.of("md0", "0")));
+      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, Map.of("md0", "0")));
     }
   }
 }
