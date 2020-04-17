@@ -18,8 +18,12 @@
 package de.sormuras.bach.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,6 +59,45 @@ class LocatorTests {
       var map = Locator.parseFragment(fragment);
       var actual = Locator.toFragment(map);
       assertEquals(fragment, actual);
+    }
+  }
+
+  @Nested
+  class Locations {
+    @Test
+    void asmWithoutFileAttributes() {
+      var path = Locator.central("org.ow2.asm", "asm", "8.0.1");
+      var uri = URI.create(path);
+      assertTrue(uri.toString().startsWith("https"));
+      assertTrue(uri.toString().contains("asm-8.0.1.jar"));
+      assertFalse(uri.toString().contains("#"));
+      assertNull(uri.getFragment());
+    }
+
+    @Test
+    void asmWithFileAttributes() {
+      var path =
+          Locator.central(
+              "org.ow2.asm:asm:8.0.1",
+              "org.objectweb.asm",
+              121772,
+              "72c74304fc162ae3b03e34ca6727e19f");
+      var uri = URI.create(path);
+      assertTrue(uri.toString().startsWith("https"));
+      assertTrue(uri.toString().contains("asm-8.0.1.jar"));
+      assertTrue(uri.toString().contains("#"));
+      var parsedAttributes = Locator.parseFragment(uri.getFragment());
+      assertEquals(
+          Map.of(
+              "module",
+              "org.objectweb.asm",
+              "version",
+              "8.0.1",
+              "size",
+              "121772",
+              "md5",
+              "72c74304fc162ae3b03e34ca6727e19f"),
+          parsedAttributes);
     }
   }
 }
