@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -25,22 +24,16 @@ import java.util.Set;
 public /*static*/ final class Library {
 
   public static Library of(String... requires) {
-    return new Library(Set.of(requires), List.of());
+    return new Library(Set.of(requires));
   }
 
   private final Set<String> requires;
-  private final List<Locator> locators;
 
-  public Library(Set<String> requires, List<Locator> locators) {
+  public Library(Set<String> requires) {
     this.requires = Objects.requireNonNull(requires, "requires");
-    this.locators = Objects.requireNonNull(locators, "locators");
   }
 
   public Set<String> requires() {
     return requires;
-  }
-
-  public List<Locator> locators() {
-    return locators;
   }
 }
