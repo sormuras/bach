@@ -22,19 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Library;
-import de.sormuras.bach.project.Locator;
-import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.tool.JavaCompiler;
 import de.sormuras.bach.tool.Tool;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -58,28 +56,16 @@ class ProjectTests {
             "\tdescription=\"\"",
             "\turi=null",
             "Structure",
-            "\tUnits: []",
+            "\tDeclared modules: []",
+            "\tRequired modules: []",
             "\tRealms: []",
             "Library",
-            "\trequires=[]",
-            "\tlocators=[]"),
+            "\trequires=[]"),
         empty.toStrings());
   }
 
   @Test
   void oneOfEach() {
-    class OneLocator implements Locator {
-
-      @Override
-      public Optional<Location> locate(String module) {
-        return Optional.empty();
-      }
-
-      @Override
-      public String toString() {
-        return "one";
-      }
-    }
     var oneDirectory = new Directory(Path.of("one"), Directory.Type.UNKNOWN, 1);
     var oneProject =
         new Project(
@@ -97,7 +83,7 @@ class ProjectTests {
                                 new JavaCompiler.CompileForJavaRelease(1),
                                 new JavaCompiler.EnablePreviewLanguageFeatures())))),
                 "one",
-                new Library(Set.of("one"), List.of(new OneLocator()))));
+                new Library(Set.of("one"))));
     assertLinesMatch(
         List.of(
             "Project",
@@ -107,7 +93,8 @@ class ProjectTests {
             "\tdescription=\"one\"",
             "\turi=one",
             "Structure",
-            "\tUnits: [one]",
+            "\tDeclared modules: [one]",
+            "\tRequired modules: []",
             "\tRealms: [one]",
             "\tmain-realm=\"one\"",
             "\tRealm \"one\"",
@@ -118,8 +105,7 @@ class ProjectTests {
             "\t\t\tDirectories: [1]",
             "\t\t\tDirectory[path=one, type=UNKNOWN, release=1]",
             "Library",
-            "\trequires=[one]",
-            "\tlocators=[one]"),
+            "\trequires=[one]"),
         oneProject.toStrings());
   }
 }

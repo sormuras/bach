@@ -85,14 +85,17 @@ class ResourcesTests {
       resources.copy(uri, jar);
       assertSame(
           jar,
-          Paths.assertFileSizeAndHashes(
+          Paths.assertFileAttributes(
               jar,
-              5929,
               Map.of(
+                  "size",
+                  "5929",
                   "md5",
                   "66739fcadcef76d68975c14c9bd68ea1",
                   "sha1",
-                  "86152263dcb465a6d25db68aaab15ebbab88c691")));
+                  "86152263dcb465a6d25db68aaab15ebbab88c691",
+                  "sha3-512",
+                  "1db0ca64d85540f578fa2add661fa1489ea5ac45f927000a6440a12ac7089f00f48e636ab91fc8220946a704cb5605e7887ed4b730f70cf53661020988076f81")));
     }
 
     @Test

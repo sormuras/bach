@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.sormuras.bach.API;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class StructureTests {
@@ -33,10 +34,9 @@ class StructureTests {
     assertTrue(empty.realms().isEmpty());
     assertNull(empty.mainRealm());
     assertTrue(empty.library().requires().isEmpty());
-    assertTrue(empty.library().locators().isEmpty());
     assertTrue(empty.toString().contains("realms"));
     assertEquals(Optional.empty(), empty.toMainRealm());
     assertEquals(List.of(), empty.toRealmNames());
-    assertEquals(List.of(), empty.toUnitNames());
+    assertEquals(Set.of(), empty.toDeclaredModuleNames());
   }
 }
