@@ -80,6 +80,20 @@ public /*static*/ final class JavaCompiler extends Tool {
     }
   }
 
+  /** Specify where to find application modules. */
+  public static final class ModulePath implements Option {
+    private final List<Path> paths;
+
+    public ModulePath(List<Path> paths) {
+      this.paths = paths;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-path", Strings.toString(paths));
+    }
+  }
+
   /** Specify where to find input sources in a module-specific form. */
   public static final class ModuleSourcePathInModuleSpecificForm implements Option {
     private final String module;
