@@ -21,11 +21,13 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.module.ResolutionException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -96,6 +98,7 @@ public class Bach {
         "\tprinter=" + printer,
         "\tWorkspace",
         "\t\tbase='" + workspace.base() + "' -> " + workspace.base().toUri(),
+        "\t\tlib='" + workspace.lib(),
         "\t\tworkspace=" + workspace.workspace());
   }
   public Printer getPrinter() {
@@ -937,6 +940,7 @@ public class Bach {
           new PrintProject(project),
           new ValidateProject(project),
           new CreateDirectories(workspace.workspace()),
+          new ResolveMissingModules(project),
           compileAllRealms(),
           new PrintModules(project));
     }
@@ -1029,6 +1033,50 @@ public class Bach {
       var structure = project.structure();
       execution.print(Level.INFO, project.toNameAndVersion(), "Units: " + structure.toDeclaredModuleNames());
       execution.print(Level.DEBUG, project.toStrings());
+    }
+  }
+  public static class ResolveMissingModules extends Task {
+    private final Project project;
+    public ResolveMissingModules(Project project) {
+      super("Resolve missing modules");
+      this.project = project;
+    }
+    public void execute(Execution execution) {
+      var structure = project.structure();
+      var library = structure.library();
+      var directory = execution.getBach().getWorkspace().lib();
+      var transporter = new Transporter(execution.getBach(), directory, library.locator());
+      var declared = structure.toDeclaredModuleNames();
+      var requires = new TreeSet<String>();
+      requires.addAll(structure.toRequiredModuleNames());
+      requires.addAll(library.requires());
+      var resolver = new ModulesResolver(new Path[] {directory}, declared, transporter);
+      resolver.resolve(requires);
+    }
+    private static class Transporter implements Consumer<Set<String>> {
+      private final Bach bach;
+      private final Path directory;
+      private final Locator locator;
+      private Transporter(Bach bach, Path directory, Locator locator) {
+        this.bach = bach;
+        this.directory = directory;
+        this.locator = locator;
+      }
+      public void accept(Set<String> modules) {
+        var resources = new Resources(bach.getHttpClient());
+        for (var module : modules) {
+          var uri = locator.apply(module);
+          if (uri == null) throw new FindException("Module " + module + " not locatable: " + locator);
+          var attributes = Locator.parseFragment(uri.getFragment());
+          var version = Optional.ofNullable(attributes.get("version"));
+          var jar = module + version.map(v -> '@' + v).orElse("") + ".jar";
+          try {
+            resources.copy(uri, directory.resolve(jar));
+          } catch (Exception e) {
+            throw new ResolutionException("Copy failed for: " + uri, e);
+          }
+        }
+      }
     }
   }
   public static class RunTool extends Task {
@@ -1206,6 +1254,15 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("--module", String.join(",", modules));
+      }
+    }
+    public static final class ModulePath implements Option {
+      private final List<Path> paths;
+      public ModulePath(List<Path> paths) {
+        this.paths = paths;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-path", Strings.toString(paths));
       }
     }
     public static final class ModuleSourcePathInModuleSpecificForm implements Option {
@@ -1646,16 +1703,21 @@ public class Bach {
       return of(Path.of(""));
     }
     public static Workspace of(Path base) {
-      return new Workspace(base, base.resolve(".bach/workspace"));
+      return new Workspace(base, base.resolve("lib"), base.resolve(".bach/workspace"));
     }
     private final Path base;
+    private final Path lib;
     private final Path workspace;
-    public Workspace(Path base, Path workspace) {
+    public Workspace(Path base, Path lib, Path workspace) {
       this.base = base;
+      this.lib = lib;
       this.workspace = workspace;
     }
     public Path base() {
       return base;
+    }
+    public Path lib() {
+      return lib;
     }
     public Path workspace() {
       return workspace;
@@ -1663,6 +1725,7 @@ public class Bach {
     public String toString() {
       return new StringJoiner(", ", Workspace.class.getSimpleName() + "[", "]")
           .add("base=" + base)
+          .add("lib=" + lib)
           .add("workspace=" + workspace)
           .toString();
     }
