@@ -79,7 +79,7 @@ public interface Projects {
                 new JavaCompiler.CompileModulesCheckingTimestamps(List.of("com.greetings")),
                 new JavaCompiler.ModuleSourcePathInModulePatternForm(List.of(src.toString())),
                 new JavaCompiler.DestinationDirectory(workspace.classes("", 0))));
-    var realm = new Realm("", List.of(unit), "com.greetings", javac);
+    var realm = new Realm("", List.of(unit), "com.greetings", List.of(), javac);
     return new Example(
         new Project(
             "Jigsaw Quick Start: Greetings",
@@ -124,6 +124,7 @@ public interface Projects {
                                 List.of(
                                     new Directory(workspace.base(), Directory.Type.SOURCE, 0)))),
                         "",
+                        List.of(),
                         Tool.javac(
                             List.of(
                                 new JavaCompiler.CompileModulesCheckingTimestamps(

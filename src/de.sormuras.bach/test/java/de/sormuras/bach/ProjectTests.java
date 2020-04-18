@@ -69,18 +69,19 @@ class ProjectTests {
   @Test
   void oneOfEach() {
     var oneDirectory = new Directory(Path.of("one"), Directory.Type.UNKNOWN, 1);
-    var oneLocator = new Locator() {
+    var oneLocator =
+        new Locator() {
 
-      @Override
-      public URI apply(String module) {
-        return null;
-      }
+          @Override
+          public URI apply(String module) {
+            return null;
+          }
 
-      @Override
-      public String toString() {
-        return "one";
-      }
-    };
+          @Override
+          public String toString() {
+            return "one";
+          }
+        };
     var oneProject =
         new Project(
             "one",
@@ -92,6 +93,7 @@ class ProjectTests {
                         "one",
                         List.of(API.newUnit("one", oneDirectory)),
                         null,
+                        List.of(),
                         Tool.javac(
                             List.of(
                                 new JavaCompiler.CompileForJavaRelease(1),
@@ -114,6 +116,7 @@ class ProjectTests {
             "\tRealm \"one\"",
             "\t\trelease=1",
             "\t\tpreview=true",
+            "\t\tupstreams=[]",
             "\t\tUnits: [1]",
             "\t\tUnit \"one\"",
             "\t\t\tDirectories: [1]",

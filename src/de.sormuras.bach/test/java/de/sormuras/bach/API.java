@@ -62,7 +62,7 @@ public interface API {
   }
 
   static Realm newRealm(String name, Unit... units) {
-    return new Realm(name, List.of(units), null, Tool.javac(List.of()));
+    return new Realm(name, List.of(units), null, List.of(), Tool.javac(List.of()));
   }
 
   static Unit newUnit(String name, Directory... directories) {
