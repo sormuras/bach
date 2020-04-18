@@ -50,6 +50,7 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
         new PrintProject(project),
         new ValidateProject(project),
         new CreateDirectories(workspace.workspace()),
+        new ResolveMissingModules(project),
         compileAllRealms(),
         // javac/jar main realm | javadoc
         // jlink    | javac/jar test realm
