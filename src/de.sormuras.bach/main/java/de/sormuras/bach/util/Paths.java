@@ -76,6 +76,10 @@ public /*static*/ class Paths {
         throw new UncheckedIOException(e);
       }
     }
+
+    map.remove("module");
+    map.remove("version");
+
     if (map.isEmpty()) return file;
 
     // remaining entries are treated as message digest algorithm-value pairs
