@@ -23,7 +23,7 @@ import java.util.Set;
 public /*static*/ final class Library {
 
   public static Library of(String... requires) {
-    return new Library(__ -> null, Set.of(requires));
+    return new Library(Locator.of(), Set.of(requires));
   }
 
   private final Locator locator;
