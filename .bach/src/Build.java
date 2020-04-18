@@ -16,7 +16,6 @@
  */
 
 import java.lang.System.Logger.Level;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -42,13 +41,9 @@ class Build {
             "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
             URI.create("https://github.com/sormuras/bach")),
         new Bach.Structure(
-            List.of(
-                mainRealm(workspace)
-                // , testRealm(workspace) TODO Needs JavaArchive of main realm and library support
-                // , testPreview(workspace) TODO Needs JavaArchive of main and test realm + library
-                ),
+            List.of(mainRealm(workspace), testRealm(workspace), testPreview(workspace)),
             "main",
-            Bach.Library.of("org.junit.jupiter", "org.junit.platform.console")));
+            Bach.Library.of()));
   }
 
   static Bach.Realm mainRealm(Bach.Workspace workspace) {
@@ -57,7 +52,7 @@ class Build {
         "main",
         List.of(
             new Bach.Unit(
-                ModuleDescriptor.newModule("de.sormuras.bach").build(),
+                Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))),
         "de.sormuras.bach",
         Bach.Tool.javac(
@@ -76,20 +71,24 @@ class Build {
     return new Bach.Realm(
         "test",
         List.of(
+            /*
             new Bach.Unit(
                 ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test"))),
+             */
             new Bach.Unit(
-                ModuleDescriptor.newOpenModule("test.base").build(),
+                Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/test.base/test")))),
         null,
         Bach.Tool.javac(
             List.of(
                 new Bach.JavaCompiler.CompileModulesCheckingTimestamps(
-                    List.of("de.sormuras.bach", "test.base")),
+                    List.of(/*"de.sormuras.bach",*/ "test.base")),
                 new Bach.JavaCompiler.CompileForJavaRelease(11),
                 new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
                     List.of("src/*/test/java", "src/*/test/java-module")),
+                new Bach.JavaCompiler.ModulePath(
+                    List.of(workspace.modules("main"), workspace.lib())),
                 new Bach.JavaCompiler.DestinationDirectory(classes) //
                 ) //
             )
@@ -98,21 +97,24 @@ class Build {
   }
 
   static Bach.Realm testPreview(Bach.Workspace workspace) {
-    var classes = workspace.classes("test-preview", 14);
+    var release = Runtime.version().feature();
+    var classes = workspace.classes("test-preview", release);
     return new Bach.Realm(
         "test-preview",
         List.of(
             new Bach.Unit(
-                ModuleDescriptor.newOpenModule("test.modules").build(),
-                Bach.Directory.listOf(Path.of("src/test.modules/test-preview")))),
+                Bach.Modules.describe(Path.of("src/test.preview/test-preview/java/module-info.java")),
+                Bach.Directory.listOf(Path.of("src/test.preview/test-preview")))),
         null,
         Bach.Tool.javac(
             List.of(
-                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("test.modules")),
-                new Bach.JavaCompiler.CompileForJavaRelease(14),
+                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("test.preview")),
+                new Bach.JavaCompiler.CompileForJavaRelease(release),
                 new Bach.JavaCompiler.EnablePreviewLanguageFeatures(),
                 new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
                     List.of("src/*/test-preview/java")),
+                new Bach.JavaCompiler.ModulePath(
+                    List.of(workspace.modules("main"), workspace.modules("test"), workspace.lib())),
                 new Bach.JavaCompiler.DestinationDirectory(classes) //
                 ) //
             ) //
