@@ -54,8 +54,12 @@ class BachTests {
         	description=""
         	uri=null
         Structure
-        	Units: []
+        	Declared modules: []
+        	Required modules: []
         	Realms: []
+        Library
+        \\Q	locator=DefaultLocator [\\E\\d+\\Q modules]\\E
+        	requires=[]
         """.lines().collect(Collectors.toList()),
         actualLines);
   }
