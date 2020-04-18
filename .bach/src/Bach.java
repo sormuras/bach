@@ -24,6 +24,8 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -59,6 +61,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -346,7 +349,7 @@ public class Bach {
   }
   public static final class Library {
     public static Library of(String... requires) {
-      return new Library(__ -> null, Set.of(requires));
+      return new Library(Locator.of(), Set.of(requires));
     }
     private final Locator locator;
     private final Set<String> requires;
@@ -361,8 +364,64 @@ public class Bach {
       return requires;
     }
   }
+  static abstract class JUnit5Modules extends Locator.AbstractLocator {
+    private final String group;
+    private final String version;
+    JUnit5Modules(String group, String version) {
+      this.group = group;
+      this.version = version;
+    }
+    void put(String suffix, long size, String md5) {
+      var module = group + suffix;
+      var artifact = module.substring(4).replace('.', '-');
+      var gav = String.join(":", group, artifact, version);
+      var central = Maven.central(gav, module, size, md5);
+      put(module, central);
+    }
+  }
+  public static class JUnitJupiterModules extends JUnit5Modules {
+    public JUnitJupiterModules() {
+      super("org.junit.jupiter", "5.6.2");
+      put("", 6359, "f516ecfd11b70dc28a1793ae5e48c6ea");
+      put(".api", 154036, "134c39075fcc504a722b1b33432a1111");
+      put(".engine", 209317, "34cae629d115762add3318dcc902706f");
+      put(".params", 562271, "0dc5639e8cfec8b920869f1ee16746c2");
+    }
+  }
+  public static class JUnitPlatformModules extends JUnit5Modules {
+    public JUnitPlatformModules() {
+      super("org.junit.platform", "1.6.2");
+      put(".commons", 96675, "827619f760062525354d47befc86ff9b");
+      put(".console", 433740, "c86a03b3bc95477ae55453e2d9dc4212");
+      put(".engine", 174108, "b41ff34208cb373de0bf954e70c4d78b");
+      put(".launcher", 121929, "efed110dfb13f33a7787b16cfbf8cd2e");
+      put(".reporting", 22426, "f99152f2cd481166abf64109b3308825");
+      put(".testkit", 42956, "d7a063edea927c01d7eb6d45475f675b");
+      put(
+          "org.apiguardian.api",
+          "org.apiguardian:apiguardian-api:1.1.0",
+          2387,
+          "944805817b648e558ed6be6fc7f054f3");
+      put(
+          "org.opentest4j",
+          "org.opentest4j:opentest4j:1.2.0",
+          7653,
+          "45c9a837c21f68e8c93e85b121e2fb90");
+    }
+  }
+  public static class JUnitVintageModules extends JUnit5Modules {
+    public JUnitVintageModules() {
+      super("org.junit.vintage", "5.6.2");
+      put(".engine", 63769, "5e5be4d146a53451aef718a4e6438ecf");
+      put("junit", "junit:junit:4.13", 381765, "5da6445d7b80aba2623e73d4561dcfde");
+      put("org.hamcrest", "org.hamcrest:hamcrest:2.2", 123360, "10b47e837f271d0662f28780e60388e8");
+    }
+  }
   public interface Locator extends Function<String, URI> {
     URI apply(String module);
+    static Locator of() {
+      return new DefaultLocator();
+    }
     static Map<String, String> parseFragment(String fragment) {
       if (fragment.isEmpty()) return Map.of();
       if (fragment.length() < "a=b".length())
@@ -379,29 +438,51 @@ public class Bach {
       map.forEach((key, value) -> joiner.add(key + '=' + value));
       return joiner.toString();
     }
-    String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
-    static String central(String gav, String module, long size, String md5) {
-      var parts = gav.split(":");
-      var group = parts[0];
-      var artifact = parts[1];
-      var version = parts[2];
-      var classifier = parts.length < 4 ? "" : parts[3];
-      var ssp = maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
-      var attributes = new LinkedHashMap<String, String>();
-      attributes.put("module", module);
-      attributes.put("version", version);
-      if (size >= 0) attributes.put("size", Long.toString(size));
-      if (!md5.isEmpty()) attributes.put("md5", md5);
-      return ssp + '#' + toFragment(attributes);
+    abstract class AbstractLocator extends TreeMap<String, String> implements Locator {
+      public String put(String module, String gav, long size, String md5) {
+        return put(module, Maven.central(gav, module, size, md5));
+      }
+      public URI apply(String module) {
+        var uri = get(module);
+        if (uri == null) return null;
+        return URI.create(uri);
+      }
+      public String toString() {
+        return getClass().getSimpleName() + " [" + size() + " modules]";
+      }
     }
-    static String central(String group, String artifact, String version) {
-      return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+    class DefaultLocator extends AbstractLocator {
+      public DefaultLocator() {
+        putAll(new JUnitPlatformModules());
+        putAll(new JUnitJupiterModules());
+        putAll(new JUnitVintageModules());
+      }
     }
-    static String maven(String repository, String g, String a, String v, String classifier) {
-      var filename = a + '-' + (classifier.isEmpty() ? v : v + '-' + classifier);
-      var joiner = new StringJoiner("/").add(repository);
-      joiner.add(g.replace('.', '/')).add(a).add(v).add(filename + ".jar");
-      return joiner.toString();
+    interface Maven {
+      String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+      static String central(String mavenGroupArtifactVersion, String module, long size, String md5) {
+        var coordinates = mavenGroupArtifactVersion.split(":");
+        var group = coordinates[0];
+        var artifact = coordinates[1];
+        var version = coordinates[2];
+        var classifier = coordinates.length < 4 ? "" : coordinates[3];
+        var ssp = maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
+        var attributes = new LinkedHashMap<String, String>();
+        attributes.put("module", module);
+        attributes.put("version", version);
+        if (size >= 0) attributes.put("size", Long.toString(size));
+        if (!md5.isEmpty()) attributes.put("md5", md5);
+        return ssp + '#' + toFragment(attributes);
+      }
+      static String central(String group, String artifact, String version) {
+        return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+      }
+      static String maven(String repository, String g, String a, String v, String classifier) {
+        var filename = a + '-' + (classifier.isEmpty() ? v : v + '-' + classifier);
+        var joiner = new StringJoiner("/").add(repository);
+        joiner.add(g.replace('.', '/')).add(a).add(v).add(filename + ".jar");
+        return joiner.toString();
+      }
     }
   }
   public static class Realm {
@@ -1329,8 +1410,14 @@ public class Bach {
       }
       return builder;
     }
+    public static Set<String> declared(ModuleFinder finder) {
+      return declared(finder.findAll().stream().map(ModuleReference::descriptor));
+    }
     public static Set<String> declared(Stream<ModuleDescriptor> descriptors) {
       return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+    }
+    public static Set<String> required(ModuleFinder finder) {
+      return required(finder.findAll().stream().map(ModuleReference::descriptor));
     }
     public static Set<String> required(Stream<ModuleDescriptor> descriptors) {
       return descriptors
@@ -1342,6 +1429,47 @@ public class Bach {
           .collect(Collectors.toCollection(TreeSet::new));
     }
     private Modules() {}
+  }
+  public static class ModulesResolver {
+    private final Path[] paths;
+    private final Set<String> declared;
+    private final Consumer<Set<String>> transporter;
+    private final Set<String> system;
+    public ModulesResolver(Path[] paths, Set<String> declared, Consumer<Set<String>> transporter) {
+      this.paths = paths;
+      this.declared = new TreeSet<>(declared);
+      this.transporter = transporter;
+      this.system = Modules.declared(ModuleFinder.ofSystem());
+    }
+    public void resolve(Set<String> required) {
+      resolveModules(required);
+      resolveLibraryModules();
+    }
+    public void resolveModules(Set<String> required) {
+      var missing = missing(required);
+      if (missing.isEmpty()) return;
+      transporter.accept(missing);
+      var unresolved = missing(required);
+      if (unresolved.isEmpty()) return;
+      throw new IllegalStateException("Unresolved modules: " + unresolved);
+    }
+    public void resolveLibraryModules() {
+      do {
+        var missing = missing(Modules.required(ModuleFinder.of(paths)));
+        if (missing.isEmpty()) return;
+        resolveModules(missing);
+      } while (true);
+    }
+    Set<String> missing(Set<String> required) {
+      var missing = new TreeSet<>(required);
+      missing.removeAll(declared);
+      if (required.isEmpty()) return Set.of();
+      missing.removeAll(system);
+      if (required.isEmpty()) return Set.of();
+      var library = Modules.declared(ModuleFinder.of(paths));
+      missing.removeAll(library);
+      return missing;
+    }
   }
   public static class Paths {
     public static boolean isEmpty(Path path) {
@@ -1381,6 +1509,8 @@ public class Bach {
           throw new UncheckedIOException(e);
         }
       }
+      map.remove("module");
+      map.remove("version");
       if (map.isEmpty()) return file;
       try {
         var bytes = Files.readAllBytes(file);
