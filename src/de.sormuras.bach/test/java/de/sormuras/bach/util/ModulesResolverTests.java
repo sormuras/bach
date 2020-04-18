@@ -18,6 +18,7 @@
 package de.sormuras.bach.util;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.project.Locator;
 import java.net.URI;
@@ -36,9 +37,15 @@ import test.base.Tree;
 class ModulesResolverTests {
 
   @Test
+  void resolveWithoutTransportFails(@TempDir Path temp) {
+    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), __ -> {});
+    assertThrows(IllegalStateException.class, () -> resolver.resolve(Set.of("org.junit.jupiter")));
+  }
+
+  @Test
   void resolveJUnitJupiter(@TempDir Path temp) {
-    var downloader = new Downloader(temp);
-    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), downloader);
+    var transporter = new Transporter(temp);
+    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.jupiter"));
 
     var files = new ArrayList<String>();
@@ -63,8 +70,8 @@ class ModulesResolverTests {
 
   @Test
   void resolveJUnitPlatformConsole(@TempDir Path temp) {
-    var downloader = new Downloader(temp);
-    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), downloader);
+    var transporter = new Transporter(temp);
+    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.platform.console"));
 
     var files = new ArrayList<String>();
@@ -86,13 +93,13 @@ class ModulesResolverTests {
     }
   }
 
-  private static class Downloader implements Consumer<Set<String>> {
+  private static class Transporter implements Consumer<Set<String>> {
 
     private final Path directory;
     private final Function<String, URI> locator;
     private final Resources resources;
 
-    private Downloader(Path directory) {
+    private Transporter(Path directory) {
       this.directory = directory;
       this.locator = Locator.of();
       this.resources = new Resources(HttpClient.newHttpClient());
