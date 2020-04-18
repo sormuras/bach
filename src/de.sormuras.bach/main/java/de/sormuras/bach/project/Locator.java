@@ -17,6 +17,9 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.project.library.JUnitJupiterModules;
+import de.sormuras.bach.project.library.JUnitPlatformModules;
+import de.sormuras.bach.project.library.JUnitVintageModules;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -55,6 +58,11 @@ public interface Locator extends Function<String, URI> {
 
   /** Map-backed locator implementation. */
   abstract class AbstractLocator extends TreeMap<String, String> implements Locator {
+
+    public String put(String module, String gav, long size, String md5) {
+      return put(module, Maven.central(gav, module, size, md5));
+    }
+
     @Override
     public URI apply(String module) {
       var uri = get(module);
@@ -69,7 +77,11 @@ public interface Locator extends Function<String, URI> {
   }
 
   class DefaultLocator extends AbstractLocator {
-    public DefaultLocator() {}
+    public DefaultLocator() {
+      putAll(new JUnitPlatformModules());
+      putAll(new JUnitJupiterModules());
+      putAll(new JUnitVintageModules());
+    }
   }
 
   /** Maven-related URI-string building helpers. */
