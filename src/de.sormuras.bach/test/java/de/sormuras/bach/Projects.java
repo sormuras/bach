@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 /** Projects. */
 public interface Projects {
@@ -73,11 +74,11 @@ public interface Projects {
     var directory = new Directory(src.resolve("com.greetings"), Directory.Type.SOURCE, 0);
     var unit = new Unit(module.build(), List.of(directory));
     var javac =
-        Tool.javac(List.of(
-            new JavaCompiler.CompileModulesCheckingTimestamps(List.of("com.greetings")),
-            new JavaCompiler.ModuleSourcePathInModulePatternForm(List.of(src.toString())),
-            new JavaCompiler.DestinationDirectory(workspace.classes("", 0)))
-        );
+        Tool.javac(
+            List.of(
+                new JavaCompiler.CompileModulesCheckingTimestamps(List.of("com.greetings")),
+                new JavaCompiler.ModuleSourcePathInModulePatternForm(List.of(src.toString())),
+                new JavaCompiler.DestinationDirectory(workspace.classes("", 0))));
     var realm = new Realm("", List.of(unit), "com.greetings", javac);
     return new Example(
         new Project(
@@ -98,5 +99,41 @@ public interface Projects {
                 + "    System.out.println(\"Greetings!\");\n"
                 + "  }\n"
                 + "}\n"));
+  }
+
+  static Example exampleOfSingleton(Workspace workspace, String... requires) {
+    var source = new StringJoiner("\n", "module singleton {", "}\n");
+    var module = ModuleDescriptor.newModule("singleton");
+    for (var require : requires) {
+      source.add("  requires " + require + ";");
+      module.requires(require);
+    }
+
+    return new Example(
+        new Project(
+            "Singleton",
+            Version.parse("0"),
+            Information.of(),
+            new Structure(
+                List.of(
+                    new Realm(
+                        "",
+                        List.of(
+                            new Unit(
+                                module.build(),
+                                List.of(
+                                    new Directory(workspace.base(), Directory.Type.SOURCE, 0)))),
+                        "",
+                        Tool.javac(
+                            List.of(
+                                new JavaCompiler.CompileModulesCheckingTimestamps(
+                                    List.of("singleton")),
+                                new JavaCompiler.ModuleSourcePathInModuleSpecificForm(
+                                    "singleton", List.of(workspace.base())),
+                                new JavaCompiler.DestinationDirectory(workspace.classes("", 0)),
+                                new JavaCompiler.ModulePath(List.of(workspace.lib())))))),
+                "",
+                Library.of())),
+        Map.of(Path.of("module-info.java"), source.toString()));
   }
 }

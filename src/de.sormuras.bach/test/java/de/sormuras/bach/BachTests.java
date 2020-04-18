@@ -93,10 +93,11 @@ class BachTests {
     var error = assertThrows(AssertionError.class, () -> run.bach().build(API.emptyProject()));
     assertEquals("Build project empty 0 (Task) failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
+    var tasks = 12;
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",
-            "Execute 11 tasks",
+            "Execute " + tasks + " tasks",
             "+ Build project empty 0",
             "\t+ Print version of various foundation tools",
             ">> RUN TOOLS >>",
@@ -106,7 +107,7 @@ class BachTests {
             ">> PROJECT COMPONENTS >>",
             "\t* Validate project",
             "Task execution failed: java.lang.IllegalStateException: project validation failed: no unit present",
-            "Executed 6 of 11 tasks",
+            "Executed 6 of " + tasks + " tasks",
             ">> ERROR >>"),
         run.log().lines());
   }

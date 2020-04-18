@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.util.Strings;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Tree;
@@ -42,6 +44,60 @@ class BuildTests {
             "java.lang.IllegalStateException: project validation failed: no unit present",
             ">> ERROR >>"),
         run.log().lines());
+  }
+
+  @Test
+  void buildSingleton(@TempDir Path temp) throws Exception {
+    var base = temp.resolve("singleton");
+    var workspace = Workspace.of(base);
+    var example = Projects.exampleOfSingleton(workspace);
+    example.deploy(base);
+    assertLinesMatch(List.of("module-info.java"), Tree.walk(base));
+
+    var run = new Run(workspace.base());
+    run.bach().build(example.project());
+
+    run.log().assertThatEverythingIsFine();
+    var N = Runtime.version().feature();
+    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
+    assertLinesMatch(
+        List.of(
+            ".bach",
+            ">> PATHS >>",
+            ".bach/workspace/classes/" + N + "/singleton/module-info.class",
+            ">> PATHS >>",
+            ".bach/workspace/summary.md",
+            ">> PATHS >>"),
+        Tree.walk(base),
+        Strings.text(run.log().lines()));
+  }
+
+  @Test
+  void buildSingletonWithRequires(@TempDir Path temp) throws Exception {
+    var base = temp.resolve("singleton");
+    var workspace = Workspace.of(base);
+    var requires = new TreeSet<>(new Locator.DefaultLocator().keySet());
+    requires.remove("org.junit.platform.testkit"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
+    var example = Projects.exampleOfSingleton(workspace, requires.toArray(String[]::new));
+    example.deploy(base);
+    assertLinesMatch(List.of("module-info.java"), Tree.walk(base));
+
+    var run = new Run(workspace.base());
+    run.bach().build(example.project());
+
+    run.log().assertThatEverythingIsFine();
+    var N = Runtime.version().feature();
+    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
+    assertLinesMatch(
+        List.of(
+            ".bach",
+            ">> PATHS >>",
+            ".bach/workspace/classes/" + N + "/singleton/module-info.class",
+            ">> PATHS >>",
+            ".bach/workspace/summary.md",
+            ">> PATHS >>"),
+        Tree.walk(base),
+        Strings.text(run.log().lines()));
   }
 
   @Test
