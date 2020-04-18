@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -96,7 +97,9 @@ class ModulesTests {
   class DeclaredAndRequired {
     @Test
     void empty() {
+      assertTrue(Modules.declared(ModuleFinder.of()).isEmpty());
       assertTrue(Modules.declared(Stream.empty()).isEmpty());
+      assertTrue(Modules.required(ModuleFinder.of()).isEmpty());
       assertTrue(Modules.required(Stream.empty()).isEmpty());
     }
 
@@ -112,6 +115,12 @@ class ModulesTests {
       var modules = Set.of(module("a"), module("b", "a"), module("c", "b", "x"));
       assertEquals(Set.of("a", "b", "c"), Modules.declared(modules.stream()));
       assertEquals(Set.of("a", "b", "x"), Modules.required(modules.stream()));
+    }
+
+    @Test
+    void systemModules() {
+      assertTrue(Modules.declared(ModuleFinder.ofSystem()).contains("java.base"));
+      assertTrue(Modules.required(ModuleFinder.ofSystem()).contains("java.logging"));
     }
   }
 
