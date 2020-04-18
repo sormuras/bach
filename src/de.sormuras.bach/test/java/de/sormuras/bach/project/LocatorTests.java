@@ -22,11 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -66,7 +71,7 @@ class LocatorTests {
   class Locations {
     @Test
     void asmWithoutFileAttributes() {
-      var path = Locator.central("org.ow2.asm", "asm", "8.0.1");
+      var path = Locator.Maven.central("org.ow2.asm", "asm", "8.0.1");
       var uri = URI.create(path);
       assertTrue(uri.toString().startsWith("https"));
       assertTrue(uri.toString().contains("asm-8.0.1.jar"));
@@ -77,7 +82,7 @@ class LocatorTests {
     @Test
     void asmWithFileAttributes() {
       var path =
-          Locator.central(
+          Locator.Maven.central(
               "org.ow2.asm:asm:8.0.1",
               "org.objectweb.asm",
               121772,
@@ -98,6 +103,30 @@ class LocatorTests {
               "md5",
               "72c74304fc162ae3b03e34ca6727e19f"),
           parsedAttributes);
+    }
+  }
+
+  @Nested
+  class DefaultLocatorTests {
+
+    @Test
+    void stringRepresentationDisplaysNumberOfMappedModules() {
+      assertEquals("DefaultLocator [0 modules]", Locator.of().toString());
+    }
+
+    @TestFactory
+    Stream<DynamicTest> allModulesAreMappedToSyntacticallyValidUriStrings() {
+      var entries = new Locator.DefaultLocator().entrySet().stream().sorted();
+      return entries.map(entry -> dynamicTest(entry.getKey(), () -> URI.create(entry.getValue())));
+    }
+
+    @Test
+    void locatorInstanceIsMutableAndThrowsOnIllegalUriSyntax() {
+      var map = new Locator.DefaultLocator();
+      assertNull(map.apply("broken"));
+      assertNull(map.put("broken", ":no-scheme"));
+      var iae = assertThrows(IllegalArgumentException.class, () -> map.apply("broken"));
+      assertTrue(iae.getCause() instanceof URISyntaxException);
     }
   }
 }

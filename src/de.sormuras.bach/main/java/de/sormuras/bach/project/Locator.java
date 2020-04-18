@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 /** A locator maps module names to URIs of modular JAR files. */
@@ -29,6 +30,10 @@ public interface Locator extends Function<String, URI> {
   /** Return the {@link URI} for the given module name. */
   @Override
   URI apply(String module);
+
+  static Locator of() {
+    return new DefaultLocator();
+  }
 
   static Map<String, String> parseFragment(String fragment) {
     if (fragment.isEmpty()) return Map.of();
@@ -48,31 +53,54 @@ public interface Locator extends Function<String, URI> {
     return joiner.toString();
   }
 
-  String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+  /** Map-backed locator implementation. */
+  abstract class AbstractLocator extends TreeMap<String, String> implements Locator {
+    @Override
+    public URI apply(String module) {
+      var uri = get(module);
+      if (uri == null) return null;
+      return URI.create(uri);
+    }
 
-  static String central(String gav, String module, long size, String md5) {
-    var parts = gav.split(":");
-    var group = parts[0];
-    var artifact = parts[1];
-    var version = parts[2];
-    var classifier = parts.length < 4 ? "" : parts[3];
-    var ssp = maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
-    var attributes = new LinkedHashMap<String, String>();
-    attributes.put("module", module);
-    attributes.put("version", version);
-    if (size >= 0) attributes.put("size", Long.toString(size));
-    if (!md5.isEmpty()) attributes.put("md5", md5);
-    return ssp + '#' + toFragment(attributes);
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + " [" + size() + " modules]";
+    }
   }
 
-  static String central(String group, String artifact, String version) {
-    return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+  class DefaultLocator extends AbstractLocator {
+    public DefaultLocator() {}
   }
 
-  static String maven(String repository, String g, String a, String v, String classifier) {
-    var filename = a + '-' + (classifier.isEmpty() ? v : v + '-' + classifier);
-    var joiner = new StringJoiner("/").add(repository);
-    joiner.add(g.replace('.', '/')).add(a).add(v).add(filename + ".jar");
-    return joiner.toString();
+  /** Maven-related URI-string building helpers. */
+  interface Maven {
+
+    String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+
+    static String central(String mavenGroupArtifactVersion, String module, long size, String md5) {
+      var coordinates = mavenGroupArtifactVersion.split(":");
+      var group = coordinates[0];
+      var artifact = coordinates[1];
+      var version = coordinates[2];
+      var classifier = coordinates.length < 4 ? "" : coordinates[3];
+      var ssp = maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
+      var attributes = new LinkedHashMap<String, String>();
+      attributes.put("module", module);
+      attributes.put("version", version);
+      if (size >= 0) attributes.put("size", Long.toString(size));
+      if (!md5.isEmpty()) attributes.put("md5", md5);
+      return ssp + '#' + toFragment(attributes);
+    }
+
+    static String central(String group, String artifact, String version) {
+      return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+    }
+
+    static String maven(String repository, String g, String a, String v, String classifier) {
+      var filename = a + '-' + (classifier.isEmpty() ? v : v + '-' + classifier);
+      var joiner = new StringJoiner("/").add(repository);
+      joiner.add(g.replace('.', '/')).add(a).add(v).add(filename + ".jar");
+      return joiner.toString();
+    }
   }
 }
