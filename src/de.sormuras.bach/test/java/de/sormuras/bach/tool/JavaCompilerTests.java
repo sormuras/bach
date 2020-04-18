@@ -25,11 +25,14 @@ import de.sormuras.bach.tool.JavaCompiler.CompileForJavaRelease;
 import de.sormuras.bach.tool.JavaCompiler.CompileModulesCheckingTimestamps;
 import de.sormuras.bach.tool.JavaCompiler.DestinationDirectory;
 import de.sormuras.bach.tool.JavaCompiler.EnablePreviewLanguageFeatures;
+import de.sormuras.bach.tool.JavaCompiler.ModulePatches;
+import de.sormuras.bach.tool.JavaCompiler.ModulePath;
 import de.sormuras.bach.tool.JavaCompiler.ModuleSourcePathInModulePatternForm;
 import de.sormuras.bach.tool.JavaCompiler.ModuleSourcePathInModuleSpecificForm;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
@@ -44,13 +47,12 @@ class JavaCompilerTests {
             List.of(
                 new CompileModulesCheckingTimestamps(modules),
                 // VersionOfModulesThatAreBeingCompiled(Version.parse("123"))
-                // PathsWhereToFindSourceFilesForModules(List.of(Path.of("src/{MODULE}/main")))
                 new ModuleSourcePathInModuleSpecificForm("a", List.of(Path.of("src/a/main/java"))),
                 new ModuleSourcePathInModuleSpecificForm("b", List.of(Path.of("src/b/java"))),
                 new ModuleSourcePathInModuleSpecificForm("c", List.of(Path.of("src/c"))),
                 new ModuleSourcePathInModulePatternForm(List.of("src/*/{test,test-preview}/java", "more")),
-                // PathsWhereToFindApplicationModules(List.of(Path.of("lib")))
-                // PathsWhereToFindMoreAssetsPerModule(Map.of("b", List.of(Path.of("src/b/test"))))
+                new ModulePath(List.of(Path.of("lib"))),
+                new ModulePatches(Map.of("b", List.of(Path.of("src/b/test")))),
                 new EnablePreviewLanguageFeatures(),
                 new CompileForJavaRelease(Runtime.version().feature()),
                 // CharacterEncodingUsedBySourceFiles("UTF-8")
@@ -80,10 +82,10 @@ class JavaCompilerTests {
             "c=" + String.join(File.separator, "src", "c"),
             "--module-source-path",
             "src/*/{test,test-preview}/java" + File.pathSeparator + "more",
-            // "--module-path",
-            // "lib",
-            // "--patch-module",
-            // "b=" + String.join(File.separator, "src", "b", "test"),
+            "--module-path",
+            "lib",
+            "--patch-module",
+            "b=" + String.join(File.separator, "src", "b", "test"),
             "--enable-preview",
             "--release",
             "" + Runtime.version().feature(),

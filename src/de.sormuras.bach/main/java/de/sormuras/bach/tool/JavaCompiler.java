@@ -21,6 +21,7 @@ import de.sormuras.bach.util.Strings;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** A {@code javac} call configuration. */
 public /*static*/ final class JavaCompiler extends Tool {
@@ -121,6 +122,21 @@ public /*static*/ final class JavaCompiler extends Tool {
     @Override
     public void visit(Arguments arguments) {
       arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
+    }
+  }
+
+  /** Specify where to find input sources in a module-specific form. */
+  public static final class ModulePatches implements Option {
+    private final Map<String, List<Path>> patches;
+
+    public ModulePatches(Map<String, List<Path>> patches) {
+      this.patches = patches;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      for (var patch : patches.entrySet())
+        arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
     }
   }
 }
