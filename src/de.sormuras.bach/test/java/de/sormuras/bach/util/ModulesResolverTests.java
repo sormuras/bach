@@ -46,14 +46,14 @@ class ModulesResolverTests {
     try {
       assertLinesMatch(
           List.of(
-              "org.apiguardian.api-.+.jar",
-              "org.junit.jupiter-.+.jar",
-              "org.junit.jupiter.api-.+.jar",
-              "org.junit.jupiter.engine-.+.jar",
-              "org.junit.jupiter.params-.+.jar",
-              "org.junit.platform.commons-.+.jar",
-              "org.junit.platform.engine-.+.jar",
-              "org.opentest4j-.+.jar"),
+              "org.apiguardian.api@.+.jar",
+              "org.junit.jupiter.api@.+.jar",
+              "org.junit.jupiter.engine@.+.jar",
+              "org.junit.jupiter.params@.+.jar",
+              "org.junit.jupiter@.+.jar",
+              "org.junit.platform.commons@.+.jar",
+              "org.junit.platform.engine@.+.jar",
+              "org.opentest4j@.+.jar"),
           files);
     } catch (Throwable throwable) {
       files.forEach(System.err::println);
@@ -72,13 +72,13 @@ class ModulesResolverTests {
     try {
       assertLinesMatch(
           List.of(
-              "org.apiguardian.api-.+.jar",
-              "org.junit.platform.commons-.+.jar",
-              "org.junit.platform.console-.+.jar",
-              "org.junit.platform.engine-.+.jar",
-              "org.junit.platform.launcher-.+.jar",
-              "org.junit.platform.reporting-.+.jar",
-              "org.opentest4j-.+.jar"),
+              "org.apiguardian.api@.+.jar",
+              "org.junit.platform.commons@.+.jar",
+              "org.junit.platform.console@.+.jar",
+              "org.junit.platform.engine@.+.jar",
+              "org.junit.platform.launcher@.+.jar",
+              "org.junit.platform.reporting@.+.jar",
+              "org.opentest4j@.+.jar"),
           files);
     } catch (Throwable throwable) {
       files.forEach(System.err::println);
@@ -100,7 +100,6 @@ class ModulesResolverTests {
 
     @Override
     public void accept(Set<String> modules) {
-      System.out.println(modules);
       for (var module : modules) {
         var uri = locator.apply(module);
         if (uri == null) continue;
@@ -110,7 +109,6 @@ class ModulesResolverTests {
         try {
           var file = resources.copy(uri, directory.resolve(jar));
           Paths.assertFileAttributes(file, attributes);
-          System.out.println(file);
         } catch (Exception e) {
           System.err.println(e.getMessage());
         }

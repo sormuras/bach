@@ -111,13 +111,14 @@ class LocatorTests {
 
     @Test
     void stringRepresentationDisplaysNumberOfMappedModules() {
-      assertEquals("DefaultLocator [0 modules]", Locator.of().toString());
+      assertEquals("DefaultLocator [15 modules]", Locator.of().toString());
     }
 
     @TestFactory
     Stream<DynamicTest> allModulesAreMappedToSyntacticallyValidUriStrings() {
-      var entries = new Locator.DefaultLocator().entrySet().stream().sorted();
-      return entries.map(entry -> dynamicTest(entry.getKey(), () -> URI.create(entry.getValue())));
+      var entries = new Locator.DefaultLocator().entrySet();
+      var stream = entries.stream().sorted(Map.Entry.comparingByKey());
+      return stream.map(entry -> dynamicTest(entry.getKey(), () -> URI.create(entry.getValue())));
     }
 
     @Test

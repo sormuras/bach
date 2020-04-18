@@ -61,7 +61,7 @@ class ProjectTests {
             "\tRequired modules: []",
             "\tRealms: []",
             "Library",
-            "\tlocator=DefaultLocator [0 modules]",
+            "\tlocator=DefaultLocator.*",
             "\trequires=[]"),
         empty.toStrings());
   }
