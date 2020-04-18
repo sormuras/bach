@@ -35,6 +35,7 @@ class WorkspaceTests {
   void defaults() {
     var workspace = Workspace.of();
     assertEquals(Path.of(""), workspace.base());
+    assertEquals(Path.of("lib"), workspace.lib());
     assertEquals(Path.of(".bach/workspace"), workspace.workspace());
 
     var ws = Path.of(".bach/workspace");

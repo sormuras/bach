@@ -29,19 +29,25 @@ public /*static*/ final class Workspace {
   }
 
   public static Workspace of(Path base) {
-    return new Workspace(base, base.resolve(".bach/workspace"));
+    return new Workspace(base, base.resolve("lib"), base.resolve(".bach/workspace"));
   }
 
   private final Path base;
+  private final Path lib;
   private final Path workspace;
 
-  public Workspace(Path base, Path workspace) {
+  public Workspace(Path base, Path lib, Path workspace) {
     this.base = base;
+    this.lib = lib;
     this.workspace = workspace;
   }
 
   public Path base() {
     return base;
+  }
+
+  public Path lib() {
+    return lib;
   }
 
   public Path workspace() {
@@ -52,6 +58,7 @@ public /*static*/ final class Workspace {
   public String toString() {
     return new StringJoiner(", ", Workspace.class.getSimpleName() + "[", "]")
         .add("base=" + base)
+        .add("lib=" + lib)
         .add("workspace=" + workspace)
         .toString();
   }

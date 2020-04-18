@@ -62,6 +62,7 @@ public class Bach {
         "\tprinter=" + printer,
         "\tWorkspace",
         "\t\tbase='" + workspace.base() + "' -> " + workspace.base().toUri(),
+        "\t\tlib='" + workspace.lib(),
         "\t\tworkspace=" + workspace.workspace());
   }
 
