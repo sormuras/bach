@@ -21,22 +21,25 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** Bach's own build program. */
 class Build {
+
+  public static final Version VERSION = Version.parse("11.0-ea");
 
   public static void main(String... args) {
     var printer = Bach.Printer.ofSystem(Level.ALL);
     var workspace = Bach.Workspace.of();
     var bach = new Bach(printer, workspace, HttpClient::newHttpClient);
-    bach.build(project("Bach.java", "11.0-ea"));
+    bach.build(project("Bach.java", VERSION));
   }
 
-  static Bach.Project project(String name, String version) {
+  static Bach.Project project(String name, Version version) {
     var workspace = Bach.Workspace.of();
     return new Bach.Project(
         name,
-        Version.parse(version),
+        version,
         new Bach.Information(
             "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
             URI.create("https://github.com/sormuras/bach")),
@@ -55,6 +58,7 @@ class Build {
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))),
         "de.sormuras.bach",
+        List.of(),
         Bach.Tool.javac(
             List.of(
                 new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("de.sormuras.bach")),
@@ -71,22 +75,27 @@ class Build {
     return new Bach.Realm(
         "test",
         List.of(
-            /*
             new Bach.Unit(
-                ModuleDescriptor.newOpenModule("de.sormuras.bach").build(),
+                Bach.Modules.describe(
+                    Path.of("src/de.sormuras.bach/test/java-module/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test"))),
-             */
             new Bach.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/test.base/test")))),
         null,
+        List.of("main"),
         Bach.Tool.javac(
             List.of(
                 new Bach.JavaCompiler.CompileModulesCheckingTimestamps(
-                    List.of(/*"de.sormuras.bach",*/ "test.base")),
+                    List.of("de.sormuras.bach", "test.base")),
                 new Bach.JavaCompiler.CompileForJavaRelease(11),
                 new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
                     List.of("src/*/test/java", "src/*/test/java-module")),
+                new Bach.JavaCompiler.ModulePatches(
+                    Map.of(
+                        "de.sormuras.bach",
+                        List.of(workspace.module("main", "de.sormuras.bach", VERSION))
+                    )),
                 new Bach.JavaCompiler.ModulePath(
                     List.of(workspace.modules("main"), workspace.lib())),
                 new Bach.JavaCompiler.DestinationDirectory(classes) //
@@ -103,9 +112,11 @@ class Build {
         "test-preview",
         List.of(
             new Bach.Unit(
-                Bach.Modules.describe(Path.of("src/test.preview/test-preview/java/module-info.java")),
+                Bach.Modules.describe(
+                    Path.of("src/test.preview/test-preview/java/module-info.java")),
                 Bach.Directory.listOf(Path.of("src/test.preview/test-preview")))),
         null,
+        List.of("main", "test"),
         Bach.Tool.javac(
             List.of(
                 new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("test.preview")),

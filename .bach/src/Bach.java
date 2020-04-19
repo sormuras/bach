@@ -239,6 +239,7 @@ public class Bach {
         strings.add("\t\trelease=" + realm.release());
         strings.add("\t\tpreview=" + realm.preview());
         realm.toMainUnit().ifPresent(unit -> strings.add("\t\tmain-unit=" + unit.name()));
+        strings.add("\t\tupstreams=" + realm.upstreams());
         strings.add("\t\tUnits: [" + realm.units().size() + ']');
         for (var unit : realm.units()) {
           var module = unit.descriptor();
@@ -492,11 +493,13 @@ public class Bach {
     private final String name;
     private final List<Unit> units;
     private final String mainUnit;
+    private final List<String> upstreams;
     private final JavaCompiler javac;
-    public Realm(String name, List<Unit> units, String mainUnit, JavaCompiler javac) {
+    public Realm(String name, List<Unit> units, String mainUnit, List<String> upstreams, JavaCompiler javac) {
       this.name = name;
       this.units = units;
       this.mainUnit = mainUnit;
+      this.upstreams = upstreams;
       this.javac = javac;
     }
     public String name() {
@@ -514,6 +517,9 @@ public class Bach {
     public String mainUnit() {
       return mainUnit;
     }
+    public List<String> upstreams() {
+      return upstreams;
+    }
     public JavaCompiler javac() {
       return javac;
     }
@@ -524,11 +530,15 @@ public class Bach {
           .add("preview=" + preview())
           .add("units=" + units)
           .add("mainUnit=" + mainUnit)
+          .add("upstreams=" + upstreams)
           .add("javac=" + javac)
           .toString();
     }
     public Optional<Unit> toMainUnit() {
       return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
+    }
+    public Optional<Unit> findUnit(String name) {
+      return units.stream().filter(unit -> unit.name().equals(name)).findAny();
     }
   }
   public static class Structure {
@@ -556,8 +566,11 @@ public class Bach {
           .add("library=" + library)
           .toString();
     }
+    public Optional<Realm> findRealm(String name) {
+      return realms.stream().filter(realm -> realm.name().equals(name)).findAny();
+    }
     public Optional<Realm> toMainRealm() {
-      return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
+      return mainRealm == null ? Optional.empty() : findRealm(mainRealm);
     }
     public List<String> toRealmNames() {
       return realms.stream().map(Realm::name).collect(Collectors.toList());
@@ -974,12 +987,19 @@ public class Bach {
           Task.parallel("Jar each " + realm.name() + " module", jars.toArray(Task[]::new)));
     }
     protected Task createArchive(Realm realm, Unit unit) {
-      var file = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
+      var module = unit.name();
+      var file = workspace.module(realm.name(), module, project.toModuleVersion(unit));
       var options = new ArrayList<Option>();
       options.add(new JavaArchiveTool.PerformOperation(JavaArchiveTool.Operation.CREATE));
       options.add(new JavaArchiveTool.ArchiveFile(file));
-      var root = workspace.classes(realm.name(), realm.release()).resolve(unit.name());
+      var root = workspace.classes(realm.name(), realm.release()).resolve(module);
       options.add(new JavaArchiveTool.ChangeDirectory(root));
+      for (var upstream : realm.upstreams()) {
+        var other = project.structure().findRealm(upstream).orElseThrow();
+        if (other.findUnit(module).isEmpty()) continue;
+        var path = workspace.classes(other.name(), other.release()).resolve(module);
+        options.add(new JavaArchiveTool.ChangeDirectory(path));
+      }
       return Task.run(Tool.jar(options));
     }
   }
@@ -1283,6 +1303,16 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
+      }
+    }
+    public static final class ModulePatches implements Option {
+      private final Map<String, List<Path>> patches;
+      public ModulePatches(Map<String, List<Path>> patches) {
+        this.patches = patches;
+      }
+      public void visit(Arguments arguments) {
+        for (var patch : patches.entrySet())
+          arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
       }
     }
   }
