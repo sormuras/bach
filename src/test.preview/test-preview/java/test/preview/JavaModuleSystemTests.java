@@ -26,6 +26,6 @@ class JavaModuleSystemTests {
   @Test
   void runningOnTheModulePath() {
     var module = getClass().getModule();
-    assertEquals("test.modules", module.getName());
+    assertEquals("test.preview", module.getName());
   }
 }
