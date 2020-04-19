@@ -35,6 +35,7 @@ class StructureTests {
     assertNull(empty.mainRealm());
     assertTrue(empty.library().requires().isEmpty());
     assertTrue(empty.toString().contains("realms"));
+    assertTrue(empty.findRealm("foo").isEmpty());
     assertEquals(Optional.empty(), empty.toMainRealm());
     assertEquals(List.of(), empty.toRealmNames());
     assertEquals(Set.of(), empty.toDeclaredModuleNames());

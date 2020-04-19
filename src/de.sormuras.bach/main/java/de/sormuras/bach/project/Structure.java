@@ -59,8 +59,12 @@ public /*static*/ class Structure {
         .toString();
   }
 
+  public Optional<Realm> findRealm(String name) {
+    return realms.stream().filter(realm -> realm.name().equals(name)).findAny();
+  }
+
   public Optional<Realm> toMainRealm() {
-    return realms.stream().filter(realm -> realm.name().equals(mainRealm)).findAny();
+    return mainRealm == null ? Optional.empty() : findRealm(mainRealm);
   }
 
   public List<String> toRealmNames() {
