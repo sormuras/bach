@@ -1067,40 +1067,32 @@ public class Bach {
     }
     public void execute(Execution execution) {
       var structure = project.structure();
-      var library = structure.library();
-      var directory = execution.getBach().getWorkspace().lib();
-      var transporter = new Transporter(execution.getBach(), directory, library.locator());
-      var declared = structure.toDeclaredModuleNames();
-      var requires = new TreeSet<String>();
-      requires.addAll(structure.toRequiredModuleNames());
-      requires.addAll(library.requires());
-      var resolver = new ModulesResolver(new Path[] {directory}, declared, transporter);
-      resolver.resolve(requires);
-    }
-    private static class Transporter implements Consumer<Set<String>> {
-      private final Bach bach;
-      private final Path directory;
-      private final Locator locator;
-      private Transporter(Bach bach, Path directory, Locator locator) {
-        this.bach = bach;
-        this.directory = directory;
-        this.locator = locator;
-      }
-      public void accept(Set<String> modules) {
-        var resources = new Resources(bach.getHttpClient());
-        for (var module : modules) {
-          var uri = locator.apply(module);
-          if (uri == null) throw new FindException("Module " + module + " not locatable: " + locator);
-          var attributes = Locator.parseFragment(uri.getFragment());
-          var version = Optional.ofNullable(attributes.get("version"));
-          var jar = module + version.map(v -> '@' + v).orElse("") + ".jar";
-          try {
-            resources.copy(uri, directory.resolve(jar));
-          } catch (Exception e) {
-            throw new ResolutionException("Copy failed for: " + uri, e);
+      var lib = execution.getBach().getWorkspace().lib();
+      class Transporter implements Consumer<Set<String>> {
+        public void accept(Set<String> modules) {
+          execution.print(Level.INFO, "Copy modules: " + modules);
+          var resources = new Resources(execution.getBach().getHttpClient());
+          for (var module : modules) {
+            var uri = structure.library().locator().apply(module);
+            if (uri == null) throw new FindException("Module " + module + " not locatable");
+            var attributes = Locator.parseFragment(uri.getFragment());
+            var version = Optional.ofNullable(attributes.get("version"));
+            var jar = module + version.map(v -> '@' + v).orElse("") + ".jar";
+            try {
+              execution.print(Level.DEBUG, jar + " << " + uri);
+              resources.copy(uri, lib.resolve(jar));
+            } catch (Exception e) {
+              throw new ResolutionException("Copy failed for: " + uri, e);
+            }
           }
         }
       }
+      var declared = structure.toDeclaredModuleNames();
+      var resolver = new ModulesResolver(new Path[] {lib}, declared, new Transporter());
+      var requires = new TreeSet<String>();
+      requires.addAll(structure.toRequiredModuleNames());
+      requires.addAll(structure.library().requires());
+      resolver.resolve(requires);
     }
   }
   public static class RunTool extends Task {
