@@ -92,7 +92,7 @@ public /*static*/ class Project {
       strings.add("\t\trelease=" + realm.release());
       strings.add("\t\tpreview=" + realm.preview());
       realm.toMainUnit().ifPresent(unit -> strings.add("\t\tmain-unit=" + unit.name()));
-      strings.add("\t\tupstreams=" + realm.toUpstreamNames());
+      strings.add("\t\tupstreams=" + realm.upstreams());
       strings.add("\t\tUnits: [" + realm.units().size() + ']');
       for (var unit : realm.units()) {
         var module = unit.descriptor();

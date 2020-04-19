@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.API;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +40,5 @@ class RealmTests {
     assertTrue(empty.toString().contains("empty"));
     assertEquals(Optional.empty(), empty.toMainUnit());
     assertTrue(empty.findUnit("123").isEmpty());
-    assertTrue(empty.patches((other, unit) -> List.of()).isEmpty());
   }
 }
