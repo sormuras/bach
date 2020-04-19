@@ -60,7 +60,7 @@ println("| /open " + build)
 println("| Build.main()")
 var code = 0
 try {
-  Build.main();
+  Build.main(new String[0]);
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
