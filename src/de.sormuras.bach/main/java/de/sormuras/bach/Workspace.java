@@ -81,7 +81,7 @@ public /*static*/ final class Workspace {
   }
 
   public String jarFileName(String module, Version version, String classifier) {
-    var versionSuffix = version == null ? "" : "-" + version;
+    var versionSuffix = version == null ? "" : "@" + version;
     var classifierSuffix = classifier == null || classifier.isEmpty() ? "" : "-" + classifier;
     return module + versionSuffix + classifierSuffix + ".jar";
   }

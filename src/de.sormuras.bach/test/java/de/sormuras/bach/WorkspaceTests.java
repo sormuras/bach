@@ -48,11 +48,11 @@ class WorkspaceTests {
     assertEquals(ws.resolve("classes/realm/" + N), workspace.classes(realm, 0));
     assertEquals(ws.resolve("classes/realm/9"), workspace.classes(realm, 9));
     assertEquals(ws.resolve("modules/realm"), workspace.modules(realm));
-    assertEquals(ws.resolve("modules/realm/foo-0.jar"), workspace.module(realm, "foo", Z));
+    assertEquals(ws.resolve("modules/realm/foo@0.jar"), workspace.module(realm, "foo", Z));
 
     assertEquals("foo.jar", workspace.jarFileName("foo", null, null));
-    assertEquals("foo-0.jar", workspace.jarFileName("foo", Z, ""));
-    assertEquals("foo-0-classifier.jar", workspace.jarFileName("foo", Z, "classifier"));
+    assertEquals("foo@0.jar", workspace.jarFileName("foo", Z, ""));
+    assertEquals("foo@0-classifier.jar", workspace.jarFileName("foo", Z, "classifier"));
   }
 
   @TestFactory
