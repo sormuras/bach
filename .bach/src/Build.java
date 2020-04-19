@@ -46,7 +46,7 @@ class Build {
         new Bach.Structure(
             List.of(mainRealm(workspace), testRealm(workspace), testPreview(workspace)),
             "main",
-            Bach.Library.of()));
+            Bach.Library.of("org.junit.platform.console")));
   }
 
   static Bach.Realm mainRealm(Bach.Workspace workspace) {

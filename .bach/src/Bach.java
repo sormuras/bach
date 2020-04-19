@@ -988,10 +988,14 @@ public class Bach {
     }
     protected Task createArchive(Realm realm, Unit unit) {
       var module = unit.name();
-      var file = workspace.module(realm.name(), module, project.toModuleVersion(unit));
+      var version = project.toModuleVersion(unit);
+      var file = workspace.module(realm.name(), module, version);
+      var main = unit.descriptor().mainClass();
       var options = new ArrayList<Option>();
       options.add(new JavaArchiveTool.PerformOperation(JavaArchiveTool.Operation.CREATE));
       options.add(new JavaArchiveTool.ArchiveFile(file));
+      options.add(new JavaArchiveTool.ModuleVersion(version));
+      main.ifPresent(name -> options.add(new JavaArchiveTool.MainClass(name)));
       var root = workspace.classes(realm.name(), realm.release()).resolve(module);
       options.add(new JavaArchiveTool.ChangeDirectory(root));
       for (var upstream : realm.upstreams()) {
@@ -1224,6 +1228,16 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("-C", value(), ".");
+      }
+    }
+    public static final class MainClass extends KeyValueOption<String> {
+      public MainClass(String className) {
+        super("--main-class", className);
+      }
+    }
+    public static final class ModuleVersion extends KeyValueOption<Version> {
+      public ModuleVersion(Version version) {
+        super("--module-version", version);
       }
     }
     public static final class MultiReleaseVersion implements Option {
@@ -1773,7 +1787,7 @@ public class Bach {
       return modules(realm).resolve(jarFileName(module, version, ""));
     }
     public String jarFileName(String module, Version version, String classifier) {
-      var versionSuffix = version == null ? "" : "-" + version;
+      var versionSuffix = version == null ? "" : "@" + version;
       var classifierSuffix = classifier == null || classifier.isEmpty() ? "" : "-" + classifier;
       return module + versionSuffix + classifierSuffix + ".jar";
     }
