@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.tool;
 
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -70,7 +71,7 @@ public /*static*/ final class JavaArchiveTool extends Tool {
     }
   }
 
-  /** Specifies the archive file name. */
+  /** Specify the archive file name. */
   public static final class ArchiveFile extends KeyValueOption<Path> {
 
     public ArchiveFile(Path file) {
@@ -91,7 +92,23 @@ public /*static*/ final class JavaArchiveTool extends Tool {
     }
   }
 
-  /** Places all following files in a versioned directory {@code META-INF/versions/VERSION/}. */
+  /** The application entry point for stand-alone applications bundled into a modular JAR file. */
+  public static final class MainClass extends KeyValueOption<String> {
+
+    public MainClass(String className) {
+      super("--main-class", className);
+    }
+  }
+
+  /** Set the version of this module. */
+  public static final class ModuleVersion extends KeyValueOption<Version> {
+
+    public ModuleVersion(Version version) {
+      super("--module-version", version);
+    }
+  }
+
+  /** Place all following files in a versioned directory {@code META-INF/versions/VERSION/}. */
   public static final class MultiReleaseVersion implements Option {
 
     private final int version;

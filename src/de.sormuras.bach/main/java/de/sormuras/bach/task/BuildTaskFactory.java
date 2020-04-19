@@ -97,13 +97,15 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
 
   protected Task createArchive(Realm realm, Unit unit) {
     var module = unit.name();
-    var file = workspace.module(realm.name(), module, project.toModuleVersion(unit));
+    var version = project.toModuleVersion(unit);
+    var file = workspace.module(realm.name(), module, version);
+    var main = unit.descriptor().mainClass();
     var options = new ArrayList<Option>();
     options.add(new JavaArchiveTool.PerformOperation(JavaArchiveTool.Operation.CREATE));
     options.add(new JavaArchiveTool.ArchiveFile(file));
+    options.add(new JavaArchiveTool.ModuleVersion(version));
     // if (verbose) options.add(new ObjectArrayOption<>("--verbose"));
-    // module.mainClass().ifPresent(name -> options.add(new KeyValueOption<>("--main-class",
-    // name)));
+    main.ifPresent(name -> options.add(new JavaArchiveTool.MainClass(name)));
     var root = workspace.classes(realm.name(), realm.release()).resolve(module);
     options.add(new JavaArchiveTool.ChangeDirectory(root));
     for (var upstream : realm.upstreams()) {
