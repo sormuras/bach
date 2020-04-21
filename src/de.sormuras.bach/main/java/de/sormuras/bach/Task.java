@@ -163,6 +163,7 @@ public /*static*/ class Task {
 
     @Override
     public void print(Level level, String message) {
+      bach.getPrinter().print(level, message);
       var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       writer.write(message);
       writer.write(System.lineSeparator());
@@ -211,10 +212,6 @@ public /*static*/ class Task {
       var execution = new Execution(bach);
       try {
         task.execute(execution);
-        var out = execution.out.toString();
-        if (!out.isEmpty()) printer.print(Level.DEBUG, Strings.textIndent(indent, out.lines()));
-        var err = execution.err.toString();
-        if (!err.isEmpty()) printer.print(Level.WARNING, Strings.textIndent(indent, err.lines()));
         if (task.composite()) {
           var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
           var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
