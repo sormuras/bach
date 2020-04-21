@@ -132,4 +132,35 @@ class BuildTests {
         Tree.walk(base),
         Strings.text(run.log().lines()));
   }
+
+  @Test
+  void buildMultiRealmMultiModuleMultiRelease(@TempDir Path temp) throws Exception {
+    var base = temp.resolve("MultiRealmMultiModuleMultiRelease");
+    var workspace = Workspace.of(base);
+    var example = Projects.exampleOfMultiRealmMultiModuleMultiRelease(workspace);
+    example.deploy(base);
+    assertLinesMatch(
+        List.of(
+            "src",
+            ">> PATH>>",
+            "src/a/main/java/module-info.java"),
+        Tree.walk(base));
+
+    var run = new Run(workspace.base());
+    run.bach().build(example.project());
+
+    run.log().assertThatEverythingIsFine();
+    var N = Runtime.version().feature();
+    assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
+    assertLinesMatch(
+        List.of(
+            ".bach",
+            ">> PATHS >>",
+            ".bach/workspace/classes/main/" + N + "/a/module-info.class",
+            ">> PATHS >>",
+            ".bach/workspace/summary.md",
+            ">> PATHS >>"),
+        Tree.walk(base),
+        Strings.text(run.log().lines()));
+  }
 }

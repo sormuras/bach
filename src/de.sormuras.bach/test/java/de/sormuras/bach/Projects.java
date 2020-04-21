@@ -137,4 +137,37 @@ public interface Projects {
                 Library.of())),
         Map.of(Path.of("module-info.java"), source.toString()));
   }
+
+  static Example exampleOfMultiRealmMultiModuleMultiRelease(Workspace workspace) {
+    var src = workspace.base().resolve("src");
+    var project =
+        new Project(
+            "MultiRealmMultiModuleMultiRelease",
+            ModuleDescriptor.Version.parse("99"),
+            Information.of(),
+            new Structure(
+                List.of(
+                    new Realm(
+                        "main",
+                        List.of(
+                            new Unit(
+                                ModuleDescriptor.newModule("a").build(),
+                                List.of(
+                                    new Directory(
+                                        src.resolve("a/main/java"), Directory.Type.SOURCE, 0)))),
+                        "",
+                        List.of(),
+                        Tool.javac(
+                            List.of(
+                                new JavaCompiler.CompileModulesCheckingTimestamps(List.of("a")),
+                                new JavaCompiler.ModuleSourcePathInModulePatternForm(
+                                    List.of(src.toString() + "/*/main/java")),
+                                new JavaCompiler.DestinationDirectory(
+                                    workspace.classes("main", 0)))))),
+                "main",
+                Library.of()));
+
+    return new Example(
+        project, Map.of(Path.of("src/a/main/java", "module-info.java"), "module a {}\n"));
+  }
 }
