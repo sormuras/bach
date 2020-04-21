@@ -245,7 +245,7 @@ public class Bach {
           var module = unit.descriptor();
           strings.add("\t\tUnit \"" + module.toNameAndVersion() + '"');
           module.mainClass().ifPresent(it -> strings.add("\t\t\tmain-class=" + it));
-          var requires = unit.toRequiresNames();
+          var requires = Modules.required(Stream.of(unit.descriptor()));
           if (!requires.isEmpty()) strings.add("\t\t\trequires=" + requires);
           strings.add("\t\t\tDirectories: [" + unit.directories().size() + ']');
           for (var directory : unit.directories()) {
@@ -605,13 +605,6 @@ public class Bach {
     public String name() {
       return descriptor.name();
     }
-    public List<String> toRequiresNames() {
-      var names =
-          descriptor.requires().stream()
-              .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-              .map(Requires::name);
-      return names.sorted().collect(Collectors.toList());
-    }
   }
   public static class Task {
     private final String name;
@@ -700,6 +693,7 @@ public class Bach {
         return true;
       }
       public void print(Level level, String message) {
+        bach.getPrinter().print(level, message);
         var writer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
         writer.write(message);
         writer.write(System.lineSeparator());
@@ -741,10 +735,6 @@ public class Bach {
         var execution = new Execution(bach);
         try {
           task.execute(execution);
-          var out = execution.out.toString();
-          if (!out.isEmpty()) printer.print(Level.DEBUG, Strings.textIndent(indent, out.lines()));
-          var err = execution.err.toString();
-          if (!err.isEmpty()) printer.print(Level.WARNING, Strings.textIndent(indent, err.lines()));
           if (task.composite()) {
             var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
