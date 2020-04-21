@@ -118,7 +118,6 @@ public /*static*/ class Modules {
     return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
   }
 
-
   public static Set<String> required(ModuleFinder finder) {
     return required(finder.findAll().stream().map(ModuleReference::descriptor));
   }

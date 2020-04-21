@@ -20,10 +20,12 @@ package de.sormuras.bach;
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.util.Modules;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 /** A named and versioned modular Java project. */
 public /*static*/ class Project {
@@ -98,7 +100,7 @@ public /*static*/ class Project {
         var module = unit.descriptor();
         strings.add("\t\tUnit \"" + module.toNameAndVersion() + '"');
         module.mainClass().ifPresent(it -> strings.add("\t\t\tmain-class=" + it));
-        var requires = unit.toRequiresNames();
+        var requires = Modules.required(Stream.of(unit.descriptor()));
         if (!requires.isEmpty()) strings.add("\t\t\trequires=" + requires);
         strings.add("\t\t\tDirectories: [" + unit.directories().size() + ']');
         for (var directory : unit.directories()) {

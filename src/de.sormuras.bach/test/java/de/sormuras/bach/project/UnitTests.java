@@ -34,7 +34,6 @@ class UnitTests {
     assertEquals(0, empty.directories().size());
     assertTrue(empty.toString().contains("empty"));
     assertEquals("empty", empty.name());
-    assertEquals(List.of(), empty.toRequiresNames());
   }
 
   @Test
@@ -44,6 +43,5 @@ class UnitTests {
     assertEquals("foo", foo.descriptor().name());
     assertEquals("foo", foo.name());
     assertSame(directory, foo.directories().get(0));
-    assertEquals(List.of(), foo.toRequiresNames());
   }
 }
