@@ -19,6 +19,9 @@ package de.sormuras.bach.tool;
 
 import de.sormuras.bach.util.Strings;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +140,32 @@ public /*static*/ final class JavaCompiler extends Tool {
     public void visit(Arguments arguments) {
       for (var patch : patches.entrySet())
         arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
+    }
+  }
+
+  /** Java source files to compile. */
+  public static final class SourceFiles implements Option {
+
+    private final List<Path> paths;
+
+    public SourceFiles(Path... paths) {
+      this.paths = List.of(paths);
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      for (var path : paths) {
+        if (Files.isRegularFile(path)) {
+          arguments.add(path);
+          continue;
+        }
+        try (var stream = Files.walk(path)) {
+          var files = stream.filter(Files::isRegularFile);
+          files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
     }
   }
 }
