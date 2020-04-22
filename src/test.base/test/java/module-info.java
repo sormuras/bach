@@ -17,6 +17,7 @@
 
 open /*test*/ module test.base {
   exports test.base;
+  exports test.base.jdk;
 
   requires java.compiler;
   requires org.junit.jupiter;
