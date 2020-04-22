@@ -56,7 +56,8 @@ class Build {
         List.of(
             new Bach.Unit(
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")))),
+                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")),
+                List.of())),
         "de.sormuras.bach",
         List.of(),
         Bach.Tool.javac(
@@ -78,10 +79,12 @@ class Build {
             new Bach.Unit(
                 Bach.Modules.describe(
                     Path.of("src/de.sormuras.bach/test/java-module/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test"))),
+                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test")),
+                List.of()),
             new Bach.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/test.base/test")))),
+                Bach.Directory.listOf(Path.of("src/test.base/test")),
+                List.of())),
         null,
         List.of("main"),
         Bach.Tool.javac(
@@ -94,8 +97,7 @@ class Build {
                 new Bach.JavaCompiler.ModulePatches(
                     Map.of(
                         "de.sormuras.bach",
-                        List.of(workspace.module("main", "de.sormuras.bach", VERSION))
-                    )),
+                        List.of(workspace.module("main", "de.sormuras.bach", VERSION)))),
                 new Bach.JavaCompiler.ModulePath(
                     List.of(workspace.modules("main"), workspace.lib())),
                 new Bach.JavaCompiler.DestinationDirectory(classes) //
@@ -114,7 +116,8 @@ class Build {
             new Bach.Unit(
                 Bach.Modules.describe(
                     Path.of("src/test.preview/test-preview/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/test.preview/test-preview")))),
+                Bach.Directory.listOf(Path.of("src/test.preview/test-preview")),
+                List.of())),
         null,
         List.of("main", "test"),
         Bach.Tool.javac(

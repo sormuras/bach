@@ -48,7 +48,7 @@ public interface API {
   }
 
   static Unit emptyUnit() {
-    return new Unit(newModuleDescriptor("empty"), List.of());
+    return new Unit(newModuleDescriptor("empty"), List.of(), List.of());
   }
 
   static Directory emptyDirectory() {
@@ -66,7 +66,7 @@ public interface API {
   }
 
   static Unit newUnit(String name, Directory... directories) {
-    return new Unit(newModuleDescriptor(name), List.of(directories));
+    return new Unit(newModuleDescriptor(name), List.of(directories), List.of());
   }
 
   @FunctionalInterface

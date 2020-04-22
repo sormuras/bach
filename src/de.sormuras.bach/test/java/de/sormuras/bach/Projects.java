@@ -72,7 +72,7 @@ public interface Projects {
     var src = workspace.base().resolve("src");
     var module = ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main");
     var directory = new Directory(src.resolve("com.greetings"), Directory.Type.SOURCE, 0);
-    var unit = new Unit(module.build(), List.of(directory));
+    var unit = new Unit(module.build(), List.of(directory), List.of());
     var javac =
         Tool.javac(
             List.of(
@@ -121,8 +121,8 @@ public interface Projects {
                         List.of(
                             new Unit(
                                 module.build(),
-                                List.of(
-                                    new Directory(workspace.base(), Directory.Type.SOURCE, 0)))),
+                                List.of(new Directory(workspace.base(), Directory.Type.SOURCE, 0)),
+                                List.of())),
                         "",
                         List.of(),
                         Tool.javac(
@@ -154,7 +154,8 @@ public interface Projects {
                                 ModuleDescriptor.newModule("a").build(),
                                 List.of(
                                     new Directory(
-                                        src.resolve("a/main/java"), Directory.Type.SOURCE, 0))),
+                                        src.resolve("a/main/java"), Directory.Type.SOURCE, 0)),
+                                List.of()),
                             new Unit(
                                 ModuleDescriptor.newModule("b").build(),
                                 List.of(
@@ -163,7 +164,15 @@ public interface Projects {
                                     new Directory(
                                         src.resolve("b/main/java-module"),
                                         Directory.Type.SOURCE,
-                                        8)))),
+                                        8)),
+                                List.of(
+                                    Tool.javac(
+                                        List.of(
+                                            new JavaCompiler.CompileForJavaRelease(8),
+                                            new JavaCompiler.DestinationDirectory(
+                                                workspace.classes("main", 8).resolve("b")),
+                                            new JavaCompiler.SourceFiles(
+                                                src.resolve("b/main/java-8"))))))),
                         "",
                         List.of(),
                         Tool.javac(

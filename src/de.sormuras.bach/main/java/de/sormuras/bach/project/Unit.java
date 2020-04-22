@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.tool.JavaCompiler;
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.StringJoiner;
@@ -26,10 +27,13 @@ public /*static*/ class Unit {
 
   private final ModuleDescriptor descriptor;
   private final List<Directory> directories;
+  private final List<JavaCompiler> compilations;
 
-  public Unit(ModuleDescriptor descriptor, List<Directory> directories) {
+  public Unit(
+      ModuleDescriptor descriptor, List<Directory> directories, List<JavaCompiler> compilations) {
     this.descriptor = descriptor;
     this.directories = directories;
+    this.compilations = compilations;
   }
 
   public ModuleDescriptor descriptor() {
@@ -40,11 +44,16 @@ public /*static*/ class Unit {
     return directories;
   }
 
+  public List<JavaCompiler> compilations() {
+    return compilations;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
         .add("descriptor=" + descriptor)
         .add("directories=" + directories)
+        .add("compilations=" + compilations)
         .toString();
   }
 
