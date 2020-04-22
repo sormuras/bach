@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Tree;
 
@@ -73,6 +74,7 @@ class BuildTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   void buildSingletonWithRequires(@TempDir Path temp) throws Exception {
     var base = temp.resolve("singleton");
     var workspace = Workspace.of(base);

@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Tree;
 
@@ -43,6 +44,7 @@ class ModulesResolverTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   void resolveJUnitJupiter(@TempDir Path temp) {
     var transporter = new Transporter(temp);
     var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
@@ -69,6 +71,7 @@ class ModulesResolverTests {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "offline", matches = "true")
   void resolveJUnitPlatformConsole(@TempDir Path temp) {
     var transporter = new Transporter(temp);
     var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
