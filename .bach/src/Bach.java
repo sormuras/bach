@@ -742,7 +742,7 @@ public class Bach {
         var execution = new Execution(bach);
         try {
           task.execute(execution);
-          if (task.composite()) {
+          if (task.composite() && !task.subs.isEmpty()) {
             var stream = task.parallel ? task.subs.parallelStream() : task.subs.stream();
             var errors = stream.map(sub -> execute(depth + 1, sub)).filter(Objects::nonNull);
             var error = errors.findFirst();
