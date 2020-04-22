@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.util.Strings;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.TreeSet;
@@ -141,12 +142,6 @@ class BuildTests {
     var workspace = Workspace.of(base);
     var example = Projects.exampleOfMultiRealmMultiModuleMultiRelease(workspace);
     example.deploy(base);
-    assertLinesMatch(
-        List.of(
-            "src",
-            ">> PATH>>",
-            "src/a/main/java/module-info.java"),
-        Tree.walk(base));
 
     var run = new Run(workspace.base());
     run.bach().build(example.project());
@@ -156,13 +151,14 @@ class BuildTests {
     assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
     assertLinesMatch(
         List.of(
-            ".bach",
-            ">> PATHS >>",
-            ".bach/workspace/classes/main/" + N + "/a/module-info.class",
-            ">> PATHS >>",
-            ".bach/workspace/summary.md",
-            ">> PATHS >>"),
-        Tree.walk(base),
+            // TODO "classes/main/8/b/b/B.class",
+            "classes/main/" + N + "/a/module-info.class",
+            "classes/main/" + N + "/b/module-info.class",
+            "modules/main/a@99.jar",
+            "modules/main/b@99.jar",
+            "summary.md",
+            ">> MORE SUMMARIES >>"),
+        Tree.walk(base.resolve(".bach/workspace"), Files::isRegularFile),
         Strings.text(run.log().lines()));
   }
 }

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.System.Logger.Level;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import test.base.Log;
 
 class TaskTests {
 

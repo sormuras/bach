@@ -154,20 +154,36 @@ public interface Projects {
                                 ModuleDescriptor.newModule("a").build(),
                                 List.of(
                                     new Directory(
-                                        src.resolve("a/main/java"), Directory.Type.SOURCE, 0)))),
+                                        src.resolve("a/main/java"), Directory.Type.SOURCE, 0))),
+                            new Unit(
+                                ModuleDescriptor.newModule("b").build(),
+                                List.of(
+                                    new Directory(
+                                        src.resolve("b/main/java-8"), Directory.Type.SOURCE, 8),
+                                    new Directory(
+                                        src.resolve("b/main/java-module"),
+                                        Directory.Type.SOURCE,
+                                        8)))),
                         "",
                         List.of(),
                         Tool.javac(
                             List.of(
-                                new JavaCompiler.CompileModulesCheckingTimestamps(List.of("a")),
+                                new JavaCompiler.CompileModulesCheckingTimestamps(
+                                    List.of("a", "b")),
                                 new JavaCompiler.ModuleSourcePathInModulePatternForm(
-                                    List.of(src.toString() + "/*/main/java")),
+                                    List.of(
+                                        src.toString() + "/*/main/java",
+                                        src.toString() + "/*/main/java-module")),
                                 new JavaCompiler.DestinationDirectory(
                                     workspace.classes("main", 0)))))),
                 "main",
                 Library.of()));
 
     return new Example(
-        project, Map.of(Path.of("src/a/main/java", "module-info.java"), "module a {}\n"));
+        project,
+        Map.of(
+            Path.of("src/a/main/java", "module-info.java"), "module a {}\n",
+            Path.of("src/b/main/java-8", "b", "B.java"), "package b; class B {}\n",
+            Path.of("src/b/main/java-module", "module-info.java"), "module b {}\n"));
   }
 }
