@@ -385,22 +385,22 @@ public class Bach {
   }
   public static class JUnitJupiterModules extends JUnit5Modules {
     public JUnitJupiterModules() {
-      super("org.junit.jupiter", "5.6.2");
-      put("", 6359, "f516ecfd11b70dc28a1793ae5e48c6ea");
-      put(".api", 154036, "134c39075fcc504a722b1b33432a1111");
-      put(".engine", 209317, "34cae629d115762add3318dcc902706f");
-      put(".params", 562271, "0dc5639e8cfec8b920869f1ee16746c2");
+      super("org.junit.jupiter", "5.7.0-M1");
+      put("", 6368, "f6673ae24dcccc20f3f6d1b2d9c25a76");
+      put(".api", 164447, "8ec22878dc0943e723e23957379820de");
+      put(".engine", 208475, "6369e33683685751f3b2f852b4f00a3f");
+      put(".params", 562041, "a0ed0a9fd50de8b300d6dded3d145d04");
     }
   }
   public static class JUnitPlatformModules extends JUnit5Modules {
     public JUnitPlatformModules() {
-      super("org.junit.platform", "1.6.2");
-      put(".commons", 96675, "827619f760062525354d47befc86ff9b");
-      put(".console", 433740, "c86a03b3bc95477ae55453e2d9dc4212");
-      put(".engine", 174108, "b41ff34208cb373de0bf954e70c4d78b");
-      put(".launcher", 121929, "efed110dfb13f33a7787b16cfbf8cd2e");
-      put(".reporting", 22426, "f99152f2cd481166abf64109b3308825");
-      put(".testkit", 42956, "d7a063edea927c01d7eb6d45475f675b");
+      super("org.junit.platform", "1.7.0-M1");
+      put(".commons", 99315, "836474af0cda44a23b2b9a78843fdc78");
+      put(".console", 447037, "ca70ecade7dc3a52aad8a4612f3493e8");
+      put(".engine", 175442, "41482c736ce4dbd5f0916d5c5c8c2311");
+      put(".launcher", 128322, "1d5e53d41e15af43f1c343854b1c91c0");
+      put(".reporting", 22437, "ff52add0e350b6672c0c42b402fa4b2b");
+      put(".testkit", 44977, "da59fda877a5a88ebbdc7c78d7e9cc55");
       put(
           "org.apiguardian.api",
           "org.apiguardian:apiguardian-api:1.1.0",
@@ -415,8 +415,8 @@ public class Bach {
   }
   public static class JUnitVintageModules extends JUnit5Modules {
     public JUnitVintageModules() {
-      super("org.junit.vintage", "5.6.2");
-      put(".engine", 63769, "5e5be4d146a53451aef718a4e6438ecf");
+      super("org.junit.vintage", "5.7.0-M1");
+      put(".engine", 63969, "455be2fc44c7525e7f20099529aec037");
       put("junit", "junit:junit:4.13", 381765, "5da6445d7b80aba2623e73d4561dcfde");
       put("org.hamcrest", "org.hamcrest:hamcrest:2.2", 123360, "10b47e837f271d0662f28780e60388e8");
     }
@@ -586,9 +586,12 @@ public class Bach {
   public static class Unit {
     private final ModuleDescriptor descriptor;
     private final List<Directory> directories;
-    public Unit(ModuleDescriptor descriptor, List<Directory> directories) {
+    private final List<JavaCompiler> compilations;
+    public Unit(
+        ModuleDescriptor descriptor, List<Directory> directories, List<JavaCompiler> compilations) {
       this.descriptor = descriptor;
       this.directories = directories;
+      this.compilations = compilations;
     }
     public ModuleDescriptor descriptor() {
       return descriptor;
@@ -596,10 +599,14 @@ public class Bach {
     public List<Directory> directories() {
       return directories;
     }
+    public List<JavaCompiler> compilations() {
+      return compilations;
+    }
     public String toString() {
       return new StringJoiner(", ", Unit.class.getSimpleName() + "[", "]")
           .add("descriptor=" + descriptor)
           .add("directories=" + directories)
+          .add("compilations=" + compilations)
           .toString();
     }
     public String name() {
@@ -962,8 +969,15 @@ public class Bach {
       return Task.sequence("Compile all realms", tasks.toArray(Task[]::new));
     }
     protected Task compileRealm(Realm realm) {
+      var compilations = new ArrayList<Task>();
+      for (var unit : realm.units()) {
+        unit.compilations().forEach(javac -> compilations.add(Task.run(javac)));
+      }
       return Task.sequence(
-          "Compile " + realm.name() + " realm", Task.run(realm.javac()), createArchives(realm)
+          "Compile " + realm.name() + " realm",
+          Task.run(realm.javac()),
+          Task.parallel("Compile units", compilations.toArray(Task[]::new)),
+          createArchives(realm)
           );
     }
     protected Task createArchives(Realm realm) {
@@ -1309,6 +1323,26 @@ public class Bach {
       public void visit(Arguments arguments) {
         for (var patch : patches.entrySet())
           arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
+      }
+    }
+    public static final class SourceFiles implements Option {
+      private final List<Path> paths;
+      public SourceFiles(Path... paths) {
+        this.paths = List.of(paths);
+      }
+      public void visit(Arguments arguments) {
+        for (var path : paths) {
+          if (Files.isRegularFile(path)) {
+            arguments.add(path);
+            continue;
+          }
+          try (var stream = Files.walk(path)) {
+            var files = stream.filter(Files::isRegularFile);
+            files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }
       }
     }
   }
