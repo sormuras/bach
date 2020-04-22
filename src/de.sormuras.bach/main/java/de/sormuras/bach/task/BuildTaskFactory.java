@@ -75,9 +75,15 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
   }
 
   protected Task compileRealm(Realm realm) {
-    // project.tuner().tune(javac, project, realm);
+    var compilations = new ArrayList<Task>();
+    for (var unit : realm.units()) {
+      unit.compilations().forEach(javac -> compilations.add(Task.run(javac)));
+    }
     return Task.sequence(
-        "Compile " + realm.name() + " realm", Task.run(realm.javac()), createArchives(realm)
+        "Compile " + realm.name() + " realm",
+        Task.run(realm.javac()),
+        Task.parallel("Compile units", compilations.toArray(Task[]::new)),
+        createArchives(realm)
         // , createCustomRuntimeImage(realm)
         );
   }

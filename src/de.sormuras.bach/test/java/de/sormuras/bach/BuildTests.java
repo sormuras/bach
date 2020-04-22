@@ -18,10 +18,12 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.project.Locator;
+import de.sormuras.bach.util.Paths;
 import de.sormuras.bach.util.Strings;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Tree;
+import test.base.jdk.Classes;
 
 class BuildTests {
 
@@ -151,14 +154,15 @@ class BuildTests {
     assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
     assertLinesMatch(
         List.of(
-            // TODO "classes/main/8/b/b/B.class",
             "classes/main/" + N + "/a/module-info.class",
             "classes/main/" + N + "/b/module-info.class",
+            "classes/main/8/b/b/B.class",
             "modules/main/a@99.jar",
             "modules/main/b@99.jar",
             "summary.md",
             ">> MORE SUMMARIES >>"),
-        Tree.walk(base.resolve(".bach/workspace"), Files::isRegularFile),
+        Tree.walk(workspace.workspace(), Files::isRegularFile),
         Strings.text(run.log().lines()));
+    assertEquals(8, Classes.feature(workspace.workspace("classes/main/8/b/b/B.class")));
   }
 }
