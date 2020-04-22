@@ -24,7 +24,6 @@ import de.sormuras.bach.project.Locator;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -50,8 +49,7 @@ class ModulesResolverTests {
     var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.jupiter"));
 
-    var files = new ArrayList<String>();
-    Tree.walk(temp, files::add);
+    var files = Tree.walk(temp);
     try {
       assertLinesMatch(
           List.of(
@@ -77,8 +75,7 @@ class ModulesResolverTests {
     var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.platform.console"));
 
-    var files = new ArrayList<String>();
-    Tree.walk(temp, files::add);
+    var files = Tree.walk(temp);
     try {
       assertLinesMatch(
           List.of(

@@ -27,15 +27,21 @@ import java.util.function.Predicate;
 public interface Tree {
   /** Walk directory tree structure. */
   static List<String> walk(Path root) {
+    return walk(root, __ -> true);
+  }
+
+  /** Walk directory tree structure. */
+  static List<String> walk(Path root, Predicate<Path> filter) {
     var list = new ArrayList<String>();
-    walk(root, list::add);
+    walk(root, filter, list::add);
     return list;
   }
 
   /** Walk directory tree structure. */
-  static void walk(Path root, Consumer<String> out) {
+  static void walk(Path root, Predicate<Path> filter, Consumer<String> out) {
     try (var stream = Files.walk(root)) {
       stream
+          .filter(filter)
           .map(root::relativize)
           .map(path -> path.toString().replace('\\', '/'))
           .filter(Predicate.not(String::isEmpty))

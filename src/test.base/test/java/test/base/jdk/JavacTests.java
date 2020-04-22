@@ -63,7 +63,7 @@ class JavacTests {
       assertTrue(Files.exists(temp.resolve("foo/foo/Foo.class")));
       assertTrue(Files.exists(temp.resolve("foo/module-info.class")));
     } catch (Throwable throwable) {
-      Tree.walk(temp, System.err::println);
+      Tree.walk(temp, __ -> true, System.err::println);
       throw throwable;
     }
   }
@@ -96,7 +96,7 @@ class JavacTests {
       assertTrue(Files.exists(classes.resolve("c/module-info.class")));
       assertTrue(Files.exists(classes.resolve("c/c/C.class")));
     } catch (AssertionError e) {
-      Tree.walk(classes, System.err::println);
+      Tree.walk(classes, __ -> true, System.err::println);
       throw e;
     }
     // for each multi-release module...
@@ -155,7 +155,7 @@ class JavacTests {
         assertEquals(0, code, String.join(System.lineSeparator(), args));
       }
     } catch (AssertionError e) {
-      Tree.walk(release, System.err::println);
+      Tree.walk(release, __ -> true, System.err::println);
       throw e;
     }
     // Strings.walk(temp, System.out::println);
