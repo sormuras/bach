@@ -29,6 +29,7 @@ import de.sormuras.bach.tool.JavaCompiler.ModulePatches;
 import de.sormuras.bach.tool.JavaCompiler.ModulePath;
 import de.sormuras.bach.tool.JavaCompiler.ModuleSourcePathInModulePatternForm;
 import de.sormuras.bach.tool.JavaCompiler.ModuleSourcePathInModuleSpecificForm;
+import de.sormuras.bach.tool.JavaCompiler.SourceFiles;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -61,7 +62,9 @@ class JavaCompilerTests {
                 // OutputSourceLocationsOfDeprecatedUsages(true)
                 // TerminateCompilationIfWarningsOccur(true)
                 // new Tool.Option.KeyValueOption<Integer>("i", 3),
-                new DestinationDirectory(Path.of("classes"))));
+                new DestinationDirectory(Path.of("classes")),
+                new SourceFiles(Path.of("A.java"))
+                ));
 
     assertThrows(NoSuchElementException.class, () -> javac.get(Option.class));
     assertEquals(modules, javac.get(CompileModulesCheckingTimestamps.class).modules());
@@ -96,7 +99,8 @@ class JavaCompilerTests {
             // "-encoding",
             // "UTF-8",
             "-d",
-            "classes"),
+            "classes",
+            "A.java"),
         javac.toArgumentStrings());
   }
 }

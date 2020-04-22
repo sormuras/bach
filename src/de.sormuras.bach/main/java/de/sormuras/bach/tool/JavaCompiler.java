@@ -155,16 +155,13 @@ public /*static*/ final class JavaCompiler extends Tool {
     @Override
     public void visit(Arguments arguments) {
       for (var path : paths) {
-        if (Files.isRegularFile(path)) {
-          arguments.add(path);
-          continue;
-        }
-        try (var stream = Files.walk(path)) {
-          var files = stream.filter(Files::isRegularFile);
-          files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
+        if (Files.isDirectory(path)) {
+          try (var files = Files.walk(path).filter(Files::isRegularFile)) {
+            files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
+          } catch (IOException e) {
+            throw new UncheckedIOException("Find Java source files failed: " + path, e);
+          }
+        } else arguments.add(path);
       }
     }
   }
