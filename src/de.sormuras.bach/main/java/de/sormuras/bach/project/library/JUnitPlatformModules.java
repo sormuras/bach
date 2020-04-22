@@ -21,13 +21,13 @@ package de.sormuras.bach.project.library;
 public /*static*/ class JUnitPlatformModules extends JUnit5Modules {
 
   public JUnitPlatformModules() {
-    super("org.junit.platform", "1.6.2");
-    put(".commons", 96675, "827619f760062525354d47befc86ff9b");
-    put(".console", 433740, "c86a03b3bc95477ae55453e2d9dc4212");
-    put(".engine", 174108, "b41ff34208cb373de0bf954e70c4d78b");
-    put(".launcher", 121929, "efed110dfb13f33a7787b16cfbf8cd2e");
-    put(".reporting", 22426, "f99152f2cd481166abf64109b3308825");
-    put(".testkit", 42956, "d7a063edea927c01d7eb6d45475f675b");
+    super("org.junit.platform", "1.7.0-M1");
+    put(".commons", 99315, "836474af0cda44a23b2b9a78843fdc78");
+    put(".console", 447037, "ca70ecade7dc3a52aad8a4612f3493e8");
+    put(".engine", 175442, "41482c736ce4dbd5f0916d5c5c8c2311");
+    put(".launcher", 128322, "1d5e53d41e15af43f1c343854b1c91c0");
+    put(".reporting", 22437, "ff52add0e350b6672c0c42b402fa4b2b");
+    put(".testkit", 44977, "da59fda877a5a88ebbdc7c78d7e9cc55");
 
     put(
         "org.apiguardian.api",

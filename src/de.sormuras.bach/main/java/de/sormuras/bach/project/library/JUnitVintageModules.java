@@ -21,8 +21,8 @@ package de.sormuras.bach.project.library;
 public /*static*/ class JUnitVintageModules extends JUnit5Modules {
 
   public JUnitVintageModules() {
-    super("org.junit.vintage", "5.6.2");
-    put(".engine", 63769, "5e5be4d146a53451aef718a4e6438ecf");
+    super("org.junit.vintage", "5.7.0-M1");
+    put(".engine", 63969, "455be2fc44c7525e7f20099529aec037");
     put("junit", "junit:junit:4.13", 381765, "5da6445d7b80aba2623e73d4561dcfde");
     put("org.hamcrest", "org.hamcrest:hamcrest:2.2", 123360, "10b47e837f271d0662f28780e60388e8");
   }

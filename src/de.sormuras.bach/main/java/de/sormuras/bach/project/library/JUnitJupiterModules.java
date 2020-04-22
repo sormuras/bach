@@ -21,10 +21,10 @@ package de.sormuras.bach.project.library;
 public /*static*/ class JUnitJupiterModules extends JUnit5Modules {
 
   public JUnitJupiterModules() {
-    super("org.junit.jupiter", "5.6.2");
-    put("", 6359, "f516ecfd11b70dc28a1793ae5e48c6ea");
-    put(".api", 154036, "134c39075fcc504a722b1b33432a1111");
-    put(".engine", 209317, "34cae629d115762add3318dcc902706f");
-    put(".params", 562271, "0dc5639e8cfec8b920869f1ee16746c2");
+    super("org.junit.jupiter", "5.7.0-M1");
+    put("", 6368, "f6673ae24dcccc20f3f6d1b2d9c25a76");
+    put(".api", 164447, "8ec22878dc0943e723e23957379820de");
+    put(".engine", 208475, "6369e33683685751f3b2f852b4f00a3f");
+    put(".params", 562041, "a0ed0a9fd50de8b300d6dded3d145d04");
   }
 }
