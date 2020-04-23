@@ -21,6 +21,7 @@ import de.sormuras.bach.Convention;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.util.Strings;
 import java.io.PrintWriter;
+import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
 
 /** {@link ToolProvider}-running task. */
@@ -46,6 +47,7 @@ public /*static*/ class RunTool extends Task {
 
   @Override
   public void execute(Execution execution) {
+    execution.print(Level.TRACE, tool.name() + ' ' + String.join(" ", args));
     var out = execution.getOut();
     var err = execution.getErr();
     var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
