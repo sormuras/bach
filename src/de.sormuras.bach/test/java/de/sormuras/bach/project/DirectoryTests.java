@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import static de.sormuras.bach.Assertions.assertToStringEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,6 +58,11 @@ class DirectoryTests {
     assertSame(Directory.Type.SOURCE, Directory.Type.of("java-123"));
     assertSame(Directory.Type.RESOURCE, Directory.Type.of("resource"));
     assertSame(Directory.Type.RESOURCE, Directory.Type.of("resources"));
+
+    assertTrue(Directory.Type.SOURCE.isSource());
+    assertTrue(Directory.Type.SOURCE_WITH_ROOT_MODULE_DESCRIPTOR.isSource());
+
+    assertFalse(Directory.Type.SOURCE.isSourceWithRootModuleDescriptor());
   }
 
   @Nested

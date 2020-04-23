@@ -37,6 +37,7 @@ public /*static*/ class Directory {
   public enum Type {
     UNKNOWN,
     SOURCE,
+    SOURCE_WITH_ROOT_MODULE_DESCRIPTOR,
     RESOURCE;
 
     @Convention
@@ -46,8 +47,16 @@ public /*static*/ class Directory {
       return UNKNOWN;
     }
 
+    public boolean isSource() {
+      return this == SOURCE || this == SOURCE_WITH_ROOT_MODULE_DESCRIPTOR;
+    }
+
+    public boolean isSourceWithRootModuleDescriptor() {
+      return this == SOURCE_WITH_ROOT_MODULE_DESCRIPTOR;
+    }
+
     public String toMarkdown() {
-      return this == SOURCE ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
+      return isSource() ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
     }
   }
 
