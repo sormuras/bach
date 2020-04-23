@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -87,18 +86,22 @@ public /*static*/ class Paths {
     try {
       var bytes = Files.readAllBytes(file);
       for (var expectedDigest : map.entrySet()) {
-        var md = MessageDigest.getInstance(expectedDigest.getKey().toUpperCase(Locale.US));
-        md.update(bytes);
-        var actualDigestValue = Strings.hex(md.digest());
-        var expectedDigestValue = expectedDigest.getValue().toLowerCase(Locale.US);
-        if (expectedDigestValue.equals(actualDigestValue)) continue;
-        var details = "expected " + expectedDigestValue + ", but got " + actualDigestValue;
+        var actual = digest(expectedDigest.getKey(), bytes);
+        var expected = expectedDigest.getValue();
+        if (expected.equalsIgnoreCase(actual)) continue;
+        var details = "expected " + expected + ", but got " + actual;
         throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
       }
     } catch (Exception e) {
       throw new AssertionError("File digest check failed: " + file, e);
     }
     return file;
+  }
+
+  public static String digest(String algorithm, byte[] bytes) throws Exception {
+    var md = MessageDigest.getInstance(algorithm);
+    md.update(bytes);
+    return Strings.hex(md.digest());
   }
 
   private Paths() {}

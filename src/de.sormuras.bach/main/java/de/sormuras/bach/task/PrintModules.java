@@ -19,10 +19,14 @@ package de.sormuras.bach.task;
 
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
+import de.sormuras.bach.util.Paths;
+import de.sormuras.bach.util.Strings;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 /** Print information about all compiled modules. */
 public /*static*/ class PrintModules extends Task {
@@ -41,11 +45,18 @@ public /*static*/ class PrintModules extends Task {
     for (var unit : realm.units()) {
       var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
       execution.print(Level.INFO, "file: " + jar.getFileName(), "size: " + Files.size(jar));
-      var out = new PrintWriter(execution.getOut());
-      var err = new PrintWriter(execution.getErr());
-      ToolProvider.findFirst("jar")
-          .orElseThrow()
-          .run(out, err, "--describe-module", "--file", jar.toString());
+      if (!execution.printable(Level.DEBUG)) continue;
+      var bytes = Files.readAllBytes(jar);
+      execution.print(Level.DEBUG, " md5: " + Paths.digest("Md5", bytes));
+      execution.print(Level.DEBUG, "sha1: " + Paths.digest("sha1", bytes));
+      var out = new StringWriter();
+      var err = new StringWriter();
+      var tool = ToolProvider.findFirst("jar").orElseThrow();
+      var args = new String[] {"--describe-module", "--file", jar.toString()};
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+      var lines = out.toString().strip().lines().skip(1).collect(Collectors.toList());
+      execution.print(Level.DEBUG, Strings.textIndent("\t", lines));
+      if (code != 0) execution.print(Level.ERROR, err.toString());
     }
   }
 }
