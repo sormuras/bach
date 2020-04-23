@@ -18,12 +18,10 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import de.sormuras.bach.project.Locator;
-import de.sormuras.bach.util.Paths;
 import de.sormuras.bach.util.Strings;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -149,14 +147,18 @@ class BuildTests {
     var run = new Run(workspace.base());
     run.bach().build(example.project());
 
+    Files.readAllLines(workspace.workspace("summary.md")).forEach(System.out::println);
+
     run.log().assertThatEverythingIsFine();
     var N = Runtime.version().feature();
     assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
     assertLinesMatch(
         List.of(
             "classes/main/" + N + "/a/module-info.class",
+            "classes/main/" + N + "/b/b/B.class",
             "classes/main/" + N + "/b/module-info.class",
             "classes/main/8/b/b/B.class",
+            "classes/main/9/b/module-info.class",
             "modules/main/a@99.jar",
             "modules/main/b@99.jar",
             "summary.md",

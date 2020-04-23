@@ -43,14 +43,6 @@ public /*static*/ class Realm {
     return name;
   }
 
-  public int release() {
-    return javac.release();
-  }
-
-  public boolean preview() {
-    return javac.preview();
-  }
-
   public List<Unit> units() {
     return units;
   }
@@ -80,6 +72,14 @@ public /*static*/ class Realm {
         .toString();
   }
 
+  public int release() {
+    return javac.release();
+  }
+
+  public boolean preview() {
+    return javac.preview();
+  }
+
   public Optional<Unit> toMainUnit() {
     return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
   }
@@ -87,5 +87,9 @@ public /*static*/ class Realm {
   /** Find a unit instance by its name. */
   public Optional<Unit> findUnit(String name) {
     return units.stream().filter(unit -> unit.name().equals(name)).findAny();
+  }
+
+  public int toRelease(int release) {
+    return release != 0 ? release : release();
   }
 }

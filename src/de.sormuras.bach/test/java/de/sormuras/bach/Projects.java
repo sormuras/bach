@@ -162,9 +162,7 @@ public interface Projects {
                                     new Directory(
                                         src.resolve("b/main/java-8"), Directory.Type.SOURCE, 8),
                                     new Directory(
-                                        src.resolve("b/main/java-module"),
-                                        Directory.Type.SOURCE,
-                                        8)),
+                                        src.resolve("b/main/java-9"), Directory.Type.SOURCE, 9)),
                                 List.of(
                                     Tool.javac(
                                         List.of(
@@ -172,7 +170,19 @@ public interface Projects {
                                             new JavaCompiler.DestinationDirectory(
                                                 workspace.classes("main", 8).resolve("b")),
                                             new JavaCompiler.SourceFiles(
-                                                src.resolve("b/main/java-8"))))))),
+                                                src.resolve("b/main/java-8")))),
+                                    Tool.javac(
+                                        List.of(
+                                            new JavaCompiler.CompileModulesCheckingTimestamps(
+                                                List.of("b")),
+                                            new JavaCompiler.ModuleSourcePathInModulePatternForm(
+                                                List.of(src.toString() + "/*/main/java-9")),
+                                            new JavaCompiler.CompileForJavaRelease(9),
+                                            new JavaCompiler.ModulePatches(
+                                                Map.of("b", List.of(workspace.classes("main", 0)))),
+                                            new JavaCompiler.DestinationDirectory(
+                                                workspace.classes("main", 9)))) //
+                                    ))),
                         "",
                         List.of(),
                         Tool.javac(
@@ -182,7 +192,8 @@ public interface Projects {
                                 new JavaCompiler.ModuleSourcePathInModulePatternForm(
                                     List.of(
                                         src.toString() + "/*/main/java",
-                                        src.toString() + "/*/main/java-module")),
+                                        src.toString() + "/*/main/java-8",
+                                        src.toString() + "/*/main/java-9")),
                                 new JavaCompiler.DestinationDirectory(
                                     workspace.classes("main", 0)))))),
                 "main",
@@ -193,6 +204,6 @@ public interface Projects {
         Map.of(
             Path.of("src/a/main/java", "module-info.java"), "module a {}\n",
             Path.of("src/b/main/java-8", "b", "B.java"), "package b; class B {}\n",
-            Path.of("src/b/main/java-module", "module-info.java"), "module b {}\n"));
+            Path.of("src/b/main/java-9", "module-info.java"), "module b {}\n"));
   }
 }
