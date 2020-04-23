@@ -46,9 +46,10 @@ class JavaArchiveToolTests {
                 new PerformOperation(Operation.EXTRACT),
                 new PerformOperation(Operation.DESCRIBE_MODULE),
                 new ArchiveFile(Path.of("foo-123.jar")),
-                new MultiReleaseVersion(321),
                 new Verbose(),
-                new ChangeDirectory(Path.of("classes"))));
+                new ChangeDirectory(Path.of("classes")),
+                new MultiReleaseVersion(321),
+                new ChangeDirectory(Path.of("classes-321"), "module-info.class")));
 
     assertThrows(NoSuchElementException.class, () -> jar.get(Option.class));
     assertEquals(6, jar.filter(PerformOperation.class).count());
@@ -67,12 +68,15 @@ class JavaArchiveToolTests {
             "--describe-module",
             "--file",
             "foo-123.jar",
-            "--release",
-            "321",
             "--verbose",
             "-C",
             "classes",
-            "."),
+            ".",
+            "--release",
+            "321",
+            "-C",
+            "classes-321",
+            "module-info.class"),
         jar.toArgumentStrings());
   }
 

@@ -82,13 +82,17 @@ public /*static*/ final class JavaArchiveTool extends Tool {
   /** Change to the specified directory and include the following files. */
   public static final class ChangeDirectory extends KeyValueOption<Path> {
 
-    public ChangeDirectory(Path value) {
+    private final List<String> files;
+
+    public ChangeDirectory(Path value, String... files) {
       super("-C", value);
+      this.files = List.of(files);
     }
 
     @Override
     public void visit(Arguments arguments) {
-      arguments.add("-C", value(), ".");
+      if (files.isEmpty()) arguments.add("-C", value(), ".");
+      else arguments.add("-C", value()).forEach(files, Arguments::add);
     }
   }
 
