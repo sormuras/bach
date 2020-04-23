@@ -126,4 +126,11 @@ public /*static*/ final class JavaArchiveTool extends Tool {
       arguments.add("--release", version);
     }
   }
+
+  /** Generate verbose output on standard output. */
+  public static final class Verbose extends ObjectArrayOption<String> {
+    public Verbose() {
+      super("--verbose");
+    }
+  }
 }

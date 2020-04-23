@@ -26,6 +26,7 @@ import de.sormuras.bach.tool.JavaArchiveTool.ChangeDirectory;
 import de.sormuras.bach.tool.JavaArchiveTool.MultiReleaseVersion;
 import de.sormuras.bach.tool.JavaArchiveTool.Operation;
 import de.sormuras.bach.tool.JavaArchiveTool.PerformOperation;
+import de.sormuras.bach.tool.JavaArchiveTool.Verbose;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,6 +47,7 @@ class JavaArchiveToolTests {
                 new PerformOperation(Operation.DESCRIBE_MODULE),
                 new ArchiveFile(Path.of("foo-123.jar")),
                 new MultiReleaseVersion(321),
+                new Verbose(),
                 new ChangeDirectory(Path.of("classes"))));
 
     assertThrows(NoSuchElementException.class, () -> jar.get(Option.class));
@@ -67,6 +69,7 @@ class JavaArchiveToolTests {
             "foo-123.jar",
             "--release",
             "321",
+            "--verbose",
             "-C",
             "classes",
             "."),
