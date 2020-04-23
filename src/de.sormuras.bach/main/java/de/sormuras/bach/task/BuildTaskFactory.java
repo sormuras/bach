@@ -20,17 +20,13 @@ package de.sormuras.bach.task;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.Workspace;
-import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.JavaArchiveTool;
 import de.sormuras.bach.tool.Option;
 import de.sormuras.bach.tool.Tool;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /** Supplies a task that compiles all realms of the specified project. */
@@ -117,30 +113,20 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
     options.add(new JavaArchiveTool.ModuleVersion(version));
     main.ifPresent(name -> options.add(new JavaArchiveTool.MainClass(name)));
     if (verbose) options.add(new JavaArchiveTool.Verbose());
-
     var directories = new ArrayDeque<>(unit.directories());
-    directories.removeIf(directory -> directory.type() != Directory.Type.SOURCE);
-    directories.removeIf(directory -> directory.path().toString().endsWith("-module"));
-
+    directories.removeIf(directory -> !directory.type().isSource());
     var base = directories.pop();
-
     // base + versioned
     var root = workspace.classes(realm.name(), realm.toRelease(base.release())).resolve(module);
     options.add(new JavaArchiveTool.ChangeDirectory(root));
-    var info = new AtomicReference<Path>();
     for (var directory : directories) {
-      var release = realm.toRelease(directory.release());
+      var release = directory.release();
       var path = workspace.classes(realm.name(), release).resolve(module);
-      if (Files.exists(path.resolve("module-info.class"))) info.compareAndSet(null, path);
+      if (directory.type().isSourceWithRootModuleDescriptor())
+        options.add(new JavaArchiveTool.ChangeDirectory(path, "module-info.class"));
       options.add(new JavaArchiveTool.MultiReleaseVersion(release));
       options.add(new JavaArchiveTool.ChangeDirectory(path));
     }
-
-    if (Files.notExists(root.resolve("module-info.class"))) {
-      var path = info.get();
-      if (path != null) options.add(new JavaArchiveTool.ChangeDirectory(path, "module-info.class"));
-    }
-
     // include assets from upstream modules with same name (and same release)
     for (var upstream : realm.upstreams()) {
       var other = project.structure().findRealm(upstream).orElseThrow();

@@ -147,7 +147,7 @@ class BuildTests {
     var run = new Run(workspace.base());
     run.bach().build(example.project());
 
-    Files.readAllLines(workspace.workspace("summary.md")).forEach(System.out::println);
+    // Files.readAllLines(workspace.workspace("summary.md")).forEach(System.out::println);
 
     run.log().assertThatEverythingIsFine();
     var N = Runtime.version().feature();

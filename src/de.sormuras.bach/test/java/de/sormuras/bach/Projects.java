@@ -17,11 +17,11 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Information;
 import de.sormuras.bach.project.Library;
-import de.sormuras.bach.project.Structure;
-import de.sormuras.bach.project.Directory;
 import de.sormuras.bach.project.Realm;
+import de.sormuras.bach.project.Structure;
 import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.JavaCompiler;
 import de.sormuras.bach.tool.Tool;
@@ -162,7 +162,9 @@ public interface Projects {
                                     new Directory(
                                         src.resolve("b/main/java-8"), Directory.Type.SOURCE, 8),
                                     new Directory(
-                                        src.resolve("b/main/java-9"), Directory.Type.SOURCE, 9)),
+                                        src.resolve("b/main/java-9"),
+                                        Directory.Type.SOURCE_WITH_ROOT_MODULE_DESCRIPTOR,
+                                        9)),
                                 List.of(
                                     Tool.javac(
                                         List.of(
