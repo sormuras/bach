@@ -17,7 +17,7 @@
 
 package de.sormuras.bach.project.library;
 
-/** Maven GroupID is {@code org.junit.jupiter}. */
+/** Maven GroupID is {@code org.junit.platform}. */
 public /*static*/ class JUnitPlatformModules extends JUnit5Modules {
 
   public JUnitPlatformModules() {
@@ -28,16 +28,5 @@ public /*static*/ class JUnitPlatformModules extends JUnit5Modules {
     put(".launcher", 128322, "1d5e53d41e15af43f1c343854b1c91c0");
     put(".reporting", 22437, "ff52add0e350b6672c0c42b402fa4b2b");
     put(".testkit", 44977, "da59fda877a5a88ebbdc7c78d7e9cc55");
-
-    put(
-        "org.apiguardian.api",
-        "org.apiguardian:apiguardian-api:1.1.0",
-        2387,
-        "944805817b648e558ed6be6fc7f054f3");
-    put(
-        "org.opentest4j",
-        "org.opentest4j:opentest4j:1.2.0",
-        7653,
-        "45c9a837c21f68e8c93e85b121e2fb90");
   }
 }

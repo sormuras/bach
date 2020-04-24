@@ -30,10 +30,43 @@ class DescribeLibraryModules {
     modules.describeJUnitPlatform("1.7.0-M1");
     modules.describeJUnitJupiter("5.7.0-M1");
     modules.describeJUnitVintage("5.7.0-M1");
+
     modules.describeAsm("8.0.1");
+    modules.describeByteBuddy("1.10.9");
+
+    modules.describeVariousArtists();
   }
 
   final HttpClient client = HttpClient.newHttpClient();
+
+  void describe(String module, String gav) throws Exception {
+    var split = gav.split(":");
+    var group = split[0];
+    var artifact = split[1];
+    var version = split[2];
+    var uri = central(group, artifact, version);
+    var head = head(uri);
+    var size = head.headers().firstValue("Content-Length").orElseThrow();
+    var md5 = read(URI.create(uri.toString() + ".md5"));
+    System.out.println(
+        "  put(\""
+            + module
+            + "\", Maven.central(\""
+            + gav
+            + "\", \""
+            + module
+            + "\", "
+            + size
+            + ", \""
+            + md5
+            + "\"));");
+  }
+
+  void describeVariousArtists() throws Exception {
+    describe("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0");
+    describe("org.assertj.core", "org.assertj:assertj-core:3.15.0");
+    describe("org.opentest4j", "org.opentest4j:opentest4j:1.2.0");
+  }
 
   void describeAsm(String version) throws Exception {
     describeAsm("", version);
@@ -51,23 +84,12 @@ class DescribeLibraryModules {
   void describeAsm(String suffix, String artifact, String version) throws Exception {
     var module = "org.objectweb.asm" + suffix;
     var group = "org.ow2.asm";
-    var uri = central(group, artifact, version);
-    var head = head(uri);
-    var size = head.headers().firstValue("Content-Length").orElseThrow();
-    var md5 = read(URI.create(uri.toString() + ".md5"));
-    var gav = String.join(":", group, artifact, version);
-    System.out.println(
-        "  put(\""
-            + module
-            + "\", Maven.central(\""
-            + gav
-            + "\", \""
-            + module
-            + "\", "
-            + size
-            + ", \""
-            + md5
-            + "\"));");
+    describe(module, group + ':' + artifact + ':' + version);
+  }
+
+  void describeByteBuddy(String version) throws Exception {
+    describe("net.bytebuddy", "net.bytebuddy:byte-buddy:" + version);
+    describe("net.bytebuddy.agent", "net.bytebuddy:byte-buddy-agent:" + version);
   }
 
   void describeJUnitJupiter(String version) throws Exception {
@@ -109,6 +131,8 @@ class DescribeLibraryModules {
   void describeJUnitVintage(String version) throws Exception {
     System.out.println("  super(\"org.junit.vintage\", \"" + version + "\");");
     describeJUnitVintage(".engine", version);
+    describe("junit", "junit:junit:4.13");
+    describe("org.hamcrest", "org.hamcrest:hamcrest:2.2");
   }
 
   void describeJUnitVintage(String suffix, String version) throws Exception {

@@ -82,6 +82,9 @@ class BuildTests {
     var workspace = Workspace.of(base);
     var requires = new TreeSet<>(new Locator.DefaultLocator().keySet());
     requires.remove("org.junit.platform.testkit"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
+    requires.remove("org.assertj.core"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
+    requires.remove("net.bytebuddy"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
+    requires.remove("net.bytebuddy.agent"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
     var example = Projects.exampleOfSingleton(workspace, requires.toArray(String[]::new));
     example.deploy(base);
     assertLinesMatch(List.of("module-info.java"), Tree.walk(base));

@@ -19,7 +19,11 @@ package de.sormuras.bach.project.library;
 
 import de.sormuras.bach.project.Locator;
 
-/** Maven GroupID is {@code org.junit.jupiter}. */
+/**
+ * ASM is an all purpose Java bytecode manipulation and analysis framework.
+ *
+ * @see <a href="https://asm.ow2.io">asm.ow2.io</a>
+ */
 public /*static*/ class AsmModules extends Locator.AbstractLocator {
 
   public AsmModules() {

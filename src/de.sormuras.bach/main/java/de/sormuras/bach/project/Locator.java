@@ -18,9 +18,11 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.project.library.AsmModules;
+import de.sormuras.bach.project.library.ByteBuddyModules;
 import de.sormuras.bach.project.library.JUnitJupiterModules;
 import de.sormuras.bach.project.library.JUnitPlatformModules;
 import de.sormuras.bach.project.library.JUnitVintageModules;
+import de.sormuras.bach.project.library.VariousArtistsModules;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -80,9 +82,11 @@ public interface Locator extends Function<String, URI> {
   class DefaultLocator extends AbstractLocator {
     public DefaultLocator() {
       putAll(new AsmModules());
+      putAll(new ByteBuddyModules());
       putAll(new JUnitPlatformModules());
       putAll(new JUnitJupiterModules());
       putAll(new JUnitVintageModules());
+      putAll(new VariousArtistsModules());
     }
   }
 

@@ -17,7 +17,7 @@
 
 package de.sormuras.bach.project.library;
 
-/** Maven GroupID is {@code org.junit.jupiter}. */
+/** JUnit Vintage + JUnit 4 + Hamcrest. */
 public /*static*/ class JUnitVintageModules extends JUnit5Modules {
 
   public JUnitVintageModules() {
