@@ -50,13 +50,14 @@ class Build {
   }
 
   static Bach.Realm mainRealm(Bach.Workspace workspace) {
-    var classes = workspace.classes("main", 11);
     return new Bach.Realm(
         "main",
         List.of(
             new Bach.Unit(
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/main")),
+                List.of(
+                    new Bach.Directory(
+                        Path.of("src/de.sormuras.bach/main/java"), Bach.Directory.Type.SOURCE, 11)),
                 List.of())),
         "de.sormuras.bach",
         List.of(),
@@ -66,24 +67,29 @@ class Build {
                 new Bach.JavaCompiler.CompileForJavaRelease(11),
                 new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
                     List.of("src/*/main/java")),
-                new Bach.JavaCompiler.DestinationDirectory(classes) //
-                ) //
-            ));
+                new Bach.JavaCompiler.DestinationDirectory(workspace.classes("main", 11)))));
   }
 
   static Bach.Realm testRealm(Bach.Workspace workspace) {
-    var classes = workspace.classes("test", 11);
     return new Bach.Realm(
         "test",
         List.of(
             new Bach.Unit(
                 Bach.Modules.describe(
                     Path.of("src/de.sormuras.bach/test/java-module/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/de.sormuras.bach/test")),
+                List.of(
+                    new Bach.Directory(
+                        Path.of("src/de.sormuras.bach/test/java"), Bach.Directory.Type.SOURCE, 11),
+                    new Bach.Directory(
+                        Path.of("src/de.sormuras.bach/test/java-module"),
+                        Bach.Directory.Type.SOURCE_WITH_ROOT_MODULE_DESCRIPTOR,
+                        11)),
                 List.of()),
             new Bach.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/test.base/test")),
+                List.of(
+                    new Bach.Directory(
+                        Path.of("src/test.base/test/java"), Bach.Directory.Type.SOURCE, 11)),
                 List.of())),
         null,
         List.of("main"),
@@ -100,23 +106,22 @@ class Build {
                         List.of(workspace.module("main", "de.sormuras.bach", VERSION)))),
                 new Bach.JavaCompiler.ModulePath(
                     List.of(workspace.modules("main"), workspace.lib())),
-                new Bach.JavaCompiler.DestinationDirectory(classes) //
-                ) //
-            )
-        //
-        );
+                new Bach.JavaCompiler.DestinationDirectory(workspace.classes("test", 11)))));
   }
 
   static Bach.Realm testPreview(Bach.Workspace workspace) {
     var release = Runtime.version().feature();
-    var classes = workspace.classes("test-preview", release);
     return new Bach.Realm(
         "test-preview",
         List.of(
             new Bach.Unit(
                 Bach.Modules.describe(
                     Path.of("src/test.preview/test-preview/java/module-info.java")),
-                Bach.Directory.listOf(Path.of("src/test.preview/test-preview")),
+                List.of(
+                    new Bach.Directory(
+                        Path.of("src/test.preview/test-preview/java"),
+                        Bach.Directory.Type.SOURCE,
+                        release)),
                 List.of())),
         null,
         List.of("main", "test"),
@@ -129,9 +134,7 @@ class Build {
                     List.of("src/*/test-preview/java")),
                 new Bach.JavaCompiler.ModulePath(
                     List.of(workspace.modules("main"), workspace.modules("test"), workspace.lib())),
-                new Bach.JavaCompiler.DestinationDirectory(classes) //
-                ) //
-            ) //
-        );
+                new Bach.JavaCompiler.DestinationDirectory(
+                    workspace.classes("test-preview", release)))));
   }
 }
