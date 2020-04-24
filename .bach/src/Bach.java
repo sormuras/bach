@@ -342,6 +342,45 @@ public class Bach {
       return requires;
     }
   }
+  public static class AsmModules extends Locator.AbstractLocator {
+    public AsmModules() {
+      put(
+          "org.objectweb.asm",
+          Maven.central(
+              "org.ow2.asm:asm:8.0.1",
+              "org.objectweb.asm",
+              121772,
+              "72c74304fc162ae3b03e34ca6727e19f"));
+      put(
+          "org.objectweb.asm.commons",
+          Maven.central(
+              "org.ow2.asm:asm-commons:8.0.1",
+              "org.objectweb.asm.commons",
+              71563,
+              "7f5ce78ad1745d67fb858a3d4fd491e9"));
+      put(
+          "org.objectweb.asm.tree",
+          Maven.central(
+              "org.ow2.asm:asm-tree:8.0.1",
+              "org.objectweb.asm.tree",
+              52628,
+              "0c65ea3d5ca385496462f82153edc05c"));
+      put(
+          "org.objectweb.asm.tree.analysis",
+          Maven.central(
+              "org.ow2.asm:asm-analysis:8.0.1",
+              "org.objectweb.asm.tree.analysis",
+              33438,
+              "4c89a09f54c8dff3a0751f7b0f383a20"));
+      put(
+          "org.objectweb.asm.util",
+          Maven.central(
+              "org.ow2.asm:asm-util:8.0.1",
+              "org.objectweb.asm.util",
+              84795,
+              "a27e03c8e81310ca238d4aeb5686a5ab"));
+    }
+  }
   static abstract class JUnit5Modules extends Locator.AbstractLocator {
     private final String group;
     private final String version;
@@ -431,6 +470,7 @@ public class Bach {
     }
     class DefaultLocator extends AbstractLocator {
       public DefaultLocator() {
+        putAll(new AsmModules());
         putAll(new JUnitPlatformModules());
         putAll(new JUnitJupiterModules());
         putAll(new JUnitVintageModules());
