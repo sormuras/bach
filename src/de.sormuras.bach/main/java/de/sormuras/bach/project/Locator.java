@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.project.library.AsmModules;
 import de.sormuras.bach.project.library.JUnitJupiterModules;
 import de.sormuras.bach.project.library.JUnitPlatformModules;
 import de.sormuras.bach.project.library.JUnitVintageModules;
@@ -78,6 +79,7 @@ public interface Locator extends Function<String, URI> {
 
   class DefaultLocator extends AbstractLocator {
     public DefaultLocator() {
+      putAll(new AsmModules());
       putAll(new JUnitPlatformModules());
       putAll(new JUnitJupiterModules());
       putAll(new JUnitVintageModules());

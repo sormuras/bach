@@ -30,9 +30,45 @@ class DescribeLibraryModules {
     modules.describeJUnitPlatform("1.7.0-M1");
     modules.describeJUnitJupiter("5.7.0-M1");
     modules.describeJUnitVintage("5.7.0-M1");
+    modules.describeAsm("8.0.1");
   }
 
   final HttpClient client = HttpClient.newHttpClient();
+
+  void describeAsm(String version) throws Exception {
+    describeAsm("", version);
+    describeAsm(".commons", version);
+    describeAsm(".tree", version);
+    describeAsm(".tree.analysis", "asm-analysis", version);
+    describeAsm(".util", version);
+  }
+
+  void describeAsm(String suffix, String version) throws Exception {
+    var artifact = "asm" + suffix.replace('.', '-');
+    describeAsm(suffix, artifact, version);
+  }
+
+  void describeAsm(String suffix, String artifact, String version) throws Exception {
+    var module = "org.objectweb.asm" + suffix;
+    var group = "org.ow2.asm";
+    var uri = central(group, artifact, version);
+    var head = head(uri);
+    var size = head.headers().firstValue("Content-Length").orElseThrow();
+    var md5 = read(URI.create(uri.toString() + ".md5"));
+    var gav = String.join(":", group, artifact, version);
+    System.out.println(
+        "  put(\""
+            + module
+            + "\", Maven.central(\""
+            + gav
+            + "\", \""
+            + module
+            + "\", "
+            + size
+            + ", \""
+            + md5
+            + "\"));");
+  }
 
   void describeJUnitJupiter(String version) throws Exception {
     System.out.println("  super(\"org.junit.jupiter\", \"" + version + "\");");
