@@ -381,6 +381,24 @@ public class Bach {
               "a27e03c8e81310ca238d4aeb5686a5ab"));
     }
   }
+  public static class ByteBuddyModules extends Locator.AbstractLocator {
+    public ByteBuddyModules() {
+      put(
+          "net.bytebuddy",
+          Maven.central(
+              "net.bytebuddy:byte-buddy:1.10.9",
+              "net.bytebuddy",
+              3376059,
+              "6a6ce042182446a1a9e1ed95921f9b7c"));
+      put(
+          "net.bytebuddy.agent",
+          Maven.central(
+              "net.bytebuddy:byte-buddy-agent:1.10.9",
+              "net.bytebuddy.agent",
+              259219,
+              "43dae8cc4a5ff874473056cbff7d88bf"));
+    }
+  }
   static abstract class JUnit5Modules extends Locator.AbstractLocator {
     private final String group;
     private final String version;
@@ -414,16 +432,6 @@ public class Bach {
       put(".launcher", 128322, "1d5e53d41e15af43f1c343854b1c91c0");
       put(".reporting", 22437, "ff52add0e350b6672c0c42b402fa4b2b");
       put(".testkit", 44977, "da59fda877a5a88ebbdc7c78d7e9cc55");
-      put(
-          "org.apiguardian.api",
-          "org.apiguardian:apiguardian-api:1.1.0",
-          2387,
-          "944805817b648e558ed6be6fc7f054f3");
-      put(
-          "org.opentest4j",
-          "org.opentest4j:opentest4j:1.2.0",
-          7653,
-          "45c9a837c21f68e8c93e85b121e2fb90");
     }
   }
   public static class JUnitVintageModules extends JUnit5Modules {
@@ -432,6 +440,27 @@ public class Bach {
       put(".engine", 63969, "455be2fc44c7525e7f20099529aec037");
       put("junit", "junit:junit:4.13", 381765, "5da6445d7b80aba2623e73d4561dcfde");
       put("org.hamcrest", "org.hamcrest:hamcrest:2.2", 123360, "10b47e837f271d0662f28780e60388e8");
+    }
+  }
+  public static class VariousArtistsModules extends Locator.AbstractLocator {
+    public VariousArtistsModules() {
+      put(
+          "org.apiguardian.api",
+          "org.apiguardian:apiguardian-api:1.1.0",
+          2387,
+          "944805817b648e558ed6be6fc7f054f3");
+      put(
+          "org.assertj.core",
+          Maven.central(
+              "org.assertj:assertj-core:3.15.0",
+              "org.assertj.core",
+              4536021,
+              "567e47f8ddde8ec261bd800906c28b92"));
+      put(
+          "org.opentest4j",
+          "org.opentest4j:opentest4j:1.2.0",
+          7653,
+          "45c9a837c21f68e8c93e85b121e2fb90");
     }
   }
   public interface Locator extends Function<String, URI> {
@@ -471,9 +500,11 @@ public class Bach {
     class DefaultLocator extends AbstractLocator {
       public DefaultLocator() {
         putAll(new AsmModules());
+        putAll(new ByteBuddyModules());
         putAll(new JUnitPlatformModules());
         putAll(new JUnitJupiterModules());
         putAll(new JUnitVintageModules());
+        putAll(new VariousArtistsModules());
       }
     }
     interface Maven {
