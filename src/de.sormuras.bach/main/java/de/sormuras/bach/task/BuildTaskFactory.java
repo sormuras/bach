@@ -27,6 +27,7 @@ import de.sormuras.bach.tool.Option;
 import de.sormuras.bach.tool.Tool;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /** Supplies a task that compiles all realms of the specified project. */
@@ -120,10 +121,12 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
     var root = workspace.classes(realm.name(), realm.toRelease(base.release())).resolve(module);
     options.add(new JavaArchiveTool.ChangeDirectory(root));
     for (var directory : directories) {
-      var release = directory.release();
+      var release = realm.toRelease(directory.release());
       var path = workspace.classes(realm.name(), release).resolve(module);
-      if (directory.type().isSourceWithRootModuleDescriptor())
+      if (directory.type().isSourceWithRootModuleDescriptor()) {
         options.add(new JavaArchiveTool.ChangeDirectory(path, "module-info.class"));
+        if (Objects.requireNonNull(directory.path().toFile().list()).length == 1) continue;
+      }
       options.add(new JavaArchiveTool.MultiReleaseVersion(release));
       options.add(new JavaArchiveTool.ChangeDirectory(path));
     }
