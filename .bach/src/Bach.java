@@ -48,13 +48,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.IntSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -263,42 +262,17 @@ public class Bach {
     public enum Type {
       UNKNOWN,
       SOURCE,
+      SOURCE_WITH_ROOT_MODULE_DESCRIPTOR,
       RESOURCE;
-      public static Type of(String string) {
-        if (string.startsWith("java")) return SOURCE;
-        if (string.contains("resource")) return RESOURCE;
-        return UNKNOWN;
+      public boolean isSource() {
+        return this == SOURCE || this == SOURCE_WITH_ROOT_MODULE_DESCRIPTOR;
+      }
+      public boolean isSourceWithRootModuleDescriptor() {
+        return this == SOURCE_WITH_ROOT_MODULE_DESCRIPTOR;
       }
       public String toMarkdown() {
-        return this == SOURCE ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
+        return isSource() ? ":scroll:" : this == RESOURCE ? ":books:" : "?";
       }
-    }
-    public static Directory of(Path path) {
-      var name = String.valueOf(path.getFileName());
-      var type = Type.of(name);
-      var release = javaReleaseFeatureNumber(name);
-      return new Directory(path, type, release);
-    }
-    public static List<Directory> listOf(Path root) {
-      if (Files.notExists(root)) return List.of();
-      var directories = new ArrayList<Directory>();
-      try (var stream = Files.newDirectoryStream(root, Files::isDirectory)) {
-        stream.forEach(path -> directories.add(of(path)));
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-      directories.sort(Comparator.comparingInt(Directory::release));
-      return List.copyOf(directories);
-    }
-    static int javaReleaseFeatureNumber(String string) {
-      if (string.endsWith("-module")) return 0;
-      if (string.endsWith("-preview")) return Runtime.version().feature();
-      if (string.startsWith("java-")) return Integer.parseInt(string.substring(5));
-      return 0;
-    }
-    static IntSummaryStatistics javaReleaseStatistics(Stream<Path> paths) {
-      var names = paths.map(Path::getFileName).map(Path::toString);
-      return names.collect(Collectors.summarizingInt(Directory::javaReleaseFeatureNumber));
     }
     private final Path path;
     private final Type type;
@@ -505,12 +479,6 @@ public class Bach {
     public String name() {
       return name;
     }
-    public int release() {
-      return javac.release();
-    }
-    public boolean preview() {
-      return javac.preview();
-    }
     public List<Unit> units() {
       return units;
     }
@@ -534,11 +502,20 @@ public class Bach {
           .add("javac=" + javac)
           .toString();
     }
+    public int release() {
+      return javac.release();
+    }
+    public boolean preview() {
+      return javac.preview();
+    }
     public Optional<Unit> toMainUnit() {
       return units.stream().filter(unit -> unit.name().equals(mainUnit)).findAny();
     }
     public Optional<Unit> findUnit(String name) {
       return units.stream().filter(unit -> unit.name().equals(name)).findAny();
+    }
+    public int toRelease(int release) {
+      return release != 0 ? release : release();
     }
   }
   public static class Structure {
@@ -1000,8 +977,22 @@ public class Bach {
       options.add(new JavaArchiveTool.ArchiveFile(file));
       options.add(new JavaArchiveTool.ModuleVersion(version));
       main.ifPresent(name -> options.add(new JavaArchiveTool.MainClass(name)));
-      var root = workspace.classes(realm.name(), realm.release()).resolve(module);
+      if (verbose) options.add(new JavaArchiveTool.Verbose());
+      var directories = new ArrayDeque<>(unit.directories());
+      directories.removeIf(directory -> !directory.type().isSource());
+      var base = directories.pop();
+      var root = workspace.classes(realm.name(), realm.toRelease(base.release())).resolve(module);
       options.add(new JavaArchiveTool.ChangeDirectory(root));
+      for (var directory : directories) {
+        var release = realm.toRelease(directory.release());
+        var path = workspace.classes(realm.name(), release).resolve(module);
+        if (directory.type().isSourceWithRootModuleDescriptor()) {
+          options.add(new JavaArchiveTool.ChangeDirectory(path, "module-info.class"));
+          if (Objects.requireNonNull(directory.path().toFile().list()).length == 1) continue;
+        }
+        options.add(new JavaArchiveTool.MultiReleaseVersion(release));
+        options.add(new JavaArchiveTool.ChangeDirectory(path));
+      }
       for (var upstream : realm.upstreams()) {
         var other = project.structure().findRealm(upstream).orElseThrow();
         if (other.findUnit(module).isEmpty()) continue;
@@ -1043,11 +1034,18 @@ public class Bach {
       for (var unit : realm.units()) {
         var jar = workspace.module(realm.name(), unit.name(), project.toModuleVersion(unit));
         execution.print(Level.INFO, "file: " + jar.getFileName(), "size: " + Files.size(jar));
-        var out = new PrintWriter(execution.getOut());
-        var err = new PrintWriter(execution.getErr());
-        ToolProvider.findFirst("jar")
-            .orElseThrow()
-            .run(out, err, "--describe-module", "--file", jar.toString());
+        if (!execution.printable(Level.DEBUG)) continue;
+        var bytes = Files.readAllBytes(jar);
+        execution.print(Level.DEBUG, " md5: " + Paths.digest("Md5", bytes));
+        execution.print(Level.DEBUG, "sha1: " + Paths.digest("sha1", bytes));
+        var out = new StringWriter();
+        var err = new StringWriter();
+        var tool = ToolProvider.findFirst("jar").orElseThrow();
+        var args = new String[] {"--describe-module", "--file", jar.toString()};
+        var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+        var lines = out.toString().strip().lines().skip(1).collect(Collectors.toList());
+        execution.print(Level.DEBUG, Strings.textIndent("\t", lines));
+        if (code != 0) execution.print(Level.ERROR, err.toString());
       }
     }
   }
@@ -1115,6 +1113,7 @@ public class Bach {
       this.args = args;
     }
     public void execute(Execution execution) {
+      execution.print(Level.TRACE, tool.name() + ' ' + String.join(" ", args));
       var out = execution.getOut();
       var err = execution.getErr();
       var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
@@ -1219,11 +1218,14 @@ public class Bach {
       }
     }
     public static final class ChangeDirectory extends KeyValueOption<Path> {
-      public ChangeDirectory(Path value) {
+      private final List<String> files;
+      public ChangeDirectory(Path value, String... files) {
         super("-C", value);
+        this.files = List.of(files);
       }
       public void visit(Arguments arguments) {
-        arguments.add("-C", value(), ".");
+        if (files.isEmpty()) arguments.add("-C", value(), ".");
+        else arguments.add("-C", value()).forEach(files, Arguments::add);
       }
     }
     public static final class MainClass extends KeyValueOption<String> {
@@ -1246,6 +1248,11 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("--release", version);
+      }
+    }
+    public static final class Verbose extends ObjectArrayOption<String> {
+      public Verbose() {
+        super("--verbose");
       }
     }
   }
@@ -1332,16 +1339,13 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         for (var path : paths) {
-          if (Files.isRegularFile(path)) {
-            arguments.add(path);
-            continue;
-          }
-          try (var stream = Files.walk(path)) {
-            var files = stream.filter(Files::isRegularFile);
-            files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
+          if (Files.isDirectory(path)) {
+            try (var files = Files.walk(path).filter(Files::isRegularFile)) {
+              files.filter(file -> file.toString().endsWith(".java")).forEach(arguments::add);
+            } catch (IOException e) {
+              throw new UncheckedIOException("Find Java source files failed: " + path, e);
+            }
+          } else arguments.add(path);
         }
       }
     }
@@ -1632,18 +1636,21 @@ public class Bach {
       try {
         var bytes = Files.readAllBytes(file);
         for (var expectedDigest : map.entrySet()) {
-          var md = MessageDigest.getInstance(expectedDigest.getKey().toUpperCase(Locale.US));
-          md.update(bytes);
-          var actualDigestValue = Strings.hex(md.digest());
-          var expectedDigestValue = expectedDigest.getValue().toLowerCase(Locale.US);
-          if (expectedDigestValue.equals(actualDigestValue)) continue;
-          var details = "expected " + expectedDigestValue + ", but got " + actualDigestValue;
+          var actual = digest(expectedDigest.getKey(), bytes);
+          var expected = expectedDigest.getValue();
+          if (expected.equalsIgnoreCase(actual)) continue;
+          var details = "expected " + expected + ", but got " + actual;
           throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
         }
       } catch (Exception e) {
         throw new AssertionError("File digest check failed: " + file, e);
       }
       return file;
+    }
+    public static String digest(String algorithm, byte[] bytes) throws Exception {
+      var md = MessageDigest.getInstance(algorithm);
+      md.update(bytes);
+      return Strings.hex(md.digest());
     }
     private Paths() {}
   }
