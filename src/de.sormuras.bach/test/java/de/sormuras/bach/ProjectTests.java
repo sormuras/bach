@@ -92,7 +92,7 @@ class ProjectTests {
                     new Realm(
                         "one",
                         List.of(API.newUnit("one", oneDirectory)),
-                        null,
+                        "one",
                         List.of(),
                         Tool.javac(
                             List.of(
@@ -116,6 +116,7 @@ class ProjectTests {
             "\tRealm \"one\"",
             "\t\trelease=1",
             "\t\tpreview=true",
+            "\t\tmain-unit=one",
             "\t\tupstreams=[]",
             "\t\tUnits: [1]",
             "\t\tUnit \"one\"",

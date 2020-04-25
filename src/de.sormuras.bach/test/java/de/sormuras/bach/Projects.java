@@ -185,7 +185,7 @@ public interface Projects {
                                             new JavaCompiler.DestinationDirectory(
                                                 workspace.classes("main", 9)))) //
                                     ))),
-                        "",
+                        null,
                         List.of(),
                         Tool.javac(
                             List.of(
