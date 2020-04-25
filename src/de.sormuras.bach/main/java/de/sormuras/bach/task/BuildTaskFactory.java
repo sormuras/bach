@@ -22,13 +22,19 @@ import de.sormuras.bach.Task;
 import de.sormuras.bach.Workspace;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.tool.Arguments;
 import de.sormuras.bach.tool.JavaArchiveTool;
+import de.sormuras.bach.tool.JavaCompiler;
 import de.sormuras.bach.tool.Option;
 import de.sormuras.bach.tool.Tool;
+import de.sormuras.bach.util.Strings;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /** Supplies a task that compiles all realms of the specified project. */
 public /*static*/ class BuildTaskFactory implements Supplier<Task> {
@@ -57,6 +63,7 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
         // javac/jar main realm | javadoc
         // jlink    | javac/jar test realm
         // jpackage | junit test realm
+        createCustomRuntimeImage(),
         new PrintModules(project));
   }
 
@@ -85,9 +92,7 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
         "Compile " + realm.name() + " realm",
         Task.run(realm.javac()),
         Task.parallel("Compile units", compilations.toArray(Task[]::new)),
-        createArchives(realm)
-        // , createCustomRuntimeImage(realm)
-        );
+        createArchives(realm));
   }
 
   protected Task createArchives(Realm realm) {
@@ -138,5 +143,35 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
       options.add(new JavaArchiveTool.ChangeDirectory(path));
     }
     return Task.run(Tool.jar(options));
+  }
+
+  protected Task createCustomRuntimeImage() {
+    var realmName = project.structure().mainRealm();
+    if (realmName == null) return Task.sequence("No main realm, no image.");
+    var realm = project.structure().toMainRealm().orElseThrow();
+    if (realm.toMainUnit().isEmpty()) return Task.sequence("No main module, no image.");
+    var launcherName = "launcher"; // TODO project.name().toLowerCase()...
+    var launcherModule = realm.toMainUnit().orElseThrow().name();
+    var modules = realm.units().stream().map(Unit::name).collect(Collectors.joining(","));
+    var modulePaths = new ArrayList<Path>();
+    modulePaths.add(workspace.modules(realm.name()));
+    modulePaths.addAll(
+        realm
+            .javac()
+            .find(JavaCompiler.ModulePath.class)
+            .map(JavaCompiler.ModulePath::paths)
+            .orElse(List.of()));
+    var arguments =
+        new Arguments()
+            .add("--output", workspace.image())
+            .add("--launcher", launcherName + "=" + launcherModule)
+            .add("--add-modules", modules)
+            .add(!modulePaths.isEmpty(), "--module-path", Strings.toString(modulePaths))
+            .add("--compress", "2")
+            .add("--no-header-files");
+    return Task.sequence(
+        "Create custom runtime image",
+        new DeleteDirectories(workspace.image()),
+        Task.run("jlink", arguments.build().toArray(String[]::new)));
   }
 }
