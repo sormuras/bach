@@ -27,6 +27,10 @@ module de.sormuras.bach {
   exports de.sormuras.bach.tool;
 
   requires java.net.http;
+  requires jdk.compiler;
+  requires jdk.jartool;
+  requires jdk.jdeps;
+  requires jdk.jlink;
 
   uses java.util.spi.ToolProvider;
 }
