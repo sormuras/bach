@@ -479,12 +479,14 @@ public class Bach {
       var mac = os.contains("mac");
       var classifier = "natives-" + (win ? "windows" : mac ? "macos" : "linux");
       var nonnatives = Set.of("cuda", "egl", "jawt", "odbc", "opencl", "vulkan");
+      var windows = Set.of("ovr"); // only windows natives are available
       for (var name : names) {
         var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
         var artifact = "lwjgl" + (name.isEmpty() ? "" : '-' + name);
         var gav = String.join(":", group, artifact, version);
         put(module, Maven.central(gav, module, 0, null));
         if (nonnatives.contains(name)) continue;
+        if (windows.contains(name) && !win) continue;
         put(module + ".natives", Maven.central(gav + ":" + classifier, module + ".natives", 0, null));
       }
     }

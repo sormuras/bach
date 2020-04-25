@@ -111,7 +111,7 @@ class LocatorTests {
 
     @Test
     void stringRepresentationDisplaysNumberOfMappedModules() {
-      assertEquals("DefaultLocator [100 modules]", Locator.of().toString());
+      assertTrue(Locator.of().toString().matches("DefaultLocator \\[\\d+ modules]"));
     }
 
     @TestFactory
