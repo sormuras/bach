@@ -22,6 +22,8 @@ import de.sormuras.bach.project.library.ByteBuddyModules;
 import de.sormuras.bach.project.library.JUnitJupiterModules;
 import de.sormuras.bach.project.library.JUnitPlatformModules;
 import de.sormuras.bach.project.library.JUnitVintageModules;
+import de.sormuras.bach.project.library.JavaFXModules;
+import de.sormuras.bach.project.library.LWJGLModules;
 import de.sormuras.bach.project.library.VariousArtistsModules;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -83,9 +85,11 @@ public interface Locator extends Function<String, URI> {
     public DefaultLocator() {
       putAll(new AsmModules());
       putAll(new ByteBuddyModules());
+      putAll(new JavaFXModules());
       putAll(new JUnitPlatformModules());
       putAll(new JUnitJupiterModules());
       putAll(new JUnitVintageModules());
+      putAll(new LWJGLModules());
       putAll(new VariousArtistsModules());
     }
   }
@@ -105,8 +109,8 @@ public interface Locator extends Function<String, URI> {
       var attributes = new LinkedHashMap<String, String>();
       attributes.put("module", module);
       attributes.put("version", version);
-      if (size >= 0) attributes.put("size", Long.toString(size));
-      if (!md5.isEmpty()) attributes.put("md5", md5);
+      if (size > 0) attributes.put("size", Long.toString(size));
+      if (md5 != null) attributes.put("md5", md5);
       return ssp + '#' + toFragment(attributes);
     }
 
