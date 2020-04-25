@@ -72,6 +72,10 @@ public /*static*/ final class Workspace {
     return workspace("classes", realm, version);
   }
 
+  public Path image() {
+    return workspace("image");
+  }
+
   public Path modules(String realm) {
     return workspace("modules", realm);
   }

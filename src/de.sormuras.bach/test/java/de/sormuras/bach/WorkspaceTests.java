@@ -37,6 +37,7 @@ class WorkspaceTests {
     assertEquals(Path.of(""), workspace.base());
     assertEquals(Path.of("lib"), workspace.lib());
     assertEquals(Path.of(".bach/workspace"), workspace.workspace());
+    assertEquals(Path.of(".bach/workspace/image"), workspace.image());
 
     var ws = Path.of(".bach/workspace");
     assertEquals(ws.resolve("first"), workspace.workspace("first"));
