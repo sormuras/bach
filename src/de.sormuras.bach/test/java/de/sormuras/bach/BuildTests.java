@@ -21,12 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.util.Strings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
@@ -80,12 +78,7 @@ class BuildTests {
   void buildSingletonWithRequires(@TempDir Path temp) throws Exception {
     var base = temp.resolve("singleton");
     var workspace = Workspace.of(base);
-    var requires = new TreeSet<>(new Locator.DefaultLocator().keySet());
-    requires.remove("org.junit.platform.testkit"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
-    requires.remove("org.assertj.core"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
-    requires.remove("net.bytebuddy"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
-    requires.remove("net.bytebuddy.agent"); // TODO Needs AssertJ, ByteBuddy, "com.sun.jna"
-    var example = Projects.exampleOfSingleton(workspace, requires.toArray(String[]::new));
+    var example = Projects.exampleOfSingleton(workspace, "jdk.jfr", "org.junit.jupiter");
     example.deploy(base);
     assertLinesMatch(List.of("module-info.java"), Tree.walk(base));
 
