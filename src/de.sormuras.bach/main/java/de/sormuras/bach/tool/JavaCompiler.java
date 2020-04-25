@@ -92,6 +92,10 @@ public /*static*/ final class JavaCompiler extends Tool {
       this.paths = paths;
     }
 
+    public List<Path> paths() {
+      return paths;
+    }
+
     @Override
     public void visit(Arguments arguments) {
       arguments.add("--module-path", Strings.toString(paths));

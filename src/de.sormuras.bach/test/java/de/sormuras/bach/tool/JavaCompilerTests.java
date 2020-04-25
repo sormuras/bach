@@ -69,6 +69,7 @@ class JavaCompilerTests {
     assertThrows(NoSuchElementException.class, () -> javac.get(Option.class));
     assertEquals(modules, javac.get(CompileModulesCheckingTimestamps.class).modules());
     assertEquals("classes", javac.get(DestinationDirectory.class).value().toString());
+    assertEquals("[lib]", javac.get(ModulePath.class).paths().toString());
 
     assertEquals("javac", javac.name());
     assertLinesMatch(
