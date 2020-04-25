@@ -28,9 +28,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import test.base.Tree;
 import test.base.jdk.Classes;
 
+// "Same Thread Execution" is required due to "jlink" doesn't work well
+// in parallel, when started via its ToolProvider entry-point.
+@Execution(ExecutionMode.SAME_THREAD)
 class BuildTests {
 
   @Test
