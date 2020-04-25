@@ -31,7 +31,8 @@ public /*static*/ class Realm {
   private final List<String> upstreams;
   private final JavaCompiler javac;
 
-  public Realm(String name, List<Unit> units, String mainUnit, List<String> upstreams, JavaCompiler javac) {
+  public Realm(
+      String name, List<Unit> units, String mainUnit, List<String> upstreams, JavaCompiler javac) {
     this.name = name;
     this.units = units;
     this.mainUnit = mainUnit;
