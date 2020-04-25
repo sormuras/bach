@@ -399,6 +399,25 @@ public class Bach {
               "43dae8cc4a5ff874473056cbff7d88bf"));
     }
   }
+  public static class JavaFXModules extends Locator.AbstractLocator {
+    public JavaFXModules() {
+      putJavaFX("14.0.1", "base", "controls", "fxml", "graphics", "media", "swing", "web");
+    }
+    private void putJavaFX(String version, String... names) {
+      var group = "org.openjfx";
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      var win = os.contains("win");
+      var mac = os.contains("mac");
+      var classifier = win ? "win" : mac ? "mac" : "linux";
+      for (var name : names) {
+        var module = "javafx." + name;
+        var artifact = "javafx-" + name;
+        var gav = String.join(":", group, artifact, version, classifier);
+        var link = Maven.central(gav, module, 0, null);
+        put(module, link);
+      }
+    }
+  }
   static abstract class JUnit5Modules extends Locator.AbstractLocator {
     private final String group;
     private final String version;
@@ -440,6 +459,34 @@ public class Bach {
       put(".engine", 63969, "455be2fc44c7525e7f20099529aec037");
       put("junit", "junit:junit:4.13", 381765, "5da6445d7b80aba2623e73d4561dcfde");
       put("org.hamcrest", "org.hamcrest:hamcrest:2.2", 123360, "10b47e837f271d0662f28780e60388e8");
+    }
+  }
+  public static class LWJGLModules extends Locator.AbstractLocator {
+    public LWJGLModules() {
+      var version = "3.2.3";
+      putJLWGL(version, "", "assimp", "bgfx", "cuda", "egl", "glfw");
+      putJLWGL(version, "jawt", "jemalloc", "libdivide", "llvm", "lmdb", "lz4");
+      putJLWGL(version, "meow", "nanovg", "nfd", "nuklear", "odbc");
+      putJLWGL(version, "openal", "opencl", "opengl", "opengles", "openvr");
+      putJLWGL(version, "opus", "ovr", "par", "remotery", "rpmalloc", "shaderc");
+      putJLWGL(version, "sse", "stb", "tinyexr", "tinyfd", "tootle", "vma");
+      putJLWGL(version, "vulkan", "xxhash", "yoga", "zstd");
+    }
+    private void putJLWGL(String version, String... names) {
+      var group = "org.lwjgl";
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      var win = os.contains("win");
+      var mac = os.contains("mac");
+      var classifier = "natives-" + (win ? "windows" : mac ? "macos" : "linux");
+      var nonnatives = Set.of("cuda", "egl", "jawt", "odbc", "opencl", "vulkan");
+      for (var name : names) {
+        var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
+        var artifact = "lwjgl" + (name.isEmpty() ? "" : '-' + name);
+        var gav = String.join(":", group, artifact, version);
+        put(module, Maven.central(gav, module, 0, null));
+        if (nonnatives.contains(name)) continue;
+        put(module + ".natives", Maven.central(gav + ":" + classifier, module + ".natives", 0, null));
+      }
     }
   }
   public static class VariousArtistsModules extends Locator.AbstractLocator {
@@ -501,9 +548,11 @@ public class Bach {
       public DefaultLocator() {
         putAll(new AsmModules());
         putAll(new ByteBuddyModules());
+        putAll(new JavaFXModules());
         putAll(new JUnitPlatformModules());
         putAll(new JUnitJupiterModules());
         putAll(new JUnitVintageModules());
+        putAll(new LWJGLModules());
         putAll(new VariousArtistsModules());
       }
     }
@@ -519,8 +568,8 @@ public class Bach {
         var attributes = new LinkedHashMap<String, String>();
         attributes.put("module", module);
         attributes.put("version", version);
-        if (size >= 0) attributes.put("size", Long.toString(size));
-        if (!md5.isEmpty()) attributes.put("md5", md5);
+        if (size > 0) attributes.put("size", Long.toString(size));
+        if (md5 != null) attributes.put("md5", md5);
         return ssp + '#' + toFragment(attributes);
       }
       static String central(String group, String artifact, String version) {
