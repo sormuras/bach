@@ -1051,6 +1051,7 @@ public class Bach {
           new CreateDirectories(workspace.workspace()),
           new ResolveMissingModules(project),
           compileAllRealms(),
+          createCustomRuntimeImage(),
           new PrintModules(project));
     }
     protected Task printVersionInformationOfFoundationTools() {
@@ -1076,8 +1077,7 @@ public class Bach {
           "Compile " + realm.name() + " realm",
           Task.run(realm.javac()),
           Task.parallel("Compile units", compilations.toArray(Task[]::new)),
-          createArchives(realm)
-          );
+          createArchives(realm));
     }
     protected Task createArchives(Realm realm) {
       var jars = new ArrayList<Task>();
@@ -1122,6 +1122,35 @@ public class Bach {
         options.add(new JavaArchiveTool.ChangeDirectory(path));
       }
       return Task.run(Tool.jar(options));
+    }
+    protected Task createCustomRuntimeImage() {
+      var realmName = project.structure().mainRealm();
+      if (realmName == null) return Task.sequence("No main realm, no image.");
+      var realm = project.structure().toMainRealm().orElseThrow();
+      if (realm.toMainUnit().isEmpty()) return Task.sequence("No main module, no image.");
+      var launcherName = "launcher"; // TODO project.name().toLowerCase()...
+      var launcherModule = realm.toMainUnit().orElseThrow().name();
+      var modules = realm.units().stream().map(Unit::name).collect(Collectors.joining(","));
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(workspace.modules(realm.name()));
+      modulePaths.addAll(
+          realm
+              .javac()
+              .find(JavaCompiler.ModulePath.class)
+              .map(JavaCompiler.ModulePath::paths)
+              .orElse(List.of()));
+      var arguments =
+          new Arguments()
+              .add("--output", workspace.image())
+              .add("--launcher", launcherName + "=" + launcherModule)
+              .add("--add-modules", modules)
+              .add(!modulePaths.isEmpty(), "--module-path", Strings.toString(modulePaths))
+              .add("--compress", "2")
+              .add("--no-header-files");
+      return Task.sequence(
+          "Create custom runtime image",
+          new DeleteDirectories(workspace.image()),
+          Task.run("jlink", arguments.build().toArray(String[]::new)));
     }
   }
   public static class CreateDirectories extends Task {
@@ -1419,6 +1448,9 @@ public class Bach {
       private final List<Path> paths;
       public ModulePath(List<Path> paths) {
         this.paths = paths;
+      }
+      public List<Path> paths() {
+        return paths;
       }
       public void visit(Arguments arguments) {
         arguments.add("--module-path", Strings.toString(paths));
@@ -1924,6 +1956,9 @@ public class Bach {
     public Path classes(String realm, int release) {
       var version = String.valueOf(release == 0 ? Runtime.version().feature() : release);
       return workspace("classes", realm, version);
+    }
+    public Path image() {
+      return workspace("image");
     }
     public Path modules(String realm) {
       return workspace("modules", realm);
