@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/.bach/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/bach" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/doc/readme" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />
