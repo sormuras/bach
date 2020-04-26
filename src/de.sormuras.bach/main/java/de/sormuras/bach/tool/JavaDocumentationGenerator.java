@@ -17,8 +17,11 @@
 
 package de.sormuras.bach.tool;
 
+import de.sormuras.bach.util.Strings;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** A {@code javadoc} call configuration generating HTML pages of API documentation from sources. */
 public /*static*/ final class JavaDocumentationGenerator extends Tool {
@@ -50,6 +53,69 @@ public /*static*/ final class JavaDocumentationGenerator extends Tool {
     @Override
     public void visit(Arguments arguments) {
       arguments.add("--module", String.join(",", modules));
+    }
+  }
+
+  /** Specify where to find application modules. */
+  public static final class ModulePath implements Option {
+    private final List<Path> paths;
+
+    public ModulePath(List<Path> paths) {
+      this.paths = paths;
+    }
+
+    public List<Path> paths() {
+      return paths;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-path", Strings.toString(paths));
+    }
+  }
+
+  /** Specify where to find input sources in a module-specific form. */
+  public static final class ModuleSourcePathInModuleSpecificForm implements Option {
+    private final String module;
+    private final List<Path> paths;
+
+    public ModuleSourcePathInModuleSpecificForm(String module, List<Path> paths) {
+      this.module = module;
+      this.paths = paths;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
+    }
+  }
+
+  /** Specify where to find input sources in a module-pattern form. */
+  public static final class ModuleSourcePathInModulePatternForm implements Option {
+    private final List<String> patterns;
+
+    public ModuleSourcePathInModulePatternForm(List<String> patterns) {
+      this.patterns = patterns;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
+    }
+  }
+
+  /** Specify where to find input sources in a module-specific form. */
+  public static final class ModulePatches implements Option {
+    private final Map<String, List<Path>> patches;
+
+    public ModulePatches(Map<String, List<Path>> patches) {
+      this.patches = patches;
+    }
+
+    @Override
+    public void visit(Arguments arguments) {
+      for (var patch : patches.entrySet())
+        arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
     }
   }
 }

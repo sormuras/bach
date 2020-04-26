@@ -112,6 +112,14 @@ public /*static*/ final class JavaCompiler extends Tool {
       this.paths = paths;
     }
 
+    public String module() {
+      return module;
+    }
+
+    public List<Path> paths() {
+      return paths;
+    }
+
     @Override
     public void visit(Arguments arguments) {
       arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
@@ -124,6 +132,10 @@ public /*static*/ final class JavaCompiler extends Tool {
 
     public ModuleSourcePathInModulePatternForm(List<String> patterns) {
       this.patterns = patterns;
+    }
+
+    public List<String> patterns() {
+      return patterns;
     }
 
     @Override
