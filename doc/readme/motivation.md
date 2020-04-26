@@ -6,11 +6,12 @@ From Project Jigsaw's Module System Quick-Start Guide to Bach.java - a Java Shel
 
 Single module, using `javac` + `jar`, and `jlink`.
 
-[MotivationJigsawQuickStartGuide](MotivationJigsawQuickStartGuide.java)
+- [Build Jigsaw Quick-Start Guide](BuildJigsawQuickStart.java)
+
 ```text
-javac    --module=com.greetings --module-source-path=doc\project\JigsawQuickStart -d doc\project\JigsawQuickStart\build\classes
-jar      --create --file=doc\project\JigsawQuickStart\build\modules\com.greetings.jar -C doc\project\JigsawQuickStart\build\classes\com.greetings .
-jlink    --output=doc\project\JigsawQuickStart\build\image --module-path=doc\project\JigsawQuickStart\build\modules --add-modules=com.greetings --launcher=greet=com.greetings/com.greetings.Main
+javac --module com.greetings ...
+  jar --file com.greetings.jar ...
+jlink --add-modules com.greetings ...
 ```
 
 ```

@@ -3,7 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.spi.ToolProvider;
 
-class MotivationJigsawQuickStartGuide {
+class BuildJigsawQuickStart {
 
   public static void main(String... args) throws Exception {
     var base = Path.of("doc", "project", "JigsawQuickStart");
