@@ -591,7 +591,8 @@ public class Bach {
     private final String mainUnit;
     private final List<String> upstreams;
     private final JavaCompiler javac;
-    public Realm(String name, List<Unit> units, String mainUnit, List<String> upstreams, JavaCompiler javac) {
+    public Realm(
+        String name, List<Unit> units, String mainUnit, List<String> upstreams, JavaCompiler javac) {
       this.name = name;
       this.units = units;
       this.mainUnit = mainUnit;
@@ -1050,7 +1051,7 @@ public class Bach {
           new ValidateProject(project),
           new CreateDirectories(workspace.workspace()),
           new ResolveMissingModules(project),
-          compileAllRealms(),
+          Task.parallel("Compile and Document", compileAllRealms(), createApiDocumentation()),
           createCustomRuntimeImage(),
           new PrintModules(project));
     }
@@ -1122,6 +1123,39 @@ public class Bach {
         options.add(new JavaArchiveTool.ChangeDirectory(path));
       }
       return Task.run(Tool.jar(options));
+    }
+    protected Task createApiDocumentation() {
+      var realmName = project.structure().mainRealm();
+      if (realmName == null) return Task.sequence("No main realm, no API documentation.");
+      var realm = project.structure().toMainRealm().orElseThrow();
+      var javac = realm.javac();
+      var options = new ArrayList<Option>();
+      options.add(
+          new JavaDocumentationGenerator.DocumentListOfModules(
+              javac.get(JavaCompiler.CompileModulesCheckingTimestamps.class).modules()));
+      javac
+          .find(JavaCompiler.ModuleSourcePathInModulePatternForm.class)
+          .map(JavaCompiler.ModuleSourcePathInModulePatternForm::patterns)
+          .ifPresent(
+              patterns ->
+                  options.add(
+                      new JavaDocumentationGenerator.ModuleSourcePathInModulePatternForm(patterns)));
+      javac
+          .find(JavaCompiler.ModuleSourcePathInModuleSpecificForm.class)
+          .ifPresent(
+              option ->
+                  options.add(
+                      new JavaDocumentationGenerator.ModuleSourcePathInModuleSpecificForm(
+                          option.module(), option.paths())));
+      javac
+          .find(JavaCompiler.ModulePath.class)
+          .ifPresent(
+              option -> options.add(new JavaDocumentationGenerator.ModulePath(option.paths())));
+      options.add(new JavaDocumentationGenerator.DestinationDirectory(workspace.workspace("api")));
+      return Task.sequence(
+          "Create API documentation",
+          new CreateDirectories(workspace.workspace("api")),
+          Task.run(Tool.javadoc(options)));
     }
     protected Task createCustomRuntimeImage() {
       var realmName = project.structure().mainRealm();
@@ -1463,6 +1497,12 @@ public class Bach {
         this.module = module;
         this.paths = paths;
       }
+      public String module() {
+        return module;
+      }
+      public List<Path> paths() {
+        return paths;
+      }
       public void visit(Arguments arguments) {
         arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
       }
@@ -1471,6 +1511,9 @@ public class Bach {
       private final List<String> patterns;
       public ModuleSourcePathInModulePatternForm(List<String> patterns) {
         this.patterns = patterns;
+      }
+      public List<String> patterns() {
+        return patterns;
       }
       public void visit(Arguments arguments) {
         arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
@@ -1523,6 +1566,48 @@ public class Bach {
       }
       public void visit(Arguments arguments) {
         arguments.add("--module", String.join(",", modules));
+      }
+    }
+    public static final class ModulePath implements Option {
+      private final List<Path> paths;
+      public ModulePath(List<Path> paths) {
+        this.paths = paths;
+      }
+      public List<Path> paths() {
+        return paths;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-path", Strings.toString(paths));
+      }
+    }
+    public static final class ModuleSourcePathInModuleSpecificForm implements Option {
+      private final String module;
+      private final List<Path> paths;
+      public ModuleSourcePathInModuleSpecificForm(String module, List<Path> paths) {
+        this.module = module;
+        this.paths = paths;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-source-path", module + "=" + Strings.toString(paths));
+      }
+    }
+    public static final class ModuleSourcePathInModulePatternForm implements Option {
+      private final List<String> patterns;
+      public ModuleSourcePathInModulePatternForm(List<String> patterns) {
+        this.patterns = patterns;
+      }
+      public void visit(Arguments arguments) {
+        arguments.add("--module-source-path", String.join(File.pathSeparator, patterns));
+      }
+    }
+    public static final class ModulePatches implements Option {
+      private final Map<String, List<Path>> patches;
+      public ModulePatches(Map<String, List<Path>> patches) {
+        this.patches = patches;
+      }
+      public void visit(Arguments arguments) {
+        for (var patch : patches.entrySet())
+          arguments.add("--patch-module", patch.getKey() + '=' + Strings.toString(patch.getValue()));
       }
     }
   }
