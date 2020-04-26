@@ -93,7 +93,7 @@ class BachTests {
     var error = assertThrows(AssertionError.class, () -> run.bach().build(API.emptyProject()));
     assertEquals("Build project empty 0 (Task) failed", error.getMessage());
     assertEquals("project validation failed: no unit present", error.getCause().getMessage());
-    var tasks = 13;
+    var tasks = 15;
     assertLinesMatch(
         List.of(
             ">> BACH INIT >>",

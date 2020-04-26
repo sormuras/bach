@@ -155,6 +155,7 @@ class BuildTests {
     assertLinesMatch(List.of(">> BUILD >>", "Build took .+"), run.log().lines());
     assertLinesMatch(
         List.of(
+            ">> MODULAR API DOCUMENTATION >>",
             "classes/main/" + N + "/a/module-info.class",
             "classes/main/" + N + "/b/b/B.class",
             "classes/main/" + N + "/b/module-info.class",

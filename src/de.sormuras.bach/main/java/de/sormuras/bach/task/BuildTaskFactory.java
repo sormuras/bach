@@ -25,6 +25,7 @@ import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.Arguments;
 import de.sormuras.bach.tool.JavaArchiveTool;
 import de.sormuras.bach.tool.JavaCompiler;
+import de.sormuras.bach.tool.JavaDocumentationGenerator;
 import de.sormuras.bach.tool.Option;
 import de.sormuras.bach.tool.Tool;
 import de.sormuras.bach.util.Strings;
@@ -59,10 +60,7 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
         new ValidateProject(project),
         new CreateDirectories(workspace.workspace()),
         new ResolveMissingModules(project),
-        compileAllRealms(),
-        // javac/jar main realm | javadoc
-        // jlink    | javac/jar test realm
-        // jpackage | junit test realm
+        Task.parallel("Compile and Document", compileAllRealms(), createApiDocumentation()),
         createCustomRuntimeImage(),
         new PrintModules(project));
   }
@@ -143,6 +141,40 @@ public /*static*/ class BuildTaskFactory implements Supplier<Task> {
       options.add(new JavaArchiveTool.ChangeDirectory(path));
     }
     return Task.run(Tool.jar(options));
+  }
+
+  protected Task createApiDocumentation() {
+    var realmName = project.structure().mainRealm();
+    if (realmName == null) return Task.sequence("No main realm, no API documentation.");
+    var realm = project.structure().toMainRealm().orElseThrow();
+    var javac = realm.javac();
+    var options = new ArrayList<Option>();
+    options.add(
+        new JavaDocumentationGenerator.DocumentListOfModules(
+            javac.get(JavaCompiler.CompileModulesCheckingTimestamps.class).modules()));
+    javac
+        .find(JavaCompiler.ModuleSourcePathInModulePatternForm.class)
+        .map(JavaCompiler.ModuleSourcePathInModulePatternForm::patterns)
+        .ifPresent(
+            patterns ->
+                options.add(
+                    new JavaDocumentationGenerator.ModuleSourcePathInModulePatternForm(patterns)));
+    javac
+        .find(JavaCompiler.ModuleSourcePathInModuleSpecificForm.class)
+        .ifPresent(
+            option ->
+                options.add(
+                    new JavaDocumentationGenerator.ModuleSourcePathInModuleSpecificForm(
+                        option.module(), option.paths())));
+    javac
+        .find(JavaCompiler.ModulePath.class)
+        .ifPresent(
+            option -> options.add(new JavaDocumentationGenerator.ModulePath(option.paths())));
+    options.add(new JavaDocumentationGenerator.DestinationDirectory(workspace.workspace("api")));
+    return Task.sequence(
+        "Create API documentation",
+        new CreateDirectories(workspace.workspace("api")),
+        Task.run(Tool.javadoc(options)));
   }
 
   protected Task createCustomRuntimeImage() {
