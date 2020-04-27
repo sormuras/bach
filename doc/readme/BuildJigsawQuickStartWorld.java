@@ -49,14 +49,19 @@ class BuildJigsawQuickStartWorld {
       runTool("jlink", args.toArray());
     }
 
-    var testModules = Set.of("test.modules");
+    var testModules = Set.of("test.modules", "org.astro");
     var testSourcePath = "--module-source-path=" + base + "/*/test";
+    var testModulePatches = "--patch-module=org.astro=" + base + "/org.astro/main";
     var testModulesDirectory =
         build.compile(
-            "test", testModules, List.of(testSourcePath, "--module-path=" + mainModulesDirectory));
+            "test",
+            testModules,
+            List.of(testSourcePath, testModulePatches, "--module-path=" + mainModulesDirectory));
     {
-      var testTool = findTestTool("test.modules", testModulesDirectory, mainModulesDirectory);
-      testTool.ifPresent(tool -> runTool(tool));
+      runTool(
+          findTestTool("test.modules", testModulesDirectory, mainModulesDirectory).orElseThrow());
+      runTool(
+          findTestTool("org.astro", testModulesDirectory.resolve("org.astro.jar")).orElseThrow());
     }
   }
 
