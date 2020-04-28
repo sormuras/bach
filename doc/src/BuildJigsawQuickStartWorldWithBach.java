@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.spi.ToolProvider;
@@ -44,22 +42,21 @@ class BuildJigsawQuickStartWorldWithBach {
     main.name = "main";
     main.flags = EnumSet.of(Realm.Flag.CREATE_API_DOCUMENTATION, Realm.Flag.CREATE_RUNTIME_IMAGE);
     main.declares = Set.of("com.greetings", "org.astro");
-    main.sourcePathPatterns.add(base.path + File.separator + '*' + File.separator + "main");
+    main.sourcePathPatterns = List.of(base.path + File.separator + '*' + File.separator + "main");
 
     var test = new Realm();
     test.name = "test";
     test.flags = EnumSet.of(Realm.Flag.LAUNCH_TESTS);
     test.declares = Set.of("test.modules", "org.astro");
     test.requires = List.of(main);
-    test.sourcePathPatterns.add(base.path + File.separator + '*' + File.separator + "test");
-    test.modulePaths.add(base.modules(main.name));
-    test.patches.put("org.astro", List.of(base.path("org.astro", "main")));
+    test.sourcePathPatterns = List.of(base.path + File.separator + '*' + File.separator + "test");
+    test.modulePaths = List.of(base.modules(main.name));
+    test.patches = Map.of("org.astro", List.of(base.path("org.astro", "main")));
 
     var project = new Project();
     project.title = "Jigsaw Quick-Start Guide";
     project.launcher = "greet=com.greetings/com.greetings.Main";
-    project.realms.add(main);
-    project.realms.add(test);
+    project.realms = List.of(main, test);
 
     var bach = new Bach();
     bach.base = base;
@@ -158,12 +155,12 @@ class BuildJigsawQuickStartWorldWithBach {
     }
 
     String name;
-    Set<Flag> flags = EnumSet.noneOf(Flag.class);
-    Set<String> declares = new TreeSet<>(); // --module
-    List<Realm> requires = new ArrayList<>();
-    List<String> sourcePathPatterns = new ArrayList<>(); // --module-source-path
-    List<Path> modulePaths = new ArrayList<>(); // --module-path
-    Map<String, List<Path>> patches = new TreeMap<>(); // --patch-module
+    Set<Flag> flags = Set.of();
+    Set<String> declares = Set.of(); // --module
+    List<Realm> requires = List.of();
+    List<String> sourcePathPatterns = List.of(); // --module-source-path
+    List<Path> modulePaths = List.of(); // --module-path
+    Map<String, List<Path>> patches = Map.of(); // --patch-module
 
     @Override
     public String toString() {
@@ -174,7 +171,7 @@ class BuildJigsawQuickStartWorldWithBach {
   static class Project {
     String title;
     String launcher;
-    List<Realm> realms = new ArrayList<>();
+    List<Realm> realms = List.of();
   }
 
   static class Task {
@@ -327,9 +324,9 @@ class BuildJigsawQuickStartWorldWithBach {
 
     Task generateCompileRealmTask(Realm realm) {
       var tasks = new ArrayList<Task>();
-      var javac = new Arguments();
       var modules = String.join(",", realm.declares);
       var moduleSourcePath = String.join(File.pathSeparator, realm.sourcePathPatterns);
+      var javac = new Arguments();
       javac
           .add("--module", modules)
           .add("--module-source-path", moduleSourcePath)
@@ -342,8 +339,11 @@ class BuildJigsawQuickStartWorldWithBach {
       tasks.add(Tasks.of(() -> Files.createDirectories(base.modules(realm.name))));
       for (var module : realm.declares) {
         var file = base.modules(realm.name).resolve(module + ".jar");
-        var jar = new Arguments();
-        jar.add("--create").add("--file", file).add("-C", base.classes(realm.name, module), ".");
+        var jar =
+            new Arguments()
+                .add("--create")
+                .add("--file", file)
+                .add("-C", base.classes(realm.name, module), ".");
         tasks.add(Tasks.run("jar", jar));
         var describe = new Arguments().add("--describe-module").add("--file", file);
         tasks.add(Tasks.run("jar", describe));
