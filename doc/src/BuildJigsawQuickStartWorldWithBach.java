@@ -1,12 +1,17 @@
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.function.BiConsumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 class BuildJigsawQuickStartWorldWithBach {
 
@@ -34,6 +39,46 @@ class BuildJigsawQuickStartWorldWithBach {
     bach.base = base;
     bach.project = project;
     bach.build();
+  }
+
+  static class Arguments {
+    private final List<String> list = new ArrayList<>();
+
+    Arguments(Object... arguments) {
+      addAll(arguments);
+    }
+
+    List<String> build() {
+      return List.copyOf(list);
+    }
+
+    Arguments add(Object argument) {
+      list.add(argument.toString());
+      return this;
+    }
+
+    Arguments add(String key, Object value) {
+      return add(key).add(value);
+    }
+
+    Arguments add(String key, Object first, Object second) {
+      return add(key).add(first).add(second);
+    }
+
+    Arguments add(boolean predicate, Object first, Object... more) {
+      return predicate ? add(first).addAll(more) : this;
+    }
+
+    @SafeVarargs
+    final <T> Arguments addAll(T... arguments) {
+      for (var argument : arguments) add(argument);
+      return this;
+    }
+
+    <T> Arguments forEach(Iterable<T> iterable, BiConsumer<Arguments, T> consumer) {
+      iterable.forEach(argument -> consumer.accept(this, argument));
+      return this;
+    }
   }
 
   static class Base {
@@ -103,14 +148,22 @@ class BuildJigsawQuickStartWorldWithBach {
 
   static class Tasks {
 
-    static Task of(Runnable runnable) {
-      class RunnableTask extends Task {
+    static Task of(Callable<?> callable) {
+      class CallableTask extends Task {
         @Override
         void run(Bach bach) {
-          runnable.run();
+          try {
+            callable.call();
+          } catch (Exception e) {
+            throw new AssertionError("Computation failed", e);
+          }
         }
       }
-      return new RunnableTask();
+      return new CallableTask();
+    }
+
+    static Task run(String tool, Arguments arguments) {
+      return run(tool, arguments.build().toArray(String[]::new));
     }
 
     static Task run(String tool, String... args) {
@@ -164,8 +217,14 @@ class BuildJigsawQuickStartWorldWithBach {
 
       @Override
       void run(Bach bach) {
-        System.out.println(tool.name() + ' ' + String.join(" ", args));
-        tool.run(System.out, System.err, args);
+        var call = (tool.name() + ' ' + String.join(" ", args)).trim();
+        System.out.println(call);
+        var code = tool.run(System.out, System.err, args);
+        if (code == 0) return;
+        var message = "Exit code " + code + " indicates an error running tool\n\t" + call;
+        var error = new AssertionError(message);
+        error.setStackTrace(new StackTraceElement[] {error.getStackTrace()[0]});
+        throw error;
       }
     }
   }
@@ -181,10 +240,40 @@ class BuildJigsawQuickStartWorldWithBach {
     Task generateBuildTask() {
       return Tasks.sequence(
           "Build project",
-          Tasks.of(() -> System.out.println("BuildJigsawQuickStartWorldWithBach")),
           new Tasks.PrintBasics(),
           new Tasks.PrintProject(),
-          Tasks.run("javac", "--version"));
+          Tasks.run("javac", "--version"),
+          generateCompileAllRealmsTask());
+    }
+
+    Task generateCompileAllRealmsTask() {
+      var tasks = project.realms.stream().map(this::generateCompileRealmTask);
+      return Tasks.sequence("Compile all realms", tasks.collect(Collectors.toList()));
+    }
+
+    Task generateCompileRealmTask(Realm realm) {
+      var tasks = new ArrayList<Task>();
+      var classes = base.workspace("classes", realm.name);
+      var javac = new Arguments();
+      javac
+          .add("--module", String.join(",", realm.declares))
+          .add("--module-source-path", String.join(File.pathSeparator, realm.sourcePathPatterns))
+          .add(!realm.modulePaths.isEmpty(), "--module-path", Strings.join(realm.modulePaths))
+          .forEach(
+              realm.patches.entrySet(),
+              (a, e) -> a.add("--patch-module", e.getKey() + '=' + Strings.join(e.getValue())))
+          .add("-d", classes);
+      tasks.add(Tasks.run("javac", javac));
+      tasks.add(Tasks.of(() -> Files.createDirectories(base.modules(realm.name))));
+      for (var module : realm.declares) {
+        var file = base.modules(realm.name).resolve(module + ".jar");
+        var jar = new Arguments();
+        jar.add("--create").add("--file", file).add("-C", classes.resolve(module), ".");
+        tasks.add(Tasks.run("jar", jar));
+        var describe = new Arguments().add("--describe-module").add("--file", file);
+        tasks.add(Tasks.run("jar", describe));
+      }
+      return Tasks.sequence("Compile " + realm.name + " realm", tasks);
     }
 
     void run(Task task) {
@@ -197,6 +286,12 @@ class BuildJigsawQuickStartWorldWithBach {
       System.out.println("[list] " + label + " begin");
       task.list.forEach(this::run);
       System.out.println("[list] " + label + " end");
+    }
+  }
+
+  static class Strings {
+    static String join(Collection<Path> paths) {
+      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
     }
   }
 }
