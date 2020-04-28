@@ -3,6 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,11 +21,13 @@ class BuildJigsawQuickStartWorldWithBach {
 
     var main = new Realm();
     main.name = "main";
+    main.flags = EnumSet.of(Realm.Flag.CREATE_API_DOCUMENTATION, Realm.Flag.CREATE_RUNTIME_IMAGE);
     main.declares = Set.of("com.greetings", "org.astro");
     main.sourcePathPatterns.add(base.path + File.separator + '*' + File.separator + "main");
 
     var test = new Realm();
     test.name = "test";
+    test.flags = EnumSet.of(Realm.Flag.LAUNCH_TESTS);
     test.declares = Set.of("test.modules", "org.astro");
     test.requires = List.of(main);
     test.sourcePathPatterns.add(base.path + File.separator + '*' + File.separator + "test");
@@ -32,6 +35,7 @@ class BuildJigsawQuickStartWorldWithBach {
     test.patches.put("org.astro", List.of(base.path("org.astro", "main")));
 
     var project = new Project();
+    project.title = "Jigsaw Quick-Start Guide";
     project.realms.add(main);
     project.realms.add(test);
 
@@ -102,13 +106,33 @@ class BuildJigsawQuickStartWorldWithBach {
       return workspace.resolve(Path.of(first, more));
     }
 
+    Path api() {
+      return workspace("api");
+    }
+
+    Path classes(String realm) {
+      return workspace("classes", realm);
+    }
+
+    Path classes(String realm, String module) {
+      return workspace("classes", realm, module);
+    }
+
     Path modules(String realm) {
       return workspace("modules", realm);
     }
   }
 
   static class Realm {
+
+    enum Flag {
+      CREATE_API_DOCUMENTATION,
+      CREATE_RUNTIME_IMAGE,
+      LAUNCH_TESTS
+    }
+
     String name;
+    Set<Flag> flags = EnumSet.noneOf(Flag.class);
     Set<String> declares = new TreeSet<>(); // --module
     List<Realm> requires = new ArrayList<>();
     List<String> sourcePathPatterns = new ArrayList<>(); // --module-source-path
@@ -122,6 +146,7 @@ class BuildJigsawQuickStartWorldWithBach {
   }
 
   static class Project {
+    String title;
     List<Realm> realms = new ArrayList<>();
   }
 
@@ -160,6 +185,16 @@ class BuildJigsawQuickStartWorldWithBach {
         }
       }
       return new CallableTask();
+    }
+
+    static Task of(Runnable runnable) {
+      class RunnableTask extends Task {
+        @Override
+        void run(Bach bach) {
+          runnable.run();
+        }
+      }
+      return new RunnableTask();
     }
 
     static Task run(String tool, Arguments arguments) {
@@ -253,22 +288,23 @@ class BuildJigsawQuickStartWorldWithBach {
 
     Task generateCompileRealmTask(Realm realm) {
       var tasks = new ArrayList<Task>();
-      var classes = base.workspace("classes", realm.name);
       var javac = new Arguments();
+      var modules = String.join(",", realm.declares);
+      var moduleSourcePath = String.join(File.pathSeparator, realm.sourcePathPatterns);
       javac
-          .add("--module", String.join(",", realm.declares))
-          .add("--module-source-path", String.join(File.pathSeparator, realm.sourcePathPatterns))
+          .add("--module", modules)
+          .add("--module-source-path", moduleSourcePath)
           .add(!realm.modulePaths.isEmpty(), "--module-path", Strings.join(realm.modulePaths))
           .forEach(
               realm.patches.entrySet(),
               (a, e) -> a.add("--patch-module", e.getKey() + '=' + Strings.join(e.getValue())))
-          .add("-d", classes);
+          .add("-d", base.classes(realm.name));
       tasks.add(Tasks.run("javac", javac));
       tasks.add(Tasks.of(() -> Files.createDirectories(base.modules(realm.name))));
       for (var module : realm.declares) {
         var file = base.modules(realm.name).resolve(module + ".jar");
         var jar = new Arguments();
-        jar.add("--create").add("--file", file).add("-C", classes.resolve(module), ".");
+        jar.add("--create").add("--file", file).add("-C", base.classes(realm.name, module), ".");
         tasks.add(Tasks.run("jar", jar));
         var describe = new Arguments().add("--describe-module").add("--file", file);
         tasks.add(Tasks.run("jar", describe));
