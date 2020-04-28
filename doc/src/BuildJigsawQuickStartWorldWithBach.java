@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
 class BuildJigsawQuickStartWorldWithBach {
@@ -70,6 +69,11 @@ class BuildJigsawQuickStartWorldWithBach {
     List<String> sourcePathPatterns = new ArrayList<>(); // --module-source-path
     List<Path> modulePaths = new ArrayList<>(); // --module-path
     Map<String, List<Path>> patches = new TreeMap<>(); // --patch-module
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 
   static class Project {
@@ -90,10 +94,7 @@ class BuildJigsawQuickStartWorldWithBach {
       this.tasks = tasks;
     }
 
-    void run(Bach bach) {
-      if (!label.isEmpty()) System.out.println(label);
-      for (var task : tasks) task.run(bach);
-    }
+    void run(Bach bach) {}
   }
 
   static class Tasks {
@@ -108,16 +109,6 @@ class BuildJigsawQuickStartWorldWithBach {
       return new RunnableTask();
     }
 
-    static Task of(Consumer<Bach> consumer) {
-      class BachConsumingTask extends Task {
-        @Override
-        void run(Bach bach) {
-          consumer.accept(bach);
-        }
-      }
-      return new BachConsumingTask();
-    }
-
     static Task run(String tool, String... args) {
       return new RunTool(ToolProvider.findFirst(tool).orElseThrow(), args);
     }
@@ -130,11 +121,31 @@ class BuildJigsawQuickStartWorldWithBach {
       return sequence(label, List.of(tasks));
     }
 
+    static class PrintBasics extends Task {
+      @Override
+      void run(Bach bach) {
+        System.out.println("System Properties");
+        System.out.println("\tos.name=" + System.getProperty("os.name"));
+        System.out.println("\tjava.version=" + System.getProperty("java.version"));
+        System.out.println("\tuser.dir=" + System.getProperty("user.dir"));
+        var base = bach.base;
+        System.out.println("Base");
+        System.out.println("\tpath=" + base.path + " -> " + base.path.toUri());
+      }
+    }
+
     static class PrintProject extends Task {
 
       @Override
       void run(Bach bach) {
-        System.out.println(bach.project.realms);
+        var project = bach.project;
+        System.out.println("Project");
+        System.out.println("\trealms=" + project.realms);
+        System.out.println("Realm");
+        for (var realm : project.realms) {
+          System.out.println("\t" + realm.name);
+          System.out.println("\t\tdeclares=" + realm.declares);
+        }
       }
     }
 
@@ -149,6 +160,7 @@ class BuildJigsawQuickStartWorldWithBach {
 
       @Override
       void run(Bach bach) {
+        System.out.println(tool.name() + ' ' + String.join(" ", args));
         tool.run(System.out, System.err, args);
       }
     }
@@ -159,16 +171,28 @@ class BuildJigsawQuickStartWorldWithBach {
     Project project;
 
     void build() {
-      createBuildTask().run(this);
+      run(generateBuildTask());
     }
 
-    Task createBuildTask() {
+    Task generateBuildTask() {
       return Tasks.sequence(
           "Build project",
-          Tasks.of(() -> System.out.println("BuildJigsawQuickStartWorldWithBach")),
-          Tasks.of(bach -> System.out.printf("\tbase.path=%s%n", bach.base.path)),
+          Tasks.of(
+              () ->
+                  System.out.println(
+                      "BuildJigsawQuickStartWorldWithBach")
+),
+          new Tasks.PrintBasics(),
           new Tasks.PrintProject(),
           Tasks.run("javac", "--version"));
+    }
+
+    void run(Task task) {
+      var label = task.label.isEmpty() ? task.getClass().getSimpleName() : task.label;
+      System.out.printf("[task] %s%n", label);
+      var subs = task.tasks;
+      if (subs.isEmpty()) task.run(this);
+      else subs.forEach(this::run);
     }
   }
 }
