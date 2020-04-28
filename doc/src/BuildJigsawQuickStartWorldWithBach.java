@@ -1,11 +1,15 @@
 import java.io.File;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -208,7 +212,11 @@ class BuildJigsawQuickStartWorldWithBach {
     }
 
     static Task run(String tool, String... args) {
-      return new RunTool(ToolProvider.findFirst(tool).orElseThrow(), args);
+      return run(ToolProvider.findFirst(tool).orElseThrow(), args);
+    }
+
+    static Task run(ToolProvider tool, String... args) {
+      return new RunTool(tool, args);
     }
 
     static Task sequence(String label, List<Task> tasks) {
@@ -258,14 +266,22 @@ class BuildJigsawQuickStartWorldWithBach {
 
       @Override
       void run(Bach bach) {
-        var call = (tool.name() + ' ' + String.join(" ", args)).trim();
-        System.out.println(call);
-        var code = tool.run(System.out, System.err, args);
-        if (code == 0) return;
-        var message = "Exit code " + code + " indicates an error running tool\n\t" + call;
-        var error = new AssertionError(message);
-        error.setStackTrace(new StackTraceElement[] {error.getStackTrace()[0]});
-        throw error;
+        bach.run(tool, args);
+      }
+    }
+
+    static class RunTestModule extends Task {
+      private final String module;
+      private final List<Path> modulePaths;
+
+      RunTestModule(String module, List<Path> modulePaths) {
+        this.module = module;
+        this.modulePaths = modulePaths;
+      }
+
+      @Override
+      void run(Bach bach) {
+        Util.findTestTool(module, modulePaths.toArray(Path[]::new)).ifPresent(bach::run);
       }
     }
   }
@@ -345,6 +361,21 @@ class BuildJigsawQuickStartWorldWithBach {
         tasks.add(Tasks.of(() -> Util.deleteDirectories(base.image())));
         tasks.add(Tasks.run("jlink", jlink));
       }
+      if (realm.flags.contains(Realm.Flag.LAUNCH_TESTS)) {
+        for (var module : realm.declares) {
+          var file = base.modules(realm.name).resolve(module + ".jar");
+          var requires = new ArrayDeque<>(realm.requires);
+          var modulePaths = new ArrayList<Path>();
+          modulePaths.add(file); // test module first
+          while (!requires.isEmpty()) { // modules of required realms next
+            var required = requires.removeFirst();
+            modulePaths.add(base.modules(required.name));
+            requires.addAll(required.requires);
+          }
+          modulePaths.add(base.modules(realm.name)); // same realm module last
+          tasks.add(new Tasks.RunTestModule(module, modulePaths));
+        }
+      }
       return Tasks.sequence("Compile " + realm.name + " realm", tasks);
     }
 
@@ -358,6 +389,17 @@ class BuildJigsawQuickStartWorldWithBach {
       System.out.println("[list] " + label + " begin");
       task.list.forEach(this::run);
       System.out.println("[list] " + label + " end");
+    }
+
+    void run(ToolProvider tool, String... args) {
+      var call = (tool.name() + ' ' + String.join(" ", args)).trim();
+      System.out.println(call);
+      var code = tool.run(System.out, System.err, args);
+      if (code == 0) return;
+      var message = "Exit code " + code + " indicates an error running tool\n\t" + call;
+      var error = new AssertionError(message);
+      error.setStackTrace(new StackTraceElement[] {error.getStackTrace()[0]});
+      throw error;
     }
   }
 
@@ -373,6 +415,21 @@ class BuildJigsawQuickStartWorldWithBach {
         for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
       return root;
+    }
+
+    static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
+      var roots = Set.of(module);
+      var finder = ModuleFinder.of(modulePaths);
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var parent = ClassLoader.getPlatformClassLoader();
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+      var layer = controller.layer();
+      var loader = layer.findLoader(module);
+      loader.setDefaultAssertionStatus(true);
+      var services = ServiceLoader.load(layer, ToolProvider.class);
+      var providers = services.stream().map(ServiceLoader.Provider::get);
+      return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
     }
   }
 }
