@@ -309,6 +309,21 @@ class BuildJigsawQuickStartWorldWithBach {
         var describe = new Arguments().add("--describe-module").add("--file", file);
         tasks.add(Tasks.run("jar", describe));
       }
+      if (realm.flags.contains(Realm.Flag.CREATE_API_DOCUMENTATION)) {
+        var javadoc = new Arguments();
+        javadoc
+            .add("--module", modules)
+            .add("--module-source-path", moduleSourcePath)
+            .add("-encoding", "UTF-8")
+            .add("-locale", "en")
+            .add("-linksource")
+            .add("-use")
+            .add(project.title != null, "-doctitle", project.title)
+            .add(project.title != null, "-windowtitle", project.title)
+            .add("-d", base.api());
+        tasks.add(Tasks.run("javadoc", javadoc));
+        tasks.add(Tasks.of(() -> System.out.println(base.api().resolve("index.html").toUri())));
+      }
       return Tasks.sequence("Compile " + realm.name + " realm", tasks);
     }
 
