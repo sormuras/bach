@@ -4,18 +4,17 @@ From Project Jigsaw's Module System Quick-Start Guide to Bach.java - a Java Shel
 
 ### Quick-Start Guide
 
-Single module
-
+Single module project setup.
 
 ```text
 └───com.greetings
-    │   module-info.java
+    │   module-info.java          --> | module com.greetings {}
     └───com
         └───greetings
                 Main.java
 ```
 
-Call `javac` + `jar`, and `jlink`.
+Call `javac` + `jar` and `jlink`.
 
 - [Build Jigsaw Quick-Start](BuildJigsawQuickStart.java)
 
@@ -27,20 +26,27 @@ jlink --add-modules com.greetings ...
 
 ```
 ├───build
-│   ├───classes
+│   ├───classes                       | `javac`'s output directory
 │   │   └───com.greetings
 │   │       │   module-info.class
 │   │       └───com
 │   │           └───greetings
 │   │                   Main.class
-│   ├───image
-│   │   │   release
-│   │   ├───bin
-|   |   [...]
-│   │   └───lib
-│   └───modules
-│           com.greetings.jar
-[...]
+|   |
+│   ├───image                         | `jlink`'s output directory
+│   │   │   release                   | Describes this image: `MODULES="java.base com.greetings"`
+│   │   ├───bin                       | Contains `greet[.bat]` launcher
+|   |   :                             |
+│   │   └───lib                       | Contains linked `modules` file
+|   |
+│   └───modules                       | `jar`'s output directory
+│           com.greetings.jar         | Modular JAR file
+|
+└───com.greetings
+    │   module-info.java
+    └───com
+        └───greetings
+                Main.java
 ```
 
 ### Quick-Start Guide World
