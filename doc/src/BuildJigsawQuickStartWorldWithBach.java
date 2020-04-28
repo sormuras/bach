@@ -36,6 +36,7 @@ class BuildJigsawQuickStartWorldWithBach {
 
     var project = new Project();
     project.title = "Jigsaw Quick-Start Guide";
+    project.launcher = "greet=com.greetings/com.greetings.Main";
     project.realms.add(main);
     project.realms.add(test);
 
@@ -118,6 +119,10 @@ class BuildJigsawQuickStartWorldWithBach {
       return workspace("classes", realm, module);
     }
 
+    Path image() {
+      return workspace("image");
+    }
+
     Path modules(String realm) {
       return workspace("modules", realm);
     }
@@ -147,6 +152,7 @@ class BuildJigsawQuickStartWorldWithBach {
 
   static class Project {
     String title;
+    String launcher;
     List<Realm> realms = new ArrayList<>();
   }
 
@@ -294,10 +300,10 @@ class BuildJigsawQuickStartWorldWithBach {
       javac
           .add("--module", modules)
           .add("--module-source-path", moduleSourcePath)
-          .add(!realm.modulePaths.isEmpty(), "--module-path", Strings.join(realm.modulePaths))
+          .add(!realm.modulePaths.isEmpty(), "--module-path", Util.join(realm.modulePaths))
           .forEach(
               realm.patches.entrySet(),
-              (a, e) -> a.add("--patch-module", e.getKey() + '=' + Strings.join(e.getValue())))
+              (a, e) -> a.add("--patch-module", e.getKey() + '=' + Util.join(e.getValue())))
           .add("-d", base.classes(realm.name));
       tasks.add(Tasks.run("javac", javac));
       tasks.add(Tasks.of(() -> Files.createDirectories(base.modules(realm.name))));
@@ -324,6 +330,21 @@ class BuildJigsawQuickStartWorldWithBach {
         tasks.add(Tasks.run("javadoc", javadoc));
         tasks.add(Tasks.of(() -> System.out.println(base.api().resolve("index.html").toUri())));
       }
+      if (realm.flags.contains(Realm.Flag.CREATE_RUNTIME_IMAGE)) {
+        var jlink = new Arguments();
+        jlink
+            .add("--add-modules", modules)
+            .add("--module-path", base.modules(realm.name))
+            .add(project.launcher != null, "--launcher", project.launcher)
+            .add("--bind-services")
+            .add("--compress", "0")
+            .add("--strip-debug")
+            .add("--no-header-files")
+            .add("--no-man-pages")
+            .add("--output", base.image());
+        tasks.add(Tasks.of(() -> Util.deleteDirectories(base.image())));
+        tasks.add(Tasks.run("jlink", jlink));
+      }
       return Tasks.sequence("Compile " + realm.name + " realm", tasks);
     }
 
@@ -340,9 +361,18 @@ class BuildJigsawQuickStartWorldWithBach {
     }
   }
 
-  static class Strings {
+  static class Util {
     static String join(Collection<Path> paths) {
       return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+
+    static Path deleteDirectories(Path root) throws Exception {
+      if (Files.notExists(root)) return root;
+      try (var stream = Files.walk(root)) {
+        var paths = stream.sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+      }
+      return root;
     }
   }
 }
