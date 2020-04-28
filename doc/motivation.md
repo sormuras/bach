@@ -16,7 +16,7 @@ Single module project setup.
 
 Call `javac` + `jar` and `jlink`.
 
-- [Build Jigsaw Quick-Start](BuildJigsawQuickStart.java)
+- [Build Jigsaw Quick-Start](src/BuildJigsawQuickStart.java)
 
 ```text
 javac --module com.greetings ...
@@ -64,13 +64,13 @@ Two modules in main realm, two modules in test realm.
 │
 ├───org.astro
 │   ├───main
-│   │   │   module-info.java      --> | module org.astro {   → ─┐ copy module name
-│   │   └───org                       |   exports org.astro; → ─│─────────┐ 
-│   │       └───astro                 | }                       │         │ copy relevant
-│   │               World.java                                  │         │ directives from
-│   └───test                                                 ┌──┴────┐    │ main module
+│   │   │   module-info.java      --> | module org.astro {   → ──┐ copy module name
+│   │   └───org                       |   exports org.astro; → ──│────────┐ 
+│   │       └───astro                 | }                        │        │ copy relevant
+│   │               World.java                                   │        │ directives from
+│   └───test                                                ┌────┴────┐   │ main module
 │       │   module-info.java      --> | open /*test*/ module org.astro {  │
-│       └───org                       |   exports org.astro;    ├─────────┘
+│       └───org                       |   exports org.astro; ─────────────┘
 │           └───astro                 |   provides ...ToolProvider with org.astro.TestProvider;
 │                   TestProvider.java | }
 │
@@ -85,7 +85,7 @@ Two modules in main realm, two modules in test realm.
 
 Call `javac` + `jar`, `javadoc`, and `jlink`.
 
-- [Build Jigsaw Quick-Start World](BuildJigsawQuickStartWorld.java)
+- [Build Jigsaw Quick-Start World](src/BuildJigsawQuickStartWorld.java)
 
 ```text
 [main]
