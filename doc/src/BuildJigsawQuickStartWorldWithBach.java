@@ -83,15 +83,19 @@ class BuildJigsawQuickStartWorldWithBach {
   static class Task {
 
     private final String label;
-    private final List<Task> tasks;
+    private final List<Task> list;
 
     Task() {
       this("", List.of());
     }
 
-    Task(String label, List<Task> tasks) {
+    Task(String label, List<Task> list) {
       this.label = label;
-      this.tasks = tasks;
+      this.list = list;
+    }
+
+    boolean runnable() {
+      return list.isEmpty();
     }
 
     void run(Bach bach) {}
@@ -177,11 +181,7 @@ class BuildJigsawQuickStartWorldWithBach {
     Task generateBuildTask() {
       return Tasks.sequence(
           "Build project",
-          Tasks.of(
-              () ->
-                  System.out.println(
-                      "BuildJigsawQuickStartWorldWithBach")
-),
+          Tasks.of(() -> System.out.println("BuildJigsawQuickStartWorldWithBach")),
           new Tasks.PrintBasics(),
           new Tasks.PrintProject(),
           Tasks.run("javac", "--version"));
@@ -189,10 +189,14 @@ class BuildJigsawQuickStartWorldWithBach {
 
     void run(Task task) {
       var label = task.label.isEmpty() ? task.getClass().getSimpleName() : task.label;
-      System.out.printf("[task] %s%n", label);
-      var subs = task.tasks;
-      if (subs.isEmpty()) task.run(this);
-      else subs.forEach(this::run);
+      if (task.runnable()) {
+        System.out.printf("[task] %s%n", label);
+        task.run(this);
+        return;
+      }
+      System.out.println("[list] " + label + " begin");
+      task.list.forEach(this::run);
+      System.out.println("[list] " + label + " end");
     }
   }
 }
