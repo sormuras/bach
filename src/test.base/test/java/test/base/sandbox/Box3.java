@@ -8,35 +8,39 @@ import java.util.List;
 import java.util.spi.ToolProvider;
 
 import org.junit.jupiter.api.Test;
+import test.base.SwallowSystem;
 
 public interface Box3 {
 
   class Main {
     @Test
+    @SwallowSystem
     void test() {
       var foo =
           new Unit(
               ModuleDescriptor.newModule("foo").build(),
               RunTool.of("javac", "--version"),
               RunTool.of("jar", "--version"));
-      var realm =
+      var main =
           new Realm(
-              "main",
               List.of(foo),
-              RunTool.of("javac", "--module-source-path", "."),
-              List.of(RunTool.of("javadoc"), RunTool.of("jlink")));
-      var project = new Project("Box III");
+              RunTool.of("javac", "--version"),
+              List.of(RunTool.of("javadoc", "--version"), RunTool.of("jlink", "--version")));
+      var project = new Project("Box III", List.of(main));
 
       var bach = new Bach(project);
-      bach.execute(
-          Task.sequence(
-              "Main Sequence", new PrintSystemProperties(), new PrintProjectComponents()));
+      bach.execute(bach.newBuildSequence());
       assertLinesMatch(
           List.of(
-              "+ Main Sequence",
+              "+ Build Sequence",
               "* PrintSystemProperties",
               "* PrintProjectComponents",
-              "= Main Sequence"),
+              "* javac --version",
+              "* javac --version",
+              "* jar --version",
+              "* javadoc --version",
+              "* jlink --version",
+              "= Build Sequence"),
           bach.executedTaskLabels);
     }
   }
@@ -44,12 +48,12 @@ public interface Box3 {
   final class Unit {
 
     private final ModuleDescriptor descriptor;
-    private final Task compile;
+    private final Task javac;
     private final Task jar;
 
-    public Unit(ModuleDescriptor descriptor, Task compile, Task jar) {
+    public Unit(ModuleDescriptor descriptor, Task javac, Task jar) {
       this.descriptor = descriptor;
-      this.compile = compile;
+      this.javac = javac;
       this.jar = jar;
     }
 
@@ -59,24 +63,24 @@ public interface Box3 {
   }
 
   final class Realm {
-    private final String name;
     private final List<Unit> units;
-    private final Task compile;
+    private final Task javac;
     private final List<Task> more;
 
-    public Realm(String name, List<Unit> units, Task compile, List<Task> more) {
-      this.name = name;
+    public Realm(List<Unit> units, Task javac, List<Task> more) {
       this.units = units;
-      this.compile = compile;
+      this.javac = javac;
       this.more = more;
     }
   }
 
   final class Project {
     private final String title;
+    private final List<Realm> realms;
 
-    public Project(String title) {
+    public Project(String title, List<Realm> realms) {
       this.title = title;
+      this.realms = realms;
     }
   }
 
@@ -89,8 +93,22 @@ public interface Box3 {
       this.project = project;
     }
 
-    public void execute(Task task) {
+    public Task newBuildSequence() {
+      var tasks = new ArrayList<Task>();
+      tasks.add(new PrintSystemProperties());
+      tasks.add(new PrintProjectComponents());
+      for (var realm : project.realms) {
+        tasks.add(realm.javac);
+        for (var unit : realm.units) {
+          tasks.add(unit.javac);
+          tasks.add(unit.jar);
+        }
+        tasks.addAll(realm.more);
+      }
+      return Task.sequence("Build Sequence", tasks);
+    }
 
+    public void execute(Task task) {
       var tasks = task.list;
       if (tasks.isEmpty()) {
         executedTaskLabels.add("* " + task.label);
@@ -111,8 +129,8 @@ public interface Box3 {
 
   class Task {
 
-    public static Task sequence(String label, Task... tasks) {
-      return new Task(label, List.of(tasks));
+    public static Task sequence(String label, List<Task> tasks) {
+      return new Task(label, tasks);
     }
 
     private final String label;
@@ -143,6 +161,7 @@ public interface Box3 {
     private final String[] args;
 
     public RunTool(ToolProvider tool, String... args) {
+      super(tool.name() + " " + String.join(" ", args), List.of());
       this.tool = tool;
       this.args = args;
     }
