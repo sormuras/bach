@@ -77,31 +77,39 @@ public /*static*/ final class Project {
       this.workspace = workspace;
     }
 
-    Path path(String first, String... more) {
+    public Path directory() {
+      return directory;
+    }
+
+    public Path workspace() {
+      return workspace;
+    }
+
+    public Path path(String first, String... more) {
       return directory.resolve(Path.of(first, more));
     }
 
-    Path workspace(String first, String... more) {
+    public Path workspace(String first, String... more) {
       return workspace.resolve(Path.of(first, more));
     }
 
-    Path api() {
+    public Path api() {
       return workspace("api");
     }
 
-    Path classes(String realm) {
+    public Path classes(String realm) {
       return workspace("classes", realm);
     }
 
-    Path classes(String realm, String module) {
+    public Path classes(String realm, String module) {
       return workspace("classes", realm, module);
     }
 
-    Path image() {
+    public Path image() {
       return workspace("image");
     }
 
-    Path modules(String realm) {
+    public Path modules(String realm) {
       return workspace("modules", realm);
     }
   }
