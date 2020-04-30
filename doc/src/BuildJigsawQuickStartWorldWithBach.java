@@ -16,20 +16,15 @@
  */
 
 import java.io.File;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.function.BiConsumer;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -37,74 +32,109 @@ class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
     var base = new Base(Path.of("doc", "project", "JigsawQuickStartWorld"));
-
-    var main = new Realm();
-    main.name = "main";
-    main.flags = EnumSet.of(Realm.Flag.CREATE_API_DOCUMENTATION, Realm.Flag.CREATE_RUNTIME_IMAGE);
-    main.declares = Set.of("com.greetings", "org.astro");
-    main.sourcePathPatterns = List.of(base.path + File.separator + '*' + File.separator + "main");
-
-    var test = new Realm();
-    test.name = "test";
-    test.flags = EnumSet.of(Realm.Flag.LAUNCH_TESTS);
-    test.declares = Set.of("test.modules", "org.astro");
-    test.requires = List.of(main);
-    test.sourcePathPatterns = List.of(base.path + File.separator + '*' + File.separator + "test");
-    test.modulePaths = List.of(base.modules(main.name));
-    test.patches = Map.of("org.astro", List.of(base.path("org.astro", "main")));
-
-    var project = new Project();
-    project.title = "Jigsaw Quick-Start Guide";
-    project.launcher = "greet=com.greetings/com.greetings.Main";
-    project.realms = List.of(main, test);
-
-    var bach = new Bach();
-    bach.base = base;
-    bach.project = project;
+    var main = newMainRealm(base);
+    var test = newTestRealm(base, main);
+    var project = new Project("Jigsaw Quick-Start World Guide", List.of(main, test));
+    var bach = new Bach(project);
     bach.build();
   }
 
-  static class Arguments {
-    private final List<String> list = new ArrayList<>();
-
-    Arguments(Object... arguments) {
-      addAll(arguments);
-    }
-
-    List<String> build() {
-      return List.copyOf(list);
-    }
-
-    Arguments add(Object argument) {
-      list.add(argument.toString());
-      return this;
-    }
-
-    Arguments add(String key, Object value) {
-      return add(key).add(value);
-    }
-
-    Arguments add(String key, Object first, Object second) {
-      return add(key).add(first).add(second);
-    }
-
-    Arguments add(boolean predicate, Object first, Object... more) {
-      return predicate ? add(first).addAll(more) : this;
-    }
-
-    @SafeVarargs
-    final <T> Arguments addAll(T... arguments) {
-      for (var argument : arguments) add(argument);
-      return this;
-    }
-
-    <T> Arguments forEach(Iterable<T> iterable, BiConsumer<Arguments, T> consumer) {
-      iterable.forEach(argument -> consumer.accept(this, argument));
-      return this;
-    }
+  private static Realm newMainRealm(Base base) {
+    var units =
+        List.of(
+            new Unit(
+                ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main").build(),
+                List.of(new CreateJar(base, "main", "com.greetings"))),
+            new Unit(
+                ModuleDescriptor.newModule("org.astro").build(),
+                List.of(new CreateJar(base, "main", "org.astro"))));
+    var moduleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
+    var moduleSourcePath = String.join(File.separator, base.path.toString(), "*", "main");
+    var javac =
+        RunTool.of(
+            "javac",
+            "--module",
+            moduleNames,
+            "--module-source-path",
+            moduleSourcePath,
+            "-d",
+            base.classes("main"));
+    var javadoc =
+        Task.sequence(
+            "Create API documentation",
+            List.of(
+                new CreateDirectories(base.api()),
+                RunTool.of(
+                    "javadoc",
+                    "--module",
+                    moduleNames,
+                    "--module-source-path",
+                    moduleSourcePath,
+                    "-quiet",
+                    "-encoding",
+                    "UTF-8",
+                    "-locale",
+                    "en",
+                    "-d",
+                    base.api())));
+    var jlink =
+        Task.sequence(
+            "Create custom runtime image",
+            List.of(
+                new DeleteDirectories(base.image()),
+                RunTool.of(
+                    "jlink",
+                    "--launcher",
+                    "greet=com.greetings/com.greetings.Main",
+                    "--add-modules",
+                    moduleNames,
+                    "--module-path",
+                    base.modules("main"),
+                    "--compress",
+                    "2",
+                    "--strip-debug",
+                    "--no-header-files",
+                    "--no-man-pages",
+                    "--output",
+                    base.image())));
+    return new Realm("main", units, javac, List.of(javadoc, jlink));
   }
 
-  static class Base {
+  private static Realm newTestRealm(Base base, Realm main) {
+    var units =
+        List.of(
+            new Unit(
+                ModuleDescriptor.newOpenModule("test.modules").build(),
+                List.of(new CreateJar(base, "test", "test.modules"))),
+            new Unit(
+                ModuleDescriptor.newOpenModule("org.astro").build(),
+                List.of(new CreateJar(base, "test", "org.astro"))));
+    var moduleNames = units.stream().map(Unit::name).collect(Collectors.joining(","));
+    var moduleSourcePath = String.join(File.separator, base.path.toString(), "*", "test");
+    var mains = base.modules(main.name);
+    var tests = base.modules("test");
+    var javac =
+        RunTool.of(
+            "javac",
+            "--module",
+            moduleNames,
+            "--module-source-path",
+            moduleSourcePath,
+            "--module-path",
+            mains,
+            "--patch-module",
+            "org.astro=" + base.path("org.astro", main.name),
+            "-d",
+            base.classes("test"));
+
+    var more =
+        List.of(
+            new RunTestModule("test.modules", List.of(tests.resolve("test.modules.jar"), mains)),
+            new RunTestModule("org.astro", List.of(tests.resolve("org.astro.jar"))));
+    return new Realm("test", units, javac, more);
+  }
+
+  static final class Base {
     private final Path path;
     private final Path workspace;
 
@@ -146,270 +176,89 @@ class BuildJigsawQuickStartWorldWithBach {
     }
   }
 
-  static class Realm {
+  static final class Unit {
 
-    enum Flag {
-      CREATE_API_DOCUMENTATION,
-      CREATE_RUNTIME_IMAGE,
-      LAUNCH_TESTS
+    private final ModuleDescriptor descriptor;
+    private final List<? extends Task> tasks;
+
+    public Unit(ModuleDescriptor descriptor, List<? extends Task> tasks) {
+      this.descriptor = descriptor;
+      this.tasks = tasks;
     }
 
-    String name;
-    Set<Flag> flags = Set.of();
-    Set<String> declares = Set.of(); // --module
-    List<Realm> requires = List.of();
-    List<String> sourcePathPatterns = List.of(); // --module-source-path
-    List<Path> modulePaths = List.of(); // --module-path
-    Map<String, List<Path>> patches = Map.of(); // --patch-module
-
-    @Override
-    public String toString() {
-      return name;
+    public String name() {
+      return descriptor.name();
     }
   }
 
-  static class Project {
-    String title;
-    String launcher;
-    List<Realm> realms = List.of();
+  static final class Realm {
+    private final String name;
+    private final List<Unit> units;
+    private final Task javac;
+    private final List<? extends Task> more;
+
+    public Realm(String name, List<Unit> units, Task javac, List<? extends Task> more) {
+      this.name = name;
+      this.units = units;
+      this.javac = javac;
+      this.more = more;
+    }
   }
 
-  static class Task {
+  static final class Project {
+    private final String title;
+    private final List<Realm> realms;
 
-    private final String label;
-    private final List<Task> list;
-
-    Task() {
-      this("", List.of());
-    }
-
-    Task(String label, List<Task> list) {
-      this.label = label;
-      this.list = list;
-    }
-
-    boolean runnable() {
-      return list.isEmpty();
-    }
-
-    void run(Bach bach) {}
-  }
-
-  static class Tasks {
-
-    static Task of(Callable<?> callable) {
-      class CallableTask extends Task {
-        @Override
-        void run(Bach bach) {
-          try {
-            callable.call();
-          } catch (Exception e) {
-            throw new AssertionError("Computation failed", e);
-          }
-        }
-      }
-      return new CallableTask();
-    }
-
-    static Task of(Runnable runnable) {
-      class RunnableTask extends Task {
-        @Override
-        void run(Bach bach) {
-          runnable.run();
-        }
-      }
-      return new RunnableTask();
-    }
-
-    static Task run(String tool, Arguments arguments) {
-      return run(tool, arguments.build().toArray(String[]::new));
-    }
-
-    static Task run(String tool, String... args) {
-      return run(ToolProvider.findFirst(tool).orElseThrow(), args);
-    }
-
-    static Task run(ToolProvider tool, String... args) {
-      return new RunTool(tool, args);
-    }
-
-    static Task sequence(String label, List<Task> tasks) {
-      return new Task(label, tasks);
-    }
-
-    static Task sequence(String label, Task... tasks) {
-      return sequence(label, List.of(tasks));
-    }
-
-    static class PrintBasics extends Task {
-      @Override
-      void run(Bach bach) {
-        System.out.println("System Properties");
-        System.out.println("\tos.name=" + System.getProperty("os.name"));
-        System.out.println("\tjava.version=" + System.getProperty("java.version"));
-        System.out.println("\tuser.dir=" + System.getProperty("user.dir"));
-        var base = bach.base;
-        System.out.println("Base");
-        System.out.println("\tpath=" + base.path + " -> " + base.path.toUri());
-      }
-    }
-
-    static class PrintProject extends Task {
-
-      @Override
-      void run(Bach bach) {
-        var project = bach.project;
-        System.out.println("Project");
-        System.out.println("\trealms=" + project.realms);
-        System.out.println("Realm");
-        for (var realm : project.realms) {
-          System.out.println("\t" + realm.name);
-          System.out.println("\t\tdeclares=" + realm.declares);
-        }
-      }
-    }
-
-    static class RunTool extends Task {
-      private final ToolProvider tool;
-      private final String[] args;
-
-      RunTool(ToolProvider tool, String... args) {
-        this.tool = tool;
-        this.args = args;
-      }
-
-      @Override
-      void run(Bach bach) {
-        bach.run(tool, args);
-      }
-    }
-
-    static class RunTestModule extends Task {
-      private final String module;
-      private final List<Path> modulePaths;
-
-      RunTestModule(String module, List<Path> modulePaths) {
-        this.module = module;
-        this.modulePaths = modulePaths;
-      }
-
-      @Override
-      void run(Bach bach) {
-        Util.findTestTool(module, modulePaths.toArray(Path[]::new)).ifPresent(bach::run);
-      }
+    public Project(String title, List<Realm> realms) {
+      this.title = title;
+      this.realms = realms;
     }
   }
 
   static class Bach {
-    Base base;
-    Project project;
 
-    void build() {
-      run(generateBuildTask());
+    private final Project project;
+
+    public Bach(Project project) {
+      this.project = project;
     }
 
-    Task generateBuildTask() {
-      return Tasks.sequence(
-          "Build project",
-          new Tasks.PrintBasics(),
-          new Tasks.PrintProject(),
-          Tasks.run("javac", "--version"),
-          generateCompileAllRealmsTask());
+    public void build() {
+      execute(buildSequence());
     }
 
-    Task generateCompileAllRealmsTask() {
-      var tasks = project.realms.stream().map(this::generateCompileRealmTask);
-      return Tasks.sequence("Compile all realms", tasks.collect(Collectors.toList()));
-    }
-
-    Task generateCompileRealmTask(Realm realm) {
+    Task buildSequence() {
       var tasks = new ArrayList<Task>();
-      var modules = String.join(",", realm.declares);
-      var moduleSourcePath = String.join(File.pathSeparator, realm.sourcePathPatterns);
-      var javac = new Arguments();
-      javac
-          .add("--module", modules)
-          .add("--module-source-path", moduleSourcePath)
-          .add(!realm.modulePaths.isEmpty(), "--module-path", Util.join(realm.modulePaths))
-          .forEach(
-              realm.patches.entrySet(),
-              (a, e) -> a.add("--patch-module", e.getKey() + '=' + Util.join(e.getValue())))
-          .add("-d", base.classes(realm.name));
-      tasks.add(Tasks.run("javac", javac));
-      tasks.add(Tasks.of(() -> Files.createDirectories(base.modules(realm.name))));
-      for (var module : realm.declares) {
-        var file = base.modules(realm.name).resolve(module + ".jar");
-        var jar =
-            new Arguments()
-                .add("--create")
-                .add("--file", file)
-                .add("-C", base.classes(realm.name, module), ".");
-        tasks.add(Tasks.run("jar", jar));
-        var describe = new Arguments().add("--describe-module").add("--file", file);
-        tasks.add(Tasks.run("jar", describe));
+      tasks.add(new PrintSystemProperties());
+      tasks.add(new PrintProjectComponents());
+      for (var realm : project.realms) {
+        tasks.add(realm.javac);
+        for (var unit : realm.units) tasks.addAll(unit.tasks);
+        tasks.addAll(realm.more);
       }
-      if (realm.flags.contains(Realm.Flag.CREATE_API_DOCUMENTATION)) {
-        var javadoc = new Arguments();
-        javadoc
-            .add("--module", modules)
-            .add("--module-source-path", moduleSourcePath)
-            .add("-encoding", "UTF-8")
-            .add("-locale", "en")
-            .add("-linksource")
-            .add("-use")
-            .add(project.title != null, "-doctitle", project.title)
-            .add(project.title != null, "-windowtitle", project.title)
-            .add("-d", base.api());
-        tasks.add(Tasks.run("javadoc", javadoc));
-        tasks.add(Tasks.of(() -> System.out.println(base.api().resolve("index.html").toUri())));
-      }
-      if (realm.flags.contains(Realm.Flag.CREATE_RUNTIME_IMAGE)) {
-        var jlink = new Arguments();
-        jlink
-            .add("--add-modules", modules)
-            .add("--module-path", base.modules(realm.name))
-            .add(project.launcher != null, "--launcher", project.launcher)
-            .add("--compress", "2")
-            .add("--strip-debug")
-            .add("--no-header-files")
-            .add("--no-man-pages")
-            .add("--output", base.image());
-        tasks.add(Tasks.of(() -> Util.deleteDirectories(base.image())));
-        tasks.add(Tasks.run("jlink", jlink));
-      }
-      if (realm.flags.contains(Realm.Flag.LAUNCH_TESTS)) {
-        for (var module : realm.declares) {
-          var file = base.modules(realm.name).resolve(module + ".jar");
-          var requires = new ArrayDeque<>(realm.requires);
-          var modulePaths = new ArrayList<Path>();
-          modulePaths.add(file); // test module first
-          while (!requires.isEmpty()) { // modules of required realms next
-            var required = requires.removeFirst();
-            modulePaths.add(base.modules(required.name));
-            requires.addAll(required.requires);
-          }
-          modulePaths.add(base.modules(realm.name)); // same realm module last
-          tasks.add(new Tasks.RunTestModule(module, modulePaths));
-        }
-      }
-      return Tasks.sequence("Compile " + realm.name + " realm", tasks);
+      return Task.sequence("Build Sequence", tasks);
     }
 
-    void run(Task task) {
-      var label = task.label.isEmpty() ? task.getClass().getSimpleName() : task.label;
-      if (task.runnable()) {
-        System.out.printf("[task] %s%n", label);
-        task.run(this);
+    void execute(Task task) {
+      var tasks = task.list;
+      if (tasks.isEmpty()) {
+        System.out.println("* " + task.label);
+        try {
+          task.execute(this);
+        } catch (Exception e) {
+          throw new Error("Task execution failed", e);
+        }
         return;
       }
-      System.out.println("[list] " + label + " begin");
-      task.list.forEach(this::run);
-      System.out.println("[list] " + label + " end");
+      System.out.println("+ " + task.label);
+      var start = System.currentTimeMillis();
+      for (var sub : tasks) execute(sub);
+      var duration = System.currentTimeMillis() - start;
+      System.out.println("= " + task.label + " took " + duration + " ms");
     }
 
-    void run(ToolProvider tool, String... args) {
+    void execute(ToolProvider tool, String... args) {
       var call = (tool.name() + ' ' + String.join(" ", args)).trim();
-      System.out.println(call);
       var code = tool.run(System.out, System.err, args);
       if (code == 0) return;
       var message = "Exit code " + code + " indicates an error running tool\n\t" + call;
@@ -419,21 +268,66 @@ class BuildJigsawQuickStartWorldWithBach {
     }
   }
 
-  static class Util {
-    static String join(Collection<Path> paths) {
-      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  static class Task {
+
+    public static Task sequence(String label, List<Task> tasks) {
+      return new Task(label, tasks);
     }
 
-    static Path deleteDirectories(Path root) throws Exception {
-      if (Files.notExists(root)) return root;
-      try (var stream = Files.walk(root)) {
-        var paths = stream.sorted((p, q) -> -p.compareTo(q));
-        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-      }
-      return root;
+    private final String label;
+    private final List<Task> list;
+
+    public Task() {
+      this("", List.of());
     }
 
-    static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
+    public Task(String label, List<Task> list) {
+      this.label = label.isBlank() ? getClass().getSimpleName() : label;
+      this.list = list;
+    }
+
+    public void execute(Bach bach) throws Exception {}
+  }
+
+  static class RunTool extends Task {
+
+    static RunTool of(String name, Object... arguments) {
+      var tool = ToolProvider.findFirst(name).orElseThrow();
+      var args = new String[arguments.length];
+      for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
+      return new RunTool(tool, args);
+    }
+
+    private final ToolProvider tool;
+    private final String[] args;
+
+    public RunTool(ToolProvider tool, String... args) {
+      super(tool.name() + " " + String.join(" ", args), List.of());
+      this.tool = tool;
+      this.args = args;
+    }
+
+    @Override
+    public void execute(Bach bach) {
+      bach.execute(tool, args);
+    }
+  }
+
+  static class RunTestModule extends Task {
+    private final String module;
+    private final List<Path> modulePaths;
+
+    RunTestModule(String module, List<Path> modulePaths) {
+      this.module = module;
+      this.modulePaths = modulePaths;
+    }
+
+    @Override
+    public void execute(Bach bach) {
+      findTestTool(module, modulePaths.toArray(Path[]::new)).ifPresent(bach::execute);
+    }
+
+    Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
       var roots = Set.of(module);
       var finder = ModuleFinder.of(modulePaths);
       var boot = ModuleLayer.boot();
@@ -446,6 +340,77 @@ class BuildJigsawQuickStartWorldWithBach {
       var services = ServiceLoader.load(layer, ToolProvider.class);
       var providers = services.stream().map(ServiceLoader.Provider::get);
       return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
+    }
+  }
+
+  static class PrintSystemProperties extends Task {
+
+    @Override
+    public void execute(Bach bach) {
+      var lines = List.of("System Properties", line("os.name"), line("user.dir"));
+      System.out.println(String.join(System.lineSeparator(), lines));
+    }
+
+    private static String line(String key) {
+      return "\t" + key + "=" + System.getProperty(key);
+    }
+  }
+
+  static class PrintProjectComponents extends Task {
+    @Override
+    public void execute(Bach bach) {
+      System.out.println(bach.project.title);
+    }
+  }
+
+  static class CreateDirectories extends Task {
+
+    final Path directory;
+
+    CreateDirectories(Path directory) {
+      super("Create directories " + directory.toUri(), List.of());
+      this.directory = directory;
+    }
+
+    @Override
+    public void execute(Bach bach) throws Exception {
+      Files.createDirectories(directory);
+    }
+  }
+
+  static class DeleteDirectories extends Task {
+
+    final Path directory;
+
+    DeleteDirectories(Path directory) {
+      super("Delete directory " + directory, List.of());
+      this.directory = directory;
+    }
+
+    @Override
+    public void execute(Bach bach) throws Exception {
+      if (Files.notExists(directory)) return;
+      try (var stream = Files.walk(directory)) {
+        var paths = stream.sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+      }
+    }
+  }
+
+  static class CreateJar extends Task {
+
+    private static List<Task> list(Base base, String realm, String module) {
+      var classes = base.classes(realm, module);
+      var modules = base.modules(realm);
+      var jar = modules.resolve(module + ".jar");
+      return List.of(
+          new CreateDirectories(modules),
+          RunTool.of("jar", "--create", "--file", jar, "-C", classes, "."),
+          RunTool.of("jar", "--describe-module", "--file", jar));
+    }
+
+    public CreateJar(Base base, String realm, String module) {
+      super("Create and describe JAR file for module " + module, list(base, realm, module));
     }
   }
 }
