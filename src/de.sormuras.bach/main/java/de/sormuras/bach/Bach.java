@@ -17,13 +17,9 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.task.BuildTaskFactory;
 import de.sormuras.bach.util.Functions;
-import de.sormuras.bach.util.Strings;
-import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /** Bach - Java Shell Builder. */
@@ -37,71 +33,21 @@ public class Bach {
     Main.main(args);
   }
 
-  /** Line-based message printer. */
-  private final Printer printer;
-
-  /** Directory for storing generated assets into. */
-  private final Workspace workspace;
-
   /** HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
   /** Initialize this instance with default values. */
   public Bach() {
-    this(Printer.ofSystem(), Workspace.of(), HttpClient.newBuilder()::build);
+    this(HttpClient.newBuilder()::build);
   }
 
   /** Initialize this instance with the specified line printer, workspace, and other values. */
-  public Bach(Printer printer, Workspace workspace, Supplier<HttpClient> httpClient) {
-    this.printer = Objects.requireNonNull(printer, "printer");
-    this.workspace = Objects.requireNonNull(workspace, "workspace");
+  public Bach(Supplier<HttpClient> httpClient) {
     this.httpClient = Functions.memoize(httpClient);
-    printer.print(
-        Level.DEBUG,
-        this + " initialized",
-        "\tprinter=" + printer,
-        "\tWorkspace",
-        "\t\tbase='" + workspace.base() + "' -> " + workspace.base().toUri(),
-        "\t\tlib='" + workspace.lib(),
-        "\t\tworkspace=" + workspace.workspace());
-  }
-
-  public Printer getPrinter() {
-    return printer;
-  }
-
-  public Workspace getWorkspace() {
-    return workspace;
   }
 
   public HttpClient getHttpClient() {
     return httpClient.get();
-  }
-
-  /** Build the specified project using default build task factory. */
-  public void build(Project project) {
-    build(project, new BuildTaskFactory(workspace, project, printer.printable(Level.DEBUG)).get());
-  }
-
-  void build(Project project, Task task) {
-    var summary = execute(new Task.Executor(this, project), task);
-    summary.write("build");
-    summary.assertSuccessful();
-    printer.print(Level.INFO, "Build took " + summary.toDurationString());
-  }
-
-  public void execute(Task task) {
-    execute(new Task.Executor(this, null), task).assertSuccessful();
-  }
-
-  private Task.Executor.Summary execute(Task.Executor executor, Task task) {
-    var size = task.size();
-    printer.print(Level.DEBUG, "Execute " + size + " tasks");
-    var summary = executor.execute(task);
-    printer.print(Level.DEBUG, "Executed " + summary.getTaskCounter() + " of " + size + " tasks");
-    var exception = Strings.text(summary.exceptionDetails());
-    if (!exception.isEmpty()) printer.print(Level.ERROR, exception);
-    return summary;
   }
 
   @Override

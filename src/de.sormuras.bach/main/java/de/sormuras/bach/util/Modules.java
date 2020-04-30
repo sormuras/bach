@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.util;
 
-import de.sormuras.bach.Convention;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -63,7 +62,6 @@ public /*static*/ class Modules {
   }
 
   /** Return name of main class of the specified module. */
-  @Convention
   public static Optional<String> findMainClass(Path info, String module) {
     var main = Path.of(module.replace('.', '/'), "Main.java");
     var exists = Files.isRegularFile(info.resolveSibling(main));
@@ -71,7 +69,6 @@ public /*static*/ class Modules {
   }
 
   /** Return name of the main module by finding a single main class containing descriptor. */
-  @Convention
   public static Optional<String> findMainModule(Stream<ModuleDescriptor> descriptors) {
     var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
