@@ -19,16 +19,16 @@ package de.sormuras.bach.util;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.project.Locator;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,14 +53,14 @@ class ModulesResolverTests {
     try {
       assertLinesMatch(
           List.of(
-              "org.apiguardian.api@.+.jar",
-              "org.junit.jupiter.api@.+.jar",
-              "org.junit.jupiter.engine@.+.jar",
-              "org.junit.jupiter.params@.+.jar",
-              "org.junit.jupiter@.+.jar",
-              "org.junit.platform.commons@.+.jar",
-              "org.junit.platform.engine@.+.jar",
-              "org.opentest4j@.+.jar"),
+              "org.apiguardian.api.jar",
+              "org.junit.jupiter.api.jar",
+              "org.junit.jupiter.engine.jar",
+              "org.junit.jupiter.jar",
+              "org.junit.jupiter.params.jar",
+              "org.junit.platform.commons.jar",
+              "org.junit.platform.engine.jar",
+              "org.opentest4j.jar"),
           files);
     } catch (Throwable throwable) {
       files.forEach(System.err::println);
@@ -79,13 +79,13 @@ class ModulesResolverTests {
     try {
       assertLinesMatch(
           List.of(
-              "org.apiguardian.api@.+.jar",
-              "org.junit.platform.commons@.+.jar",
-              "org.junit.platform.console@.+.jar",
-              "org.junit.platform.engine@.+.jar",
-              "org.junit.platform.launcher@.+.jar",
-              "org.junit.platform.reporting@.+.jar",
-              "org.opentest4j@.+.jar"),
+              "org.apiguardian.api.jar",
+              "org.junit.platform.commons.jar",
+              "org.junit.platform.console.jar",
+              "org.junit.platform.engine.jar",
+              "org.junit.platform.launcher.jar",
+              "org.junit.platform.reporting.jar",
+              "org.opentest4j.jar"),
           files);
     } catch (Throwable throwable) {
       files.forEach(System.err::println);
@@ -93,29 +93,46 @@ class ModulesResolverTests {
     }
   }
 
-  private static class Transporter implements Consumer<Set<String>> {
+  private static class Transporter extends TreeMap<String, URI> implements Consumer<Set<String>> {
+
+    private static URI central(String group, String artifact, String version) {
+      var host = "https://repo.maven.apache.org/maven2";
+      var file = artifact + '-' + version + ".jar";
+      return URI.create(String.join("/", host, group.replace('.', '/'), artifact, version, file));
+    }
 
     private final Path directory;
-    private final Function<String, URI> locator;
     private final Resources resources;
 
     private Transporter(Path directory) {
       this.directory = directory;
-      this.locator = Locator.of();
       this.resources = new Resources(HttpClient.newHttpClient());
+      var jupiter = "org.junit.jupiter";
+      put(jupiter, central(jupiter, "junit-jupiter", "5.6.2"));
+      put(jupiter + ".api", central(jupiter, "junit-jupiter-api", "5.6.2"));
+      put(jupiter + ".engine", central(jupiter, "junit-jupiter-engine", "5.6.2"));
+      put(jupiter + ".params", central(jupiter, "junit-jupiter-params", "5.6.2"));
+
+      var platform = "org.junit.platform";
+      put(platform + ".commons", central(platform, "junit-platform-commons", "1.6.2"));
+      put(platform + ".console", central(platform, "junit-platform-console", "1.6.2"));
+      put(platform + ".engine", central(platform, "junit-platform-engine", "1.6.2"));
+      put(platform + ".launcher", central(platform, "junit-platform-launcher", "1.6.2"));
+      put(platform + ".reporting", central(platform, "junit-platform-reporting", "1.6.2"));
+      put(platform + ".testkit", central(platform, "junit-platform-testkit", "1.6.2"));
+
+      put("org.apiguardian.api", central("org.apiguardian", "apiguardian-api", "1.1.0"));
+      put("org.opentest4j", central("org.opentest4j", "opentest4j", "1.2.0"));
     }
 
     @Override
     public void accept(Set<String> modules) {
       for (var module : modules) {
-        var uri = locator.apply(module);
+        var uri = get(module);
         if (uri == null) continue;
-        var attributes = Locator.parseFragment(uri.getFragment());
-        var version = Optional.ofNullable(attributes.get("version"));
-        var jar = module + version.map(v -> '@' + v).orElse("") + ".jar";
         try {
-          var file = resources.copy(uri, directory.resolve(jar));
-          Paths.assertFileAttributes(file, attributes);
+          var file = resources.copy(uri, directory.resolve(module + ".jar"));
+          assertTrue(Files.isReadable(file));
         } catch (Exception e) {
           System.err.println(e.getMessage());
         }
