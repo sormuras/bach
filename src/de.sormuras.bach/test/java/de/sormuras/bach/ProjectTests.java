@@ -26,9 +26,9 @@ class ProjectTests {
 
   @Test
   void useProjectBuilderTouchingAllComponents() {
-    var project = new Project.Builder().title("Title").version("99").build();
-    assertNotNull(project.info());
+    var project = Project.newProject("Title", "99").build();
     assertEquals("Title 99", project.toTitleAndVersion());
+    assertEquals("99", project.info().version().toString());
     assertNotNull(project.toString());
   }
 }

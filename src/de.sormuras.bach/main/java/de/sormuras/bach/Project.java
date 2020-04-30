@@ -23,6 +23,10 @@ import java.util.StringJoiner;
 /** A project descriptor. */
 public /*static*/ final class Project {
 
+  public static Builder newProject(String title, String version) {
+    return new Builder().title(title).version(Version.parse(version));
+  }
+
   private final Info info;
 
   public Project(Info info) {
@@ -86,10 +90,6 @@ public /*static*/ final class Project {
     public Builder title(String title) {
       this.title = title;
       return this;
-    }
-
-    public Builder version(String version) {
-      return version(Version.parse(version));
     }
 
     public Builder version(Version version) {
