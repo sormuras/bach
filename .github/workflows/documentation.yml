@@ -1,0 +1,19 @@
+name: Documentation
+on: push
+jobs:
+  build:
+    name: "Build projects"
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout sources'
+      uses: actions/checkout@v2
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 15-ea
+    - name: 'Build Jigsaw Quick-Start'
+      run: java doc/src/BuildJigsawQuickStart.java
+    - name: 'Build Jigsaw Quick-Start World'
+      run: java doc/src/BuildJigsawQuickStartWorld.java
+    - name: 'Build Jigsaw Quick-Start World with Bach (inline)'
+      run: java doc/src/BuildJigsawQuickStartWorldWithBach.java
