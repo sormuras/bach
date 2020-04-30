@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 /** Bach's own build program. */
 class Build {
@@ -29,112 +24,7 @@ class Build {
   public static final Version VERSION = Version.parse("11.0-ea");
 
   public static void main(String... args) {
-    var printer = Bach.Printer.ofSystem(Level.ALL);
-    var workspace = Bach.Workspace.of();
-    var bach = new Bach(printer, workspace, HttpClient::newHttpClient);
-    bach.build(project("Bach.java", VERSION));
-  }
-
-  static Bach.Project project(String name, Version version) {
-    var workspace = Bach.Workspace.of();
-    return new Bach.Project(
-        name,
-        version,
-        new Bach.Information(
-            "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
-            URI.create("https://github.com/sormuras/bach")),
-        new Bach.Structure(
-            List.of(mainRealm(workspace), testRealm(workspace), testPreview(workspace)),
-            "main",
-            Bach.Library.of("org.junit.platform.console")));
-  }
-
-  static Bach.Realm mainRealm(Bach.Workspace workspace) {
-    return new Bach.Realm(
-        "main",
-        List.of(
-            new Bach.Unit(
-                Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
-                List.of(
-                    new Bach.Directory(
-                        Path.of("src/de.sormuras.bach/main/java"), Bach.Directory.Type.SOURCE, 11)),
-                List.of())),
-        "de.sormuras.bach",
-        List.of(),
-        Bach.Tool.javac(
-            List.of(
-                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("de.sormuras.bach")),
-                new Bach.JavaCompiler.CompileForJavaRelease(11),
-                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
-                    List.of("src/*/main/java")),
-                new Bach.JavaCompiler.DestinationDirectory(workspace.classes("main", 11)))));
-  }
-
-  static Bach.Realm testRealm(Bach.Workspace workspace) {
-    return new Bach.Realm(
-        "test",
-        List.of(
-            new Bach.Unit(
-                Bach.Modules.describe(
-                    Path.of("src/de.sormuras.bach/test/java-module/module-info.java")),
-                List.of(
-                    new Bach.Directory(
-                        Path.of("src/de.sormuras.bach/test/java"), Bach.Directory.Type.SOURCE, 11),
-                    new Bach.Directory(
-                        Path.of("src/de.sormuras.bach/test/java-module"),
-                        Bach.Directory.Type.SOURCE_WITH_ROOT_MODULE_DESCRIPTOR,
-                        11)),
-                List.of()),
-            new Bach.Unit(
-                Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
-                List.of(
-                    new Bach.Directory(
-                        Path.of("src/test.base/test/java"), Bach.Directory.Type.SOURCE, 11)),
-                List.of())),
-        null,
-        List.of("main"),
-        Bach.Tool.javac(
-            List.of(
-                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(
-                    List.of("de.sormuras.bach", "test.base")),
-                new Bach.JavaCompiler.CompileForJavaRelease(11),
-                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
-                    List.of("src/*/test/java", "src/*/test/java-module")),
-                new Bach.JavaCompiler.ModulePatches(
-                    Map.of(
-                        "de.sormuras.bach",
-                        List.of(workspace.module("main", "de.sormuras.bach", VERSION)))),
-                new Bach.JavaCompiler.ModulePath(
-                    List.of(workspace.modules("main"), workspace.lib())),
-                new Bach.JavaCompiler.DestinationDirectory(workspace.classes("test", 11)))));
-  }
-
-  static Bach.Realm testPreview(Bach.Workspace workspace) {
-    var release = Runtime.version().feature();
-    return new Bach.Realm(
-        "test-preview",
-        List.of(
-            new Bach.Unit(
-                Bach.Modules.describe(
-                    Path.of("src/test.preview/test-preview/java/module-info.java")),
-                List.of(
-                    new Bach.Directory(
-                        Path.of("src/test.preview/test-preview/java"),
-                        Bach.Directory.Type.SOURCE,
-                        release)),
-                List.of())),
-        null,
-        List.of("main", "test"),
-        Bach.Tool.javac(
-            List.of(
-                new Bach.JavaCompiler.CompileModulesCheckingTimestamps(List.of("test.preview")),
-                new Bach.JavaCompiler.CompileForJavaRelease(release),
-                new Bach.JavaCompiler.EnablePreviewLanguageFeatures(),
-                new Bach.JavaCompiler.ModuleSourcePathInModulePatternForm(
-                    List.of("src/*/test-preview/java")),
-                new Bach.JavaCompiler.ModulePath(
-                    List.of(workspace.modules("main"), workspace.modules("test"), workspace.lib())),
-                new Bach.JavaCompiler.DestinationDirectory(
-                    workspace.classes("test-preview", release)))));
+    var bach = new Bach(HttpClient::newHttpClient);
+    System.out.println(bach.toString());
   }
 }
