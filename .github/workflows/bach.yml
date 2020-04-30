@@ -20,12 +20,3 @@ jobs:
       run: jshell --version
     - name: 'Build Bach.java'
       run: jshell build.jsh
-    - name: 'Test module de.sormuras.bach (in-module)'
-      run: java --module-path .bach/workspace/modules/test:lib --add-modules de.sormuras.bach --module org.junit.platform.console --select-module de.sormuras.bach
-    - name: 'Test module test.preview (inter-module)'
-      run: java --enable-preview --module-path .bach/workspace/modules/test-preview:.bach/workspace/modules/main:.bach/workspace/modules/test:lib --add-modules test.preview --module org.junit.platform.console --select-module test.preview
-    - name: 'Upload build summary'
-      uses: actions/upload-artifact@v1
-      with:
-        name: summary.md
-        path: .bach/workspace/summary.md
