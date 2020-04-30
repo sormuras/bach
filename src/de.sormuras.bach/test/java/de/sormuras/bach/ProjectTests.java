@@ -20,15 +20,25 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
 
   @Test
   void useProjectBuilderTouchingAllComponents() {
-    var project = Project.newProject("Title", "99").build();
+    var project = Project.newProject("Title", "99").base(Project.Base.of()).build();
     assertEquals("Title 99", project.toTitleAndVersion());
-    assertEquals("99", project.info().version().toString());
+    var base = project.base();
+    assertEquals("", base.path("").toString());
+    assertEquals(Path.of(".bach/workspace"), base.workspace(""));
+    assertEquals(Path.of(".bach/workspace/api"), base.api());
+    assertEquals(Path.of(".bach/workspace/classes/realm"), base.classes("realm"));
+    assertEquals(Path.of(".bach/workspace/classes/realm/module"), base.classes("realm", "module"));
+    assertEquals(Path.of(".bach/workspace/image"), base.image());
+    assertEquals(Path.of(".bach/workspace/modules/realm"), base.modules("realm"));
+    var info = project.info();
+    assertEquals("99", info.version().toString());
     assertNotNull(project.toString());
   }
 }
