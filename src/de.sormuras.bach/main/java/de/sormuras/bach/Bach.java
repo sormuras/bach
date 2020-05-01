@@ -41,6 +41,9 @@ public class Bach {
   /** Logbook instance. */
   private final Logbook logbook;
 
+  /** The project to build. */
+  private final Project project;
+
   /** HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
@@ -52,12 +55,17 @@ public class Bach {
   /** Initialize this instance with the specified line printer, workspace, and other values. */
   public Bach(Supplier<HttpClient> httpClient) {
     this.logbook = new Logbook();
+    this.project = project;
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
   }
 
   public Logger getLogger() {
     return logbook;
+  }
+
+  public Project getProject() {
+    return project;
   }
 
   public HttpClient getHttpClient() {
