@@ -47,8 +47,18 @@ class BachTests {
 
     var logbook = ((Logbook) bach.getLogger());
     var initialMessage = "Initialized " + expectedStringRepresentation;
-    assertLinesMatch(List.of(initialMessage), logbook.messages());
-    assertLinesMatch(List.of("TRACE|" + initialMessage), logbook.lines(this::toLine));
+    var projectMessage =
+        String.join(
+            System.lineSeparator() + "\t",
+            "Project",
+            "title: Zero",
+            "version: 0",
+            "realms: 0",
+            "units: 0");
+    assertLinesMatch(List.of(initialMessage, projectMessage), logbook.messages());
+    assertLinesMatch(
+        List.of("TRACE|" + initialMessage, "DEBUG|" + projectMessage),
+        logbook.lines(this::toLogLine));
   }
 
   @Test
@@ -72,10 +82,10 @@ class BachTests {
             "TRACE|* javac --version",
             "DEBUG|javac --version",
             Pattern.quote("DEBUG|javac ") + ".+"),
-        logbook.lines(this::toLine));
+        logbook.lines(this::toLogLine));
   }
 
-  String toLine(Logbook.Entry entry) {
+  String toLogLine(Logbook.Entry entry) {
     var thrown = entry.thrown() == null ? "" : " -> " + entry.thrown();
     return entry.level().name() + '|' + entry.message() + thrown;
   }

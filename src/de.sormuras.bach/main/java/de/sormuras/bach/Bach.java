@@ -75,6 +75,7 @@ public class Bach {
     this.project = project;
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
+    logbook.log(Level.DEBUG, String.join(System.lineSeparator(), project.toStrings()));
   }
 
   public Logger getLogger() {
