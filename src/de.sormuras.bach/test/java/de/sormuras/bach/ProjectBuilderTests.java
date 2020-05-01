@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class ProjectTests {
+class ProjectBuilderTests {
 
   @Test
-  void useProjectBuilderTouchingAllComponents() {
+  void touchAllComponents() {
     var project = Project.newProject("Title", "99").base(Project.Base.of()).build();
     assertEquals("Title 99", project.toTitleAndVersion());
     var base = project.base();
