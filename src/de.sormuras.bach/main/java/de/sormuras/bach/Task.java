@@ -130,4 +130,18 @@ public /*static*/ class Task {
       }
     }
   }
+
+  static class CreateJar extends Task {
+
+    private static List<Task> list(Path jar, Path classes) {
+      return List.of(
+          new CreateDirectories(jar.getParent()),
+          runTool("jar", "--create", "--file", jar, "-C", classes, "."),
+          runTool("jar", "--describe-module", "--file", jar));
+    }
+
+    public CreateJar(Path jar, Path classes) {
+      super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
+    }
+  }
 }
