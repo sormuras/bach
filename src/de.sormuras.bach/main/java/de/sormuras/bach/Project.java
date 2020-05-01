@@ -17,9 +17,14 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.util.Modules;
+import de.sormuras.bach.util.Paths;
+import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 
 /** A project descriptor. */
 public /*static*/ final class Project {
@@ -167,6 +172,34 @@ public /*static*/ final class Project {
     public Builder version(Version version) {
       this.version = version;
       return this;
+    }
+  }
+
+  /** A directory walker using {@code module-info.java} units to build {@link Builder} objects. */
+  public interface Walker {
+
+    /** A single-realm directory tree walker creating a single unnamed realm for all modules. */
+    class DefaultRealmWalker {
+
+      private final Path base;
+
+      public DefaultRealmWalker(Path base) {
+        this.base = base;
+      }
+
+      public Builder walk() {
+        var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
+        if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
+        var moduleNames = new TreeSet<String>();
+        var moduleSourcePathPatterns = new TreeSet<String>();
+        for (var info : moduleInfoFiles) {
+          var descriptor = Modules.describe(info);
+          moduleNames.add(descriptor.name());
+          moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+        }
+        var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
+        return new Builder().base(Base.of(base));
+      }
     }
   }
 }
