@@ -17,8 +17,12 @@
 
 package de.sormuras.bach;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.spi.ToolProvider;
 
 /** A piece of work to be done or undertaken. */
 public /*static*/ class Task {
@@ -29,6 +33,13 @@ public /*static*/ class Task {
 
   public static Task sequence(String label, List<Task> tasks) {
     return new Task(label, tasks);
+  }
+
+  public static Task runTool(String name, Object... arguments) {
+    var tool = ToolProvider.findFirst(name).orElseThrow();
+    var args = new String[arguments.length];
+    for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
+    return new RunTool(tool, args);
   }
 
   private final String label;
@@ -60,4 +71,27 @@ public /*static*/ class Task {
   }
 
   public void execute(Bach bach) throws Exception {}
+
+  static class RunTool extends Task {
+
+    private final ToolProvider tool;
+    private final String[] args;
+
+    public RunTool(ToolProvider tool, String... args) {
+      super(tool.name() + " " + String.join(" ", args), List.of());
+      this.tool = tool;
+      this.args = args;
+    }
+
+    @Override
+    public void execute(Bach bach) {
+      var out = new StringWriter();
+      var err = new StringWriter();
+      bach.execute(tool, new PrintWriter(out), new PrintWriter(err), args);
+      var outString = out.toString().strip();
+      if (!outString.isEmpty()) bach.getLogger().log(Level.DEBUG, outString);
+      var errString = err.toString().strip();
+      if (!errString.isEmpty()) bach.getLogger().log(Level.WARNING, outString);
+    }
+  }
 }
