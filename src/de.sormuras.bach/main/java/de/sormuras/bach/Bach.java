@@ -24,7 +24,9 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 /** Bach - Java Shell Builder. */
@@ -38,7 +40,27 @@ public class Bach {
     Main.main(args);
   }
 
-  /** Logbook instance. */
+  /** Create Bach instance with a project parsed from the current working directory "as-is". */
+  public static Bach of() {
+    return of(Path.of(""));
+  }
+
+  /** Create Bach instance with a project parsed from the specified base directory "as-is". */
+  public static Bach of(Path directory) {
+    return of(Project.newProject(directory).build());
+  }
+
+  /** Create Bach instance with a customized project parsed from the current working directory. */
+  public static Bach of(UnaryOperator<Project.Builder> operator) {
+    return of(operator.apply(Project.newProject(Path.of(""))).build());
+  }
+
+  /** Create Bach instance with the specified project and default components. */
+  public static Bach of(Project project) {
+    return new Bach(project, HttpClient.newBuilder()::build);
+  }
+
+  /** Logbook instance collecting all log entries. */
   private final Logbook logbook;
 
   /** The project to build. */
@@ -47,13 +69,8 @@ public class Bach {
   /** HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
-  /** Initialize this instance with default values. */
-  public Bach() {
-    this(HttpClient.newBuilder()::build);
-  }
-
-  /** Initialize this instance with the specified line printer, workspace, and other values. */
-  public Bach(Supplier<HttpClient> httpClient) {
+  /** Initialize this instance with the specified project and. */
+  public Bach(Project project, Supplier<HttpClient> httpClient) {
     this.logbook = new Logbook();
     this.project = project;
     this.httpClient = Functions.memoize(httpClient);

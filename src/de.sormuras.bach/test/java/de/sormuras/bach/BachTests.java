@@ -32,13 +32,18 @@ import test.base.SwallowSystem;
 
 class BachTests {
 
+  static Bach zero() {
+    return Bach.of(Project.newProject("Zero", "0").build());
+  }
+
   @Test
   void defaults() {
-    var bach = new Bach();
+    var bach = zero();
     var expectedStringRepresentation = "Bach.java " + Bach.VERSION;
-    assertEquals(expectedStringRepresentation, bach.toString());
     assertNotNull(bach.getLogger());
+    assertEquals("0", bach.getProject().info().version().toString());
     assertNotNull(bach.getHttpClient());
+    assertEquals(expectedStringRepresentation, bach.toString());
 
     var logbook = ((Logbook) bach.getLogger());
     var initialMessage = "Initialized " + expectedStringRepresentation;
@@ -57,7 +62,7 @@ class BachTests {
 
   @Test
   void executeTool() {
-    var bach = new Bach();
+    var bach = zero();
     var task = Task.runTool("javac", "--version");
     bach.execute(task);
     var logbook = ((Logbook) bach.getLogger());
