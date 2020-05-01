@@ -64,6 +64,34 @@ public class Bach {
     return httpClient.get();
   }
 
+  void execute(Task task) {
+    var label = task.getLabel();
+    var tasks = task.getList();
+    if (tasks.isEmpty()) {
+      logbook.log(Level.TRACE, "* {0}", label);
+      try {
+        task.execute(this);
+      } catch (Throwable throwable) {
+        var message = "Task execution failed";
+        logbook.log(Level.ERROR, message, throwable);
+        throw new Error(message, throwable);
+      }
+      return;
+    }
+    logbook.log(Level.TRACE, "+ {0}", label);
+    var start = System.currentTimeMillis();
+    for (var sub : tasks) execute(sub);
+    var duration = System.currentTimeMillis() - start;
+    logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
+  }
+
+  void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+    var call = (tool.name() + ' ' + String.join(" ", args)).trim();
+    logbook.log(Level.DEBUG, call);
+    var code = tool.run(out, err, args);
+    if (code != 0) throw new AssertionError("Tool run exit code: " + code + "\n\t" + call);
+  }
+
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
