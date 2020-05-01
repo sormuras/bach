@@ -18,9 +18,14 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.util.Functions;
+import de.sormuras.bach.util.Logbook;
+import java.io.PrintWriter;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
 import java.util.function.Supplier;
+import java.util.spi.ToolProvider;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -33,6 +38,9 @@ public class Bach {
     Main.main(args);
   }
 
+  /** Logbook instance. */
+  private final Logbook logbook;
+
   /** HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
@@ -43,7 +51,13 @@ public class Bach {
 
   /** Initialize this instance with the specified line printer, workspace, and other values. */
   public Bach(Supplier<HttpClient> httpClient) {
+    this.logbook = new Logbook();
     this.httpClient = Functions.memoize(httpClient);
+    logbook.log(Level.TRACE, "Initialized " + toString());
+  }
+
+  public Logger getLogger() {
+    return logbook;
   }
 
   public HttpClient getHttpClient() {
