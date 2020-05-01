@@ -20,6 +20,8 @@ package de.sormuras.bach;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
@@ -92,6 +94,40 @@ public /*static*/ class Task {
       if (!outString.isEmpty()) bach.getLogger().log(Level.DEBUG, outString);
       var errString = err.toString().strip();
       if (!errString.isEmpty()) bach.getLogger().log(Level.WARNING, outString);
+    }
+  }
+
+  static class CreateDirectories extends Task {
+
+    final Path directory;
+
+    CreateDirectories(Path directory) {
+      super("Create directories " + directory.toUri(), List.of());
+      this.directory = directory;
+    }
+
+    @Override
+    public void execute(Bach bach) throws Exception {
+      Files.createDirectories(directory);
+    }
+  }
+
+  static class DeleteDirectories extends Task {
+
+    final Path directory;
+
+    DeleteDirectories(Path directory) {
+      super("Delete directory " + directory, List.of());
+      this.directory = directory;
+    }
+
+    @Override
+    public void execute(Bach bach) throws Exception {
+      if (Files.notExists(directory)) return;
+      try (var stream = Files.walk(directory)) {
+        var paths = stream.sorted((p, q) -> -p.compareTo(q));
+        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+      }
     }
   }
 }
