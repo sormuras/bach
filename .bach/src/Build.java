@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-import java.lang.module.ModuleDescriptor.Version;
-import java.net.http.HttpClient;
-
-/** Bach's own build program. */
+/**
+ * Bach's own build program.
+ *
+ * <p>Uses single-file source-code {@code Bach.java} to build module {@code de.sormuras.bach}.
+ */
 class Build {
 
-  public static final Version VERSION = Version.parse("11.0-ea");
-
   public static void main(String... args) {
-    var bach = new Bach(HttpClient::newHttpClient);
+    var bach = Bach.of(project -> project.version(Bach.VERSION));
     System.out.println(bach.toString());
   }
 }

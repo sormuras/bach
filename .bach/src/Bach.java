@@ -16,7 +16,11 @@
  */
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger.Level;
+import java.lang.System.Logger;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
@@ -36,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -46,13 +51,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 public class Bach {
@@ -60,15 +71,62 @@ public class Bach {
   public static void main(String... args) {
     Main.main(args);
   }
-  private final Supplier<HttpClient> httpClient;
-  public Bach() {
-    this(HttpClient.newBuilder()::build);
+  public static Bach of() {
+    return of(Path.of(""));
   }
-  public Bach(Supplier<HttpClient> httpClient) {
+  public static Bach of(Path directory) {
+    return of(Project.newProject(directory).build());
+  }
+  public static Bach of(UnaryOperator<Project.Builder> operator) {
+    return of(operator.apply(Project.newProject(Path.of(""))).build());
+  }
+  public static Bach of(Project project) {
+    return new Bach(project, HttpClient.newBuilder()::build);
+  }
+  private final Logbook logbook;
+  private final Project project;
+  private final Supplier<HttpClient> httpClient;
+  public Bach(Project project, Supplier<HttpClient> httpClient) {
+    this.logbook = new Logbook();
+    this.project = project;
     this.httpClient = Functions.memoize(httpClient);
+    logbook.log(Level.TRACE, "Initialized " + toString());
+    logbook.log(Level.DEBUG, String.join(System.lineSeparator(), project.toStrings()));
+  }
+  public Logger getLogger() {
+    return logbook;
+  }
+  public Project getProject() {
+    return project;
   }
   public HttpClient getHttpClient() {
     return httpClient.get();
+  }
+  void execute(Task task) {
+    var label = task.getLabel();
+    var tasks = task.getList();
+    if (tasks.isEmpty()) {
+      logbook.log(Level.TRACE, "* {0}", label);
+      try {
+        task.execute(this);
+      } catch (Throwable throwable) {
+        var message = "Task execution failed";
+        logbook.log(Level.ERROR, message, throwable);
+        throw new Error(message, throwable);
+      }
+      return;
+    }
+    logbook.log(Level.TRACE, "+ {0}", label);
+    var start = System.currentTimeMillis();
+    for (var sub : tasks) execute(sub);
+    var duration = System.currentTimeMillis() - start;
+    logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
+  }
+  void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+    var call = (tool.name() + ' ' + String.join(" ", args)).trim();
+    logbook.log(Level.DEBUG, call);
+    var code = tool.run(out, err, args);
+    if (code != 0) throw new AssertionError("Tool run exit code: " + code + "\n\t" + call);
   }
   public String toString() {
     return "Bach.java " + VERSION;
@@ -76,6 +134,337 @@ public class Bach {
   static class Main {
     public static void main(String... args) {
       System.out.println("Bach.java " + Bach.VERSION);
+    }
+  }
+  public static final class Project {
+    public static Builder newProject(Path directory) {
+      return new Builder().base(Base.of(directory)).walk();
+    }
+    public static Builder newProject(String title, String version) {
+      return new Builder().title(title).version(Version.parse(version));
+    }
+    private final Base base;
+    private final Info info;
+    private final Structure structure;
+    public Project(Base base, Info info, Structure structure) {
+      this.base = base;
+      this.info = info;
+      this.structure = structure;
+    }
+    public Base base() {
+      return base;
+    }
+    public Info info() {
+      return info;
+    }
+    public Structure structure() {
+      return structure;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
+          .add("base=" + base)
+          .add("info=" + info)
+          .add("structure=" + structure)
+          .toString();
+    }
+    public List<String> toStrings() {
+      var list = new ArrayList<String>();
+      list.add("Project");
+      list.add("\ttitle: " + info.title());
+      list.add("\tversion: " + info.version());
+      list.add("\trealms: " + structure.realms().size());
+      list.add("\tunits: " + structure.units().size());
+      for (var realm : structure.realms()) {
+        list.add("\tRealm " + realm.name());
+        list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().getLabel()));
+        list.add("\t\ttasks: " + realm.tasks().size());
+        for (var unit : realm.units()) {
+          list.add("\t\tUnit " + unit.name());
+          list.add("\t\t\ttasks: " + unit.tasks().size());
+          var module = unit.descriptor();
+          list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
+          list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
+          list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
+        }
+      }
+      return list;
+    }
+    public String toTitleAndVersion() {
+      return info.title() + ' ' + info.version();
+    }
+    public Set<String> toDeclaredModuleNames() {
+      return structure.units.stream().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+    }
+    public Set<String> toRequiredModuleNames() {
+      return Modules.required(structure.units().stream().map(Unit::descriptor));
+    }
+    public static final class Base {
+      public static Base of() {
+        return of(Path.of(""));
+      }
+      public static Base of(Path directory) {
+        return new Base(directory, directory.resolve(".bach/workspace"));
+      }
+      private final Path directory;
+      private final Path workspace;
+      Base(Path directory, Path workspace) {
+        this.directory = directory;
+        this.workspace = workspace;
+      }
+      public Path directory() {
+        return directory;
+      }
+      public Path workspace() {
+        return workspace;
+      }
+      public Path path(String first, String... more) {
+        return directory.resolve(Path.of(first, more));
+      }
+      public Path workspace(String first, String... more) {
+        return workspace.resolve(Path.of(first, more));
+      }
+      public Path api() {
+        return workspace("api");
+      }
+      public Path classes(String realm) {
+        return workspace("classes", realm);
+      }
+      public Path classes(String realm, String module) {
+        return workspace("classes", realm, module);
+      }
+      public Path image() {
+        return workspace("image");
+      }
+      public Path modules(String realm) {
+        return workspace("modules", realm);
+      }
+    }
+    public static final class Info {
+      private final String title;
+      private final Version version;
+      public Info(String title, Version version) {
+        this.title = title;
+        this.version = version;
+      }
+      public String title() {
+        return title;
+      }
+      public Version version() {
+        return version;
+      }
+      public String toString() {
+        return new StringJoiner(", ", Info.class.getSimpleName() + "[", "]")
+            .add("title='" + title + "'")
+            .add("version=" + version)
+            .toString();
+      }
+    }
+    public static final class Structure {
+      private final List<Realm> realms;
+      private final List<Unit> units;
+      public Structure(List<Realm> realms, List<Unit> units) {
+        this.realms = realms;
+        this.units = units;
+      }
+      public List<Realm> realms() {
+        return realms;
+      }
+      public List<Unit> units() {
+        return units;
+      }
+    }
+    public static final class Realm {
+      private final String name;
+      private final List<Unit> units;
+      private final Task javac;
+      private final List<Task> tasks;
+      public Realm(String name, List<Unit> units, Task javac, List<Task> tasks) {
+        this.name = name;
+        this.units = units;
+        this.javac = javac;
+        this.tasks = tasks;
+      }
+      public String name() {
+        return name;
+      }
+      public List<Unit> units() {
+        return units;
+      }
+      public Task javac() {
+        return javac;
+      }
+      public List<Task> tasks() {
+        return tasks;
+      }
+    }
+    public static final class Unit {
+      private final ModuleDescriptor descriptor;
+      private final List<Task> tasks;
+      public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
+        this.descriptor = descriptor;
+        this.tasks = tasks;
+      }
+      public ModuleDescriptor descriptor() {
+        return descriptor;
+      }
+      public List<Task> tasks() {
+        return tasks;
+      }
+      public String name() {
+        return descriptor.name();
+      }
+    }
+    public static class Builder {
+      private Base base = Base.of();
+      private String title = "Project Title";
+      private Version version = Version.parse("1-ea");
+      private Structure structure = new Structure(List.of(), List.of());
+      public Project build() {
+        var info = new Info(title, version);
+        return new Project(base, info, structure);
+      }
+      public Builder base(Base base) {
+        this.base = base;
+        return this;
+      }
+      public Builder title(String title) {
+        this.title = title;
+        return this;
+      }
+      public Builder version(Version version) {
+        this.version = version;
+        return this;
+      }
+      public Builder structure(Structure structure) {
+        this.structure = structure;
+        return this;
+      }
+      public Builder walk() {
+        var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
+        if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
+        return walkAndSetSingleUnnamedRealmStructure(moduleInfoFiles);
+      }
+      public Builder walkAndSetSingleUnnamedRealmStructure(List<Path> moduleInfoFiles) {
+        var moduleNames = new TreeSet<String>();
+        var moduleSourcePathPatterns = new TreeSet<String>();
+        var units = new ArrayList<Unit>();
+        for (var info : moduleInfoFiles) {
+          var descriptor = Modules.describe(info);
+          var module = descriptor.name();
+          moduleNames.add(module);
+          moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+          var classes = base.classes("", module);
+          var modules = base.modules("");
+          var jar = modules.resolve(module + ".jar");
+          units.add(new Unit(descriptor, List.of(new Task.CreateJar(jar, classes))));
+        }
+        var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
+        var realm =
+            new Realm(
+                "",
+                units,
+                Task.runTool(
+                    "javac",
+                    "--module",
+                    String.join(",", moduleNames),
+                    "--module-source-path",
+                    moduleSourcePath,
+                    "-d",
+                    base.classes("")),
+                List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
+        var directoryName = base.directory().toAbsolutePath().getFileName();
+        return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
+            .structure(new Structure(List.of(realm), units));
+      }
+    }
+  }
+  public static class Task {
+    public static Task sequence(String label, Task... tasks) {
+      return sequence(label, List.of(tasks));
+    }
+    public static Task sequence(String label, List<Task> tasks) {
+      return new Task(label, tasks);
+    }
+    public static Task runTool(String name, Object... arguments) {
+      var tool = ToolProvider.findFirst(name).orElseThrow();
+      var args = new String[arguments.length];
+      for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
+      return new RunTool(tool, args);
+    }
+    private final String label;
+    private final List<Task> list;
+    public Task() {
+      this("", List.of());
+    }
+    public Task(String label, List<Task> list) {
+      this.label = label.isBlank() ? getClass().getSimpleName() : label;
+      this.list = list;
+    }
+    public String getLabel() {
+      return label;
+    }
+    public List<Task> getList() {
+      return list;
+    }
+    public String toString() {
+      return new StringJoiner(", ", Task.class.getSimpleName() + "[", "]")
+          .add("label='" + label + "'")
+          .add("list.size=" + list.size())
+          .toString();
+    }
+    public void execute(Bach bach) throws Exception {}
+    static class RunTool extends Task {
+      private final ToolProvider tool;
+      private final String[] args;
+      public RunTool(ToolProvider tool, String... args) {
+        super(tool.name() + " " + String.join(" ", args), List.of());
+        this.tool = tool;
+        this.args = args;
+      }
+      public void execute(Bach bach) {
+        var out = new StringWriter();
+        var err = new StringWriter();
+        bach.execute(tool, new PrintWriter(out), new PrintWriter(err), args);
+        var outString = out.toString().strip();
+        if (!outString.isEmpty()) bach.getLogger().log(Level.DEBUG, outString);
+        var errString = err.toString().strip();
+        if (!errString.isEmpty()) bach.getLogger().log(Level.WARNING, outString);
+      }
+    }
+    static class CreateDirectories extends Task {
+      final Path directory;
+      CreateDirectories(Path directory) {
+        super("Create directories " + directory.toUri(), List.of());
+        this.directory = directory;
+      }
+      public void execute(Bach bach) throws Exception {
+        Files.createDirectories(directory);
+      }
+    }
+    static class DeleteDirectories extends Task {
+      final Path directory;
+      DeleteDirectories(Path directory) {
+        super("Delete directory " + directory, List.of());
+        this.directory = directory;
+      }
+      public void execute(Bach bach) throws Exception {
+        if (Files.notExists(directory)) return;
+        try (var stream = Files.walk(directory)) {
+          var paths = stream.sorted((p, q) -> -p.compareTo(q));
+          for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+        }
+      }
+    }
+    static class CreateJar extends Task {
+      private static List<Task> list(Path jar, Path classes) {
+        return List.of(
+            new CreateDirectories(jar.getParent()),
+            runTool("jar", "--create", "--file", jar, "-C", classes, "."),
+            runTool("jar", "--describe-module", "--file", jar));
+      }
+      public CreateJar(Path jar, Path classes) {
+        super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
+      }
     }
   }
   public static class Functions {
@@ -98,6 +487,46 @@ public class Bach {
       return new CachingSupplier();
     }
     private Functions() {}
+  }
+  public static class Logbook implements System.Logger {
+    private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
+    public String getName() {
+      return "Logbook";
+    }
+    public boolean isLoggable(Level level) {
+      return true;
+    }
+    public void log(Level level, ResourceBundle bundle, String message, Throwable thrown) {
+      entries.add(new Entry(level, message, thrown));
+    }
+    public void log(Level level, ResourceBundle bundle, String pattern, Object... arguments) {
+      entries.add(new Entry(level, MessageFormat.format(pattern, arguments), null));
+    }
+    public List<String> messages() {
+      return lines(Entry::message);
+    }
+    public List<String> lines(Function<Entry, String> mapper) {
+      return entries.stream().map(mapper).collect(Collectors.toList());
+    }
+    public static final class Entry {
+      private final Level level;
+      private final String message;
+      private final Throwable thrown;
+      public Entry(Level level, String message, Throwable thrown) {
+        this.level = level;
+        this.message = message;
+        this.thrown = thrown;
+      }
+      public Level level() {
+        return level;
+      }
+      public String message() {
+        return message;
+      }
+      public Throwable thrown() {
+        return thrown;
+      }
+    }
   }
   public static class Modules {
     interface Patterns {
@@ -149,6 +578,12 @@ public class Bach {
                 () -> builder.requires(requiredName));
       }
       return builder;
+    }
+    public static String modulePatternForm(Path info, String module) {
+      var pattern = info.normalize().getParent().toString().replace(module, "*");
+      if (pattern.equals("*")) return ".";
+      if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+      return pattern;
     }
     public static Set<String> declared(ModuleFinder finder) {
       return declared(finder.findAll().stream().map(ModuleReference::descriptor));
@@ -222,6 +657,9 @@ public class Bach {
         throw new UncheckedIOException(e);
       }
     }
+    public static boolean isModuleInfoJavaFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
+    }
     public static void delete(Path directory, Predicate<Path> filter) throws IOException {
       try {
         Files.deleteIfExists(directory);
@@ -270,6 +708,17 @@ public class Bach {
       var md = MessageDigest.getInstance(algorithm);
       md.update(bytes);
       return Strings.hex(md.digest());
+    }
+    public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+      var files = new TreeSet<Path>();
+      for (var root : roots) {
+        try (var stream = Files.walk(root)) {
+          stream.filter(filter).forEach(files::add);
+        } catch (Exception e) {
+          throw new Error("Walk directory '" + root + "' failed: " + e, e);
+        }
+      }
+      return List.copyOf(files);
     }
     private Paths() {}
   }
