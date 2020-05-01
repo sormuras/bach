@@ -18,9 +18,13 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.util.Logbook;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -29,11 +33,17 @@ import test.base.SwallowSystem;
 class BachTests {
 
   @Test
-  @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void defaults() {
     var bach = new Bach();
-    assertEquals("Bach.java " + Bach.VERSION, bach.toString());
+    var expectedStringRepresentation = "Bach.java " + Bach.VERSION;
+    assertEquals(expectedStringRepresentation, bach.toString());
+    assertNotNull(bach.getLogger());
     assertNotNull(bach.getHttpClient());
+
+    var logbook = ((Logbook) bach.getLogger());
+    var initialMessage = "Initialized " + expectedStringRepresentation;
+    assertLinesMatch(List.of(initialMessage), logbook.messages());
+    assertLinesMatch(List.of("TRACE|" + initialMessage), logbook.lines(this::toLine));
   }
 
   @Test
@@ -43,5 +53,25 @@ class BachTests {
     Bach.main();
     assertTrue(streams.errors().isEmpty());
     assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+  }
+
+  @Test
+  void executeTool() {
+    var bach = new Bach();
+    var task = Task.runTool("javac", "--version");
+    bach.execute(task);
+    var logbook = ((Logbook) bach.getLogger());
+    assertLinesMatch(
+        List.of(
+            ">> INIT >>",
+            "TRACE|* javac --version",
+            "DEBUG|javac --version",
+            Pattern.quote("DEBUG|javac ") + ".+"),
+        logbook.lines(this::toLine));
+  }
+
+  String toLine(Logbook.Entry entry) {
+    var thrown = entry.thrown() == null ? "" : " -> " + entry.thrown();
+    return entry.level().name() + '|' + entry.message() + thrown;
   }
 }
