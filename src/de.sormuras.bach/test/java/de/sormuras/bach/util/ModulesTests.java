@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
@@ -35,8 +36,25 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ModulesTests {
+
+  @Nested
+  class ModuleSourcePathOption {
+    @ParameterizedTest
+    @CsvSource({
+      ".               , foo/module-info.java",
+      "src             , src/foo/module-info.java",
+      "*/src           , foo/src/module-info.java",
+      "src/*/main/java , src/foo/main/java/module-info.java"
+    })
+    void modulePatternFormForModuleFoo(String expected, Path path) {
+      var actual = Modules.modulePatternForm(path, "foo");
+      assertEquals(expected.replace('/', File.separatorChar), actual);
+    }
+  }
 
   @Nested
   class Describe {

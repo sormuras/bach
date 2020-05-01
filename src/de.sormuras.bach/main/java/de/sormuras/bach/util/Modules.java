@@ -106,6 +106,15 @@ public /*static*/ class Modules {
     return builder;
   }
 
+  /** Return the module-pattern form as specified by the {@code --module-source-path} option. */
+  public static String modulePatternForm(Path info, String module) {
+    var pattern = info.normalize().getParent().toString().replace(module, "*");
+    if (pattern.equals("*")) return ".";
+    if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+    // if (pattern.startsWith("*")) return "." + File.separator + pattern;
+    return pattern;
+  }
+
   public static Set<String> declared(ModuleFinder finder) {
     return declared(finder.findAll().stream().map(ModuleReference::descriptor));
   }
