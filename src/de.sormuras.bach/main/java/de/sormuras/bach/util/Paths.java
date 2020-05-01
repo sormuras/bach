@@ -23,8 +23,11 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /** {@link Path}-related utilities. */
@@ -39,6 +42,11 @@ public /*static*/ class Paths {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  /** Test supplied path for pointing to a Java module declaration compilation unit. */
+  public static boolean isModuleInfoJavaFile(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
   }
 
   /** Delete a tree of directories starting with the given root directory. */
@@ -102,6 +110,20 @@ public /*static*/ class Paths {
     var md = MessageDigest.getInstance(algorithm);
     md.update(bytes);
     return Strings.hex(md.digest());
+  }
+
+
+  /** Walk all trees to find matching paths the given filter starting at given root paths. */
+  public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+    var files = new TreeSet<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root)) {
+        stream.filter(filter).forEach(files::add);
+      } catch (Exception e) {
+        throw new Error("Walk directory '" + root + "' failed: " + e, e);
+      }
+    }
+    return List.copyOf(files);
   }
 
   private Paths() {}
