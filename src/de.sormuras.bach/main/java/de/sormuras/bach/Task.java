@@ -23,6 +23,7 @@ import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
 
@@ -52,8 +53,9 @@ public /*static*/ class Task {
   }
 
   public Task(String label, List<Task> list) {
+    Objects.requireNonNull(label, "label");
     this.label = label.isBlank() ? getClass().getSimpleName() : label;
-    this.list = list;
+    this.list = List.copyOf(Objects.requireNonNull(list, "list"));
   }
 
   public String getLabel() {

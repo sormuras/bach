@@ -25,6 +25,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -47,9 +48,9 @@ public /*static*/ final class Project {
   private final Structure structure;
 
   public Project(Base base, Info info, Structure structure) {
-    this.base = base;
-    this.info = info;
-    this.structure = structure;
+    this.base = Objects.requireNonNull(base, "base");
+    this.info = Objects.requireNonNull(info, "info");
+    this.structure = Objects.requireNonNull(structure, "structure");
   }
 
   public Base base() {
@@ -126,8 +127,8 @@ public /*static*/ final class Project {
     private final Path workspace;
 
     Base(Path directory, Path workspace) {
-      this.directory = directory;
-      this.workspace = workspace;
+      this.directory = Objects.requireNonNull(directory, "directory");
+      this.workspace = Objects.requireNonNull(workspace, "workspace");
     }
 
     public Path directory() {
@@ -174,8 +175,8 @@ public /*static*/ final class Project {
     private final Version version;
 
     public Info(String title, Version version) {
-      this.title = title;
-      this.version = version;
+      this.title = Objects.requireNonNull(title, "title");
+      this.version = Objects.requireNonNull(version, "version");
     }
 
     public String title() {
@@ -201,8 +202,8 @@ public /*static*/ final class Project {
     private final List<Unit> units;
 
     public Structure(List<Realm> realms, List<Unit> units) {
-      this.realms = realms;
-      this.units = units;
+      this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
+      this.units = List.copyOf(Objects.requireNonNull(units, "units"));
     }
 
     public List<Realm> realms() {
@@ -222,10 +223,10 @@ public /*static*/ final class Project {
     private final List<Task> tasks;
 
     public Realm(String name, List<Unit> units, Task javac, List<Task> tasks) {
-      this.name = name;
-      this.units = units;
-      this.javac = javac;
-      this.tasks = tasks;
+      this.name = Objects.requireNonNull(name, "name");
+      this.units = List.copyOf(Objects.requireNonNull(units, "units"));
+      this.javac = Objects.requireNonNull(javac, "javac");
+      this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
 
     public String name() {
@@ -252,8 +253,8 @@ public /*static*/ final class Project {
     private final List<Task> tasks;
 
     public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
-      this.descriptor = descriptor;
-      this.tasks = tasks;
+      this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+      this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
 
     public ModuleDescriptor descriptor() {

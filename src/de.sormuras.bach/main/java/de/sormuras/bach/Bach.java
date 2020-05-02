@@ -27,6 +27,7 @@ import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -90,8 +91,8 @@ public class Bach {
 
   /** Canonical constructor. */
   Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
-    this.logbook = logbook;
-    this.project = project;
+    this.logbook = Objects.requireNonNull(logbook, "logbook");
+    this.project = Objects.requireNonNull(project, "project");
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
     logbook.log(Level.DEBUG, String.join(System.lineSeparator(), project.toStrings()));
