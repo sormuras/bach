@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** An entry-collecting system logger implementation. */
 public /*static*/ class Logbook implements System.Logger {
@@ -69,12 +70,20 @@ public /*static*/ class Logbook implements System.Logger {
 
   @Override
   public void log(Level level, ResourceBundle bundle, String message, Throwable thrown) {
-    entries.add(new Entry(level, message, thrown));
+    if (message == null || message.isBlank()) return;
+    var entry = new Entry(level, message, thrown);
+    if (debug) consumer.accept(entry.toString());
+    entries.add(entry);
   }
 
   @Override
   public void log(Level level, ResourceBundle bundle, String pattern, Object... arguments) {
-    entries.add(new Entry(level, MessageFormat.format(pattern, arguments), null));
+    var message = arguments == null ? pattern : MessageFormat.format(pattern, arguments);
+    log(level, bundle, message, (Throwable) null);
+  }
+
+  public Stream<Entry> entries(Level threshold) {
+    return entries.stream().filter(entry -> entry.level.getSeverity() >= threshold.getSeverity());
   }
 
   public List<String> messages() {
@@ -85,22 +94,33 @@ public /*static*/ class Logbook implements System.Logger {
     return entries.stream().map(mapper).collect(Collectors.toList());
   }
 
-  public final class Entry {
+  public static final class Entry {
     private final Level level;
     private final String message;
-    private final Throwable thrown;
+    private final Throwable exception;
 
-    public Entry(Level level, String message, Throwable thrown) {
+    public Entry(Level level, String message, Throwable exception) {
       this.level = level;
       this.message = message;
-      this.thrown = thrown;
-      if (debug) consumer.accept(message);
+      this.exception = exception;
+    }
+
+    public Level level() {
+      return level;
+    }
+
+    public String message() {
+      return message;
+    }
+
+    public Throwable exception() {
+      return exception;
     }
 
     @Override
     public String toString() {
-      if (thrown == null) return level + "|" + message;
-      return level + "|" + message + " -> " + thrown;
+      var exceptionMessage = exception == null ? "" : " -> " + exception;
+      return String.format("%c|%s%s", level.name().charAt(0), message, exceptionMessage);
     }
   }
 }
