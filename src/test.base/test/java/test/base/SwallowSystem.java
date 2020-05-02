@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -72,20 +73,27 @@ public @interface SwallowSystem {
 
     private final PrintStream standardOut, standardErr;
     private final ByteArrayOutputStream out, err;
+    private final List<Runnable> shutdownHooks;
 
     Streams() {
       this.standardOut = System.out;
       this.standardErr = System.err;
       this.out = new ByteArrayOutputStream();
       this.err = new ByteArrayOutputStream();
+      this.shutdownHooks = new ArrayList<>();
       System.setOut(new PrintStream(out));
       System.setErr(new PrintStream(err));
+    }
+
+    public void addShutdownHook(Runnable runnable) {
+      shutdownHooks.add(runnable);
     }
 
     @Override
     public void close() {
       System.setOut(standardOut);
       System.setErr(standardErr);
+      shutdownHooks.forEach(Runnable::run);
     }
 
     public List<String> lines() {
