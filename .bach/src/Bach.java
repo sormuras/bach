@@ -34,21 +34,17 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
-import java.security.MessageDigest;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -56,7 +52,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -95,8 +90,8 @@ public class Bach {
     this(Logbook.ofSystem(), project, httpClient);
   }
   Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
-    this.logbook = logbook;
-    this.project = project;
+    this.logbook = Objects.requireNonNull(logbook, "logbook");
+    this.project = Objects.requireNonNull(project, "project");
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
     logbook.log(Level.DEBUG, String.join(System.lineSeparator(), project.toStrings()));
@@ -130,7 +125,8 @@ public class Bach {
     if (tasks.isEmpty()) {
       logbook.log(Level.TRACE, "* {0}", label);
       try {
-        if (!logbook.isDryRun()) task.execute(this);
+        if (logbook.isDryRun()) return;
+        task.execute(this);
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
@@ -173,9 +169,9 @@ public class Bach {
     private final Info info;
     private final Structure structure;
     public Project(Base base, Info info, Structure structure) {
-      this.base = base;
-      this.info = info;
-      this.structure = structure;
+      this.base = Objects.requireNonNull(base, "base");
+      this.info = Objects.requireNonNull(info, "info");
+      this.structure = Objects.requireNonNull(structure, "structure");
     }
     public Base base() {
       return base;
@@ -234,8 +230,8 @@ public class Bach {
       private final Path directory;
       private final Path workspace;
       Base(Path directory, Path workspace) {
-        this.directory = directory;
-        this.workspace = workspace;
+        this.directory = Objects.requireNonNull(directory, "directory");
+        this.workspace = Objects.requireNonNull(workspace, "workspace");
       }
       public Path directory() {
         return directory;
@@ -269,8 +265,8 @@ public class Bach {
       private final String title;
       private final Version version;
       public Info(String title, Version version) {
-        this.title = title;
-        this.version = version;
+        this.title = Objects.requireNonNull(title, "title");
+        this.version = Objects.requireNonNull(version, "version");
       }
       public String title() {
         return title;
@@ -289,8 +285,8 @@ public class Bach {
       private final List<Realm> realms;
       private final List<Unit> units;
       public Structure(List<Realm> realms, List<Unit> units) {
-        this.realms = realms;
-        this.units = units;
+        this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
+        this.units = List.copyOf(Objects.requireNonNull(units, "units"));
       }
       public List<Realm> realms() {
         return realms;
@@ -305,10 +301,10 @@ public class Bach {
       private final Task javac;
       private final List<Task> tasks;
       public Realm(String name, List<Unit> units, Task javac, List<Task> tasks) {
-        this.name = name;
-        this.units = units;
-        this.javac = javac;
-        this.tasks = tasks;
+        this.name = Objects.requireNonNull(name, "name");
+        this.units = List.copyOf(Objects.requireNonNull(units, "units"));
+        this.javac = Objects.requireNonNull(javac, "javac");
+        this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
       }
       public String name() {
         return name;
@@ -327,8 +323,8 @@ public class Bach {
       private final ModuleDescriptor descriptor;
       private final List<Task> tasks;
       public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
-        this.descriptor = descriptor;
-        this.tasks = tasks;
+        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
       }
       public ModuleDescriptor descriptor() {
         return descriptor;
@@ -426,8 +422,9 @@ public class Bach {
       this("", List.of());
     }
     public Task(String label, List<Task> list) {
+      Objects.requireNonNull(label, "label");
       this.label = label.isBlank() ? getClass().getSimpleName() : label;
-      this.list = list;
+      this.list = List.copyOf(Objects.requireNonNull(list, "list"));
     }
     public String getLabel() {
       return label;
@@ -708,55 +705,6 @@ public class Bach {
     public static boolean isModuleInfoJavaFile(Path path) {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
-    public static void delete(Path directory, Predicate<Path> filter) throws IOException {
-      try {
-        Files.deleteIfExists(directory);
-        return;
-      } catch (DirectoryNotEmptyException __) {
-      }
-      try (var stream = Files.walk(directory)) {
-        var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-      }
-    }
-    public static Path assertFileAttributes(Path file, Map<String, String> attributes) {
-      if (attributes.isEmpty()) return file;
-      var map = new HashMap<>(attributes);
-      var size = map.remove("size");
-      if (size != null) {
-        var expectedSize = Long.parseLong(size);
-        try {
-          long fileSize = Files.size(file);
-          if (expectedSize != fileSize) {
-            var details = "expected " + expectedSize + " bytes\n\tactual " + fileSize + " bytes";
-            throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
-          }
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
-      }
-      map.remove("module");
-      map.remove("version");
-      if (map.isEmpty()) return file;
-      try {
-        var bytes = Files.readAllBytes(file);
-        for (var expectedDigest : map.entrySet()) {
-          var actual = digest(expectedDigest.getKey(), bytes);
-          var expected = expectedDigest.getValue();
-          if (expected.equalsIgnoreCase(actual)) continue;
-          var details = "expected " + expected + ", but got " + actual;
-          throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
-        }
-      } catch (Exception e) {
-        throw new AssertionError("File digest check failed: " + file, e);
-      }
-      return file;
-    }
-    public static String digest(String algorithm, byte[] bytes) throws Exception {
-      var md = MessageDigest.getInstance(algorithm);
-      md.update(bytes);
-      return Strings.hex(md.digest());
-    }
     public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
       var files = new TreeSet<Path>();
       for (var root : roots) {
@@ -816,69 +764,11 @@ public class Bach {
       }
       if (response.statusCode() == 304 /*Not Modified*/) return file;
       Files.deleteIfExists(file);
-      throw new IllegalStateException("copy " + uri + " failed: response=" + response);
+      throw new IllegalStateException("Copy " + uri + " failed: response=" + response);
     }
     public String read(URI uri) throws Exception {
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
     }
-  }
-  public static class Strings {
-    public static List<String> list(String tool, String... args) {
-      return list(tool, List.of(args));
-    }
-    public static List<String> list(String tool, List<String> args) {
-      if (args.isEmpty()) return List.of(tool);
-      if (args.size() == 1) return List.of(tool + ' ' + args.get(0));
-      var strings = new ArrayList<String>();
-      strings.add(tool + " with " + args.size() + " arguments:");
-      var simple = true;
-      for (String arg : args) {
-        var minus = arg.startsWith("-");
-        strings.add((simple | minus ? "\t" : "\t\t") + arg);
-        simple = !minus;
-      }
-      return List.copyOf(strings);
-    }
-    public static String text(String... lines) {
-      return String.join(System.lineSeparator(), lines);
-    }
-    public static String text(Iterable<String> lines) {
-      return String.join(System.lineSeparator(), lines);
-    }
-    public static String text(Stream<String> lines) {
-      return String.join(System.lineSeparator(), lines.collect(Collectors.toList()));
-    }
-    public static String textIndent(String indent, String... strings) {
-      return indent + String.join(System.lineSeparator() + indent, strings);
-    }
-    public static String textIndent(String indent, Iterable<String> strings) {
-      return indent + String.join(System.lineSeparator() + indent, strings);
-    }
-    public static String textIndent(String indent, Stream<String> strings) {
-      return text(strings.map(string -> indent + string));
-    }
-    public static String toString(Duration duration) {
-      return duration
-          .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
-          .toString()
-          .substring(2)
-          .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-          .toLowerCase();
-    }
-    public static String toString(Collection<Path> paths) {
-      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-    }
-    private static final char[] HEX_TABLE = "0123456789abcdef".toCharArray();
-    public static String hex(byte[] bytes) {
-      var chars = new char[bytes.length * 2];
-      for (int i = 0; i < bytes.length; i++) {
-        int value = bytes[i] & 0xFF;
-        chars[i * 2] = HEX_TABLE[value >>> 4];
-        chars[i * 2 + 1] = HEX_TABLE[value & 0x0F];
-      }
-      return new String(chars);
-    }
-    private Strings() {}
   }
 }
