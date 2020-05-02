@@ -20,3 +20,7 @@ jobs:
       run: jshell --version
     - name: 'Build Bach.java'
       run: jshell -R-Debug build.jsh
+    - name: 'Upload build artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        path: .bach/workspace/summary.md
