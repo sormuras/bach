@@ -89,7 +89,7 @@ public /*static*/ class Resources {
     }
     if (response.statusCode() == 304 /*Not Modified*/) return file;
     Files.deleteIfExists(file);
-    throw new IllegalStateException("copy " + uri + " failed: response=" + response);
+    throw new IllegalStateException("Copy " + uri + " failed: response=" + response);
   }
 
   /** Read all content from a uri into a string. */
