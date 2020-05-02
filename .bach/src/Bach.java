@@ -68,6 +68,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 public class Bach {
   public static final Version VERSION = Version.parse("11.0-ea");
+  public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
+  public static Optional<Path> findCustomBuildProgram() {
+    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
+  }
   public static void main(String... args) {
     Main.main(args);
   }
@@ -87,7 +91,10 @@ public class Bach {
   private final Project project;
   private final Supplier<HttpClient> httpClient;
   public Bach(Project project, Supplier<HttpClient> httpClient) {
-    this.logbook = new Logbook();
+    this(Logbook.ofSystem(), project, httpClient);
+  }
+  Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
+    this.logbook = logbook;
     this.project = project;
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
@@ -102,13 +109,27 @@ public class Bach {
   public HttpClient getHttpClient() {
     return httpClient.get();
   }
+  public Summary build() {
+    var summary = new Summary();
+    execute(buildSequence());
+    return summary;
+  }
+  Task buildSequence() {
+    var tasks = new ArrayList<Task>();
+    for (var realm : project.structure().realms()) {
+      tasks.add(realm.javac());
+      for (var unit : realm.units()) tasks.addAll(unit.tasks());
+      tasks.addAll(realm.tasks());
+    }
+    return Task.sequence("Build Sequence", tasks);
+  }
   void execute(Task task) {
     var label = task.getLabel();
     var tasks = task.getList();
     if (tasks.isEmpty()) {
       logbook.log(Level.TRACE, "* {0}", label);
       try {
-        task.execute(this);
+        if (!logbook.isDryRun()) task.execute(this);
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
@@ -133,7 +154,11 @@ public class Bach {
   }
   static class Main {
     public static void main(String... args) {
-      System.out.println("Bach.java " + Bach.VERSION);
+      if (Bach.findCustomBuildProgram().isPresent()) {
+        System.err.println("Custom build program execution not supported, yet.");
+        return;
+      }
+      Bach.of().build().assertSuccessful();
     }
   }
   public static final class Project {
@@ -378,6 +403,9 @@ public class Bach {
       }
     }
   }
+  public class Summary {
+    public void assertSuccessful() {}
+  }
   public static class Task {
     public static Task sequence(String label, Task... tasks) {
       return sequence(label, List.of(tasks));
@@ -489,11 +517,33 @@ public class Bach {
     private Functions() {}
   }
   public static class Logbook implements System.Logger {
-    private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
+    public static Logbook ofSystem() {
+      var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+      var dryRun = Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run"));
+      return new Logbook(System.out::println, debug, dryRun);
+    }
+    private final Consumer<String> consumer;
+    private final boolean debug;
+    private final boolean dryRun;
+    private final Collection<Entry> entries;
+    public Logbook(Consumer<String> consumer, boolean debug, boolean dryRun) {
+      this.consumer = consumer;
+      this.debug = debug;
+      this.dryRun = dryRun;
+      this.entries = new ConcurrentLinkedQueue<>();
+    }
+    public boolean isDebug() {
+      return debug;
+    }
+    public boolean isDryRun() {
+      return dryRun;
+    }
     public String getName() {
       return "Logbook";
     }
     public boolean isLoggable(Level level) {
+      if (level == Level.ALL) return isDebug();
+      if (level == Level.OFF) return isDryRun();
       return true;
     }
     public void log(Level level, ResourceBundle bundle, String message, Throwable thrown) {
@@ -503,12 +553,12 @@ public class Bach {
       entries.add(new Entry(level, MessageFormat.format(pattern, arguments), null));
     }
     public List<String> messages() {
-      return lines(Entry::message);
+      return lines(entry -> entry.message);
     }
     public List<String> lines(Function<Entry, String> mapper) {
       return entries.stream().map(mapper).collect(Collectors.toList());
     }
-    public static final class Entry {
+    public final class Entry {
       private final Level level;
       private final String message;
       private final Throwable thrown;
@@ -516,15 +566,11 @@ public class Bach {
         this.level = level;
         this.message = message;
         this.thrown = thrown;
+        if (debug) consumer.accept(message);
       }
-      public Level level() {
-        return level;
-      }
-      public String message() {
-        return message;
-      }
-      public Throwable thrown() {
-        return thrown;
+      public String toString() {
+        if (thrown == null) return level + "|" + message;
+        return level + "|" + message + " -> " + thrown;
       }
     }
   }
