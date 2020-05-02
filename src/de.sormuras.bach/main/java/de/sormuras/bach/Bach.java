@@ -24,7 +24,10 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
@@ -34,6 +37,14 @@ public class Bach {
 
   /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("11.0-ea");
+
+  /** Default path of the custom build program source file. */
+  public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
+
+  /** Return path to the custom build program if it exists. */
+  public static Optional<Path> findCustomBuildProgram() {
+    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
+  }
 
   /** Main entry-point. */
   public static void main(String... args) {
@@ -60,18 +71,23 @@ public class Bach {
     return new Bach(project, HttpClient.newBuilder()::build);
   }
 
-  /** Logbook instance collecting all log entries. */
+  /** The logbook instance collecting all log entries. */
   private final Logbook logbook;
 
   /** The project to build. */
   private final Project project;
 
-  /** HttpClient supplier. */
+  /** The HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
-  /** Initialize this instance with the specified project and. */
+  /** Initialize this instance with the specified project and other component values. */
   public Bach(Project project, Supplier<HttpClient> httpClient) {
-    this.logbook = new Logbook();
+    this(Logbook.ofSystem(), project, httpClient);
+  }
+
+  /** Canonical constructor. */
+  Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
+    this.logbook = logbook;
     this.project = project;
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
@@ -90,13 +106,29 @@ public class Bach {
     return httpClient.get();
   }
 
+  public Summary build() {
+    var summary = new Summary();
+    execute(buildSequence());
+    return summary;
+  }
+
+  Task buildSequence() {
+    var tasks = new ArrayList<Task>();
+    for (var realm : project.structure().realms()) {
+      tasks.add(realm.javac());
+      for (var unit : realm.units()) tasks.addAll(unit.tasks());
+      tasks.addAll(realm.tasks());
+    }
+    return Task.sequence("Build Sequence", tasks);
+  }
+
   void execute(Task task) {
     var label = task.getLabel();
     var tasks = task.getList();
     if (tasks.isEmpty()) {
       logbook.log(Level.TRACE, "* {0}", label);
       try {
-        task.execute(this);
+        if (!logbook.isDryRun()) task.execute(this);
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
