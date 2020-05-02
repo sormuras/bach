@@ -41,6 +41,10 @@ import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -106,8 +110,9 @@ public class Bach {
     return httpClient.get();
   }
   public Summary build() {
-    var summary = new Summary();
+    var summary = new Summary(this);
     execute(buildSequence());
+    summary.writeMarkdown(project.base().workspace("summary.md"), true);
     return summary;
   }
   Task buildSequence() {
@@ -127,6 +132,8 @@ public class Bach {
       try {
         if (logbook.isDryRun()) return;
         task.execute(this);
+        logbook.log(Level.DEBUG, task.getOut().toString().strip());
+        logbook.log(Level.WARNING, task.getErr().toString().strip());
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
@@ -401,7 +408,59 @@ public class Bach {
     }
   }
   public class Summary {
-    public void assertSuccessful() {}
+    private final Bach bach;
+    private final Logbook logbook;
+    public Summary(Bach bach) {
+      this.bach = bach;
+      this.logbook = (Logbook) bach.getLogger();
+    }
+    public void assertSuccessful() {
+      var entries = logbook.entries(Level.WARNING).collect(Collectors.toList());
+      if (entries.isEmpty()) return;
+      var lines = new StringJoiner(System.lineSeparator());
+      lines.add(String.format("Collected %d error(s)", entries.size()));
+      for (var entry : entries) lines.add("\t- " + entry.message());
+      lines.add("");
+      lines.add(String.join(System.lineSeparator(), toMarkdown()));
+      var error = new AssertionError(lines.toString());
+      for (var entry : entries) if (entry.exception() != null) error.addSuppressed(entry.exception());
+      throw error;
+    }
+    public void writeMarkdown(Path file, boolean createCopyWithTimestamp) {
+      var markdown = toMarkdown();
+      try {
+        Files.write(file, markdown);
+        if (createCopyWithTimestamp) {
+          @SuppressWarnings("SpellCheckingInspection")
+          var pattern = "yyyyMMdd_HHmmss";
+          var formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC);
+          var timestamp = formatter.format(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+          var summaries = Files.createDirectories(file.resolveSibling("summaries"));
+          Files.copy(file, summaries.resolve("summary-" + timestamp + ".md"));
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+    public List<String> toMarkdown() {
+      var md = new ArrayList<String>();
+      md.add("# Summary for " + bach.getProject().toTitleAndVersion());
+      md.addAll(projectDescription());
+      return md;
+    }
+    private List<String> projectDescription() {
+      var md = new ArrayList<String>();
+      var project = bach.getProject();
+      md.add("");
+      md.add("## Project");
+      md.add("- title: " + project.info().title());
+      md.add("- version: " + project.info().version());
+      md.add("");
+      md.add("```text");
+      md.addAll(project.toStrings());
+      md.add("```");
+      return md;
+    }
   }
   public static class Task {
     public static Task sequence(String label, Task... tasks) {
@@ -418,6 +477,8 @@ public class Bach {
     }
     private final String label;
     private final List<Task> list;
+    private final StringWriter out;
+    private final StringWriter err;
     public Task() {
       this("", List.of());
     }
@@ -425,12 +486,20 @@ public class Bach {
       Objects.requireNonNull(label, "label");
       this.label = label.isBlank() ? getClass().getSimpleName() : label;
       this.list = List.copyOf(Objects.requireNonNull(list, "list"));
+      this.out = new StringWriter();
+      this.err = new StringWriter();
     }
     public String getLabel() {
       return label;
     }
     public List<Task> getList() {
       return list;
+    }
+    public StringWriter getOut() {
+      return out;
+    }
+    public StringWriter getErr() {
+      return err;
     }
     public String toString() {
       return new StringJoiner(", ", Task.class.getSimpleName() + "[", "]")
@@ -448,13 +517,7 @@ public class Bach {
         this.args = args;
       }
       public void execute(Bach bach) {
-        var out = new StringWriter();
-        var err = new StringWriter();
-        bach.execute(tool, new PrintWriter(out), new PrintWriter(err), args);
-        var outString = out.toString().strip();
-        if (!outString.isEmpty()) bach.getLogger().log(Level.DEBUG, outString);
-        var errString = err.toString().strip();
-        if (!errString.isEmpty()) bach.getLogger().log(Level.WARNING, outString);
+        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
       }
     }
     static class CreateDirectories extends Task {
@@ -545,10 +608,17 @@ public class Bach {
       return true;
     }
     public void log(Level level, ResourceBundle bundle, String message, Throwable thrown) {
-      entries.add(new Entry(level, message, thrown));
+      if (message == null || message.isBlank()) return;
+      var entry = new Entry(level, message, thrown);
+      if (debug) consumer.accept(entry.toString());
+      entries.add(entry);
     }
     public void log(Level level, ResourceBundle bundle, String pattern, Object... arguments) {
-      entries.add(new Entry(level, MessageFormat.format(pattern, arguments), null));
+      var message = arguments == null ? pattern : MessageFormat.format(pattern, arguments);
+      log(level, bundle, message, (Throwable) null);
+    }
+    public Stream<Entry> entries(Level threshold) {
+      return entries.stream().filter(entry -> entry.level.getSeverity() >= threshold.getSeverity());
     }
     public List<String> messages() {
       return lines(entry -> entry.message);
@@ -556,19 +626,27 @@ public class Bach {
     public List<String> lines(Function<Entry, String> mapper) {
       return entries.stream().map(mapper).collect(Collectors.toList());
     }
-    public final class Entry {
+    public static final class Entry {
       private final Level level;
       private final String message;
-      private final Throwable thrown;
-      public Entry(Level level, String message, Throwable thrown) {
+      private final Throwable exception;
+      public Entry(Level level, String message, Throwable exception) {
         this.level = level;
         this.message = message;
-        this.thrown = thrown;
-        if (debug) consumer.accept(message);
+        this.exception = exception;
+      }
+      public Level level() {
+        return level;
+      }
+      public String message() {
+        return message;
+      }
+      public Throwable exception() {
+        return exception;
       }
       public String toString() {
-        if (thrown == null) return level + "|" + message;
-        return level + "|" + message + " -> " + thrown;
+        var exceptionMessage = exception == null ? "" : " -> " + exception;
+        return String.format("%c|%s%s", level.name().charAt(0), message, exceptionMessage);
       }
     }
   }
