@@ -20,20 +20,19 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.util.Logbook;
+import java.net.http.HttpClient;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import test.base.SwallowSystem;
 
 class BachTests {
 
   static Bach zero() {
-    return Bach.of(Project.newProject("Zero", "0").build());
+    var logbook = new Logbook(__ -> {}, true, false);
+    var zero = Project.newProject("Zero", "0").build();
+    return new Bach(logbook, zero, HttpClient.newBuilder()::build);
   }
 
   @Test
@@ -58,16 +57,7 @@ class BachTests {
     assertLinesMatch(List.of(initialMessage, projectMessage), logbook.messages());
     assertLinesMatch(
         List.of("TRACE|" + initialMessage, "DEBUG|" + projectMessage),
-        logbook.lines(this::toLogLine));
-  }
-
-  @Test
-  @SwallowSystem
-  @ResourceLock(Resources.SYSTEM_PROPERTIES)
-  void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
-    Bach.main();
-    assertTrue(streams.errors().isEmpty());
-    assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+        logbook.lines(Object::toString));
   }
 
   @Test
@@ -82,11 +72,6 @@ class BachTests {
             "TRACE|* javac --version",
             "DEBUG|javac --version",
             Pattern.quote("DEBUG|javac ") + ".+"),
-        logbook.lines(this::toLogLine));
-  }
-
-  String toLogLine(Logbook.Entry entry) {
-    var thrown = entry.thrown() == null ? "" : " -> " + entry.thrown();
-    return entry.level().name() + '|' + entry.message() + thrown;
+        logbook.lines(Object::toString));
   }
 }

@@ -37,12 +37,19 @@ class MainTests {
   @ResourceLock(Resources.SYSTEM_PROPERTIES)
   void callMainMethodWithoutArguments(SwallowSystem.Streams streams) {
     try {
+      System.setProperty("ebug", "");
       System.setProperty("ry-run", "");
       Main.main();
     } finally {
       System.clearProperty("ry-run");
+      System.clearProperty("ebug");
     }
-    assertTrue(streams.errors().isEmpty());
-    assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+    try {
+      assertTrue(streams.errors().contains("Custom build program execution not supported, yet."));
+      // assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
+    } catch (Throwable throwable) {
+      streams.addShutdownHook(() -> System.err.println(streams));
+      throw throwable;
+    }
   }
 }
