@@ -69,11 +69,12 @@ import java.util.stream.Stream;
 public class Bach {
   public static final Version VERSION = Version.parse("11.0-ea");
   public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
-  public static Optional<Path> findCustomBuildProgram() {
-    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
-  }
+  public static final Path WORKSPACE = Path.of(".bach/workspace");
   public static void main(String... args) {
     Main.main(args);
+  }
+  public static Optional<Path> findCustomBuildProgram() {
+    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
   public static Bach of() {
     return of(Path.of(""));
@@ -228,7 +229,7 @@ public class Bach {
         return of(Path.of(""));
       }
       public static Base of(Path directory) {
-        return new Base(directory, directory.resolve(".bach/workspace"));
+        return new Base(directory, directory.resolve(Bach.WORKSPACE));
       }
       private final Path directory;
       private final Path workspace;
@@ -629,6 +630,7 @@ public class Bach {
       var pattern = info.normalize().getParent().toString().replace(module, "*");
       if (pattern.equals("*")) return ".";
       if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+      if (pattern.startsWith("*")) return "." + File.separator + pattern;
       return pattern;
     }
     public static Set<String> declared(ModuleFinder finder) {
