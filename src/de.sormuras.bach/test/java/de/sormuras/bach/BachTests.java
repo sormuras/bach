@@ -56,7 +56,7 @@ class BachTests {
             "units: 0");
     assertLinesMatch(List.of(initialMessage, projectMessage), logbook.messages());
     assertLinesMatch(
-        List.of("TRACE|" + initialMessage, "DEBUG|" + projectMessage),
+        List.of("T|" + initialMessage, "D|" + projectMessage),
         logbook.lines(Object::toString));
   }
 
@@ -69,9 +69,9 @@ class BachTests {
     assertLinesMatch(
         List.of(
             ">> INIT >>",
-            "TRACE|* javac --version",
-            "DEBUG|javac --version",
-            Pattern.quote("DEBUG|javac ") + ".+"),
+            "T|* javac --version",
+            "D|javac --version",
+            Pattern.quote("D|javac ") + ".+"),
         logbook.lines(Object::toString));
   }
 }

@@ -135,6 +135,8 @@ public class Bach {
       try {
         if (logbook.isDryRun()) return;
         task.execute(this);
+        logbook.log(Level.DEBUG, task.getOut().toString().strip());
+        logbook.log(Level.WARNING, task.getErr().toString().strip());
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
