@@ -20,7 +20,11 @@ package de.sormuras.bach;
 /** Bach's main program. */
 /*static*/ class Main {
   public static void main(String... args) {
-    System.out.println("Bach.java " + Bach.VERSION);
-    // new Bach().build(project -> {}).assertSuccessful();
+    if (Bach.findCustomBuildProgram().isPresent()) {
+      System.err.println("Custom build program execution not supported, yet.");
+      return;
+    }
+    // Default to build() for the time being.
+    Bach.of().build().assertSuccessful();
   }
 }
