@@ -19,7 +19,6 @@ package de.sormuras.bach;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -47,6 +46,8 @@ public /*static*/ class Task {
 
   private final String label;
   private final List<Task> list;
+  private final StringWriter out;
+  private final StringWriter err;
 
   public Task() {
     this("", List.of());
@@ -56,6 +57,8 @@ public /*static*/ class Task {
     Objects.requireNonNull(label, "label");
     this.label = label.isBlank() ? getClass().getSimpleName() : label;
     this.list = List.copyOf(Objects.requireNonNull(list, "list"));
+    this.out = new StringWriter();
+    this.err = new StringWriter();
   }
 
   public String getLabel() {
@@ -64,6 +67,14 @@ public /*static*/ class Task {
 
   public List<Task> getList() {
     return list;
+  }
+
+  public StringWriter getOut() {
+    return out;
+  }
+
+  public StringWriter getErr() {
+    return err;
   }
 
   @Override
@@ -89,13 +100,7 @@ public /*static*/ class Task {
 
     @Override
     public void execute(Bach bach) {
-      var out = new StringWriter();
-      var err = new StringWriter();
-      bach.execute(tool, new PrintWriter(out), new PrintWriter(err), args);
-      var outString = out.toString().strip();
-      if (!outString.isEmpty()) bach.getLogger().log(Level.DEBUG, outString);
-      var errString = err.toString().strip();
-      if (!errString.isEmpty()) bach.getLogger().log(Level.WARNING, outString);
+      bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
     }
   }
 
