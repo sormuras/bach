@@ -38,7 +38,7 @@ class Build {
                 Bach.VERSION),
             new Bach.Project.Structure(realms, List.of()));
     var bach = Bach.of(project);
-    bach.build();
+    bach.build().assertSuccessful();
   }
 
   static Bach.Project.Realm mainRealm(Bach.Project.Base base) {
@@ -59,6 +59,11 @@ class Build {
             moduleNames,
             "--module-source-path",
             moduleSourcePath,
+            "-encoding",
+            "UTF-8",
+            "-parameters",
+            "-Werror",
+            "-X" + "lint",
             "-d",
             base.classes("main"));
     var javadoc =
@@ -77,6 +82,9 @@ class Build {
                     "UTF-8",
                     "-locale",
                     "en",
+                    "-Xdoclint:-missing", // TODO Add missing javadoc elements.
+                    "-link",
+                    "https://docs.oracle.com/en/java/javase/11/docs/api",
                     "-d",
                     base.api())));
     var jlink =

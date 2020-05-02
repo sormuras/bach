@@ -23,7 +23,7 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
 
-  requires java.net.http;
+  requires transitive java.net.http;
   requires jdk.compiler;
   requires jdk.jartool;
   requires jdk.jdeps;
