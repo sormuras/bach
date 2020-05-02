@@ -19,4 +19,4 @@ jobs:
     - name: 'Emit version of JShell (trigger creation of user''s preferences directory)'
       run: jshell --version
     - name: 'Build Bach.java'
-      run: jshell build.jsh
+      run: jshell -R-Debug build.jsh
