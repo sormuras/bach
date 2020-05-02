@@ -3,6 +3,7 @@
 **/build/
 **/target/
 
+*.args
 *.jar
 
 /bach
