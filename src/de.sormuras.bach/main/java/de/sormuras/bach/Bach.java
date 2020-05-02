@@ -41,14 +41,17 @@ public class Bach {
   /** Default path of the custom build program source file. */
   public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
 
-  /** Return path to the custom build program if it exists. */
-  public static Optional<Path> findCustomBuildProgram() {
-    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
-  }
+  /** Workspace root directory to used for generated assets. */
+  public static final Path WORKSPACE = Path.of(".bach/workspace");
 
   /** Main entry-point. */
   public static void main(String... args) {
     Main.main(args);
+  }
+
+  /** Return path to the custom build program if it exists. */
+  public static Optional<Path> findCustomBuildProgram() {
+    return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
 
   /** Create Bach instance with a project parsed from the current working directory "as-is". */

@@ -119,7 +119,7 @@ public /*static*/ final class Project {
 
     /** Create a base instance for the specified directory. */
     public static Base of(Path directory) {
-      return new Base(directory, directory.resolve(".bach/workspace"));
+      return new Base(directory, directory.resolve(Bach.WORKSPACE));
     }
 
     private final Path directory;
