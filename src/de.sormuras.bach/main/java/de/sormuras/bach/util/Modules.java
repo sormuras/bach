@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -111,7 +112,7 @@ public /*static*/ class Modules {
     var pattern = info.normalize().getParent().toString().replace(module, "*");
     if (pattern.equals("*")) return ".";
     if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
-    // if (pattern.startsWith("*")) return "." + File.separator + pattern;
+    if (pattern.startsWith("*")) return "." + File.separator + pattern;
     return pattern;
   }
 

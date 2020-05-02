@@ -47,7 +47,7 @@ class ModulesTests {
     @CsvSource({
       ".               , foo/module-info.java",
       "src             , src/foo/module-info.java",
-      "*/src           , foo/src/module-info.java",
+      "./*/src         , foo/src/module-info.java",
       "src/*/main/java , src/foo/main/java/module-info.java"
     })
     void modulePatternFormForModuleFoo(String expected, Path path) {
