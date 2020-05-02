@@ -5,13 +5,38 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** An entry-collecting system logger implementation. */
 public /*static*/ class Logbook implements System.Logger {
 
-  private final Collection<Entry> entries = new ConcurrentLinkedQueue<>();
+  public static Logbook ofSystem() {
+    var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+    var dryRun = Boolean.getBoolean("ry-run") || "".equals(System.getProperty("ry-run"));
+    return new Logbook(System.out::println, debug, dryRun);
+  }
+
+  private final Consumer<String> consumer;
+  private final boolean debug;
+  private final boolean dryRun;
+  private final Collection<Entry> entries;
+
+  public Logbook(Consumer<String> consumer, boolean debug, boolean dryRun) {
+    this.consumer = consumer;
+    this.debug = debug;
+    this.dryRun = dryRun;
+    this.entries = new ConcurrentLinkedQueue<>();
+  }
+
+  public boolean isDebug() {
+    return debug;
+  }
+
+  public boolean isDryRun() {
+    return dryRun;
+  }
 
   @Override
   public String getName() {
@@ -20,6 +45,8 @@ public /*static*/ class Logbook implements System.Logger {
 
   @Override
   public boolean isLoggable(Level level) {
+    if (level == Level.ALL) return isDebug();
+    if (level == Level.OFF) return isDryRun();
     return true;
   }
 
@@ -34,14 +61,14 @@ public /*static*/ class Logbook implements System.Logger {
   }
 
   public List<String> messages() {
-    return lines(Entry::message);
+    return lines(entry -> entry.message);
   }
 
   public List<String> lines(Function<Entry, String> mapper) {
     return entries.stream().map(mapper).collect(Collectors.toList());
   }
 
-  public static final class Entry {
+  public final class Entry {
     private final Level level;
     private final String message;
     private final Throwable thrown;
@@ -50,18 +77,13 @@ public /*static*/ class Logbook implements System.Logger {
       this.level = level;
       this.message = message;
       this.thrown = thrown;
+      if (debug) consumer.accept(message);
     }
 
-    public Level level() {
-      return level;
-    }
-
-    public String message() {
-      return message;
-    }
-
-    public Throwable thrown() {
-      return thrown;
+    @Override
+    public String toString() {
+      if (thrown == null) return level + "|" + message;
+      return level + "|" + message + " -> " + thrown;
     }
   }
 }
