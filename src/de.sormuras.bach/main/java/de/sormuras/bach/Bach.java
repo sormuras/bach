@@ -111,8 +111,9 @@ public class Bach {
   }
 
   public Summary build() {
-    var summary = new Summary();
+    var summary = new Summary(this);
     execute(buildSequence());
+    summary.writeMarkdown(project.base().workspace("summary.md"), true);
     return summary;
   }
 
