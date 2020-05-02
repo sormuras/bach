@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.util;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.FileSystem;
@@ -58,40 +55,6 @@ class PathsTests {
       assertThrows(UncheckedIOException.class, () -> Paths.isEmpty(sub));
     } finally {
       FileSystem.chmod(sub, true, true, true);
-    }
-  }
-
-  @Nested
-  class AssertFileAttributes {
-    @Test
-    void throwsForNonExistentFile() {
-      var file = Path.of("does", "not", "exist");
-      var fail = Map.of("size", "?");
-      var zero = Map.of("size", "0");
-      assertThrows(NumberFormatException.class, () -> Paths.assertFileAttributes(file, fail));
-      assertThrows(UncheckedIOException.class, () -> Paths.assertFileAttributes(file, zero));
-    }
-
-    @Test
-    void errorsOnSizeMismatch(@TempDir Path temp) throws Exception {
-      var empty = Files.createFile(temp.resolve("file"));
-      assertDoesNotThrow(() -> Paths.assertFileAttributes(empty, Map.of("size", "0")));
-      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, Map.of("size", "1")));
-    }
-
-    @Test
-    void errorsMessageDigestMismatch(@TempDir Path temp) throws Exception {
-      var empty = Files.createFile(temp.resolve("file"));
-      var zeroMD5 = Map.of("size", "0", "md5", "d41d8cd98f00b204e9800998ecf8427e");
-      var failMD5 = Map.of("size", "0", "md5", "0");
-      assertDoesNotThrow(() -> Paths.assertFileAttributes(empty, zeroMD5));
-      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, failMD5));
-    }
-
-    @Test
-    void errorsMessageDigestAlgorithmNotFound(@TempDir Path temp) throws Exception {
-      var empty = Files.createFile(temp.resolve("file"));
-      assertThrows(Error.class, () -> Paths.assertFileAttributes(empty, Map.of("md0", "0")));
     }
   }
 }

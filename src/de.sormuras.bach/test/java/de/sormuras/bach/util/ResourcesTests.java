@@ -28,6 +28,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpClient.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -85,7 +87,7 @@ class ResourcesTests {
       resources.copy(uri, jar);
       assertSame(
           jar,
-          Paths.assertFileAttributes(
+          assertFileAttributes(
               jar,
               Map.of(
                   "size",
@@ -105,5 +107,53 @@ class ResourcesTests {
       assertThrows(IllegalStateException.class, () -> new Resources(client).copy(uri, file));
       assertTrue(Files.notExists(file));
     }
+  }
+
+
+  /** Check the size and message digest hashes of the specified file. */
+  public static Path assertFileAttributes(Path file, Map<String, String> attributes) {
+    if (attributes.isEmpty()) return file;
+
+    var map = new HashMap<>(attributes);
+    var size = map.remove("size");
+    if (size != null) {
+      var expectedSize = Long.parseLong(size);
+      try {
+        long fileSize = Files.size(file);
+        if (expectedSize != fileSize) {
+          var details = "expected " + expectedSize + " bytes\n\tactual " + fileSize + " bytes";
+          throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
+        }
+      } catch (Exception e) {
+        throw new Error(e);
+      }
+    }
+
+    map.remove("module");
+    map.remove("version");
+
+    if (map.isEmpty()) return file;
+
+    // remaining entries are treated as message digest algorithm-value pairs
+    // https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#messagedigest-algorithms
+    try {
+      var bytes = Files.readAllBytes(file);
+      for (var expectedDigest : map.entrySet()) {
+        var actual = digest(expectedDigest.getKey(), bytes);
+        var expected = expectedDigest.getValue();
+        if (expected.equalsIgnoreCase(actual)) continue;
+        var details = "expected " + expected + ", but got " + actual;
+        throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
+      }
+    } catch (Exception e) {
+      throw new AssertionError("File digest check failed: " + file, e);
+    }
+    return file;
+  }
+
+  public static String digest(String algorithm, byte[] bytes) throws Exception {
+    var md = MessageDigest.getInstance(algorithm);
+    md.update(bytes);
+    return Strings.hex(md.digest());
   }
 }

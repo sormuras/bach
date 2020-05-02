@@ -19,14 +19,10 @@ package de.sormuras.bach.util;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
@@ -48,70 +44,6 @@ public /*static*/ class Paths {
   public static boolean isModuleInfoJavaFile(Path path) {
     return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
   }
-
-  /** Delete a tree of directories starting with the given root directory. */
-  public static void delete(Path directory, Predicate<Path> filter) throws IOException {
-    // trivial case: delete existing empty directory or single file
-    try {
-      Files.deleteIfExists(directory);
-      return;
-    } catch (DirectoryNotEmptyException __) {
-      // fall-through
-    }
-    // default case: walk the tree from leaves back to root directories...
-    try (var stream = Files.walk(directory)) {
-      var paths = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
-      for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-    }
-  }
-
-  /** Check the size and message digest hashes of the specified file. */
-  public static Path assertFileAttributes(Path file, Map<String, String> attributes) {
-    if (attributes.isEmpty()) return file;
-
-    var map = new HashMap<>(attributes);
-    var size = map.remove("size");
-    if (size != null) {
-      var expectedSize = Long.parseLong(size);
-      try {
-        long fileSize = Files.size(file);
-        if (expectedSize != fileSize) {
-          var details = "expected " + expectedSize + " bytes\n\tactual " + fileSize + " bytes";
-          throw new AssertionError("File size mismatch: " + file + "\n\t" + details);
-        }
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-
-    map.remove("module");
-    map.remove("version");
-
-    if (map.isEmpty()) return file;
-
-    // remaining entries are treated as message digest algorithm-value pairs
-    // https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#messagedigest-algorithms
-    try {
-      var bytes = Files.readAllBytes(file);
-      for (var expectedDigest : map.entrySet()) {
-        var actual = digest(expectedDigest.getKey(), bytes);
-        var expected = expectedDigest.getValue();
-        if (expected.equalsIgnoreCase(actual)) continue;
-        var details = "expected " + expected + ", but got " + actual;
-        throw new AssertionError("File digest mismatch: " + file + "\n\t" + details);
-      }
-    } catch (Exception e) {
-      throw new AssertionError("File digest check failed: " + file, e);
-    }
-    return file;
-  }
-
-  public static String digest(String algorithm, byte[] bytes) throws Exception {
-    var md = MessageDigest.getInstance(algorithm);
-    md.update(bytes);
-    return Strings.hex(md.digest());
-  }
-
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
   public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
