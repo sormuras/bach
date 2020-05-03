@@ -77,6 +77,7 @@ public class Summary {
     var md = new ArrayList<String>();
     md.add("# Summary for " + bach.getProject().toTitleAndVersion());
     md.addAll(projectDescription());
+    md.addAll(logbookEntries());
     return md;
   }
 
@@ -91,6 +92,18 @@ public class Summary {
     md.add("```text");
     md.addAll(project.toStrings());
     md.add("```");
+    return md;
+  }
+
+  private List<String> logbookEntries() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Logbook");
+    for (var entry : logbook.entries(Level.ALL).collect(Collectors.toList())) {
+      md.add("- " + entry.level());
+      var one = entry.message().lines().count() == 1;
+      md.add((one ? "`" : "```text\n") + entry.message() + (one ? "`" : "\n```"));
+    }
     return md;
   }
 }
