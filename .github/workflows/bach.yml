@@ -23,4 +23,5 @@ jobs:
     - name: 'Upload build artifact'
       uses: actions/upload-artifact@v2
       with:
+        name: artifact-${{ matrix.java }}-${{ matrix.os }}
         path: .bach/workspace/summary.md
