@@ -36,7 +36,7 @@ class Build {
             new Bach.Project.Info(
                 "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
                 Bach.VERSION),
-            new Bach.Project.Structure(realms, List.of()));
+            new Bach.Project.Structure(realms));
     var bach = Bach.of(project);
     bach.build().assertSuccessful();
   }

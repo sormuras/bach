@@ -202,7 +202,7 @@ public class Bach {
       list.add("\ttitle: " + info.title());
       list.add("\tversion: " + info.version());
       list.add("\trealms: " + structure.realms().size());
-      list.add("\tunits: " + structure.units().size());
+      list.add("\tunits: " + structure.units().count());
       for (var realm : structure.realms()) {
         list.add("\tRealm " + realm.name());
         list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().getLabel()));
@@ -222,10 +222,10 @@ public class Bach {
       return info.title() + ' ' + info.version();
     }
     public Set<String> toDeclaredModuleNames() {
-      return structure.units.stream().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+      return structure.units().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
     }
     public Set<String> toRequiredModuleNames() {
-      return Modules.required(structure.units().stream().map(Unit::descriptor));
+      return Modules.required(structure.units().map(Unit::descriptor));
     }
     public static final class Base {
       public static Base of() {
@@ -290,16 +290,14 @@ public class Bach {
     }
     public static final class Structure {
       private final List<Realm> realms;
-      private final List<Unit> units;
-      public Structure(List<Realm> realms, List<Unit> units) {
+      public Structure(List<Realm> realms) {
         this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
-        this.units = List.copyOf(Objects.requireNonNull(units, "units"));
       }
       public List<Realm> realms() {
         return realms;
       }
-      public List<Unit> units() {
-        return units;
+      public Stream<Unit> units() {
+        return realms.stream().flatMap(realm -> realm.units().stream());
       }
     }
     public static final class Realm {
@@ -347,7 +345,7 @@ public class Bach {
       private Base base = Base.of();
       private String title = "Project Title";
       private Version version = Version.parse("1-ea");
-      private Structure structure = new Structure(List.of(), List.of());
+      private Structure structure = new Structure(List.of());
       public Project build() {
         var info = new Info(title, version);
         return new Project(base, info, structure);
@@ -403,7 +401,7 @@ public class Bach {
                 List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
         var directoryName = base.directory().toAbsolutePath().getFileName();
         return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
-            .structure(new Structure(List.of(realm), units));
+            .structure(new Structure(List.of(realm)));
       }
     }
   }
