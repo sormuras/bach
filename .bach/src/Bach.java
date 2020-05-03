@@ -98,7 +98,7 @@ public class Bach {
     this.project = Objects.requireNonNull(project, "project");
     this.httpClient = Functions.memoize(httpClient);
     logbook.log(Level.TRACE, "Initialized " + toString());
-    logbook.log(Level.DEBUG, String.join(System.lineSeparator(), project.toStrings()));
+    logbook.log(Level.DEBUG, project.toTitleAndVersion());
   }
   public Logger getLogger() {
     return logbook;
@@ -446,6 +446,7 @@ public class Bach {
       var md = new ArrayList<String>();
       md.add("# Summary for " + bach.getProject().toTitleAndVersion());
       md.addAll(projectDescription());
+      md.addAll(logbookEntries());
       return md;
     }
     private List<String> projectDescription() {
@@ -459,6 +460,17 @@ public class Bach {
       md.add("```text");
       md.addAll(project.toStrings());
       md.add("```");
+      return md;
+    }
+    private List<String> logbookEntries() {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Logbook");
+      for (var entry : logbook.entries(Level.ALL).collect(Collectors.toList())) {
+        md.add("- " + entry.level());
+        var one = entry.message().lines().count() == 1;
+        md.add((one ? "`" : "```text\n") + entry.message() + (one ? "`" : "\n```"));
+      }
       return md;
     }
   }
