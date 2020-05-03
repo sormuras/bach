@@ -46,18 +46,10 @@ class BachTests {
 
     var logbook = ((Logbook) bach.getLogger());
     var initialMessage = "Initialized " + expectedStringRepresentation;
-    var projectMessage =
-        String.join(
-            System.lineSeparator() + "\t",
-            "Project",
-            "title: Zero",
-            "version: 0",
-            "realms: 0",
-            "units: 0");
+    var projectMessage = "Zero 0";
     assertLinesMatch(List.of(initialMessage, projectMessage), logbook.messages());
     assertLinesMatch(
-        List.of("T|" + initialMessage, "D|" + projectMessage),
-        logbook.lines(Object::toString));
+        List.of("T|" + initialMessage, "D|" + projectMessage), logbook.lines(Object::toString));
   }
 
   @Test
