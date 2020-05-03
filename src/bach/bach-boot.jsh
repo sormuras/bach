@@ -43,10 +43,9 @@ println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
 println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
 println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
-println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
+println("   \\/__/    \\/__/    \\/__/    \\/__/.java " + version)
 println()
-println("     Java Shell Builder Boot (" + version + ")")
-println("     https://github.com/sormuras/bach")
+println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
 println()
 
 /*
@@ -77,8 +76,7 @@ if (Files.notExists(build)) {
   Files.createDirectories(build.getParent());
   Files.write(build, List.of(
       "class Build {",
-      "\tpublic static void main(String... args) {",
-      "\t\tBach.main(\"build\");",
+      "\t\tBach.of(project -> project).build().assertSuccessful();",
       "\t}",
       "}"));
   Files.readAllLines(build).forEach(line -> println("\t" + line));

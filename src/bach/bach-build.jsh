@@ -29,8 +29,8 @@ println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
 println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
-
-println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+println()
 
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
@@ -48,7 +48,7 @@ if (Files.notExists(build)) {
   Files.write(build, List.of(
       "class Build {",
       "\tpublic static void main(String... args) {",
-      "\t\tBach.main(\"build\");",
+      "\t\tBach.of(project -> project).build().assertSuccessful();",
       "\t}",
       "}"));
   Files.readAllLines(build).forEach(line -> println("| " + line));
@@ -65,6 +65,10 @@ try {
   println(throwable);
   code = 1;
 }
+
+println()
+println("| Have fun! https://github.com/sponsors/sormuras (-:")
+println()
 
 println("| /exit " + code)
 /exit code
