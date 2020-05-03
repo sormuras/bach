@@ -87,7 +87,7 @@ public /*static*/ class Task {
 
   public void execute(Bach bach) throws Exception {}
 
-  static class RunTool extends Task {
+  public static class RunTool extends Task {
 
     private final ToolProvider tool;
     private final String[] args;
@@ -104,11 +104,11 @@ public /*static*/ class Task {
     }
   }
 
-  static class CreateDirectories extends Task {
+  public static class CreateDirectories extends Task {
 
-    final Path directory;
+    private final Path directory;
 
-    CreateDirectories(Path directory) {
+    public CreateDirectories(Path directory) {
       super("Create directories " + directory.toUri(), List.of());
       this.directory = directory;
     }
@@ -119,11 +119,11 @@ public /*static*/ class Task {
     }
   }
 
-  static class DeleteDirectories extends Task {
+  public static class DeleteDirectories extends Task {
 
-    final Path directory;
+    private final Path directory;
 
-    DeleteDirectories(Path directory) {
+    public DeleteDirectories(Path directory) {
       super("Delete directory " + directory, List.of());
       this.directory = directory;
     }
@@ -138,7 +138,7 @@ public /*static*/ class Task {
     }
   }
 
-  static class CreateJar extends Task {
+  public static class CreateJar extends Task {
 
     private static List<Task> list(Path jar, Path classes) {
       return List.of(

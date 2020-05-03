@@ -518,7 +518,7 @@ public class Bach {
           .toString();
     }
     public void execute(Bach bach) throws Exception {}
-    static class RunTool extends Task {
+    public static class RunTool extends Task {
       private final ToolProvider tool;
       private final String[] args;
       public RunTool(ToolProvider tool, String... args) {
@@ -530,9 +530,9 @@ public class Bach {
         bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
       }
     }
-    static class CreateDirectories extends Task {
-      final Path directory;
-      CreateDirectories(Path directory) {
+    public static class CreateDirectories extends Task {
+      private final Path directory;
+      public CreateDirectories(Path directory) {
         super("Create directories " + directory.toUri(), List.of());
         this.directory = directory;
       }
@@ -540,9 +540,9 @@ public class Bach {
         Files.createDirectories(directory);
       }
     }
-    static class DeleteDirectories extends Task {
-      final Path directory;
-      DeleteDirectories(Path directory) {
+    public static class DeleteDirectories extends Task {
+      private final Path directory;
+      public DeleteDirectories(Path directory) {
         super("Delete directory " + directory, List.of());
         this.directory = directory;
       }
@@ -554,7 +554,7 @@ public class Bach {
         }
       }
     }
-    static class CreateJar extends Task {
+    public static class CreateJar extends Task {
       private static List<Task> list(Path jar, Path classes) {
         return List.of(
             new CreateDirectories(jar.getParent()),
