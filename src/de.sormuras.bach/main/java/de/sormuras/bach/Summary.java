@@ -59,6 +59,7 @@ public class Summary {
   public void writeMarkdown(Path file, boolean createCopyWithTimestamp) {
     var markdown = toMarkdown();
     try {
+      Files.createDirectories(file.getParent());
       Files.write(file, markdown);
       if (createCopyWithTimestamp) {
         @SuppressWarnings("SpellCheckingInspection")
