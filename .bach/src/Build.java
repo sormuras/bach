@@ -29,7 +29,7 @@ class Build {
 
   public static void main(String... args) {
     var base = Bach.Project.Base.of();
-    var realms = List.of(mainRealm(base));
+    var realms = List.of(mainRealm(base), testRealm(base));
     var project =
         new Bach.Project(
             Bach.Project.Base.of(),
@@ -108,5 +108,35 @@ class Build {
                     "--output",
                     base.image())));
     return new Bach.Project.Realm("main", units, javac, List.of(javadoc, jlink));
+  }
+
+  static Bach.Project.Realm testRealm(Bach.Project.Base base) {
+    var units =
+        List.of(
+            new Bach.Project.Unit(
+                Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
+                List.of(
+                    new Bach.Task.CreateJar(
+                        base.modules("test").resolve("test.base.jar"),
+                        base.classes("test", "test.base")))));
+    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.joining(","));
+    var moduleSourcePath = "src/*/test/java".replace('/', File.separatorChar);
+    var javac =
+        Bach.Task.runTool(
+            "javac",
+            "--module",
+            moduleNames,
+            "--module-source-path",
+            moduleSourcePath,
+            "--module-path",
+            base.directory().resolve("lib"),
+            "-encoding",
+            "UTF-8",
+            "-parameters",
+            "-Werror",
+            "-X" + "lint",
+            "-d",
+            base.classes("test"));
+    return new Bach.Project.Realm("test", units, javac, List.of());
   }
 }
