@@ -17,13 +17,22 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.util.ModulesResolver;
+import de.sormuras.bach.util.Resources;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.System.Logger.Level;
+import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
 /** A piece of work to be done or undertaken. */
@@ -149,6 +158,65 @@ public /*static*/ class Task {
 
     public CreateJar(Path jar, Path classes) {
       super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
+    }
+  }
+
+  /** Determine and transport missing library modules. */
+  public static class ResolveMissingModules extends Task {
+
+    private static String central(String group, String artifact, String version) {
+      var host = "https://repo.maven.apache.org/maven2";
+      var file = artifact + '-' + version + ".jar";
+      return String.join("/", host, group.replace('.', '/'), artifact, version, file);
+    }
+
+    private final Map<String, String> map;
+
+    public ResolveMissingModules() {
+      super("Resolve missing modules", List.of());
+      this.map = new TreeMap<>();
+      var jupiter = "org.junit.jupiter";
+      map.put(jupiter, central(jupiter, "junit-jupiter", "5.6.2"));
+      map.put(jupiter + ".api", central(jupiter, "junit-jupiter-api", "5.6.2"));
+      map.put(jupiter + ".engine", central(jupiter, "junit-jupiter-engine", "5.6.2"));
+      map.put(jupiter + ".params", central(jupiter, "junit-jupiter-params", "5.6.2"));
+      var platform = "org.junit.platform";
+      map.put(platform + ".commons", central(platform, "junit-platform-commons", "1.6.2"));
+      map.put(platform + ".console", central(platform, "junit-platform-console", "1.6.2"));
+      map.put(platform + ".engine", central(platform, "junit-platform-engine", "1.6.2"));
+      map.put(platform + ".launcher", central(platform, "junit-platform-launcher", "1.6.2"));
+      map.put(platform + ".reporting", central(platform, "junit-platform-reporting", "1.6.2"));
+      map.put(platform + ".testkit", central(platform, "junit-platform-testkit", "1.6.2"));
+      // various artists
+      map.put("org.apiguardian.api", central("org.apiguardian", "apiguardian-api", "1.1.0"));
+      map.put("org.opentest4j", central("org.opentest4j", "opentest4j", "1.2.0"));
+    }
+
+    @Override
+    public void execute(Bach bach) {
+      var project = bach.getProject();
+      var lib = project.base().directory().resolve("lib");
+      class Transporter implements Consumer<Set<String>> {
+        @Override
+        public void accept(Set<String> modules) {
+          var resources = new Resources(HttpClient.newHttpClient());
+          for (var module : modules) {
+            var uri = map.get(module);
+            if (uri == null) continue;
+            try {
+              var jar = resources.copy(URI.create(uri), lib.resolve(module + ".jar")).getFileName();
+              var size = Files.size(jar);
+              bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", jar, size, uri);
+            } catch (Exception e) {
+              throw new Error("Resolve module '" + module + "' failed: " + uri, e);
+            }
+          }
+        }
+      }
+      var declared = project.toDeclaredModuleNames();
+      var required = project.toRequiredModuleNames();
+      var resolver = new ModulesResolver(new Path[] {lib}, declared, new Transporter());
+      resolver.resolve(required);
     }
   }
 }
