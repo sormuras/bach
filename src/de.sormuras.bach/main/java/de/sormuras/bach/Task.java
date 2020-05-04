@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -174,7 +173,7 @@ public /*static*/ class Task {
       class Transporter implements Consumer<Set<String>> {
         @Override
         public void accept(Set<String> modules) {
-          var resources = new Resources(HttpClient.newHttpClient());
+          var resources = new Resources(bach.getHttpClient());
           for (var module : modules) {
             var raw = library.lookup().apply(module);
             if (raw == null) continue;
