@@ -313,27 +313,75 @@ public class Bach {
       }
     }
     public static final class Library {
-      public static String central(String group, String artifact, String version) {
-        var host = "https://repo.maven.apache.org/maven2";
-        var file = artifact + '-' + version + ".jar";
-        return String.join("/", host, group.replace('.', '/'), artifact, version, file);
-      }
       public static Library of() {
         var map = new TreeMap<String, String>();
-        var jupiter = "org.junit.jupiter";
-        map.put(jupiter, central(jupiter, "junit-jupiter", "5.6.2"));
-        map.put(jupiter + ".api", central(jupiter, "junit-jupiter-api", "5.6.2"));
-        map.put(jupiter + ".engine", central(jupiter, "junit-jupiter-engine", "5.6.2"));
-        map.put(jupiter + ".params", central(jupiter, "junit-jupiter-params", "5.6.2"));
-        var platform = "org.junit.platform";
-        map.put(platform + ".commons", central(platform, "junit-platform-commons", "1.6.2"));
-        map.put(platform + ".console", central(platform, "junit-platform-console", "1.6.2"));
-        map.put(platform + ".engine", central(platform, "junit-platform-engine", "1.6.2"));
-        map.put(platform + ".launcher", central(platform, "junit-platform-launcher", "1.6.2"));
-        map.put(platform + ".reporting", central(platform, "junit-platform-reporting", "1.6.2"));
-        map.put(platform + ".testkit", central(platform, "junit-platform-testkit", "1.6.2"));
-        map.put("org.apiguardian.api", central("org.apiguardian", "apiguardian-api", "1.1.0"));
-        map.put("org.opentest4j", central("org.opentest4j", "opentest4j", "1.2.0"));
+        map.put("junit", "https://repo.maven.apache.org/maven2/junit/junit/4.13/junit-4.13.jar");
+        map.put(
+            "net.bytebuddy",
+            "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.10.9/byte-buddy-1.10.9.jar");
+        map.put(
+            "net.bytebuddy.agent",
+            "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.10.9/byte-buddy-agent-1.10.9.jar");
+        map.put(
+            "org.apiguardian.api",
+            "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.0/apiguardian-api-1.1.0.jar");
+        map.put(
+            "org.assertj.core",
+            "https://repo.maven.apache.org/maven2/org/assertj/assertj-core/3.15.0/assertj-core-3.15.0.jar");
+        map.put(
+            "org.hamcrest",
+            "https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar");
+        map.put(
+            "org.junit.jupiter",
+            "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.7.0-M1/junit-jupiter-5.7.0-M1.jar");
+        map.put(
+            "org.junit.jupiter.api",
+            "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.7.0-M1/junit-jupiter-api-5.7.0-M1.jar");
+        map.put(
+            "org.junit.jupiter.engine",
+            "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.7.0-M1/junit-jupiter-engine-5.7.0-M1.jar");
+        map.put(
+            "org.junit.jupiter.params",
+            "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.7.0-M1/junit-jupiter-params-5.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.commons",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.7.0-M1/junit-platform-commons-1.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.console",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console/1.7.0-M1/junit-platform-console-1.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.engine",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.7.0-M1/junit-platform-engine-1.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.launcher",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.7.0-M1/junit-platform-launcher-1.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.reporting",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-reporting/1.7.0-M1/junit-platform-reporting-1.7.0-M1.jar");
+        map.put(
+            "org.junit.platform.testkit",
+            "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-testkit/1.7.0-M1/junit-platform-testkit-1.7.0-M1.jar");
+        map.put(
+            "org.junit.vintage.engine",
+            "https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/5.7.0-M1/junit-vintage-engine-5.7.0-M1.jar");
+        map.put(
+            "org.objectweb.asm",
+            "https://repo.maven.apache.org/maven2/org/ow2/asm/asm/8.0.1/asm-8.0.1.jar");
+        map.put(
+            "org.objectweb.asm.commons",
+            "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-commons/8.0.1/asm-commons-8.0.1.jar");
+        map.put(
+            "org.objectweb.asm.tree",
+            "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-tree/8.0.1/asm-tree-8.0.1.jar");
+        map.put(
+            "org.objectweb.asm.tree.analysis",
+            "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-analysis/8.0.1/asm-analysis-8.0.1.jar");
+        map.put(
+            "org.objectweb.asm.util",
+            "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-util/8.0.1/asm-util-8.0.1.jar");
+        map.put(
+            "org.opentest4j",
+            "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar");
         return of(map);
       }
       public static Library of(Map<String, String> map) {
