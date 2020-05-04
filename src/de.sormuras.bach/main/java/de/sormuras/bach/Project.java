@@ -25,11 +25,14 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -199,10 +202,16 @@ public /*static*/ final class Project {
 
   /** A project structure. */
   public static final class Structure {
+    private final Library library;
     private final List<Realm> realms;
 
-    public Structure(List<Realm> realms) {
+    public Structure(Library library, List<Realm> realms) {
+      this.library = library;
       this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
+    }
+
+    public Library library() {
+      return library;
     }
 
     public List<Realm> realms() {
@@ -211,6 +220,55 @@ public /*static*/ final class Project {
 
     public Stream<Unit> units() {
       return realms.stream().flatMap(realm -> realm.units().stream());
+    }
+  }
+
+  /** An external modules management and lookup service. */
+  public static final class Library {
+    public static String central(String group, String artifact, String version) {
+      var host = "https://repo.maven.apache.org/maven2";
+      var file = artifact + '-' + version + ".jar";
+      return String.join("/", host, group.replace('.', '/'), artifact, version, file);
+    }
+
+    public static Library of() {
+      var map = new TreeMap<String, String>();
+      var jupiter = "org.junit.jupiter";
+      map.put(jupiter, central(jupiter, "junit-jupiter", "5.6.2"));
+      map.put(jupiter + ".api", central(jupiter, "junit-jupiter-api", "5.6.2"));
+      map.put(jupiter + ".engine", central(jupiter, "junit-jupiter-engine", "5.6.2"));
+      map.put(jupiter + ".params", central(jupiter, "junit-jupiter-params", "5.6.2"));
+      var platform = "org.junit.platform";
+      map.put(platform + ".commons", central(platform, "junit-platform-commons", "1.6.2"));
+      map.put(platform + ".console", central(platform, "junit-platform-console", "1.6.2"));
+      map.put(platform + ".engine", central(platform, "junit-platform-engine", "1.6.2"));
+      map.put(platform + ".launcher", central(platform, "junit-platform-launcher", "1.6.2"));
+      map.put(platform + ".reporting", central(platform, "junit-platform-reporting", "1.6.2"));
+      map.put(platform + ".testkit", central(platform, "junit-platform-testkit", "1.6.2"));
+      // various artists
+      map.put("org.apiguardian.api", central("org.apiguardian", "apiguardian-api", "1.1.0"));
+      map.put("org.opentest4j", central("org.opentest4j", "opentest4j", "1.2.0"));
+      return of(map);
+    }
+
+    public static Library of(Map<String, String> map) {
+      return new Library(Set.of(), map::get);
+    }
+
+    private final Set<String> required;
+    private final UnaryOperator<String> lookup;
+
+    public Library(Set<String> required, UnaryOperator<String> lookup) {
+      this.required = required;
+      this.lookup = lookup;
+    }
+
+    public Set<String> required() {
+      return required;
+    }
+
+    public UnaryOperator<String> lookup() {
+      return lookup;
     }
   }
 
@@ -275,7 +333,7 @@ public /*static*/ final class Project {
     private Base base = Base.of();
     private String title = "Project Title";
     private Version version = Version.parse("1-ea");
-    private Structure structure = new Structure(List.of());
+    private Structure structure = new Structure(Library.of(), List.of());
 
     public Project build() {
       var info = new Info(title, version);
@@ -339,7 +397,7 @@ public /*static*/ final class Project {
               List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
       var directoryName = base.directory().toAbsolutePath().getFileName();
       return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
-          .structure(new Structure(List.of(realm)));
+          .structure(new Structure(Library.of(), List.of(realm)));
     }
   }
 }
