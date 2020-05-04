@@ -204,11 +204,12 @@ public /*static*/ class Task {
             var uri = map.get(module);
             if (uri == null) continue;
             try {
-              var jar = resources.copy(URI.create(uri), lib.resolve(module + ".jar")).getFileName();
-              var size = Files.size(jar);
-              bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", jar, size, uri);
+              var name = module + ".jar";
+              var file = resources.copy(URI.create(uri), lib.resolve(name));
+              var size = Files.size(file);
+              bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
             } catch (Exception e) {
-              throw new Error("Resolve module '" + module + "' failed: " + uri, e);
+              throw new Error("Resolve module '" + module + "' failed: " + uri +"\n\t" + e, e);
             }
           }
         }
