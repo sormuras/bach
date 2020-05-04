@@ -437,7 +437,7 @@ public class Bach {
       }
     }
   }
-  public class Summary {
+  public static class Summary {
     private final Bach bach;
     private final Logbook logbook;
     public Summary(Bach bach) {
@@ -608,7 +608,7 @@ public class Bach {
         var lib = project.base().directory().resolve("lib");
         class Transporter implements Consumer<Set<String>> {
           public void accept(Set<String> modules) {
-            var resources = new Resources(HttpClient.newHttpClient());
+            var resources = new Resources(bach.getHttpClient());
             for (var module : modules) {
               var raw = library.lookup().apply(module);
               if (raw == null) continue;
