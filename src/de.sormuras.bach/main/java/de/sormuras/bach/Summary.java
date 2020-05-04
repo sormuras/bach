@@ -31,7 +31,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /** A build summary. */
-public class Summary {
+public /*static*/ class Summary {
 
   private final Bach bach;
   private final Logbook logbook;
