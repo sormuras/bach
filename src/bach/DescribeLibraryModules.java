@@ -20,128 +20,105 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 
 /** Load and print attributes of modular JAR files. */
 class DescribeLibraryModules {
 
   public static void main(String... args) throws Exception {
     var modules = new DescribeLibraryModules();
-    modules.describeJUnitPlatform("1.7.0-M1");
-    modules.describeJUnitJupiter("5.7.0-M1");
-    modules.describeJUnitVintage("5.7.0-M1");
-
-    modules.describeAsm("8.0.1");
-    modules.describeByteBuddy("1.10.9");
-
-    modules.describeVariousArtists();
+    modules.mapASM("8.0.1");
+    modules.mapByteBuddy("1.10.9");
+    modules.mapJUnitPlatform("1.7.0-M1");
+    modules.mapJUnitJupiter("5.7.0-M1");
+    modules.mapJUnitVintage("5.7.0-M1");
+    modules.mapVariousArtists();
+    var format = "map.put(\"%s\", \"%s\");%n";
+    modules.map.forEach((module, uri) -> System.out.printf(format, module, uri));
   }
 
   final HttpClient client = HttpClient.newHttpClient();
+  final boolean fragment = false;
+  final Map<String, String> map = new TreeMap<>();
 
-  void describe(String module, String gav) throws Exception {
+  void map(String module, String gav) throws Exception {
     var split = gav.split(":");
     var group = split[0];
     var artifact = split[1];
     var version = split[2];
     var uri = central(group, artifact, version);
-    var head = head(uri);
-    var size = head.headers().firstValue("Content-Length").orElseThrow();
-    var md5 = read(URI.create(uri.toString() + ".md5"));
-    System.out.println(
-        "  put(\""
-            + module
-            + "\", Maven.central(\""
-            + gav
-            + "\", \""
-            + module
-            + "\", "
-            + size
-            + ", \""
-            + md5
-            + "\"));");
+    var fragments = new LinkedHashMap<String, String>();
+    if (fragment) {
+      fragments.put("size", head(uri).headers().firstValue("Content-Length").orElseThrow());
+      fragments.put("md5", read(URI.create(uri.toString() + ".md5")));
+    }
+    var value = uri.toString() + (fragments.isEmpty() ? "" : '#' + fragments.toString());
+    map.put(module, value);
   }
 
-  void describeVariousArtists() throws Exception {
-    describe("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0");
-    describe("org.assertj.core", "org.assertj:assertj-core:3.15.0");
-    describe("org.opentest4j", "org.opentest4j:opentest4j:1.2.0");
+  void mapVariousArtists() throws Exception {
+    map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0");
+    map("org.assertj.core", "org.assertj:assertj-core:3.15.0");
+    map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0");
   }
 
-  void describeAsm(String version) throws Exception {
-    describeAsm("", version);
-    describeAsm(".commons", version);
-    describeAsm(".tree", version);
-    describeAsm(".tree.analysis", "asm-analysis", version);
-    describeAsm(".util", version);
+  void mapASM(String version) throws Exception {
+    mapASM("", version);
+    mapASM(".commons", version);
+    mapASM(".tree", version);
+    mapASM(".tree.analysis", "asm-analysis", version);
+    mapASM(".util", version);
   }
 
-  void describeAsm(String suffix, String version) throws Exception {
+  void mapASM(String suffix, String version) throws Exception {
     var artifact = "asm" + suffix.replace('.', '-');
-    describeAsm(suffix, artifact, version);
+    mapASM(suffix, artifact, version);
   }
 
-  void describeAsm(String suffix, String artifact, String version) throws Exception {
+  void mapASM(String suffix, String artifact, String version) throws Exception {
     var module = "org.objectweb.asm" + suffix;
     var group = "org.ow2.asm";
-    describe(module, group + ':' + artifact + ':' + version);
+    map(module, group + ':' + artifact + ':' + version);
   }
 
-  void describeByteBuddy(String version) throws Exception {
-    describe("net.bytebuddy", "net.bytebuddy:byte-buddy:" + version);
-    describe("net.bytebuddy.agent", "net.bytebuddy:byte-buddy-agent:" + version);
+  void mapByteBuddy(String version) throws Exception {
+    map("net.bytebuddy", "net.bytebuddy:byte-buddy:" + version);
+    map("net.bytebuddy.agent", "net.bytebuddy:byte-buddy-agent:" + version);
   }
 
-  void describeJUnitJupiter(String version) throws Exception {
-    System.out.println("  super(\"org.junit.jupiter\", \"" + version + "\");");
-    describeJUnitJupiter("", version);
-    describeJUnitJupiter(".api", version);
-    describeJUnitJupiter(".engine", version);
-    describeJUnitJupiter(".params", version);
+  void mapJUnitJupiter(String version) throws Exception {
+    mapJUnitJupiter("", version);
+    mapJUnitJupiter(".api", version);
+    mapJUnitJupiter(".engine", version);
+    mapJUnitJupiter(".params", version);
   }
 
-  void describeJUnitJupiter(String suffix, String version) throws Exception {
+  void mapJUnitJupiter(String suffix, String version) throws Exception {
     var artifact = "junit-jupiter" + suffix.replace('.', '-');
-    var uri = central("org.junit.jupiter", artifact, version);
-    var head = head(uri);
-    var size = head.headers().firstValue("Content-Length").orElseThrow();
-    var md5 = read(URI.create(uri.toString() + ".md5"));
-    System.out.println("  put(\"" + suffix + "\", " + size + ", \"" + md5 + "\");");
+    map("org.junit.jupiter" + suffix, "org.junit.jupiter:" + artifact + ":" + version);
   }
 
-  void describeJUnitPlatform(String version) throws Exception {
-    System.out.println("  super(\"org.junit.platform\", \"" + version + "\");");
-    describeJUnitPlatform(".commons", version);
-    describeJUnitPlatform(".console", version);
-    describeJUnitPlatform(".engine", version);
-    describeJUnitPlatform(".launcher", version);
-    describeJUnitPlatform(".reporting", version);
-    describeJUnitPlatform(".testkit", version);
+  void mapJUnitPlatform(String version) throws Exception {
+    mapJUnitPlatform(".commons", version);
+    mapJUnitPlatform(".console", version);
+    mapJUnitPlatform(".engine", version);
+    mapJUnitPlatform(".launcher", version);
+    mapJUnitPlatform(".reporting", version);
+    mapJUnitPlatform(".testkit", version);
   }
 
-  void describeJUnitPlatform(String suffix, String version) throws Exception {
+  void mapJUnitPlatform(String suffix, String version) throws Exception {
     var artifact = "junit-platform" + suffix.replace('.', '-');
-    var uri = central("org.junit.platform", artifact, version);
-    var head = head(uri);
-    var size = head.headers().firstValue("Content-Length").orElseThrow();
-    var md5 = read(URI.create(uri.toString() + ".md5"));
-    System.out.println("  put(\"" + suffix + "\", " + size + ", \"" + md5 + "\");");
+    map("org.junit.platform" + suffix, "org.junit.platform:" + artifact + ":" + version);
   }
 
-  void describeJUnitVintage(String version) throws Exception {
-    System.out.println("  super(\"org.junit.vintage\", \"" + version + "\");");
-    describeJUnitVintage(".engine", version);
-    describe("junit", "junit:junit:4.13");
-    describe("org.hamcrest", "org.hamcrest:hamcrest:2.2");
-  }
-
-  void describeJUnitVintage(String suffix, String version) throws Exception {
-    var artifact = "junit-vintage" + suffix.replace('.', '-');
-    var uri = central("org.junit.vintage", artifact, version);
-    var head = head(uri);
-    var size = head.headers().firstValue("Content-Length").orElseThrow();
-    var md5 = read(URI.create(uri.toString() + ".md5"));
-    System.out.println("  put(\"" + suffix + "\", " + size + ", \"" + md5 + "\");");
+  void mapJUnitVintage(String version) throws Exception {
+    map("org.junit.vintage.engine", "org.junit.vintage:junit-vintage-engine:" + version);
+    map("junit", "junit:junit:4.13");
+    map("org.hamcrest", "org.hamcrest:hamcrest:2.2");
   }
 
   HttpResponse<Void> head(URI uri) throws Exception {
