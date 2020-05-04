@@ -29,6 +29,7 @@ class Build {
 
   public static void main(String... args) {
     var base = Bach.Project.Base.of();
+    var library = Bach.Project.Library.of();
     var realms = List.of(mainRealm(base), testRealm(base));
     var project =
         new Bach.Project(
@@ -36,7 +37,7 @@ class Build {
             new Bach.Project.Info(
                 "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
                 Bach.VERSION),
-            new Bach.Project.Structure(realms));
+            new Bach.Project.Structure(library, realms));
     var bach = Bach.of(project);
     bach.build().assertSuccessful();
   }
