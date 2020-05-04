@@ -36,8 +36,7 @@ class DescribeLibraryModules {
     modules.mapJUnitJupiter("5.7.0-M1");
     modules.mapJUnitVintage("5.7.0-M1");
     modules.mapVariousArtists();
-    var format = "map.put(\"%s\", \"%s\");%n";
-    modules.map.forEach((module, uri) -> System.out.printf(format, module, uri));
+    modules.map.forEach((module, uri) -> System.out.printf("put(\"%s\", \"%s\");%n", module, uri));
   }
 
   final HttpClient client = HttpClient.newHttpClient();
