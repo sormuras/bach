@@ -49,11 +49,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -111,12 +113,16 @@ public class Bach {
   }
   public Summary build() {
     var summary = new Summary(this);
-    execute(buildSequence());
-    summary.writeMarkdown(project.base().workspace("summary.md"), true);
+    try {
+      execute(buildSequence());
+    } finally {
+      summary.writeMarkdown(project.base().workspace("summary.md"), true);
+    }
     return summary;
   }
   Task buildSequence() {
     var tasks = new ArrayList<Task>();
+    tasks.add(new Task.ResolveMissingModules());
     for (var realm : project.structure().realms()) {
       tasks.add(realm.javac());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
@@ -132,12 +138,13 @@ public class Bach {
       try {
         if (logbook.isDryRun()) return;
         task.execute(this);
-        logbook.log(Level.DEBUG, task.getOut().toString().strip());
-        logbook.log(Level.WARNING, task.getErr().toString().strip());
       } catch (Throwable throwable) {
         var message = "Task execution failed";
         logbook.log(Level.ERROR, message, throwable);
         throw new Error(message, throwable);
+      } finally {
+        logbook.log(Level.DEBUG, task.getOut().toString().strip());
+        logbook.log(Level.WARNING, task.getErr().toString().strip());
       }
       return;
     }
@@ -427,6 +434,7 @@ public class Bach {
     public void writeMarkdown(Path file, boolean createCopyWithTimestamp) {
       var markdown = toMarkdown();
       try {
+        Files.createDirectories(file.getParent());
         Files.write(file, markdown);
         if (createCopyWithTimestamp) {
           @SuppressWarnings("SpellCheckingInspection")
@@ -563,6 +571,57 @@ public class Bach {
       }
       public CreateJar(Path jar, Path classes) {
         super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
+      }
+    }
+    public static class ResolveMissingModules extends Task {
+      private static String central(String group, String artifact, String version) {
+        var host = "https://repo.maven.apache.org/maven2";
+        var file = artifact + '-' + version + ".jar";
+        return String.join("/", host, group.replace('.', '/'), artifact, version, file);
+      }
+      private final Map<String, String> map;
+      public ResolveMissingModules() {
+        super("Resolve missing modules", List.of());
+        this.map = new TreeMap<>();
+        var jupiter = "org.junit.jupiter";
+        map.put(jupiter, central(jupiter, "junit-jupiter", "5.6.2"));
+        map.put(jupiter + ".api", central(jupiter, "junit-jupiter-api", "5.6.2"));
+        map.put(jupiter + ".engine", central(jupiter, "junit-jupiter-engine", "5.6.2"));
+        map.put(jupiter + ".params", central(jupiter, "junit-jupiter-params", "5.6.2"));
+        var platform = "org.junit.platform";
+        map.put(platform + ".commons", central(platform, "junit-platform-commons", "1.6.2"));
+        map.put(platform + ".console", central(platform, "junit-platform-console", "1.6.2"));
+        map.put(platform + ".engine", central(platform, "junit-platform-engine", "1.6.2"));
+        map.put(platform + ".launcher", central(platform, "junit-platform-launcher", "1.6.2"));
+        map.put(platform + ".reporting", central(platform, "junit-platform-reporting", "1.6.2"));
+        map.put(platform + ".testkit", central(platform, "junit-platform-testkit", "1.6.2"));
+        map.put("org.apiguardian.api", central("org.apiguardian", "apiguardian-api", "1.1.0"));
+        map.put("org.opentest4j", central("org.opentest4j", "opentest4j", "1.2.0"));
+      }
+      public void execute(Bach bach) {
+        var project = bach.getProject();
+        var lib = project.base().directory().resolve("lib");
+        class Transporter implements Consumer<Set<String>> {
+          public void accept(Set<String> modules) {
+            var resources = new Resources(HttpClient.newHttpClient());
+            for (var module : modules) {
+              var uri = map.get(module);
+              if (uri == null) continue;
+              try {
+                var name = module + ".jar";
+                var file = resources.copy(URI.create(uri), lib.resolve(name));
+                var size = Files.size(file);
+                bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
+              } catch (Exception e) {
+                throw new Error("Resolve module '" + module + "' failed: " + uri +"\n\t" + e, e);
+              }
+            }
+          }
+        }
+        var declared = project.toDeclaredModuleNames();
+        var required = project.toRequiredModuleNames();
+        var resolver = new ModulesResolver(new Path[] {lib}, declared, new Transporter());
+        resolver.resolve(required);
       }
     }
   }
