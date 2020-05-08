@@ -26,6 +26,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -399,11 +400,14 @@ public class Bach {
         return this;
       }
       public Builder walk() {
+        return walk((tool, context) -> {});
+      }
+      public Builder walk(Tool.Tuner tuner) {
         var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
         if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-        return walkAndSetSingleUnnamedRealmStructure(moduleInfoFiles);
+        return walkUnnamedRealm(moduleInfoFiles, tuner);
       }
-      public Builder walkAndSetSingleUnnamedRealmStructure(List<Path> moduleInfoFiles) {
+      public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Tool.Tuner tuner) {
         var moduleNames = new TreeSet<String>();
         var moduleSourcePathPatterns = new TreeSet<String>();
         var units = new ArrayList<Unit>();
@@ -418,18 +422,17 @@ public class Bach {
           units.add(new Unit(descriptor, List.of(new Task.CreateJar(jar, classes))));
         }
         var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
+        var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
+        javac
+            .getAdditionalArguments()
+            .add("--module-source-path", moduleSourcePath)
+            .add("-d", base.classes(""));
+        tuner.tune(javac, new Tool.Context("", null));
         var realm =
             new Realm(
                 "",
                 units,
-                Task.runTool(
-                    "javac",
-                    "--module",
-                    String.join(",", moduleNames),
-                    "--module-source-path",
-                    moduleSourcePath,
-                    "-d",
-                    base.classes("")),
+                new Task.RunTool(javac.provider(), javac.arguments()),
                 List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
         var directoryName = base.directory().toAbsolutePath().getFileName();
         return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
@@ -630,6 +633,76 @@ public class Bach {
         resolver.resolve(required);
         resolver.resolve(library.required());
       }
+    }
+  }
+  public interface Tool {
+    ToolProvider provider();
+    String[] arguments();
+    static boolean assigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof String) return !((String) object).isEmpty();
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      if (object.getClass().isArray()) return Array.getLength(object) != 0;
+      return true;
+    }
+    class Arguments {
+      private final List<String> list = new ArrayList<>();
+      public Arguments add(Object argument) {
+        list.add(argument.toString());
+        return this;
+      }
+      public Arguments add(String key, Object value) {
+        return add(key).add(value);
+      }
+      public Arguments add(Arguments arguments) {
+        list.addAll(arguments.list);
+        return this;
+      }
+      public String[] toStringArray() {
+        return list.toArray(String[]::new);
+      }
+    }
+    final class Context {
+      private final String realm;
+      private final String module;
+      public Context(String realm, String module) {
+        this.realm = realm;
+        this.module = module;
+      }
+      public String realm() {
+        return realm;
+      }
+      public String module() {
+        return module;
+      }
+    }
+    class Javac implements Tool {
+      private final Arguments additionalArguments = new Arguments();
+      private Set<String> compileModulesCheckingTimestamps = Set.of();
+      public ToolProvider provider() {
+        return ToolProvider.findFirst("javac").orElseThrow();
+      }
+      public String[] arguments() {
+        var arguments = new Arguments();
+        var module = getCompileModulesCheckingTimestamps();
+        if (assigned(module)) arguments.add("--module", String.join(",", module));
+        return arguments.add(getAdditionalArguments()).toStringArray();
+      }
+      public Arguments getAdditionalArguments() {
+        return additionalArguments;
+      }
+      public Set<String> getCompileModulesCheckingTimestamps() {
+        return compileModulesCheckingTimestamps;
+      }
+      public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
+        this.compileModulesCheckingTimestamps = moduleNames;
+        return this;
+      }
+    }
+    interface Tuner {
+      void tune(Tool tool, Context context);
     }
   }
   public static class Functions {
