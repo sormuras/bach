@@ -340,12 +340,17 @@ public /*static*/ final class Project {
 
     /** Walk base tree and use {@code module-info.java} units to configure this builder instance. */
     public Builder walk() {
-      var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
-      if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-      return walkAndSetSingleUnnamedRealmStructure(moduleInfoFiles);
+      return walk((tool, context) -> {});
     }
 
-    public Builder walkAndSetSingleUnnamedRealmStructure(List<Path> moduleInfoFiles) {
+    /** Walk base tree and use {@code module-info.java} units to configure this builder instance. */
+    public Builder walk(Tool.Tuner tuner) {
+      var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
+      if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
+      return walkUnnamedRealm(moduleInfoFiles, tuner);
+    }
+
+    public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Tool.Tuner tuner) {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Unit>();
@@ -360,18 +365,20 @@ public /*static*/ final class Project {
         units.add(new Unit(descriptor, List.of(new Task.CreateJar(jar, classes))));
       }
       var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
+
+      var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
+      javac
+          .getAdditionalArguments()
+          .add("--module-source-path", moduleSourcePath)
+          .add("-d", base.classes(""));
+
+      tuner.tune(javac, new Tool.Context("", null));
+
       var realm =
           new Realm(
               "",
               units,
-              Task.runTool(
-                  "javac",
-                  "--module",
-                  String.join(",", moduleNames),
-                  "--module-source-path",
-                  moduleSourcePath,
-                  "-d",
-                  base.classes("")),
+              new Task.RunTool(javac.provider(), javac.arguments()),
               List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
       var directoryName = base.directory().toAbsolutePath().getFileName();
       return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))

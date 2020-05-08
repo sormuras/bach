@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,12 +60,28 @@ class ProjectTests {
     @Test
     void walkJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
-      var project = Project.newProject(base).build();
+      var project =
+          new Project.Builder()
+              .base(Project.Base.of(base))
+              .walk(
+                  (tool, context) -> {
+                    assertEquals("", context.realm());
+                    assertNull(context.module());
+                    if (tool instanceof Tool.Javac)
+                      ((Tool.Javac) tool).getAdditionalArguments().add("--verbose");
+                  })
+              .build();
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("Project JigsawQuickStart 1-ea", project.toTitleAndVersion());
       assertEquals(Set.of("com.greetings"), project.toDeclaredModuleNames());
       assertEquals(Set.of(), project.toRequiredModuleNames());
+      var realm = project.structure().realms().get(0);
+      assertEquals("", realm.name());
+      assertSame(Task.RunTool.class, realm.javac().getClass());
+      var javac = realm.javac();
+      assertTrue(javac.getLabel().contains("--verbose"));
+      assertTrue(javac.getLabel().contains("com.greetings"));
     }
 
     @Test
