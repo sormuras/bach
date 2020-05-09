@@ -22,9 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import de.sormuras.bach.util.Logbook;
+import java.io.PrintWriter;
 import java.net.http.HttpClient;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -53,17 +54,27 @@ class BachTests {
   }
 
   @Test
-  void executeTool() {
+  void executeLocalTool() {
+    class Local implements ToolProvider {
+
+      @Override
+      public String name() {
+        return "local";
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        out.printf("args -> %s", String.join("-", args));
+        return 0;
+      }
+    }
+
     var bach = zero();
-    var task = Task.runTool("javac", "--version");
+    var task = new Task.RunTool(new Local(), "1", "2", "3");
     bach.execute(task);
     var logbook = ((Logbook) bach.getLogger());
     assertLinesMatch(
-        List.of(
-            ">> INIT >>",
-            "T|* javac --version",
-            "D|javac --version",
-            Pattern.quote("D|javac ") + ".+"),
+        List.of(">> INIT >>", "T|* local 1 2 3", "D|local 1 2 3", "D|args -> 1-2-3"),
         logbook.lines(Object::toString));
   }
 }
