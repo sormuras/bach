@@ -49,6 +49,7 @@ class ToolTests {
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
             .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
             .setPathsWhereToFindMoreAssetsPerModule(Map.of("foo.baz", List.of(Path.of("baz-src"))))
+            .setCompileForVirtualMachineVersion(Runtime.version().feature())
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
         List.of(
@@ -64,6 +65,8 @@ class ToolTests {
             "foo.baz=baz-src",
             "--module-path",
             "lib",
+            "--release",
+            "" + Runtime.version().feature(),
             "-d",
             "classes"),
         List.of(javac.toolArguments()));

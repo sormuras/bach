@@ -33,6 +33,7 @@ public /*static*/ class Javac extends AbstractTool {
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
   private Collection<Path> pathsWhereToFindApplicationModules;
+  private int compileForVirtualMachineVersion;
   private Path destinationDirectory;
 
   public Javac() {
@@ -62,6 +63,9 @@ public /*static*/ class Javac extends AbstractTool {
 
     var modulePath = getPathsWhereToFindApplicationModules();
     if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
+
+    var release = getCompileForVirtualMachineVersion();
+    if (assigned(release)) arguments.add("--release", release);
 
     var destination = getDestinationDirectory();
     if (assigned(destination)) arguments.add("-d", destination);
@@ -120,6 +124,15 @@ public /*static*/ class Javac extends AbstractTool {
   public Javac setPathsWhereToFindApplicationModules(
       Collection<Path> pathsWhereToFindApplicationModules) {
     this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+    return this;
+  }
+
+  public int getCompileForVirtualMachineVersion() {
+    return compileForVirtualMachineVersion;
+  }
+
+  public Javac setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
+    this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
     return this;
   }
 
