@@ -17,9 +17,9 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.util.Modules;
-import de.sormuras.bach.util.ModulesMap;
-import de.sormuras.bach.util.Paths;
+import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.internal.ModulesMap;
+import de.sormuras.bach.internal.Paths;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;

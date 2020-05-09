@@ -17,8 +17,8 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.util.Functions;
-import de.sormuras.bach.util.Logbook;
+import de.sormuras.bach.internal.Functions;
+import de.sormuras.bach.internal.Logbook;
 import java.io.PrintWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;

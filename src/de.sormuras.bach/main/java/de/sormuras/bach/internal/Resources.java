@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.util;
+package de.sormuras.bach.internal;
 
 import java.net.URI;
 import java.net.http.HttpClient;

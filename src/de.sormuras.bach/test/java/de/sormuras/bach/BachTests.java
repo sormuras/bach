@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import de.sormuras.bach.util.Logbook;
+import de.sormuras.bach.internal.Logbook;
 import java.io.PrintWriter;
 import java.net.http.HttpClient;
 import java.util.List;

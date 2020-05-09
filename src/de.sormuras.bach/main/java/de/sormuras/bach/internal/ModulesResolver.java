@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.util;
+package de.sormuras.bach.internal;
 
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;

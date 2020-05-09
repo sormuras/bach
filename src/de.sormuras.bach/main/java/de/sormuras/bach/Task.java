@@ -17,8 +17,8 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.util.ModulesResolver;
-import de.sormuras.bach.util.Resources;
+import de.sormuras.bach.internal.ModulesResolver;
+import de.sormuras.bach.internal.Resources;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;

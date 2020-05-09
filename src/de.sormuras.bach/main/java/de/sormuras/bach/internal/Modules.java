@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.util;
+package de.sormuras.bach.internal;
 
 import java.io.File;
 import java.io.IOException;

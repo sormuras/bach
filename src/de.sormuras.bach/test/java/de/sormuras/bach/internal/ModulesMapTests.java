@@ -15,29 +15,23 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.util;
+package de.sormuras.bach.internal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import org.junit.jupiter.api.Test;
+import java.net.URI;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 
-class FunctionsTests {
+class ModulesMapTests {
 
-  private static String slowString(String string) {
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      // ignore
-    }
-    return string;
+  @TestFactory
+  Stream<DynamicTest> mapValueIsValidUri() {
+    return new ModulesMap().entrySet().stream().map(e -> checkUriIsValid(e.getKey(), e.getValue()));
   }
 
-  @Test
-  void memoizeString() {
-    var hello = Functions.memoize(() -> FunctionsTests.slowString("Hello"));
-    var first = hello.get();
-    assertEquals("Hello", first);
-    for (int i = 0; i < 1234; i++) assertSame(first, hello.get());
+  private DynamicTest checkUriIsValid(String module, String uri) {
+    return dynamicTest(module, () -> URI.create(uri));
   }
 }
