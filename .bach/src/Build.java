@@ -156,6 +156,7 @@ class Build {
     jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
     return Bach.Task.sequence(
         "Create modular JAR file " + jar.getFileName(),
+        new Bach.Task.CreateDirectories(jar.getParent()),
         jarCreate.toolTask(),
         jarDescribe.toolTask());
   }
