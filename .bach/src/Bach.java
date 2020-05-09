@@ -419,21 +419,39 @@ public class Bach {
           var classes = base.classes("", module);
           var modules = base.modules("");
           var jar = modules.resolve(module + ".jar");
-          units.add(new Unit(descriptor, List.of(new Task.CreateJar(jar, classes))));
+          var context = new Tool.Context("", module);
+          var jarCreate = new Tool.Jar();
+          jarCreate
+              .getAdditionalArguments()
+              .add("--create")
+              .add("--file", jar)
+              .add("-C", classes, ".");
+          tuner.tune(jarCreate, context);
+          var jarDescribe = new Tool.Jar();
+          jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
+          tuner.tune(jarDescribe, context);
+          var task =
+              Task.sequence(
+                  "Create modular JAR file " + jar.getFileName(),
+                  jarCreate.toolTask(),
+                  jarDescribe.toolTask());
+          units.add(new Unit(descriptor, List.of(task)));
         }
         var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
+        var context = new Tool.Context("", null);
         var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
         javac
             .getAdditionalArguments()
             .add("--module-source-path", moduleSourcePath)
             .add("-d", base.classes(""));
-        tuner.tune(javac, new Tool.Context("", null));
-        var realm =
-            new Realm(
-                "",
-                units,
-                new Task.RunTool(javac.provider(), javac.arguments()),
-                List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
+        tuner.tune(javac, context);
+        var javadoc = new Tool.Javadoc();
+        javadoc.getAdditionalArguments().add("--version");
+        tuner.tune(javadoc, context);
+        var jlink = new Tool.Jlink();
+        jlink.getAdditionalArguments().add("--version");
+        tuner.tune(jlink, context);
+        var realm = new Realm("", units, javac.toolTask(), List.of(javadoc.toolTask(), jlink.toolTask()));
         var directoryName = base.directory().toAbsolutePath().getFileName();
         return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
             .structure(new Structure(Library.of(), List.of(realm)));
@@ -515,12 +533,6 @@ public class Bach {
     public static Task sequence(String label, List<Task> tasks) {
       return new Task(label, tasks);
     }
-    public static Task runTool(String name, Object... arguments) {
-      var tool = ToolProvider.findFirst(name).orElseThrow();
-      var args = new String[arguments.length];
-      for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
-      return new RunTool(tool, args);
-    }
     private final String label;
     private final List<Task> list;
     private final StringWriter out;
@@ -590,17 +602,6 @@ public class Bach {
         }
       }
     }
-    public static class CreateJar extends Task {
-      private static List<Task> list(Path jar, Path classes) {
-        return List.of(
-            new CreateDirectories(jar.getParent()),
-            runTool("jar", "--create", "--file", jar, "-C", classes, "."),
-            runTool("jar", "--describe-module", "--file", jar));
-      }
-      public CreateJar(Path jar, Path classes) {
-        super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
-      }
-    }
     public static class ResolveMissingModules extends Task {
       public ResolveMissingModules() {
         super("Resolve missing modules", List.of());
@@ -636,8 +637,11 @@ public class Bach {
     }
   }
   public interface Tool {
-    ToolProvider provider();
-    String[] arguments();
+    ToolProvider toolProvider();
+    String[] toolArguments();
+    default Task toolTask() {
+      return new Task.RunTool(toolProvider(), toolArguments());
+    }
     static boolean assigned(Object object) {
       if (object == null) return false;
       if (object instanceof Number) return ((Number) object).intValue() != 0;
@@ -655,6 +659,9 @@ public class Bach {
       }
       public Arguments add(String key, Object value) {
         return add(key).add(value);
+      }
+      public Arguments add(String key, Object first, Object second) {
+        return add(key).add(first).add(second);
       }
       public Arguments add(Arguments arguments) {
         list.addAll(arguments.list);
@@ -678,20 +685,33 @@ public class Bach {
         return module;
       }
     }
-    class Javac implements Tool {
+    abstract class AbstractTool implements Tool {
+      private final String name;
       private final Arguments additionalArguments = new Arguments();
-      private Set<String> compileModulesCheckingTimestamps = Set.of();
-      public ToolProvider provider() {
-        return ToolProvider.findFirst("javac").orElseThrow();
-      }
-      public String[] arguments() {
-        var arguments = new Arguments();
-        var module = getCompileModulesCheckingTimestamps();
-        if (assigned(module)) arguments.add("--module", String.join(",", module));
-        return arguments.add(getAdditionalArguments()).toStringArray();
+      public AbstractTool(String name) {
+        this.name = name;
       }
       public Arguments getAdditionalArguments() {
         return additionalArguments;
+      }
+      public ToolProvider toolProvider() {
+        return ToolProvider.findFirst(name).orElseThrow();
+      }
+      public String[] toolArguments() {
+        var arguments = new Arguments();
+        arguments(arguments);
+        return arguments.add(getAdditionalArguments()).toStringArray();
+      }
+      protected void arguments(Arguments arguments) {}
+    }
+    class Javac extends AbstractTool {
+      private Set<String> compileModulesCheckingTimestamps = Set.of();
+      public Javac() {
+        super("javac");
+      }
+      protected void arguments(Arguments arguments) {
+        var module = getCompileModulesCheckingTimestamps();
+        if (assigned(module)) arguments.add("--module", String.join(",", module));
       }
       public Set<String> getCompileModulesCheckingTimestamps() {
         return compileModulesCheckingTimestamps;
@@ -699,6 +719,21 @@ public class Bach {
       public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
         this.compileModulesCheckingTimestamps = moduleNames;
         return this;
+      }
+    }
+    class Jar extends AbstractTool {
+      public Jar() {
+        super("jar");
+      }
+    }
+    class Javadoc extends AbstractTool {
+      public Javadoc() {
+        super("javadoc");
+      }
+    }
+    class Jlink extends AbstractTool {
+      public Jlink() {
+        super("jlink");
       }
     }
     interface Tuner {

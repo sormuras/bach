@@ -18,6 +18,7 @@
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /**
@@ -48,13 +49,13 @@ class Build {
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
                 List.of(
-                    new Bach.Task.CreateJar(
+                    createJar(
                         base.modules("main").resolve("de.sormuras.bach.jar"),
                         base.classes("main", "de.sormuras.bach")))));
     var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.joining(","));
     var moduleSourcePath = "src/*/main/java".replace('/', File.separatorChar);
     var javac =
-        Bach.Task.runTool(
+        runTool(
             "javac",
             "--module",
             moduleNames,
@@ -72,7 +73,7 @@ class Build {
             "Create API documentation",
             List.of(
                 new Bach.Task.CreateDirectories(base.api()),
-                Bach.Task.runTool(
+                runTool(
                     "javadoc",
                     "--module",
                     moduleNames,
@@ -93,7 +94,7 @@ class Build {
             "Create custom runtime image",
             List.of(
                 new Bach.Task.DeleteDirectories(base.image()),
-                Bach.Task.runTool(
+                runTool(
                     "jlink",
                     "--launcher",
                     "bach=de.sormuras.bach/de.sormuras.bach.Main",
@@ -117,13 +118,13 @@ class Build {
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
                 List.of(
-                    new Bach.Task.CreateJar(
+                    createJar(
                         base.modules("test").resolve("test.base.jar"),
                         base.classes("test", "test.base")))));
     var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.joining(","));
     var moduleSourcePath = "src/*/test/java".replace('/', File.separatorChar);
     var javac =
-        Bach.Task.runTool(
+        runTool(
             "javac",
             "--module",
             moduleNames,
@@ -139,5 +140,23 @@ class Build {
             "-d",
             base.classes("test"));
     return new Bach.Project.Realm("test", units, javac, List.of());
+  }
+
+  static Bach.Task runTool(String name, Object... arguments) {
+    var tool = ToolProvider.findFirst(name).orElseThrow();
+    var args = new String[arguments.length];
+    for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
+    return new Bach.Task.RunTool(tool, args);
+  }
+
+  static Bach.Task createJar(Path jar, Path classes) {
+    var jarCreate = new Bach.Tool.Jar();
+    jarCreate.getAdditionalArguments().add("--create").add("--file", jar).add("-C", classes, ".");
+    var jarDescribe = new Bach.Tool.Jar();
+    jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
+    return Bach.Task.sequence(
+        "Create modular JAR file " + jar.getFileName(),
+        jarCreate.toolTask(),
+        jarDescribe.toolTask());
   }
 }
