@@ -391,7 +391,7 @@ public /*static*/ final class Project {
       var context = new Tool.Context("", null);
       var javac = new Javac()
           .setCompileModulesCheckingTimestamps(moduleNames)
-          .setWhereToFindSourceFilesInModulePatternForm(moduleSourcePathPatterns)
+          .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
           .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
 

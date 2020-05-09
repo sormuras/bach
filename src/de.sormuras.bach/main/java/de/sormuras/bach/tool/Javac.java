@@ -17,17 +17,20 @@
 
 package de.sormuras.bach.tool;
 
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /** A call to {@code javac}, the Java compiler. */
 public /*static*/ class Javac extends AbstractTool {
 
   private Set<String> compileModulesCheckingTimestamps;
-  private Map<String, Collection<Path>> whereToFindSourceFilesInModuleSpecificForm;
-  private Collection<String> whereToFindSourceFilesInModulePatternForm;
+  private Version versionOfModulesThatAreBeingCompiled;
+  private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
+  private Collection<String> patternsWhereToFindSourceFiles;
   private Path destinationDirectory;
 
   public Javac() {
@@ -37,14 +40,17 @@ public /*static*/ class Javac extends AbstractTool {
   @Override
   protected void arguments(Arguments arguments) {
     var module = getCompileModulesCheckingTimestamps();
-    if (assigned(module)) arguments.add("--module", String.join(",", module));
+    if (assigned(module)) arguments.add("--module", String.join(",", new TreeSet<>(module)));
 
-    var specific = getWhereToFindSourceFilesInModuleSpecificForm();
+    var version = getVersionOfModulesThatAreBeingCompiled();
+    if (assigned(version)) arguments.add("--module-version", version);
+
+    var specific = getPathsWhereToFindSourceFiles();
     if (assigned(specific))
       for (var entry : specific.entrySet())
         arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
 
-    var patterns = getWhereToFindSourceFilesInModulePatternForm();
+    var patterns = getPatternsWhereToFindSourceFiles();
     if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
 
     var destination = getDestinationDirectory();
@@ -60,21 +66,30 @@ public /*static*/ class Javac extends AbstractTool {
     return this;
   }
 
-  public Map<String, Collection<Path>> getWhereToFindSourceFilesInModuleSpecificForm() {
-    return whereToFindSourceFilesInModuleSpecificForm;
+  public Version getVersionOfModulesThatAreBeingCompiled() {
+    return versionOfModulesThatAreBeingCompiled;
   }
 
-  public Javac setWhereToFindSourceFilesInModuleSpecificForm(Map<String, Collection<Path>> map) {
-    this.whereToFindSourceFilesInModuleSpecificForm = map;
+  public Javac setVersionOfModulesThatAreBeingCompiled(Version versionOfModulesThatAreBeingCompiled) {
+    this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
     return this;
   }
 
-  public Collection<String> getWhereToFindSourceFilesInModulePatternForm() {
-    return whereToFindSourceFilesInModulePatternForm;
+  public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+    return pathsWhereToFindSourceFiles;
   }
 
-  public Javac setWhereToFindSourceFilesInModulePatternForm(Collection<String> patterns) {
-    this.whereToFindSourceFilesInModulePatternForm = patterns;
+  public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+    this.pathsWhereToFindSourceFiles = map;
+    return this;
+  }
+
+  public Collection<String> getPatternsWhereToFindSourceFiles() {
+    return patternsWhereToFindSourceFiles;
+  }
+
+  public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+    this.patternsWhereToFindSourceFiles = patterns;
     return this;
   }
 

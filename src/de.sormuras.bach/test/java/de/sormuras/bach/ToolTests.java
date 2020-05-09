@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import de.sormuras.bach.tool.Javac;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -43,14 +44,17 @@ class ToolTests {
     var javac =
         new Javac()
             .setCompileModulesCheckingTimestamps(Set.of("foo.bar", "foo.baz"))
-            .setWhereToFindSourceFilesInModuleSpecificForm(
+            .setVersionOfModulesThatAreBeingCompiled(ModuleDescriptor.Version.parse("1.2.3"))
+            .setPathsWhereToFindSourceFiles(
                 Map.of("foo.bar", List.of(Path.of("foo-src"))))
-            .setWhereToFindSourceFilesInModulePatternForm(List.of("src/*/main/java"))
+            .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
         List.of(
             "--module",
             "foo.bar,foo.baz",
+            "--module-version",
+            "1.2.3",
             "--module-source-path",
             "foo.bar=foo-src",
             "--module-source-path",
