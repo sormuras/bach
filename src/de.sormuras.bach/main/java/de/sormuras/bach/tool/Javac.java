@@ -31,6 +31,7 @@ public /*static*/ class Javac extends AbstractTool {
   private Version versionOfModulesThatAreBeingCompiled;
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Collection<String> patternsWhereToFindSourceFiles;
+  private Collection<Path> pathsWhereToFindApplicationModules;
   private Path destinationDirectory;
 
   public Javac() {
@@ -52,6 +53,9 @@ public /*static*/ class Javac extends AbstractTool {
 
     var patterns = getPatternsWhereToFindSourceFiles();
     if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+
+    var modulePath = getPathsWhereToFindApplicationModules();
+    if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
 
     var destination = getDestinationDirectory();
     if (assigned(destination)) arguments.add("-d", destination);
@@ -90,6 +94,15 @@ public /*static*/ class Javac extends AbstractTool {
 
   public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
     this.patternsWhereToFindSourceFiles = patterns;
+    return this;
+  }
+
+  public Collection<Path> getPathsWhereToFindApplicationModules() {
+    return pathsWhereToFindApplicationModules;
+  }
+
+  public Javac setPathsWhereToFindApplicationModules(Collection<Path> pathsWhereToFindApplicationModules) {
+    this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
     return this;
   }
 

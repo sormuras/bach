@@ -45,9 +45,9 @@ class ToolTests {
         new Javac()
             .setCompileModulesCheckingTimestamps(Set.of("foo.bar", "foo.baz"))
             .setVersionOfModulesThatAreBeingCompiled(ModuleDescriptor.Version.parse("1.2.3"))
-            .setPathsWhereToFindSourceFiles(
-                Map.of("foo.bar", List.of(Path.of("foo-src"))))
+            .setPathsWhereToFindSourceFiles(Map.of("foo.bar", List.of(Path.of("foo-src"))))
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
+            .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
         List.of(
@@ -59,6 +59,8 @@ class ToolTests {
             "foo.bar=foo-src",
             "--module-source-path",
             "src/*/main/java",
+            "--module-path",
+            "lib",
             "-d",
             "classes"),
         List.of(javac.toolArguments()));
