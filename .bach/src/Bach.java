@@ -180,6 +180,15 @@ public class Bach {
     public static Builder newProject(String title, String version) {
       return new Builder().title(title).version(Version.parse(version));
     }
+    static void tuner(Tool tool, @SuppressWarnings("unused") Tool.Context context) {
+      if (tool instanceof Javac) {
+        var javac = (Javac) tool;
+        javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
+        javac.setGenerateMetadataForMethodParameters(true);
+        javac.setTerminateCompilationIfWarningsOccur(true);
+        javac.getAdditionalArguments().add("-X" + "lint");
+      }
+    }
     private final Base base;
     private final Info info;
     private final Structure structure;
@@ -400,7 +409,7 @@ public class Bach {
         return this;
       }
       public Builder walk() {
-        return walk((tool, context) -> {});
+        return walk(Project::tuner);
       }
       public Builder walk(Tool.Tuner tuner) {
         var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
@@ -1177,50 +1186,50 @@ public class Bach {
     public String getCharacterEncodingUsedBySourceFiles() {
       return characterEncodingUsedBySourceFiles;
     }
-    public Javac setCharacterEncodingUsedBySourceFiles(String characterEncodingUsedBySourceFiles) {
-      this.characterEncodingUsedBySourceFiles = characterEncodingUsedBySourceFiles;
+    public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
+      this.characterEncodingUsedBySourceFiles = encoding;
       return this;
     }
     public int getCompileForVirtualMachineVersion() {
       return compileForVirtualMachineVersion;
     }
-    public Javac setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
-      this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
+    public Javac setCompileForVirtualMachineVersion(int release) {
+      this.compileForVirtualMachineVersion = release;
       return this;
     }
     public boolean isEnablePreviewLanguageFeatures() {
       return enablePreviewLanguageFeatures;
     }
-    public Javac setEnablePreviewLanguageFeatures(boolean enablePreviewLanguageFeatures) {
-      this.enablePreviewLanguageFeatures = enablePreviewLanguageFeatures;
+    public Javac setEnablePreviewLanguageFeatures(boolean preview) {
+      this.enablePreviewLanguageFeatures = preview;
       return this;
     }
     public boolean isGenerateMetadataForMethodParameters() {
       return generateMetadataForMethodParameters;
     }
-    public Javac setGenerateMetadataForMethodParameters(boolean generateMetadataForMethodParameters) {
-      this.generateMetadataForMethodParameters = generateMetadataForMethodParameters;
+    public Javac setGenerateMetadataForMethodParameters(boolean parameters) {
+      this.generateMetadataForMethodParameters = parameters;
       return this;
     }
     public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
       return outputMessagesAboutWhatTheCompilerIsDoing;
     }
-    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean outputMessagesAboutWhatTheCompilerIsDoing) {
-      this.outputMessagesAboutWhatTheCompilerIsDoing = outputMessagesAboutWhatTheCompilerIsDoing;
+    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
+      this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
       return this;
     }
     public boolean isOutputSourceLocationsOfDeprecatedUsages() {
       return outputSourceLocationsOfDeprecatedUsages;
     }
-    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean outputSourceLocationsOfDeprecatedUsages) {
-      this.outputSourceLocationsOfDeprecatedUsages = outputSourceLocationsOfDeprecatedUsages;
+    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
+      this.outputSourceLocationsOfDeprecatedUsages = deprecation;
       return this;
     }
     public boolean isTerminateCompilationIfWarningsOccur() {
       return terminateCompilationIfWarningsOccur;
     }
-    public Javac setTerminateCompilationIfWarningsOccur(boolean terminateCompilationIfWarningsOccur) {
-      this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
+    public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
+      this.terminateCompilationIfWarningsOccur = error;
       return this;
     }
     public Path getDestinationDirectory() {
