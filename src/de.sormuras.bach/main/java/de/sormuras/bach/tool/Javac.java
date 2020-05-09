@@ -29,8 +29,9 @@ public /*static*/ class Javac extends AbstractTool {
 
   private Set<String> compileModulesCheckingTimestamps;
   private Version versionOfModulesThatAreBeingCompiled;
-  private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Collection<String> patternsWhereToFindSourceFiles;
+  private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
+  private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
   private Collection<Path> pathsWhereToFindApplicationModules;
   private Path destinationDirectory;
 
@@ -46,13 +47,18 @@ public /*static*/ class Javac extends AbstractTool {
     var version = getVersionOfModulesThatAreBeingCompiled();
     if (assigned(version)) arguments.add("--module-version", version);
 
+    var patterns = getPatternsWhereToFindSourceFiles();
+    if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+
     var specific = getPathsWhereToFindSourceFiles();
     if (assigned(specific))
       for (var entry : specific.entrySet())
         arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
 
-    var patterns = getPatternsWhereToFindSourceFiles();
-    if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+    var patches = getPathsWhereToFindMoreAssetsPerModule();
+    if (assigned(patches))
+      for (var patch : patches.entrySet())
+        arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
 
     var modulePath = getPathsWhereToFindApplicationModules();
     if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
@@ -74,17 +80,9 @@ public /*static*/ class Javac extends AbstractTool {
     return versionOfModulesThatAreBeingCompiled;
   }
 
-  public Javac setVersionOfModulesThatAreBeingCompiled(Version versionOfModulesThatAreBeingCompiled) {
+  public Javac setVersionOfModulesThatAreBeingCompiled(
+      Version versionOfModulesThatAreBeingCompiled) {
     this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
-    return this;
-  }
-
-  public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
-    return pathsWhereToFindSourceFiles;
-  }
-
-  public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
-    this.pathsWhereToFindSourceFiles = map;
     return this;
   }
 
@@ -97,11 +95,30 @@ public /*static*/ class Javac extends AbstractTool {
     return this;
   }
 
+  public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+    return pathsWhereToFindSourceFiles;
+  }
+
+  public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+    this.pathsWhereToFindSourceFiles = map;
+    return this;
+  }
+
+  public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+    return pathsWhereToFindMoreAssetsPerModule;
+  }
+
+  public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+    this.pathsWhereToFindMoreAssetsPerModule = map;
+    return this;
+  }
+
   public Collection<Path> getPathsWhereToFindApplicationModules() {
     return pathsWhereToFindApplicationModules;
   }
 
-  public Javac setPathsWhereToFindApplicationModules(Collection<Path> pathsWhereToFindApplicationModules) {
+  public Javac setPathsWhereToFindApplicationModules(
+      Collection<Path> pathsWhereToFindApplicationModules) {
     this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
     return this;
   }

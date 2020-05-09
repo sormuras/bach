@@ -48,6 +48,7 @@ class ToolTests {
             .setPathsWhereToFindSourceFiles(Map.of("foo.bar", List.of(Path.of("foo-src"))))
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
             .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
+            .setPathsWhereToFindMoreAssetsPerModule(Map.of("foo.baz", List.of(Path.of("baz-src"))))
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
         List.of(
@@ -56,9 +57,11 @@ class ToolTests {
             "--module-version",
             "1.2.3",
             "--module-source-path",
-            "foo.bar=foo-src",
-            "--module-source-path",
             "src/*/main/java",
+            "--module-source-path",
+            "foo.bar=foo-src",
+            "--patch-module",
+            "foo.baz=baz-src",
             "--module-path",
             "lib",
             "-d",
