@@ -20,7 +20,10 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,7 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ToolTests {
 
   @ParameterizedTest
-  @ValueSource(classes = {Javac.class})
+  @ValueSource(classes = {Javac.class, Javadoc.class, Jar.class, Jlink.class})
   void defaultToolInstanceYieldsEmptyListOfArguments(Class<? extends Tool> tool) throws Exception {
     var instance = tool.getConstructor().newInstance();
     assertEquals(List.of(), List.of(instance.toolArguments()));
