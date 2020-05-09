@@ -28,11 +28,15 @@ import java.util.spi.ToolProvider;
 /** Tool call API consisting of a provider and its arguments, as a {@link String} array. */
 public interface Tool {
 
-  /** Return the tool provider to run. */
-  ToolProvider provider();
+  /** Return the tool provider running this tool. */
+  ToolProvider toolProvider();
 
   /** Return the arguments to pass to {@code ToolProvider#run(out, err, String...)}. */
-  String[] arguments();
+  String[] toolArguments();
+
+  default Task toolTask() {
+    return new Task.RunTool(toolProvider(), toolArguments());
+  }
 
   /** Return {@code true} if the given object is not null in any form, otherwise {@code false}. */
   static boolean assigned(Object object) {
@@ -56,6 +60,10 @@ public interface Tool {
 
     public Arguments add(String key, Object value) {
       return add(key).add(value);
+    }
+
+    public Arguments add(String key, Object first, Object second) {
+      return add(key).add(first).add(second);
     }
 
     public Arguments add(Arguments arguments) {
@@ -87,27 +95,48 @@ public interface Tool {
     }
   }
 
-  /** A call to {@code javac}, the Java compiler. */
-  class Javac implements Tool {
+  /** An abstract tool implementation providing support for additional arguments. */
+  abstract class AbstractTool implements Tool {
 
+    private final String name;
     private final Arguments additionalArguments = new Arguments();
-    private Set<String> compileModulesCheckingTimestamps = Set.of();
 
-    @Override
-    public ToolProvider provider() {
-      return ToolProvider.findFirst("javac").orElseThrow();
-    }
-
-    @Override
-    public String[] arguments() {
-      var arguments = new Arguments();
-      var module = getCompileModulesCheckingTimestamps();
-      if (assigned(module)) arguments.add("--module", String.join(",", module));
-      return arguments.add(getAdditionalArguments()).toStringArray();
+    public AbstractTool(String name) {
+      this.name = name;
     }
 
     public Arguments getAdditionalArguments() {
       return additionalArguments;
+    }
+
+    @Override
+    public ToolProvider toolProvider() {
+      return ToolProvider.findFirst(name).orElseThrow();
+    }
+
+    @Override
+    public String[] toolArguments() {
+      var arguments = new Arguments();
+      arguments(arguments);
+      return arguments.add(getAdditionalArguments()).toStringArray();
+    }
+
+    protected void arguments(Arguments arguments) {}
+  }
+
+  /** A call to {@code javac}, the Java compiler. */
+  class Javac extends AbstractTool {
+
+    private Set<String> compileModulesCheckingTimestamps = Set.of();
+
+    public Javac() {
+      super("javac");
+    }
+
+    @Override
+    protected void arguments(Arguments arguments) {
+      var module = getCompileModulesCheckingTimestamps();
+      if (assigned(module)) arguments.add("--module", String.join(",", module));
     }
 
     public Set<String> getCompileModulesCheckingTimestamps() {
