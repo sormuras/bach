@@ -24,7 +24,6 @@ import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import de.sormuras.bach.tool.Jlink;
-import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -388,14 +387,12 @@ public /*static*/ final class Project {
 
         units.add(new Unit(descriptor, List.of(task)));
       }
-      var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
 
       var context = new Tool.Context("", null);
-      var javac = new Javac().setCompileModulesCheckingTimestamps(moduleNames);
-      javac
-          .getAdditionalArguments()
-          .add("--module-source-path", moduleSourcePath)
-          .add("-d", base.classes(""));
+      var javac = new Javac()
+          .setCompileModulesCheckingTimestamps(moduleNames)
+          .setWhereToFindSourceFilesInModulePatternForm(moduleSourcePathPatterns)
+          .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
 
       var javadoc = new Javadoc();
