@@ -378,6 +378,7 @@ public /*static*/ final class Project {
         var task =
             Task.sequence(
                 "Create modular JAR file " + jar.getFileName(),
+                new Task.CreateDirectories(jar.getParent()),
                 jarCreate.toolTask(),
                 jarDescribe.toolTask());
 
