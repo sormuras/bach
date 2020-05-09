@@ -150,9 +150,9 @@ class Build {
   }
 
   static Bach.Task createJar(Path jar, Path classes) {
-    var jarCreate = new Bach.Tool.Jar();
+    var jarCreate = new Bach.Jar();
     jarCreate.getAdditionalArguments().add("--create").add("--file", jar).add("-C", classes, ".");
-    var jarDescribe = new Bach.Tool.Jar();
+    var jarDescribe = new Bach.Jar();
     jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
     return Bach.Task.sequence(
         "Create modular JAR file " + jar.getFileName(),

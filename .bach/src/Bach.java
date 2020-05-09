@@ -420,14 +420,14 @@ public class Bach {
           var modules = base.modules("");
           var jar = modules.resolve(module + ".jar");
           var context = new Tool.Context("", module);
-          var jarCreate = new Tool.Jar();
+          var jarCreate = new Jar();
           jarCreate
               .getAdditionalArguments()
               .add("--create")
               .add("--file", jar)
               .add("-C", classes, ".");
           tuner.tune(jarCreate, context);
-          var jarDescribe = new Tool.Jar();
+          var jarDescribe = new Jar();
           jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
           tuner.tune(jarDescribe, context);
           var task =
@@ -440,16 +440,16 @@ public class Bach {
         }
         var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
         var context = new Tool.Context("", null);
-        var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
+        var javac = new Javac().setCompileModulesCheckingTimestamps(moduleNames);
         javac
             .getAdditionalArguments()
             .add("--module-source-path", moduleSourcePath)
             .add("-d", base.classes(""));
         tuner.tune(javac, context);
-        var javadoc = new Tool.Javadoc();
+        var javadoc = new Javadoc();
         javadoc.getAdditionalArguments().add("--version");
         tuner.tune(javadoc, context);
-        var jlink = new Tool.Jlink();
+        var jlink = new Jlink();
         jlink.getAdditionalArguments().add("--version");
         tuner.tune(jlink, context);
         var realm = new Realm("", units, javac.toolTask(), List.of(javadoc.toolTask(), jlink.toolTask()));
@@ -643,15 +643,6 @@ public class Bach {
     default Task toolTask() {
       return new Task.RunTool(toolProvider(), toolArguments());
     }
-    static boolean assigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof String) return !((String) object).isEmpty();
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      if (object.getClass().isArray()) return Array.getLength(object) != 0;
-      return true;
-    }
     class Arguments {
       private final List<String> list = new ArrayList<>();
       public Arguments add(Object argument) {
@@ -684,57 +675,6 @@ public class Bach {
       }
       public String module() {
         return module;
-      }
-    }
-    abstract class AbstractTool implements Tool {
-      private final String name;
-      private final Arguments additionalArguments = new Arguments();
-      public AbstractTool(String name) {
-        this.name = name;
-      }
-      public Arguments getAdditionalArguments() {
-        return additionalArguments;
-      }
-      public ToolProvider toolProvider() {
-        return ToolProvider.findFirst(name).orElseThrow();
-      }
-      public String[] toolArguments() {
-        var arguments = new Arguments();
-        arguments(arguments);
-        return arguments.add(getAdditionalArguments()).toStringArray();
-      }
-      protected void arguments(Arguments arguments) {}
-    }
-    class Javac extends AbstractTool {
-      private Set<String> compileModulesCheckingTimestamps = Set.of();
-      public Javac() {
-        super("javac");
-      }
-      protected void arguments(Arguments arguments) {
-        var module = getCompileModulesCheckingTimestamps();
-        if (assigned(module)) arguments.add("--module", String.join(",", module));
-      }
-      public Set<String> getCompileModulesCheckingTimestamps() {
-        return compileModulesCheckingTimestamps;
-      }
-      public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
-        this.compileModulesCheckingTimestamps = moduleNames;
-        return this;
-      }
-    }
-    class Jar extends AbstractTool {
-      public Jar() {
-        super("jar");
-      }
-    }
-    class Javadoc extends AbstractTool {
-      public Javadoc() {
-        super("javadoc");
-      }
-    }
-    class Jlink extends AbstractTool {
-      public Jlink() {
-        super("jlink");
       }
     }
     interface Tuner {
@@ -1104,6 +1044,66 @@ public class Bach {
     public String read(URI uri) throws Exception {
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
+    }
+  }
+  public static abstract class AbstractTool implements Tool {
+    private final String name;
+    private final Arguments additionalArguments = new Arguments();
+    public AbstractTool(String name) {
+      this.name = name;
+    }
+    public Arguments getAdditionalArguments() {
+      return additionalArguments;
+    }
+    public ToolProvider toolProvider() {
+      return ToolProvider.findFirst(name).orElseThrow();
+    }
+    public String[] toolArguments() {
+      var arguments = new Arguments();
+      arguments(arguments);
+      return arguments.add(getAdditionalArguments()).toStringArray();
+    }
+    protected void arguments(Arguments arguments) {}
+    protected boolean assigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof String) return !((String) object).isEmpty();
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      if (object.getClass().isArray()) return Array.getLength(object) != 0;
+      return true;
+    }
+  }
+  public static class Jar extends AbstractTool {
+    public Jar() {
+      super("jar");
+    }
+  }
+  public static class Javac extends AbstractTool {
+    private Set<String> compileModulesCheckingTimestamps = Set.of();
+    public Javac() {
+      super("javac");
+    }
+    protected void arguments(Arguments arguments) {
+      var module = getCompileModulesCheckingTimestamps();
+      if (assigned(module)) arguments.add("--module", String.join(",", module));
+    }
+    public Set<String> getCompileModulesCheckingTimestamps() {
+      return compileModulesCheckingTimestamps;
+    }
+    public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
+      this.compileModulesCheckingTimestamps = moduleNames;
+      return this;
+    }
+  }
+  public static class Javadoc extends AbstractTool {
+    public Javadoc() {
+      super("javadoc");
+    }
+  }
+  public static class Jlink extends AbstractTool {
+    public Jlink() {
+      super("jlink");
     }
   }
 }
