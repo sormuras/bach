@@ -18,13 +18,35 @@
 package de.sormuras.bach.tool;
 
 import de.sormuras.bach.Tool;
+import java.io.File;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 /** An abstract tool implementation providing support for additional arguments. */
 public /*static*/ abstract class AbstractTool implements Tool {
+
+  /** Return {@code true} if the given object is not null in any form, otherwise {@code false}. */
+  public static boolean assigned(Object object) {
+    if (object == null) return false;
+    if (object instanceof Number) return ((Number) object).intValue() != 0;
+    if (object instanceof String) return !((String) object).isEmpty();
+    if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+    if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+    if (object.getClass().isArray()) return Array.getLength(object) != 0;
+    return true;
+  }
+
+  public static String join(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
+  public static String joinPaths(Collection<String> paths) {
+    return String.join(File.pathSeparator, paths);
+  }
 
   private final String name;
   private final Arguments additionalArguments = new Arguments();
@@ -50,15 +72,4 @@ public /*static*/ abstract class AbstractTool implements Tool {
   }
 
   protected void arguments(Arguments arguments) {}
-
-  /** Return {@code true} if the given object is not null in any form, otherwise {@code false}. */
-  protected boolean assigned(Object object) {
-    if (object == null) return false;
-    if (object instanceof Number) return ((Number) object).intValue() != 0;
-    if (object instanceof String) return !((String) object).isEmpty();
-    if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-    if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-    if (object.getClass().isArray()) return Array.getLength(object) != 0;
-    return true;
-  }
 }
