@@ -19,7 +19,6 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,9 +65,8 @@ class ProjectTests {
               .walk(
                   (tool, context) -> {
                     assertEquals("", context.realm());
-                    assertNull(context.module());
-                    if (tool instanceof Tool.Javac)
-                      ((Tool.Javac) tool).getAdditionalArguments().add("--verbose");
+                    if (tool instanceof Tool.AbstractTool)
+                      ((Tool.AbstractTool) tool).getAdditionalArguments().add("--verbose");
                   })
               .build();
       assertSame(base, project.base().directory());

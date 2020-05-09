@@ -43,13 +43,6 @@ public /*static*/ class Task {
     return new Task(label, tasks);
   }
 
-  public static Task runTool(String name, Object... arguments) {
-    var tool = ToolProvider.findFirst(name).orElseThrow();
-    var args = new String[arguments.length];
-    for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
-    return new RunTool(tool, args);
-  }
-
   private final String label;
   private final List<Task> list;
   private final StringWriter out;
@@ -141,20 +134,6 @@ public /*static*/ class Task {
         var paths = stream.sorted((p, q) -> -p.compareTo(q));
         for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
-    }
-  }
-
-  public static class CreateJar extends Task {
-
-    private static List<Task> list(Path jar, Path classes) {
-      return List.of(
-          new CreateDirectories(jar.getParent()),
-          runTool("jar", "--create", "--file", jar, "-C", classes, "."),
-          runTool("jar", "--describe-module", "--file", jar));
-    }
-
-    public CreateJar(Path jar, Path classes) {
-      super("Create modular JAR file " + jar.getFileName(), list(jar, classes));
     }
   }
 

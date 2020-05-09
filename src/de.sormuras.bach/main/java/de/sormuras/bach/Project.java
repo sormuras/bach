@@ -359,27 +359,49 @@ public /*static*/ final class Project {
         var module = descriptor.name();
         moduleNames.add(module);
         moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+
         var classes = base.classes("", module);
         var modules = base.modules("");
         var jar = modules.resolve(module + ".jar");
-        units.add(new Unit(descriptor, List.of(new Task.CreateJar(jar, classes))));
+
+        var context = new Tool.Context("", module);
+        var jarCreate = new Tool.Jar();
+        jarCreate
+            .getAdditionalArguments()
+            .add("--create")
+            .add("--file", jar)
+            .add("-C", classes, ".");
+        tuner.tune(jarCreate, context);
+        var jarDescribe = new Tool.Jar();
+        jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
+        tuner.tune(jarDescribe, context);
+        var task =
+            Task.sequence(
+                "Create modular JAR file " + jar.getFileName(),
+                jarCreate.toolTask(),
+                jarDescribe.toolTask());
+
+        units.add(new Unit(descriptor, List.of(task)));
       }
       var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
 
+      var context = new Tool.Context("", null);
       var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
       javac
           .getAdditionalArguments()
           .add("--module-source-path", moduleSourcePath)
           .add("-d", base.classes(""));
+      tuner.tune(javac, context);
 
-      tuner.tune(javac, new Tool.Context("", null));
+      var javadoc = new Tool.Javadoc();
+      javadoc.getAdditionalArguments().add("--version");
+      tuner.tune(javadoc, context);
 
-      var realm =
-          new Realm(
-              "",
-              units,
-              new Task.RunTool(javac.provider(), javac.arguments()),
-              List.of(Task.runTool("javadoc", "--version"), Task.runTool("jlink", "--version")));
+      var jlink = new Tool.Jlink();
+      jlink.getAdditionalArguments().add("--version");
+      tuner.tune(jlink, context);
+
+      var realm = new Realm("", units, javac.toolTask(), List.of(javadoc.toolTask(), jlink.toolTask()));
       var directoryName = base.directory().toAbsolutePath().getFileName();
       return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
           .structure(new Structure(Library.of(), List.of(realm)));
