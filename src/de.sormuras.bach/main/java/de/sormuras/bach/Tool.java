@@ -149,6 +149,30 @@ public interface Tool {
     }
   }
 
+  /** A call to {@code jar}, the Java Archive managing tool. */
+  class Jar extends AbstractTool {
+
+    public Jar() {
+      super("jar");
+    }
+  }
+
+  /** A call to {@code javadoc}, the Java API documentation generating tool. */
+  class Javadoc extends AbstractTool {
+
+    public Javadoc() {
+      super("javadoc");
+    }
+  }
+
+  /** A call to {@code jlink}, the tool that generates custom runtime images. */
+  class Jlink extends AbstractTool {
+
+    public Jlink() {
+      super("jlink");
+    }
+  }
+
   /**
    * Tune arguments passed to tool calls.
    *
