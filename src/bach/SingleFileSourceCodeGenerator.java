@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -47,7 +48,8 @@ class SingleFileSourceCodeGenerator {
             .forEach(files::add);
       }
     }
-    var sources = files.stream().sorted().map(Source::of).collect(Collectors.toList());
+    var comparator = Comparator.comparing(Path::getNameCount).thenComparing(Path::getFileName);
+    var sources = files.stream().sorted(comparator).map(Source::of).collect(Collectors.toList());
     var generator = new SingleFileSourceCodeGenerator(Source.of(template), sources);
     var lines = generator.toLines();
     Files.write(target, lines);
