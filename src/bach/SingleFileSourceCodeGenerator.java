@@ -107,8 +107,7 @@ class SingleFileSourceCodeGenerator {
     var lines = new ArrayList<String>();
     Files.readAllLines(template.path).stream().limit(16).forEach(lines::add);
     lines.addAll(imports);
-    lines.addAll(template.lines);
-    // lines.addAll(classes);
+    template.lines.stream().map(line -> line.replace("/*private*/", "private")).forEach(lines::add);
     lines.addAll(lines.size() - 1, classes);
 
     return lines;

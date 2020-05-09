@@ -90,7 +90,7 @@ public class Bach {
   }
 
   /** Canonical constructor. */
-  Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
+  /*private*/ Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
     this.logbook = Objects.requireNonNull(logbook, "logbook");
     this.project = Objects.requireNonNull(project, "project");
     this.httpClient = Functions.memoize(httpClient);
@@ -120,7 +120,7 @@ public class Bach {
     return summary;
   }
 
-  Task buildSequence() {
+  /*private*/ Task buildSequence() {
     var tasks = new ArrayList<Task>();
     tasks.add(new Task.ResolveMissingModules());
     for (var realm : project.structure().realms()) {
@@ -131,7 +131,7 @@ public class Bach {
     return Task.sequence("Build Sequence", tasks);
   }
 
-  void execute(Task task) {
+  /*private*/ void execute(Task task) {
     var label = task.getLabel();
     var tasks = task.getList();
     if (tasks.isEmpty()) {
@@ -156,7 +156,7 @@ public class Bach {
     logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
   }
 
-  void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+  /*private*/ void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
     var call = (tool.name() + ' ' + String.join(" ", args)).trim();
     logbook.log(Level.DEBUG, call);
     var code = tool.run(out, err, args);
