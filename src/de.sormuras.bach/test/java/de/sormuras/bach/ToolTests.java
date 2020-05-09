@@ -51,6 +51,11 @@ class ToolTests {
             .setPathsWhereToFindMoreAssetsPerModule(Map.of("foo.baz", List.of(Path.of("baz-src"))))
             .setCharacterEncodingUsedBySourceFiles("UTF-8")
             .setCompileForVirtualMachineVersion(Runtime.version().feature())
+            .setEnablePreviewLanguageFeatures(true)
+            .setGenerateMetadataForMethodParameters(true)
+            .setOutputSourceLocationsOfDeprecatedUsages(true)
+            .setOutputMessagesAboutWhatTheCompilerIsDoing(true)
+            .setTerminateCompilationIfWarningsOccur(true)
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
         List.of(
@@ -70,6 +75,11 @@ class ToolTests {
             "UTF-8",
             "--release",
             "" + Runtime.version().feature(),
+            "--enable-preview",
+            "-parameters",
+            "-deprecation",
+            "-verbose",
+            "-Werror",
             "-d",
             "classes"),
         List.of(javac.toolArguments()));

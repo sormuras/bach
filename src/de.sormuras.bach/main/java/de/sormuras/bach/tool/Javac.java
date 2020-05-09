@@ -35,6 +35,11 @@ public /*static*/ class Javac extends AbstractTool {
   private Collection<Path> pathsWhereToFindApplicationModules;
   private String characterEncodingUsedBySourceFiles;
   private int compileForVirtualMachineVersion;
+  private boolean enablePreviewLanguageFeatures;
+  private boolean generateMetadataForMethodParameters;
+  private boolean outputMessagesAboutWhatTheCompilerIsDoing;
+  private boolean outputSourceLocationsOfDeprecatedUsages;
+  private boolean terminateCompilationIfWarningsOccur;
   private Path destinationDirectory;
 
   public Javac() {
@@ -70,6 +75,16 @@ public /*static*/ class Javac extends AbstractTool {
 
     var release = getCompileForVirtualMachineVersion();
     if (assigned(release)) arguments.add("--release", release);
+
+    if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
+
+    if (isGenerateMetadataForMethodParameters()) arguments.add("-parameters");
+
+    if (isOutputSourceLocationsOfDeprecatedUsages()) arguments.add("-deprecation");
+
+    if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
+
+    if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
 
     var destination = getDestinationDirectory();
     if (assigned(destination)) arguments.add("-d", destination);
@@ -146,6 +161,51 @@ public /*static*/ class Javac extends AbstractTool {
 
   public Javac setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
     this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
+    return this;
+  }
+
+  public boolean isEnablePreviewLanguageFeatures() {
+    return enablePreviewLanguageFeatures;
+  }
+
+  public Javac setEnablePreviewLanguageFeatures(boolean enablePreviewLanguageFeatures) {
+    this.enablePreviewLanguageFeatures = enablePreviewLanguageFeatures;
+    return this;
+  }
+
+  public boolean isGenerateMetadataForMethodParameters() {
+    return generateMetadataForMethodParameters;
+  }
+
+  public Javac setGenerateMetadataForMethodParameters(boolean generateMetadataForMethodParameters) {
+    this.generateMetadataForMethodParameters = generateMetadataForMethodParameters;
+    return this;
+  }
+
+  public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
+    return outputMessagesAboutWhatTheCompilerIsDoing;
+  }
+
+  public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean outputMessagesAboutWhatTheCompilerIsDoing) {
+    this.outputMessagesAboutWhatTheCompilerIsDoing = outputMessagesAboutWhatTheCompilerIsDoing;
+    return this;
+  }
+
+  public boolean isOutputSourceLocationsOfDeprecatedUsages() {
+    return outputSourceLocationsOfDeprecatedUsages;
+  }
+
+  public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean outputSourceLocationsOfDeprecatedUsages) {
+    this.outputSourceLocationsOfDeprecatedUsages = outputSourceLocationsOfDeprecatedUsages;
+    return this;
+  }
+
+  public boolean isTerminateCompilationIfWarningsOccur() {
+    return terminateCompilationIfWarningsOccur;
+  }
+
+  public Javac setTerminateCompilationIfWarningsOccur(boolean terminateCompilationIfWarningsOccur) {
+    this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
     return this;
   }
 
