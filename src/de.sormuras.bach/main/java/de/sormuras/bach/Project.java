@@ -50,6 +50,16 @@ public /*static*/ final class Project {
     return new Builder().title(title).version(Version.parse(version));
   }
 
+  static void tuner(Tool tool, @SuppressWarnings("unused") Tool.Context context) {
+    if (tool instanceof Javac) {
+      var javac = (Javac) tool;
+      javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
+      javac.setGenerateMetadataForMethodParameters(true);
+      javac.setTerminateCompilationIfWarningsOccur(true);
+      javac.getAdditionalArguments().add("-X" + "lint");
+    }
+  }
+
   private final Base base;
   private final Info info;
   private final Structure structure;
@@ -343,7 +353,7 @@ public /*static*/ final class Project {
 
     /** Walk base tree and use {@code module-info.java} units to configure this builder instance. */
     public Builder walk() {
-      return walk((tool, context) -> {});
+      return walk(Project::tuner);
     }
 
     /** Walk base tree and use {@code module-info.java} units to configure this builder instance. */
