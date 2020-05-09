@@ -20,6 +20,10 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.tool.Jar;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
@@ -365,14 +369,14 @@ public /*static*/ final class Project {
         var jar = modules.resolve(module + ".jar");
 
         var context = new Tool.Context("", module);
-        var jarCreate = new Tool.Jar();
+        var jarCreate = new Jar();
         jarCreate
             .getAdditionalArguments()
             .add("--create")
             .add("--file", jar)
             .add("-C", classes, ".");
         tuner.tune(jarCreate, context);
-        var jarDescribe = new Tool.Jar();
+        var jarDescribe = new Jar();
         jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
         tuner.tune(jarDescribe, context);
         var task =
@@ -387,18 +391,18 @@ public /*static*/ final class Project {
       var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
 
       var context = new Tool.Context("", null);
-      var javac = new Tool.Javac().setCompileModulesCheckingTimestamps(moduleNames);
+      var javac = new Javac().setCompileModulesCheckingTimestamps(moduleNames);
       javac
           .getAdditionalArguments()
           .add("--module-source-path", moduleSourcePath)
           .add("-d", base.classes(""));
       tuner.tune(javac, context);
 
-      var javadoc = new Tool.Javadoc();
+      var javadoc = new Javadoc();
       javadoc.getAdditionalArguments().add("--version");
       tuner.tune(javadoc, context);
 
-      var jlink = new Tool.Jlink();
+      var jlink = new Jlink();
       jlink.getAdditionalArguments().add("--version");
       tuner.tune(jlink, context);
 
