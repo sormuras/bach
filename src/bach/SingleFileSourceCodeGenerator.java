@@ -48,7 +48,7 @@ class SingleFileSourceCodeGenerator {
             .forEach(files::add);
       }
     }
-    var comparator = Comparator.comparing(Path::getNameCount).thenComparing(Path::getFileName);
+    var comparator = Comparator.comparing(Path::getNameCount).thenComparing(Path::toString);
     var sources = files.stream().sorted(comparator).map(Source::of).collect(Collectors.toList());
     var generator = new SingleFileSourceCodeGenerator(Source.of(template), sources);
     var lines = generator.toLines();
