@@ -441,7 +441,7 @@ public class Bach {
         var context = new Tool.Context("", null);
         var javac = new Javac()
             .setCompileModulesCheckingTimestamps(moduleNames)
-            .setWhereToFindSourceFilesInModulePatternForm(moduleSourcePathPatterns)
+            .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
             .setDestinationDirectory(base.classes(""));
         tuner.tune(javac, context);
         var javadoc = new Javadoc();
@@ -1085,21 +1085,48 @@ public class Bach {
   }
   public static class Javac extends AbstractTool {
     private Set<String> compileModulesCheckingTimestamps;
-    private Map<String, Collection<Path>> whereToFindSourceFilesInModuleSpecificForm;
-    private Collection<String> whereToFindSourceFilesInModulePatternForm;
+    private Version versionOfModulesThatAreBeingCompiled;
+    private Collection<String> patternsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
+    private Collection<Path> pathsWhereToFindApplicationModules;
+    private String characterEncodingUsedBySourceFiles;
+    private int compileForVirtualMachineVersion;
+    private boolean enablePreviewLanguageFeatures;
+    private boolean generateMetadataForMethodParameters;
+    private boolean outputMessagesAboutWhatTheCompilerIsDoing;
+    private boolean outputSourceLocationsOfDeprecatedUsages;
+    private boolean terminateCompilationIfWarningsOccur;
     private Path destinationDirectory;
     public Javac() {
       super("javac");
     }
     protected void arguments(Arguments arguments) {
       var module = getCompileModulesCheckingTimestamps();
-      if (assigned(module)) arguments.add("--module", String.join(",", module));
-      var specific = getWhereToFindSourceFilesInModuleSpecificForm();
+      if (assigned(module)) arguments.add("--module", String.join(",", new TreeSet<>(module)));
+      var version = getVersionOfModulesThatAreBeingCompiled();
+      if (assigned(version)) arguments.add("--module-version", version);
+      var patterns = getPatternsWhereToFindSourceFiles();
+      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+      var specific = getPathsWhereToFindSourceFiles();
       if (assigned(specific))
         for (var entry : specific.entrySet())
           arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
-      var patterns = getWhereToFindSourceFilesInModulePatternForm();
-      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+      var patches = getPathsWhereToFindMoreAssetsPerModule();
+      if (assigned(patches))
+        for (var patch : patches.entrySet())
+          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+      var modulePath = getPathsWhereToFindApplicationModules();
+      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
+      var encoding = getCharacterEncodingUsedBySourceFiles();
+      if (assigned(encoding)) arguments.add("-encoding", encoding);
+      var release = getCompileForVirtualMachineVersion();
+      if (assigned(release)) arguments.add("--release", release);
+      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
+      if (isGenerateMetadataForMethodParameters()) arguments.add("-parameters");
+      if (isOutputSourceLocationsOfDeprecatedUsages()) arguments.add("-deprecation");
+      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
+      if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
       var destination = getDestinationDirectory();
       if (assigned(destination)) arguments.add("-d", destination);
     }
@@ -1110,18 +1137,90 @@ public class Bach {
       this.compileModulesCheckingTimestamps = moduleNames;
       return this;
     }
-    public Map<String, Collection<Path>> getWhereToFindSourceFilesInModuleSpecificForm() {
-      return whereToFindSourceFilesInModuleSpecificForm;
+    public Version getVersionOfModulesThatAreBeingCompiled() {
+      return versionOfModulesThatAreBeingCompiled;
     }
-    public Javac setWhereToFindSourceFilesInModuleSpecificForm(Map<String, Collection<Path>> map) {
-      this.whereToFindSourceFilesInModuleSpecificForm = map;
+    public Javac setVersionOfModulesThatAreBeingCompiled(
+        Version versionOfModulesThatAreBeingCompiled) {
+      this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
       return this;
     }
-    public Collection<String> getWhereToFindSourceFilesInModulePatternForm() {
-      return whereToFindSourceFilesInModulePatternForm;
+    public Collection<String> getPatternsWhereToFindSourceFiles() {
+      return patternsWhereToFindSourceFiles;
     }
-    public Javac setWhereToFindSourceFilesInModulePatternForm(Collection<String> patterns) {
-      this.whereToFindSourceFilesInModulePatternForm = patterns;
+    public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+      this.patternsWhereToFindSourceFiles = patterns;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+      return pathsWhereToFindSourceFiles;
+    }
+    public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindSourceFiles = map;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+      return pathsWhereToFindMoreAssetsPerModule;
+    }
+    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindMoreAssetsPerModule = map;
+      return this;
+    }
+    public Collection<Path> getPathsWhereToFindApplicationModules() {
+      return pathsWhereToFindApplicationModules;
+    }
+    public Javac setPathsWhereToFindApplicationModules(
+        Collection<Path> pathsWhereToFindApplicationModules) {
+      this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+      return this;
+    }
+    public String getCharacterEncodingUsedBySourceFiles() {
+      return characterEncodingUsedBySourceFiles;
+    }
+    public Javac setCharacterEncodingUsedBySourceFiles(String characterEncodingUsedBySourceFiles) {
+      this.characterEncodingUsedBySourceFiles = characterEncodingUsedBySourceFiles;
+      return this;
+    }
+    public int getCompileForVirtualMachineVersion() {
+      return compileForVirtualMachineVersion;
+    }
+    public Javac setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
+      this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
+      return this;
+    }
+    public boolean isEnablePreviewLanguageFeatures() {
+      return enablePreviewLanguageFeatures;
+    }
+    public Javac setEnablePreviewLanguageFeatures(boolean enablePreviewLanguageFeatures) {
+      this.enablePreviewLanguageFeatures = enablePreviewLanguageFeatures;
+      return this;
+    }
+    public boolean isGenerateMetadataForMethodParameters() {
+      return generateMetadataForMethodParameters;
+    }
+    public Javac setGenerateMetadataForMethodParameters(boolean generateMetadataForMethodParameters) {
+      this.generateMetadataForMethodParameters = generateMetadataForMethodParameters;
+      return this;
+    }
+    public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
+      return outputMessagesAboutWhatTheCompilerIsDoing;
+    }
+    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean outputMessagesAboutWhatTheCompilerIsDoing) {
+      this.outputMessagesAboutWhatTheCompilerIsDoing = outputMessagesAboutWhatTheCompilerIsDoing;
+      return this;
+    }
+    public boolean isOutputSourceLocationsOfDeprecatedUsages() {
+      return outputSourceLocationsOfDeprecatedUsages;
+    }
+    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean outputSourceLocationsOfDeprecatedUsages) {
+      this.outputSourceLocationsOfDeprecatedUsages = outputSourceLocationsOfDeprecatedUsages;
+      return this;
+    }
+    public boolean isTerminateCompilationIfWarningsOccur() {
+      return terminateCompilationIfWarningsOccur;
+    }
+    public Javac setTerminateCompilationIfWarningsOccur(boolean terminateCompilationIfWarningsOccur) {
+      this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
       return this;
     }
     public Path getDestinationDirectory() {
