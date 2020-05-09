@@ -87,4 +87,41 @@ class ToolTests {
             "classes"),
         List.of(javac.toolArguments()));
   }
+
+  @Test
+  void touchAllPropertiesOfJavadoc() {
+    var javadoc =
+        new Javadoc()
+            .setDocumentModules(Set.of("foo.bar", "foo.baz"))
+            .setPathsWhereToFindSourceFiles(Map.of("foo.bar", List.of(Path.of("foo-src"))))
+            .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
+            .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
+            .setPathsWhereToFindMoreAssetsPerModule(Map.of("foo.baz", List.of(Path.of("baz-src"))))
+            .setCharacterEncodingUsedBySourceFiles("UTF-8")
+            .setCompileForVirtualMachineVersion(Runtime.version().feature())
+            .setEnablePreviewLanguageFeatures(true)
+            .setOutputMessagesAboutWhatJavadocIsDoing(true)
+            .setDestinationDirectory(Path.of("classes"));
+    assertLinesMatch(
+        List.of(
+            "--module",
+            "foo.bar,foo.baz",
+            "--module-source-path",
+            "src/*/main/java",
+            "--module-source-path",
+            "foo.bar=foo-src",
+            "--patch-module",
+            "foo.baz=baz-src",
+            "--module-path",
+            "lib",
+            "-encoding",
+            "UTF-8",
+            "--release",
+            "" + Runtime.version().feature(),
+            "--enable-preview",
+            "-verbose",
+            "-d",
+            "classes"),
+        List.of(javadoc.toolArguments()));
+  }
 }
