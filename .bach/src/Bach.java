@@ -438,13 +438,11 @@ public class Bach {
                   jarDescribe.toolTask());
           units.add(new Unit(descriptor, List.of(task)));
         }
-        var moduleSourcePath = String.join(File.pathSeparator, moduleSourcePathPatterns);
         var context = new Tool.Context("", null);
-        var javac = new Javac().setCompileModulesCheckingTimestamps(moduleNames);
-        javac
-            .getAdditionalArguments()
-            .add("--module-source-path", moduleSourcePath)
-            .add("-d", base.classes(""));
+        var javac = new Javac()
+            .setCompileModulesCheckingTimestamps(moduleNames)
+            .setWhereToFindSourceFilesInModulePatternForm(moduleSourcePathPatterns)
+            .setDestinationDirectory(base.classes(""));
         tuner.tune(javac, context);
         var javadoc = new Javadoc();
         javadoc.getAdditionalArguments().add("--version");
@@ -1047,6 +1045,21 @@ public class Bach {
     }
   }
   public static abstract class AbstractTool implements Tool {
+    public static boolean assigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof String) return !((String) object).isEmpty();
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      if (object.getClass().isArray()) return Array.getLength(object) != 0;
+      return true;
+    }
+    public static String join(Collection<Path> paths) {
+      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+    public static String joinPaths(Collection<String> paths) {
+      return String.join(File.pathSeparator, paths);
+    }
     private final String name;
     private final Arguments additionalArguments = new Arguments();
     public AbstractTool(String name) {
@@ -1064,15 +1077,6 @@ public class Bach {
       return arguments.add(getAdditionalArguments()).toStringArray();
     }
     protected void arguments(Arguments arguments) {}
-    protected boolean assigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof String) return !((String) object).isEmpty();
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      if (object.getClass().isArray()) return Array.getLength(object) != 0;
-      return true;
-    }
   }
   public static class Jar extends AbstractTool {
     public Jar() {
@@ -1080,19 +1084,51 @@ public class Bach {
     }
   }
   public static class Javac extends AbstractTool {
-    private Set<String> compileModulesCheckingTimestamps = Set.of();
+    private Set<String> compileModulesCheckingTimestamps;
+    private Map<String, Collection<Path>> whereToFindSourceFilesInModuleSpecificForm;
+    private Collection<String> whereToFindSourceFilesInModulePatternForm;
+    private Path destinationDirectory;
     public Javac() {
       super("javac");
     }
     protected void arguments(Arguments arguments) {
       var module = getCompileModulesCheckingTimestamps();
       if (assigned(module)) arguments.add("--module", String.join(",", module));
+      var specific = getWhereToFindSourceFilesInModuleSpecificForm();
+      if (assigned(specific))
+        for (var entry : specific.entrySet())
+          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
+      var patterns = getWhereToFindSourceFilesInModulePatternForm();
+      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+      var destination = getDestinationDirectory();
+      if (assigned(destination)) arguments.add("-d", destination);
     }
     public Set<String> getCompileModulesCheckingTimestamps() {
       return compileModulesCheckingTimestamps;
     }
     public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
       this.compileModulesCheckingTimestamps = moduleNames;
+      return this;
+    }
+    public Map<String, Collection<Path>> getWhereToFindSourceFilesInModuleSpecificForm() {
+      return whereToFindSourceFilesInModuleSpecificForm;
+    }
+    public Javac setWhereToFindSourceFilesInModuleSpecificForm(Map<String, Collection<Path>> map) {
+      this.whereToFindSourceFilesInModuleSpecificForm = map;
+      return this;
+    }
+    public Collection<String> getWhereToFindSourceFilesInModulePatternForm() {
+      return whereToFindSourceFilesInModulePatternForm;
+    }
+    public Javac setWhereToFindSourceFilesInModulePatternForm(Collection<String> patterns) {
+      this.whereToFindSourceFilesInModulePatternForm = patterns;
+      return this;
+    }
+    public Path getDestinationDirectory() {
+      return destinationDirectory;
+    }
+    public Javac setDestinationDirectory(Path destinationDirectory) {
+      this.destinationDirectory = destinationDirectory;
       return this;
     }
   }
