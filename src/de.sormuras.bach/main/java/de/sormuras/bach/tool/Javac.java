@@ -150,8 +150,8 @@ public /*static*/ class Javac extends AbstractTool {
     return characterEncodingUsedBySourceFiles;
   }
 
-  public Javac setCharacterEncodingUsedBySourceFiles(String characterEncodingUsedBySourceFiles) {
-    this.characterEncodingUsedBySourceFiles = characterEncodingUsedBySourceFiles;
+  public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
+    this.characterEncodingUsedBySourceFiles = encoding;
     return this;
   }
 
@@ -159,8 +159,8 @@ public /*static*/ class Javac extends AbstractTool {
     return compileForVirtualMachineVersion;
   }
 
-  public Javac setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
-    this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
+  public Javac setCompileForVirtualMachineVersion(int release) {
+    this.compileForVirtualMachineVersion = release;
     return this;
   }
 
@@ -168,8 +168,8 @@ public /*static*/ class Javac extends AbstractTool {
     return enablePreviewLanguageFeatures;
   }
 
-  public Javac setEnablePreviewLanguageFeatures(boolean enablePreviewLanguageFeatures) {
-    this.enablePreviewLanguageFeatures = enablePreviewLanguageFeatures;
+  public Javac setEnablePreviewLanguageFeatures(boolean preview) {
+    this.enablePreviewLanguageFeatures = preview;
     return this;
   }
 
@@ -177,8 +177,8 @@ public /*static*/ class Javac extends AbstractTool {
     return generateMetadataForMethodParameters;
   }
 
-  public Javac setGenerateMetadataForMethodParameters(boolean generateMetadataForMethodParameters) {
-    this.generateMetadataForMethodParameters = generateMetadataForMethodParameters;
+  public Javac setGenerateMetadataForMethodParameters(boolean parameters) {
+    this.generateMetadataForMethodParameters = parameters;
     return this;
   }
 
@@ -186,8 +186,8 @@ public /*static*/ class Javac extends AbstractTool {
     return outputMessagesAboutWhatTheCompilerIsDoing;
   }
 
-  public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean outputMessagesAboutWhatTheCompilerIsDoing) {
-    this.outputMessagesAboutWhatTheCompilerIsDoing = outputMessagesAboutWhatTheCompilerIsDoing;
+  public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
+    this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
     return this;
   }
 
@@ -195,8 +195,8 @@ public /*static*/ class Javac extends AbstractTool {
     return outputSourceLocationsOfDeprecatedUsages;
   }
 
-  public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean outputSourceLocationsOfDeprecatedUsages) {
-    this.outputSourceLocationsOfDeprecatedUsages = outputSourceLocationsOfDeprecatedUsages;
+  public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
+    this.outputSourceLocationsOfDeprecatedUsages = deprecation;
     return this;
   }
 
@@ -204,8 +204,8 @@ public /*static*/ class Javac extends AbstractTool {
     return terminateCompilationIfWarningsOccur;
   }
 
-  public Javac setTerminateCompilationIfWarningsOccur(boolean terminateCompilationIfWarningsOccur) {
-    this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
+  public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
+    this.terminateCompilationIfWarningsOccur = error;
     return this;
   }
 
