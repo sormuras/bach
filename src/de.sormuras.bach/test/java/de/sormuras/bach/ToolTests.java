@@ -49,6 +49,7 @@ class ToolTests {
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
             .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
             .setPathsWhereToFindMoreAssetsPerModule(Map.of("foo.baz", List.of(Path.of("baz-src"))))
+            .setCharacterEncodingUsedBySourceFiles("UTF-8")
             .setCompileForVirtualMachineVersion(Runtime.version().feature())
             .setDestinationDirectory(Path.of("classes"));
     assertLinesMatch(
@@ -65,6 +66,8 @@ class ToolTests {
             "foo.baz=baz-src",
             "--module-path",
             "lib",
+            "-encoding",
+            "UTF-8",
             "--release",
             "" + Runtime.version().feature(),
             "-d",

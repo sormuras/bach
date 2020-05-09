@@ -33,6 +33,7 @@ public /*static*/ class Javac extends AbstractTool {
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
   private Collection<Path> pathsWhereToFindApplicationModules;
+  private String characterEncodingUsedBySourceFiles;
   private int compileForVirtualMachineVersion;
   private Path destinationDirectory;
 
@@ -63,6 +64,9 @@ public /*static*/ class Javac extends AbstractTool {
 
     var modulePath = getPathsWhereToFindApplicationModules();
     if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
+
+    var encoding = getCharacterEncodingUsedBySourceFiles();
+    if (assigned(encoding)) arguments.add("-encoding", encoding);
 
     var release = getCompileForVirtualMachineVersion();
     if (assigned(release)) arguments.add("--release", release);
@@ -124,6 +128,15 @@ public /*static*/ class Javac extends AbstractTool {
   public Javac setPathsWhereToFindApplicationModules(
       Collection<Path> pathsWhereToFindApplicationModules) {
     this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+    return this;
+  }
+
+  public String getCharacterEncodingUsedBySourceFiles() {
+    return characterEncodingUsedBySourceFiles;
+  }
+
+  public Javac setCharacterEncodingUsedBySourceFiles(String characterEncodingUsedBySourceFiles) {
+    this.characterEncodingUsedBySourceFiles = characterEncodingUsedBySourceFiles;
     return this;
   }
 
