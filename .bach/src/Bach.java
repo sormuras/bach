@@ -226,12 +226,26 @@ public class Bach {
       return new Builder().title(title).version(Version.parse(version));
     }
     static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
+      if (call instanceof GenericModuleSourceFilesConsumer) {
+        var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+        consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
+      }
       if (call instanceof Javac) {
         var javac = (Javac) call;
-        javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
         javac.setGenerateMetadataForMethodParameters(true);
         javac.setTerminateCompilationIfWarningsOccur(true);
         javac.getAdditionalArguments().add("-X" + "lint");
+      }
+      if (call instanceof Javadoc) {
+        var javadoc = (Javadoc) call;
+        javadoc.getAdditionalArguments().add("-locale", "en");
+      }
+      if (call instanceof Jlink) {
+        var jlink = (Jlink) call;
+        jlink.getAdditionalArguments().add("--compress", "2");
+        jlink.getAdditionalArguments().add("--strip-debug");
+        jlink.getAdditionalArguments().add("--no-header-files");
+        jlink.getAdditionalArguments().add("--no-man-pages");
       }
     }
     private final Base base;
@@ -465,7 +479,9 @@ public class Bach {
         var moduleNames = new TreeSet<String>();
         var moduleSourcePathPatterns = new TreeSet<String>();
         var units = new ArrayList<Unit>();
+        var javadocCommentFound = false;
         for (var info : moduleInfoFiles) {
+          javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
           var descriptor = Modules.describe(info);
           var module = descriptor.name();
           moduleNames.add(module);
@@ -475,11 +491,10 @@ public class Bach {
           var jar = modules.resolve(module + ".jar");
           var context = new Call.Context("", module);
           var jarCreate = new Jar();
-          jarCreate
-              .getAdditionalArguments()
-              .add("--create")
-              .add("--file", jar)
-              .add("-C", classes, ".");
+          var jarCreateArgs = jarCreate.getAdditionalArguments();
+          jarCreateArgs.add("--create").add("--file", jar);
+          descriptor.mainClass().ifPresent(main -> jarCreateArgs.add("--main-class", main));
+          jarCreateArgs.add("-C", classes, ".");
           tuner.tune(jarCreate, context);
           var jarDescribe = new Jar();
           jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
@@ -499,13 +514,32 @@ public class Bach {
                 .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
                 .setDestinationDirectory(base.classes(""));
         tuner.tune(javac, context);
-        var javadoc = new Javadoc();
-        javadoc.getAdditionalArguments().add("--version");
-        tuner.tune(javadoc, context);
-        var jlink = new Jlink();
-        jlink.getAdditionalArguments().add("--version");
-        tuner.tune(jlink, context);
-        var realm = new Realm("", units, javac.toTask(), List.of(javadoc.toTask(), jlink.toTask()));
+        var tasks = new ArrayList<Task>();
+        if (javadocCommentFound) {
+          var javadoc =
+              new Javadoc()
+                  .setDestinationDirectory(base.api())
+                  .setModules(moduleNames)
+                  .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
+          tuner.tune(javadoc, context);
+          tasks.add(javadoc.toTask());
+        }
+        var mainModule = Modules.findMainModule(units.stream().map(Unit::descriptor));
+        if (mainModule.isPresent()) {
+          var jlink =
+              new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
+          var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
+          var arguments = jlink.getAdditionalArguments();
+          arguments.add("--module-path", base.modules(""));
+          arguments.add("--launcher", launcher + '=' + mainModule.get());
+          tuner.tune(jlink, context);
+          tasks.add(
+              Task.sequence(
+                  String.format("Create custom runtime image with '%s' as launcher", launcher),
+                  new Task.DeleteDirectories(base.image()),
+                  jlink.toTask()));
+        }
+        var realm = new Realm("", units, javac.toTask(), tasks);
         var directoryName = base.directory().toAbsolutePath().getFileName();
         return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
             .structure(new Structure(Library.of(), List.of(realm)));
@@ -727,6 +761,7 @@ public class Bach {
   @SuppressWarnings("unchecked")
   public static abstract class GenericModuleSourceFilesConsumer<T> extends AbstractCallBuilder {
     private Path destinationDirectory;
+    private String characterEncodingUsedBySourceFiles;
     private Set<String> modules;
     public GenericModuleSourceFilesConsumer(String name) {
       super(name);
@@ -734,6 +769,8 @@ public class Bach {
     protected void arguments(Arguments arguments) {
       var destination = getDestinationDirectory();
       if (assigned(destination)) arguments.add("-d", destination);
+      var encoding = getCharacterEncodingUsedBySourceFiles();
+      if (assigned(encoding)) arguments.add("-encoding", encoding);
       var modules = getModules();
       if (assigned(modules)) arguments.add("--module", String.join(",", new TreeSet<>(modules)));
     }
@@ -742,6 +779,13 @@ public class Bach {
     }
     public T setDestinationDirectory(Path directory) {
       this.destinationDirectory = directory;
+      return (T) this;
+    }
+    public String getCharacterEncodingUsedBySourceFiles() {
+      return characterEncodingUsedBySourceFiles;
+    }
+    public T setCharacterEncodingUsedBySourceFiles(String encoding) {
+      this.characterEncodingUsedBySourceFiles = encoding;
       return (T) this;
     }
     public Set<String> getModules() {
@@ -766,7 +810,6 @@ public class Bach {
     private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
     private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
     private Collection<Path> pathsWhereToFindApplicationModules;
-    private String characterEncodingUsedBySourceFiles;
     private int compileForVirtualMachineVersion;
     private boolean enablePreviewLanguageFeatures;
     private boolean generateMetadataForMethodParameters;
@@ -795,8 +838,6 @@ public class Bach {
           arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
       var modulePath = getPathsWhereToFindApplicationModules();
       if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
-      var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (assigned(encoding)) arguments.add("-encoding", encoding);
       var release = getCompileForVirtualMachineVersion();
       if (assigned(release)) arguments.add("--release", release);
       if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
@@ -840,13 +881,6 @@ public class Bach {
     public Javac setPathsWhereToFindApplicationModules(
         Collection<Path> pathsWhereToFindApplicationModules) {
       this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
-      return this;
-    }
-    public String getCharacterEncodingUsedBySourceFiles() {
-      return characterEncodingUsedBySourceFiles;
-    }
-    public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
-      this.characterEncodingUsedBySourceFiles = encoding;
       return this;
     }
     public int getCompileForVirtualMachineVersion() {
@@ -1316,6 +1350,13 @@ public class Bach {
         try (var stream = Files.list(path)) {
           return stream.findAny().isEmpty();
         }
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+    public static boolean isJavadocCommentAvailable(Path path) {
+      try {
+        return Files.readString(path).contains("/**");
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
