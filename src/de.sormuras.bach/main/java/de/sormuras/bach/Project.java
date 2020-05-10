@@ -396,11 +396,10 @@ public /*static*/ final class Project {
 
         var context = new Call.Context("", module);
         var jarCreate = new Jar();
-        jarCreate
-            .getAdditionalArguments()
-            .add("--create")
-            .add("--file", jar)
-            .add("-C", classes, ".");
+        var jarCreateArgs = jarCreate.getAdditionalArguments();
+        jarCreateArgs.add("--create").add("--file", jar);
+        descriptor.mainClass().ifPresent(main -> jarCreateArgs.add("--main-class", main));
+        jarCreateArgs.add("-C", classes, ".");
         tuner.tune(jarCreate, context);
         var jarDescribe = new Jar();
         jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
