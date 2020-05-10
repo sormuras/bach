@@ -77,10 +77,7 @@ class ProjectTests {
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.structure().realms().get(0);
       assertEquals("", realm.name());
-      assertSame(Task.RunTool.class, realm.javac().getClass());
-      var javac = realm.javac();
-      assertTrue(javac.getLabel().contains("--verbose"));
-      assertTrue(javac.getLabel().contains("com.greetings"));
+      assertEquals("Compile module(s): [com.greetings]", realm.javac().getLabel());
     }
 
     @Test

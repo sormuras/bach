@@ -21,13 +21,10 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 /** A call to {@code javac}, the Java compiler. */
-public /*static*/ class Javac extends AbstractTool {
+public /*static*/ class Javac extends ConsumeModuleSourcesTool<Javac> {
 
-  private Set<String> compileModulesCheckingTimestamps;
   private Version versionOfModulesThatAreBeingCompiled;
   private Collection<String> patternsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
@@ -40,16 +37,19 @@ public /*static*/ class Javac extends AbstractTool {
   private boolean outputMessagesAboutWhatTheCompilerIsDoing;
   private boolean outputSourceLocationsOfDeprecatedUsages;
   private boolean terminateCompilationIfWarningsOccur;
-  private Path destinationDirectory;
 
   public Javac() {
     super("javac");
   }
 
   @Override
+  public String toolLabel() {
+    return "Compile module(s): " + getModules();
+  }
+
+  @Override
   protected void arguments(Arguments arguments) {
-    var module = getCompileModulesCheckingTimestamps();
-    if (assigned(module)) arguments.add("--module", String.join(",", new TreeSet<>(module)));
+    super.arguments(arguments);
 
     var version = getVersionOfModulesThatAreBeingCompiled();
     if (assigned(version)) arguments.add("--module-version", version);
@@ -85,18 +85,6 @@ public /*static*/ class Javac extends AbstractTool {
     if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
 
     if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
-
-    var destination = getDestinationDirectory();
-    if (assigned(destination)) arguments.add("-d", destination);
-  }
-
-  public Set<String> getCompileModulesCheckingTimestamps() {
-    return compileModulesCheckingTimestamps;
-  }
-
-  public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
-    this.compileModulesCheckingTimestamps = moduleNames;
-    return this;
   }
 
   public Version getVersionOfModulesThatAreBeingCompiled() {
@@ -206,15 +194,6 @@ public /*static*/ class Javac extends AbstractTool {
 
   public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
     this.terminateCompilationIfWarningsOccur = error;
-    return this;
-  }
-
-  public Path getDestinationDirectory() {
-    return destinationDirectory;
-  }
-
-  public Javac setDestinationDirectory(Path destinationDirectory) {
-    this.destinationDirectory = destinationDirectory;
     return this;
   }
 }

@@ -46,7 +46,7 @@ class ToolTests {
   void touchAllPropertiesOfJavac() {
     var javac =
         new Javac()
-            .setCompileModulesCheckingTimestamps(Set.of("foo.bar", "foo.baz"))
+            .setModules(Set.of("foo.bar", "foo.baz"))
             .setVersionOfModulesThatAreBeingCompiled(ModuleDescriptor.Version.parse("1.2.3"))
             .setPathsWhereToFindSourceFiles(Map.of("foo.bar", List.of(Path.of("foo-src"))))
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
@@ -60,8 +60,11 @@ class ToolTests {
             .setOutputMessagesAboutWhatTheCompilerIsDoing(true)
             .setTerminateCompilationIfWarningsOccur(true)
             .setDestinationDirectory(Path.of("classes"));
+    javac.getAdditionalArguments().add("--version");
     assertLinesMatch(
         List.of(
+            "-d",
+            "classes",
             "--module",
             "foo.bar,foo.baz",
             "--module-version",
@@ -83,8 +86,7 @@ class ToolTests {
             "-deprecation",
             "-verbose",
             "-Werror",
-            "-d",
-            "classes"),
+            "--version"),
         List.of(javac.toolArguments()));
   }
 
@@ -92,7 +94,8 @@ class ToolTests {
   void touchAllPropertiesOfJavadoc() {
     var javadoc =
         new Javadoc()
-            .setDocumentModules(Set.of("foo.bar", "foo.baz"))
+            .setDestinationDirectory(Path.of("api"))
+            .setModules(Set.of("foo.bar", "foo.baz"))
             .setPathsWhereToFindSourceFiles(Map.of("foo.bar", List.of(Path.of("foo-src"))))
             .setPatternsWhereToFindSourceFiles(List.of("src/*/main/java"))
             .setPathsWhereToFindApplicationModules(List.of(Path.of("lib")))
@@ -101,9 +104,12 @@ class ToolTests {
             .setCompileForVirtualMachineVersion(Runtime.version().feature())
             .setEnablePreviewLanguageFeatures(true)
             .setOutputMessagesAboutWhatJavadocIsDoing(true)
-            .setDestinationDirectory(Path.of("classes"));
+            .setShutOffDisplayingStatusMessages(true);
+    javadoc.getAdditionalArguments().add("--version");
     assertLinesMatch(
         List.of(
+            "-d",
+            "api",
             "--module",
             "foo.bar,foo.baz",
             "--module-source-path",
@@ -120,8 +126,27 @@ class ToolTests {
             "" + Runtime.version().feature(),
             "--enable-preview",
             "-verbose",
-            "-d",
-            "classes"),
+            "-quiet",
+            "--version"),
         List.of(javadoc.toolArguments()));
+  }
+
+  @Test
+  void touchAllPropertiesOfJar() {
+    var jar = new Jar();
+    jar.getAdditionalArguments().add("--version");
+    assertLinesMatch(List.of("--version"), List.of(jar.toolArguments()));
+  }
+
+  @Test
+  void touchAllPropertiesOfJlink() {
+    var jlink =
+        new Jlink()
+            .setLocationOfTheGeneratedRuntimeImage(Path.of("image"))
+            .setModules(Set.of("foo.bar", "foo.baz"));
+    jlink.getAdditionalArguments().add("--version");
+    assertLinesMatch(
+        List.of("--output", "image", "--add-modules", "foo.bar,foo.baz", "--version"),
+        List.of(jlink.toolArguments()));
   }
 }

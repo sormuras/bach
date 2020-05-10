@@ -74,7 +74,7 @@ class BachTests {
     bach.execute(task);
     var logbook = ((Logbook) bach.getLogger());
     assertLinesMatch(
-        List.of(">> INIT >>", "T|* local 1 2 3", "D|local 1 2 3", "D|args -> 1-2-3"),
+        List.of(">> INIT >>", "T|* local no-op tool", "D|local 1 2 3", "D|args -> 1-2-3"),
         logbook.lines(Object::toString));
   }
 }

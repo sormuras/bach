@@ -23,4 +23,9 @@ public /*static*/ class Jar extends AbstractTool {
   public Jar() {
     super("jar");
   }
+
+  @Override
+  public String toolLabel() {
+    return "Operate on JAR file";
+  }
 }

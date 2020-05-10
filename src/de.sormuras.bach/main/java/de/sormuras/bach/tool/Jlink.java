@@ -17,10 +17,50 @@
 
 package de.sormuras.bach.tool;
 
+import java.nio.file.Path;
+import java.util.Set;
+import java.util.TreeSet;
+
 /** A call to {@code jlink}, the tool that generates custom runtime images. */
 public /*static*/ class Jlink extends AbstractTool {
 
+  /** Value of {@code --output} option. */
+  private Path locationOfTheGeneratedRuntimeImage;
+  /** Value of {@code --add-modules <module>(,<module>)*} option. */
+  private Set<String> modules;
+
   public Jlink() {
     super("jlink");
+  }
+
+  @Override
+  public String toolLabel() {
+    return "Create a custom runtime image with dependencies for " + getModules();
+  }
+
+  @Override
+  protected void arguments(Arguments arguments) {
+    var output = getLocationOfTheGeneratedRuntimeImage();
+    if (assigned(output)) arguments.add("--output", output);
+    var modules = getModules();
+    if (assigned(modules)) arguments.add("--add-modules", String.join(",", new TreeSet<>(modules)));
+  }
+
+  public Path getLocationOfTheGeneratedRuntimeImage() {
+    return locationOfTheGeneratedRuntimeImage;
+  }
+
+  public Jlink setLocationOfTheGeneratedRuntimeImage(Path output) {
+    this.locationOfTheGeneratedRuntimeImage = output;
+    return this;
+  }
+
+  public Set<String> getModules() {
+    return modules;
+  }
+
+  public Jlink setModules(Set<String> modules) {
+    this.modules = modules;
+    return this;
   }
 }

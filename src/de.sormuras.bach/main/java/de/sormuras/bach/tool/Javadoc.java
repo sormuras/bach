@@ -20,13 +20,10 @@ package de.sormuras.bach.tool;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 /** A call to {@code javadoc}, the Java API documentation generating tool. */
-public /*static*/ class Javadoc extends AbstractTool {
+public /*static*/ class Javadoc extends ConsumeModuleSourcesTool<Javadoc> {
 
-  private Set<String> documentModules;
   private Collection<String> patternsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
@@ -34,17 +31,22 @@ public /*static*/ class Javadoc extends AbstractTool {
   private String characterEncodingUsedBySourceFiles;
   private int compileForVirtualMachineVersion;
   private boolean enablePreviewLanguageFeatures;
-  private boolean outputMessagesAboutWhatTheCompilerIsDoing;
-  private Path destinationDirectory;
+  private boolean outputMessagesAboutWhatJavadocIsDoing;
+
+  private boolean shutOffDisplayingStatusMessages;
 
   public Javadoc() {
     super("javadoc");
   }
 
   @Override
+  public String toolLabel() {
+    return "Generate API documentation for " + getModules();
+  }
+
+  @Override
   protected void arguments(Arguments arguments) {
-    var module = getDocumentModules();
-    if (assigned(module)) arguments.add("--module", String.join(",", new TreeSet<>(module)));
+    super.arguments(arguments);
 
     var patterns = getPatternsWhereToFindSourceFiles();
     if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
@@ -72,25 +74,15 @@ public /*static*/ class Javadoc extends AbstractTool {
 
     if (isOutputMessagesAboutWhatJavadocIsDoing()) arguments.add("-verbose");
 
-    var destination = getDestinationDirectory();
-    if (assigned(destination)) arguments.add("-d", destination);
-  }
-
-  public Set<String> getDocumentModules() {
-    return documentModules;
-  }
-
-  public Javadoc setDocumentModules(Set<String> documentModules) {
-    this.documentModules = documentModules;
-    return this;
+    if (isShutOffDisplayingStatusMessages()) arguments.add("-quiet");
   }
 
   public Collection<String> getPatternsWhereToFindSourceFiles() {
     return patternsWhereToFindSourceFiles;
   }
 
-  public Javadoc setPatternsWhereToFindSourceFiles(Collection<String> patternsWhereToFindSourceFiles) {
-    this.patternsWhereToFindSourceFiles = patternsWhereToFindSourceFiles;
+  public Javadoc setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+    this.patternsWhereToFindSourceFiles = patterns;
     return this;
   }
 
@@ -98,8 +90,8 @@ public /*static*/ class Javadoc extends AbstractTool {
     return pathsWhereToFindSourceFiles;
   }
 
-  public Javadoc setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> pathsWhereToFindSourceFiles) {
-    this.pathsWhereToFindSourceFiles = pathsWhereToFindSourceFiles;
+  public Javadoc setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+    this.pathsWhereToFindSourceFiles = map;
     return this;
   }
 
@@ -107,8 +99,8 @@ public /*static*/ class Javadoc extends AbstractTool {
     return pathsWhereToFindMoreAssetsPerModule;
   }
 
-  public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule) {
-    this.pathsWhereToFindMoreAssetsPerModule = pathsWhereToFindMoreAssetsPerModule;
+  public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+    this.pathsWhereToFindMoreAssetsPerModule = map;
     return this;
   }
 
@@ -116,8 +108,8 @@ public /*static*/ class Javadoc extends AbstractTool {
     return pathsWhereToFindApplicationModules;
   }
 
-  public Javadoc setPathsWhereToFindApplicationModules(Collection<Path> pathsWhereToFindApplicationModules) {
-    this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+  public Javadoc setPathsWhereToFindApplicationModules(Collection<Path> paths) {
+    this.pathsWhereToFindApplicationModules = paths;
     return this;
   }
 
@@ -125,8 +117,8 @@ public /*static*/ class Javadoc extends AbstractTool {
     return characterEncodingUsedBySourceFiles;
   }
 
-  public Javadoc setCharacterEncodingUsedBySourceFiles(String characterEncodingUsedBySourceFiles) {
-    this.characterEncodingUsedBySourceFiles = characterEncodingUsedBySourceFiles;
+  public Javadoc setCharacterEncodingUsedBySourceFiles(String encoding) {
+    this.characterEncodingUsedBySourceFiles = encoding;
     return this;
   }
 
@@ -134,8 +126,8 @@ public /*static*/ class Javadoc extends AbstractTool {
     return compileForVirtualMachineVersion;
   }
 
-  public Javadoc setCompileForVirtualMachineVersion(int compileForVirtualMachineVersion) {
-    this.compileForVirtualMachineVersion = compileForVirtualMachineVersion;
+  public Javadoc setCompileForVirtualMachineVersion(int release) {
+    this.compileForVirtualMachineVersion = release;
     return this;
   }
 
@@ -143,26 +135,26 @@ public /*static*/ class Javadoc extends AbstractTool {
     return enablePreviewLanguageFeatures;
   }
 
-  public Javadoc setEnablePreviewLanguageFeatures(boolean enablePreviewLanguageFeatures) {
-    this.enablePreviewLanguageFeatures = enablePreviewLanguageFeatures;
+  public Javadoc setEnablePreviewLanguageFeatures(boolean preview) {
+    this.enablePreviewLanguageFeatures = preview;
     return this;
   }
 
   public boolean isOutputMessagesAboutWhatJavadocIsDoing() {
-    return outputMessagesAboutWhatTheCompilerIsDoing;
+    return outputMessagesAboutWhatJavadocIsDoing;
   }
 
-  public Javadoc setOutputMessagesAboutWhatJavadocIsDoing(boolean outputMessagesAboutWhatTheCompilerIsDoing) {
-    this.outputMessagesAboutWhatTheCompilerIsDoing = outputMessagesAboutWhatTheCompilerIsDoing;
+  public Javadoc setOutputMessagesAboutWhatJavadocIsDoing(boolean verbose) {
+    this.outputMessagesAboutWhatJavadocIsDoing = verbose;
     return this;
   }
 
-  public Path getDestinationDirectory() {
-    return destinationDirectory;
+  public boolean isShutOffDisplayingStatusMessages() {
+    return shutOffDisplayingStatusMessages;
   }
 
-  public Javadoc setDestinationDirectory(Path destinationDirectory) {
-    this.destinationDirectory = destinationDirectory;
+  public Javadoc setShutOffDisplayingStatusMessages(boolean quiet) {
+    this.shutOffDisplayingStatusMessages = quiet;
     return this;
   }
 }

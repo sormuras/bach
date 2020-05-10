@@ -24,6 +24,9 @@ import java.util.spi.ToolProvider;
 /** Tool call API consisting of a provider and its arguments, as a {@link String} array. */
 public interface Tool {
 
+  /** Return a short label of this tool call. */
+  String toolLabel();
+
   /** Return the tool provider running this tool. */
   ToolProvider toolProvider();
 
@@ -31,7 +34,7 @@ public interface Tool {
   String[] toolArguments();
 
   default Task toolTask() {
-    return new Task.RunTool(toolProvider(), toolArguments());
+    return new Task.RunTool(toolLabel(), toolProvider(), toolArguments());
   }
 
   /** A mutable argument list builder. */

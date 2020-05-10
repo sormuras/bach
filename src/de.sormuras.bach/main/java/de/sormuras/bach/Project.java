@@ -400,7 +400,7 @@ public /*static*/ final class Project {
 
       var context = new Tool.Context("", null);
       var javac = new Javac()
-          .setCompileModulesCheckingTimestamps(moduleNames)
+          .setModules(moduleNames)
           .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
           .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
