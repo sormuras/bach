@@ -66,6 +66,13 @@ public /*static*/ final class Project {
       var javadoc = (Javadoc) call;
       javadoc.getAdditionalArguments().add("-locale", "en");
     }
+    if (call instanceof Jlink) {
+      var jlink = (Jlink) call;
+      jlink.getAdditionalArguments().add("--compress", "2");
+      jlink.getAdditionalArguments().add("--strip-debug");
+      jlink.getAdditionalArguments().add("--no-header-files");
+      jlink.getAdditionalArguments().add("--no-man-pages");
+    }
   }
 
   private final Base base;
