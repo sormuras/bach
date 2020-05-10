@@ -20,10 +20,10 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import de.sormuras.bach.tool.Jar;
-import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.Javadoc;
-import de.sormuras.bach.tool.Jlink;
+import de.sormuras.bach.call.Jar;
+import de.sormuras.bach.call.Javac;
+import de.sormuras.bach.call.Javadoc;
+import de.sormuras.bach.call.Jlink;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;

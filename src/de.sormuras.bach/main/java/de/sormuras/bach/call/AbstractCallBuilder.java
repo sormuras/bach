@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.tool;
+package de.sormuras.bach.call;
 
 import de.sormuras.bach.Call;
 import java.io.File;

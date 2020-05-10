@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.tool;
+package de.sormuras.bach.call;
 
 import java.nio.file.Path;
 import java.util.Collection;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.tool;
+package de.sormuras.bach.call;
 
 /** A call to {@code jar}, the Java Archive managing tool. */
 public /*static*/ class Jar extends AbstractCallBuilder {

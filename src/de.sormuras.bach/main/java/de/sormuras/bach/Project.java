@@ -17,13 +17,13 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.call.Jar;
+import de.sormuras.bach.call.Javac;
+import de.sormuras.bach.call.Javadoc;
+import de.sormuras.bach.call.Jlink;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.tool.Jar;
-import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.Javadoc;
-import de.sormuras.bach.tool.Jlink;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -399,10 +399,11 @@ public /*static*/ final class Project {
       }
 
       var context = new Call.Context("", null);
-      var javac = new Javac()
-          .setModules(moduleNames)
-          .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
-          .setDestinationDirectory(base.classes(""));
+      var javac =
+          new Javac()
+              .setModules(moduleNames)
+              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+              .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
 
       var javadoc = new Javadoc();
