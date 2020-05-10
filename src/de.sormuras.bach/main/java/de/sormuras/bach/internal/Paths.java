@@ -40,6 +40,14 @@ public /*static*/ class Paths {
     }
   }
 
+  public static boolean isJavadocCommentAvailable(Path path) {
+    try {
+      return Files.readString(path).contains("/**");
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
   public static boolean isModuleInfoJavaFile(Path path) {
     return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");

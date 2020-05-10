@@ -65,6 +65,8 @@ class CallTests {
         List.of(
             "-d",
             "classes",
+            "-encoding",
+            "UTF-8",
             "--module",
             "foo.bar,foo.baz",
             "--module-version",
@@ -77,8 +79,6 @@ class CallTests {
             "foo.baz=baz-src",
             "--module-path",
             "lib",
-            "-encoding",
-            "UTF-8",
             "--release",
             "" + Runtime.version().feature(),
             "--enable-preview",
@@ -110,6 +110,8 @@ class CallTests {
         List.of(
             "-d",
             "api",
+            "-encoding",
+            "UTF-8",
             "--module",
             "foo.bar,foo.baz",
             "--module-source-path",

@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.call.GenericModuleSourceFilesConsumer;
 import de.sormuras.bach.call.Jar;
 import de.sormuras.bach.call.Javac;
 import de.sormuras.bach.call.Javadoc;
@@ -51,12 +52,19 @@ public /*static*/ final class Project {
   }
 
   static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
+    if (call instanceof GenericModuleSourceFilesConsumer) {
+      var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+      consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
+    }
     if (call instanceof Javac) {
       var javac = (Javac) call;
-      javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
       javac.setGenerateMetadataForMethodParameters(true);
       javac.setTerminateCompilationIfWarningsOccur(true);
       javac.getAdditionalArguments().add("-X" + "lint");
+    }
+    if (call instanceof Javadoc) {
+      var javadoc = (Javadoc) call;
+      javadoc.getAdditionalArguments().add("-locale", "en");
     }
   }
 
@@ -367,7 +375,9 @@ public /*static*/ final class Project {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Unit>();
+      var javadocCommentFound = false;
       for (var info : moduleInfoFiles) {
+        javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
         var descriptor = Modules.describe(info);
         var module = descriptor.name();
         moduleNames.add(module);
@@ -406,15 +416,23 @@ public /*static*/ final class Project {
               .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
 
-      var javadoc = new Javadoc();
-      javadoc.getAdditionalArguments().add("--version");
-      tuner.tune(javadoc, context);
+      var tasks = new ArrayList<Task>();
+      if (javadocCommentFound) {
+        var javadoc =
+            new Javadoc()
+                .setDestinationDirectory(base.api())
+                .setModules(moduleNames)
+                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
+        tuner.tune(javadoc, context);
+        tasks.add(javadoc.toTask());
+      }
 
       var jlink = new Jlink();
       jlink.getAdditionalArguments().add("--version");
       tuner.tune(jlink, context);
+      tasks.add(jlink.toTask());
 
-      var realm = new Realm("", units, javac.toTask(), List.of(javadoc.toTask(), jlink.toTask()));
+      var realm = new Realm("", units, javac.toTask(), tasks);
       var directoryName = base.directory().toAbsolutePath().getFileName();
       return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
           .structure(new Structure(Library.of(), List.of(realm)));
