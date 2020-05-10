@@ -3,6 +3,9 @@
 **/build/
 **/target/
 
+doc/project/JigsawQuickStart/.bach/src/Build.java
+doc/project/JigsawQuickStartWorld/.bach/src/Build.java
+
 *.args
 *.jar
 
