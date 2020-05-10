@@ -164,6 +164,51 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
+  public interface Call {
+    String toLabel();
+    ToolProvider toProvider();
+    String[] toArguments();
+    default Task toTask() {
+      return new Task.RunTool(toLabel(), toProvider(), toArguments());
+    }
+    class Arguments {
+      private final List<String> list = new ArrayList<>();
+      public Arguments add(Object argument) {
+        list.add(argument.toString());
+        return this;
+      }
+      public Arguments add(String key, Object value) {
+        return add(key).add(value);
+      }
+      public Arguments add(String key, Object first, Object second) {
+        return add(key).add(first).add(second);
+      }
+      public Arguments add(Arguments arguments) {
+        list.addAll(arguments.list);
+        return this;
+      }
+      public String[] toStringArray() {
+        return list.toArray(String[]::new);
+      }
+    }
+    final class Context {
+      private final String realm;
+      private final String module;
+      public Context(String realm, String module) {
+        this.realm = realm;
+        this.module = module;
+      }
+      public String realm() {
+        return realm;
+      }
+      public String module() {
+        return module;
+      }
+    }
+    interface Tuner {
+      void tune(Call call, Context context);
+    }
+  }
   static class Main {
     public static void main(String... args) {
       if (Bach.findCustomBuildProgram().isPresent()) {
@@ -180,9 +225,9 @@ public class Bach {
     public static Builder newProject(String title, String version) {
       return new Builder().title(title).version(Version.parse(version));
     }
-    static void tuner(Tool tool, @SuppressWarnings("unused") Tool.Context context) {
-      if (tool instanceof Javac) {
-        var javac = (Javac) tool;
+    static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
+      if (call instanceof Javac) {
+        var javac = (Javac) call;
         javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
         javac.setGenerateMetadataForMethodParameters(true);
         javac.setTerminateCompilationIfWarningsOccur(true);
@@ -411,12 +456,12 @@ public class Bach {
       public Builder walk() {
         return walk(Project::tuner);
       }
-      public Builder walk(Tool.Tuner tuner) {
+      public Builder walk(Call.Tuner tuner) {
         var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
         if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
         return walkUnnamedRealm(moduleInfoFiles, tuner);
       }
-      public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Tool.Tuner tuner) {
+      public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Call.Tuner tuner) {
         var moduleNames = new TreeSet<String>();
         var moduleSourcePathPatterns = new TreeSet<String>();
         var units = new ArrayList<Unit>();
@@ -428,7 +473,7 @@ public class Bach {
           var classes = base.classes("", module);
           var modules = base.modules("");
           var jar = modules.resolve(module + ".jar");
-          var context = new Tool.Context("", module);
+          var context = new Call.Context("", module);
           var jarCreate = new Jar();
           jarCreate
               .getAdditionalArguments()
@@ -443,15 +488,16 @@ public class Bach {
               Task.sequence(
                   "Create modular JAR file " + jar.getFileName(),
                   new Task.CreateDirectories(jar.getParent()),
-                  jarCreate.toolTask(),
-                  jarDescribe.toolTask());
+                  jarCreate.toTask(),
+                  jarDescribe.toTask());
           units.add(new Unit(descriptor, List.of(task)));
         }
-        var context = new Tool.Context("", null);
-        var javac = new Javac()
-            .setCompileModulesCheckingTimestamps(moduleNames)
-            .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
-            .setDestinationDirectory(base.classes(""));
+        var context = new Call.Context("", null);
+        var javac =
+            new Javac()
+                .setModules(moduleNames)
+                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+                .setDestinationDirectory(base.classes(""));
         tuner.tune(javac, context);
         var javadoc = new Javadoc();
         javadoc.getAdditionalArguments().add("--version");
@@ -459,7 +505,7 @@ public class Bach {
         var jlink = new Jlink();
         jlink.getAdditionalArguments().add("--version");
         tuner.tune(jlink, context);
-        var realm = new Realm("", units, javac.toolTask(), List.of(javadoc.toolTask(), jlink.toolTask()));
+        var realm = new Realm("", units, javac.toTask(), List.of(javadoc.toTask(), jlink.toTask()));
         var directoryName = base.directory().toAbsolutePath().getFileName();
         return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
             .structure(new Structure(Library.of(), List.of(realm)));
@@ -577,8 +623,8 @@ public class Bach {
     public static class RunTool extends Task {
       private final ToolProvider tool;
       private final String[] args;
-      public RunTool(ToolProvider tool, String... args) {
-        super(tool.name() + " " + String.join(" ", args), List.of());
+      public RunTool(String label, ToolProvider tool, String... args) {
+        super(label, List.of());
         this.tool = tool;
         this.args = args;
       }
@@ -644,48 +690,338 @@ public class Bach {
       }
     }
   }
-  public interface Tool {
-    ToolProvider toolProvider();
-    String[] toolArguments();
-    default Task toolTask() {
-      return new Task.RunTool(toolProvider(), toolArguments());
+  public static abstract class AbstractCallBuilder implements Call {
+    public static boolean assigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof String) return !((String) object).isEmpty();
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      if (object.getClass().isArray()) return Array.getLength(object) != 0;
+      return true;
     }
-    class Arguments {
-      private final List<String> list = new ArrayList<>();
-      public Arguments add(Object argument) {
-        list.add(argument.toString());
-        return this;
-      }
-      public Arguments add(String key, Object value) {
-        return add(key).add(value);
-      }
-      public Arguments add(String key, Object first, Object second) {
-        return add(key).add(first).add(second);
-      }
-      public Arguments add(Arguments arguments) {
-        list.addAll(arguments.list);
-        return this;
-      }
-      public String[] toStringArray() {
-        return list.toArray(String[]::new);
-      }
+    public static String join(Collection<Path> paths) {
+      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
     }
-    final class Context {
-      private final String realm;
-      private final String module;
-      public Context(String realm, String module) {
-        this.realm = realm;
-        this.module = module;
-      }
-      public String realm() {
-        return realm;
-      }
-      public String module() {
-        return module;
-      }
+    public static String joinPaths(Collection<String> paths) {
+      return String.join(File.pathSeparator, paths);
     }
-    interface Tuner {
-      void tune(Tool tool, Context context);
+    private final String name;
+    private final Arguments additionalArguments = new Arguments();
+    public AbstractCallBuilder(String name) {
+      this.name = name;
+    }
+    public Arguments getAdditionalArguments() {
+      return additionalArguments;
+    }
+    public ToolProvider toProvider() {
+      return ToolProvider.findFirst(name).orElseThrow();
+    }
+    public String[] toArguments() {
+      var arguments = new Arguments();
+      arguments(arguments);
+      return arguments.add(getAdditionalArguments()).toStringArray();
+    }
+    protected void arguments(Arguments arguments) {}
+  }
+  @SuppressWarnings("unchecked")
+  public static abstract class GenericModuleSourceFilesConsumer<T> extends AbstractCallBuilder {
+    private Path destinationDirectory;
+    private Set<String> modules;
+    public GenericModuleSourceFilesConsumer(String name) {
+      super(name);
+    }
+    protected void arguments(Arguments arguments) {
+      var destination = getDestinationDirectory();
+      if (assigned(destination)) arguments.add("-d", destination);
+      var modules = getModules();
+      if (assigned(modules)) arguments.add("--module", String.join(",", new TreeSet<>(modules)));
+    }
+    public Path getDestinationDirectory() {
+      return destinationDirectory;
+    }
+    public T setDestinationDirectory(Path directory) {
+      this.destinationDirectory = directory;
+      return (T) this;
+    }
+    public Set<String> getModules() {
+      return modules;
+    }
+    public T setModules(Set<String> modules) {
+      this.modules = modules;
+      return (T) this;
+    }
+  }
+  public static class Jar extends AbstractCallBuilder {
+    public Jar() {
+      super("jar");
+    }
+    public String toLabel() {
+      return "Operate on JAR file";
+    }
+  }
+  public static class Javac extends GenericModuleSourceFilesConsumer<Javac> {
+    private Version versionOfModulesThatAreBeingCompiled;
+    private Collection<String> patternsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
+    private Collection<Path> pathsWhereToFindApplicationModules;
+    private String characterEncodingUsedBySourceFiles;
+    private int compileForVirtualMachineVersion;
+    private boolean enablePreviewLanguageFeatures;
+    private boolean generateMetadataForMethodParameters;
+    private boolean outputMessagesAboutWhatTheCompilerIsDoing;
+    private boolean outputSourceLocationsOfDeprecatedUsages;
+    private boolean terminateCompilationIfWarningsOccur;
+    public Javac() {
+      super("javac");
+    }
+    public String toLabel() {
+      return "Compile module(s): " + getModules();
+    }
+    protected void arguments(Arguments arguments) {
+      super.arguments(arguments);
+      var version = getVersionOfModulesThatAreBeingCompiled();
+      if (assigned(version)) arguments.add("--module-version", version);
+      var patterns = getPatternsWhereToFindSourceFiles();
+      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+      var specific = getPathsWhereToFindSourceFiles();
+      if (assigned(specific))
+        for (var entry : specific.entrySet())
+          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
+      var patches = getPathsWhereToFindMoreAssetsPerModule();
+      if (assigned(patches))
+        for (var patch : patches.entrySet())
+          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+      var modulePath = getPathsWhereToFindApplicationModules();
+      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
+      var encoding = getCharacterEncodingUsedBySourceFiles();
+      if (assigned(encoding)) arguments.add("-encoding", encoding);
+      var release = getCompileForVirtualMachineVersion();
+      if (assigned(release)) arguments.add("--release", release);
+      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
+      if (isGenerateMetadataForMethodParameters()) arguments.add("-parameters");
+      if (isOutputSourceLocationsOfDeprecatedUsages()) arguments.add("-deprecation");
+      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
+      if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
+    }
+    public Version getVersionOfModulesThatAreBeingCompiled() {
+      return versionOfModulesThatAreBeingCompiled;
+    }
+    public Javac setVersionOfModulesThatAreBeingCompiled(
+        Version versionOfModulesThatAreBeingCompiled) {
+      this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
+      return this;
+    }
+    public Collection<String> getPatternsWhereToFindSourceFiles() {
+      return patternsWhereToFindSourceFiles;
+    }
+    public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+      this.patternsWhereToFindSourceFiles = patterns;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+      return pathsWhereToFindSourceFiles;
+    }
+    public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindSourceFiles = map;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+      return pathsWhereToFindMoreAssetsPerModule;
+    }
+    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindMoreAssetsPerModule = map;
+      return this;
+    }
+    public Collection<Path> getPathsWhereToFindApplicationModules() {
+      return pathsWhereToFindApplicationModules;
+    }
+    public Javac setPathsWhereToFindApplicationModules(
+        Collection<Path> pathsWhereToFindApplicationModules) {
+      this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+      return this;
+    }
+    public String getCharacterEncodingUsedBySourceFiles() {
+      return characterEncodingUsedBySourceFiles;
+    }
+    public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
+      this.characterEncodingUsedBySourceFiles = encoding;
+      return this;
+    }
+    public int getCompileForVirtualMachineVersion() {
+      return compileForVirtualMachineVersion;
+    }
+    public Javac setCompileForVirtualMachineVersion(int release) {
+      this.compileForVirtualMachineVersion = release;
+      return this;
+    }
+    public boolean isEnablePreviewLanguageFeatures() {
+      return enablePreviewLanguageFeatures;
+    }
+    public Javac setEnablePreviewLanguageFeatures(boolean preview) {
+      this.enablePreviewLanguageFeatures = preview;
+      return this;
+    }
+    public boolean isGenerateMetadataForMethodParameters() {
+      return generateMetadataForMethodParameters;
+    }
+    public Javac setGenerateMetadataForMethodParameters(boolean parameters) {
+      this.generateMetadataForMethodParameters = parameters;
+      return this;
+    }
+    public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
+      return outputMessagesAboutWhatTheCompilerIsDoing;
+    }
+    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
+      this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
+      return this;
+    }
+    public boolean isOutputSourceLocationsOfDeprecatedUsages() {
+      return outputSourceLocationsOfDeprecatedUsages;
+    }
+    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
+      this.outputSourceLocationsOfDeprecatedUsages = deprecation;
+      return this;
+    }
+    public boolean isTerminateCompilationIfWarningsOccur() {
+      return terminateCompilationIfWarningsOccur;
+    }
+    public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
+      this.terminateCompilationIfWarningsOccur = error;
+      return this;
+    }
+  }
+  public static class Javadoc extends GenericModuleSourceFilesConsumer<Javadoc> {
+    private Collection<String> patternsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
+    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
+    private Collection<Path> pathsWhereToFindApplicationModules;
+    private String characterEncodingUsedBySourceFiles;
+    private int compileForVirtualMachineVersion;
+    private boolean enablePreviewLanguageFeatures;
+    private boolean outputMessagesAboutWhatJavadocIsDoing;
+    private boolean shutOffDisplayingStatusMessages;
+    public Javadoc() {
+      super("javadoc");
+    }
+    public String toLabel() {
+      return "Generate API documentation for " + getModules();
+    }
+    protected void arguments(Arguments arguments) {
+      super.arguments(arguments);
+      var patterns = getPatternsWhereToFindSourceFiles();
+      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
+      var specific = getPathsWhereToFindSourceFiles();
+      if (assigned(specific))
+        for (var entry : specific.entrySet())
+          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
+      var patches = getPathsWhereToFindMoreAssetsPerModule();
+      if (assigned(patches))
+        for (var patch : patches.entrySet())
+          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
+      var modulePath = getPathsWhereToFindApplicationModules();
+      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
+      var encoding = getCharacterEncodingUsedBySourceFiles();
+      if (assigned(encoding)) arguments.add("-encoding", encoding);
+      var release = getCompileForVirtualMachineVersion();
+      if (assigned(release)) arguments.add("--release", release);
+      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
+      if (isOutputMessagesAboutWhatJavadocIsDoing()) arguments.add("-verbose");
+      if (isShutOffDisplayingStatusMessages()) arguments.add("-quiet");
+    }
+    public Collection<String> getPatternsWhereToFindSourceFiles() {
+      return patternsWhereToFindSourceFiles;
+    }
+    public Javadoc setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+      this.patternsWhereToFindSourceFiles = patterns;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+      return pathsWhereToFindSourceFiles;
+    }
+    public Javadoc setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindSourceFiles = map;
+      return this;
+    }
+    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+      return pathsWhereToFindMoreAssetsPerModule;
+    }
+    public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+      this.pathsWhereToFindMoreAssetsPerModule = map;
+      return this;
+    }
+    public Collection<Path> getPathsWhereToFindApplicationModules() {
+      return pathsWhereToFindApplicationModules;
+    }
+    public Javadoc setPathsWhereToFindApplicationModules(Collection<Path> paths) {
+      this.pathsWhereToFindApplicationModules = paths;
+      return this;
+    }
+    public String getCharacterEncodingUsedBySourceFiles() {
+      return characterEncodingUsedBySourceFiles;
+    }
+    public Javadoc setCharacterEncodingUsedBySourceFiles(String encoding) {
+      this.characterEncodingUsedBySourceFiles = encoding;
+      return this;
+    }
+    public int getCompileForVirtualMachineVersion() {
+      return compileForVirtualMachineVersion;
+    }
+    public Javadoc setCompileForVirtualMachineVersion(int release) {
+      this.compileForVirtualMachineVersion = release;
+      return this;
+    }
+    public boolean isEnablePreviewLanguageFeatures() {
+      return enablePreviewLanguageFeatures;
+    }
+    public Javadoc setEnablePreviewLanguageFeatures(boolean preview) {
+      this.enablePreviewLanguageFeatures = preview;
+      return this;
+    }
+    public boolean isOutputMessagesAboutWhatJavadocIsDoing() {
+      return outputMessagesAboutWhatJavadocIsDoing;
+    }
+    public Javadoc setOutputMessagesAboutWhatJavadocIsDoing(boolean verbose) {
+      this.outputMessagesAboutWhatJavadocIsDoing = verbose;
+      return this;
+    }
+    public boolean isShutOffDisplayingStatusMessages() {
+      return shutOffDisplayingStatusMessages;
+    }
+    public Javadoc setShutOffDisplayingStatusMessages(boolean quiet) {
+      this.shutOffDisplayingStatusMessages = quiet;
+      return this;
+    }
+  }
+  public static class Jlink extends AbstractCallBuilder {
+    private Path locationOfTheGeneratedRuntimeImage;
+    private Set<String> modules;
+    public Jlink() {
+      super("jlink");
+    }
+    public String toLabel() {
+      return "Create a custom runtime image with dependencies for " + getModules();
+    }
+    protected void arguments(Arguments arguments) {
+      var output = getLocationOfTheGeneratedRuntimeImage();
+      if (assigned(output)) arguments.add("--output", output);
+      var modules = getModules();
+      if (assigned(modules)) arguments.add("--add-modules", String.join(",", new TreeSet<>(modules)));
+    }
+    public Path getLocationOfTheGeneratedRuntimeImage() {
+      return locationOfTheGeneratedRuntimeImage;
+    }
+    public Jlink setLocationOfTheGeneratedRuntimeImage(Path output) {
+      this.locationOfTheGeneratedRuntimeImage = output;
+      return this;
+    }
+    public Set<String> getModules() {
+      return modules;
+    }
+    public Jlink setModules(Set<String> modules) {
+      this.modules = modules;
+      return this;
     }
   }
   public static class Functions {
@@ -1051,203 +1387,6 @@ public class Bach {
     public String read(URI uri) throws Exception {
       var request = HttpRequest.newBuilder(uri).GET();
       return client.send(request.build(), BodyHandlers.ofString()).body();
-    }
-  }
-  public static abstract class AbstractTool implements Tool {
-    public static boolean assigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof String) return !((String) object).isEmpty();
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      if (object.getClass().isArray()) return Array.getLength(object) != 0;
-      return true;
-    }
-    public static String join(Collection<Path> paths) {
-      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-    }
-    public static String joinPaths(Collection<String> paths) {
-      return String.join(File.pathSeparator, paths);
-    }
-    private final String name;
-    private final Arguments additionalArguments = new Arguments();
-    public AbstractTool(String name) {
-      this.name = name;
-    }
-    public Arguments getAdditionalArguments() {
-      return additionalArguments;
-    }
-    public ToolProvider toolProvider() {
-      return ToolProvider.findFirst(name).orElseThrow();
-    }
-    public String[] toolArguments() {
-      var arguments = new Arguments();
-      arguments(arguments);
-      return arguments.add(getAdditionalArguments()).toStringArray();
-    }
-    protected void arguments(Arguments arguments) {}
-  }
-  public static class Jar extends AbstractTool {
-    public Jar() {
-      super("jar");
-    }
-  }
-  public static class Javac extends AbstractTool {
-    private Set<String> compileModulesCheckingTimestamps;
-    private Version versionOfModulesThatAreBeingCompiled;
-    private Collection<String> patternsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private Collection<Path> pathsWhereToFindApplicationModules;
-    private String characterEncodingUsedBySourceFiles;
-    private int compileForVirtualMachineVersion;
-    private boolean enablePreviewLanguageFeatures;
-    private boolean generateMetadataForMethodParameters;
-    private boolean outputMessagesAboutWhatTheCompilerIsDoing;
-    private boolean outputSourceLocationsOfDeprecatedUsages;
-    private boolean terminateCompilationIfWarningsOccur;
-    private Path destinationDirectory;
-    public Javac() {
-      super("javac");
-    }
-    protected void arguments(Arguments arguments) {
-      var module = getCompileModulesCheckingTimestamps();
-      if (assigned(module)) arguments.add("--module", String.join(",", new TreeSet<>(module)));
-      var version = getVersionOfModulesThatAreBeingCompiled();
-      if (assigned(version)) arguments.add("--module-version", version);
-      var patterns = getPatternsWhereToFindSourceFiles();
-      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
-      var specific = getPathsWhereToFindSourceFiles();
-      if (assigned(specific))
-        for (var entry : specific.entrySet())
-          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
-      var patches = getPathsWhereToFindMoreAssetsPerModule();
-      if (assigned(patches))
-        for (var patch : patches.entrySet())
-          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
-      var modulePath = getPathsWhereToFindApplicationModules();
-      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
-      var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (assigned(encoding)) arguments.add("-encoding", encoding);
-      var release = getCompileForVirtualMachineVersion();
-      if (assigned(release)) arguments.add("--release", release);
-      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
-      if (isGenerateMetadataForMethodParameters()) arguments.add("-parameters");
-      if (isOutputSourceLocationsOfDeprecatedUsages()) arguments.add("-deprecation");
-      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
-      if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
-      var destination = getDestinationDirectory();
-      if (assigned(destination)) arguments.add("-d", destination);
-    }
-    public Set<String> getCompileModulesCheckingTimestamps() {
-      return compileModulesCheckingTimestamps;
-    }
-    public Javac setCompileModulesCheckingTimestamps(Set<String> moduleNames) {
-      this.compileModulesCheckingTimestamps = moduleNames;
-      return this;
-    }
-    public Version getVersionOfModulesThatAreBeingCompiled() {
-      return versionOfModulesThatAreBeingCompiled;
-    }
-    public Javac setVersionOfModulesThatAreBeingCompiled(
-        Version versionOfModulesThatAreBeingCompiled) {
-      this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
-      return this;
-    }
-    public Collection<String> getPatternsWhereToFindSourceFiles() {
-      return patternsWhereToFindSourceFiles;
-    }
-    public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
-      this.patternsWhereToFindSourceFiles = patterns;
-      return this;
-    }
-    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
-      return pathsWhereToFindSourceFiles;
-    }
-    public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
-      this.pathsWhereToFindSourceFiles = map;
-      return this;
-    }
-    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
-      return pathsWhereToFindMoreAssetsPerModule;
-    }
-    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
-      this.pathsWhereToFindMoreAssetsPerModule = map;
-      return this;
-    }
-    public Collection<Path> getPathsWhereToFindApplicationModules() {
-      return pathsWhereToFindApplicationModules;
-    }
-    public Javac setPathsWhereToFindApplicationModules(
-        Collection<Path> pathsWhereToFindApplicationModules) {
-      this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
-      return this;
-    }
-    public String getCharacterEncodingUsedBySourceFiles() {
-      return characterEncodingUsedBySourceFiles;
-    }
-    public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
-      this.characterEncodingUsedBySourceFiles = encoding;
-      return this;
-    }
-    public int getCompileForVirtualMachineVersion() {
-      return compileForVirtualMachineVersion;
-    }
-    public Javac setCompileForVirtualMachineVersion(int release) {
-      this.compileForVirtualMachineVersion = release;
-      return this;
-    }
-    public boolean isEnablePreviewLanguageFeatures() {
-      return enablePreviewLanguageFeatures;
-    }
-    public Javac setEnablePreviewLanguageFeatures(boolean preview) {
-      this.enablePreviewLanguageFeatures = preview;
-      return this;
-    }
-    public boolean isGenerateMetadataForMethodParameters() {
-      return generateMetadataForMethodParameters;
-    }
-    public Javac setGenerateMetadataForMethodParameters(boolean parameters) {
-      this.generateMetadataForMethodParameters = parameters;
-      return this;
-    }
-    public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
-      return outputMessagesAboutWhatTheCompilerIsDoing;
-    }
-    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
-      this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
-      return this;
-    }
-    public boolean isOutputSourceLocationsOfDeprecatedUsages() {
-      return outputSourceLocationsOfDeprecatedUsages;
-    }
-    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
-      this.outputSourceLocationsOfDeprecatedUsages = deprecation;
-      return this;
-    }
-    public boolean isTerminateCompilationIfWarningsOccur() {
-      return terminateCompilationIfWarningsOccur;
-    }
-    public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
-      this.terminateCompilationIfWarningsOccur = error;
-      return this;
-    }
-    public Path getDestinationDirectory() {
-      return destinationDirectory;
-    }
-    public Javac setDestinationDirectory(Path destinationDirectory) {
-      this.destinationDirectory = destinationDirectory;
-      return this;
-    }
-  }
-  public static class Javadoc extends AbstractTool {
-    public Javadoc() {
-      super("javadoc");
-    }
-  }
-  public static class Jlink extends AbstractTool {
-    public Jlink() {
-      super("jlink");
     }
   }
 }

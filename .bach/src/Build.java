@@ -146,7 +146,7 @@ class Build {
     var tool = ToolProvider.findFirst(name).orElseThrow();
     var args = new String[arguments.length];
     for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
-    return new Bach.Task.RunTool(tool, args);
+    return new Bach.Task.RunTool(name + " with " + args.length + " arguments", tool, args);
   }
 
   static Bach.Task createJar(Path jar, Path classes) {
@@ -157,7 +157,7 @@ class Build {
     return Bach.Task.sequence(
         "Create modular JAR file " + jar.getFileName(),
         new Bach.Task.CreateDirectories(jar.getParent()),
-        jarCreate.toolTask(),
-        jarDescribe.toolTask());
+        jarCreate.toTask(),
+        jarDescribe.toTask());
   }
 }
