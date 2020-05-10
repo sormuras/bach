@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.tool.AbstractTool;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
@@ -63,12 +62,7 @@ class ProjectTests {
       var project =
           new Project.Builder()
               .base(Project.Base.of(base))
-              .walk(
-                  (tool, context) -> {
-                    assertEquals("", context.realm());
-                    if (tool instanceof AbstractTool)
-                      ((AbstractTool) tool).getAdditionalArguments().add("--verbose");
-                  })
+              .walk((call, context) -> assertEquals("", context.realm()))
               .build();
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());

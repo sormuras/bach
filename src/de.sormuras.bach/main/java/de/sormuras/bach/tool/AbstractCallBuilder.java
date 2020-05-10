@@ -17,7 +17,7 @@
 
 package de.sormuras.bach.tool;
 
-import de.sormuras.bach.Tool;
+import de.sormuras.bach.Call;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
@@ -26,8 +26,8 @@ import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
-/** An abstract tool implementation providing support for additional arguments. */
-public /*static*/ abstract class AbstractTool implements Tool {
+/** An abstract tool call builder providing support for additional arguments. */
+public /*static*/ abstract class AbstractCallBuilder implements Call {
 
   /** Return {@code true} if the given object is not null in any form, otherwise {@code false}. */
   public static boolean assigned(Object object) {
@@ -51,7 +51,7 @@ public /*static*/ abstract class AbstractTool implements Tool {
   private final String name;
   private final Arguments additionalArguments = new Arguments();
 
-  public AbstractTool(String name) {
+  public AbstractCallBuilder(String name) {
     this.name = name;
   }
 
@@ -60,12 +60,12 @@ public /*static*/ abstract class AbstractTool implements Tool {
   }
 
   @Override
-  public ToolProvider toolProvider() {
+  public ToolProvider toProvider() {
     return ToolProvider.findFirst(name).orElseThrow();
   }
 
   @Override
-  public String[] toolArguments() {
+  public String[] toArguments() {
     var arguments = new Arguments();
     arguments(arguments);
     return arguments.add(getAdditionalArguments()).toStringArray();

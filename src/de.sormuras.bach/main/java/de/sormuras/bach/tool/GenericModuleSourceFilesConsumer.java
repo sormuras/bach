@@ -23,14 +23,14 @@ import java.util.TreeSet;
 
 /** An abstract tool implementation providing support for shared {@code module}-related options. */
 @SuppressWarnings("unchecked")
-public /*static*/ abstract class ConsumeModuleSourcesTool<T> extends AbstractTool {
+public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends AbstractCallBuilder {
 
   /** Value of {@code -d <directory>} option. */
   private Path destinationDirectory;
   /** Value of {@code --module <module>(,<module>)*} option. */
   private Set<String> modules;
 
-  public ConsumeModuleSourcesTool(String name) {
+  public GenericModuleSourceFilesConsumer(String name) {
     super(name);
   }
 

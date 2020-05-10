@@ -33,13 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class ToolTests {
+class CallTests {
 
   @ParameterizedTest
   @ValueSource(classes = {Javac.class, Javadoc.class, Jar.class, Jlink.class})
-  void defaultToolInstanceYieldsEmptyListOfArguments(Class<? extends Tool> tool) throws Exception {
+  void defaultToolInstanceYieldsEmptyListOfArguments(Class<? extends Call> tool) throws Exception {
     var instance = tool.getConstructor().newInstance();
-    assertEquals(List.of(), List.of(instance.toolArguments()));
+    assertEquals(List.of(), List.of(instance.toArguments()));
   }
 
   @Test
@@ -87,7 +87,7 @@ class ToolTests {
             "-verbose",
             "-Werror",
             "--version"),
-        List.of(javac.toolArguments()));
+        List.of(javac.toArguments()));
   }
 
   @Test
@@ -128,14 +128,14 @@ class ToolTests {
             "-verbose",
             "-quiet",
             "--version"),
-        List.of(javadoc.toolArguments()));
+        List.of(javadoc.toArguments()));
   }
 
   @Test
   void touchAllPropertiesOfJar() {
     var jar = new Jar();
     jar.getAdditionalArguments().add("--version");
-    assertLinesMatch(List.of("--version"), List.of(jar.toolArguments()));
+    assertLinesMatch(List.of("--version"), List.of(jar.toArguments()));
   }
 
   @Test
@@ -147,6 +147,6 @@ class ToolTests {
     jlink.getAdditionalArguments().add("--version");
     assertLinesMatch(
         List.of("--output", "image", "--add-modules", "foo.bar,foo.baz", "--version"),
-        List.of(jlink.toolArguments()));
+        List.of(jlink.toArguments()));
   }
 }

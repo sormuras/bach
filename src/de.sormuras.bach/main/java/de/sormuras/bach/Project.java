@@ -50,9 +50,9 @@ public /*static*/ final class Project {
     return new Builder().title(title).version(Version.parse(version));
   }
 
-  static void tuner(Tool tool, @SuppressWarnings("unused") Tool.Context context) {
-    if (tool instanceof Javac) {
-      var javac = (Javac) tool;
+  static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
+    if (call instanceof Javac) {
+      var javac = (Javac) call;
       javac.setCharacterEncodingUsedBySourceFiles("UTF-8");
       javac.setGenerateMetadataForMethodParameters(true);
       javac.setTerminateCompilationIfWarningsOccur(true);
@@ -357,13 +357,13 @@ public /*static*/ final class Project {
     }
 
     /** Walk base tree and use {@code module-info.java} units to configure this builder instance. */
-    public Builder walk(Tool.Tuner tuner) {
+    public Builder walk(Call.Tuner tuner) {
       var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
       if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
       return walkUnnamedRealm(moduleInfoFiles, tuner);
     }
 
-    public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Tool.Tuner tuner) {
+    public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Call.Tuner tuner) {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Unit>();
@@ -377,7 +377,7 @@ public /*static*/ final class Project {
         var modules = base.modules("");
         var jar = modules.resolve(module + ".jar");
 
-        var context = new Tool.Context("", module);
+        var context = new Call.Context("", module);
         var jarCreate = new Jar();
         jarCreate
             .getAdditionalArguments()
@@ -392,13 +392,13 @@ public /*static*/ final class Project {
             Task.sequence(
                 "Create modular JAR file " + jar.getFileName(),
                 new Task.CreateDirectories(jar.getParent()),
-                jarCreate.toolTask(),
-                jarDescribe.toolTask());
+                jarCreate.toTask(),
+                jarDescribe.toTask());
 
         units.add(new Unit(descriptor, List.of(task)));
       }
 
-      var context = new Tool.Context("", null);
+      var context = new Call.Context("", null);
       var javac = new Javac()
           .setModules(moduleNames)
           .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
@@ -413,7 +413,7 @@ public /*static*/ final class Project {
       jlink.getAdditionalArguments().add("--version");
       tuner.tune(jlink, context);
 
-      var realm = new Realm("", units, javac.toolTask(), List.of(javadoc.toolTask(), jlink.toolTask()));
+      var realm = new Realm("", units, javac.toTask(), List.of(javadoc.toTask(), jlink.toTask()));
       var directoryName = base.directory().toAbsolutePath().getFileName();
       return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
           .structure(new Structure(Library.of(), List.of(realm)));

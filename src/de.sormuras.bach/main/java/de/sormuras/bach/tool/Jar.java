@@ -18,14 +18,14 @@
 package de.sormuras.bach.tool;
 
 /** A call to {@code jar}, the Java Archive managing tool. */
-public /*static*/ class Jar extends AbstractTool {
+public /*static*/ class Jar extends AbstractCallBuilder {
 
   public Jar() {
     super("jar");
   }
 
   @Override
-  public String toolLabel() {
+  public String toLabel() {
     return "Operate on JAR file";
   }
 }

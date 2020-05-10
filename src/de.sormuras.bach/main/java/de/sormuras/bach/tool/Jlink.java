@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /** A call to {@code jlink}, the tool that generates custom runtime images. */
-public /*static*/ class Jlink extends AbstractTool {
+public /*static*/ class Jlink extends AbstractCallBuilder {
 
   /** Value of {@code --output} option. */
   private Path locationOfTheGeneratedRuntimeImage;
@@ -34,7 +34,7 @@ public /*static*/ class Jlink extends AbstractTool {
   }
 
   @Override
-  public String toolLabel() {
+  public String toLabel() {
     return "Create a custom runtime image with dependencies for " + getModules();
   }
 

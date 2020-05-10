@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /** A call to {@code javac}, the Java compiler. */
-public /*static*/ class Javac extends ConsumeModuleSourcesTool<Javac> {
+public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
 
   private Version versionOfModulesThatAreBeingCompiled;
   private Collection<String> patternsWhereToFindSourceFiles;
@@ -43,7 +43,7 @@ public /*static*/ class Javac extends ConsumeModuleSourcesTool<Javac> {
   }
 
   @Override
-  public String toolLabel() {
+  public String toLabel() {
     return "Compile module(s): " + getModules();
   }
 

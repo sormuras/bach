@@ -21,20 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-/** Tool call API consisting of a provider and its arguments, as a {@link String} array. */
-public interface Tool {
+/** A tool call configuration. */
+public interface Call {
 
   /** Return a short label of this tool call. */
-  String toolLabel();
+  String toLabel();
 
   /** Return the tool provider running this tool. */
-  ToolProvider toolProvider();
+  ToolProvider toProvider();
 
   /** Return the arguments to pass to {@code ToolProvider#run(out, err, String...)}. */
-  String[] toolArguments();
+  String[] toArguments();
 
-  default Task toolTask() {
-    return new Task.RunTool(toolLabel(), toolProvider(), toolArguments());
+  default Task toTask() {
+    return new Task.RunTool(toLabel(), toProvider(), toArguments());
   }
 
   /** A mutable argument list builder. */
@@ -94,6 +94,6 @@ public interface Tool {
    */
   @FunctionalInterface
   interface Tuner {
-    void tune(Tool tool, Context context);
+    void tune(Call call, Context context);
   }
 }

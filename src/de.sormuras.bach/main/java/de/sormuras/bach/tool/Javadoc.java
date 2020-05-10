@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /** A call to {@code javadoc}, the Java API documentation generating tool. */
-public /*static*/ class Javadoc extends ConsumeModuleSourcesTool<Javadoc> {
+public /*static*/ class Javadoc extends GenericModuleSourceFilesConsumer<Javadoc> {
 
   private Collection<String> patternsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
@@ -40,7 +40,7 @@ public /*static*/ class Javadoc extends ConsumeModuleSourcesTool<Javadoc> {
   }
 
   @Override
-  public String toolLabel() {
+  public String toLabel() {
     return "Generate API documentation for " + getModules();
   }
 
