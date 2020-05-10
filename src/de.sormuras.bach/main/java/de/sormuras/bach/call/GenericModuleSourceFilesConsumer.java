@@ -27,6 +27,8 @@ public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends Abs
 
   /** Value of {@code -d <directory>} option. */
   private Path destinationDirectory;
+  /** Value of {@code -encoding <encoding>} option. */
+  private String characterEncodingUsedBySourceFiles;
   /** Value of {@code --module <module>(,<module>)*} option. */
   private Set<String> modules;
 
@@ -38,6 +40,9 @@ public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends Abs
   protected void arguments(Arguments arguments) {
     var destination = getDestinationDirectory();
     if (assigned(destination)) arguments.add("-d", destination);
+
+    var encoding = getCharacterEncodingUsedBySourceFiles();
+    if (assigned(encoding)) arguments.add("-encoding", encoding);
 
     var modules = getModules();
     if (assigned(modules)) arguments.add("--module", String.join(",", new TreeSet<>(modules)));
@@ -51,6 +56,17 @@ public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends Abs
   /** Set value for {@code -d} option. */
   public T setDestinationDirectory(Path directory) {
     this.destinationDirectory = directory;
+    return (T) this;
+  }
+
+  /** Get value of {@code -encoding <encoding>} option. */
+  public String getCharacterEncodingUsedBySourceFiles() {
+    return characterEncodingUsedBySourceFiles;
+  }
+
+  /** Set value for {@code -encoding <encoding>} option. */
+  public T setCharacterEncodingUsedBySourceFiles(String encoding) {
+    this.characterEncodingUsedBySourceFiles = encoding;
     return (T) this;
   }
 

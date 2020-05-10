@@ -30,7 +30,7 @@ public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
   private Collection<Path> pathsWhereToFindApplicationModules;
-  private String characterEncodingUsedBySourceFiles;
+
   private int compileForVirtualMachineVersion;
   private boolean enablePreviewLanguageFeatures;
   private boolean generateMetadataForMethodParameters;
@@ -69,9 +69,6 @@ public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
 
     var modulePath = getPathsWhereToFindApplicationModules();
     if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
-
-    var encoding = getCharacterEncodingUsedBySourceFiles();
-    if (assigned(encoding)) arguments.add("-encoding", encoding);
 
     var release = getCompileForVirtualMachineVersion();
     if (assigned(release)) arguments.add("--release", release);
@@ -131,15 +128,6 @@ public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
   public Javac setPathsWhereToFindApplicationModules(
       Collection<Path> pathsWhereToFindApplicationModules) {
     this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
-    return this;
-  }
-
-  public String getCharacterEncodingUsedBySourceFiles() {
-    return characterEncodingUsedBySourceFiles;
-  }
-
-  public Javac setCharacterEncodingUsedBySourceFiles(String encoding) {
-    this.characterEncodingUsedBySourceFiles = encoding;
     return this;
   }
 
