@@ -91,8 +91,8 @@ public /*static*/ class Task {
     private final ToolProvider tool;
     private final String[] args;
 
-    public RunTool(ToolProvider tool, String... args) {
-      super(tool.name() + " " + String.join(" ", args), List.of());
+    public RunTool(String label, ToolProvider tool, String... args) {
+      super(label, List.of());
       this.tool = tool;
       this.args = args;
     }

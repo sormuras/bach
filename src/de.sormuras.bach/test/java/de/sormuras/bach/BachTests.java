@@ -70,7 +70,7 @@ class BachTests {
     }
 
     var bach = zero();
-    var task = new Task.RunTool(new Local(), "1", "2", "3");
+    var task = new Task.RunTool("local no-op tool", new Local(), "1", "2", "3");
     bach.execute(task);
     var logbook = ((Logbook) bach.getLogger());
     assertLinesMatch(
