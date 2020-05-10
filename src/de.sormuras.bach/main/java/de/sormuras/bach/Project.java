@@ -434,10 +434,21 @@ public /*static*/ final class Project {
         tasks.add(javadoc.toTask());
       }
 
-      var jlink = new Jlink();
-      jlink.getAdditionalArguments().add("--version");
-      tuner.tune(jlink, context);
-      tasks.add(jlink.toTask());
+      var mainModule = Modules.findMainModule(units.stream().map(Unit::descriptor));
+      if (mainModule.isPresent()) {
+        var jlink =
+            new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
+        var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
+        var arguments = jlink.getAdditionalArguments();
+        arguments.add("--module-path", base.modules(""));
+        arguments.add("--launcher", launcher + '=' + mainModule.get());
+        tuner.tune(jlink, context);
+        tasks.add(
+            Task.sequence(
+                String.format("Create custom runtime image with '%s' as launcher", launcher),
+                new Task.DeleteDirectories(base.image()),
+                jlink.toTask()));
+      }
 
       var realm = new Realm("", units, javac.toTask(), tasks);
       var directoryName = base.directory().toAbsolutePath().getFileName();
