@@ -57,28 +57,28 @@ Two modules in main realm, two modules in test realm.
 ```text
 ├───com.greetings
 │   └───main
-│       │   module-info.java      --> | module com.greetings {
-│       └───com                       |   requires org.astro;
-│           └───greetings             | }
-│                   Main.java
-│
-├───org.astro
-│   ├───main
-│   │   │   module-info.java      --> | module org.astro {   → ──┐ copy module name
-│   │   └───org                       |   exports org.astro; → ──│────────┐ 
-│   │       └───astro                 | }                        │        │ copy relevant
-│   │               World.java                                   │        │ directives from
-│   └───test                                                ┌────┴────┐   │ main module
-│       │   module-info.java      --> | open /*test*/ module org.astro {  │
-│       └───org                       |   exports org.astro; ─────────────┘
-│           └───astro                 |   provides ...ToolProvider with org.astro.TestProvider;
-│                   TestProvider.java | }
-│
-└───test.modules
-    └───test
-        │   module-info.java      --> | open /*test*/ module test.modules {
-        └───test                      |   requires com.greetings;
-            └───modules               |   requires org.astro;
+│       │   module-info.java      --> | module com.greetings { ← ────────────────────────────────┐
+│       └───com                       |   requires org.astro;  → ──┐                             │
+│           └───greetings             | }                          |                             │
+│                   Main.java                      ┌───────────────┘                             │
+│                                                  │                                             │
+├───org.astro                                      │ ┌───────────────────────────────────────────┤
+│   ├───main                                       ↓ ↓                                           │
+│   │   │   module-info.java      --> | module org.astro {   ├───┐ copy module name              │
+│   │   └───org                       |   exports org.astro; ├───┼────────┐                      │
+│   │       └───astro                 | }                        │        │ copy relevant        │
+│   │               World.java                                   │        │ directives from      │
+│   └───test                                                ┌────┴────┐   │ main module          │
+│       │   module-info.java      --> | open /*test*/ module org.astro {  │                      │
+│       └───org                       |   exports org.astro; ├────────────┘                      │
+│           └───astro                 |   provides ...ToolProvider with org.astro.TestProvider;  │
+│                   TestProvider.java | }                                                        │
+│                                                                                                │
+└───test.modules                                                                                 │
+    └───test                                                                                     │
+        │   module-info.java      --> | open /*test*/ module test.modules {                      │
+        └───test                      |   requires com.greetings; → ─────────────────────────────┤
+            └───modules               |   requires org.astro; → ─────────────────────────────────┘
                     TestProvider.java |   provides ...ToolProvider with test.modules.TestProvider;
                                       | }
 ```
