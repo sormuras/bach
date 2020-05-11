@@ -1236,16 +1236,16 @@ public class Bach {
       put("junit", "https://repo.maven.apache.org/maven2/junit/junit/4.13/junit-4.13.jar");
       put(
           "net.bytebuddy",
-          "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.10.9/byte-buddy-1.10.9.jar");
+          "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.10.10/byte-buddy-1.10.10.jar");
       put(
           "net.bytebuddy.agent",
-          "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.10.9/byte-buddy-agent-1.10.9.jar");
+          "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.10.10/byte-buddy-agent-1.10.10.jar");
       put(
           "org.apiguardian.api",
           "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.0/apiguardian-api-1.1.0.jar");
       put(
           "org.assertj.core",
-          "https://repo.maven.apache.org/maven2/org/assertj/assertj-core/3.15.0/assertj-core-3.15.0.jar");
+          "https://repo.maven.apache.org/maven2/org/assertj/assertj-core/3.16.1/assertj-core-3.16.1.jar");
       put(
           "org.hamcrest",
           "https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar");

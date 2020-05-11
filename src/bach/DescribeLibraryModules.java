@@ -31,7 +31,7 @@ class DescribeLibraryModules {
   public static void main(String... args) throws Exception {
     var modules = new DescribeLibraryModules();
     modules.mapASM("8.0.1");
-    modules.mapByteBuddy("1.10.9");
+    modules.mapByteBuddy("1.10.10");
     modules.mapJUnitPlatform("1.7.0-M1");
     modules.mapJUnitJupiter("5.7.0-M1");
     modules.mapJUnitVintage("5.7.0-M1");
@@ -60,7 +60,7 @@ class DescribeLibraryModules {
 
   void mapVariousArtists() throws Exception {
     map("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0");
-    map("org.assertj.core", "org.assertj:assertj-core:3.15.0");
+    map("org.assertj.core", "org.assertj:assertj-core:3.16.1");
     map("org.opentest4j", "org.opentest4j:opentest4j:1.2.0");
   }
 
