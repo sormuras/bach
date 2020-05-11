@@ -220,12 +220,12 @@ public class Bach {
   }
   public static final class Project {
     public static Builder newProject(Path directory) {
-      return new Builder().base(Base.of(directory)).walk();
+      return ModulesWalker.walk(directory);
     }
     public static Builder newProject(String title, String version) {
       return new Builder().title(title).version(Version.parse(version));
     }
-    static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
+    public static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
       if (call instanceof GenericModuleSourceFilesConsumer) {
         var consumer = (GenericModuleSourceFilesConsumer<?>) call;
         consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
@@ -466,83 +466,6 @@ public class Bach {
       public Builder structure(Structure structure) {
         this.structure = structure;
         return this;
-      }
-      public Builder walk() {
-        return walk(Project::tuner);
-      }
-      public Builder walk(Call.Tuner tuner) {
-        var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
-        if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-        return walkUnnamedRealm(moduleInfoFiles, tuner);
-      }
-      public Builder walkUnnamedRealm(List<Path> moduleInfoFiles, Call.Tuner tuner) {
-        var moduleNames = new TreeSet<String>();
-        var moduleSourcePathPatterns = new TreeSet<String>();
-        var units = new ArrayList<Unit>();
-        var javadocCommentFound = false;
-        for (var info : moduleInfoFiles) {
-          javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
-          var descriptor = Modules.describe(info);
-          var module = descriptor.name();
-          moduleNames.add(module);
-          moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
-          var classes = base.classes("", module);
-          var modules = base.modules("");
-          var jar = modules.resolve(module + ".jar");
-          var context = new Call.Context("", module);
-          var jarCreate = new Jar();
-          var jarCreateArgs = jarCreate.getAdditionalArguments();
-          jarCreateArgs.add("--create").add("--file", jar);
-          descriptor.mainClass().ifPresent(main -> jarCreateArgs.add("--main-class", main));
-          jarCreateArgs.add("-C", classes, ".");
-          tuner.tune(jarCreate, context);
-          var jarDescribe = new Jar();
-          jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
-          tuner.tune(jarDescribe, context);
-          var task =
-              Task.sequence(
-                  "Create modular JAR file " + jar.getFileName(),
-                  new Task.CreateDirectories(jar.getParent()),
-                  jarCreate.toTask(),
-                  jarDescribe.toTask());
-          units.add(new Unit(descriptor, List.of(task)));
-        }
-        var context = new Call.Context("", null);
-        var javac =
-            new Javac()
-                .setModules(moduleNames)
-                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
-                .setDestinationDirectory(base.classes(""));
-        tuner.tune(javac, context);
-        var tasks = new ArrayList<Task>();
-        if (javadocCommentFound) {
-          var javadoc =
-              new Javadoc()
-                  .setDestinationDirectory(base.api())
-                  .setModules(moduleNames)
-                  .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
-          tuner.tune(javadoc, context);
-          tasks.add(javadoc.toTask());
-        }
-        var mainModule = Modules.findMainModule(units.stream().map(Unit::descriptor));
-        if (mainModule.isPresent()) {
-          var jlink =
-              new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
-          var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
-          var arguments = jlink.getAdditionalArguments();
-          arguments.add("--module-path", base.modules(""));
-          arguments.add("--launcher", launcher + '=' + mainModule.get());
-          tuner.tune(jlink, context);
-          tasks.add(
-              Task.sequence(
-                  String.format("Create custom runtime image with '%s' as launcher", launcher),
-                  new Task.DeleteDirectories(base.image()),
-                  jlink.toTask()));
-        }
-        var realm = new Realm("", units, javac.toTask(), tasks);
-        var directoryName = base.directory().toAbsolutePath().getFileName();
-        return title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
-            .structure(new Structure(Library.of(), List.of(realm)));
       }
     }
   }
@@ -1341,6 +1264,96 @@ public class Bach {
       var library = Modules.declared(ModuleFinder.of(paths));
       missing.removeAll(library);
       return missing;
+    }
+  }
+  public static class ModulesWalker {
+    public static Project.Builder walk(Path directory) {
+      return walk(Project.Base.of(directory), Project::tuner);
+    }
+    public static Project.Builder walk(Project.Base base, Call.Tuner tuner) {
+      var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
+      if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
+      var walker = new ModulesWalker(base, moduleInfoFiles, tuner);
+      return walker.walkAndCreateUnnamedRealm();
+    }
+    private final Project.Base base;
+    private final List<Path> moduleInfoFiles;
+    private final Call.Tuner tuner;
+    public ModulesWalker(Project.Base base, List<Path> moduleInfoFiles, Call.Tuner tuner) {
+      this.base = base;
+      this.moduleInfoFiles = moduleInfoFiles;
+      this.tuner = tuner;
+    }
+    public Project.Builder walkAndCreateUnnamedRealm() {
+      var moduleNames = new TreeSet<String>();
+      var moduleSourcePathPatterns = new TreeSet<String>();
+      var units = new ArrayList<Project.Unit>();
+      var javadocCommentFound = false;
+      for (var info : moduleInfoFiles) {
+        javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
+        var descriptor = Modules.describe(info);
+        var module = descriptor.name();
+        moduleNames.add(module);
+        moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+        var classes = base.classes("", module);
+        var modules = base.modules("");
+        var jar = modules.resolve(module + ".jar");
+        var context = new Call.Context("", module);
+        var jarCreate = new Jar();
+        var jarCreateArgs = jarCreate.getAdditionalArguments();
+        jarCreateArgs.add("--create").add("--file", jar);
+        descriptor.mainClass().ifPresent(main -> jarCreateArgs.add("--main-class", main));
+        jarCreateArgs.add("-C", classes, ".");
+        tuner.tune(jarCreate, context);
+        var jarDescribe = new Jar();
+        jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
+        tuner.tune(jarDescribe, context);
+        var task =
+            Task.sequence(
+                "Create modular JAR file " + jar.getFileName(),
+                new Task.CreateDirectories(jar.getParent()),
+                jarCreate.toTask(),
+                jarDescribe.toTask());
+        units.add(new Project.Unit(descriptor, List.of(task)));
+      }
+      var context = new Call.Context("", null);
+      var javac =
+          new Javac()
+              .setModules(moduleNames)
+              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+              .setDestinationDirectory(base.classes(""));
+      tuner.tune(javac, context);
+      var tasks = new ArrayList<Task>();
+      if (javadocCommentFound) {
+        var javadoc =
+            new Javadoc()
+                .setDestinationDirectory(base.api())
+                .setModules(moduleNames)
+                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
+        tuner.tune(javadoc, context);
+        tasks.add(javadoc.toTask());
+      }
+      var mainModule = Modules.findMainModule(units.stream().map(Project.Unit::descriptor));
+      if (mainModule.isPresent()) {
+        var jlink =
+            new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
+        var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
+        var arguments = jlink.getAdditionalArguments();
+        arguments.add("--module-path", base.modules(""));
+        arguments.add("--launcher", launcher + '=' + mainModule.get());
+        tuner.tune(jlink, context);
+        tasks.add(
+            Task.sequence(
+                String.format("Create custom runtime image with '%s' as launcher", launcher),
+                new Task.DeleteDirectories(base.image()),
+                jlink.toTask()));
+      }
+      var realm = new Project.Realm("", units, javac.toTask(), tasks);
+      var directoryName = base.directory().toAbsolutePath().getFileName();
+      return new Project.Builder()
+          .base(base)
+          .title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
+          .structure(new Project.Structure(Project.Library.of(), List.of(realm)));
     }
   }
   public static class Paths {
