@@ -59,11 +59,7 @@ class ProjectTests {
     @Test
     void walkJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
-      var project =
-          new Project.Builder()
-              .base(Project.Base.of(base))
-              .walk((call, context) -> assertEquals("", context.realm()))
-              .build();
+      var project = Project.newProject(base).build();
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("Project JigsawQuickStart 1-ea", project.toTitleAndVersion());
