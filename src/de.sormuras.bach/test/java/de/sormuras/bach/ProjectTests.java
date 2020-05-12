@@ -22,7 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.internal.ModulesWalker;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,15 @@ import org.junit.jupiter.api.Test;
 class ProjectTests {
 
   static Project zero() {
-    return Project.newProject("Zero", "0").build();
+    return new Project.Builder().title("Zero").version(Version.parse("0")).build();
+  }
+
+  static Project newProject(Path directory) {
+    var base = Project.Base.of(directory);
+    var directoryName = base.directory().toAbsolutePath().getFileName();
+    var title = Optional.ofNullable(directoryName).map(Path::toString).orElse("Untitled");
+    var builder = new Project.Builder().base(base).title(title).tuner(Project.Tuner::defaults);
+    return ModulesWalker.walk(builder).build();
   }
 
   @Test
@@ -55,14 +66,25 @@ class ProjectTests {
   }
 
   @Nested
+  class BuilderTests {
+    @Test
+    void defaults() {
+      var builder = new Project.Builder();
+      assertNotNull(builder.getBase());
+      assertNotNull(builder.getInfo());
+      assertNotNull(builder.getTuner());
+    }
+  }
+
+  @Nested
   class DocProject {
     @Test
     void walkJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
-      var project = Project.newProject(base).build();
+      var project = newProject(base);
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
-      assertEquals("Project JigsawQuickStart 1-ea", project.toTitleAndVersion());
+      assertEquals("JigsawQuickStart 1-ea", project.toTitleAndVersion());
       assertEquals(Set.of("com.greetings"), project.toDeclaredModuleNames());
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.structure().realms().get(0);
@@ -73,10 +95,10 @@ class ProjectTests {
     @Test
     void walkJigsawQuickStartWorld() {
       var base = Path.of("doc", "project", "JigsawQuickStartWorld");
-      var project = Project.newProject(base).build();
+      var project = newProject(base);
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
-      assertEquals("Project JigsawQuickStartWorld 1-ea", project.toTitleAndVersion());
+      assertEquals("JigsawQuickStartWorld 1-ea", project.toTitleAndVersion());
       assertEquals(
           Set.of("com.greetings", "org.astro", "test.modules"), project.toDeclaredModuleNames());
       assertEquals(Set.of("com.greetings", "org.astro"), project.toRequiredModuleNames());

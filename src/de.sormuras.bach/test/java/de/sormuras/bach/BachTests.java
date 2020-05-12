@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import de.sormuras.bach.internal.Logbook;
 import java.io.PrintWriter;
+import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.spi.ToolProvider;
@@ -32,7 +33,7 @@ class BachTests {
 
   static Bach zero() {
     var logbook = new Logbook(__ -> {}, true, false);
-    var zero = Project.newProject("Zero", "0").build();
+    var zero = new Project.Builder().title("Zero").version(Version.parse("0")).build();
     return new Bach(logbook, zero, HttpClient.newBuilder()::build);
   }
 
