@@ -122,7 +122,7 @@ public class Bach {
     var tasks = new ArrayList<Task>();
     tasks.add(new Task.ResolveMissingModules());
     for (var realm : project.structure().realms()) {
-      tasks.add(realm.javac());
+      tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());
     }
@@ -161,14 +161,31 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
-  public interface Call {
-    String toLabel();
-    ToolProvider toProvider();
-    String[] toArguments();
-    default Task toTask() {
+  public static class Call {
+    private final String name;
+    private final Arguments additionalArguments = new Arguments();
+    public Call(String name) {
+      this.name = name;
+    }
+    public Arguments getAdditionalArguments() {
+      return additionalArguments;
+    }
+    public String toLabel() {
+      return name;
+    }
+    public ToolProvider toProvider() {
+      return ToolProvider.findFirst(name).orElseThrow();
+    }
+    public String[] toArguments() {
+      var arguments = new Arguments();
+      addConfiguredArguments(arguments);
+      return arguments.add(getAdditionalArguments()).toStringArray();
+    }
+    protected void addConfiguredArguments(Arguments arguments) {}
+    public Task toTask() {
       return new Task.RunTool(toLabel(), toProvider(), toArguments());
     }
-    class Arguments {
+    public static class Arguments {
       private final List<String> list = new ArrayList<>();
       public Arguments add(Object argument) {
         list.add(argument.toString());
@@ -187,6 +204,21 @@ public class Bach {
       public String[] toStringArray() {
         return list.toArray(String[]::new);
       }
+    }
+    public static boolean assigned(Object object) {
+      if (object == null) return false;
+      if (object instanceof Number) return ((Number) object).intValue() != 0;
+      if (object instanceof String) return !((String) object).isEmpty();
+      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+      if (object.getClass().isArray()) return Array.getLength(object) != 0;
+      return true;
+    }
+    public static String join(Collection<Path> paths) {
+      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    }
+    public static String joinPaths(Collection<String> paths) {
+      return String.join(File.pathSeparator, paths);
     }
   }
   static class Main {
@@ -239,7 +271,7 @@ public class Bach {
       list.add("\tunits: " + structure.units().count());
       for (var realm : structure.realms()) {
         list.add("\tRealm " + realm.name());
-        list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().getLabel()));
+        list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
         list.add("\t\ttasks: " + realm.tasks().size());
         for (var unit : realm.units()) {
           list.add("\t\tUnit " + unit.name());
@@ -362,9 +394,9 @@ public class Bach {
     public static final class Realm {
       private final String name;
       private final List<Unit> units;
-      private final Task javac;
+      private final Javac javac;
       private final List<Task> tasks;
-      public Realm(String name, List<Unit> units, Task javac, List<Task> tasks) {
+      public Realm(String name, List<Unit> units, Javac javac, List<Task> tasks) {
         this.name = Objects.requireNonNull(name, "name");
         this.units = List.copyOf(Objects.requireNonNull(units, "units"));
         this.javac = Objects.requireNonNull(javac, "javac");
@@ -376,7 +408,7 @@ public class Bach {
       public List<Unit> units() {
         return units;
       }
-      public Task javac() {
+      public Javac javac() {
         return javac;
       }
       public List<Task> tasks() {
@@ -403,8 +435,8 @@ public class Bach {
     public interface Tuner {
       void tune(Call call, Map<String, String> context);
       static void defaults(Call call, Map<String, String> context) {
-        if (call instanceof GenericModuleSourceFilesConsumer) {
-          var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+        if (call instanceof GenericSourcesConsumer) {
+          var consumer = (GenericSourcesConsumer<?>) call;
           consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
         }
         if (call instanceof Javac) {
@@ -651,49 +683,15 @@ public class Bach {
       }
     }
   }
-  public static abstract class AbstractCallBuilder implements Call {
-    public static boolean assigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof String) return !((String) object).isEmpty();
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      if (object.getClass().isArray()) return Array.getLength(object) != 0;
-      return true;
-    }
-    public static String join(Collection<Path> paths) {
-      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-    }
-    public static String joinPaths(Collection<String> paths) {
-      return String.join(File.pathSeparator, paths);
-    }
-    private final String name;
-    private final Arguments additionalArguments = new Arguments();
-    public AbstractCallBuilder(String name) {
-      this.name = name;
-    }
-    public Arguments getAdditionalArguments() {
-      return additionalArguments;
-    }
-    public ToolProvider toProvider() {
-      return ToolProvider.findFirst(name).orElseThrow();
-    }
-    public String[] toArguments() {
-      var arguments = new Arguments();
-      arguments(arguments);
-      return arguments.add(getAdditionalArguments()).toStringArray();
-    }
-    protected void arguments(Arguments arguments) {}
-  }
   @SuppressWarnings("unchecked")
-  public static abstract class GenericModuleSourceFilesConsumer<T> extends AbstractCallBuilder {
+  public static abstract class GenericSourcesConsumer<T> extends Call {
     private Path destinationDirectory;
     private String characterEncodingUsedBySourceFiles;
     private Set<String> modules;
-    public GenericModuleSourceFilesConsumer(String name) {
+    public GenericSourcesConsumer(String name) {
       super(name);
     }
-    protected void arguments(Arguments arguments) {
+    protected void addConfiguredArguments(Arguments arguments) {
       var destination = getDestinationDirectory();
       if (assigned(destination)) arguments.add("-d", destination);
       var encoding = getCharacterEncodingUsedBySourceFiles();
@@ -723,7 +721,7 @@ public class Bach {
       return (T) this;
     }
   }
-  public static class Jar extends AbstractCallBuilder {
+  public static class Jar extends Call {
     public Jar() {
       super("jar");
     }
@@ -731,7 +729,7 @@ public class Bach {
       return "Operate on JAR file";
     }
   }
-  public static class Javac extends GenericModuleSourceFilesConsumer<Javac> {
+  public static class Javac extends GenericSourcesConsumer<Javac> {
     private Version versionOfModulesThatAreBeingCompiled;
     private Collection<String> patternsWhereToFindSourceFiles;
     private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
@@ -749,8 +747,8 @@ public class Bach {
     public String toLabel() {
       return "Compile module(s): " + getModules();
     }
-    protected void arguments(Arguments arguments) {
-      super.arguments(arguments);
+    protected void addConfiguredArguments(Arguments arguments) {
+      super.addConfiguredArguments(arguments);
       var version = getVersionOfModulesThatAreBeingCompiled();
       if (assigned(version)) arguments.add("--module-version", version);
       var patterns = getPatternsWhereToFindSourceFiles();
@@ -853,7 +851,7 @@ public class Bach {
       return this;
     }
   }
-  public static class Javadoc extends GenericModuleSourceFilesConsumer<Javadoc> {
+  public static class Javadoc extends GenericSourcesConsumer<Javadoc> {
     private Collection<String> patternsWhereToFindSourceFiles;
     private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
     private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
@@ -869,8 +867,8 @@ public class Bach {
     public String toLabel() {
       return "Generate API documentation for " + getModules();
     }
-    protected void arguments(Arguments arguments) {
-      super.arguments(arguments);
+    protected void addConfiguredArguments(Arguments arguments) {
+      super.addConfiguredArguments(arguments);
       var patterns = getPatternsWhereToFindSourceFiles();
       if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
       var specific = getPathsWhereToFindSourceFiles();
@@ -955,7 +953,7 @@ public class Bach {
       return this;
     }
   }
-  public static class Jlink extends AbstractCallBuilder {
+  public static class Jlink extends Call {
     private Path locationOfTheGeneratedRuntimeImage;
     private Set<String> modules;
     public Jlink() {
@@ -964,7 +962,7 @@ public class Bach {
     public String toLabel() {
       return "Create a custom runtime image with dependencies for " + getModules();
     }
-    protected void arguments(Arguments arguments) {
+    protected void addConfiguredArguments(Arguments arguments) {
       var output = getLocationOfTheGeneratedRuntimeImage();
       if (assigned(output)) arguments.add("--output", output);
       var modules = getModules();
@@ -1280,10 +1278,12 @@ public class Bach {
       return builder.structure(structure); // replace
     }
     private final Project.Base base;
+    private final Project.Info info;
     private final Project.Tuner tuner;
     private final List<Path> moduleInfoFiles;
     public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
       this.base = builder.getBase();
+      this.info = builder.getInfo();
       this.tuner = builder.getTuner();
       this.moduleInfoFiles = moduleInfoFiles;
     }
@@ -1292,12 +1292,12 @@ public class Bach {
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Project.Unit>();
       var javadocCommentFound = false;
-      for (var info : moduleInfoFiles) {
-        javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
-        var descriptor = Modules.describe(info);
+      for (var moduleInfoFile : moduleInfoFiles) {
+        javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(moduleInfoFile);
+        var descriptor = Modules.describe(moduleInfoFile);
         var module = descriptor.name();
         moduleNames.add(module);
-        moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+        moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
         var classes = base.classes("", module);
         var modules = base.modules("");
         var jar = modules.resolve(module + ".jar");
@@ -1323,6 +1323,7 @@ public class Bach {
       var javac =
           new Javac()
               .setModules(moduleNames)
+              .setVersionOfModulesThatAreBeingCompiled(info.version())
               .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
               .setDestinationDirectory(base.classes(""));
       tuner.tune(javac, context);
@@ -1351,7 +1352,7 @@ public class Bach {
                 new Task.DeleteDirectories(base.image()),
                 jlink.toTask()));
       }
-      var realm = new Project.Realm("", units, javac.toTask(), tasks);
+      var realm = new Project.Realm("", units, javac, tasks);
       return new Project.Structure(Project.Library.of(), List.of(realm));
     }
   }

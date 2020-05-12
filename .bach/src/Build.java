@@ -18,6 +18,7 @@
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
@@ -52,22 +53,17 @@ class Build {
                     createJar(
                         base.modules("main").resolve("de.sormuras.bach.jar"),
                         base.classes("main", "de.sormuras.bach")))));
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.joining(","));
+
+    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
     var moduleSourcePath = "src/*/main/java".replace('/', File.separatorChar);
     var javac =
-        runTool(
-            "javac",
-            "--module",
-            moduleNames,
-            "--module-source-path",
-            moduleSourcePath,
-            "-encoding",
-            "UTF-8",
-            "-parameters",
-            "-Werror",
-            "-X" + "lint",
-            "-d",
-            base.classes("main"));
+        new Bach.Javac()
+            .setDestinationDirectory(base.classes("main"))
+            .setModules(moduleNames)
+            .setVersionOfModulesThatAreBeingCompiled(Bach.VERSION)
+            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath));
+    Bach.Project.Tuner.defaults(javac, Map.of("realm", "main"));
+
     var javadoc =
         Bach.Task.sequence(
             "Create API documentation",
@@ -76,7 +72,7 @@ class Build {
                 runTool(
                     "javadoc",
                     "--module",
-                    moduleNames,
+                    String.join(",", moduleNames),
                     "--module-source-path",
                     moduleSourcePath,
                     "-quiet",
@@ -99,7 +95,7 @@ class Build {
                     "--launcher",
                     "bach=de.sormuras.bach/de.sormuras.bach.Main",
                     "--add-modules",
-                    moduleNames,
+                    String.join(",", moduleNames),
                     "--module-path",
                     base.modules("main"),
                     "--compress",
@@ -121,24 +117,16 @@ class Build {
                     createJar(
                         base.modules("test").resolve("test.base.jar"),
                         base.classes("test", "test.base")))));
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.joining(","));
+    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
     var moduleSourcePath = "src/*/test/java".replace('/', File.separatorChar);
+
     var javac =
-        runTool(
-            "javac",
-            "--module",
-            moduleNames,
-            "--module-source-path",
-            moduleSourcePath,
-            "--module-path",
-            base.directory().resolve("lib"),
-            "-encoding",
-            "UTF-8",
-            "-parameters",
-            "-Werror",
-            "-X" + "lint",
-            "-d",
-            base.classes("test"));
+        new Bach.Javac()
+            .setDestinationDirectory(base.classes("test"))
+            .setModules(moduleNames)
+            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
+            .setPathsWhereToFindApplicationModules(List.of(base.directory().resolve("lib")));
+    Bach.Project.Tuner.defaults(javac, Map.of("realm", "test"));
     return new Bach.Project.Realm("test", units, javac, List.of());
   }
 
