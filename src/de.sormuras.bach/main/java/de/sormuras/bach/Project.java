@@ -289,15 +289,21 @@ public /*static*/ final class Project {
   public static final class Unit {
 
     private final ModuleDescriptor descriptor;
+    private final List<Path> paths;
     private final List<Task> tasks;
 
-    public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
+    public Unit(ModuleDescriptor descriptor, List<Path> paths, List<Task> tasks) {
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+      this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
       this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
 
     public ModuleDescriptor descriptor() {
       return descriptor;
+    }
+
+    public List<Path> paths() {
+      return paths;
     }
 
     public List<Task> tasks() {
