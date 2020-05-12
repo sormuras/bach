@@ -17,7 +17,7 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.call.GenericModuleSourceFilesConsumer;
+import de.sormuras.bach.call.GenericSourcesConsumer;
 import de.sormuras.bach.call.Javac;
 import de.sormuras.bach.call.Javadoc;
 import de.sormuras.bach.call.Jlink;
@@ -316,8 +316,8 @@ public /*static*/ final class Project {
     void tune(Call call, Map<String, String> context);
 
     static void defaults(Call call, Map<String, String> context) {
-      if (call instanceof GenericModuleSourceFilesConsumer) {
-        var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+      if (call instanceof GenericSourcesConsumer) {
+        var consumer = (GenericSourcesConsumer<?>) call;
         consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
       }
       if (call instanceof Javac) {

@@ -17,12 +17,13 @@
 
 package de.sormuras.bach.call;
 
+import de.sormuras.bach.Call;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.TreeSet;
 
 /** A call to {@code jlink}, the tool that generates custom runtime images. */
-public /*static*/ class Jlink extends AbstractCallBuilder {
+public /*static*/ class Jlink extends Call {
 
   /** Value of {@code --output} option. */
   private Path locationOfTheGeneratedRuntimeImage;
@@ -39,7 +40,7 @@ public /*static*/ class Jlink extends AbstractCallBuilder {
   }
 
   @Override
-  protected void arguments(Arguments arguments) {
+  protected void addConfiguredArguments(Arguments arguments) {
     var output = getLocationOfTheGeneratedRuntimeImage();
     if (assigned(output)) arguments.add("--output", output);
     var modules = getModules();

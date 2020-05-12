@@ -17,13 +17,14 @@
 
 package de.sormuras.bach.call;
 
+import de.sormuras.bach.Call;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.TreeSet;
 
 /** An abstract tool implementation providing support for shared {@code module}-related options. */
 @SuppressWarnings("unchecked")
-public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends AbstractCallBuilder {
+public /*static*/ abstract class GenericSourcesConsumer<T> extends Call {
 
   /** Value of {@code -d <directory>} option. */
   private Path destinationDirectory;
@@ -32,12 +33,12 @@ public /*static*/ abstract class GenericModuleSourceFilesConsumer<T> extends Abs
   /** Value of {@code --module <module>(,<module>)*} option. */
   private Set<String> modules;
 
-  public GenericModuleSourceFilesConsumer(String name) {
+  public GenericSourcesConsumer(String name) {
     super(name);
   }
 
   @Override
-  protected void arguments(Arguments arguments) {
+  protected void addConfiguredArguments(Arguments arguments) {
     var destination = getDestinationDirectory();
     if (assigned(destination)) arguments.add("-d", destination);
 

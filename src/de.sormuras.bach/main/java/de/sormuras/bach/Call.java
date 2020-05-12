@@ -17,28 +17,54 @@
 
 package de.sormuras.bach;
 
+import java.io.File;
+import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
-/** A tool call configuration. */
-public interface Call {
+/** A tool call configuration builder. */
+public /*static*/ class Call {
 
-  /** Return a short label of this tool call. */
-  String toLabel();
+  private final String name;
+  private final Arguments additionalArguments = new Arguments();
+
+  public Call(String name) {
+    this.name = name;
+  }
+
+  public Arguments getAdditionalArguments() {
+    return additionalArguments;
+  }
+
+  public String toLabel() {
+    return name;
+  }
 
   /** Return the tool provider running this tool. */
-  ToolProvider toProvider();
+  public ToolProvider toProvider() {
+    return ToolProvider.findFirst(name).orElseThrow();
+  }
 
   /** Return the arguments to pass to {@code ToolProvider#run(out, err, String...)}. */
-  String[] toArguments();
+  public String[] toArguments() {
+    var arguments = new Arguments();
+    addConfiguredArguments(arguments);
+    return arguments.add(getAdditionalArguments()).toStringArray();
+  }
 
-  default Task toTask() {
+  protected void addConfiguredArguments(Arguments arguments) {}
+
+  public Task toTask() {
     return new Task.RunTool(toLabel(), toProvider(), toArguments());
   }
 
   /** A mutable argument list builder. */
-  class Arguments {
+  public static class Arguments {
     private final List<String> list = new ArrayList<>();
 
     public Arguments add(Object argument) {
@@ -62,5 +88,24 @@ public interface Call {
     public String[] toStringArray() {
       return list.toArray(String[]::new);
     }
+  }
+
+  /** Return {@code true} if the given object is not null in any form, otherwise {@code false}. */
+  public static boolean assigned(Object object) {
+    if (object == null) return false;
+    if (object instanceof Number) return ((Number) object).intValue() != 0;
+    if (object instanceof String) return !((String) object).isEmpty();
+    if (object instanceof Optional) return ((Optional<?>) object).isPresent();
+    if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
+    if (object.getClass().isArray()) return Array.getLength(object) != 0;
+    return true;
+  }
+
+  public static String join(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
+  public static String joinPaths(Collection<String> paths) {
+    return String.join(File.pathSeparator, paths);
   }
 }

@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /** A call to {@code javac}, the Java compiler. */
-public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
+public /*static*/ class Javac extends GenericSourcesConsumer<Javac> {
 
   private Version versionOfModulesThatAreBeingCompiled;
   private Collection<String> patternsWhereToFindSourceFiles;
@@ -48,8 +48,8 @@ public /*static*/ class Javac extends GenericModuleSourceFilesConsumer<Javac> {
   }
 
   @Override
-  protected void arguments(Arguments arguments) {
-    super.arguments(arguments);
+  protected void addConfiguredArguments(Arguments arguments) {
+    super.addConfiguredArguments(arguments);
 
     var version = getVersionOfModulesThatAreBeingCompiled();
     if (assigned(version)) arguments.add("--module-version", version);

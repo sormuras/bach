@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /** A call to {@code javadoc}, the Java API documentation generating tool. */
-public /*static*/ class Javadoc extends GenericModuleSourceFilesConsumer<Javadoc> {
+public /*static*/ class Javadoc extends GenericSourcesConsumer<Javadoc> {
 
   private Collection<String> patternsWhereToFindSourceFiles;
   private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
@@ -45,8 +45,8 @@ public /*static*/ class Javadoc extends GenericModuleSourceFilesConsumer<Javadoc
   }
 
   @Override
-  protected void arguments(Arguments arguments) {
-    super.arguments(arguments);
+  protected void addConfiguredArguments(Arguments arguments) {
+    super.addConfiguredArguments(arguments);
 
     var patterns = getPatternsWhereToFindSourceFiles();
     if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));

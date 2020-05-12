@@ -17,8 +17,10 @@
 
 package de.sormuras.bach.call;
 
+import de.sormuras.bach.Call;
+
 /** A call to {@code jar}, the Java Archive managing tool. */
-public /*static*/ class Jar extends AbstractCallBuilder {
+public /*static*/ class Jar extends Call {
 
   public Jar() {
     super("jar");
