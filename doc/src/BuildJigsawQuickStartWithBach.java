@@ -15,19 +15,15 @@
  * limitations under the License.
  */
 
-import java.lang.module.ModuleDescriptor;
-import java.nio.file.Path;
-
 class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
     Bach.of(
-            new Bach.Project.Builder()
-                .base(Bach.Project.Base.of(Path.of("doc", "project", "JigsawQuickStart")))
-                .title("Module System Quick-Start Guide Greetings")
-                .version(ModuleDescriptor.Version.parse("47.11"))
-                .walk()
-                .build())
+            greetings ->
+                greetings
+                    .base("doc/project/JigsawQuickStart")
+                    .title("Quick-Start Guide Greetings")
+                    .version("47.11"))
         .build()
         .assertSuccessful();
   }

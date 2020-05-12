@@ -57,17 +57,12 @@ public class Bach {
 
   /** Create Bach instance with a project parsed from the current working directory "as-is". */
   public static Bach of() {
-    return of(Path.of(""));
-  }
-
-  /** Create Bach instance with a project parsed from the specified base directory "as-is". */
-  public static Bach of(Path directory) {
-    return of(Project.newProject(directory).build());
+    return of(UnaryOperator.identity());
   }
 
   /** Create Bach instance with a customized project parsed from the current working directory. */
   public static Bach of(UnaryOperator<Project.Builder> operator) {
-    return of(operator.apply(Project.newProject(Path.of(""))).build());
+    return of(Project.of(Path.of(""), operator));
   }
 
   /** Create Bach instance with the specified project and default components. */
