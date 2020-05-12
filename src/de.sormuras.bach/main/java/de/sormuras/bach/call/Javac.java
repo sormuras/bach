@@ -19,17 +19,17 @@ package de.sormuras.bach.call;
 
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /** A call to {@code javac}, the Java compiler. */
 public /*static*/ class Javac extends GenericSourcesConsumer<Javac> {
 
   private Version versionOfModulesThatAreBeingCompiled;
-  private Collection<String> patternsWhereToFindSourceFiles;
-  private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
-  private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
-  private Collection<Path> pathsWhereToFindApplicationModules;
+  private List<String> patternsWhereToFindSourceFiles;
+  private Map<String, List<Path>> pathsWhereToFindSourceFiles;
+  private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
+  private List<Path> pathsWhereToFindApplicationModules;
 
   private int compileForVirtualMachineVersion;
   private boolean enablePreviewLanguageFeatures;
@@ -94,39 +94,39 @@ public /*static*/ class Javac extends GenericSourcesConsumer<Javac> {
     return this;
   }
 
-  public Collection<String> getPatternsWhereToFindSourceFiles() {
+  public List<String> getPatternsWhereToFindSourceFiles() {
     return patternsWhereToFindSourceFiles;
   }
 
-  public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+  public Javac setPatternsWhereToFindSourceFiles(List<String> patterns) {
     this.patternsWhereToFindSourceFiles = patterns;
     return this;
   }
 
-  public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+  public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
     return pathsWhereToFindSourceFiles;
   }
 
-  public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+  public Javac setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
     this.pathsWhereToFindSourceFiles = map;
     return this;
   }
 
-  public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+  public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
     return pathsWhereToFindMoreAssetsPerModule;
   }
 
-  public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+  public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
     this.pathsWhereToFindMoreAssetsPerModule = map;
     return this;
   }
 
-  public Collection<Path> getPathsWhereToFindApplicationModules() {
+  public List<Path> getPathsWhereToFindApplicationModules() {
     return pathsWhereToFindApplicationModules;
   }
 
   public Javac setPathsWhereToFindApplicationModules(
-      Collection<Path> pathsWhereToFindApplicationModules) {
+      List<Path> pathsWhereToFindApplicationModules) {
     this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
     return this;
   }
