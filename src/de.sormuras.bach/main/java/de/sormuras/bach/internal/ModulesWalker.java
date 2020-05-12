@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.internal;
 
-import de.sormuras.bach.Call;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.call.Jar;
@@ -27,36 +26,33 @@ import de.sormuras.bach.call.Jlink;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.TreeSet;
 
-/**
- * Walk a directory tree, find modules, organize a structure and return a {@link Project.Builder}.
- */
+/** A directory tree walker building modular project structures. */
 public /*static*/ class ModulesWalker {
 
-  public static Project.Builder walk(Path directory) {
-    return walk(Project.Base.of(directory), Project::tuner);
-  }
-
-  public static Project.Builder walk(Project.Base base, Call.Tuner tuner) {
-    var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
+  /** Walk given {@link Project.Builder}'s base directory tree and replace its structure. */
+  public static Project.Builder walk(Project.Builder builder) {
+    var base = builder.getBase().directory();
+    var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
     if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-    var walker = new ModulesWalker(base, moduleInfoFiles, tuner);
-    return walker.walkAndCreateUnnamedRealm();
+    var walker = new ModulesWalker(builder, moduleInfoFiles);
+    var structure = walker.newStructureWithSingleUnnamedRealm();
+    return builder.structure(structure); // replace
   }
 
   private final Project.Base base;
+  private final Project.Tuner tuner;
   private final List<Path> moduleInfoFiles;
-  private final Call.Tuner tuner;
 
-  public ModulesWalker(Project.Base base, List<Path> moduleInfoFiles, Call.Tuner tuner) {
-    this.base = base;
+  public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
+    this.base = builder.getBase();
+    this.tuner = builder.getTuner();
     this.moduleInfoFiles = moduleInfoFiles;
-    this.tuner = tuner;
   }
 
-  public Project.Builder walkAndCreateUnnamedRealm() {
+  public Project.Structure newStructureWithSingleUnnamedRealm() {
     var moduleNames = new TreeSet<String>();
     var moduleSourcePathPatterns = new TreeSet<String>();
     var units = new ArrayList<Project.Unit>();
@@ -72,7 +68,7 @@ public /*static*/ class ModulesWalker {
       var modules = base.modules("");
       var jar = modules.resolve(module + ".jar");
 
-      var context = new Call.Context("", module);
+      var context = Map.of("realm", "", "module", module);
       var jarCreate = new Jar();
       var jarCreateArgs = jarCreate.getAdditionalArguments();
       jarCreateArgs.add("--create").add("--file", jar);
@@ -92,7 +88,7 @@ public /*static*/ class ModulesWalker {
       units.add(new Project.Unit(descriptor, List.of(task)));
     }
 
-    var context = new Call.Context("", null);
+    var context = Map.of("realm", "");
     var javac =
         new Javac()
             .setModules(moduleNames)
@@ -128,11 +124,7 @@ public /*static*/ class ModulesWalker {
     }
 
     var realm = new Project.Realm("", units, javac.toTask(), tasks);
-    var directoryName = base.directory().toAbsolutePath().getFileName();
 
-    return new Project.Builder()
-        .base(base)
-        .title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
-        .structure(new Project.Structure(Project.Library.of(), List.of(realm)));
+    return new Project.Structure(Project.Library.of(), List.of(realm));
   }
 }
