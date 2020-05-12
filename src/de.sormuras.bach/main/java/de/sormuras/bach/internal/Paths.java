@@ -21,23 +21,21 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /** {@link Path}-related utilities. */
 public /*static*/ class Paths {
-  /** Test for a regular file of size zero or an empty directory. */
-  public static boolean isEmpty(Path path) {
-    try {
-      if (Files.isRegularFile(path)) return Files.size(path) == 0L;
-      try (var stream = Files.list(path)) {
-        return stream.findAny().isEmpty();
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+
+  /** Convert path element names of the given unit into a reversed deque. */
+  public static Deque<String> deque(Path path) {
+    var deque = new ArrayDeque<String>();
+    path.forEach(name -> deque.addFirst(name.toString()));
+    return deque;
   }
 
   public static boolean isJavadocCommentAvailable(Path path) {
