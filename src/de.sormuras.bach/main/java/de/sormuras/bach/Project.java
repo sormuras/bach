@@ -92,7 +92,7 @@ public /*static*/ final class Project {
     list.add("\tunits: " + structure.units().count());
     for (var realm : structure.realms()) {
       list.add("\tRealm " + realm.name());
-      list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().getLabel()));
+      list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
       list.add("\t\ttasks: " + realm.tasks().size());
       for (var unit : realm.units()) {
         list.add("\t\tUnit " + unit.name());
@@ -258,10 +258,10 @@ public /*static*/ final class Project {
   public static final class Realm {
     private final String name;
     private final List<Unit> units;
-    private final Task javac;
+    private final Javac javac;
     private final List<Task> tasks;
 
-    public Realm(String name, List<Unit> units, Task javac, List<Task> tasks) {
+    public Realm(String name, List<Unit> units, Javac javac, List<Task> tasks) {
       this.name = Objects.requireNonNull(name, "name");
       this.units = List.copyOf(Objects.requireNonNull(units, "units"));
       this.javac = Objects.requireNonNull(javac, "javac");
@@ -276,7 +276,7 @@ public /*static*/ final class Project {
       return units;
     }
 
-    public Task javac() {
+    public Javac javac() {
       return javac;
     }
 

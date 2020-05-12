@@ -89,7 +89,9 @@ class ProjectTests {
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.structure().realms().get(0);
       assertEquals("", realm.name());
-      assertEquals("Compile module(s): [com.greetings]", realm.javac().getLabel());
+      var javac = realm.javac();
+      assertEquals("1-ea", javac.getVersionOfModulesThatAreBeingCompiled().toString());
+      assertEquals("Compile module(s): [com.greetings]", javac.toLabel());
     }
 
     @Test

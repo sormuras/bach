@@ -126,7 +126,7 @@ public /*static*/ class ModulesWalker {
               jlink.toTask()));
     }
 
-    var realm = new Project.Realm("", units, javac.toTask(), tasks);
+    var realm = new Project.Realm("", units, javac, tasks);
 
     return new Project.Structure(Project.Library.of(), List.of(realm));
   }
