@@ -145,10 +145,11 @@ public /*static*/ class Task {
    }
 
     @Override
-    public void execute(Bach bach) {
+    public void execute(Bach bach) throws Exception {
       var project = bach.getProject();
       var library = project.structure().library();
-      var lib = project.base().directory().resolve("lib");
+      var lib = project.base().workspace("lib");
+      Files.createDirectories(lib);
       class Transporter implements Consumer<Set<String>> {
         @Override
         public void accept(Set<String> modules) {
