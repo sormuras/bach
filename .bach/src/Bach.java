@@ -79,13 +79,10 @@ public class Bach {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
   public static Bach of() {
-    return of(Path.of(""));
-  }
-  public static Bach of(Path directory) {
-    return of(Project.newProject(directory).build());
+    return of(UnaryOperator.identity());
   }
   public static Bach of(UnaryOperator<Project.Builder> operator) {
-    return of(operator.apply(Project.newProject(Path.of(""))).build());
+    return of(Project.of(Path.of(""), operator));
   }
   public static Bach of(Project project) {
     return new Bach(project, HttpClient.newBuilder()::build);
@@ -191,23 +188,6 @@ public class Bach {
         return list.toArray(String[]::new);
       }
     }
-    final class Context {
-      private final String realm;
-      private final String module;
-      public Context(String realm, String module) {
-        this.realm = realm;
-        this.module = module;
-      }
-      public String realm() {
-        return realm;
-      }
-      public String module() {
-        return module;
-      }
-    }
-    interface Tuner {
-      void tune(Call call, Context context);
-    }
   }
   static class Main {
     public static void main(String... args) {
@@ -219,34 +199,12 @@ public class Bach {
     }
   }
   public static final class Project {
-    public static Builder newProject(Path directory) {
-      return ModulesWalker.walk(directory);
-    }
-    public static Builder newProject(String title, String version) {
-      return new Builder().title(title).version(Version.parse(version));
-    }
-    public static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
-      if (call instanceof GenericModuleSourceFilesConsumer) {
-        var consumer = (GenericModuleSourceFilesConsumer<?>) call;
-        consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
-      }
-      if (call instanceof Javac) {
-        var javac = (Javac) call;
-        javac.setGenerateMetadataForMethodParameters(true);
-        javac.setTerminateCompilationIfWarningsOccur(true);
-        javac.getAdditionalArguments().add("-X" + "lint");
-      }
-      if (call instanceof Javadoc) {
-        var javadoc = (Javadoc) call;
-        javadoc.getAdditionalArguments().add("-locale", "en");
-      }
-      if (call instanceof Jlink) {
-        var jlink = (Jlink) call;
-        jlink.getAdditionalArguments().add("--compress", "2");
-        jlink.getAdditionalArguments().add("--strip-debug");
-        jlink.getAdditionalArguments().add("--no-header-files");
-        jlink.getAdditionalArguments().add("--no-man-pages");
-      }
+    public static Project of(Path directory, UnaryOperator<Builder> operator) {
+      var base = Base.of(directory);
+      var directoryName = base.directory().toAbsolutePath().getFileName();
+      var title = Optional.ofNullable(directoryName).map(Path::toString).orElse("Untitled");
+      var builder = new Builder().base(base).title(title);
+      return ModulesWalker.walk(operator.apply(builder)).build();
     }
     private final Base base;
     private final Info info;
@@ -442,29 +400,75 @@ public class Bach {
         return descriptor.name();
       }
     }
+    public interface Tuner {
+      void tune(Call call, Map<String, String> context);
+      static void defaults(Call call, Map<String, String> context) {
+        if (call instanceof GenericModuleSourceFilesConsumer) {
+          var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+          consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
+        }
+        if (call instanceof Javac) {
+          var javac = (Javac) call;
+          javac.setGenerateMetadataForMethodParameters(true);
+          javac.setTerminateCompilationIfWarningsOccur(true);
+          javac.getAdditionalArguments().add("-X" + "lint");
+        }
+        if (call instanceof Javadoc) {
+          var javadoc = (Javadoc) call;
+          javadoc.getAdditionalArguments().add("-locale", "en");
+        }
+        if (call instanceof Jlink) {
+          var jlink = (Jlink) call;
+          jlink.getAdditionalArguments().add("--compress", "2");
+          jlink.getAdditionalArguments().add("--no-header-files");
+          jlink.getAdditionalArguments().add("--no-man-pages");
+          jlink.getAdditionalArguments().add("--strip-debug");
+        }
+      }
+    }
     public static class Builder {
       private Base base = Base.of();
-      private String title = "Project Title";
-      private Version version = Version.parse("1-ea");
+      private Info info = new Info("Project Title", Version.parse("1-ea"));
       private Structure structure = new Structure(Library.of(), List.of());
+      private Tuner tuner = Tuner::defaults;
       public Project build() {
-        var info = new Info(title, version);
         return new Project(base, info, structure);
+      }
+      public Base getBase() {
+        return base;
+      }
+      public Info getInfo() {
+        return info;
+      }
+      public Tuner getTuner() {
+        return tuner;
       }
       public Builder base(Base base) {
         this.base = base;
         return this;
       }
+      public Builder base(String directory) {
+        return base(Base.of(Path.of(directory)));
+      }
       public Builder title(String title) {
-        this.title = title;
-        return this;
+        return info(new Info(title, info.version()));
+      }
+      public Builder version(String version) {
+        return version(Version.parse(version));
       }
       public Builder version(Version version) {
-        this.version = version;
+        return info(new Info(info.title(), version));
+      }
+      public Builder info(Info info) {
+        this.info = info;
         return this;
       }
       public Builder structure(Structure structure) {
         this.structure = structure;
+        return this;
+      }
+      public Builder tuner(Tuner tuner) {
+        this.tuner = tuner;
         return this;
       }
     }
@@ -1267,24 +1271,23 @@ public class Bach {
     }
   }
   public static class ModulesWalker {
-    public static Project.Builder walk(Path directory) {
-      return walk(Project.Base.of(directory), Project::tuner);
-    }
-    public static Project.Builder walk(Project.Base base, Call.Tuner tuner) {
-      var moduleInfoFiles = Paths.find(List.of(base.directory()), Paths::isModuleInfoJavaFile);
+    public static Project.Builder walk(Project.Builder builder) {
+      var base = builder.getBase().directory();
+      var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
       if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-      var walker = new ModulesWalker(base, moduleInfoFiles, tuner);
-      return walker.walkAndCreateUnnamedRealm();
+      var walker = new ModulesWalker(builder, moduleInfoFiles);
+      var structure = walker.newStructureWithSingleUnnamedRealm();
+      return builder.structure(structure); // replace
     }
     private final Project.Base base;
+    private final Project.Tuner tuner;
     private final List<Path> moduleInfoFiles;
-    private final Call.Tuner tuner;
-    public ModulesWalker(Project.Base base, List<Path> moduleInfoFiles, Call.Tuner tuner) {
-      this.base = base;
+    public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
+      this.base = builder.getBase();
+      this.tuner = builder.getTuner();
       this.moduleInfoFiles = moduleInfoFiles;
-      this.tuner = tuner;
     }
-    public Project.Builder walkAndCreateUnnamedRealm() {
+    public Project.Structure newStructureWithSingleUnnamedRealm() {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Project.Unit>();
@@ -1298,7 +1301,7 @@ public class Bach {
         var classes = base.classes("", module);
         var modules = base.modules("");
         var jar = modules.resolve(module + ".jar");
-        var context = new Call.Context("", module);
+        var context = Map.of("realm", "", "module", module);
         var jarCreate = new Jar();
         var jarCreateArgs = jarCreate.getAdditionalArguments();
         jarCreateArgs.add("--create").add("--file", jar);
@@ -1316,7 +1319,7 @@ public class Bach {
                 jarDescribe.toTask());
         units.add(new Project.Unit(descriptor, List.of(task)));
       }
-      var context = new Call.Context("", null);
+      var context = Map.of("realm", "");
       var javac =
           new Javac()
               .setModules(moduleNames)
@@ -1349,11 +1352,7 @@ public class Bach {
                 jlink.toTask()));
       }
       var realm = new Project.Realm("", units, javac.toTask(), tasks);
-      var directoryName = base.directory().toAbsolutePath().getFileName();
-      return new Project.Builder()
-          .base(base)
-          .title("Project " + Optional.ofNullable(directoryName).map(Path::toString).orElse("?"))
-          .structure(new Project.Structure(Project.Library.of(), List.of(realm)));
+      return new Project.Structure(Project.Library.of(), List.of(realm));
     }
   }
   public static class Paths {
