@@ -63,37 +63,4 @@ public interface Call {
       return list.toArray(String[]::new);
     }
   }
-
-  /** A description of the frame or reason a tool is called. */
-  final class Context {
-    private final String realm;
-    private final String module;
-
-    public Context(String realm, String module) {
-      this.realm = realm;
-      this.module = module;
-    }
-
-    public String realm() {
-      return realm;
-    }
-
-    public String module() {
-      return module;
-    }
-  }
-
-  /**
-   * Tune arguments passed to tool calls.
-   *
-   * <p>Sample implementation:
-   *
-   * <pre><code>
-   * if (tool instanceof Javac javac) javac.getArguments().add("--verbose");
-   * </code></pre>
-   */
-  @FunctionalInterface
-  interface Tuner {
-    void tune(Call call, Context context);
-  }
 }

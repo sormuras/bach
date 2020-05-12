@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -41,36 +42,13 @@ import java.util.stream.Stream;
 /** A project descriptor. */
 public /*static*/ final class Project {
 
-  public static Builder newProject(Path directory) {
-    return ModulesWalker.walk(directory);
-  }
-
-  public static Builder newProject(String title, String version) {
-    return new Builder().title(title).version(Version.parse(version));
-  }
-
-  public static void tuner(Call call, @SuppressWarnings("unused") Call.Context context) {
-    if (call instanceof GenericModuleSourceFilesConsumer) {
-      var consumer = (GenericModuleSourceFilesConsumer<?>) call;
-      consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
-    }
-    if (call instanceof Javac) {
-      var javac = (Javac) call;
-      javac.setGenerateMetadataForMethodParameters(true);
-      javac.setTerminateCompilationIfWarningsOccur(true);
-      javac.getAdditionalArguments().add("-X" + "lint");
-    }
-    if (call instanceof Javadoc) {
-      var javadoc = (Javadoc) call;
-      javadoc.getAdditionalArguments().add("-locale", "en");
-    }
-    if (call instanceof Jlink) {
-      var jlink = (Jlink) call;
-      jlink.getAdditionalArguments().add("--compress", "2");
-      jlink.getAdditionalArguments().add("--strip-debug");
-      jlink.getAdditionalArguments().add("--no-header-files");
-      jlink.getAdditionalArguments().add("--no-man-pages");
-    }
+  /** Create customized project instance. */
+  public static Project of(Path directory, UnaryOperator<Builder> operator) {
+    var base = Base.of(directory);
+    var directoryName = base.directory().toAbsolutePath().getFileName();
+    var title = Optional.ofNullable(directoryName).map(Path::toString).orElse("Untitled");
+    var builder = new Builder().base(base).title(title);
+    return ModulesWalker.walk(operator.apply(builder)).build();
   }
 
   private final Base base;
@@ -331,17 +309,59 @@ public /*static*/ final class Project {
     }
   }
 
+  /** An arguments tuner used by {@link Builder} instance. */
+  @FunctionalInterface
+  public interface Tuner {
+
+    void tune(Call call, Map<String, String> context);
+
+    static void defaults(Call call, Map<String, String> context) {
+      if (call instanceof GenericModuleSourceFilesConsumer) {
+        var consumer = (GenericModuleSourceFilesConsumer<?>) call;
+        consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
+      }
+      if (call instanceof Javac) {
+        var javac = (Javac) call;
+        javac.setGenerateMetadataForMethodParameters(true);
+        javac.setTerminateCompilationIfWarningsOccur(true);
+        javac.getAdditionalArguments().add("-X" + "lint");
+      }
+      if (call instanceof Javadoc) {
+        var javadoc = (Javadoc) call;
+        javadoc.getAdditionalArguments().add("-locale", "en");
+      }
+      if (call instanceof Jlink) {
+        var jlink = (Jlink) call;
+        jlink.getAdditionalArguments().add("--compress", "2");
+        jlink.getAdditionalArguments().add("--no-header-files");
+        jlink.getAdditionalArguments().add("--no-man-pages");
+        jlink.getAdditionalArguments().add("--strip-debug");
+      }
+    }
+  }
+
   /** A builder for building {@link Project} objects. */
   public static class Builder {
 
     private Base base = Base.of();
-    private String title = "Project Title";
-    private Version version = Version.parse("1-ea");
+    private Info info = new Info("Project Title", Version.parse("1-ea"));
     private Structure structure = new Structure(Library.of(), List.of());
+    private Tuner tuner = Tuner::defaults;
 
     public Project build() {
-      var info = new Info(title, version);
       return new Project(base, info, structure);
+    }
+
+    public Base getBase() {
+      return base;
+    }
+
+    public Info getInfo() {
+      return info;
+    }
+
+    public Tuner getTuner() {
+      return tuner;
     }
 
     public Builder base(Base base) {
@@ -349,18 +369,34 @@ public /*static*/ final class Project {
       return this;
     }
 
+    public Builder base(String directory) {
+      return base(Base.of(Path.of(directory)));
+    }
+
     public Builder title(String title) {
-      this.title = title;
-      return this;
+      return info(new Info(title, info.version()));
+    }
+
+    public Builder version(String version) {
+      return version(Version.parse(version));
     }
 
     public Builder version(Version version) {
-      this.version = version;
+      return info(new Info(info.title(), version));
+    }
+
+    public Builder info(Info info) {
+      this.info = info;
       return this;
     }
 
     public Builder structure(Structure structure) {
       this.structure = structure;
+      return this;
+    }
+
+    public Builder tuner(Tuner tuner) {
+      this.tuner = tuner;
       return this;
     }
   }
