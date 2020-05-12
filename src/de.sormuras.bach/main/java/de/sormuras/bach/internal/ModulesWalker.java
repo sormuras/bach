@@ -43,11 +43,13 @@ public /*static*/ class ModulesWalker {
   }
 
   private final Project.Base base;
+  private final Project.Info info;
   private final Project.Tuner tuner;
   private final List<Path> moduleInfoFiles;
 
   public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
     this.base = builder.getBase();
+    this.info = builder.getInfo();
     this.tuner = builder.getTuner();
     this.moduleInfoFiles = moduleInfoFiles;
   }
@@ -57,12 +59,12 @@ public /*static*/ class ModulesWalker {
     var moduleSourcePathPatterns = new TreeSet<String>();
     var units = new ArrayList<Project.Unit>();
     var javadocCommentFound = false;
-    for (var info : moduleInfoFiles) {
-      javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(info);
-      var descriptor = Modules.describe(info);
+    for (var moduleInfoFile : moduleInfoFiles) {
+      javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(moduleInfoFile);
+      var descriptor = Modules.describe(moduleInfoFile);
       var module = descriptor.name();
       moduleNames.add(module);
-      moduleSourcePathPatterns.add(Modules.modulePatternForm(info, descriptor.name()));
+      moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
 
       var classes = base.classes("", module);
       var modules = base.modules("");
@@ -92,6 +94,7 @@ public /*static*/ class ModulesWalker {
     var javac =
         new Javac()
             .setModules(moduleNames)
+            .setVersionOfModulesThatAreBeingCompiled(info.version())
             .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
             .setDestinationDirectory(base.classes(""));
     tuner.tune(javac, context);
