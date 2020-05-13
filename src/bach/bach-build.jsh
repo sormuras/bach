@@ -29,8 +29,8 @@ println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
 println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
-println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
-println()
+println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+println("|")
 
 // The "/open" directive below this comment requires a constant String literal as its argument.
 // Due to this restriction, the URL points
@@ -42,20 +42,23 @@ println("| /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java
 println("| Bach.java " + Bach.VERSION)
 
 var build = Path.of(".bach/src/Build.java")
-if (Files.notExists(build)) {
-  println("| Create default build program " + build);
+var volatileBuild = Files.notExists(build)
+if (volatileBuild) {
+  println("| Create volatile build program " + build);
   Files.createDirectories(build.getParent());
   Files.write(build, List.of(
       "class Build {",
-      "\tpublic static void main(String... args) {",
-      "\t\tBach.of(project -> project).build().assertSuccessful();",
-      "\t}",
+      "  public static void main(String... args) {",
+      "    Bach.of(project -> project).build().assertSuccessful();",
+      "  }",
       "}"));
   Files.readAllLines(build).forEach(line -> println("| " + line));
 }
 
 println("| /open " + build)
 /open .bach/src/Build.java
+
+if (volatileBuild) Files.delete(build)
 
 println("| Build.main()")
 var code = 0
@@ -66,9 +69,8 @@ try {
   code = 1;
 }
 
-println()
+println("|")
 println("| Have fun! https://github.com/sponsors/sormuras (-:")
-println()
-
+println("|")
 println("| /exit " + code)
 /exit code
