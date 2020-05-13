@@ -137,19 +137,19 @@ public /*static*/ class Task {
     }
   }
 
-  /** Determine and transport missing library modules. */
-  public static class ResolveMissingModules extends Task {
+  /** Determine and transport missing 3<sup>rd</sup> party modules. */
+  public static class ResolveMissingThirdPartyModules extends Task {
 
-    public ResolveMissingModules() {
-      super("Resolve missing modules", List.of());
-   }
+    public ResolveMissingThirdPartyModules() {
+      super("Resolve missing 3rd-party modules", List.of());
+    }
 
     @Override
     public void execute(Bach bach) throws Exception {
       var project = bach.getProject();
       var library = project.structure().library();
-      var lib = project.base().workspace("lib");
-      Files.createDirectories(lib);
+      var thirdPartyModules = project.base().thirdPartyModules();
+      Files.createDirectories(thirdPartyModules);
       class Transporter implements Consumer<Set<String>> {
         @Override
         public void accept(Set<String> modules) {
@@ -160,19 +160,19 @@ public /*static*/ class Task {
             try {
               var uri = URI.create(raw);
               var name = module + ".jar";
-              var file = resources.copy(uri, lib.resolve(name));
+              var file = resources.copy(uri, thirdPartyModules.resolve(name));
               var size = Files.size(file);
               bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
             } catch (Exception e) {
-              throw new Error("Resolve module '" + module + "' failed: " + raw +"\n\t" + e, e);
+              throw new Error("Resolve module '" + module + "' failed: " + raw + "\n\t" + e, e);
             }
           }
         }
       }
+      var modulePaths = project.base().modulePaths(List.of());
       var declared = project.toDeclaredModuleNames();
-      var required = project.toRequiredModuleNames();
-      var resolver = new ModulesResolver(new Path[] {lib}, declared, new Transporter());
-      resolver.resolve(required);
+      var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
+      resolver.resolve(project.toRequiredModuleNames());
       resolver.resolve(library.required());
     }
   }

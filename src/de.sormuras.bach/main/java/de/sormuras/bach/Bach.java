@@ -117,7 +117,7 @@ public class Bach {
 
   /*private*/ Task buildSequence() {
     var tasks = new ArrayList<Task>();
-    tasks.add(new Task.ResolveMissingModules());
+    tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.structure().realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
