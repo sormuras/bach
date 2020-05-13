@@ -144,6 +144,7 @@ public /*static*/ class ModulesWalker {
     }
 
     var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
+    var patchesToUpstreams = patches(units, upstreams);
 
     var context = Map.of("realm", realm);
     var javac =
@@ -152,7 +153,7 @@ public /*static*/ class ModulesWalker {
             .setVersionOfModulesThatAreBeingCompiled(info.version())
             .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
             .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
-            .setPathsWhereToFindMoreAssetsPerModule(patches(units, upstreams))
+            .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
             .setDestinationDirectory(base.classes(realm));
     if (preview) {
       javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
@@ -166,7 +167,9 @@ public /*static*/ class ModulesWalker {
           new Javadoc()
               .setDestinationDirectory(base.api())
               .setModules(moduleNames)
-              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
+              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+              .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
+              .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
       tuner.tune(javadoc, context);
       tasks.add(javadoc.toTask());
     }
