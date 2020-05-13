@@ -26,6 +26,7 @@ import de.sormuras.bach.internal.ModulesMap;
 import de.sormuras.bach.internal.ModulesWalker;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,8 +152,16 @@ public /*static*/ final class Project {
       return directory.resolve(Path.of(first, more));
     }
 
+    public Optional<Path> lib() {
+      return Files.isDirectory(path("lib")) ? Optional.of(path("lib")) : Optional.empty();
+    }
+
     public Path workspace(String first, String... more) {
       return workspace.resolve(Path.of(first, more));
+    }
+
+    public Path thirdPartyModules() {
+      return workspace("3rd-party-modules");
     }
 
     public Path api() {
