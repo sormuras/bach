@@ -874,10 +874,10 @@ public class Bach {
     }
   }
   public static class Javadoc extends GenericSourcesConsumer<Javadoc> {
-    private Collection<String> patternsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private Collection<Path> pathsWhereToFindApplicationModules;
+    private List<String> patternsWhereToFindSourceFiles;
+    private Map<String, List<Path>> pathsWhereToFindSourceFiles;
+    private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
+    private List<Path> pathsWhereToFindApplicationModules;
     private String characterEncodingUsedBySourceFiles;
     private int compileForVirtualMachineVersion;
     private boolean enablePreviewLanguageFeatures;
@@ -911,31 +911,31 @@ public class Bach {
       if (isOutputMessagesAboutWhatJavadocIsDoing()) arguments.add("-verbose");
       if (isShutOffDisplayingStatusMessages()) arguments.add("-quiet");
     }
-    public Collection<String> getPatternsWhereToFindSourceFiles() {
+    public List<String> getPatternsWhereToFindSourceFiles() {
       return patternsWhereToFindSourceFiles;
     }
-    public Javadoc setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+    public Javadoc setPatternsWhereToFindSourceFiles(List<String> patterns) {
       this.patternsWhereToFindSourceFiles = patterns;
       return this;
     }
-    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+    public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
       return pathsWhereToFindSourceFiles;
     }
-    public Javadoc setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+    public Javadoc setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
       this.pathsWhereToFindSourceFiles = map;
       return this;
     }
-    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+    public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
       return pathsWhereToFindMoreAssetsPerModule;
     }
-    public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+    public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
       this.pathsWhereToFindMoreAssetsPerModule = map;
       return this;
     }
-    public Collection<Path> getPathsWhereToFindApplicationModules() {
+    public List<Path> getPathsWhereToFindApplicationModules() {
       return pathsWhereToFindApplicationModules;
     }
-    public Javadoc setPathsWhereToFindApplicationModules(Collection<Path> paths) {
+    public Javadoc setPathsWhereToFindApplicationModules(List<Path> paths) {
       this.pathsWhereToFindApplicationModules = paths;
       return this;
     }
@@ -1388,6 +1388,7 @@ public class Bach {
         units.add(new Project.Unit(descriptor, List.of(parent), List.of(task)));
       }
       var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
+      var patchesToUpstreams = patches(units, upstreams);
       var context = Map.of("realm", realm);
       var javac =
           new Javac()
@@ -1395,7 +1396,7 @@ public class Bach {
               .setVersionOfModulesThatAreBeingCompiled(info.version())
               .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
               .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
-              .setPathsWhereToFindMoreAssetsPerModule(patches(units, upstreams))
+              .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
               .setDestinationDirectory(base.classes(realm));
       if (preview) {
         javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
@@ -1408,7 +1409,9 @@ public class Bach {
             new Javadoc()
                 .setDestinationDirectory(base.api())
                 .setModules(moduleNames)
-                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns);
+                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+                .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
+                .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
         tuner.tune(javadoc, context);
         tasks.add(javadoc.toTask());
       }
