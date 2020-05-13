@@ -76,8 +76,8 @@ if (Files.notExists(build)) {
   Files.createDirectories(build.getParent());
   Files.write(build, List.of(
       "class Build {",
-      "\t\tBach.of(project -> project).build().assertSuccessful();",
-      "\t}",
+      "    Bach.of(project -> project).build().assertSuccessful();",
+      "  }",
       "}"));
   Files.readAllLines(build).forEach(line -> println("\t" + line));
 }
@@ -97,6 +97,14 @@ Files.write(root.resolve("bach"), List.of("/usr/bin/env " + directly + " \"$@\""
 Files.write(root.resolve("bach.bat"), List.of("@ECHO OFF", directly + " %*"))
 Files.write(root.resolve("build"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"", "rm -rf " + boot)).toFile().setExecutable(true)
 Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher + " %*", "rmdir /Q/S " + boot))
+
+
+/*
+ * Generate default git ignore configuration file.
+ */
+println()
+println("Generate default .gitignore configuration.")
+Files.write(root.resolve(".gitignore"), List.of("/workspace/"))
 
 /*
  * Smoke test Bach.java by printing its version and help text.

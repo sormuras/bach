@@ -42,9 +42,8 @@ println("| /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java
 println("| Bach.java " + Bach.VERSION)
 
 var build = Path.of(".bach/src/Build.java")
-var volatileBuild = Files.notExists(build)
-if (volatileBuild) {
-  println("| Create volatile build program " + build);
+if (Files.notExists(build)) {
+  println("| Create default build program " + build);
   Files.createDirectories(build.getParent());
   Files.write(build, List.of(
       "class Build {",
@@ -57,8 +56,6 @@ if (volatileBuild) {
 
 println("| /open " + build)
 /open .bach/src/Build.java
-
-if (volatileBuild) Files.delete(build)
 
 println("| Build.main()")
 var code = 0
