@@ -183,6 +183,14 @@ public /*static*/ final class Project {
     public Path modules(String realm) {
       return workspace("modules", realm);
     }
+
+    public List<Path> modulePaths(Iterable<String> realms) {
+      var paths = new ArrayList<Path>();
+      for (var realm : realms) paths.add(modules(realm));
+      lib().ifPresent(paths::add);
+      paths.add(thirdPartyModules());
+      return List.copyOf(paths);
+    }
   }
 
   /** A basic information holder. */
