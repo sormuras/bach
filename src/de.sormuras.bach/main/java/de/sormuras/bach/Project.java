@@ -338,7 +338,7 @@ public /*static*/ final class Project {
 
     void tune(Call call, Map<String, String> context);
 
-    static void defaults(Call call, Map<String, String> context) {
+    static void defaults(Call call, @SuppressWarnings("unused") Map<String, String> context) {
       if (call instanceof GenericSourcesConsumer) {
         var consumer = (GenericSourcesConsumer<?>) call;
         consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
