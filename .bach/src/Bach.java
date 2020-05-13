@@ -46,8 +46,11 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -120,7 +123,7 @@ public class Bach {
   }
   private Task buildSequence() {
     var tasks = new ArrayList<Task>();
-    tasks.add(new Task.ResolveMissingModules());
+    tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.structure().realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
@@ -315,8 +318,14 @@ public class Bach {
       public Path path(String first, String... more) {
         return directory.resolve(Path.of(first, more));
       }
+      public Optional<Path> lib() {
+        return Files.isDirectory(path("lib")) ? Optional.of(path("lib")) : Optional.empty();
+      }
       public Path workspace(String first, String... more) {
         return workspace.resolve(Path.of(first, more));
+      }
+      public Path thirdPartyModules() {
+        return workspace("3rd-party-modules");
       }
       public Path api() {
         return workspace("api");
@@ -332,6 +341,13 @@ public class Bach {
       }
       public Path modules(String realm) {
         return workspace("modules", realm);
+      }
+      public List<Path> modulePaths(Iterable<String> realms) {
+        var paths = new ArrayList<Path>();
+        for (var realm : realms) paths.add(modules(realm));
+        lib().ifPresent(paths::add);
+        paths.add(thirdPartyModules());
+        return List.copyOf(paths);
       }
     }
     public static final class Info {
@@ -417,13 +433,18 @@ public class Bach {
     }
     public static final class Unit {
       private final ModuleDescriptor descriptor;
+      private final List<Path> paths;
       private final List<Task> tasks;
-      public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
+      public Unit(ModuleDescriptor descriptor, List<Path> paths, List<Task> tasks) {
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
         this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
       }
       public ModuleDescriptor descriptor() {
         return descriptor;
+      }
+      public List<Path> paths() {
+        return paths;
       }
       public List<Task> tasks() {
         return tasks;
@@ -434,7 +455,7 @@ public class Bach {
     }
     public interface Tuner {
       void tune(Call call, Map<String, String> context);
-      static void defaults(Call call, Map<String, String> context) {
+      static void defaults(Call call, @SuppressWarnings("unused") Map<String, String> context) {
         if (call instanceof GenericSourcesConsumer) {
           var consumer = (GenericSourcesConsumer<?>) call;
           consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
@@ -649,14 +670,15 @@ public class Bach {
         }
       }
     }
-    public static class ResolveMissingModules extends Task {
-      public ResolveMissingModules() {
-        super("Resolve missing modules", List.of());
-     }
-      public void execute(Bach bach) {
+    public static class ResolveMissingThirdPartyModules extends Task {
+      public ResolveMissingThirdPartyModules() {
+        super("Resolve missing 3rd-party modules", List.of());
+      }
+      public void execute(Bach bach) throws Exception {
         var project = bach.getProject();
         var library = project.structure().library();
-        var lib = project.base().directory().resolve("lib");
+        var thirdPartyModules = project.base().thirdPartyModules();
+        Files.createDirectories(thirdPartyModules);
         class Transporter implements Consumer<Set<String>> {
           public void accept(Set<String> modules) {
             var resources = new Resources(bach.getHttpClient());
@@ -666,19 +688,19 @@ public class Bach {
               try {
                 var uri = URI.create(raw);
                 var name = module + ".jar";
-                var file = resources.copy(uri, lib.resolve(name));
+                var file = resources.copy(uri, thirdPartyModules.resolve(name));
                 var size = Files.size(file);
                 bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
               } catch (Exception e) {
-                throw new Error("Resolve module '" + module + "' failed: " + raw +"\n\t" + e, e);
+                throw new Error("Resolve module '" + module + "' failed: " + raw + "\n\t" + e, e);
               }
             }
           }
         }
+        var modulePaths = project.base().modulePaths(List.of());
         var declared = project.toDeclaredModuleNames();
-        var required = project.toRequiredModuleNames();
-        var resolver = new ModulesResolver(new Path[] {lib}, declared, new Transporter());
-        resolver.resolve(required);
+        var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
+        resolver.resolve(project.toRequiredModuleNames());
         resolver.resolve(library.required());
       }
     }
@@ -731,10 +753,10 @@ public class Bach {
   }
   public static class Javac extends GenericSourcesConsumer<Javac> {
     private Version versionOfModulesThatAreBeingCompiled;
-    private Collection<String> patternsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
-    private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private Collection<Path> pathsWhereToFindApplicationModules;
+    private List<String> patternsWhereToFindSourceFiles;
+    private Map<String, List<Path>> pathsWhereToFindSourceFiles;
+    private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
+    private List<Path> pathsWhereToFindApplicationModules;
     private int compileForVirtualMachineVersion;
     private boolean enablePreviewLanguageFeatures;
     private boolean generateMetadataForMethodParameters;
@@ -779,32 +801,32 @@ public class Bach {
       this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
       return this;
     }
-    public Collection<String> getPatternsWhereToFindSourceFiles() {
+    public List<String> getPatternsWhereToFindSourceFiles() {
       return patternsWhereToFindSourceFiles;
     }
-    public Javac setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+    public Javac setPatternsWhereToFindSourceFiles(List<String> patterns) {
       this.patternsWhereToFindSourceFiles = patterns;
       return this;
     }
-    public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+    public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
       return pathsWhereToFindSourceFiles;
     }
-    public Javac setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+    public Javac setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
       this.pathsWhereToFindSourceFiles = map;
       return this;
     }
-    public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+    public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
       return pathsWhereToFindMoreAssetsPerModule;
     }
-    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
       this.pathsWhereToFindMoreAssetsPerModule = map;
       return this;
     }
-    public Collection<Path> getPathsWhereToFindApplicationModules() {
+    public List<Path> getPathsWhereToFindApplicationModules() {
       return pathsWhereToFindApplicationModules;
     }
     public Javac setPathsWhereToFindApplicationModules(
-        Collection<Path> pathsWhereToFindApplicationModules) {
+        List<Path> pathsWhereToFindApplicationModules) {
       this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
       return this;
     }
@@ -1232,8 +1254,8 @@ public class Bach {
     private final Set<String> declared;
     private final Consumer<Set<String>> transporter;
     private final Set<String> system;
-    public ModulesResolver(Path[] paths, Set<String> declared, Consumer<Set<String>> transporter) {
-      this.paths = paths;
+    public ModulesResolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
+      this.paths = paths.toArray(Path[]::new);
       this.declared = new TreeSet<>(declared);
       this.transporter = transporter;
       this.system = Modules.declared(ModuleFinder.ofSystem());
@@ -1274,8 +1296,7 @@ public class Bach {
       var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
       if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
       var walker = new ModulesWalker(builder, moduleInfoFiles);
-      var structure = walker.newStructureWithSingleUnnamedRealm();
-      return builder.structure(structure); // replace
+      return builder.structure(walker.newStructure());
     }
     private final Project.Base base;
     private final Project.Info info;
@@ -1287,9 +1308,55 @@ public class Bach {
       this.tuner = builder.getTuner();
       this.moduleInfoFiles = moduleInfoFiles;
     }
+    public Project.Structure newStructure() {
+      try {
+        return newStructureWithMainTestPreviewRealms();
+      } catch (IllegalStateException ignore) {
+      }
+      return newStructureWithSingleUnnamedRealm();
+    }
     public Project.Structure newStructureWithSingleUnnamedRealm() {
+      var realms = List.of(newRealm("", moduleInfoFiles, false, List.of()));
+      return new Project.Structure(Project.Library.of(), realms);
+    }
+    public Project.Structure newStructureWithMainTestPreviewRealms() {
+      var mainModuleInfoFiles = new ArrayList<Path>();
+      var testModuleInfoFiles = new ArrayList<Path>();
+      var viewModuleInfoFiles = new ArrayList<Path>();
+      for (var moduleInfoFile : moduleInfoFiles) {
+        var deque = Paths.deque(moduleInfoFile);
+        if (Collections.frequency(deque, "main") == 1) {
+          mainModuleInfoFiles.add(moduleInfoFile);
+        } else if (Collections.frequency(deque, "test") == 1) {
+          testModuleInfoFiles.add(moduleInfoFile);
+        } else if (Collections.frequency(deque, "test-preview") == 1) {
+          viewModuleInfoFiles.add(moduleInfoFile);
+        } else {
+          var message = new StringBuilder("Cannot guess realm of " + moduleInfoFile);
+          message.append('\n').append('\n');
+          for (var file : moduleInfoFiles) message.append("\t\t").append(file).append('\n');
+          throw new IllegalStateException(message.toString());
+        }
+      }
+      var realms = new ArrayList<Project.Realm>();
+      var main = newRealm("main", mainModuleInfoFiles, false, List.of());
+      if (!mainModuleInfoFiles.isEmpty()) {
+        realms.add(main);
+      }
+      var test = newRealm("test", testModuleInfoFiles, false, List.of(main));
+      if (!testModuleInfoFiles.isEmpty()) {
+        realms.add(test);
+      }
+      var view = newRealm("test-preview", viewModuleInfoFiles, true, List.of(main, test));
+      if (!viewModuleInfoFiles.isEmpty()) {
+        realms.add(view);
+      }
+      return new Project.Structure(Project.Library.of(), realms);
+    }
+    public Project.Realm newRealm(
+        String realm, List<Path> moduleInfoFiles, boolean preview, List<Project.Realm> upstreams) {
       var moduleNames = new TreeSet<String>();
-      var moduleSourcePathPatterns = new TreeSet<String>();
+      var moduleSourcePathPatterns = new ArrayList<String>();
       var units = new ArrayList<Project.Unit>();
       var javadocCommentFound = false;
       for (var moduleInfoFile : moduleInfoFiles) {
@@ -1298,10 +1365,10 @@ public class Bach {
         var module = descriptor.name();
         moduleNames.add(module);
         moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
-        var classes = base.classes("", module);
-        var modules = base.modules("");
+        var classes = base.classes(realm, module);
+        var modules = base.modules(realm);
         var jar = modules.resolve(module + ".jar");
-        var context = Map.of("realm", "", "module", module);
+        var context = Map.of("realm", realm, "module", module);
         var jarCreate = new Jar();
         var jarCreateArgs = jarCreate.getAdditionalArguments();
         jarCreateArgs.add("--create").add("--file", jar);
@@ -1317,15 +1384,23 @@ public class Bach {
                 new Task.CreateDirectories(jar.getParent()),
                 jarCreate.toTask(),
                 jarDescribe.toTask());
-        units.add(new Project.Unit(descriptor, List.of(task)));
+        var parent = moduleInfoFile.getParent();
+        units.add(new Project.Unit(descriptor, List.of(parent), List.of(task)));
       }
-      var context = Map.of("realm", "");
+      var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
+      var context = Map.of("realm", realm);
       var javac =
           new Javac()
               .setModules(moduleNames)
               .setVersionOfModulesThatAreBeingCompiled(info.version())
               .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
-              .setDestinationDirectory(base.classes(""));
+              .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
+              .setPathsWhereToFindMoreAssetsPerModule(patches(units, upstreams))
+              .setDestinationDirectory(base.classes(realm));
+      if (preview) {
+        javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
+        javac.setEnablePreviewLanguageFeatures(true);
+      }
       tuner.tune(javac, context);
       var tasks = new ArrayList<Task>();
       if (javadocCommentFound) {
@@ -1343,7 +1418,7 @@ public class Bach {
             new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
         var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
         var arguments = jlink.getAdditionalArguments();
-        arguments.add("--module-path", base.modules(""));
+        arguments.add("--module-path", base.modules(realm));
         arguments.add("--launcher", launcher + '=' + mainModule.get());
         tuner.tune(jlink, context);
         tasks.add(
@@ -1352,20 +1427,27 @@ public class Bach {
                 new Task.DeleteDirectories(base.image()),
                 jlink.toTask()));
       }
-      var realm = new Project.Realm("", units, javac, tasks);
-      return new Project.Structure(Project.Library.of(), List.of(realm));
+      return new Project.Realm(realm, units, javac, tasks);
+    }
+    static Map<String, List<Path>> patches(List<Project.Unit> units, List<Project.Realm> upstreams) {
+      if (units.isEmpty() || upstreams.isEmpty()) return Map.of();
+      var patches = new TreeMap<String, List<Path>>();
+      for (var unit : units) {
+        var module = unit.name();
+        for (var upstream : upstreams)
+          upstream.units().stream()
+              .filter(up -> up.name().equals(module))
+              .findAny()
+              .ifPresent(up -> patches.put(module, up.paths()));
+      }
+      return patches;
     }
   }
   public static class Paths {
-    public static boolean isEmpty(Path path) {
-      try {
-        if (Files.isRegularFile(path)) return Files.size(path) == 0L;
-        try (var stream = Files.list(path)) {
-          return stream.findAny().isEmpty();
-        }
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public static Deque<String> deque(Path path) {
+      var deque = new ArrayDeque<String>();
+      path.forEach(name -> deque.addFirst(name.toString()));
+      return deque;
     }
     public static boolean isJavadocCommentAvailable(Path path) {
       try {

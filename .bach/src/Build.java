@@ -49,6 +49,7 @@ class Build {
         List.of(
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
+                List.of(Path.of("src/de.sormuras.bach/main/java")),
                 List.of(
                     createJar(
                         base.modules("main").resolve("de.sormuras.bach.jar"),
@@ -113,6 +114,7 @@ class Build {
         List.of(
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
+                List.of(Path.of("src/test.base/test/java")),
                 List.of(
                     createJar(
                         base.modules("test").resolve("test.base.jar"),
@@ -125,7 +127,7 @@ class Build {
             .setDestinationDirectory(base.classes("test"))
             .setModules(moduleNames)
             .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
-            .setPathsWhereToFindApplicationModules(List.of(base.directory().resolve("lib")));
+            .setPathsWhereToFindApplicationModules(List.of(base.thirdPartyModules()));
     Bach.Project.Tuner.defaults(javac, Map.of("realm", "test"));
     return new Bach.Project.Realm("test", units, javac, List.of());
   }
