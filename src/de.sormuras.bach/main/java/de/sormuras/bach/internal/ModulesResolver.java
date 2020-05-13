@@ -19,6 +19,7 @@ package de.sormuras.bach.internal;
 
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -31,8 +32,8 @@ public /*static*/ class ModulesResolver {
   private final Consumer<Set<String>> transporter;
   private final Set<String> system;
 
-  public ModulesResolver(Path[] paths, Set<String> declared, Consumer<Set<String>> transporter) {
-    this.paths = paths;
+  public ModulesResolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
+    this.paths = paths.toArray(Path[]::new);
     this.declared = new TreeSet<>(declared);
     this.transporter = transporter;
     this.system = Modules.declared(ModuleFinder.ofSystem());

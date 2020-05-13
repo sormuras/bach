@@ -38,7 +38,7 @@ class ModulesResolverTests {
 
   @Test
   void resolveWithoutTransportFails(@TempDir Path temp) {
-    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), __ -> {});
+    var resolver = new ModulesResolver(List.of(temp), Set.of(), __ -> {});
     assertThrows(IllegalStateException.class, () -> resolver.resolve(Set.of("org.junit.jupiter")));
   }
 
@@ -46,7 +46,7 @@ class ModulesResolverTests {
   @DisabledIfSystemProperty(named = "offline", matches = "true")
   void resolveJUnitJupiter(@TempDir Path temp) {
     var transporter = new Transporter(temp);
-    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
+    var resolver = new ModulesResolver(List.of(temp), Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.jupiter"));
 
     var files = Tree.walk(temp);
@@ -72,7 +72,7 @@ class ModulesResolverTests {
   @DisabledIfSystemProperty(named = "offline", matches = "true")
   void resolveJUnitPlatformConsole(@TempDir Path temp) {
     var transporter = new Transporter(temp);
-    var resolver = new ModulesResolver(new Path[] {temp}, Set.of(), transporter);
+    var resolver = new ModulesResolver(List.of(temp), Set.of(), transporter);
     resolver.resolve(Set.of("org.junit.platform.console"));
 
     var files = Tree.walk(temp);
