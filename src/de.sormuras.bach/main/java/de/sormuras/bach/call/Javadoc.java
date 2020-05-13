@@ -18,16 +18,16 @@
 package de.sormuras.bach.call;
 
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /** A call to {@code javadoc}, the Java API documentation generating tool. */
 public /*static*/ class Javadoc extends GenericSourcesConsumer<Javadoc> {
 
-  private Collection<String> patternsWhereToFindSourceFiles;
-  private Map<String, Collection<Path>> pathsWhereToFindSourceFiles;
-  private Map<String, Collection<Path>> pathsWhereToFindMoreAssetsPerModule;
-  private Collection<Path> pathsWhereToFindApplicationModules;
+  private List<String> patternsWhereToFindSourceFiles;
+  private Map<String, List<Path>> pathsWhereToFindSourceFiles;
+  private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
+  private List<Path> pathsWhereToFindApplicationModules;
   private String characterEncodingUsedBySourceFiles;
   private int compileForVirtualMachineVersion;
   private boolean enablePreviewLanguageFeatures;
@@ -77,38 +77,38 @@ public /*static*/ class Javadoc extends GenericSourcesConsumer<Javadoc> {
     if (isShutOffDisplayingStatusMessages()) arguments.add("-quiet");
   }
 
-  public Collection<String> getPatternsWhereToFindSourceFiles() {
+  public List<String> getPatternsWhereToFindSourceFiles() {
     return patternsWhereToFindSourceFiles;
   }
 
-  public Javadoc setPatternsWhereToFindSourceFiles(Collection<String> patterns) {
+  public Javadoc setPatternsWhereToFindSourceFiles(List<String> patterns) {
     this.patternsWhereToFindSourceFiles = patterns;
     return this;
   }
 
-  public Map<String, Collection<Path>> getPathsWhereToFindSourceFiles() {
+  public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
     return pathsWhereToFindSourceFiles;
   }
 
-  public Javadoc setPathsWhereToFindSourceFiles(Map<String, Collection<Path>> map) {
+  public Javadoc setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
     this.pathsWhereToFindSourceFiles = map;
     return this;
   }
 
-  public Map<String, Collection<Path>> getPathsWhereToFindMoreAssetsPerModule() {
+  public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
     return pathsWhereToFindMoreAssetsPerModule;
   }
 
-  public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, Collection<Path>> map) {
+  public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
     this.pathsWhereToFindMoreAssetsPerModule = map;
     return this;
   }
 
-  public Collection<Path> getPathsWhereToFindApplicationModules() {
+  public List<Path> getPathsWhereToFindApplicationModules() {
     return pathsWhereToFindApplicationModules;
   }
 
-  public Javadoc setPathsWhereToFindApplicationModules(Collection<Path> paths) {
+  public Javadoc setPathsWhereToFindApplicationModules(List<Path> paths) {
     this.pathsWhereToFindApplicationModules = paths;
     return this;
   }
