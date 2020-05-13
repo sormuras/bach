@@ -104,6 +104,12 @@ class ProjectTests {
       assertEquals(
           Set.of("com.greetings", "org.astro", "test.modules"), project.toDeclaredModuleNames());
       assertEquals(Set.of("com.greetings", "org.astro"), project.toRequiredModuleNames());
+      var realms = project.structure().realms();
+      assertEquals(2, realms.size(), realms.toString());
+      var main = realms.get(0);
+      assertEquals("main", main.name());
+      var test = realms.get(1);
+      assertEquals("test", test.name());
     }
   }
 }

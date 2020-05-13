@@ -25,9 +25,12 @@ import de.sormuras.bach.call.Javadoc;
 import de.sormuras.bach.call.Jlink;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** A directory tree walker building modular project structures. */
 public /*static*/ class ModulesWalker {
@@ -38,8 +41,7 @@ public /*static*/ class ModulesWalker {
     var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
     if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
     var walker = new ModulesWalker(builder, moduleInfoFiles);
-    var structure = walker.newStructureWithSingleUnnamedRealm();
-    return builder.structure(structure); // replace
+    return builder.structure(walker.newStructure());
   }
 
   private final Project.Base base;
@@ -54,9 +56,59 @@ public /*static*/ class ModulesWalker {
     this.moduleInfoFiles = moduleInfoFiles;
   }
 
+  public Project.Structure newStructure() {
+    try {
+      return newStructureWithMainTestPreviewRealms();
+    } catch (IllegalStateException ignore) {
+      // try next
+    }
+    return newStructureWithSingleUnnamedRealm();
+  }
+
   public Project.Structure newStructureWithSingleUnnamedRealm() {
+    var realms = List.of(newRealm("", moduleInfoFiles, false, List.of()));
+    return new Project.Structure(Project.Library.of(), realms);
+  }
+
+  public Project.Structure newStructureWithMainTestPreviewRealms() {
+    var mainModuleInfoFiles = new ArrayList<Path>();
+    var testModuleInfoFiles = new ArrayList<Path>();
+    var viewModuleInfoFiles = new ArrayList<Path>();
+    for (var moduleInfoFile : moduleInfoFiles) {
+      var deque = Paths.deque(moduleInfoFile);
+      if (Collections.frequency(deque, "main") == 1) {
+        mainModuleInfoFiles.add(moduleInfoFile);
+      } else if (Collections.frequency(deque, "test") == 1) {
+        testModuleInfoFiles.add(moduleInfoFile);
+      } else if (Collections.frequency(deque, "test-preview") == 1) {
+        viewModuleInfoFiles.add(moduleInfoFile);
+      } else {
+        var message = new StringBuilder("Cannot guess realm of " + moduleInfoFile);
+        message.append('\n').append('\n');
+        for (var file : moduleInfoFiles) message.append("\t\t").append(file).append('\n');
+        throw new IllegalStateException(message.toString());
+      }
+    }
+    var realms = new ArrayList<Project.Realm>();
+    var main = newRealm("main", mainModuleInfoFiles, false, List.of());
+    if (!mainModuleInfoFiles.isEmpty()) {
+      realms.add(main);
+    }
+    var test = newRealm("test", testModuleInfoFiles, false, List.of(main));
+    if (!testModuleInfoFiles.isEmpty()) {
+      realms.add(test);
+    }
+    var view = newRealm("test-preview", viewModuleInfoFiles, true, List.of(main, test));
+    if (!viewModuleInfoFiles.isEmpty()) {
+      realms.add(view);
+    }
+    return new Project.Structure(Project.Library.of(), realms);
+  }
+
+  public Project.Realm newRealm(
+      String realm, List<Path> moduleInfoFiles, boolean preview, List<Project.Realm> upstreams) {
     var moduleNames = new TreeSet<String>();
-    var moduleSourcePathPatterns = new TreeSet<String>();
+    var moduleSourcePathPatterns = new ArrayList<String>();
     var units = new ArrayList<Project.Unit>();
     var javadocCommentFound = false;
     for (var moduleInfoFile : moduleInfoFiles) {
@@ -66,11 +118,11 @@ public /*static*/ class ModulesWalker {
       moduleNames.add(module);
       moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
 
-      var classes = base.classes("", module);
-      var modules = base.modules("");
+      var classes = base.classes(realm, module);
+      var modules = base.modules(realm);
       var jar = modules.resolve(module + ".jar");
 
-      var context = Map.of("realm", "", "module", module);
+      var context = Map.of("realm", realm, "module", module);
       var jarCreate = new Jar();
       var jarCreateArgs = jarCreate.getAdditionalArguments();
       jarCreateArgs.add("--create").add("--file", jar);
@@ -87,16 +139,25 @@ public /*static*/ class ModulesWalker {
               jarCreate.toTask(),
               jarDescribe.toTask());
 
-      units.add(new Project.Unit(descriptor, List.of(task)));
+      var parent = moduleInfoFile.getParent();
+      units.add(new Project.Unit(descriptor, List.of(parent), List.of(task)));
     }
 
-    var context = Map.of("realm", "");
+    var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
+
+    var context = Map.of("realm", realm);
     var javac =
         new Javac()
             .setModules(moduleNames)
             .setVersionOfModulesThatAreBeingCompiled(info.version())
             .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
-            .setDestinationDirectory(base.classes(""));
+            .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
+            .setPathsWhereToFindMoreAssetsPerModule(patches(units, upstreams))
+            .setDestinationDirectory(base.classes(realm));
+    if (preview) {
+      javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
+      javac.setEnablePreviewLanguageFeatures(true);
+    }
     tuner.tune(javac, context);
 
     var tasks = new ArrayList<Task>();
@@ -116,7 +177,7 @@ public /*static*/ class ModulesWalker {
           new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
       var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
       var arguments = jlink.getAdditionalArguments();
-      arguments.add("--module-path", base.modules(""));
+      arguments.add("--module-path", base.modules(realm));
       arguments.add("--launcher", launcher + '=' + mainModule.get());
       tuner.tune(jlink, context);
       tasks.add(
@@ -126,8 +187,20 @@ public /*static*/ class ModulesWalker {
               jlink.toTask()));
     }
 
-    var realm = new Project.Realm("", units, javac, tasks);
+    return new Project.Realm(realm, units, javac, tasks);
+  }
 
-    return new Project.Structure(Project.Library.of(), List.of(realm));
+  static Map<String, List<Path>> patches(List<Project.Unit> units, List<Project.Realm> upstreams) {
+    if (units.isEmpty() || upstreams.isEmpty()) return Map.of();
+    var patches = new TreeMap<String, List<Path>>();
+    for (var unit : units) {
+      var module = unit.name();
+      for (var upstream : upstreams)
+        upstream.units().stream()
+            .filter(up -> up.name().equals(module))
+            .findAny()
+            .ifPresent(up -> patches.put(module, up.paths()));
+    }
+    return patches;
   }
 }
