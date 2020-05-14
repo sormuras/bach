@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesResolver;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
@@ -101,6 +102,23 @@ public /*static*/ class Task {
     @Override
     public void execute(Bach bach) {
       bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
+    }
+  }
+
+  public static class RunTestModule extends Task {
+
+    private final String module;
+    private final List<Path> modulePaths;
+
+    public RunTestModule(String module, List<Path> modulePaths) {
+      this.module = module;
+      this.modulePaths = modulePaths;
+    }
+
+    @Override
+    public void execute(Bach bach) {
+      var test = Modules.findTestTool(module, modulePaths.toArray(Path[]::new));
+      test.ifPresent(tool -> bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr())));
     }
   }
 
