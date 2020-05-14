@@ -27,10 +27,13 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,6 +76,21 @@ public /*static*/ class Modules {
   public static Optional<String> findMainModule(Stream<ModuleDescriptor> descriptors) {
     var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+  }
+
+  public static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
+    var roots = Set.of(module);
+    var finder = ModuleFinder.of(modulePaths);
+    var boot = ModuleLayer.boot();
+    var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+    var parent = ClassLoader.getPlatformClassLoader();
+    var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+    var layer = controller.layer();
+    var loader = layer.findLoader(module);
+    loader.setDefaultAssertionStatus(true);
+    var services = ServiceLoader.load(layer, ToolProvider.class);
+    var providers = services.stream().map(ServiceLoader.Provider::get);
+    return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
   }
 
   /** Parse module definition from the given file. */
