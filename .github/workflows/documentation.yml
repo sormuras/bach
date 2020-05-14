@@ -2,6 +2,7 @@ name: Documentation
 on:
   push:
     paths:
+      - '.github/workflows/documentation.yml'
       - 'doc/**'
 jobs:
   build:
@@ -14,9 +15,17 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 15-ea
-    - name: 'Build Jigsaw Quick-Start'
+
+    - name: 'Build Jigsaw Quick-Start (direct)'
       run: java doc/src/BuildJigsawQuickStart.java
-    - name: 'Build Jigsaw Quick-Start World'
+
+    - name: 'Build Jigsaw Quick-Start (jshell)'
+      working-directory: doc/project/JigsawQuickStart
+      run: jshell -R-Debug ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
+
+    - name: 'Build Jigsaw Quick-Start World (direct)'
       run: java doc/src/BuildJigsawQuickStartWorld.java
-    - name: 'Build Jigsaw Quick-Start World with Bach (inline)'
-      run: java doc/src/BuildJigsawQuickStartWorldWithBach.java
+
+    - name: 'Build Jigsaw Quick-Start World (jshell)'
+      working-directory: doc/project/JigsawQuickStart
+      run: jshell -R-Debug ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
