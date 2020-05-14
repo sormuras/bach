@@ -127,7 +127,7 @@ class Build {
             .setDestinationDirectory(base.classes("test"))
             .setModules(moduleNames)
             .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
-            .setPathsWhereToFindApplicationModules(List.of(base.thirdPartyModules()));
+            .setPathsWhereToFindApplicationModules(List.of(base.lib()));
     Bach.Project.Tuner.defaults(javac, Map.of("realm", "test"));
     return new Bach.Project.Realm("test", units, javac, List.of());
   }

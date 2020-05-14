@@ -123,12 +123,14 @@ public class Bach {
   }
   private Task buildSequence() {
     var tasks = new ArrayList<Task>();
+    tasks.add(new Task.CreateDirectories(project.base().lib()));
     tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.structure().realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());
     }
+    tasks.add(new Task.DeleteEmptyDirectory(project.base().lib()));
     return Task.sequence("Build Sequence", tasks);
   }
   private void execute(Task task) {
@@ -318,14 +320,11 @@ public class Bach {
       public Path path(String first, String... more) {
         return directory.resolve(Path.of(first, more));
       }
-      public Optional<Path> lib() {
-        return Files.isDirectory(path("lib")) ? Optional.of(path("lib")) : Optional.empty();
+      public Path lib() {
+        return path("lib");
       }
       public Path workspace(String first, String... more) {
         return workspace.resolve(Path.of(first, more));
-      }
-      public Path thirdPartyModules() {
-        return workspace("3rd-party-modules");
       }
       public Path api() {
         return workspace("api");
@@ -345,8 +344,7 @@ public class Bach {
       public List<Path> modulePaths(Iterable<String> realms) {
         var paths = new ArrayList<Path>();
         for (var realm : realms) paths.add(modules(realm));
-        lib().ifPresent(paths::add);
-        paths.add(thirdPartyModules());
+        paths.add(lib());
         return List.copyOf(paths);
       }
     }
@@ -670,15 +668,24 @@ public class Bach {
         }
       }
     }
+    public static class DeleteEmptyDirectory extends Task {
+      private final Path directory;
+      public DeleteEmptyDirectory(Path directory) {
+        super("Delete directory " + directory + " if it is empty", List.of());
+        this.directory = directory;
+      }
+      public void execute(Bach bach) throws Exception {
+        if (Files.notExists(directory)) return;
+        if (Paths.isEmpty(directory)) Files.deleteIfExists(directory);
+      }
+    }
     public static class ResolveMissingThirdPartyModules extends Task {
       public ResolveMissingThirdPartyModules() {
         super("Resolve missing 3rd-party modules", List.of());
       }
-      public void execute(Bach bach) throws Exception {
+      public void execute(Bach bach) {
         var project = bach.getProject();
         var library = project.structure().library();
-        var thirdPartyModules = project.base().thirdPartyModules();
-        Files.createDirectories(thirdPartyModules);
         class Transporter implements Consumer<Set<String>> {
           public void accept(Set<String> modules) {
             var resources = new Resources(bach.getHttpClient());
@@ -686,9 +693,10 @@ public class Bach {
               var raw = library.lookup().apply(module);
               if (raw == null) continue;
               try {
+                var lib = Files.createDirectories(project.base().lib());
                 var uri = URI.create(raw);
                 var name = module + ".jar";
-                var file = resources.copy(uri, thirdPartyModules.resolve(name));
+                var file = resources.copy(uri, lib.resolve(name));
                 var size = Files.size(file);
                 bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
               } catch (Exception e) {
@@ -1451,6 +1459,16 @@ public class Bach {
       var deque = new ArrayDeque<String>();
       path.forEach(name -> deque.addFirst(name.toString()));
       return deque;
+    }
+    public static boolean isEmpty(Path path) {
+      try {
+        if (Files.isRegularFile(path)) return Files.size(path) == 0L;
+        try (var stream = Files.list(path)) {
+          return stream.findAny().isEmpty();
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
     public static boolean isJavadocCommentAvailable(Path path) {
       try {
