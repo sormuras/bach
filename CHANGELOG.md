@@ -34,8 +34,9 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ### TODO
 
+- 🗄 Multi-Release modular JAR file support
 - ✔ Automated Checks: `ToolProvider` + JUnit Platform
-- More main modes: build, clean, help, info...
+- ⌨ More main modes: build, clean, help, info...
 - 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
 - 🧩 Locator looking up module-to-maven mappings from https://github.com/sormuras/modules
 
