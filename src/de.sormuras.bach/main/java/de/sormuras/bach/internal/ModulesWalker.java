@@ -66,7 +66,7 @@ public /*static*/ class ModulesWalker {
   }
 
   public Project.Structure newStructureWithSingleUnnamedRealm() {
-    var realms = List.of(newRealm("", moduleInfoFiles, false, List.of()));
+    var realms = List.of(newRealm("", moduleInfoFiles, false, true, List.of()));
     return new Project.Structure(Project.Library.of(), realms);
   }
 
@@ -89,24 +89,21 @@ public /*static*/ class ModulesWalker {
         throw new IllegalStateException(message.toString());
       }
     }
+
+    var main = newRealm("main", mainModuleInfoFiles, false, false, List.of());
+    var test = newRealm("test", testModuleInfoFiles, false, true, List.of(main));
+    var view = newRealm("test-preview", viewModuleInfoFiles, true, true, List.of(main, test));
+
     var realms = new ArrayList<Project.Realm>();
-    var main = newRealm("main", mainModuleInfoFiles, false, List.of());
-    if (!mainModuleInfoFiles.isEmpty()) {
-      realms.add(main);
-    }
-    var test = newRealm("test", testModuleInfoFiles, false, List.of(main));
-    if (!testModuleInfoFiles.isEmpty()) {
-      realms.add(test);
-    }
-    var view = newRealm("test-preview", viewModuleInfoFiles, true, List.of(main, test));
-    if (!viewModuleInfoFiles.isEmpty()) {
-      realms.add(view);
-    }
+    if (!main.units().isEmpty()) realms.add(main);
+    if (!test.units().isEmpty()) realms.add(test);
+    if (!view.units().isEmpty()) realms.add(view);
+
     return new Project.Structure(Project.Library.of(), realms);
   }
 
   public Project.Realm newRealm(
-      String realm, List<Path> moduleInfoFiles, boolean preview, List<Project.Realm> upstreams) {
+      String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
     var moduleNames = new TreeSet<String>();
     var moduleSourcePathPatterns = new ArrayList<String>();
     var units = new ArrayList<Project.Unit>();
@@ -188,6 +185,18 @@ public /*static*/ class ModulesWalker {
               String.format("Create custom runtime image with '%s' as launcher", launcher),
               new Task.DeleteDirectories(base.image()),
               jlink.toTask()));
+    }
+
+    if (test) {
+      for (var unit : units) {
+        var module = unit.name();
+        var jar = base.modules(realm).resolve(module + ".jar");
+        var modulePaths = new ArrayList<Path>();
+        modulePaths.add(jar);
+        modulePaths.addAll(base.modulePaths(namesOfUpstreams));
+        modulePaths.add(base.modules(realm));
+        tasks.add(new Task.RunTestModule(module, modulePaths));
+      }
     }
 
     return new Project.Realm(realm, units, javac, tasks);
