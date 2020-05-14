@@ -108,8 +108,10 @@ class ProjectTests {
       assertEquals(2, realms.size(), realms.toString());
       var main = realms.get(0);
       assertEquals("main", main.name());
+      assertEquals(2, main.units().size());
       var test = realms.get(1);
       assertEquals("test", test.name());
+      assertEquals(2, test.units().size());
     }
   }
 }
