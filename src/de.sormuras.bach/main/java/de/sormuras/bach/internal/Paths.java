@@ -38,6 +38,18 @@ public /*static*/ class Paths {
     return deque;
   }
 
+  /** Test for a regular file of size zero or an empty directory. */
+  public static boolean isEmpty(Path path) {
+    try {
+      if (Files.isRegularFile(path)) return Files.size(path) == 0L;
+      try (var stream = Files.list(path)) {
+        return stream.findAny().isEmpty();
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   public static boolean isJavadocCommentAvailable(Path path) {
     try {
       return Files.readString(path).contains("/**");
