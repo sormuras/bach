@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -644,6 +645,18 @@ public class Bach {
         bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
       }
     }
+    public static class RunTestModule extends Task {
+      private final String module;
+      private final List<Path> modulePaths;
+      public RunTestModule(String module, List<Path> modulePaths) {
+        this.module = module;
+        this.modulePaths = modulePaths;
+      }
+      public void execute(Bach bach) {
+        var test = Modules.findTestTool(module, modulePaths.toArray(Path[]::new));
+        test.ifPresent(tool -> bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr())));
+      }
+    }
     public static class CreateDirectories extends Task {
       private final Path directory;
       public CreateDirectories(Path directory) {
@@ -1132,6 +1145,20 @@ public class Bach {
       var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
     }
+    public static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
+      var roots = Set.of(module);
+      var finder = ModuleFinder.of(modulePaths);
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var parent = ClassLoader.getPlatformClassLoader();
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+      var layer = controller.layer();
+      var loader = layer.findLoader(module);
+      loader.setDefaultAssertionStatus(true);
+      var services = ServiceLoader.load(layer, ToolProvider.class);
+      var providers = services.stream().map(ServiceLoader.Provider::get);
+      return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
+    }
     public static ModuleDescriptor describe(Path info) {
       try {
         var module = describe(Files.readString(info));
@@ -1324,7 +1351,7 @@ public class Bach {
       return newStructureWithSingleUnnamedRealm();
     }
     public Project.Structure newStructureWithSingleUnnamedRealm() {
-      var realms = List.of(newRealm("", moduleInfoFiles, false, List.of()));
+      var realms = List.of(newRealm("", moduleInfoFiles, false, true, List.of()));
       return new Project.Structure(Project.Library.of(), realms);
     }
     public Project.Structure newStructureWithMainTestPreviewRealms() {
@@ -1346,23 +1373,17 @@ public class Bach {
           throw new IllegalStateException(message.toString());
         }
       }
+      var main = newRealm("main", mainModuleInfoFiles, false, false, List.of());
+      var test = newRealm("test", testModuleInfoFiles, false, true, List.of(main));
+      var view = newRealm("test-preview", viewModuleInfoFiles, true, true, List.of(main, test));
       var realms = new ArrayList<Project.Realm>();
-      var main = newRealm("main", mainModuleInfoFiles, false, List.of());
-      if (!mainModuleInfoFiles.isEmpty()) {
-        realms.add(main);
-      }
-      var test = newRealm("test", testModuleInfoFiles, false, List.of(main));
-      if (!testModuleInfoFiles.isEmpty()) {
-        realms.add(test);
-      }
-      var view = newRealm("test-preview", viewModuleInfoFiles, true, List.of(main, test));
-      if (!viewModuleInfoFiles.isEmpty()) {
-        realms.add(view);
-      }
+      if (!main.units().isEmpty()) realms.add(main);
+      if (!test.units().isEmpty()) realms.add(test);
+      if (!view.units().isEmpty()) realms.add(view);
       return new Project.Structure(Project.Library.of(), realms);
     }
     public Project.Realm newRealm(
-        String realm, List<Path> moduleInfoFiles, boolean preview, List<Project.Realm> upstreams) {
+        String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new ArrayList<String>();
       var units = new ArrayList<Project.Unit>();
@@ -1437,6 +1458,17 @@ public class Bach {
                 String.format("Create custom runtime image with '%s' as launcher", launcher),
                 new Task.DeleteDirectories(base.image()),
                 jlink.toTask()));
+      }
+      if (test) {
+        for (var unit : units) {
+          var module = unit.name();
+          var jar = base.modules(realm).resolve(module + ".jar");
+          var modulePaths = new ArrayList<Path>();
+          modulePaths.add(jar);
+          modulePaths.addAll(base.modulePaths(namesOfUpstreams));
+          modulePaths.add(base.modules(realm));
+          tasks.add(new Task.RunTestModule(module, modulePaths));
+        }
       }
       return new Project.Realm(realm, units, javac, tasks);
     }
