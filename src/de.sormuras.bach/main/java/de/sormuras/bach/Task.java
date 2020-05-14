@@ -145,11 +145,9 @@ public /*static*/ class Task {
     }
 
     @Override
-    public void execute(Bach bach) throws Exception {
+    public void execute(Bach bach) {
       var project = bach.getProject();
       var library = project.structure().library();
-      var thirdPartyModules = project.base().thirdPartyModules();
-      Files.createDirectories(thirdPartyModules);
       class Transporter implements Consumer<Set<String>> {
         @Override
         public void accept(Set<String> modules) {
@@ -158,9 +156,10 @@ public /*static*/ class Task {
             var raw = library.lookup().apply(module);
             if (raw == null) continue;
             try {
+              var lib = Files.createDirectories(project.base().lib());
               var uri = URI.create(raw);
               var name = module + ".jar";
-              var file = resources.copy(uri, thirdPartyModules.resolve(name));
+              var file = resources.copy(uri, lib.resolve(name));
               var size = Files.size(file);
               bach.getLogger().log(Level.INFO, "{0} ({1} bytes) << {2}", file, size, uri);
             } catch (Exception e) {
