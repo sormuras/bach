@@ -105,7 +105,7 @@ public /*static*/ class ModulesWalker {
   public Project.Realm newRealm(
       String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
     var moduleNames = new TreeSet<String>();
-    var moduleSourcePathPatterns = new ArrayList<String>();
+    var moduleSourcePathPatterns = new TreeSet<String>();
     var units = new ArrayList<Project.Unit>();
     var javadocCommentFound = false;
     for (var moduleInfoFile : moduleInfoFiles) {
@@ -148,7 +148,7 @@ public /*static*/ class ModulesWalker {
         new Javac()
             .setModules(moduleNames)
             .setVersionOfModulesThatAreBeingCompiled(info.version())
-            .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+            .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
             .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
             .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
             .setDestinationDirectory(base.classes(realm));
@@ -164,7 +164,7 @@ public /*static*/ class ModulesWalker {
           new Javadoc()
               .setDestinationDirectory(base.api())
               .setModules(moduleNames)
-              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+              .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
               .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
               .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
       tuner.tune(javadoc, context);
