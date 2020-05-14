@@ -78,7 +78,7 @@ public /*static*/ class Modules {
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
   }
 
-  public static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
+  public static List<ToolProvider> findToolProviders(String module, Path... modulePaths) {
     var roots = Set.of(module);
     var finder = ModuleFinder.of(modulePaths);
     var boot = ModuleLayer.boot();
@@ -89,8 +89,7 @@ public /*static*/ class Modules {
     var loader = layer.findLoader(module);
     loader.setDefaultAssertionStatus(true);
     var services = ServiceLoader.load(layer, ToolProvider.class);
-    var providers = services.stream().map(ServiceLoader.Provider::get);
-    return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
+    return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
   }
 
   /** Parse module definition from the given file. */

@@ -117,8 +117,26 @@ public /*static*/ class Task {
 
     @Override
     public void execute(Bach bach) {
-      var test = Modules.findTestTool(module, modulePaths.toArray(Path[]::new));
-      test.ifPresent(tool -> bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr())));
+      var tools = Modules.findToolProviders(module, modulePaths.toArray(Path[]::new));
+      for (var tool : tools) {
+        var toolLoader = tool.getClass().getClassLoader();
+        var currentThread = Thread.currentThread();
+        var currentContextLoader = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(toolLoader);
+        try {
+          if (tool.name().equals("test(" + module + ")"))
+            bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
+          if (tool.name().equals("junit"))
+            bach.execute(
+                tool,
+                new PrintWriter(getOut()),
+                new PrintWriter(getErr()),
+                "--select-module",
+                module);
+        } finally {
+          currentThread.setContextClassLoader(currentContextLoader);
+        }
+      }
     }
   }
 
