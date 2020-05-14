@@ -62,7 +62,8 @@ class Build {
             .setDestinationDirectory(base.classes("main"))
             .setModules(moduleNames)
             .setVersionOfModulesThatAreBeingCompiled(Bach.VERSION)
-            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath));
+            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
+            .setCompileForVirtualMachineVersion(11);
     Bach.Project.Tuner.defaults(javac, Map.of("realm", "main"));
 
     var javadoc =
