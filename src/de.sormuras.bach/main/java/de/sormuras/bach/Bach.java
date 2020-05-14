@@ -117,12 +117,14 @@ public class Bach {
 
   /*private*/ Task buildSequence() {
     var tasks = new ArrayList<Task>();
+    tasks.add(new Task.CreateDirectories(project.base().lib()));
     tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.structure().realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());
     }
+    tasks.add(new Task.DeleteEmptyDirectory(project.base().lib()));
     return Task.sequence("Build Sequence", tasks);
   }
 
