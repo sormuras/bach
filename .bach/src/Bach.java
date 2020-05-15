@@ -150,7 +150,7 @@ public class Bach {
         throw new Error(message, throwable);
       } finally {
         logbook.log(Level.DEBUG, task.getOut().toString().strip());
-        logbook.log(Level.WARNING, task.getErr().toString().strip());
+        logbook.log(Level.INFO, task.getErr().toString().strip());
       }
       return;
     }
@@ -1494,7 +1494,6 @@ public class Bach {
       if (preview) {
         javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
         javac.setEnablePreviewLanguageFeatures(true);
-        javac.getAdditionalArguments().add("-X" + "lint:-preview");
       }
       tuner.tune(javac, context);
       var tasks = new ArrayList<Task>();

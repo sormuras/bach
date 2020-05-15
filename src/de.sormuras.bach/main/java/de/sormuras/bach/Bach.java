@@ -142,7 +142,7 @@ public class Bach {
         throw new Error(message, throwable);
       } finally {
         logbook.log(Level.DEBUG, task.getOut().toString().strip());
-        logbook.log(Level.WARNING, task.getErr().toString().strip());
+        logbook.log(Level.INFO, task.getErr().toString().strip());
       }
       return;
     }
