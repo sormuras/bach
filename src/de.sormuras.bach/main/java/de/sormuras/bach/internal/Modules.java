@@ -20,6 +20,7 @@ package de.sormuras.bach.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
@@ -27,10 +28,12 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
@@ -78,18 +81,32 @@ public /*static*/ class Modules {
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
   }
 
-  public static List<ToolProvider> findToolProviders(String module, Path... modulePaths) {
-    var roots = Set.of(module);
-    var finder = ModuleFinder.of(modulePaths);
+  /** Return list of tool providers found by resolving the specified module. */
+  public static List<ToolProvider> findTools(String module, List<Path> modulePaths) {
     var boot = ModuleLayer.boot();
-    var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+    var roots = Set.of(module);
+    var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
     var parent = ClassLoader.getPlatformClassLoader();
-    var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
-    var layer = controller.layer();
-    var loader = layer.findLoader(module);
-    loader.setDefaultAssertionStatus(true);
-    var services = ServiceLoader.load(layer, ToolProvider.class);
-    return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
+    try {
+      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+      var layer = controller.layer();
+      var loader = layer.findLoader(module);
+      loader.setDefaultAssertionStatus(true);
+      var services = ServiceLoader.load(layer, ToolProvider.class);
+      return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
+    } catch (FindException exception) {
+      var message = new StringJoiner(System.lineSeparator());
+      message.add(exception.getMessage());
+      message.add("Module path:");
+      modulePaths.forEach(path -> message.add("\t" + path));
+      message.add("Finder finds module(s):");
+      finder.findAll().stream()
+          .sorted(Comparator.comparing(ModuleReference::descriptor))
+          .forEach(reference -> message.add("\t" + reference));
+      message.add("");
+      throw new RuntimeException(message.toString(), exception);
+    }
   }
 
   /** Parse module definition from the given file. */
