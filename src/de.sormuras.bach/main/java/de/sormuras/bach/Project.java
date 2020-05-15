@@ -362,8 +362,10 @@ public /*static*/ final class Project {
 
     private Base base = Base.of();
     private Info info = new Info("Project Title", Version.parse("1-ea"));
+    private Library library = Library.of();
     private Structure structure = new Structure(Library.of(), List.of());
     private Tuner tuner = Tuner::defaults;
+    private List<Path> walkModuleInfoFiles = List.of();
 
     public Project build() {
       return new Project(base, info, structure);
@@ -377,8 +379,16 @@ public /*static*/ final class Project {
       return info;
     }
 
+    public Library getLibrary() {
+      return library;
+    }
+
     public Tuner getTuner() {
       return tuner;
+    }
+
+    public List<Path> getWalkModuleInfoFiles() {
+      return walkModuleInfoFiles;
     }
 
     public Builder base(Base base) {
@@ -407,6 +417,11 @@ public /*static*/ final class Project {
       return this;
     }
 
+    public Builder library(Library library) {
+      this.library = library;
+      return this;
+    }
+
     public Builder structure(Structure structure) {
       this.structure = structure;
       return this;
@@ -414,6 +429,11 @@ public /*static*/ final class Project {
 
     public Builder tuner(Tuner tuner) {
       this.tuner = tuner;
+      return this;
+    }
+
+    public Builder walkModuleInfoFiles(List<Path> files) {
+      this.walkModuleInfoFiles = files;
       return this;
     }
   }

@@ -38,7 +38,10 @@ public /*static*/ class ModulesWalker {
   /** Walk given {@link Project.Builder}'s base directory tree and replace its structure. */
   public static Project.Builder walk(Project.Builder builder) {
     var base = builder.getBase().directory();
-    var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
+    var moduleInfoFiles =
+        builder.getWalkModuleInfoFiles().isEmpty()
+            ? Paths.find(List.of(base), Paths::isModuleInfoJavaFile)
+            : builder.getWalkModuleInfoFiles();
     if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
     var walker = new ModulesWalker(builder, moduleInfoFiles);
     return builder.structure(walker.newStructure());
@@ -46,12 +49,14 @@ public /*static*/ class ModulesWalker {
 
   private final Project.Base base;
   private final Project.Info info;
+  private final Project.Library library;
   private final Project.Tuner tuner;
   private final List<Path> moduleInfoFiles;
 
   public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
     this.base = builder.getBase();
     this.info = builder.getInfo();
+    this.library = builder.getLibrary();
     this.tuner = builder.getTuner();
     this.moduleInfoFiles = moduleInfoFiles;
   }
@@ -67,7 +72,7 @@ public /*static*/ class ModulesWalker {
 
   public Project.Structure newStructureWithSingleUnnamedRealm() {
     var realms = List.of(newRealm("", moduleInfoFiles, false, true, List.of()));
-    return new Project.Structure(Project.Library.of(), realms);
+    return new Project.Structure(library, realms);
   }
 
   public Project.Structure newStructureWithMainTestPreviewRealms() {
@@ -99,11 +104,15 @@ public /*static*/ class ModulesWalker {
     if (!test.units().isEmpty()) realms.add(test);
     if (!view.units().isEmpty()) realms.add(view);
 
-    return new Project.Structure(Project.Library.of(), realms);
+    return new Project.Structure(library, realms);
   }
 
   public Project.Realm newRealm(
-      String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
+      String realm,
+      List<Path> moduleInfoFiles,
+      boolean preview,
+      boolean test,
+      List<Project.Realm> upstreams) {
     var moduleNames = new TreeSet<String>();
     var moduleSourcePathPatterns = new TreeSet<String>();
     var units = new ArrayList<Project.Unit>();
@@ -155,6 +164,7 @@ public /*static*/ class ModulesWalker {
     if (preview) {
       javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
       javac.setEnablePreviewLanguageFeatures(true);
+      javac.getAdditionalArguments().add("-X" + "lint:-preview");
     }
     tuner.tune(javac, context);
 
