@@ -164,7 +164,6 @@ public /*static*/ class ModulesWalker {
     if (preview) {
       javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
       javac.setEnablePreviewLanguageFeatures(true);
-      javac.getAdditionalArguments().add("-X" + "lint:-preview");
     }
     tuner.tune(javac, context);
 
