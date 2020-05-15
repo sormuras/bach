@@ -21,6 +21,7 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.System.Logger;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
@@ -50,6 +51,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
@@ -649,12 +651,37 @@ public class Bach {
       private final String module;
       private final List<Path> modulePaths;
       public RunTestModule(String module, List<Path> modulePaths) {
+        super("Run tests for module " + module, List.of());
         this.module = module;
         this.modulePaths = modulePaths;
       }
       public void execute(Bach bach) {
-        var test = Modules.findTestTool(module, modulePaths.toArray(Path[]::new));
-        test.ifPresent(tool -> bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr())));
+        var currentThread = Thread.currentThread();
+        var currentContextLoader = currentThread.getContextClassLoader();
+        try {
+          for (var tool : Modules.findTools(module, modulePaths)) executeTool(bach, tool);
+        } finally {
+          currentThread.setContextClassLoader(currentContextLoader);
+        }
+      }
+      private void executeTool(Bach bach, ToolProvider tool) {
+        Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
+        if (tool.name().equals("test(" + module + ")")) {
+          bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
+          return;
+        }
+        if (tool.name().equals("junit")) {
+          var base = bach.getProject().base();
+          bach.execute(
+              tool,
+              new PrintWriter(getOut()),
+              new PrintWriter(getErr()),
+              "--select-module",
+              module,
+              "--disable-ansi-colors",
+              "--reports-dir",
+              base.workspace("junit-reports", module).toString());
+        }
       }
     }
     public static class CreateDirectories extends Task {
@@ -1145,19 +1172,31 @@ public class Bach {
       var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
       return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
     }
-    public static Optional<ToolProvider> findTestTool(String module, Path... modulePaths) {
-      var roots = Set.of(module);
-      var finder = ModuleFinder.of(modulePaths);
+    public static List<ToolProvider> findTools(String module, List<Path> modulePaths) {
       var boot = ModuleLayer.boot();
-      var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+      var roots = Set.of(module);
+      var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
       var parent = ClassLoader.getPlatformClassLoader();
-      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
-      var layer = controller.layer();
-      var loader = layer.findLoader(module);
-      loader.setDefaultAssertionStatus(true);
-      var services = ServiceLoader.load(layer, ToolProvider.class);
-      var providers = services.stream().map(ServiceLoader.Provider::get);
-      return providers.filter(provider -> provider.name().equals("test(" + module + ")")).findAny();
+      try {
+        var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+        var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+        var layer = controller.layer();
+        var loader = layer.findLoader(module);
+        loader.setDefaultAssertionStatus(true);
+        var services = ServiceLoader.load(layer, ToolProvider.class);
+        return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
+      } catch (FindException exception) {
+        var message = new StringJoiner(System.lineSeparator());
+        message.add(exception.getMessage());
+        message.add("Module path:");
+        modulePaths.forEach(path -> message.add("\t" + path));
+        message.add("Finder finds module(s):");
+        finder.findAll().stream()
+            .sorted(Comparator.comparing(ModuleReference::descriptor))
+            .forEach(reference -> message.add("\t" + reference));
+        message.add("");
+        throw new RuntimeException(message.toString(), exception);
+      }
     }
     public static ModuleDescriptor describe(Path info) {
       try {
@@ -1385,7 +1424,7 @@ public class Bach {
     public Project.Realm newRealm(
         String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
       var moduleNames = new TreeSet<String>();
-      var moduleSourcePathPatterns = new ArrayList<String>();
+      var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Project.Unit>();
       var javadocCommentFound = false;
       for (var moduleInfoFile : moduleInfoFiles) {
@@ -1423,7 +1462,7 @@ public class Bach {
           new Javac()
               .setModules(moduleNames)
               .setVersionOfModulesThatAreBeingCompiled(info.version())
-              .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+              .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
               .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
               .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
               .setDestinationDirectory(base.classes(realm));
@@ -1438,7 +1477,7 @@ public class Bach {
             new Javadoc()
                 .setDestinationDirectory(base.api())
                 .setModules(moduleNames)
-                .setPatternsWhereToFindSourceFiles(moduleSourcePathPatterns)
+                .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
                 .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
                 .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
         tuner.tune(javadoc, context);

@@ -28,6 +28,15 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
     > Calls `jlink` with the right arguments.
     Find binary assets in `bach/workspace/image/`.
 
+- ✔ Automated Checks
+
+    > Runs custom `ToolProvider`-based test programs named `test(${MODULE})`.
+    In-process.
+    Launches [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher) with the right arguments.
+    In-process.
+    Find reports in `.bach/workspace/junit-reports/`.
+    
+
 - 📋 Structured build **summary** with history
     > Stores latest summary in `.bach/workspace/summary.md`.
     Find a history of summary file in `.bach/workspace/summaries/`.
@@ -35,7 +44,6 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 ### TODO
 
 - 🗄 Multi-Release modular JAR file support
-- ✔ Automated Checks: `ToolProvider` + JUnit Platform
 - ⌨ More main modes: build, clean, help, info...
 - 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
 - 🧩 Locator looking up module-to-maven mappings from https://github.com/sormuras/modules
