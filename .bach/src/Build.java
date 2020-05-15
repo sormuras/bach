@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * Bach's own build program.
@@ -30,125 +28,35 @@ import java.util.stream.Collectors;
 class Build {
 
   public static void main(String... args) {
-    var base = Bach.Project.Base.of();
-    var library = Bach.Project.Library.of();
-    var realms = List.of(mainRealm(base), testRealm(base));
-    var project =
-        new Bach.Project(
-            Bach.Project.Base.of(),
-            new Bach.Project.Info(
-                "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
-                Bach.VERSION),
-            new Bach.Project.Structure(library, realms));
-    var bach = Bach.of(project);
+    var bach =
+        Bach.of(
+            project ->
+                project
+                    .title("\uD83C\uDFBC Bach.java")
+                    .version(Bach.VERSION)
+                    .walkModuleInfoFiles(
+                        List.of(
+                            Path.of("src/de.sormuras.bach/main/java/module-info.java"),
+                            Path.of("src/de.sormuras.bach/test/java-module/module-info.java"),
+                            Path.of("src/test.base/test/java/module-info.java"),
+                            Path.of("src/test.preview/test-preview/java/module-info.java")))
+                    .tuner(Build::tune)
+                    .library(
+                        new Bach.Project.Library(
+                            Set.of("org.junit.platform.console"), new Bach.ModulesMap()::get)));
     bach.build().assertSuccessful();
   }
 
-  static Bach.Project.Realm mainRealm(Bach.Project.Base base) {
-    var units =
-        List.of(
-            new Bach.Project.Unit(
-                Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
-                List.of(Path.of("src/de.sormuras.bach/main/java")),
-                List.of(
-                    createJar(
-                        base.modules("main").resolve("de.sormuras.bach.jar"),
-                        base.classes("main", "de.sormuras.bach")))));
-
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
-    var moduleSourcePath = "src/*/main/java".replace('/', File.separatorChar);
-    var javac =
-        new Bach.Javac()
-            .setDestinationDirectory(base.classes("main"))
-            .setModules(moduleNames)
-            .setVersionOfModulesThatAreBeingCompiled(Bach.VERSION)
-            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
-            .setCompileForVirtualMachineVersion(11);
-    Bach.Project.Tuner.defaults(javac, Map.of("realm", "main"));
-
-    var javadoc =
-        Bach.Task.sequence(
-            "Create API documentation",
-            List.of(
-                new Bach.Task.CreateDirectories(base.api()),
-                runTool(
-                    "javadoc",
-                    "--module",
-                    String.join(",", moduleNames),
-                    "--module-source-path",
-                    moduleSourcePath,
-                    "-quiet",
-                    "-encoding",
-                    "UTF-8",
-                    "-locale",
-                    "en",
-                    "-Xdoclint:-missing", // TODO Add missing javadoc elements.
-                    "-link",
-                    "https://docs.oracle.com/en/java/javase/11/docs/api",
-                    "-d",
-                    base.api())));
-    var jlink =
-        Bach.Task.sequence(
-            "Create custom runtime image",
-            List.of(
-                new Bach.Task.DeleteDirectories(base.image()),
-                runTool(
-                    "jlink",
-                    "--launcher",
-                    "bach=de.sormuras.bach/de.sormuras.bach.Main",
-                    "--add-modules",
-                    String.join(",", moduleNames),
-                    "--module-path",
-                    base.modules("main"),
-                    "--compress",
-                    "2",
-                    "--strip-debug",
-                    "--no-header-files",
-                    "--no-man-pages",
-                    "--output",
-                    base.image())));
-    return new Bach.Project.Realm("main", units, javac, List.of(javadoc, jlink));
-  }
-
-  static Bach.Project.Realm testRealm(Bach.Project.Base base) {
-    var units =
-        List.of(
-            new Bach.Project.Unit(
-                Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
-                List.of(Path.of("src/test.base/test/java")),
-                List.of(
-                    createJar(
-                        base.modules("test").resolve("test.base.jar"),
-                        base.classes("test", "test.base")))));
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
-    var moduleSourcePath = "src/*/test/java".replace('/', File.separatorChar);
-
-    var javac =
-        new Bach.Javac()
-            .setDestinationDirectory(base.classes("test"))
-            .setModules(moduleNames)
-            .setPatternsWhereToFindSourceFiles(List.of(moduleSourcePath))
-            .setPathsWhereToFindApplicationModules(List.of(base.lib()));
-    Bach.Project.Tuner.defaults(javac, Map.of("realm", "test"));
-    return new Bach.Project.Realm("test", units, javac, List.of());
-  }
-
-  static Bach.Task runTool(String name, Object... arguments) {
-    var tool = ToolProvider.findFirst(name).orElseThrow();
-    var args = new String[arguments.length];
-    for (int i = 0; i < args.length; i++) args[i] = arguments[i].toString();
-    return new Bach.Task.RunTool(name + " with " + args.length + " arguments", tool, args);
-  }
-
-  static Bach.Task createJar(Path jar, Path classes) {
-    var jarCreate = new Bach.Jar();
-    jarCreate.getAdditionalArguments().add("--create").add("--file", jar).add("-C", classes, ".");
-    var jarDescribe = new Bach.Jar();
-    jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
-    return Bach.Task.sequence(
-        "Create modular JAR file " + jar.getFileName(),
-        new Bach.Task.CreateDirectories(jar.getParent()),
-        jarCreate.toTask(),
-        jarDescribe.toTask());
+  private static void tune(Bach.Call tool, Map<String, String> context) {
+    if ("main".equals(context.get("realm"))) {
+      if (tool instanceof Bach.Javac) {
+        ((Bach.Javac) tool).setCompileForVirtualMachineVersion(11);
+      }
+      if (tool instanceof Bach.Javadoc) {
+        tool.getAdditionalArguments()
+            .add("-Xdoclint:-missing")
+            .add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
+      }
+    }
   }
 }
