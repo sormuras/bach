@@ -111,31 +111,39 @@ public /*static*/ class Task {
     private final List<Path> modulePaths;
 
     public RunTestModule(String module, List<Path> modulePaths) {
+      super("Run tests for module " + module, List.of());
       this.module = module;
       this.modulePaths = modulePaths;
     }
 
     @Override
     public void execute(Bach bach) {
-      var tools = Modules.findToolProviders(module, modulePaths.toArray(Path[]::new));
-      for (var tool : tools) {
-        var toolLoader = tool.getClass().getClassLoader();
-        var currentThread = Thread.currentThread();
-        var currentContextLoader = currentThread.getContextClassLoader();
-        currentThread.setContextClassLoader(toolLoader);
-        try {
-          if (tool.name().equals("test(" + module + ")"))
-            bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
-          if (tool.name().equals("junit"))
-            bach.execute(
-                tool,
-                new PrintWriter(getOut()),
-                new PrintWriter(getErr()),
-                "--select-module",
-                module);
-        } finally {
-          currentThread.setContextClassLoader(currentContextLoader);
-        }
+      var currentThread = Thread.currentThread();
+      var currentContextLoader = currentThread.getContextClassLoader();
+      try {
+        for (var tool : Modules.findTools(module, modulePaths)) executeTool(bach, tool);
+      } finally {
+        currentThread.setContextClassLoader(currentContextLoader);
+      }
+    }
+
+    private void executeTool(Bach bach, ToolProvider tool) {
+      Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
+      if (tool.name().equals("test(" + module + ")")) {
+        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
+        return;
+      }
+      if (tool.name().equals("junit")) {
+        var base = bach.getProject().base();
+        bach.execute(
+            tool,
+            new PrintWriter(getOut()),
+            new PrintWriter(getErr()),
+            "--select-module",
+            module,
+            "--disable-ansi-colors",
+            "--reports-dir",
+            base.workspace("junit-reports", module).toString());
       }
     }
   }
