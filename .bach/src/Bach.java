@@ -483,8 +483,10 @@ public class Bach {
     public static class Builder {
       private Base base = Base.of();
       private Info info = new Info("Project Title", Version.parse("1-ea"));
+      private Library library = Library.of();
       private Structure structure = new Structure(Library.of(), List.of());
       private Tuner tuner = Tuner::defaults;
+      private List<Path> walkModuleInfoFiles = List.of();
       public Project build() {
         return new Project(base, info, structure);
       }
@@ -494,8 +496,14 @@ public class Bach {
       public Info getInfo() {
         return info;
       }
+      public Library getLibrary() {
+        return library;
+      }
       public Tuner getTuner() {
         return tuner;
+      }
+      public List<Path> getWalkModuleInfoFiles() {
+        return walkModuleInfoFiles;
       }
       public Builder base(Base base) {
         this.base = base;
@@ -517,12 +525,20 @@ public class Bach {
         this.info = info;
         return this;
       }
+      public Builder library(Library library) {
+        this.library = library;
+        return this;
+      }
       public Builder structure(Structure structure) {
         this.structure = structure;
         return this;
       }
       public Builder tuner(Tuner tuner) {
         this.tuner = tuner;
+        return this;
+      }
+      public Builder walkModuleInfoFiles(List<Path> files) {
+        this.walkModuleInfoFiles = files;
         return this;
       }
     }
@@ -1367,18 +1383,23 @@ public class Bach {
   public static class ModulesWalker {
     public static Project.Builder walk(Project.Builder builder) {
       var base = builder.getBase().directory();
-      var moduleInfoFiles = Paths.find(List.of(base), Paths::isModuleInfoJavaFile);
+      var moduleInfoFiles =
+          builder.getWalkModuleInfoFiles().isEmpty()
+              ? Paths.find(List.of(base), Paths::isModuleInfoJavaFile)
+              : builder.getWalkModuleInfoFiles();
       if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
       var walker = new ModulesWalker(builder, moduleInfoFiles);
       return builder.structure(walker.newStructure());
     }
     private final Project.Base base;
     private final Project.Info info;
+    private final Project.Library library;
     private final Project.Tuner tuner;
     private final List<Path> moduleInfoFiles;
     public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
       this.base = builder.getBase();
       this.info = builder.getInfo();
+      this.library = builder.getLibrary();
       this.tuner = builder.getTuner();
       this.moduleInfoFiles = moduleInfoFiles;
     }
@@ -1391,7 +1412,7 @@ public class Bach {
     }
     public Project.Structure newStructureWithSingleUnnamedRealm() {
       var realms = List.of(newRealm("", moduleInfoFiles, false, true, List.of()));
-      return new Project.Structure(Project.Library.of(), realms);
+      return new Project.Structure(library, realms);
     }
     public Project.Structure newStructureWithMainTestPreviewRealms() {
       var mainModuleInfoFiles = new ArrayList<Path>();
@@ -1419,10 +1440,14 @@ public class Bach {
       if (!main.units().isEmpty()) realms.add(main);
       if (!test.units().isEmpty()) realms.add(test);
       if (!view.units().isEmpty()) realms.add(view);
-      return new Project.Structure(Project.Library.of(), realms);
+      return new Project.Structure(library, realms);
     }
     public Project.Realm newRealm(
-        String realm, List<Path> moduleInfoFiles, boolean preview, boolean test, List<Project.Realm> upstreams) {
+        String realm,
+        List<Path> moduleInfoFiles,
+        boolean preview,
+        boolean test,
+        List<Project.Realm> upstreams) {
       var moduleNames = new TreeSet<String>();
       var moduleSourcePathPatterns = new TreeSet<String>();
       var units = new ArrayList<Project.Unit>();
@@ -1469,6 +1494,7 @@ public class Bach {
       if (preview) {
         javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
         javac.setEnablePreviewLanguageFeatures(true);
+        javac.getAdditionalArguments().add("-X" + "lint:-preview");
       }
       tuner.tune(javac, context);
       var tasks = new ArrayList<Task>();
