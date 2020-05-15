@@ -2,6 +2,7 @@
   <configuration default="false" name="Build Bach" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="Build" />
     <module name="bach" />
+    <option name="VM_PARAMETERS" value="--enable-preview" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

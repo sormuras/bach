@@ -19,7 +19,7 @@ jobs:
     - name: 'Emit version of JShell (trigger creation of user''s preferences directory)'
       run: jshell --version
     - name: 'Build Bach.java'
-      run: jshell -R-Debug build.jsh
+      run: jshell --enable-preview -R-Debug build.jsh
     - name: 'Upload build artifact'
       uses: actions/upload-artifact@v2
       with:
