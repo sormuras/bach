@@ -6,7 +6,48 @@
 
 Use Java source to build your modular Java project.
 
-![Soon...](https://www.123gif.de/gifs/underconstruction/underconstruction-0205.gif)
+## Features
+
+- ☕ **Java**, pristine Java
+
+    > JDK 11+ required.
+    Write custom build programs in Java (no XML, YML, Z...).
+    Java modules declarations define dependencies.
+    Missing 3<sup>rd</sup>-party modules are resolved recursively.
+
+- 🚀 **Zero-installation** build mode
+
+    > `jshell https://sormuras.de/bach-build` - a copy of [bach-build.jsh](src/bach/bach-build.jsh)
+
+- 📚 **API** documentation
+
+    > Calls `javadoc` with the right arguments.
+    Find generated HTML pages in `bach/workspace/api/`.
+
+- 💾 Custom runtime **image**
+
+    > Calls `jlink` with the right arguments.
+    Find binary assets in `bach/workspace/image/`.
+
+- ✔ Automated Checks: **Test** program and JUnit Platform support
+
+    > Runs custom `ToolProvider`-based test programs named `test(${MODULE})`.
+    In-process.
+    Launches [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher) with the right arguments.
+    In-process.
+    Find reports in `.bach/workspace/junit-reports/`.
+
+- 📋 Structured build **summary** with history
+
+    > Stores latest summary as `.bach/workspace/summary.md`.
+    Find a collection summary files from previous builds in `.bach/workspace/summaries/`.
+
+### TODO
+
+- ⌨ More main modes: `clean`, `help`, `info`...
+- 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
+- 🗄 Multi-Release modular JAR file support
+- 🧩 Locator looking up module-to-maven mappings from [sormuras/modules](https://github.com/sormuras/modules)
 
 # install-jdk.sh
 

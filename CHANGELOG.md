@@ -6,48 +6,7 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
-### Added
-- ☕ **Java**, pristine Java
-
-    > JDK 11+ required.
-    Write custom build programs in Java (no XML, YML, Z...).
-    Java modules declarations define dependencies.
-    Missing 3<sup>rd</sup>-party modules are resolved recursively.
-
-- 🚀 **Zero-installation** build mode
-
-    > `jshell https://sormuras.de/bach-build` - a copy of [bach-build.jsh](src/bach/bach-build.jsh)
-
-- 📚 **API** documentation
-
-    > Calls `javadoc` with the right arguments.
-    Find generated HTML pages in `bach/workspace/api/`.
-
-- 💾 Custom runtime **image**
-
-    > Calls `jlink` with the right arguments.
-    Find binary assets in `bach/workspace/image/`.
-
-- ✔ Automated Checks: **Test** program and JUnit Platform support
-
-    > Runs custom `ToolProvider`-based test programs named `test(${MODULE})`.
-    In-process.
-    Launches [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher) with the right arguments.
-    In-process.
-    Find reports in `.bach/workspace/junit-reports/`.
-    
-
-- 📋 Structured build **summary** with history
-
-    > Stores latest summary as `.bach/workspace/summary.md`.
-    Find the history of summary files in `.bach/workspace/summaries/`.
-
-### TODO
-
-- 🗄 Multi-Release modular JAR file support
-- ⌨ More main modes: build, clean, help, info...
-- 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
-- 🧩 Locator looking up module-to-maven mappings from https://github.com/sormuras/modules
+_In progress..._
 
 ## Version [2.1] released 2020-02-08
 
