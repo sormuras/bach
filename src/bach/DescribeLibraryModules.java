@@ -32,30 +32,46 @@ class DescribeLibraryModules {
     var modules = new DescribeLibraryModules();
     modules.mapASM("8.0.1");
     modules.mapByteBuddy("1.10.10");
+    modules.mapJavaFX("14.0.1");
     modules.mapJUnitPlatform("1.7.0-M1");
     modules.mapJUnitJupiter("5.7.0-M1");
     modules.mapJUnitVintage("5.7.0-M1");
     modules.mapVariousArtists();
-    modules.map.forEach((module, uri) -> System.out.printf("put(\"%s\", \"%s\");%n", module, uri));
+    modules.map.forEach((module, code) -> System.out.printf("put(\"%s\", %s);%n", module, code));
   }
 
   final HttpClient client = HttpClient.newHttpClient();
   final boolean fragment = false;
   final Map<String, String> map = new TreeMap<>();
 
-  void map(String module, String gav) throws Exception {
+  void map(String module, String gav, String... classifiers) throws Exception {
     var split = gav.split(":");
     var group = split[0];
     var artifact = split[1];
     var version = split[2];
-    var uri = central(group, artifact, version);
-    var fragments = new LinkedHashMap<String, String>();
-    if (fragment) {
-      fragments.put("size", head(uri).headers().firstValue("Content-Length").orElseThrow());
-      fragments.put("md5", read(URI.create(uri.toString() + ".md5")));
+    if (classifiers.length == 0) {
+      var uri = central(group, artifact, version, "");
+      var fragments = new LinkedHashMap<String, String>();
+      if (fragment) {
+        fragments.put("size", head(uri).headers().firstValue("Content-Length").orElseThrow());
+        fragments.put("md5", read(URI.create(uri.toString() + ".md5")));
+      }
+      var value = uri.toString() + (fragments.isEmpty() ? "" : '#' + fragments.toString());
+      map.put(module, '"' + value + '"');
+      return;
     }
-    var value = uri.toString() + (fragments.isEmpty() ? "" : '#' + fragments.toString());
-    map.put(module, value);
+    var joiner = new StringJoiner(", ");
+    for (var classifier : classifiers) {
+      var uri = central(group, artifact, version, classifier);
+      var fragments = new LinkedHashMap<String, String>();
+      if (fragment) {
+        fragments.put("size", head(uri).headers().firstValue("Content-Length").orElseThrow());
+        fragments.put("md5", read(URI.create(uri.toString() + ".md5")));
+      }
+      var value = uri.toString() + (fragments.isEmpty() ? "" : '#' + fragments.toString());
+      joiner.add('"' + value + '"');
+    }
+    map.put(module, "platform(" + joiner.toString() + ')');
   }
 
   void mapVariousArtists() throws Exception {
@@ -86,6 +102,20 @@ class DescribeLibraryModules {
   void mapByteBuddy(String version) throws Exception {
     map("net.bytebuddy", "net.bytebuddy:byte-buddy:" + version);
     map("net.bytebuddy.agent", "net.bytebuddy:byte-buddy-agent:" + version);
+  }
+
+  void mapJavaFX(String version) throws Exception {
+    mapJavaFX("base", version);
+    mapJavaFX("controls", version);
+    mapJavaFX("fxml", version);
+    mapJavaFX("graphics", version);
+    mapJavaFX("media", version);
+    mapJavaFX("swing", version);
+    mapJavaFX("web", version);
+  }
+
+  void mapJavaFX(String suffix, String version) throws Exception {
+    map("javafx." + suffix, "org.openjfx:javafx-" + suffix + ":" + version, "linux", "mac", "win");
   }
 
   void mapJUnitJupiter(String version) throws Exception {
@@ -132,9 +162,9 @@ class DescribeLibraryModules {
     return client.send(request.build(), HttpResponse.BodyHandlers.ofString()).body();
   }
 
-  static URI central(String group, String artifact, String version) {
+  static URI central(String group, String artifact, String version, String classifier) {
     var CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
-    return maven(CENTRAL_REPOSITORY, group, artifact, version, "");
+    return maven(CENTRAL_REPOSITORY, group, artifact, version, classifier);
   }
 
   static URI maven(String repository, String g, String a, String v, String classifier) {
