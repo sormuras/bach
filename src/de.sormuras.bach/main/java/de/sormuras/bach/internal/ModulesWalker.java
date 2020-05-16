@@ -24,6 +24,7 @@ import de.sormuras.bach.call.Jar;
 import de.sormuras.bach.call.Javac;
 import de.sormuras.bach.call.Javadoc;
 import de.sormuras.bach.call.Jlink;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -124,6 +125,11 @@ public /*static*/ class ModulesWalker {
       var module = descriptor.name();
       moduleNames.add(module);
       moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
+      var infoParent = moduleInfoFile.getParent();
+      var javaSibling = infoParent.resolveSibling("java");
+      var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
+      if (javaPresent)
+        moduleSourcePathPatterns.add(Modules.modulePatternForm(javaSibling, descriptor.name()));
 
       var classes = base.classes(realm, module);
       var modules = base.modules(realm);
@@ -145,9 +151,10 @@ public /*static*/ class ModulesWalker {
               new Task.CreateDirectories(jar.getParent()),
               jarCreate.toTask(),
               jarDescribe.toTask());
-
-      var parent = moduleInfoFile.getParent();
-      units.add(new Project.Unit(descriptor, List.of(parent), List.of(task)));
+      var sourcePaths = new ArrayList<Path>();
+      sourcePaths.add(infoParent);
+      if (javaPresent) sourcePaths.add(javaSibling);
+      units.add(new Project.Unit(descriptor, sourcePaths, List.of(task)));
     }
 
     var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
