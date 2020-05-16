@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.internal;
 
+import de.sormuras.bach.Call;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.Task;
 import de.sormuras.bach.call.Jar;
@@ -184,9 +185,12 @@ public /*static*/ class ModulesWalker {
     if (mainModule.isPresent()) {
       var jlink =
           new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(base.modules(realm));
+      modulePaths.addAll(base.modulePaths(namesOfUpstreams));
       var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
       var arguments = jlink.getAdditionalArguments();
-      arguments.add("--module-path", base.modules(realm));
+      arguments.add("--module-path", Call.join(modulePaths));
       arguments.add("--launcher", launcher + '=' + mainModule.get());
       tuner.tune(jlink, context);
       tasks.add(
