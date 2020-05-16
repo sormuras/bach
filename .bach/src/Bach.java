@@ -1241,7 +1241,14 @@ public class Bach {
       return builder;
     }
     public static String modulePatternForm(Path info, String module) {
-      var pattern = info.normalize().getParent().toString().replace(module, "*");
+      var deque = new ArrayDeque<String>();
+      for (var element : info.normalize()) {
+        var name = element.toString();
+        if (name.equals("module-info.java")) continue;
+        deque.addLast(name.equals(module) ? "*" : name);
+      }
+      var pattern = String.join(File.separator, deque);
+      if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
       if (pattern.equals("*")) return ".";
       if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
       if (pattern.startsWith("*")) return "." + File.separator + pattern;
@@ -1269,7 +1276,53 @@ public class Bach {
   }
   public static class ModulesMap extends TreeMap<String, String> {
     private static final long serialVersionUID = -7978021121082640440L;
+    public static String platform(String linux, String mac, String windows) {
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      return os.contains("win") ? windows : os.contains("mac") ? mac : linux;
+    }
     public ModulesMap() {
+      put(
+          "javafx.base",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-base/14.0.1/javafx-base-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-base/14.0.1/javafx-base-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-base/14.0.1/javafx-base-14.0.1-win.jar"));
+      put(
+          "javafx.controls",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-controls/14.0.1/javafx-controls-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-controls/14.0.1/javafx-controls-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-controls/14.0.1/javafx-controls-14.0.1-win.jar"));
+      put(
+          "javafx.fxml",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-fxml/14.0.1/javafx-fxml-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-fxml/14.0.1/javafx-fxml-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-fxml/14.0.1/javafx-fxml-14.0.1-win.jar"));
+      put(
+          "javafx.graphics",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-graphics/14.0.1/javafx-graphics-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-graphics/14.0.1/javafx-graphics-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-graphics/14.0.1/javafx-graphics-14.0.1-win.jar"));
+      put(
+          "javafx.media",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-media/14.0.1/javafx-media-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-media/14.0.1/javafx-media-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-media/14.0.1/javafx-media-14.0.1-win.jar"));
+      put(
+          "javafx.swing",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-swing/14.0.1/javafx-swing-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-swing/14.0.1/javafx-swing-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-swing/14.0.1/javafx-swing-14.0.1-win.jar"));
+      put(
+          "javafx.web",
+          platform(
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-web/14.0.1/javafx-web-14.0.1-linux.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-web/14.0.1/javafx-web-14.0.1-mac.jar",
+              "https://repo.maven.apache.org/maven2/org/openjfx/javafx-web/14.0.1/javafx-web-14.0.1-win.jar"));
       put("junit", "https://repo.maven.apache.org/maven2/junit/junit/4.13/junit-4.13.jar");
       put(
           "net.bytebuddy",
@@ -1458,6 +1511,11 @@ public class Bach {
         var module = descriptor.name();
         moduleNames.add(module);
         moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
+        var infoParent = moduleInfoFile.getParent();
+        var javaSibling = infoParent.resolveSibling("java");
+        var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
+        if (javaPresent)
+          moduleSourcePathPatterns.add(Modules.modulePatternForm(javaSibling, descriptor.name()));
         var classes = base.classes(realm, module);
         var modules = base.modules(realm);
         var jar = modules.resolve(module + ".jar");
@@ -1477,8 +1535,10 @@ public class Bach {
                 new Task.CreateDirectories(jar.getParent()),
                 jarCreate.toTask(),
                 jarDescribe.toTask());
-        var parent = moduleInfoFile.getParent();
-        units.add(new Project.Unit(descriptor, List.of(parent), List.of(task)));
+        var sourcePaths = new ArrayList<Path>();
+        sourcePaths.add(infoParent);
+        if (javaPresent) sourcePaths.add(javaSibling);
+        units.add(new Project.Unit(descriptor, sourcePaths, List.of(task)));
       }
       var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
       var patchesToUpstreams = patches(units, upstreams);
@@ -1512,9 +1572,12 @@ public class Bach {
       if (mainModule.isPresent()) {
         var jlink =
             new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
+        var modulePaths = new ArrayList<Path>();
+        modulePaths.add(base.modules(realm));
+        modulePaths.addAll(base.modulePaths(namesOfUpstreams));
         var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
         var arguments = jlink.getAdditionalArguments();
-        arguments.add("--module-path", base.modules(realm));
+        arguments.add("--module-path", Call.join(modulePaths));
         arguments.add("--launcher", launcher + '=' + mainModule.get());
         tuner.tune(jlink, context);
         tasks.add(
