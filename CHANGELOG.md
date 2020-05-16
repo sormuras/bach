@@ -16,7 +16,7 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 - 🚀 **Zero-installation** build mode
 
-    > `jshell https://sormuras.de/bach-build` ↔ [bach-build.jsh](src/bach/bach-build.jsh)
+    > `jshell https://sormuras.de/bach-build` - a copy of [bach-build.jsh](src/bach/bach-build.jsh)
 
 - 📚 **API** documentation
 
@@ -28,7 +28,7 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
     > Calls `jlink` with the right arguments.
     Find binary assets in `bach/workspace/image/`.
 
-- ✔ Automated Checks
+- ✔ Automated Checks: **Test** program and JUnit Platform support
 
     > Runs custom `ToolProvider`-based test programs named `test(${MODULE})`.
     In-process.
@@ -38,8 +38,9 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
     
 
 - 📋 Structured build **summary** with history
-    > Stores latest summary in `.bach/workspace/summary.md`.
-    Find a history of summary file in `.bach/workspace/summaries/`.
+
+    > Stores latest summary as `.bach/workspace/summary.md`.
+    Find the history of summary files in `.bach/workspace/summaries/`.
 
 ### TODO
 
