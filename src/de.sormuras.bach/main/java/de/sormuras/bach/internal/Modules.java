@@ -28,6 +28,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -143,7 +144,14 @@ public /*static*/ class Modules {
 
   /** Return the module-pattern form as specified by the {@code --module-source-path} option. */
   public static String modulePatternForm(Path info, String module) {
-    var pattern = info.normalize().getParent().toString().replace(module, "*");
+    var deque = new ArrayDeque<String>();
+    for (var element : info.normalize()) {
+      var name = element.toString();
+      if (name.equals("module-info.java")) continue;
+      deque.addLast(name.equals(module) ? "*" : name);
+    }
+    var pattern = String.join(File.separator, deque);
+    if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
     if (pattern.equals("*")) return ".";
     if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
     if (pattern.startsWith("*")) return "." + File.separator + pattern;

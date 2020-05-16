@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.UncheckedIOException;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
 import java.lang.module.ModuleDescriptor.Version;
@@ -43,6 +44,13 @@ class ModulesTests {
 
   @Nested
   class ModuleSourcePathOption {
+    @Test
+    void modulePatternFormFromPathWithoutModulesNameFails() {
+      var path = Path.of("a/b/c/module-info.java");
+      var exception = assertThrows(FindException.class, () -> Modules.modulePatternForm(path, "d"));
+      assertEquals("Name 'd' not found: " + path, exception.getMessage());
+    }
+
     @ParameterizedTest
     @CsvSource({
       ".               , foo/module-info.java",
