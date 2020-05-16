@@ -24,6 +24,7 @@ import de.sormuras.bach.call.Jar;
 import de.sormuras.bach.call.Javac;
 import de.sormuras.bach.call.Javadoc;
 import de.sormuras.bach.call.Jlink;
+import java.lang.module.FindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -117,6 +118,7 @@ public /*static*/ class ModulesWalker {
       List<Project.Realm> upstreams) {
     var moduleNames = new TreeSet<String>();
     var moduleSourcePathPatterns = new TreeSet<String>();
+    var moduleSourcePathsPerModules = new TreeMap<String, List<Path>>();
     var units = new ArrayList<Project.Unit>();
     var javadocCommentFound = false;
     for (var moduleInfoFile : moduleInfoFiles) {
@@ -124,12 +126,20 @@ public /*static*/ class ModulesWalker {
       var descriptor = Modules.describe(moduleInfoFile);
       var module = descriptor.name();
       moduleNames.add(module);
-      moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
+
       var infoParent = moduleInfoFile.getParent();
       var javaSibling = infoParent.resolveSibling("java");
       var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
-      if (javaPresent)
-        moduleSourcePathPatterns.add(Modules.modulePatternForm(javaSibling, descriptor.name()));
+      var sourcePaths = new ArrayList<Path>();
+      sourcePaths.add(infoParent);
+      if (javaPresent) sourcePaths.add(javaSibling);
+      try {
+        moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
+        if (javaPresent)
+          moduleSourcePathPatterns.add(Modules.modulePatternForm(javaSibling, descriptor.name()));
+      } catch (FindException e) {
+        moduleSourcePathsPerModules.put(module, sourcePaths);
+      }
 
       var classes = base.classes(realm, module);
       var modules = base.modules(realm);
@@ -151,9 +161,7 @@ public /*static*/ class ModulesWalker {
               new Task.CreateDirectories(jar.getParent()),
               jarCreate.toTask(),
               jarDescribe.toTask());
-      var sourcePaths = new ArrayList<Path>();
-      sourcePaths.add(infoParent);
-      if (javaPresent) sourcePaths.add(javaSibling);
+
       units.add(new Project.Unit(descriptor, sourcePaths, List.of(task)));
     }
 
@@ -166,6 +174,7 @@ public /*static*/ class ModulesWalker {
             .setModules(moduleNames)
             .setVersionOfModulesThatAreBeingCompiled(info.version())
             .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
+            .setPathsWhereToFindMoreAssetsPerModule(moduleSourcePathsPerModules)
             .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
             .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
             .setDestinationDirectory(base.classes(realm));
@@ -182,6 +191,7 @@ public /*static*/ class ModulesWalker {
               .setDestinationDirectory(base.api())
               .setModules(moduleNames)
               .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
+              .setPathsWhereToFindMoreAssetsPerModule(moduleSourcePathsPerModules)
               .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
               .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
       tuner.tune(javadoc, context);
