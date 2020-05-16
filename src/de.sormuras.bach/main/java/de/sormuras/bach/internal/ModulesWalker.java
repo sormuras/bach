@@ -174,9 +174,9 @@ public /*static*/ class ModulesWalker {
             .setModules(moduleNames)
             .setVersionOfModulesThatAreBeingCompiled(info.version())
             .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
-            .setPathsWhereToFindMoreAssetsPerModule(moduleSourcePathsPerModules)
-            .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
+            .setPathsWhereToFindSourceFiles(moduleSourcePathsPerModules)
             .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
+            .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
             .setDestinationDirectory(base.classes(realm));
     if (preview) {
       javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
@@ -191,9 +191,9 @@ public /*static*/ class ModulesWalker {
               .setDestinationDirectory(base.api())
               .setModules(moduleNames)
               .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
-              .setPathsWhereToFindMoreAssetsPerModule(moduleSourcePathsPerModules)
-              .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
-              .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams);
+              .setPathsWhereToFindSourceFiles(moduleSourcePathsPerModules)
+              .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
+              .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams));
       tuner.tune(javadoc, context);
       tasks.add(javadoc.toTask());
     }
