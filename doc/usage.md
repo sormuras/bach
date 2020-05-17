@@ -26,3 +26,66 @@ Namespace uses `Bach.` prefix
 
 Mount modular `de.sormuras.bach@${VERSION}.jar`.
 Use its API directly in your modular build program.
+
+### API
+
+#### Bach API
+
+```java
+var bach = new Bach(/*project, http client supplier, ...*/);
+
+bach.build();
+// TODO bach.clean();
+// TODO bach.erase();
+// TODO bach.help();
+// TODO bach.info();
+```
+
+#### Creating a new Project instance
+
+##### Project
+
+```java
+var project = new Project(
+        new Base(/*directories, folders, files, ...*/),
+        new Info(/*title, version, ...*/)
+        // here be more immutable component values...
+    );
+
+Bach.of(project).build().assertSuccessful();
+```
+
+##### Project Builder
+
+A Builder collects custom components and creates a Project instance.
+A Builder provides convenient setters accepting basic types: e.g. `String` instead of `Path`.
+
+```java
+var builder = new Project.Builder()
+    .title("Here be dragons...")
+    .version("47.11");
+
+var project = builder.newProject();
+
+Bach.of(project).build().assertSuccessful();
+```
+
+##### Project Builder Builder
+
+A Walker parses a directory and creates a Builder instance -- a builder builder.
+A Walker is customizable like a builder.
+
+```java
+var walker = new Project.Walker()
+    .base(Path.of(""))
+    .limitDepth(5)
+    .limitModules("foo", "bar");
+
+var builder = walker.newBuilder()
+    .title("Here be dragons...")
+    .version("47.11");
+
+var project = builder.newProject();
+
+Bach.of(project).build().assertSuccessful();
+```
