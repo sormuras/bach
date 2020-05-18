@@ -54,7 +54,8 @@ public /*static*/ class Call {
   public String[] toArguments() {
     var arguments = new Arguments();
     addConfiguredArguments(arguments);
-    return arguments.add(getAdditionalArguments()).toStringArray();
+    arguments.list.addAll(additionalArguments.list);
+    return arguments.toStringArray();
   }
 
   protected void addConfiguredArguments(Arguments arguments) {}
@@ -78,11 +79,6 @@ public /*static*/ class Call {
 
     public Arguments add(String key, Object first, Object second) {
       return add(key).add(first).add(second);
-    }
-
-    public Arguments add(Arguments arguments) {
-      list.addAll(arguments.list);
-      return this;
     }
 
     public String[] toStringArray() {
