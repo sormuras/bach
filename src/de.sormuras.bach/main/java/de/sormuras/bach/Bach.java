@@ -108,7 +108,7 @@ public class Bach {
     var tasks = new ArrayList<Task>();
     tasks.add(new Task.CreateDirectories(project.base().lib()));
     tasks.add(new Task.ResolveMissingThirdPartyModules());
-    for (var realm : project.structure().realms()) {
+    for (var realm : project.realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());

@@ -208,7 +208,7 @@ public /*static*/ class Task {
     @Override
     public void execute(Bach bach) {
       var project = bach.getProject();
-      var library = project.structure().library();
+      var library = project.library();
       class Transporter implements Consumer<Set<String>> {
         @Override
         public void accept(Set<String> modules) {

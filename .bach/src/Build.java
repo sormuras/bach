@@ -31,17 +31,15 @@ class Build {
 
   public static void main(String... args) {
     var base = Bach.Project.Base.of();
-    var realms = List.of(mainRealm(base), testRealm(base));
     var project =
         new Bach.Project(
-            Bach.Project.Base.of(),
+            base,
             new Bach.Project.Info(
                 "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools",
                 Bach.VERSION),
-            new Bach.Project.Structure(
-                new Bach.Project.Library(
-                    Set.of("org.junit.platform.console"), new Bach.ModulesMap()::get),
-                realms));
+            new Bach.Project.Library(
+                Set.of("org.junit.platform.console"), new Bach.ModulesMap()::get),
+            List.of(mainRealm(base), testRealm(base)));
     var bach = Bach.of(project);
     bach.build().assertSuccessful();
   }

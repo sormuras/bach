@@ -42,8 +42,11 @@ class ProjectTests {
     assertEquals(Path.of(".bach/workspace/image"), base.image());
     assertEquals(Path.of(".bach/workspace/modules/realm"), base.modules("realm"));
     var info = project.info();
+    assertEquals("Zero", info.title());
     assertEquals("0", info.version().toString());
-    var structure = project.structure();
-    assertTrue(structure.realms().isEmpty());
+    // library
+    assertTrue(project.library().required().isEmpty());
+    // realms
+    assertTrue(project.realms().isEmpty());
   }
 }

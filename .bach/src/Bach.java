@@ -121,7 +121,7 @@ public class Bach {
     var tasks = new ArrayList<Task>();
     tasks.add(new Task.CreateDirectories(project.base().lib()));
     tasks.add(new Task.ResolveMissingThirdPartyModules());
-    for (var realm : project.structure().realms()) {
+    for (var realm : project.realms()) {
       tasks.add(realm.javac().toTask());
       for (var unit : realm.units()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());
@@ -233,11 +233,13 @@ public class Bach {
   public static final class Project {
     private final Base base;
     private final Info info;
-    private final Structure structure;
-    public Project(Base base, Info info, Structure structure) {
+    private final Library library;
+    private final List<Realm> realms;
+    public Project(Base base, Info info, Library library, List<Realm> realms) {
       this.base = Objects.requireNonNull(base, "base");
       this.info = Objects.requireNonNull(info, "info");
-      this.structure = Objects.requireNonNull(structure, "structure");
+      this.library = Objects.requireNonNull(library, "library");
+      this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
     }
     public Base base() {
       return base;
@@ -245,14 +247,18 @@ public class Bach {
     public Info info() {
       return info;
     }
-    public Structure structure() {
-      return structure;
+    public Library library() {
+      return library;
+    }
+    public List<Realm> realms() {
+      return realms;
     }
     public String toString() {
       return new StringJoiner(", ", Project.class.getSimpleName() + "[", "]")
           .add("base=" + base)
           .add("info=" + info)
-          .add("structure=" + structure)
+          .add("library=" + library)
+          .add("realms=" + realms)
           .toString();
     }
     public List<String> toStrings() {
@@ -260,9 +266,9 @@ public class Bach {
       list.add("Project");
       list.add("\ttitle: " + info.title());
       list.add("\tversion: " + info.version());
-      list.add("\trealms: " + structure.realms().size());
-      list.add("\tunits: " + structure.units().count());
-      for (var realm : structure.realms()) {
+      list.add("\trealms: " + realms().size());
+      list.add("\tunits: " + toUnits().count());
+      for (var realm : realms()) {
         list.add("\tRealm " + realm.name());
         list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
         list.add("\t\ttasks: " + realm.tasks().size());
@@ -281,10 +287,13 @@ public class Bach {
       return info.title() + ' ' + info.version();
     }
     public Set<String> toDeclaredModuleNames() {
-      return structure.units().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+      return toUnits().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
     }
     public Set<String> toRequiredModuleNames() {
-      return Modules.required(structure.units().map(Unit::descriptor));
+      return Modules.required(toUnits().map(Unit::descriptor));
+    }
+    public Stream<Unit> toUnits() {
+      return realms.stream().flatMap(realm -> realm.units().stream());
     }
     public static final class Base {
       public static Base of() {
@@ -354,23 +363,6 @@ public class Bach {
             .add("title='" + title + "'")
             .add("version=" + version)
             .toString();
-      }
-    }
-    public static final class Structure {
-      private final Library library;
-      private final List<Realm> realms;
-      public Structure(Library library, List<Realm> realms) {
-        this.library = library;
-        this.realms = List.copyOf(Objects.requireNonNull(realms, "realms"));
-      }
-      public Library library() {
-        return library;
-      }
-      public List<Realm> realms() {
-        return realms;
-      }
-      public Stream<Unit> units() {
-        return realms.stream().flatMap(realm -> realm.units().stream());
       }
     }
     public static final class Library {
@@ -633,7 +625,7 @@ public class Bach {
       }
       public void execute(Bach bach) {
         var project = bach.getProject();
-        var library = project.structure().library();
+        var library = project.library();
         class Transporter implements Consumer<Set<String>> {
           public void accept(Set<String> modules) {
             var resources = new Resources(bach.getHttpClient());
