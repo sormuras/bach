@@ -37,6 +37,10 @@ import java.util.stream.Stream;
 /** A project descriptor. */
 public /*static*/ final class Project {
 
+  public static Builder builder() {
+    return new Builder();
+  }
+
   private final Base base;
   private final Info info;
   private final Library library;
@@ -291,6 +295,83 @@ public /*static*/ final class Project {
 
     public String name() {
       return descriptor.name();
+    }
+  }
+
+  /** A builder for building {@link Project} objects. */
+  public static class Builder {
+
+    private Base base = null;
+    private Path baseDirectory = Path.of("");
+    private Path baseWorkspace = Bach.WORKSPACE;
+
+    private Info info = null;
+    private String infoTitle = "Untitled";
+    private String infoVersion = "1-ea";
+
+    private Library library = null;
+    private final Set<String> libraryRequired = new TreeSet<>();
+    private final Map<String, String> libraryMap = new ModulesMap();
+
+    private List<Realm> realms = List.of();
+
+    public Project newProject() {
+      return new Project(
+          base != null ? base : new Base(baseDirectory, baseWorkspace),
+          info != null ? info : new Info(infoTitle, Version.parse(infoVersion)),
+          library != null ? library : new Library(libraryRequired, libraryMap::get),
+          realms != null ? realms : List.of());
+    }
+
+    public Builder setBase(Base base) {
+      this.base = base;
+      return this;
+    }
+
+    public Builder setInfo(Info info) {
+      this.info = info;
+      return this;
+    }
+
+    public Builder setLibrary(Library library) {
+      this.library = library;
+      return this;
+    }
+
+    public Builder setRealms(List<Realm> realms) {
+      this.realms = realms;
+      return this;
+    }
+
+    public Builder base(Path directory) {
+      this.baseDirectory = directory;
+      return this;
+    }
+
+    public Builder workspace(Path workspace) {
+      this.baseWorkspace = workspace;
+      return this;
+    }
+
+    public Builder title(String title) {
+      this.infoTitle = title;
+      return this;
+    }
+
+    public Builder version(String version) {
+      this.infoVersion = version;
+      return this;
+    }
+
+    public Builder requires(String module, String... more) {
+      this.libraryRequired.add(module);
+      this.libraryRequired.addAll(List.of(more));
+      return this;
+    }
+
+    public Builder map(String module, String uri) {
+      this.libraryMap.put(module, uri);
+      return this;
     }
   }
 }
