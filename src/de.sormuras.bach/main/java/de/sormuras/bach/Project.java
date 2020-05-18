@@ -17,13 +17,9 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.call.GenericSourcesConsumer;
 import de.sormuras.bach.call.Javac;
-import de.sormuras.bach.call.Javadoc;
-import de.sormuras.bach.call.Jlink;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
-import de.sormuras.bach.internal.ModulesWalker;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -31,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
@@ -41,15 +36,6 @@ import java.util.stream.Stream;
 
 /** A project descriptor. */
 public /*static*/ final class Project {
-
-  /** Create customized project instance. */
-  public static Project of(Path directory, UnaryOperator<Builder> operator) {
-    var base = Base.of(directory);
-    var directoryName = base.directory().toAbsolutePath().getFileName();
-    var title = Optional.ofNullable(directoryName).map(Path::toString).orElse("Untitled");
-    var builder = new Builder().base(base).title(title);
-    return ModulesWalker.walk(operator.apply(builder)).build();
-  }
 
   private final Base base;
   private final Info info;
@@ -300,21 +286,15 @@ public /*static*/ final class Project {
   public static final class Unit {
 
     private final ModuleDescriptor descriptor;
-    private final List<Path> paths;
     private final List<Task> tasks;
 
-    public Unit(ModuleDescriptor descriptor, List<Path> paths, List<Task> tasks) {
+    public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-      this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
       this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
 
     public ModuleDescriptor descriptor() {
       return descriptor;
-    }
-
-    public List<Path> paths() {
-      return paths;
     }
 
     public List<Task> tasks() {
@@ -323,118 +303,6 @@ public /*static*/ final class Project {
 
     public String name() {
       return descriptor.name();
-    }
-  }
-
-  /** An arguments tuner used by {@link Builder} instance. */
-  @FunctionalInterface
-  public interface Tuner {
-
-    void tune(Call call, Map<String, String> context);
-
-    static void defaults(Call call, @SuppressWarnings("unused") Map<String, String> context) {
-      if (call instanceof GenericSourcesConsumer) {
-        var consumer = (GenericSourcesConsumer<?>) call;
-        consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
-      }
-      if (call instanceof Javac) {
-        var javac = (Javac) call;
-        javac.setGenerateMetadataForMethodParameters(true);
-        javac.setTerminateCompilationIfWarningsOccur(true);
-        javac.getAdditionalArguments().add("-X" + "lint");
-      }
-      if (call instanceof Javadoc) {
-        var javadoc = (Javadoc) call;
-        javadoc.getAdditionalArguments().add("-locale", "en");
-      }
-      if (call instanceof Jlink) {
-        var jlink = (Jlink) call;
-        jlink.getAdditionalArguments().add("--compress", "2");
-        jlink.getAdditionalArguments().add("--no-header-files");
-        jlink.getAdditionalArguments().add("--no-man-pages");
-        jlink.getAdditionalArguments().add("--strip-debug");
-      }
-    }
-  }
-
-  /** A builder for building {@link Project} objects. */
-  public static class Builder {
-
-    private Base base = Base.of();
-    private Info info = new Info("Project Title", Version.parse("1-ea"));
-    private Library library = Library.of();
-    private Structure structure = new Structure(Library.of(), List.of());
-    private Tuner tuner = Tuner::defaults;
-    private List<Path> walkModuleInfoFiles = List.of();
-
-    public Project build() {
-      return new Project(base, info, structure);
-    }
-
-    public Base getBase() {
-      return base;
-    }
-
-    public Info getInfo() {
-      return info;
-    }
-
-    public Library getLibrary() {
-      return library;
-    }
-
-    public Tuner getTuner() {
-      return tuner;
-    }
-
-    public List<Path> getWalkModuleInfoFiles() {
-      return walkModuleInfoFiles;
-    }
-
-    public Builder base(Base base) {
-      this.base = base;
-      return this;
-    }
-
-    public Builder base(String directory) {
-      return base(Base.of(Path.of(directory)));
-    }
-
-    public Builder title(String title) {
-      return info(new Info(title, info.version()));
-    }
-
-    public Builder version(String version) {
-      return version(Version.parse(version));
-    }
-
-    public Builder version(Version version) {
-      return info(new Info(info.title(), version));
-    }
-
-    public Builder info(Info info) {
-      this.info = info;
-      return this;
-    }
-
-    public Builder library(Library library) {
-      this.library = library;
-      return this;
-    }
-
-    public Builder structure(Structure structure) {
-      this.structure = structure;
-      return this;
-    }
-
-    public Builder tuner(Tuner tuner) {
-      this.tuner = tuner;
-      return this;
-    }
-
-    public Builder walkModuleInfoFiles(List<Path> files) {
-      this.walkModuleInfoFiles = files;
-      return this;
     }
   }
 }

@@ -50,7 +50,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
@@ -83,12 +82,6 @@ public class Bach {
   }
   public static Optional<Path> findCustomBuildProgram() {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
-  }
-  public static Bach of() {
-    return of(UnaryOperator.identity());
-  }
-  public static Bach of(UnaryOperator<Project.Builder> operator) {
-    return of(Project.of(Path.of(""), operator));
   }
   public static Bach of(Project project) {
     return new Bach(project, HttpClient.newBuilder()::build);
@@ -235,17 +228,9 @@ public class Bach {
         System.err.println("Custom build program execution not supported, yet.");
         return;
       }
-      Bach.of().build().assertSuccessful();
     }
   }
   public static final class Project {
-    public static Project of(Path directory, UnaryOperator<Builder> operator) {
-      var base = Base.of(directory);
-      var directoryName = base.directory().toAbsolutePath().getFileName();
-      var title = Optional.ofNullable(directoryName).map(Path::toString).orElse("Untitled");
-      var builder = new Builder().base(base).title(title);
-      return ModulesWalker.walk(operator.apply(builder)).build();
-    }
     private final Base base;
     private final Info info;
     private final Structure structure;
@@ -434,112 +419,19 @@ public class Bach {
     }
     public static final class Unit {
       private final ModuleDescriptor descriptor;
-      private final List<Path> paths;
       private final List<Task> tasks;
-      public Unit(ModuleDescriptor descriptor, List<Path> paths, List<Task> tasks) {
+      public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-        this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
         this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
       }
       public ModuleDescriptor descriptor() {
         return descriptor;
-      }
-      public List<Path> paths() {
-        return paths;
       }
       public List<Task> tasks() {
         return tasks;
       }
       public String name() {
         return descriptor.name();
-      }
-    }
-    public interface Tuner {
-      void tune(Call call, Map<String, String> context);
-      static void defaults(Call call, @SuppressWarnings("unused") Map<String, String> context) {
-        if (call instanceof GenericSourcesConsumer) {
-          var consumer = (GenericSourcesConsumer<?>) call;
-          consumer.setCharacterEncodingUsedBySourceFiles("UTF-8");
-        }
-        if (call instanceof Javac) {
-          var javac = (Javac) call;
-          javac.setGenerateMetadataForMethodParameters(true);
-          javac.setTerminateCompilationIfWarningsOccur(true);
-          javac.getAdditionalArguments().add("-X" + "lint");
-        }
-        if (call instanceof Javadoc) {
-          var javadoc = (Javadoc) call;
-          javadoc.getAdditionalArguments().add("-locale", "en");
-        }
-        if (call instanceof Jlink) {
-          var jlink = (Jlink) call;
-          jlink.getAdditionalArguments().add("--compress", "2");
-          jlink.getAdditionalArguments().add("--no-header-files");
-          jlink.getAdditionalArguments().add("--no-man-pages");
-          jlink.getAdditionalArguments().add("--strip-debug");
-        }
-      }
-    }
-    public static class Builder {
-      private Base base = Base.of();
-      private Info info = new Info("Project Title", Version.parse("1-ea"));
-      private Library library = Library.of();
-      private Structure structure = new Structure(Library.of(), List.of());
-      private Tuner tuner = Tuner::defaults;
-      private List<Path> walkModuleInfoFiles = List.of();
-      public Project build() {
-        return new Project(base, info, structure);
-      }
-      public Base getBase() {
-        return base;
-      }
-      public Info getInfo() {
-        return info;
-      }
-      public Library getLibrary() {
-        return library;
-      }
-      public Tuner getTuner() {
-        return tuner;
-      }
-      public List<Path> getWalkModuleInfoFiles() {
-        return walkModuleInfoFiles;
-      }
-      public Builder base(Base base) {
-        this.base = base;
-        return this;
-      }
-      public Builder base(String directory) {
-        return base(Base.of(Path.of(directory)));
-      }
-      public Builder title(String title) {
-        return info(new Info(title, info.version()));
-      }
-      public Builder version(String version) {
-        return version(Version.parse(version));
-      }
-      public Builder version(Version version) {
-        return info(new Info(info.title(), version));
-      }
-      public Builder info(Info info) {
-        this.info = info;
-        return this;
-      }
-      public Builder library(Library library) {
-        this.library = library;
-        return this;
-      }
-      public Builder structure(Structure structure) {
-        this.structure = structure;
-        return this;
-      }
-      public Builder tuner(Tuner tuner) {
-        this.tuner = tuner;
-        return this;
-      }
-      public Builder walkModuleInfoFiles(List<Path> files) {
-        this.walkModuleInfoFiles = files;
-        return this;
       }
     }
   }
@@ -1431,193 +1323,6 @@ public class Bach {
       var library = Modules.declared(ModuleFinder.of(paths));
       missing.removeAll(library);
       return missing;
-    }
-  }
-  public static class ModulesWalker {
-    public static Project.Builder walk(Project.Builder builder) {
-      var base = builder.getBase().directory();
-      var moduleInfoFiles =
-          builder.getWalkModuleInfoFiles().isEmpty()
-              ? Paths.find(List.of(base), Paths::isModuleInfoJavaFile)
-              : builder.getWalkModuleInfoFiles();
-      if (moduleInfoFiles.isEmpty()) throw new IllegalStateException("No module found: " + base);
-      var walker = new ModulesWalker(builder, moduleInfoFiles);
-      return builder.structure(walker.newStructure());
-    }
-    private final Project.Base base;
-    private final Project.Info info;
-    private final Project.Library library;
-    private final Project.Tuner tuner;
-    private final List<Path> moduleInfoFiles;
-    public ModulesWalker(Project.Builder builder, List<Path> moduleInfoFiles) {
-      this.base = builder.getBase();
-      this.info = builder.getInfo();
-      this.library = builder.getLibrary();
-      this.tuner = builder.getTuner();
-      this.moduleInfoFiles = moduleInfoFiles;
-    }
-    public Project.Structure newStructure() {
-      try {
-        return newStructureWithMainTestPreviewRealms();
-      } catch (IllegalStateException ignore) {
-      }
-      return newStructureWithSingleUnnamedRealm();
-    }
-    public Project.Structure newStructureWithSingleUnnamedRealm() {
-      var realms = List.of(newRealm("", moduleInfoFiles, false, true, List.of()));
-      return new Project.Structure(library, realms);
-    }
-    public Project.Structure newStructureWithMainTestPreviewRealms() {
-      var mainModuleInfoFiles = new ArrayList<Path>();
-      var testModuleInfoFiles = new ArrayList<Path>();
-      var viewModuleInfoFiles = new ArrayList<Path>();
-      for (var moduleInfoFile : moduleInfoFiles) {
-        var deque = Paths.deque(moduleInfoFile);
-        if (Collections.frequency(deque, "main") == 1) {
-          mainModuleInfoFiles.add(moduleInfoFile);
-        } else if (Collections.frequency(deque, "test") == 1) {
-          testModuleInfoFiles.add(moduleInfoFile);
-        } else if (Collections.frequency(deque, "test-preview") == 1) {
-          viewModuleInfoFiles.add(moduleInfoFile);
-        } else {
-          var message = new StringBuilder("Cannot guess realm of " + moduleInfoFile);
-          message.append('\n').append('\n');
-          for (var file : moduleInfoFiles) message.append("\t\t").append(file).append('\n');
-          throw new IllegalStateException(message.toString());
-        }
-      }
-      var main = newRealm("main", mainModuleInfoFiles, false, false, List.of());
-      var test = newRealm("test", testModuleInfoFiles, false, true, List.of(main));
-      var view = newRealm("test-preview", viewModuleInfoFiles, true, true, List.of(main, test));
-      var realms = new ArrayList<Project.Realm>();
-      if (!main.units().isEmpty()) realms.add(main);
-      if (!test.units().isEmpty()) realms.add(test);
-      if (!view.units().isEmpty()) realms.add(view);
-      return new Project.Structure(library, realms);
-    }
-    public Project.Realm newRealm(
-        String realm,
-        List<Path> moduleInfoFiles,
-        boolean preview,
-        boolean test,
-        List<Project.Realm> upstreams) {
-      var moduleNames = new TreeSet<String>();
-      var moduleSourcePathPatterns = new TreeSet<String>();
-      var moduleSourcePathsPerModules = new TreeMap<String, List<Path>>();
-      var units = new ArrayList<Project.Unit>();
-      var javadocCommentFound = false;
-      for (var moduleInfoFile : moduleInfoFiles) {
-        javadocCommentFound = javadocCommentFound || Paths.isJavadocCommentAvailable(moduleInfoFile);
-        var descriptor = Modules.describe(moduleInfoFile);
-        var module = descriptor.name();
-        moduleNames.add(module);
-        var infoParent = moduleInfoFile.getParent();
-        var javaSibling = infoParent.resolveSibling("java");
-        var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
-        var sourcePaths = new ArrayList<Path>();
-        sourcePaths.add(infoParent);
-        if (javaPresent) sourcePaths.add(javaSibling);
-        try {
-          moduleSourcePathPatterns.add(Modules.modulePatternForm(moduleInfoFile, descriptor.name()));
-          if (javaPresent)
-            moduleSourcePathPatterns.add(Modules.modulePatternForm(javaSibling, descriptor.name()));
-        } catch (FindException e) {
-          moduleSourcePathsPerModules.put(module, sourcePaths);
-        }
-        var classes = base.classes(realm, module);
-        var modules = base.modules(realm);
-        var jar = modules.resolve(module + ".jar");
-        var context = Map.of("realm", realm, "module", module);
-        var jarCreate = new Jar();
-        var jarCreateArgs = jarCreate.getAdditionalArguments();
-        jarCreateArgs.add("--create").add("--file", jar);
-        descriptor.mainClass().ifPresent(main -> jarCreateArgs.add("--main-class", main));
-        jarCreateArgs.add("-C", classes, ".");
-        tuner.tune(jarCreate, context);
-        var jarDescribe = new Jar();
-        jarDescribe.getAdditionalArguments().add("--describe-module").add("--file", jar);
-        tuner.tune(jarDescribe, context);
-        var task =
-            Task.sequence(
-                "Create modular JAR file " + jar.getFileName(),
-                new Task.CreateDirectories(jar.getParent()),
-                jarCreate.toTask(),
-                jarDescribe.toTask());
-        units.add(new Project.Unit(descriptor, sourcePaths, List.of(task)));
-      }
-      var namesOfUpstreams = upstreams.stream().map(Project.Realm::name).collect(Collectors.toList());
-      var patchesToUpstreams = patches(units, upstreams);
-      var context = Map.of("realm", realm);
-      var javac =
-          new Javac()
-              .setModules(moduleNames)
-              .setVersionOfModulesThatAreBeingCompiled(info.version())
-              .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
-              .setPathsWhereToFindSourceFiles(moduleSourcePathsPerModules)
-              .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
-              .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams))
-              .setDestinationDirectory(base.classes(realm));
-      if (preview) {
-        javac.setCompileForVirtualMachineVersion(Runtime.version().feature());
-        javac.setEnablePreviewLanguageFeatures(true);
-      }
-      tuner.tune(javac, context);
-      var tasks = new ArrayList<Task>();
-      if (javadocCommentFound) {
-        var javadoc =
-            new Javadoc()
-                .setDestinationDirectory(base.api())
-                .setModules(moduleNames)
-                .setPatternsWhereToFindSourceFiles(new ArrayList<>(moduleSourcePathPatterns))
-                .setPathsWhereToFindSourceFiles(moduleSourcePathsPerModules)
-                .setPathsWhereToFindMoreAssetsPerModule(patchesToUpstreams)
-                .setPathsWhereToFindApplicationModules(base.modulePaths(namesOfUpstreams));
-        tuner.tune(javadoc, context);
-        tasks.add(javadoc.toTask());
-      }
-      var mainModule = Modules.findMainModule(units.stream().map(Project.Unit::descriptor));
-      if (mainModule.isPresent()) {
-        var jlink =
-            new Jlink().setModules(moduleNames).setLocationOfTheGeneratedRuntimeImage(base.image());
-        var modulePaths = new ArrayList<Path>();
-        modulePaths.add(base.modules(realm));
-        modulePaths.addAll(base.modulePaths(namesOfUpstreams));
-        var launcher = Path.of(mainModule.get().replace('.', '/')).getFileName().toString();
-        var arguments = jlink.getAdditionalArguments();
-        arguments.add("--module-path", Call.join(modulePaths));
-        arguments.add("--launcher", launcher + '=' + mainModule.get());
-        tuner.tune(jlink, context);
-        tasks.add(
-            Task.sequence(
-                String.format("Create custom runtime image with '%s' as launcher", launcher),
-                new Task.DeleteDirectories(base.image()),
-                jlink.toTask()));
-      }
-      if (test) {
-        for (var unit : units) {
-          var module = unit.name();
-          var jar = base.modules(realm).resolve(module + ".jar");
-          var modulePaths = new ArrayList<Path>();
-          modulePaths.add(jar);
-          modulePaths.addAll(base.modulePaths(namesOfUpstreams));
-          modulePaths.add(base.modules(realm));
-          tasks.add(new Task.RunTestModule(module, modulePaths));
-        }
-      }
-      return new Project.Realm(realm, units, javac, tasks);
-    }
-    static Map<String, List<Path>> patches(List<Project.Unit> units, List<Project.Realm> upstreams) {
-      if (units.isEmpty() || upstreams.isEmpty()) return Map.of();
-      var patches = new TreeMap<String, List<Path>>();
-      for (var unit : units) {
-        var module = unit.name();
-        for (var upstream : upstreams)
-          upstream.units().stream()
-              .filter(up -> up.name().equals(module))
-              .findAny()
-              .ifPresent(up -> patches.put(module, up.paths()));
-      }
-      return patches;
     }
   }
   public static class Paths {

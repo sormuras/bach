@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 /** Bach - Java Shell Builder. */
@@ -53,16 +52,6 @@ public class Bach {
   /** Return path to the custom build program if it exists. */
   public static Optional<Path> findCustomBuildProgram() {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
-  }
-
-  /** Create Bach instance with a project parsed from the current working directory "as-is". */
-  public static Bach of() {
-    return of(UnaryOperator.identity());
-  }
-
-  /** Create Bach instance with a customized project parsed from the current working directory. */
-  public static Bach of(UnaryOperator<Project.Builder> operator) {
-    return of(Project.of(Path.of(""), operator));
   }
 
   /** Create Bach instance with the specified project and default components. */

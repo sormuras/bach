@@ -25,6 +25,6 @@ package de.sormuras.bach;
       return;
     }
     // Default to build() for the time being.
-    Bach.of().build().assertSuccessful();
+    // TODO Bach.of().build().assertSuccessful();
   }
 }

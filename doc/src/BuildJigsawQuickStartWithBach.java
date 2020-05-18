@@ -18,7 +18,9 @@
 class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
-    Bach.of(
+    return;
+    /*
+    TODO Bach.of(
             greetings ->
                 greetings
                     .base("doc/project/JigsawQuickStart")
@@ -26,5 +28,6 @@ class BuildJigsawQuickStartWithBach {
                     .version("47.11"))
         .build()
         .assertSuccessful();
+     */
   }
 }

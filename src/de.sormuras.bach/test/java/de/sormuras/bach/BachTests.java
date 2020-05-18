@@ -33,7 +33,7 @@ class BachTests {
 
   static Bach zero() {
     var logbook = new Logbook(__ -> {}, true, false);
-    var zero = new Project.Builder().title("Zero").version(Version.parse("0")).build();
+    var zero = Projects.zero();
     return new Bach(logbook, zero, HttpClient.newBuilder()::build);
   }
 

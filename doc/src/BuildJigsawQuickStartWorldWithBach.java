@@ -18,7 +18,9 @@
 class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
-    Bach.of(
+    return;
+    /*
+    TODO Bach.of(
             world ->
                 world
                     .base("doc/project/JigsawQuickStartWorld")
@@ -26,5 +28,6 @@ class BuildJigsawQuickStartWorldWithBach {
                     .version("17.01"))
         .build()
         .assertSuccessful();
+     */
   }
 }
