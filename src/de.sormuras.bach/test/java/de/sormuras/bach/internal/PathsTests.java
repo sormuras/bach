@@ -21,12 +21,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.FileSystem;
 
@@ -61,6 +67,16 @@ class PathsTests {
       } finally {
         FileSystem.chmod(sub, true, true, true);
       }
+    }
+  }
+
+  @Nested
+  class IsRootTests {
+    @TestFactory
+    Stream<DynamicTest> fileSystemRootDirectoriesAreRoots() {
+      var roots = FileSystems.getDefault().getRootDirectories();
+      return StreamSupport.stream(roots.spliterator(), false)
+          .map(path -> dynamicTest(path.toString(), () -> Paths.isRoot(path)));
     }
   }
 

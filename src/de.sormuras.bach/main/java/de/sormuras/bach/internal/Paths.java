@@ -50,6 +50,11 @@ public /*static*/ class Paths {
     }
   }
 
+  /** Test for a path pointing to a file system root like {@code /} or {@code C:\}. */
+  public static boolean isRoot(Path path) {
+    return path.toAbsolutePath().normalize().getNameCount() == 0;
+  }
+
   public static boolean isJavadocCommentAvailable(Path path) {
     try {
       return Files.readString(path).contains("/**");
