@@ -69,10 +69,10 @@ public /*static*/ class Paths {
   }
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
-  public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+  public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
     var files = new TreeSet<Path>();
     for (var root : roots) {
-      try (var stream = Files.walk(root)) {
+      try (var stream = Files.walk(root, maxDepth)) {
         stream.filter(filter).forEach(files::add);
       } catch (Exception e) {
         throw new Error("Walk directory '" + root + "' failed: " + e, e);
