@@ -17,7 +17,6 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.call.Javac;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
 import java.lang.module.ModuleDescriptor;
@@ -30,7 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -91,11 +89,8 @@ public /*static*/ final class Project {
     list.add("\tunits: " + toUnits().count());
     for (var realm : realms()) {
       list.add("\tRealm " + realm.name());
-      list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
-      list.add("\t\ttasks: " + realm.tasks().size());
       for (var unit : realm.units().values()) {
         list.add("\t\tUnit " + unit.name());
-        list.add("\t\t\ttasks: " + unit.tasks().size());
         var module = unit.descriptor();
         list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
         list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
@@ -247,32 +242,41 @@ public /*static*/ final class Project {
 
   /** A named set of module source units. */
   public static final class Realm {
-    private final String name;
-    private final Map<String, Unit> units;
-    private final Javac javac;
-    private final List<Task> tasks;
 
-    public Realm(String name, Map<String, Unit> units, Javac javac, List<Task> tasks) {
+    /** A flag on a realm. */
+    public enum Flag {
+      CREATE_API_DOCUMENTATION,
+      CREATE_CUSTOM_RUNTIME_IMAGE,
+      ENABLE_PREVIEW_LANGUAGE_FEATURES,
+      LAUNCH_TESTS
+    }
+
+    private final String name;
+    private final Set<Flag> flags;
+    private final Map<String, Unit> units;
+    private final Map<String, Realm> realms;
+
+    public Realm(String name, Set<Flag> flags, Map<String, Unit> units, Map<String, Realm> realms) {
       this.name = Objects.requireNonNull(name, "name");
-      this.units = new TreeMap<>(Objects.requireNonNull(units, "units"));
-      this.javac = Objects.requireNonNull(javac, "javac");
-      this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
+      this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+      this.units = Map.copyOf(Objects.requireNonNull(units, "units"));
+      this.realms = Map.copyOf(Objects.requireNonNull(realms, "realms"));
     }
 
     public String name() {
       return name;
     }
 
+    public Set<Flag> flags() {
+      return flags;
+    }
+
     public Map<String,Unit> units() {
       return units;
     }
 
-    public Javac javac() {
-      return javac;
-    }
-
-    public List<Task> tasks() {
-      return tasks;
+    public Map<String, Realm> realms() {
+      return realms;
     }
 
     public Optional<Unit> unit(String module) {
@@ -284,19 +288,13 @@ public /*static*/ final class Project {
   public static final class Unit {
 
     private final ModuleDescriptor descriptor;
-    private final List<Task> tasks;
 
-    public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
+    public Unit(ModuleDescriptor descriptor) {
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-      this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
 
     public ModuleDescriptor descriptor() {
       return descriptor;
-    }
-
-    public List<Task> tasks() {
-      return tasks;
     }
 
     public String name() {
@@ -322,16 +320,11 @@ public /*static*/ final class Project {
     private List<Realm> realms = List.of();
 
     public Project newProject() {
-      var version = Version.parse(infoVersion);
-      List<Realm> localRealms = realms == null ? List.of() : realms;
-      for (var realm : localRealms) {
-        realm.javac().setVersionOfModulesThatAreBeingCompiled(version);
-      }
       return new Project(
           base == null ? new Base(baseDirectory, baseWorkspace) : base,
-          info == null ? new Info(infoTitle, version) : info,
+          info == null ? new Info(infoTitle, Version.parse(infoVersion)) : info,
           library == null ? new Library(libraryRequired, libraryMap::get) : library,
-          localRealms);
+          realms == null ? List.of() : realms);
     }
 
     public Builder setBase(Base base) {

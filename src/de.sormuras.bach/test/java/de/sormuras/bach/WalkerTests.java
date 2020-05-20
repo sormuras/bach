@@ -18,15 +18,10 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.call.Javac;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
@@ -41,9 +36,8 @@ class WalkerTests {
     @Test
     @Disabled("Walker for main|test|test-preview realm layout not implemented, yet")
     void walkSelf() {
-      var moduleInfoFiles = Paths.find(List.of(Path.of("src")), 5, this::isModuleFile);
-
-      var walker = new Walker().setTuner(this::tune);
+      var walker = new Walker();
+      walker.setWalkDepthLimit(5); // src/${MODULE}/${REALM}/java/module-info.java
       var project = walker.newBuilder().newProject();
       var realms = project.realms();
 
@@ -51,32 +45,17 @@ class WalkerTests {
 
       var main = realms.get(0);
       assertEquals("main", main.name());
-      assertFalse(main.javac().isEnablePreviewLanguageFeatures());
-      assertEquals(11, main.javac().getCompileForVirtualMachineVersion());
+      assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION));
+      assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE));
 
       var test = realms.get(1);
       assertEquals("test", test.name());
-      assertFalse(test.javac().isEnablePreviewLanguageFeatures());
-      assertEquals(0, test.javac().getCompileForVirtualMachineVersion());
+      assertTrue(test.flags().contains(Project.Realm.Flag.LAUNCH_TESTS));
 
       var preview = realms.get(2);
       assertEquals("test-preview", preview.name());
-      assertTrue(preview.javac().isEnablePreviewLanguageFeatures());
-      assertEquals(
-          Runtime.version().feature(), preview.javac().getCompileForVirtualMachineVersion());
-    }
-
-    // src/${MODULE}/${REALM}/java/module-info.java
-    boolean isModuleFile(Path path) {
-      return Paths.isModuleInfoJavaFile(path) && path.getNameCount() == 5;
-    }
-
-    void tune(Call call, Map<String, String> context) {
-      if ("main".equals(context.get("realm"))) {
-        if (call instanceof Javac) {
-          ((Javac) call).setCompileForVirtualMachineVersion(11);
-        }
-      }
+      assertTrue(preview.flags().contains(Project.Realm.Flag.LAUNCH_TESTS));
+      assertTrue(preview.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES));
     }
   }
 
@@ -93,9 +72,6 @@ class WalkerTests {
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.realms().get(0);
       assertEquals("", realm.name());
-      var javac = realm.javac();
-      assertEquals("1-ea", javac.getVersionOfModulesThatAreBeingCompiled().toString());
-      assertEquals("Compile module(s): [com.greetings]", javac.toLabel());
     }
 
     @Test
