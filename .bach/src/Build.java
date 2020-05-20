@@ -18,9 +18,9 @@
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
 
 /**
  * Bach's own build program.
@@ -46,7 +46,8 @@ class Build {
 
   static Bach.Project.Realm mainRealm(Bach.Project.Base base) {
     var units =
-        List.of(
+        Map.of(
+            "de.sormuras.bach",
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/de.sormuras.bach/main/java/module-info.java")),
                 List.of(
@@ -54,7 +55,7 @@ class Build {
                         base.modules("main").resolve("de.sormuras.bach.jar"),
                         base.classes("main", "de.sormuras.bach")))));
 
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
+    var moduleNames = Set.of("de.sormuras.bach");
     var moduleSourcePath = "src/*/main/java".replace('/', File.separatorChar);
     var javac =
         new Bach.Javac()
@@ -113,16 +114,16 @@ class Build {
 
   static Bach.Project.Realm testRealm(Bach.Project.Base base) {
     var units =
-        List.of(
+        Map.of(
+            "test.base",
             new Bach.Project.Unit(
                 Bach.Modules.describe(Path.of("src/test.base/test/java/module-info.java")),
                 List.of(
                     createJar(
                         base.modules("test").resolve("test.base.jar"),
                         base.classes("test", "test.base")))));
-    var moduleNames = units.stream().map(Bach.Project.Unit::name).collect(Collectors.toSet());
+    var moduleNames = Set.of("test.base");
     var moduleSourcePath = "src/*/test/java".replace('/', File.separatorChar);
-
     var javac =
         new Bach.Javac()
             .setDestinationDirectory(base.classes("test"))
