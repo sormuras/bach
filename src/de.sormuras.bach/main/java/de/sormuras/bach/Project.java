@@ -322,11 +322,16 @@ public /*static*/ final class Project {
     private List<Realm> realms = List.of();
 
     public Project newProject() {
+      var version = Version.parse(infoVersion);
+      List<Realm> localRealms = realms == null ? List.of() : realms;
+      for (var realm : localRealms) {
+        realm.javac().setVersionOfModulesThatAreBeingCompiled(version);
+      }
       return new Project(
-          base != null ? base : new Base(baseDirectory, baseWorkspace),
-          info != null ? info : new Info(infoTitle, Version.parse(infoVersion)),
-          library != null ? library : new Library(libraryRequired, libraryMap::get),
-          realms != null ? realms : List.of());
+          base == null ? new Base(baseDirectory, baseWorkspace) : base,
+          info == null ? new Info(infoTitle, version) : info,
+          library == null ? new Library(libraryRequired, libraryMap::get) : library,
+          localRealms);
     }
 
     public Builder setBase(Base base) {
