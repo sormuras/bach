@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,6 +43,7 @@ class WalkerTests {
       var project = walker.newBuilder().title("BACH").version("0-TEST").newProject();
 
       // project.toStrings().forEach(System.out::println);
+
       assertEquals("BACH 0-TEST", project.toTitleAndVersion());
       assertEquals(4, project.toUnits().count());
 
@@ -53,10 +55,18 @@ class WalkerTests {
       assertEquals(Set.of("de.sormuras.bach"), main.units().keySet());
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION));
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE));
+      assertFalse(
+          main.unit("de.sormuras.bach")
+              .orElseThrow()
+              .sources()
+              .get(0)
+              .flags()
+              .contains(Project.Source.Flag.VERSIONED));
 
       var test = realms.get(1);
       assertEquals("test", test.name());
-      assertEquals(Set.of("de.sormuras.bach", "test.base"), test.units().keySet());
+      assertEquals("de.sormuras.bach", test.unit("de.sormuras.bach").orElseThrow().toName());
+      assertEquals("test.base", test.unit("test.base").orElseThrow().toName());
       assertTrue(test.flags().contains(Project.Realm.Flag.LAUNCH_TESTS));
 
       var preview = realms.get(2);

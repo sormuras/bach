@@ -89,12 +89,20 @@ public /*static*/ final class Project {
     list.add("\tunits: " + toUnits().count());
     for (var realm : realms()) {
       list.add("\tRealm " + realm.name());
+      list.add("\t\tflags: " + realm.flags());
+      list.add("\t\tupstreams: " + new TreeSet<>(realm.upstreams()));
       for (var unit : realm.units().values()) {
-        list.add("\t\tUnit " + unit.name());
+        list.add("\t\tUnit " + unit.toName());
         var module = unit.descriptor();
         list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
-        list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
-        list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
+        list.add("\t\t\t\tmain-class: " + module.mainClass().orElse("-"));
+        list.add("\t\t\t\trequires: " + unit.toRequiredNames());
+        list.add("\t\t\tSources");
+        for (var source : unit.sources()) {
+          list.add("\t\t\t\tpath: " + source.path());
+          list.add("\t\t\t\tflags: " + source.flags());
+          list.add("\t\t\t\trelease: " + source.release());
+        }
       }
     }
     return list;
@@ -105,7 +113,7 @@ public /*static*/ final class Project {
   }
 
   public Set<String> toDeclaredModuleNames() {
-    return toUnits().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+    return toUnits().map(Unit::toName).collect(Collectors.toCollection(TreeSet::new));
   }
 
   public Set<String> toRequiredModuleNames() {
@@ -254,13 +262,13 @@ public /*static*/ final class Project {
     private final String name;
     private final Set<Flag> flags;
     private final Map<String, Unit> units;
-    private final Map<String, Realm> realms;
+    private final Set<String> upstreams;
 
-    public Realm(String name, Set<Flag> flags, Map<String, Unit> units, Map<String, Realm> realms) {
+    public Realm(String name, Set<Flag> flags, Map<String, Unit> units, Set<String> upstreams) {
       this.name = Objects.requireNonNull(name, "name");
       this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
       this.units = Map.copyOf(Objects.requireNonNull(units, "units"));
-      this.realms = Map.copyOf(Objects.requireNonNull(realms, "realms"));
+      this.upstreams = Set.copyOf(Objects.requireNonNull(upstreams, "upstreams"));
     }
 
     public String name() {
@@ -271,12 +279,12 @@ public /*static*/ final class Project {
       return flags;
     }
 
-    public Map<String,Unit> units() {
+    public Map<String, Unit> units() {
       return units;
     }
 
-    public Map<String, Realm> realms() {
-      return realms;
+    public Set<String> upstreams() {
+      return upstreams;
     }
 
     public Optional<Unit> unit(String module) {
@@ -288,17 +296,60 @@ public /*static*/ final class Project {
   public static final class Unit {
 
     private final ModuleDescriptor descriptor;
+    private final List<Source> sources;
 
-    public Unit(ModuleDescriptor descriptor) {
+    public Unit(ModuleDescriptor descriptor, List<Source> sources) {
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+      this.sources = List.copyOf(sources);
     }
 
     public ModuleDescriptor descriptor() {
       return descriptor;
     }
 
-    public String name() {
+    public List<Source> sources() {
+      return sources;
+    }
+
+    public String toName() {
       return descriptor.name();
+    }
+
+    public Set<String> toRequiredNames() {
+      var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+      return names.collect(Collectors.toCollection(TreeSet::new));
+    }
+  }
+
+  /** A source path with optional release directive. */
+  public static final class Source {
+
+    /** A source-specific flag enumeration. */
+    public enum Flag {
+      /** Store binary assets in {@code META-INF/versions/${release}/} directory of the JAR file. */
+      VERSIONED
+    }
+
+    private final Set<Flag> flags;
+    private final Path path;
+    private final int release;
+
+    public Source(Set<Flag> flags, Path path, int release) {
+      this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+      this.path = Objects.requireNonNull(path, "path");
+      this.release = Objects.checkIndex(release, Runtime.version().feature() + 1);
+    }
+
+    public Set<Flag> flags() {
+      return flags;
+    }
+
+    public Path path() {
+      return path;
+    }
+
+    public int release() {
+      return release;
     }
   }
 

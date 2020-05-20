@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -126,12 +125,15 @@ public /*static*/ class Walker {
         new RealmBuilder("test")
             .takeMatchingModuleInfoFilesFrom(files)
             .flag(Project.Realm.Flag.LAUNCH_TESTS)
+            .upstream("main")
             .build();
     var preview =
         new RealmBuilder("test-preview")
             .takeMatchingModuleInfoFilesFrom(files)
             .flag(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)
             .flag(Project.Realm.Flag.LAUNCH_TESTS)
+            .upstream("main")
+            .upstream("test")
             .build();
     if (!files.isEmpty()) throw new UnsupportedOperationException("File(s) not taken: " + files);
     var realms = new ArrayList<Project.Realm>();
@@ -148,7 +150,7 @@ public /*static*/ class Walker {
     final String name;
     final List<Path> moduleInfoFiles = new ArrayList<>();
     final Set<Project.Realm.Flag> flags = new TreeSet<>();
-    final Map<String, Project.Realm> upstreams = new TreeMap<>();
+    final Set<String> upstreams = new TreeSet<>();
 
     RealmBuilder(String name) {
       this.name = Objects.requireNonNull(name, "name");
@@ -159,18 +161,24 @@ public /*static*/ class Walker {
       return this;
     }
 
+    RealmBuilder upstream(String upstream) {
+      upstreams.add(upstream);
+      return this;
+    }
+
     RealmBuilder takeMatchingModuleInfoFilesFrom(List<Path> files) {
+      if (files.isEmpty()) return this;
       if (name.isEmpty()) {
         moduleInfoFiles.addAll(files);
         files.clear();
-      } else {
-        var iterator = files.listIterator();
-        while (iterator.hasNext()) {
-          var file = iterator.next();
-          if (Collections.frequency(Paths.deque(file), name) == 1) {
-            moduleInfoFiles.add(file);
-            iterator.remove();
-          }
+        return this;
+      }
+      var iterator = files.listIterator();
+      while (iterator.hasNext()) {
+        var file = iterator.next();
+        if (Collections.frequency(Paths.deque(file), name) == 1) {
+          moduleInfoFiles.add(file);
+          iterator.remove();
         }
       }
       return this;
@@ -181,7 +189,9 @@ public /*static*/ class Walker {
       for (var info : moduleInfoFiles) {
         var descriptor = Modules.describe(info);
         var module = descriptor.name();
-        units.put(module, new Project.Unit(descriptor));
+        var sources = new ArrayList<Project.Source>();
+        sources.add(new Project.Source(Set.of(), info.getParent(), 0));
+        units.put(module, new Project.Unit(descriptor, sources));
       }
       return new Project.Realm(name, flags, units, upstreams);
     }
