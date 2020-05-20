@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -34,26 +33,35 @@ class WalkerTests {
   class DeSormurasBachTests {
 
     @Test
-    @Disabled("Walker for main|test|test-preview realm layout not implemented, yet")
     void walkSelf() {
-      var walker = new Walker();
-      walker.setWalkDepthLimit(5); // src/${MODULE}/${REALM}/java/module-info.java
-      var project = walker.newBuilder().newProject();
-      var realms = project.realms();
+      var walker =
+          new Walker()
+              .setWalkOffset(Path.of("src"))
+              .setWalkDepthLimit(5)
+              .setLayout(Walker.Layout.MAIN_TEST_PREVIEW);
+      var project = walker.newBuilder().title("BACH").version("0-TEST").newProject();
 
-      assertEquals("bach 1-ea", project.toTitleAndVersion());
+      // project.toStrings().forEach(System.out::println);
+      assertEquals("BACH 0-TEST", project.toTitleAndVersion());
+      assertEquals(4, project.toUnits().count());
+
+      var realms = project.realms();
+      assertEquals(3, realms.size(), realms.toString());
 
       var main = realms.get(0);
       assertEquals("main", main.name());
+      assertEquals(Set.of("de.sormuras.bach"), main.units().keySet());
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION));
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE));
 
       var test = realms.get(1);
       assertEquals("test", test.name());
+      assertEquals(Set.of("de.sormuras.bach", "test.base"), test.units().keySet());
       assertTrue(test.flags().contains(Project.Realm.Flag.LAUNCH_TESTS));
 
       var preview = realms.get(2);
       assertEquals("test-preview", preview.name());
+      assertEquals(Set.of("test.preview"), preview.units().keySet());
       assertTrue(preview.flags().contains(Project.Realm.Flag.LAUNCH_TESTS));
       assertTrue(preview.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES));
     }
