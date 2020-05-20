@@ -27,8 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -91,7 +93,7 @@ public /*static*/ final class Project {
       list.add("\tRealm " + realm.name());
       list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
       list.add("\t\ttasks: " + realm.tasks().size());
-      for (var unit : realm.units()) {
+      for (var unit : realm.units().values()) {
         list.add("\t\tUnit " + unit.name());
         list.add("\t\t\ttasks: " + unit.tasks().size());
         var module = unit.descriptor();
@@ -116,7 +118,7 @@ public /*static*/ final class Project {
   }
 
   public Stream<Unit> toUnits() {
-    return realms.stream().flatMap(realm -> realm.units().stream());
+    return realms.stream().flatMap(realm -> realm.units().values().stream());
   }
 
   /** A base directory with a set of derived directories, files, locations, and other assets. */
@@ -246,13 +248,13 @@ public /*static*/ final class Project {
   /** A named set of module source units. */
   public static final class Realm {
     private final String name;
-    private final List<Unit> units;
+    private final Map<String, Unit> units;
     private final Javac javac;
     private final List<Task> tasks;
 
-    public Realm(String name, List<Unit> units, Javac javac, List<Task> tasks) {
+    public Realm(String name, Map<String, Unit> units, Javac javac, List<Task> tasks) {
       this.name = Objects.requireNonNull(name, "name");
-      this.units = List.copyOf(Objects.requireNonNull(units, "units"));
+      this.units = new TreeMap<>(Objects.requireNonNull(units, "units"));
       this.javac = Objects.requireNonNull(javac, "javac");
       this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
     }
@@ -261,7 +263,7 @@ public /*static*/ final class Project {
       return name;
     }
 
-    public List<Unit> units() {
+    public Map<String,Unit> units() {
       return units;
     }
 
@@ -271,6 +273,10 @@ public /*static*/ final class Project {
 
     public List<Task> tasks() {
       return tasks;
+    }
+
+    public Optional<Unit> unit(String module) {
+      return Optional.ofNullable(units.get(module));
     }
   }
 

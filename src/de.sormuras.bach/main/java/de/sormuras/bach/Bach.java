@@ -110,7 +110,7 @@ public class Bach {
     tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.realms()) {
       tasks.add(realm.javac().toTask());
-      for (var unit : realm.units()) tasks.addAll(unit.tasks());
+      for (var unit : realm.units().values()) tasks.addAll(unit.tasks());
       tasks.addAll(realm.tasks());
     }
     tasks.add(new Task.DeleteEmptyDirectory(project.base().lib()));
