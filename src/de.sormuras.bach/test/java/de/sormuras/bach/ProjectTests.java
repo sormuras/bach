@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.Set;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -48,5 +50,35 @@ class ProjectTests {
     assertTrue(project.library().required().isEmpty());
     // realms
     assertTrue(project.realms().isEmpty());
+  }
+
+  @Nested
+  class ProjectBuilderTests {
+
+    @Test
+    void allDirectSettersPermitNullAsAnArgument() {
+      var builder = Project.builder().setBase(null).setInfo(null).setLibrary(null).setRealms(null);
+      var project = builder.newProject();
+      assertEquals("", project.base().directory().toString());
+      assertEquals("Untitled 1-ea", project.toTitleAndVersion());
+    }
+
+    @Test
+    void withCustomBaseDirectoryAndWorkspace() {
+      var base = Path.of("base");
+      var work = Path.of("work");
+      var project = Project.builder().base(base).workspace(work).newProject();
+      assertEquals(base, project.base().directory());
+      assertEquals(work, project.base().workspace());
+    }
+
+    @Test
+    void withCustomModuleMapping() {
+      var project = Project.builder().map("foo", "https://foo.jar").requires("foo").newProject();
+      assertTrue(project.toDeclaredModuleNames().isEmpty());
+      assertTrue(project.toRequiredModuleNames().isEmpty());
+      assertEquals(Set.of("foo"), project.library().required());
+      assertEquals("https://foo.jar", project.library().lookup().apply("foo"));
+    }
   }
 }
