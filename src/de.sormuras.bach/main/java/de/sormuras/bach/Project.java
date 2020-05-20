@@ -290,6 +290,10 @@ public /*static*/ final class Project {
     public Optional<Unit> unit(String module) {
       return Optional.ofNullable(units.get(module));
     }
+
+    public String toLabelName() {
+      return name.isEmpty() ? "unnamed" : name;
+    }
   }
 
   /** A module source unit. */
