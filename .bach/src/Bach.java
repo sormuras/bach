@@ -110,9 +110,12 @@ public class Bach {
     return httpClient.get();
   }
   public Summary build() {
+    return build(Sequencer.Tuner::defaults);
+  }
+  public Summary build(Sequencer.Tuner tuner) {
     var summary = new Summary(this);
     try {
-      execute(new Sequencer(project).newBuildSequence());
+      execute(new Sequencer(project, tuner).newBuildSequence());
     } finally {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }
@@ -469,8 +472,10 @@ public class Bach {
   }
   public static class Sequencer {
     private final Project project;
-    public Sequencer(Project project) {
+    private final Tuner tuner;
+    public Sequencer(Project project, Tuner tuner) {
       this.project = project;
+      this.tuner = tuner;
     }
     public Task newBuildSequence() {
       var tasks = new ArrayList<Task>();
@@ -494,6 +499,7 @@ public class Bach {
         arguments.put("--enable-preview");
         arguments.put("--release", Runtime.version().feature());
       }
+      tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
       return new Task.RunTool(
           "Compile sources of " + realm.toLabelName() + " realm",
           ToolProvider.findFirst("javac").orElseThrow(),
@@ -508,6 +514,7 @@ public class Bach {
       var arguments = new Arguments().put("--create").put("--file", jar);
       unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
       arguments.put("-C", classes, ".");
+      tuner.tune(arguments, Map.of("tool", "jar", "realm", realm.name(), "module", module));
       return Task.sequence(
           "Create modular JAR file " + jar.getFileName(),
           new Task.CreateDirectories(jar.getParent()),
@@ -602,6 +609,29 @@ public class Bach {
         if (patches.isEmpty()) return;
         for (var patch : patches.entrySet())
           arguments.put("--patch-module", patch.getKey() + "=", patch.getValue());
+      }
+    }
+    public interface Tuner {
+      void tune(Arguments arguments, Map<String, String> context);
+      static void defaults(Arguments arguments, Map<String, String> context) {
+        switch (context.get("tool")) {
+          case "javac":
+            arguments.put("-encoding", "UTF-8");
+            arguments.put("-parameters");
+            arguments.put("-Werror");
+            arguments.put("-X" + "lint");
+            break;
+          case "javadoc":
+            arguments.put("-encoding", "UTF-8");
+            arguments.put("-locale", "en");
+            break;
+          case "jlink":
+            arguments.put("--compress", "2");
+            arguments.put("--no-header-files");
+            arguments.put("--no-man-pages");
+            arguments.put("--strip-debug");
+            break;
+        }
       }
     }
   }

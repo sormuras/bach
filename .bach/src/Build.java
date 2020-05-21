@@ -16,6 +16,7 @@
  */
 
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * Bach's own build program.
@@ -35,6 +36,21 @@ class Build {
             .version(Bach.VERSION.toString())
             .requires("org.junit.platform.console")
             .newProject();
-    Bach.of(project).build().assertSuccessful();
+    Bach.of(project).build(Build::tune).assertSuccessful();
+  }
+
+  private static void tune(Bach.Sequencer.Arguments arguments, Map<String, String> context) {
+    if ("main".equals(context.get("realm"))) {
+      switch (context.get("tool")) {
+        case "javac":
+          arguments.put("--release", 11);
+          break;
+        case "javadoc":
+          arguments
+              .put("-Xdoclint:-missing")
+              .add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
+          break;
+      }
+    }
   }
 }
