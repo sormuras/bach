@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -195,13 +196,20 @@ public /*static*/ class Walker {
     Project.Realm build() {
       var units = new TreeMap<String, Project.Unit>();
       for (var info : moduleInfoFiles) {
-        var descriptor = Modules.describe(info);
-        var module = descriptor.name();
-        var sources = new ArrayList<Project.Source>();
-        sources.add(new Project.Source(Set.of(), info.getParent(), 0));
-        units.put(module, new Project.Unit(descriptor, sources));
+        var unit = unit(info);
+        units.put(unit.toName(), unit);
       }
       return new Project.Realm(name, flags, units, upstreams);
+    }
+
+    Project.Unit unit(Path info) {
+      var infoParent = info.getParent();
+      var javaSibling = infoParent.resolveSibling("java");
+      var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
+      var sources = new ArrayList<Project.Source>();
+      if (javaPresent) sources.add(new Project.Source(Set.of(), javaSibling, 0));
+      sources.add(new Project.Source(Set.of(), info.getParent(), 0));
+      return new Project.Unit(Modules.describe(info), sources);
     }
   }
 }

@@ -27,6 +27,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 class WalkerTests {
 
@@ -80,6 +81,7 @@ class WalkerTests {
   @Nested
   class DocProject {
     @Test
+    @ResourceLock("jlink")
     void walkJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
       var project = new Walker().setBase(base).newBuilder().newProject();
@@ -95,6 +97,7 @@ class WalkerTests {
     }
 
     @Test
+    @ResourceLock("jlink")
     void walkJigsawQuickStartWorld() {
       var base = Path.of("doc", "project", "JigsawQuickStartWorld");
       var project = new Walker().setBase(base).newBuilder().newProject();
