@@ -21,7 +21,7 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,13 +184,6 @@ public /*static*/ final class Project {
 
     public Path modules(String realm) {
       return workspace("modules", realm);
-    }
-
-    public List<Path> modulePaths(Iterable<String> realms) {
-      var paths = new ArrayList<Path>();
-      for (var realm : realms) paths.add(modules(realm));
-      if (Files.isDirectory(lib())) paths.add(lib());
-      return List.copyOf(paths);
     }
   }
 
