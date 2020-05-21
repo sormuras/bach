@@ -496,22 +496,16 @@ public class Bach {
       for (var realm : project.realms()) {
         tasks.add(newJavacTask(realm));
         for (var unit : realm.units().values()) tasks.add(newJarTask(realm, unit));
+        if (realm.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION))
+          tasks.add(newJavadocTask(realm));
+        if (realm.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE))
+          tasks.add(newJlinkTask(realm));
       }
       return Task.sequence("Build Sequence", tasks);
     }
     Task newJavacTask(Project.Realm realm) {
-      var arguments =
-          new Arguments()
-              .put("--module", String.join(",", realm.units().keySet()))
-              .put("-d", project.base().classes(realm.name()));
-      var modulePaths = Helper.modulePaths(project, realm);
-      if (!modulePaths.isEmpty()) arguments.put("--module-path", modulePaths);
-      Helper.putModuleSourcePaths(arguments, realm);
-      Helper.putModulePatches(arguments, project, realm);
-      if (realm.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)) {
-        arguments.put("--enable-preview");
-        arguments.put("--release", Runtime.version().feature());
-      }
+      var classes = project.base().classes(realm.name());
+      var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
       tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
       return new Task.RunTool(
           "Compile sources of " + realm.toLabelName() + " realm",
@@ -535,6 +529,38 @@ public class Bach {
               "Package classes of module " + module,
               ToolProvider.findFirst("jar").orElseThrow(),
               arguments.toStringArray()));
+    }
+    Task newJavadocTask(Project.Realm realm) {
+      var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
+      tuner.tune(arguments, Map.of("tool", "javadoc", "realm", realm.name()));
+      return new Task.RunTool(
+          "Generate API documentation for " + realm.toLabelName() + " realm",
+          ToolProvider.findFirst("javadoc").orElseThrow(),
+          arguments.toStringArray());
+    }
+    Task newJlinkTask(Project.Realm realm) {
+      var base = project.base();
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(base.modules(realm.name()));
+      modulePaths.addAll(Helper.modulePaths(project, realm));
+      var units = realm.units();
+      var mainModule = Modules.findMainModule(units.values().stream().map(Project.Unit::descriptor));
+      var arguments =
+          new Arguments()
+              .put("--add-modules", String.join(",", units.keySet()))
+              .put("--module-path", modulePaths)
+              .put("--output", base.image());
+      if (mainModule.isPresent()) {
+        var module = mainModule.get();
+        var launcher = Path.of(module.replace('.', '/')).getFileName().toString();
+        arguments.put("--launcher", launcher + '=' + module);
+      }
+      tuner.tune(arguments, Map.of("tool", "jlink", "realm", realm.name()));
+      return Task.sequence(
+          "Create custom runtime image",
+          new Task.DeleteDirectories(base.image()),
+          new Task.RunTool(
+              "jlink", ToolProvider.findFirst("jlink").orElseThrow(), arguments.toStringArray()));
     }
     public static class Arguments {
       private final Map<String, List<Object>> namedOptions = new LinkedHashMap<>();
@@ -566,6 +592,18 @@ public class Bach {
       }
     }
     public interface Helper {
+      static Arguments newModuleArguments(Project project, Project.Realm realm) {
+        var arguments = new Arguments().put("--module", String.join(",", realm.units().keySet()));
+        var modulePaths = Helper.modulePaths(project, realm);
+        if (!modulePaths.isEmpty()) arguments.put("--module-path", modulePaths);
+        Helper.putModuleSourcePaths(arguments, realm);
+        Helper.putModulePatches(arguments, project, realm);
+        if (realm.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)) {
+          arguments.put("--enable-preview");
+          arguments.put("--release", Runtime.version().feature());
+        }
+        return arguments;
+      }
       static List<Path> modulePaths(Project project, Project.Realm realm) {
         var base = project.base();
         var lib = base.lib();
