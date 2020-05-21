@@ -27,7 +27,6 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
-import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -50,8 +49,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -111,23 +112,11 @@ public class Bach {
   public Summary build() {
     var summary = new Summary(this);
     try {
-      execute(buildSequence());
+      execute(new Sequencer(project).newBuildSequence());
     } finally {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }
     return summary;
-  }
-  private Task buildSequence() {
-    var tasks = new ArrayList<Task>();
-    tasks.add(new Task.CreateDirectories(project.base().lib()));
-    tasks.add(new Task.ResolveMissingThirdPartyModules());
-    for (var realm : project.realms()) {
-      tasks.add(realm.javac().toTask());
-      for (var unit : realm.units()) tasks.addAll(unit.tasks());
-      tasks.addAll(realm.tasks());
-    }
-    tasks.add(new Task.DeleteEmptyDirectory(project.base().lib()));
-    return Task.sequence("Build Sequence", tasks);
   }
   private void execute(Task task) {
     var label = task.getLabel();
@@ -162,66 +151,6 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
-  public static class Call {
-    private final String name;
-    private final Arguments additionalArguments = new Arguments();
-    public Call(String name) {
-      this.name = name;
-    }
-    public Arguments getAdditionalArguments() {
-      return additionalArguments;
-    }
-    public String toLabel() {
-      return name;
-    }
-    public ToolProvider toProvider() {
-      return ToolProvider.findFirst(name).orElseThrow();
-    }
-    public String[] toArguments() {
-      var arguments = new Arguments();
-      addConfiguredArguments(arguments);
-      return arguments.add(getAdditionalArguments()).toStringArray();
-    }
-    protected void addConfiguredArguments(Arguments arguments) {}
-    public Task toTask() {
-      return new Task.RunTool(toLabel(), toProvider(), toArguments());
-    }
-    public static class Arguments {
-      private final List<String> list = new ArrayList<>();
-      public Arguments add(Object argument) {
-        list.add(argument.toString());
-        return this;
-      }
-      public Arguments add(String key, Object value) {
-        return add(key).add(value);
-      }
-      public Arguments add(String key, Object first, Object second) {
-        return add(key).add(first).add(second);
-      }
-      public Arguments add(Arguments arguments) {
-        list.addAll(arguments.list);
-        return this;
-      }
-      public String[] toStringArray() {
-        return list.toArray(String[]::new);
-      }
-    }
-    public static boolean assigned(Object object) {
-      if (object == null) return false;
-      if (object instanceof Number) return ((Number) object).intValue() != 0;
-      if (object instanceof String) return !((String) object).isEmpty();
-      if (object instanceof Optional) return ((Optional<?>) object).isPresent();
-      if (object instanceof Collection) return !((Collection<?>) object).isEmpty();
-      if (object.getClass().isArray()) return Array.getLength(object) != 0;
-      return true;
-    }
-    public static String join(Collection<Path> paths) {
-      return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-    }
-    public static String joinPaths(Collection<String> paths) {
-      return String.join(File.pathSeparator, paths);
-    }
-  }
   static class Main {
     public static void main(String... args) {
       if (Bach.findCustomBuildProgram().isPresent()) {
@@ -231,6 +160,9 @@ public class Bach {
     }
   }
   public static final class Project {
+    public static Builder builder() {
+      return new Builder();
+    }
     private final Base base;
     private final Info info;
     private final Library library;
@@ -266,19 +198,26 @@ public class Bach {
       list.add("Project");
       list.add("\ttitle: " + info.title());
       list.add("\tversion: " + info.version());
-      list.add("\trealms: " + realms().size());
-      list.add("\tunits: " + toUnits().count());
+      list.add("\trealms: " + toRealmLabelNames() + " << " + toUnits().count() + " distinct unit(s)");
+      list.add("\tdeclares: " + toDeclaredModuleNames());
+      list.add("\trequires: " + toRequiredModuleNames());
+      list.add("\texternal: " + toExternalModuleNames());
       for (var realm : realms()) {
         list.add("\tRealm " + realm.name());
-        list.add("\t\tjavac: " + String.format("%.77s...", realm.javac().toLabel()));
-        list.add("\t\ttasks: " + realm.tasks().size());
-        for (var unit : realm.units()) {
-          list.add("\t\tUnit " + unit.name());
-          list.add("\t\t\ttasks: " + unit.tasks().size());
+        list.add("\t\tflags: " + realm.flags());
+        list.add("\t\tupstreams: " + new TreeSet<>(realm.upstreams()));
+        for (var unit : realm.units().values()) {
+          list.add("\t\tUnit " + unit.toName());
           var module = unit.descriptor();
           list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
-          list.add("\t\t\t\tmain: " + module.mainClass().orElse("-"));
-          list.add("\t\t\t\trequires: " + new TreeSet<>(module.requires()));
+          list.add("\t\t\t\tmain-class: " + module.mainClass().orElse("-"));
+          list.add("\t\t\t\trequires: " + unit.toRequiredNames());
+          list.add("\t\t\tSources");
+          for (var source : unit.sources()) {
+            list.add("\t\t\t\tpath: " + source.path());
+            list.add("\t\t\t\tflags: " + source.flags());
+            list.add("\t\t\t\trelease: " + source.release());
+          }
         }
       }
       return list;
@@ -287,13 +226,22 @@ public class Bach {
       return info.title() + ' ' + info.version();
     }
     public Set<String> toDeclaredModuleNames() {
-      return toUnits().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+      return toUnits().map(Unit::toName).collect(Collectors.toCollection(TreeSet::new));
+    }
+    public Set<String> toExternalModuleNames() {
+      var externals = new TreeSet<>(toRequiredModuleNames());
+      externals.removeAll(toDeclaredModuleNames());
+      externals.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+      return externals;
     }
     public Set<String> toRequiredModuleNames() {
       return Modules.required(toUnits().map(Unit::descriptor));
     }
+    public Set<String> toRealmLabelNames() {
+      return realms.stream().map(Realm::toLabelName).collect(Collectors.toCollection(TreeSet::new));
+    }
     public Stream<Unit> toUnits() {
-      return realms.stream().flatMap(realm -> realm.units().stream());
+      return realms.stream().flatMap(realm -> realm.units().values().stream());
     }
     public static final class Base {
       public static Base of() {
@@ -338,12 +286,6 @@ public class Bach {
       public Path modules(String realm) {
         return workspace("modules", realm);
       }
-      public List<Path> modulePaths(Iterable<String> realms) {
-        var paths = new ArrayList<Path>();
-        for (var realm : realms) paths.add(modules(realm));
-        paths.add(lib());
-        return List.copyOf(paths);
-      }
     }
     public static final class Info {
       private final String title;
@@ -386,44 +328,280 @@ public class Bach {
       }
     }
     public static final class Realm {
+      public enum Flag {
+        CREATE_API_DOCUMENTATION,
+        CREATE_CUSTOM_RUNTIME_IMAGE,
+        ENABLE_PREVIEW_LANGUAGE_FEATURES,
+        LAUNCH_TESTS
+      }
       private final String name;
-      private final List<Unit> units;
-      private final Javac javac;
-      private final List<Task> tasks;
-      public Realm(String name, List<Unit> units, Javac javac, List<Task> tasks) {
+      private final Set<Flag> flags;
+      private final Map<String, Unit> units;
+      private final Set<String> upstreams;
+      public Realm(String name, Set<Flag> flags, Map<String, Unit> units, Set<String> upstreams) {
         this.name = Objects.requireNonNull(name, "name");
-        this.units = List.copyOf(Objects.requireNonNull(units, "units"));
-        this.javac = Objects.requireNonNull(javac, "javac");
-        this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
+        this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+        this.units = Map.copyOf(Objects.requireNonNull(units, "units"));
+        this.upstreams = Set.copyOf(Objects.requireNonNull(upstreams, "upstreams"));
       }
       public String name() {
         return name;
       }
-      public List<Unit> units() {
+      public Set<Flag> flags() {
+        return flags;
+      }
+      public Map<String, Unit> units() {
         return units;
       }
-      public Javac javac() {
-        return javac;
+      public Set<String> upstreams() {
+        return upstreams;
       }
-      public List<Task> tasks() {
-        return tasks;
+      public Optional<Unit> unit(String module) {
+        return Optional.ofNullable(units.get(module));
+      }
+      public String toLabelName() {
+        return name.isEmpty() ? "unnamed" : name;
       }
     }
     public static final class Unit {
       private final ModuleDescriptor descriptor;
-      private final List<Task> tasks;
-      public Unit(ModuleDescriptor descriptor, List<Task> tasks) {
+      private final List<Source> sources;
+      public Unit(ModuleDescriptor descriptor, List<Source> sources) {
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-        this.tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
+        this.sources = List.copyOf(sources);
       }
       public ModuleDescriptor descriptor() {
         return descriptor;
       }
-      public List<Task> tasks() {
-        return tasks;
+      public List<Source> sources() {
+        return sources;
       }
-      public String name() {
+      public String toName() {
         return descriptor.name();
+      }
+      public Set<String> toRequiredNames() {
+        var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
+        return names.collect(Collectors.toCollection(TreeSet::new));
+      }
+    }
+    public static final class Source {
+      public enum Flag {
+        VERSIONED
+      }
+      private final Set<Flag> flags;
+      private final Path path;
+      private final int release;
+      public Source(Set<Flag> flags, Path path, int release) {
+        this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+        this.path = Objects.requireNonNull(path, "path");
+        this.release = Objects.checkIndex(release, Runtime.version().feature() + 1);
+      }
+      public Set<Flag> flags() {
+        return flags;
+      }
+      public Path path() {
+        return path;
+      }
+      public int release() {
+        return release;
+      }
+    }
+    public static class Builder {
+      private Base base = null;
+      private Path baseDirectory = Path.of("");
+      private Path baseWorkspace = Bach.WORKSPACE;
+      private Info info = null;
+      private String infoTitle = "Untitled";
+      private String infoVersion = "1-ea";
+      private Library library = null;
+      private final Set<String> libraryRequired = new TreeSet<>();
+      private final Map<String, String> libraryMap = new ModulesMap();
+      private List<Realm> realms = List.of();
+      public Project newProject() {
+        return new Project(
+            base == null ? new Base(baseDirectory, baseWorkspace) : base,
+            info == null ? new Info(infoTitle, Version.parse(infoVersion)) : info,
+            library == null ? new Library(libraryRequired, libraryMap::get) : library,
+            realms == null ? List.of() : realms);
+      }
+      public Builder setBase(Base base) {
+        this.base = base;
+        return this;
+      }
+      public Builder setInfo(Info info) {
+        this.info = info;
+        return this;
+      }
+      public Builder setLibrary(Library library) {
+        this.library = library;
+        return this;
+      }
+      public Builder setRealms(List<Realm> realms) {
+        this.realms = realms;
+        return this;
+      }
+      public Builder base(Path directory) {
+        this.baseDirectory = directory;
+        return this;
+      }
+      public Builder workspace(Path workspace) {
+        this.baseWorkspace = workspace;
+        return this;
+      }
+      public Builder title(String title) {
+        this.infoTitle = title;
+        return this;
+      }
+      public Builder version(String version) {
+        this.infoVersion = version;
+        return this;
+      }
+      public Builder requires(String module, String... more) {
+        this.libraryRequired.add(module);
+        this.libraryRequired.addAll(List.of(more));
+        return this;
+      }
+      public Builder map(String module, String uri) {
+        this.libraryMap.put(module, uri);
+        return this;
+      }
+    }
+  }
+  public static class Sequencer {
+    private final Project project;
+    public Sequencer(Project project) {
+      this.project = project;
+    }
+    public Task newBuildSequence() {
+      var tasks = new ArrayList<Task>();
+      tasks.add(new Task.ResolveMissingThirdPartyModules());
+      for (var realm : project.realms()) {
+        tasks.add(newJavacTask(realm));
+        for (var unit : realm.units().values()) tasks.add(newJarTask(realm, unit));
+      }
+      return Task.sequence("Build Sequence", tasks);
+    }
+    Task newJavacTask(Project.Realm realm) {
+      var arguments =
+          new Arguments()
+              .put("--module", String.join(",", realm.units().keySet()))
+              .put("-d", project.base().classes(realm.name()));
+      var modulePaths = Helper.modulePaths(project, realm);
+      if (!modulePaths.isEmpty()) arguments.put("--module-path", modulePaths);
+      Helper.putModuleSourcePaths(arguments, realm);
+      Helper.putModulePatches(arguments, project, realm);
+      if (realm.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)) {
+        arguments.put("--enable-preview");
+        arguments.put("--release", Runtime.version().feature());
+      }
+      return new Task.RunTool(
+          "Compile sources of " + realm.toLabelName() + " realm",
+          ToolProvider.findFirst("javac").orElseThrow(),
+          arguments.toStringArray());
+    }
+    Task newJarTask(Project.Realm realm, Project.Unit unit) {
+      var base = project.base();
+      var module = unit.toName();
+      var classes = base.classes(realm.name(), module);
+      var modules = base.modules(realm.name());
+      var jar = modules.resolve(module + "@" + project.info().version() + ".jar");
+      var arguments = new Arguments().put("--create").put("--file", jar);
+      unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
+      arguments.put("-C", classes, ".");
+      return Task.sequence(
+          "Create modular JAR file " + jar.getFileName(),
+          new Task.CreateDirectories(jar.getParent()),
+          new Task.RunTool(
+              "Package classes of module " + module,
+              ToolProvider.findFirst("jar").orElseThrow(),
+              arguments.toStringArray()));
+    }
+    public static class Arguments {
+      private final Map<String, List<Object>> namedOptions = new LinkedHashMap<>();
+      private final List<Object> additionalArguments = new ArrayList<>();
+      public Arguments add(Object... arguments) {
+        this.additionalArguments.addAll(List.of(arguments));
+        return this;
+      }
+      public Arguments put(String option, Object... values) {
+        namedOptions.put(option, List.of(values));
+        return this;
+      }
+      public Arguments put(String option, Collection<Path> paths) {
+        return put(option, "", paths);
+      }
+      public Arguments put(String option, String prefix, Collection<Path> paths) {
+        var path = paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+        namedOptions.put(option, List.of(prefix + path));
+        return this;
+      }
+      public String[] toStringArray() {
+        var list = new ArrayList<String>();
+        for (var entry : namedOptions.entrySet()) {
+          list.add(entry.getKey());
+          for (var value : entry.getValue()) list.add(value.toString());
+        }
+        for (var additional : additionalArguments) list.add(additional.toString());
+        return list.toArray(String[]::new);
+      }
+    }
+    public interface Helper {
+      static List<Path> modulePaths(Project project, Project.Realm realm) {
+        var base = project.base();
+        var lib = base.lib();
+        var paths = new ArrayList<Path>();
+        for (var upstream : realm.upstreams()) paths.add(base.modules(upstream));
+        if (Files.isDirectory(lib) || !project.toExternalModuleNames().isEmpty()) paths.add(lib);
+        return List.copyOf(paths);
+      }
+      static List<Path> relevantSourcePaths(Project.Unit unit) {
+        var sources = unit.sources();
+        var p0 = sources.get(0).path();
+        if (sources.size() == 1 || Files.exists(p0.resolve("module-info.java"))) return List.of(p0);
+        for (var source : sources) {
+          var pN = source.path();
+          if (Files.exists(pN.resolve("module-info.java"))) return List.of(p0, pN);
+        }
+        throw new IllegalStateException("No module-info.java found in: " + sources);
+      }
+      static void putModuleSourcePaths(Arguments arguments, Project.Realm realm) {
+        var patterns = new TreeSet<String>(); // "src:etc/*/java"
+        var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
+        for (var unit : realm.units().values()) {
+          var sourcePaths = Helper.relevantSourcePaths(unit);
+          try {
+            for (var path : sourcePaths) patterns.add(Modules.modulePatternForm(path, unit.toName()));
+          } catch (FindException e) {
+            specific.put(unit.toName(), sourcePaths);
+          }
+        }
+        if (!patterns.isEmpty())
+          arguments.put("--module-source-path", String.join(File.pathSeparator, patterns));
+        if (specific.isEmpty()) return;
+        for (var entry : specific.entrySet())
+          arguments.put("--module-source-path", entry.getKey() + "=", entry.getValue());
+      }
+      static Map<String, List<Path>> patches(
+          Collection<Project.Unit> units, List<Project.Realm> upstreams) {
+        if (units.isEmpty() || upstreams.isEmpty()) return Map.of();
+        var patches = new TreeMap<String, List<Path>>();
+        for (var unit : units) {
+          var module = unit.toName();
+          for (var upstream : upstreams)
+            upstream.units().values().stream()
+                .filter(up -> up.toName().equals(module))
+                .findAny()
+                .ifPresent(up -> patches.put(module, List.of(up.sources().get(0).path())));
+        }
+        return patches;
+      }
+      static void putModulePatches(Arguments arguments, Project project, Project.Realm realm) {
+        var upstreams = new ArrayList<>(project.realms());
+        upstreams.removeIf(candidate -> !realm.upstreams().contains(candidate.name()));
+        var patches = patches(realm.units().values(), upstreams);
+        if (patches.isEmpty()) return;
+        for (var patch : patches.entrySet())
+          arguments.put("--patch-module", patch.getKey() + "=", patch.getValue());
       }
     }
   }
@@ -645,7 +823,7 @@ public class Bach {
             }
           }
         }
-        var modulePaths = project.base().modulePaths(List.of());
+        var modulePaths = List.of(project.base().lib());
         var declared = project.toDeclaredModuleNames();
         var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
         resolver.resolve(project.toRequiredModuleNames());
@@ -653,304 +831,148 @@ public class Bach {
       }
     }
   }
-  @SuppressWarnings("unchecked")
-  public static abstract class GenericSourcesConsumer<T> extends Call {
-    private Path destinationDirectory;
-    private String characterEncodingUsedBySourceFiles;
-    private Set<String> modules;
-    public GenericSourcesConsumer(String name) {
-      super(name);
+  public static class Walker {
+    public enum Layout {
+      AUTOMATIC,
+      DEFAULT,
+      MAIN_TEST_PREVIEW
     }
-    protected void addConfiguredArguments(Arguments arguments) {
-      var destination = getDestinationDirectory();
-      if (assigned(destination)) arguments.add("-d", destination);
-      var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (assigned(encoding)) arguments.add("-encoding", encoding);
-      var modules = getModules();
-      if (assigned(modules)) arguments.add("--module", String.join(",", new TreeSet<>(modules)));
+    private Project.Base base = Project.Base.of();
+    private List<Path> moduleInfoFiles = new ArrayList<>();
+    private int walkDepthLimit = 9;
+    private Path walkOffset = Path.of("");
+    private Layout layout = Layout.AUTOMATIC;
+    public Walker setBase(Path directory) {
+      return setBase(Project.Base.of(directory));
     }
-    public Path getDestinationDirectory() {
-      return destinationDirectory;
-    }
-    public T setDestinationDirectory(Path directory) {
-      this.destinationDirectory = directory;
-      return (T) this;
-    }
-    public String getCharacterEncodingUsedBySourceFiles() {
-      return characterEncodingUsedBySourceFiles;
-    }
-    public T setCharacterEncodingUsedBySourceFiles(String encoding) {
-      this.characterEncodingUsedBySourceFiles = encoding;
-      return (T) this;
-    }
-    public Set<String> getModules() {
-      return modules;
-    }
-    public T setModules(Set<String> modules) {
-      this.modules = modules;
-      return (T) this;
-    }
-  }
-  public static class Jar extends Call {
-    public Jar() {
-      super("jar");
-    }
-    public String toLabel() {
-      return "Operate on JAR file";
-    }
-  }
-  public static class Javac extends GenericSourcesConsumer<Javac> {
-    private Version versionOfModulesThatAreBeingCompiled;
-    private List<String> patternsWhereToFindSourceFiles;
-    private Map<String, List<Path>> pathsWhereToFindSourceFiles;
-    private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private List<Path> pathsWhereToFindApplicationModules;
-    private int compileForVirtualMachineVersion;
-    private boolean enablePreviewLanguageFeatures;
-    private boolean generateMetadataForMethodParameters;
-    private boolean outputMessagesAboutWhatTheCompilerIsDoing;
-    private boolean outputSourceLocationsOfDeprecatedUsages;
-    private boolean terminateCompilationIfWarningsOccur;
-    public Javac() {
-      super("javac");
-    }
-    public String toLabel() {
-      return "Compile module(s): " + getModules();
-    }
-    protected void addConfiguredArguments(Arguments arguments) {
-      super.addConfiguredArguments(arguments);
-      var version = getVersionOfModulesThatAreBeingCompiled();
-      if (assigned(version)) arguments.add("--module-version", version);
-      var patterns = getPatternsWhereToFindSourceFiles();
-      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
-      var specific = getPathsWhereToFindSourceFiles();
-      if (assigned(specific))
-        for (var entry : specific.entrySet())
-          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
-      var patches = getPathsWhereToFindMoreAssetsPerModule();
-      if (assigned(patches))
-        for (var patch : patches.entrySet())
-          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
-      var modulePath = getPathsWhereToFindApplicationModules();
-      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
-      var release = getCompileForVirtualMachineVersion();
-      if (assigned(release)) arguments.add("--release", release);
-      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
-      if (isGenerateMetadataForMethodParameters()) arguments.add("-parameters");
-      if (isOutputSourceLocationsOfDeprecatedUsages()) arguments.add("-deprecation");
-      if (isOutputMessagesAboutWhatTheCompilerIsDoing()) arguments.add("-verbose");
-      if (isTerminateCompilationIfWarningsOccur()) arguments.add("-Werror");
-    }
-    public Version getVersionOfModulesThatAreBeingCompiled() {
-      return versionOfModulesThatAreBeingCompiled;
-    }
-    public Javac setVersionOfModulesThatAreBeingCompiled(
-        Version versionOfModulesThatAreBeingCompiled) {
-      this.versionOfModulesThatAreBeingCompiled = versionOfModulesThatAreBeingCompiled;
+    public Walker setBase(Project.Base base) {
+      this.base = base;
       return this;
     }
-    public List<String> getPatternsWhereToFindSourceFiles() {
-      return patternsWhereToFindSourceFiles;
-    }
-    public Javac setPatternsWhereToFindSourceFiles(List<String> patterns) {
-      this.patternsWhereToFindSourceFiles = patterns;
+    public Walker setModuleInfoFiles(List<Path> moduleInfoFiles) {
+      this.moduleInfoFiles = moduleInfoFiles;
       return this;
     }
-    public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
-      return pathsWhereToFindSourceFiles;
-    }
-    public Javac setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
-      this.pathsWhereToFindSourceFiles = map;
+    public Walker setWalkOffset(Path walkOffset) {
+      this.walkOffset = walkOffset;
       return this;
     }
-    public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
-      return pathsWhereToFindMoreAssetsPerModule;
-    }
-    public Javac setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
-      this.pathsWhereToFindMoreAssetsPerModule = map;
+    public Walker setWalkDepthLimit(int walkDepthLimit) {
+      this.walkDepthLimit = walkDepthLimit;
       return this;
     }
-    public List<Path> getPathsWhereToFindApplicationModules() {
-      return pathsWhereToFindApplicationModules;
-    }
-    public Javac setPathsWhereToFindApplicationModules(
-        List<Path> pathsWhereToFindApplicationModules) {
-      this.pathsWhereToFindApplicationModules = pathsWhereToFindApplicationModules;
+    public Walker setLayout(Layout layout) {
+      this.layout = layout;
       return this;
     }
-    public int getCompileForVirtualMachineVersion() {
-      return compileForVirtualMachineVersion;
+    public Project.Builder newBuilder() {
+      if (moduleInfoFiles.isEmpty()) {
+        var directory = base.directory().resolve(walkOffset);
+        if (Paths.isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
+        var paths = Paths.find(List.of(directory), walkDepthLimit, Paths::isModuleInfoJavaFile);
+        if (paths.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
+        setModuleInfoFiles(paths);
+      }
+      var directoryName = base.directory().toAbsolutePath().getFileName();
+      var builder = Project.builder();
+      builder.setBase(base);
+      if (directoryName != null) builder.title(directoryName.toString());
+      builder.setRealms(computeRealms());
+      return builder;
     }
-    public Javac setCompileForVirtualMachineVersion(int release) {
-      this.compileForVirtualMachineVersion = release;
-      return this;
+    List<Project.Realm> computeRealms() {
+      if (layout == Layout.DEFAULT) return computeUnnamedRealm();
+      if (layout == Layout.MAIN_TEST_PREVIEW) return computeMainTestPreviewRealms();
+      if (layout != Layout.AUTOMATIC) throw new AssertionError("Unexpected layout: " + layout);
+      try {
+        return computeMainTestPreviewRealms();
+      } catch (UnsupportedOperationException ignored) {
+      }
+      return computeUnnamedRealm();
     }
-    public boolean isEnablePreviewLanguageFeatures() {
-      return enablePreviewLanguageFeatures;
+    List<Project.Realm> computeUnnamedRealm() {
+      return List.of(
+          new RealmBuilder("")
+              .takeMatchingModuleInfoFilesFrom(new ArrayList<>(moduleInfoFiles))
+              .flag(Project.Realm.Flag.CREATE_API_DOCUMENTATION)
+              .flag(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE)
+              .flag(Project.Realm.Flag.LAUNCH_TESTS)
+              .build());
     }
-    public Javac setEnablePreviewLanguageFeatures(boolean preview) {
-      this.enablePreviewLanguageFeatures = preview;
-      return this;
+    List<Project.Realm> computeMainTestPreviewRealms() {
+      var files = new ArrayList<>(moduleInfoFiles);
+      var main =
+          new RealmBuilder("main")
+              .takeMatchingModuleInfoFilesFrom(files)
+              .flag(Project.Realm.Flag.CREATE_API_DOCUMENTATION)
+              .flag(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE)
+              .build();
+      var test =
+          new RealmBuilder("test")
+              .takeMatchingModuleInfoFilesFrom(files)
+              .flag(Project.Realm.Flag.LAUNCH_TESTS)
+              .upstream("main")
+              .build();
+      var preview =
+          new RealmBuilder("test-preview")
+              .takeMatchingModuleInfoFilesFrom(files)
+              .flag(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)
+              .flag(Project.Realm.Flag.LAUNCH_TESTS)
+              .upstream("main")
+              .upstream("test")
+              .build();
+      if (!files.isEmpty()) throw new UnsupportedOperationException("File(s) not taken: " + files);
+      var realms = new ArrayList<Project.Realm>();
+      if (!main.units().isEmpty()) realms.add(main);
+      if (!test.units().isEmpty()) realms.add(test);
+      if (!preview.units().isEmpty()) realms.add(preview);
+      if (realms.isEmpty()) throw new UnsupportedOperationException("No match in: " + files);
+      return List.copyOf(realms);
     }
-    public boolean isGenerateMetadataForMethodParameters() {
-      return generateMetadataForMethodParameters;
-    }
-    public Javac setGenerateMetadataForMethodParameters(boolean parameters) {
-      this.generateMetadataForMethodParameters = parameters;
-      return this;
-    }
-    public boolean isOutputMessagesAboutWhatTheCompilerIsDoing() {
-      return outputMessagesAboutWhatTheCompilerIsDoing;
-    }
-    public Javac setOutputMessagesAboutWhatTheCompilerIsDoing(boolean verbose) {
-      this.outputMessagesAboutWhatTheCompilerIsDoing = verbose;
-      return this;
-    }
-    public boolean isOutputSourceLocationsOfDeprecatedUsages() {
-      return outputSourceLocationsOfDeprecatedUsages;
-    }
-    public Javac setOutputSourceLocationsOfDeprecatedUsages(boolean deprecation) {
-      this.outputSourceLocationsOfDeprecatedUsages = deprecation;
-      return this;
-    }
-    public boolean isTerminateCompilationIfWarningsOccur() {
-      return terminateCompilationIfWarningsOccur;
-    }
-    public Javac setTerminateCompilationIfWarningsOccur(boolean error) {
-      this.terminateCompilationIfWarningsOccur = error;
-      return this;
-    }
-  }
-  public static class Javadoc extends GenericSourcesConsumer<Javadoc> {
-    private List<String> patternsWhereToFindSourceFiles;
-    private Map<String, List<Path>> pathsWhereToFindSourceFiles;
-    private Map<String, List<Path>> pathsWhereToFindMoreAssetsPerModule;
-    private List<Path> pathsWhereToFindApplicationModules;
-    private String characterEncodingUsedBySourceFiles;
-    private int compileForVirtualMachineVersion;
-    private boolean enablePreviewLanguageFeatures;
-    private boolean outputMessagesAboutWhatJavadocIsDoing;
-    private boolean shutOffDisplayingStatusMessages;
-    public Javadoc() {
-      super("javadoc");
-    }
-    public String toLabel() {
-      return "Generate API documentation for " + getModules();
-    }
-    protected void addConfiguredArguments(Arguments arguments) {
-      super.addConfiguredArguments(arguments);
-      var patterns = getPatternsWhereToFindSourceFiles();
-      if (assigned(patterns)) arguments.add("--module-source-path", joinPaths(patterns));
-      var specific = getPathsWhereToFindSourceFiles();
-      if (assigned(specific))
-        for (var entry : specific.entrySet())
-          arguments.add("--module-source-path", entry.getKey() + '=' + join(entry.getValue()));
-      var patches = getPathsWhereToFindMoreAssetsPerModule();
-      if (assigned(patches))
-        for (var patch : patches.entrySet())
-          arguments.add("--patch-module", patch.getKey() + '=' + join(patch.getValue()));
-      var modulePath = getPathsWhereToFindApplicationModules();
-      if (assigned(modulePath)) arguments.add("--module-path", join(modulePath));
-      var encoding = getCharacterEncodingUsedBySourceFiles();
-      if (assigned(encoding)) arguments.add("-encoding", encoding);
-      var release = getCompileForVirtualMachineVersion();
-      if (assigned(release)) arguments.add("--release", release);
-      if (isEnablePreviewLanguageFeatures()) arguments.add("--enable-preview");
-      if (isOutputMessagesAboutWhatJavadocIsDoing()) arguments.add("-verbose");
-      if (isShutOffDisplayingStatusMessages()) arguments.add("-quiet");
-    }
-    public List<String> getPatternsWhereToFindSourceFiles() {
-      return patternsWhereToFindSourceFiles;
-    }
-    public Javadoc setPatternsWhereToFindSourceFiles(List<String> patterns) {
-      this.patternsWhereToFindSourceFiles = patterns;
-      return this;
-    }
-    public Map<String, List<Path>> getPathsWhereToFindSourceFiles() {
-      return pathsWhereToFindSourceFiles;
-    }
-    public Javadoc setPathsWhereToFindSourceFiles(Map<String, List<Path>> map) {
-      this.pathsWhereToFindSourceFiles = map;
-      return this;
-    }
-    public Map<String, List<Path>> getPathsWhereToFindMoreAssetsPerModule() {
-      return pathsWhereToFindMoreAssetsPerModule;
-    }
-    public Javadoc setPathsWhereToFindMoreAssetsPerModule(Map<String, List<Path>> map) {
-      this.pathsWhereToFindMoreAssetsPerModule = map;
-      return this;
-    }
-    public List<Path> getPathsWhereToFindApplicationModules() {
-      return pathsWhereToFindApplicationModules;
-    }
-    public Javadoc setPathsWhereToFindApplicationModules(List<Path> paths) {
-      this.pathsWhereToFindApplicationModules = paths;
-      return this;
-    }
-    public String getCharacterEncodingUsedBySourceFiles() {
-      return characterEncodingUsedBySourceFiles;
-    }
-    public Javadoc setCharacterEncodingUsedBySourceFiles(String encoding) {
-      this.characterEncodingUsedBySourceFiles = encoding;
-      return this;
-    }
-    public int getCompileForVirtualMachineVersion() {
-      return compileForVirtualMachineVersion;
-    }
-    public Javadoc setCompileForVirtualMachineVersion(int release) {
-      this.compileForVirtualMachineVersion = release;
-      return this;
-    }
-    public boolean isEnablePreviewLanguageFeatures() {
-      return enablePreviewLanguageFeatures;
-    }
-    public Javadoc setEnablePreviewLanguageFeatures(boolean preview) {
-      this.enablePreviewLanguageFeatures = preview;
-      return this;
-    }
-    public boolean isOutputMessagesAboutWhatJavadocIsDoing() {
-      return outputMessagesAboutWhatJavadocIsDoing;
-    }
-    public Javadoc setOutputMessagesAboutWhatJavadocIsDoing(boolean verbose) {
-      this.outputMessagesAboutWhatJavadocIsDoing = verbose;
-      return this;
-    }
-    public boolean isShutOffDisplayingStatusMessages() {
-      return shutOffDisplayingStatusMessages;
-    }
-    public Javadoc setShutOffDisplayingStatusMessages(boolean quiet) {
-      this.shutOffDisplayingStatusMessages = quiet;
-      return this;
-    }
-  }
-  public static class Jlink extends Call {
-    private Path locationOfTheGeneratedRuntimeImage;
-    private Set<String> modules;
-    public Jlink() {
-      super("jlink");
-    }
-    public String toLabel() {
-      return "Create a custom runtime image with dependencies for " + getModules();
-    }
-    protected void addConfiguredArguments(Arguments arguments) {
-      var output = getLocationOfTheGeneratedRuntimeImage();
-      if (assigned(output)) arguments.add("--output", output);
-      var modules = getModules();
-      if (assigned(modules)) arguments.add("--add-modules", String.join(",", new TreeSet<>(modules)));
-    }
-    public Path getLocationOfTheGeneratedRuntimeImage() {
-      return locationOfTheGeneratedRuntimeImage;
-    }
-    public Jlink setLocationOfTheGeneratedRuntimeImage(Path output) {
-      this.locationOfTheGeneratedRuntimeImage = output;
-      return this;
-    }
-    public Set<String> getModules() {
-      return modules;
-    }
-    public Jlink setModules(Set<String> modules) {
-      this.modules = modules;
-      return this;
+    private static class RealmBuilder {
+      final String name;
+      final List<Path> moduleInfoFiles = new ArrayList<>();
+      final Set<Project.Realm.Flag> flags = new TreeSet<>();
+      final Set<String> upstreams = new TreeSet<>();
+      RealmBuilder(String name) {
+        this.name = Objects.requireNonNull(name, "name");
+      }
+      RealmBuilder flag(Project.Realm.Flag flag) {
+        flags.add(flag);
+        return this;
+      }
+      RealmBuilder upstream(String upstream) {
+        upstreams.add(upstream);
+        return this;
+      }
+      RealmBuilder takeMatchingModuleInfoFilesFrom(List<Path> files) {
+        if (files.isEmpty()) return this;
+        if (name.isEmpty()) {
+          moduleInfoFiles.addAll(files);
+          files.clear();
+          return this;
+        }
+        var iterator = files.listIterator();
+        while (iterator.hasNext()) {
+          var file = iterator.next();
+          if (Collections.frequency(Paths.deque(file), name) == 1) {
+            moduleInfoFiles.add(file);
+            iterator.remove();
+          }
+        }
+        return this;
+      }
+      Project.Realm build() {
+        var units = new TreeMap<String, Project.Unit>();
+        for (var info : moduleInfoFiles) {
+          var descriptor = Modules.describe(info);
+          var module = descriptor.name();
+          var sources = new ArrayList<Project.Source>();
+          sources.add(new Project.Source(Set.of(), info.getParent(), 0));
+          units.put(module, new Project.Unit(descriptor, sources));
+        }
+        return new Project.Realm(name, flags, units, upstreams);
+      }
     }
   }
   public static class Functions {
@@ -1282,10 +1304,11 @@ public class Bach {
     private final Consumer<Set<String>> transporter;
     private final Set<String> system;
     public ModulesResolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
-      this.paths = paths.toArray(Path[]::new);
-      this.declared = new TreeSet<>(declared);
-      this.transporter = transporter;
+      this.paths = Objects.requireNonNull(paths, "paths").toArray(Path[]::new);
+      this.declared = new TreeSet<>(Objects.requireNonNull(declared, "declared"));
+      this.transporter = Objects.requireNonNull(transporter, "transporter");
       this.system = Modules.declared(ModuleFinder.ofSystem());
+      if (paths.isEmpty()) throw new IllegalArgumentException("At least one path expected");
     }
     public void resolve(Set<String> required) {
       resolveModules(required);
@@ -1333,6 +1356,9 @@ public class Bach {
         throw new UncheckedIOException(e);
       }
     }
+    public static boolean isRoot(Path path) {
+      return path.toAbsolutePath().normalize().getNameCount() == 0;
+    }
     public static boolean isJavadocCommentAvailable(Path path) {
       try {
         return Files.readString(path).contains("/**");
@@ -1343,10 +1369,10 @@ public class Bach {
     public static boolean isModuleInfoJavaFile(Path path) {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
-    public static List<Path> find(Collection<Path> roots, Predicate<Path> filter) {
+    public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
       var files = new TreeSet<Path>();
       for (var root : roots) {
-        try (var stream = Files.walk(root)) {
+        try (var stream = Files.walk(root, maxDepth)) {
           stream.filter(filter).forEach(files::add);
         } catch (Exception e) {
           throw new Error("Walk directory '" + root + "' failed: " + e, e);

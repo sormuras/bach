@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import java.nio.file.Path;
+
 /**
  * Bach's own build program.
  *
@@ -23,6 +25,16 @@
 class Build {
 
   public static void main(String... args) {
-    throw new UnsupportedOperationException("Not re-implemented, yet...");
+    var project =
+        new Bach.Walker()
+            .setWalkOffset(Path.of("src"))
+            .setWalkDepthLimit(5)
+            .setLayout(Bach.Walker.Layout.MAIN_TEST_PREVIEW)
+            .newBuilder()
+            .title("\uD83C\uDFBC Bach.java")
+            .version(Bach.VERSION.toString())
+            .requires("org.junit.platform.console")
+            .newProject();
+    Bach.of(project).build().assertSuccessful();
   }
 }
