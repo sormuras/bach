@@ -76,6 +76,7 @@ if (Files.notExists(build)) {
   Files.createDirectories(build.getParent());
   Files.write(build, List.of(
       "class Build {",
+      "  public static void main(String... args) {",
       "    Bach.of(project -> project).build().assertSuccessful();",
       "  }",
       "}"));
