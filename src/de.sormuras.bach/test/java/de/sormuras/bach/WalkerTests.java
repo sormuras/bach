@@ -90,6 +90,8 @@ class WalkerTests {
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.realms().get(0);
       assertEquals("", realm.name());
+
+      Bach.of(project).build().assertSuccessful();
     }
 
     @Test
@@ -113,6 +115,8 @@ class WalkerTests {
       var test = realms.get(1);
       assertEquals("test", test.name());
       assertEquals(2, test.units().size());
+
+      Bach.of(project).build().assertSuccessful();
     }
   }
 }
