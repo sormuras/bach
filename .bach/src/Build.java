@@ -40,6 +40,7 @@ class Build {
   }
 
   private static void tune(Bach.Sequencer.Arguments arguments, Map<String, String> context) {
+    Bach.Sequencer.Tuner.defaults(arguments, context);
     if ("main".equals(context.get("realm"))) {
       switch (context.get("tool")) {
         case "javac":
