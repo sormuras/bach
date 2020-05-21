@@ -86,8 +86,10 @@ public /*static*/ final class Project {
     list.add("Project");
     list.add("\ttitle: " + info.title());
     list.add("\tversion: " + info.version());
-    list.add("\trealms: " + realms().size());
-    list.add("\tunits: " + toUnits().count());
+    list.add("\trealms: " + toRealmLabelNames() + " << " + toUnits().count() + " distinct unit(s)");
+    list.add("\tdeclares: " + toDeclaredModuleNames());
+    list.add("\trequires: " + toRequiredModuleNames());
+    list.add("\texternal: " + toExternalModuleNames());
     for (var realm : realms()) {
       list.add("\tRealm " + realm.name());
       list.add("\t\tflags: " + realm.flags());
@@ -117,8 +119,19 @@ public /*static*/ final class Project {
     return toUnits().map(Unit::toName).collect(Collectors.toCollection(TreeSet::new));
   }
 
+  public Set<String> toExternalModuleNames() {
+    var externals = new TreeSet<>(toRequiredModuleNames());
+    externals.removeAll(toDeclaredModuleNames());
+    externals.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    return externals;
+  }
+
   public Set<String> toRequiredModuleNames() {
     return Modules.required(toUnits().map(Unit::descriptor));
+  }
+
+  public Set<String> toRealmLabelNames() {
+    return realms.stream().map(Realm::toLabelName).collect(Collectors.toCollection(TreeSet::new));
   }
 
   public Stream<Unit> toUnits() {
