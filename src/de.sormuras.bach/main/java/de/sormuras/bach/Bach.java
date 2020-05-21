@@ -54,11 +54,22 @@ public class Bach {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
 
+  /** Return Bach instance with a default project parsed from the current working directory. */
+  public static Bach of() {
+    return of(UnaryOperator.identity());
+  }
+
+  /** Return Bach instance with a configured project parsed from the current working directory. */
+  public static Bach of(UnaryOperator<Project.Builder> builder) {
+    return of(UnaryOperator.identity(), builder);
+  }
+
+  /** Return Bach instance with both operators applied. */
   public static Bach of(UnaryOperator<Walker> walker, UnaryOperator<Project.Builder> builder) {
     return of(builder.apply(walker.apply(new Walker()).newBuilder()).newProject());
   }
 
-  /** Create Bach instance with the specified project and default components. */
+  /** Return Bach instance with the specified project and default components. */
   public static Bach of(Project project) {
     return new Bach(project, HttpClient.newBuilder()::build);
   }
