@@ -41,8 +41,9 @@ class Build {
 
   private static void tune(Bach.Sequencer.Arguments arguments, Map<String, String> context) {
     Bach.Sequencer.Tuner.defaults(arguments, context);
+    var tool = context.get("tool");
     if ("main".equals(context.get("realm"))) {
-      switch (context.get("tool")) {
+      switch (tool) {
         case "javac":
           arguments.put("--release", 11);
           break;
@@ -52,6 +53,9 @@ class Build {
               .add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
           break;
       }
+    }
+    if ("test-preview".equals(context.get("realm"))) {
+      if (tool.equals("javac")) arguments.put("-Xlint:-preview");
     }
   }
 }
