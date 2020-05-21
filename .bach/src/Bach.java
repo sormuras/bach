@@ -84,6 +84,15 @@ public class Bach {
   public static Optional<Path> findCustomBuildProgram() {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
+  public static Bach of() {
+    return of(UnaryOperator.identity());
+  }
+  public static Bach of(UnaryOperator<Project.Builder> builder) {
+    return of(UnaryOperator.identity(), builder);
+  }
+  public static Bach of(UnaryOperator<Walker> walker, UnaryOperator<Project.Builder> builder) {
+    return of(builder.apply(walker.apply(new Walker()).newBuilder()).newProject());
+  }
   public static Bach of(Project project) {
     return new Bach(project, HttpClient.newBuilder()::build);
   }
@@ -160,6 +169,7 @@ public class Bach {
         System.err.println("Custom build program execution not supported, yet.");
         return;
       }
+      Bach.of().build().assertSuccessful();
     }
   }
   public static final class Project {
@@ -442,6 +452,9 @@ public class Bach {
       public Builder setRealms(List<Realm> realms) {
         this.realms = realms;
         return this;
+      }
+      public Builder base(String directory, String... more) {
+        return base(Path.of(directory, more));
       }
       public Builder base(Path directory) {
         this.baseDirectory = directory;
@@ -872,6 +885,9 @@ public class Bach {
     private int walkDepthLimit = 9;
     private Path walkOffset = Path.of("");
     private Layout layout = Layout.AUTOMATIC;
+    public Walker setBase(String directory, String... more) {
+      return setBase(Path.of(directory, more));
+    }
     public Walker setBase(Path directory) {
       return setBase(Project.Base.of(directory));
     }
