@@ -95,6 +95,8 @@ class ModulesResolverTests {
 
   private static class Transporter extends TreeMap<String, URI> implements Consumer<Set<String>> {
 
+    private static final long serialVersionUID = 8022416598117573537L;
+
     private static URI central(String group, String artifact, String version) {
       var host = "https://repo.maven.apache.org/maven2";
       var file = artifact + '-' + version + ".jar";
