@@ -82,7 +82,8 @@ public /*static*/ class Sequencer {
     var jar = Helper.jar(project, realm, module);
     var arguments = new Arguments().put("--create").put("--file", jar);
     unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
-    arguments.put("-C", classes, ".");
+    arguments.add("-C", classes, ".");
+    unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
     tuner.tune(arguments, project, Tuner.context("jar", realm, module));
     return Task.sequence(
         "Create modular JAR file " + jar.getFileName(),

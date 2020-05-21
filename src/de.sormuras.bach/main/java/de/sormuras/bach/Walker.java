@@ -209,7 +209,10 @@ public /*static*/ class Walker {
       var sources = new ArrayList<Project.Source>();
       if (javaPresent) sources.add(new Project.Source(Set.of(), javaSibling, 0));
       sources.add(new Project.Source(Set.of(), info.getParent(), 0));
-      return new Project.Unit(Modules.describe(info), sources);
+      var resourcesPath = infoParent.resolveSibling("resources");
+      var resources = new ArrayList<Path>();
+      if (Files.isDirectory(resourcesPath)) resources.add(resourcesPath);
+      return new Project.Unit(Modules.describe(info), sources, resources);
     }
   }
 }

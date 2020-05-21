@@ -308,10 +308,12 @@ public /*static*/ final class Project {
 
     private final ModuleDescriptor descriptor;
     private final List<Source> sources;
+    private final List<Path> resources;
 
-    public Unit(ModuleDescriptor descriptor, List<Source> sources) {
+    public Unit(ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
       this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-      this.sources = List.copyOf(sources);
+      this.sources = List.copyOf(Objects.requireNonNull(sources, "sources"));
+      this.resources = List.copyOf(Objects.requireNonNull(resources, "resources"));
     }
 
     public ModuleDescriptor descriptor() {
@@ -320,6 +322,10 @@ public /*static*/ final class Project {
 
     public List<Source> sources() {
       return sources;
+    }
+
+    public List<Path> resources() {
+      return resources;
     }
 
     public String toName() {

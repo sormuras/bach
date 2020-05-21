@@ -379,15 +379,20 @@ public class Bach {
     public static final class Unit {
       private final ModuleDescriptor descriptor;
       private final List<Source> sources;
-      public Unit(ModuleDescriptor descriptor, List<Source> sources) {
+      private final List<Path> resources;
+      public Unit(ModuleDescriptor descriptor, List<Source> sources, List<Path> resources) {
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-        this.sources = List.copyOf(sources);
+        this.sources = List.copyOf(Objects.requireNonNull(sources, "sources"));
+        this.resources = List.copyOf(Objects.requireNonNull(resources, "resources"));
       }
       public ModuleDescriptor descriptor() {
         return descriptor;
       }
       public List<Source> sources() {
         return sources;
+      }
+      public List<Path> resources() {
+        return resources;
       }
       public String toName() {
         return descriptor.name();
@@ -520,7 +525,8 @@ public class Bach {
       var jar = Helper.jar(project, realm, module);
       var arguments = new Arguments().put("--create").put("--file", jar);
       unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
-      arguments.put("-C", classes, ".");
+      arguments.add("-C", classes, ".");
+      unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
       tuner.tune(arguments, project, Tuner.context("jar", realm, module));
       return Task.sequence(
           "Create modular JAR file " + jar.getFileName(),
@@ -1095,7 +1101,10 @@ public class Bach {
         var sources = new ArrayList<Project.Source>();
         if (javaPresent) sources.add(new Project.Source(Set.of(), javaSibling, 0));
         sources.add(new Project.Source(Set.of(), info.getParent(), 0));
-        return new Project.Unit(Modules.describe(info), sources);
+        var resourcesPath = infoParent.resolveSibling("resources");
+        var resources = new ArrayList<Path>();
+        if (Files.isDirectory(resourcesPath)) resources.add(resourcesPath);
+        return new Project.Unit(Modules.describe(info), sources, resources);
       }
     }
   }
