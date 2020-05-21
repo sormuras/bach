@@ -94,9 +94,13 @@ public class Bach {
   }
 
   public Summary build() {
+    return build(Sequencer.Tuner::defaults);
+  }
+
+  public Summary build(Sequencer.Tuner tuner) {
     var summary = new Summary(this);
     try {
-      execute(new Sequencer(project).newBuildSequence());
+      execute(new Sequencer(project, tuner).newBuildSequence());
     } finally {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }

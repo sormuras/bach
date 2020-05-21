@@ -36,9 +36,11 @@ import java.util.stream.Collectors;
 public /*static*/ class Sequencer {
 
   private final Project project;
+  private final Tuner tuner;
 
-  public Sequencer(Project project) {
+  public Sequencer(Project project, Tuner tuner) {
     this.project = project;
+    this.tuner = tuner;
   }
 
   public Task newBuildSequence() {
@@ -69,6 +71,7 @@ public /*static*/ class Sequencer {
       arguments.put("--enable-preview");
       arguments.put("--release", Runtime.version().feature());
     }
+    tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
 
     return new Task.RunTool(
         "Compile sources of " + realm.toLabelName() + " realm",
@@ -87,6 +90,7 @@ public /*static*/ class Sequencer {
     var arguments = new Arguments().put("--create").put("--file", jar);
     unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
     arguments.put("-C", classes, ".");
+    tuner.tune(arguments, Map.of("tool", "jar", "realm", realm.name(), "module", module));
 
     return Task.sequence(
         "Create modular JAR file " + jar.getFileName(),
@@ -197,6 +201,34 @@ public /*static*/ class Sequencer {
       if (patches.isEmpty()) return;
       for (var patch : patches.entrySet())
         arguments.put("--patch-module", patch.getKey() + "=", patch.getValue());
+    }
+  }
+
+  /** An arguments tuner invoked by a {@link Sequencer} instance. */
+  @FunctionalInterface
+  public interface Tuner {
+
+    void tune(Arguments arguments, Map<String, String> context);
+
+    static void defaults(Arguments arguments, Map<String, String> context) {
+      switch (context.get("tool")) {
+        case "javac":
+          arguments.put("-encoding", "UTF-8");
+          arguments.put("-parameters");
+          arguments.put("-Werror");
+          arguments.put("-X" + "lint");
+          break;
+        case "javadoc":
+          arguments.put("-encoding", "UTF-8");
+          arguments.put("-locale", "en");
+          break;
+        case "jlink":
+          arguments.put("--compress", "2");
+          arguments.put("--no-header-files");
+          arguments.put("--no-man-pages");
+          arguments.put("--strip-debug");
+          break;
+      }
     }
   }
 }
