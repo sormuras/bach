@@ -26,7 +26,6 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -97,25 +96,11 @@ public class Bach {
   public Summary build() {
     var summary = new Summary(this);
     try {
-      execute(buildSequence());
+      execute(new Sequencer(project).newBuildSequence());
     } finally {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }
     return summary;
-  }
-
-  /*private*/ Task buildSequence() {
-    var tasks = new ArrayList<Task>();
-    tasks.add(new Task.CreateDirectories(project.base().lib()));
-    tasks.add(new Task.ResolveMissingThirdPartyModules());
-    for (var realm : project.realms()) {
-      logbook.log(Level.TRACE, "Tasks for realm {0}", realm);
-      // TODO tasks.add(realm.javac().toTask());
-      // TODO for (var unit : realm.units().values()) tasks.addAll(unit.tasks());
-      // TODO tasks.addAll(realm.tasks());
-    }
-    tasks.add(new Task.DeleteEmptyDirectory(project.base().lib()));
-    return Task.sequence("Build Sequence", tasks);
   }
 
   /*private*/ void execute(Task task) {
