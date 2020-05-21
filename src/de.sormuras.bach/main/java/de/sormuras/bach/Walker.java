@@ -47,6 +47,10 @@ public /*static*/ class Walker {
   private Path walkOffset = Path.of("");
   private Layout layout = Layout.AUTOMATIC;
 
+  public Walker setBase(String directory, String... more) {
+    return setBase(Path.of(directory, more));
+  }
+
   public Walker setBase(Path directory) {
     return setBase(Project.Base.of(directory));
   }

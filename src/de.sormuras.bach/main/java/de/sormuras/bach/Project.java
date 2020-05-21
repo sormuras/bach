@@ -409,6 +409,10 @@ public /*static*/ final class Project {
       return this;
     }
 
+    public Builder base(String directory, String... more) {
+      return base(Path.of(directory, more));
+    }
+
     public Builder base(Path directory) {
       this.baseDirectory = directory;
       return this;
