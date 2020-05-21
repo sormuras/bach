@@ -20,6 +20,7 @@ package de.sormuras.bach.internal;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -33,10 +34,11 @@ public /*static*/ class ModulesResolver {
   private final Set<String> system;
 
   public ModulesResolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
-    this.paths = paths.toArray(Path[]::new);
-    this.declared = new TreeSet<>(declared);
-    this.transporter = transporter;
+    this.paths = Objects.requireNonNull(paths, "paths").toArray(Path[]::new);
+    this.declared = new TreeSet<>(Objects.requireNonNull(declared, "declared"));
+    this.transporter = Objects.requireNonNull(transporter, "transporter");
     this.system = Modules.declared(ModuleFinder.ofSystem());
+    if (paths.isEmpty()) throw new IllegalArgumentException("At least one path expected");
   }
 
   public void resolve(Set<String> required) {

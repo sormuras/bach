@@ -229,7 +229,7 @@ public /*static*/ class Task {
           }
         }
       }
-      var modulePaths = project.base().modulePaths(List.of());
+      var modulePaths = List.of(project.base().lib());
       var declared = project.toDeclaredModuleNames();
       var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
       resolver.resolve(project.toRequiredModuleNames());
