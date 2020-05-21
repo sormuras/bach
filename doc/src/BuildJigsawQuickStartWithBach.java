@@ -18,16 +18,10 @@
 class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
-    return;
-    /*
-    TODO Bach.of(
-            greetings ->
-                greetings
-                    .base("doc/project/JigsawQuickStart")
-                    .title("Quick-Start Guide Greetings")
-                    .version("47.11"))
-        .build()
-        .assertSuccessful();
-     */
+    var bach =
+        Bach.of(
+            walker -> walker.setBase("doc/project/JigsawQuickStart"),
+            project -> project.title("Module System Quick-Start Guide Greetings").version("17.01"));
+    bach.build().assertSuccessful();
   }
 }
