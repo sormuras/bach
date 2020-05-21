@@ -56,6 +56,8 @@ public /*static*/ class Sequencer {
       // jlink
       if (realm.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE))
         tasks.add(newJlinkTask(realm));
+      // test(${MODULE}) | junit = test
+      if (realm.flags().contains(Project.Realm.Flag.LAUNCH_TESTS)) tasks.add(newTestsTask(realm));
     }
     return Task.sequence("Build Sequence", tasks);
   }
@@ -63,8 +65,7 @@ public /*static*/ class Sequencer {
   Task newJavacTask(Project.Realm realm) {
     var classes = project.base().classes(realm.name());
     var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
-    tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
-
+    tuner.tune(arguments, project, Tuner.context("javac", realm));
     return new Task.RunTool(
         "Compile sources of " + realm.toLabelName() + " realm",
         ToolProvider.findFirst("javac").orElseThrow(),
@@ -74,16 +75,12 @@ public /*static*/ class Sequencer {
   Task newJarTask(Project.Realm realm, Project.Unit unit) {
     var base = project.base();
     var module = unit.toName();
-
     var classes = base.classes(realm.name(), module);
-    var modules = base.modules(realm.name());
-    var jar = modules.resolve(module + "@" + project.info().version() + ".jar");
-
+    var jar = Helper.jar(project, realm, module);
     var arguments = new Arguments().put("--create").put("--file", jar);
     unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
     arguments.put("-C", classes, ".");
-    tuner.tune(arguments, Map.of("tool", "jar", "realm", realm.name(), "module", module));
-
+    tuner.tune(arguments, project, Tuner.context("jar", realm, module));
     return Task.sequence(
         "Create modular JAR file " + jar.getFileName(),
         new Task.CreateDirectories(jar.getParent()),
@@ -95,8 +92,7 @@ public /*static*/ class Sequencer {
 
   Task newJavadocTask(Project.Realm realm) {
     var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
-    tuner.tune(arguments, Map.of("tool", "javadoc", "realm", realm.name()));
-
+    tuner.tune(arguments, project, Tuner.context("javadoc", realm));
     return new Task.RunTool(
         "Generate API documentation for " + realm.toLabelName() + " realm",
         ToolProvider.findFirst("javadoc").orElseThrow(),
@@ -120,13 +116,29 @@ public /*static*/ class Sequencer {
       var launcher = Path.of(module.replace('.', '/')).getFileName().toString();
       arguments.put("--launcher", launcher + '=' + module);
     }
-    tuner.tune(arguments, Map.of("tool", "jlink", "realm", realm.name()));
-
+    tuner.tune(arguments, project, Tuner.context("jlink", realm));
     return Task.sequence(
         "Create custom runtime image",
         new Task.DeleteDirectories(base.image()),
         new Task.RunTool(
             "jlink", ToolProvider.findFirst("jlink").orElseThrow(), arguments.toStringArray()));
+  }
+
+  Task newTestsTask(Project.Realm realm) {
+    var base = project.base();
+    var tasks = new ArrayList<Task>();
+    for (var unit : realm.units().values()) {
+      var module = unit.toName();
+      var jar = Helper.jar(project, realm, module);
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(jar);
+      modulePaths.addAll(Helper.modulePaths(project, realm));
+      modulePaths.add(base.modules(realm.name()));
+      var arguments = new Arguments().put("--select-module", module);
+      tuner.tune(arguments, project, Tuner.context("junit", realm, module));
+      tasks.add(new Task.RunTestModule(module, modulePaths, arguments.toStringArray()));
+    }
+    return Task.sequence("Launch all tests located in " + realm.toLabelName() + " realm", tasks);
   }
 
   /** A mutable argument collection builder. */
@@ -190,6 +202,11 @@ public /*static*/ class Sequencer {
       return List.copyOf(paths);
     }
 
+    static Path jar(Project project, Project.Realm realm, String module) {
+      var modules = project.base().modules(realm.name());
+      return modules.resolve(module + "@" + project.info().version() + ".jar");
+    }
+
     /** Compute module-relevant source path for the given unit. */
     static List<Path> relevantSourcePaths(Project.Unit unit) {
       var sources = unit.sources();
@@ -249,9 +266,17 @@ public /*static*/ class Sequencer {
   @FunctionalInterface
   public interface Tuner {
 
-    void tune(Arguments arguments, Map<String, String> context);
+    static Map<String, String> context(String tool, Project.Realm realm) {
+      return Map.of("tool", tool, "realm", realm.name());
+    }
 
-    static void defaults(Arguments arguments, Map<String, String> context) {
+    static Map<String, String> context(String tool, Project.Realm realm, String module) {
+      return Map.of("tool", tool, "realm", realm.name(), "module", module);
+    }
+
+    void tune(Arguments arguments, Project project, Map<String, String> context);
+
+    static void defaults(Arguments arguments, Project project, Map<String, String> context) {
       switch (context.get("tool")) {
         case "javac":
           arguments.put("-encoding", "UTF-8");
@@ -268,6 +293,12 @@ public /*static*/ class Sequencer {
           arguments.put("--no-header-files");
           arguments.put("--no-man-pages");
           arguments.put("--strip-debug");
+          break;
+        case "junit":
+          var module = context.get("module");
+          var target = project.base().workspace("junit-reports", module);
+          arguments.put("--disable-ansi-colors");
+          arguments.put("--reports-dir", target);
           break;
       }
     }

@@ -109,11 +109,13 @@ public /*static*/ class Task {
 
     private final String module;
     private final List<Path> modulePaths;
+    private final String[] junitArguments;
 
-    public RunTestModule(String module, List<Path> modulePaths) {
+    public RunTestModule(String module, List<Path> modulePaths, String[] junitArguments) {
       super("Run tests for module " + module, List.of());
       this.module = module;
       this.modulePaths = modulePaths;
+      this.junitArguments = junitArguments;
     }
 
     @Override
@@ -134,16 +136,7 @@ public /*static*/ class Task {
         return;
       }
       if (tool.name().equals("junit")) {
-        var base = bach.getProject().base();
-        bach.execute(
-            tool,
-            new PrintWriter(getOut()),
-            new PrintWriter(getErr()),
-            "--select-module",
-            module,
-            "--disable-ansi-colors",
-            "--reports-dir",
-            base.workspace("junit-reports", module).toString());
+        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), junitArguments);
       }
     }
   }
