@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 /** Bach - Java Shell Builder. */
@@ -51,6 +52,10 @@ public class Bach {
   /** Return path to the custom build program if it exists. */
   public static Optional<Path> findCustomBuildProgram() {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
+  }
+
+  public static Bach of(UnaryOperator<Walker> walker, UnaryOperator<Project.Builder> builder) {
+    return of(builder.apply(walker.apply(new Walker()).newBuilder()).newProject());
   }
 
   /** Create Bach instance with the specified project and default components. */
