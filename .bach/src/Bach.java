@@ -499,7 +499,7 @@ public class Bach {
         if (realm.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION))
           tasks.add(newJavadocTask(realm));
         if (realm.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE))
-          tasks.add(newJlinkTask(realm));
+          tasks.add(newJLinkTask(realm));
         if (realm.flags().contains(Project.Realm.Flag.LAUNCH_TESTS)) tasks.add(newTestsTask(realm));
       }
       return Task.sequence("Build Sequence", tasks);
@@ -538,11 +538,17 @@ public class Bach {
           ToolProvider.findFirst("javadoc").orElseThrow(),
           arguments.toStringArray());
     }
-    Task newJlinkTask(Project.Realm realm) {
+    Task newJLinkTask(Project.Realm realm) {
       var base = project.base();
       var modulePaths = new ArrayList<Path>();
       modulePaths.add(base.modules(realm.name()));
       modulePaths.addAll(Helper.modulePaths(project, realm));
+      var automaticModules =
+          ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+              .map(ModuleReference::descriptor)
+              .filter(ModuleDescriptor::isAutomatic)
+              .collect(Collectors.toList());
+      if (!automaticModules.isEmpty()) return Task.sequence("Automatic module: " + automaticModules);
       var units = realm.units();
       var mainModule = Modules.findMainModule(units.values().stream().map(Project.Unit::descriptor));
       var arguments =

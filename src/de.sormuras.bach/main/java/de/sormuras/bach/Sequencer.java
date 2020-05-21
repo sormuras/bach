@@ -20,6 +20,9 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Modules;
 import java.io.File;
 import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -55,7 +58,7 @@ public /*static*/ class Sequencer {
         tasks.add(newJavadocTask(realm));
       // jlink
       if (realm.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE))
-        tasks.add(newJlinkTask(realm));
+        tasks.add(newJLinkTask(realm));
       // test(${MODULE}) | junit = test
       if (realm.flags().contains(Project.Realm.Flag.LAUNCH_TESTS)) tasks.add(newTestsTask(realm));
     }
@@ -99,11 +102,17 @@ public /*static*/ class Sequencer {
         arguments.toStringArray());
   }
 
-  Task newJlinkTask(Project.Realm realm) {
+  Task newJLinkTask(Project.Realm realm) {
     var base = project.base();
     var modulePaths = new ArrayList<Path>();
     modulePaths.add(base.modules(realm.name()));
     modulePaths.addAll(Helper.modulePaths(project, realm));
+    var automaticModules =
+        ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+            .map(ModuleReference::descriptor)
+            .filter(ModuleDescriptor::isAutomatic)
+            .collect(Collectors.toList());
+    if (!automaticModules.isEmpty()) return Task.sequence("Automatic module: " + automaticModules);
     var units = realm.units();
     var mainModule = Modules.findMainModule(units.values().stream().map(Project.Unit::descriptor));
     var arguments =
