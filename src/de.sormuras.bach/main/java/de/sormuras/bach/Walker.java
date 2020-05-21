@@ -65,6 +65,10 @@ public /*static*/ class Walker {
     return this;
   }
 
+  public Walker setWalkOffset(String offset, String... more) {
+    return setWalkOffset(Path.of(offset, more));
+  }
+
   public Walker setWalkOffset(Path walkOffset) {
     this.walkOffset = walkOffset;
     return this;
