@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-import java.nio.file.Path;
-import java.util.Map;
-
 /**
  * Bach's own build program.
  *
@@ -26,36 +23,32 @@ import java.util.Map;
 class Build {
 
   public static void main(String... args) {
-    var project =
-        new Bach.Walker()
-            .setWalkOffset(Path.of("src"))
-            .setWalkDepthLimit(5)
-            .setLayout(Bach.Walker.Layout.MAIN_TEST_PREVIEW)
-            .newBuilder()
-            .title("\uD83C\uDFBC Bach.java")
-            .version(Bach.VERSION.toString())
-            .requires("org.junit.platform.console")
-            .newProject();
-    Bach.of(project).build(Build::tune).assertSuccessful();
-  }
-
-  private static void tune(Bach.Sequencer.Arguments arguments, Map<String, String> context) {
-    Bach.Sequencer.Tuner.defaults(arguments, context);
-    var tool = context.get("tool");
-    if ("main".equals(context.get("realm"))) {
-      switch (tool) {
-        case "javac":
-          arguments.put("--release", 11);
-          break;
-        case "javadoc":
-          arguments
-              .put("-Xdoclint:-missing")
-              .add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
-          break;
-      }
-    }
-    if ("test-preview".equals(context.get("realm"))) {
-      if (tool.equals("javac")) arguments.put("-Xlint:-preview");
-    }
+    Bach.of(
+            walker ->
+                walker
+                    .setWalkOffset("src")
+                    .setWalkDepthLimit(5)
+                    .setLayout(Bach.Walker.Layout.MAIN_TEST_PREVIEW),
+            project ->
+                project
+                    .title("\uD83C\uDFBC Bach.java")
+                    .version(Bach.VERSION.toString())
+                    .requires("org.junit.platform.console"))
+        .build(
+            (arguments, project, map) -> {
+              Bach.Sequencer.Tuner.defaults(arguments, project, map);
+              var tool = map.get("tool");
+              if ("main".equals(map.get("realm"))) {
+                if ("javac".equals(tool)) arguments.put("--release", 11);
+                if ("javadoc".equals(tool)) {
+                  arguments.put("-Xdoclint:-missing");
+                  arguments.add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
+                }
+              }
+              if ("test-preview".equals(map.get("realm"))) {
+                if (tool.equals("javac")) arguments.put("-Xlint:-preview");
+              }
+            })
+        .assertSuccessful();
   }
 }

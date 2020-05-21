@@ -500,13 +500,14 @@ public class Bach {
           tasks.add(newJavadocTask(realm));
         if (realm.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE))
           tasks.add(newJlinkTask(realm));
+        if (realm.flags().contains(Project.Realm.Flag.LAUNCH_TESTS)) tasks.add(newTestsTask(realm));
       }
       return Task.sequence("Build Sequence", tasks);
     }
     Task newJavacTask(Project.Realm realm) {
       var classes = project.base().classes(realm.name());
       var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
-      tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
+      tuner.tune(arguments, project, Tuner.context("javac", realm));
       return new Task.RunTool(
           "Compile sources of " + realm.toLabelName() + " realm",
           ToolProvider.findFirst("javac").orElseThrow(),
@@ -516,12 +517,11 @@ public class Bach {
       var base = project.base();
       var module = unit.toName();
       var classes = base.classes(realm.name(), module);
-      var modules = base.modules(realm.name());
-      var jar = modules.resolve(module + "@" + project.info().version() + ".jar");
+      var jar = Helper.jar(project, realm, module);
       var arguments = new Arguments().put("--create").put("--file", jar);
       unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
       arguments.put("-C", classes, ".");
-      tuner.tune(arguments, Map.of("tool", "jar", "realm", realm.name(), "module", module));
+      tuner.tune(arguments, project, Tuner.context("jar", realm, module));
       return Task.sequence(
           "Create modular JAR file " + jar.getFileName(),
           new Task.CreateDirectories(jar.getParent()),
@@ -532,7 +532,7 @@ public class Bach {
     }
     Task newJavadocTask(Project.Realm realm) {
       var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
-      tuner.tune(arguments, Map.of("tool", "javadoc", "realm", realm.name()));
+      tuner.tune(arguments, project, Tuner.context("javadoc", realm));
       return new Task.RunTool(
           "Generate API documentation for " + realm.toLabelName() + " realm",
           ToolProvider.findFirst("javadoc").orElseThrow(),
@@ -555,12 +555,28 @@ public class Bach {
         var launcher = Path.of(module.replace('.', '/')).getFileName().toString();
         arguments.put("--launcher", launcher + '=' + module);
       }
-      tuner.tune(arguments, Map.of("tool", "jlink", "realm", realm.name()));
+      tuner.tune(arguments, project, Tuner.context("jlink", realm));
       return Task.sequence(
           "Create custom runtime image",
           new Task.DeleteDirectories(base.image()),
           new Task.RunTool(
               "jlink", ToolProvider.findFirst("jlink").orElseThrow(), arguments.toStringArray()));
+    }
+    Task newTestsTask(Project.Realm realm) {
+      var base = project.base();
+      var tasks = new ArrayList<Task>();
+      for (var unit : realm.units().values()) {
+        var module = unit.toName();
+        var jar = Helper.jar(project, realm, module);
+        var modulePaths = new ArrayList<Path>();
+        modulePaths.add(jar);
+        modulePaths.addAll(Helper.modulePaths(project, realm));
+        modulePaths.add(base.modules(realm.name()));
+        var arguments = new Arguments().put("--select-module", module);
+        tuner.tune(arguments, project, Tuner.context("junit", realm, module));
+        tasks.add(new Task.RunTestModule(module, modulePaths, arguments.toStringArray()));
+      }
+      return Task.sequence("Launch all tests located in " + realm.toLabelName() + " realm", tasks);
     }
     public static class Arguments {
       private final Map<String, List<Object>> namedOptions = new LinkedHashMap<>();
@@ -611,6 +627,10 @@ public class Bach {
         for (var upstream : realm.upstreams()) paths.add(base.modules(upstream));
         if (Files.isDirectory(lib) || !project.toExternalModuleNames().isEmpty()) paths.add(lib);
         return List.copyOf(paths);
+      }
+      static Path jar(Project project, Project.Realm realm, String module) {
+        var modules = project.base().modules(realm.name());
+        return modules.resolve(module + "@" + project.info().version() + ".jar");
       }
       static List<Path> relevantSourcePaths(Project.Unit unit) {
         var sources = unit.sources();
@@ -663,8 +683,14 @@ public class Bach {
       }
     }
     public interface Tuner {
-      void tune(Arguments arguments, Map<String, String> context);
-      static void defaults(Arguments arguments, Map<String, String> context) {
+      static Map<String, String> context(String tool, Project.Realm realm) {
+        return Map.of("tool", tool, "realm", realm.name());
+      }
+      static Map<String, String> context(String tool, Project.Realm realm, String module) {
+        return Map.of("tool", tool, "realm", realm.name(), "module", module);
+      }
+      void tune(Arguments arguments, Project project, Map<String, String> context);
+      static void defaults(Arguments arguments, Project project, Map<String, String> context) {
         switch (context.get("tool")) {
           case "javac":
             arguments.put("-encoding", "UTF-8");
@@ -681,6 +707,12 @@ public class Bach {
             arguments.put("--no-header-files");
             arguments.put("--no-man-pages");
             arguments.put("--strip-debug");
+            break;
+          case "junit":
+            var module = context.get("module");
+            var target = project.base().workspace("junit-reports", module);
+            arguments.put("--disable-ansi-colors");
+            arguments.put("--reports-dir", target);
             break;
         }
       }
@@ -809,10 +841,12 @@ public class Bach {
     public static class RunTestModule extends Task {
       private final String module;
       private final List<Path> modulePaths;
-      public RunTestModule(String module, List<Path> modulePaths) {
+      private final String[] junitArguments;
+      public RunTestModule(String module, List<Path> modulePaths, String[] junitArguments) {
         super("Run tests for module " + module, List.of());
         this.module = module;
         this.modulePaths = modulePaths;
+        this.junitArguments = junitArguments;
       }
       public void execute(Bach bach) {
         var currentThread = Thread.currentThread();
@@ -830,16 +864,7 @@ public class Bach {
           return;
         }
         if (tool.name().equals("junit")) {
-          var base = bach.getProject().base();
-          bach.execute(
-              tool,
-              new PrintWriter(getOut()),
-              new PrintWriter(getErr()),
-              "--select-module",
-              module,
-              "--disable-ansi-colors",
-              "--reports-dir",
-              base.workspace("junit-reports", module).toString());
+          bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), junitArguments);
         }
       }
     }
@@ -936,6 +961,9 @@ public class Bach {
     public Walker setModuleInfoFiles(List<Path> moduleInfoFiles) {
       this.moduleInfoFiles = moduleInfoFiles;
       return this;
+    }
+    public Walker setWalkOffset(String offset, String... more) {
+      return setWalkOffset(Path.of(offset, more));
     }
     public Walker setWalkOffset(Path walkOffset) {
       this.walkOffset = walkOffset;
