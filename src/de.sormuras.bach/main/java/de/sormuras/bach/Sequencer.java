@@ -47,30 +47,19 @@ public /*static*/ class Sequencer {
     var tasks = new ArrayList<Task>();
     tasks.add(new Task.ResolveMissingThirdPartyModules());
     for (var realm : project.realms()) {
+      // javac + jar = compile
       tasks.add(newJavacTask(realm));
       for (var unit : realm.units().values()) tasks.add(newJarTask(realm, unit));
-
-      // TODO tasks.addAll(realm.tasks());
+      // javadoc
+      if (realm.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION))
+        tasks.add(newJavadocTask(realm));
     }
     return Task.sequence("Build Sequence", tasks);
   }
 
   Task newJavacTask(Project.Realm realm) {
-    var arguments =
-        new Arguments()
-            .put("--module", String.join(",", realm.units().keySet()))
-            .put("-d", project.base().classes(realm.name()));
-
-    var modulePaths = Helper.modulePaths(project, realm);
-    if (!modulePaths.isEmpty()) arguments.put("--module-path", modulePaths);
-
-    Helper.putModuleSourcePaths(arguments, realm);
-    Helper.putModulePatches(arguments, project, realm);
-
-    if (realm.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)) {
-      arguments.put("--enable-preview");
-      arguments.put("--release", Runtime.version().feature());
-    }
+    var classes = project.base().classes(realm.name());
+    var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
     tuner.tune(arguments, Map.of("tool", "javac", "realm", realm.name()));
 
     return new Task.RunTool(
@@ -99,6 +88,16 @@ public /*static*/ class Sequencer {
             "Package classes of module " + module,
             ToolProvider.findFirst("jar").orElseThrow(),
             arguments.toStringArray()));
+  }
+
+  Task newJavadocTask(Project.Realm realm) {
+    var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
+    tuner.tune(arguments, Map.of("tool", "javadoc", "realm", realm.name()));
+
+    return new Task.RunTool(
+        "Generate API documentation for " + realm.toLabelName() + " realm",
+        ToolProvider.findFirst("javadoc").orElseThrow(),
+        arguments.toStringArray());
   }
 
   /** A mutable argument collection builder. */
@@ -139,6 +138,19 @@ public /*static*/ class Sequencer {
 
   /** A static helper. */
   public interface Helper {
+
+    static Arguments newModuleArguments(Project project, Project.Realm realm) {
+      var arguments = new Arguments().put("--module", String.join(",", realm.units().keySet()));
+      var modulePaths = Helper.modulePaths(project, realm);
+      if (!modulePaths.isEmpty()) arguments.put("--module-path", modulePaths);
+      Helper.putModuleSourcePaths(arguments, realm);
+      Helper.putModulePatches(arguments, project, realm);
+      if (realm.flags().contains(Project.Realm.Flag.ENABLE_PREVIEW_LANGUAGE_FEATURES)) {
+        arguments.put("--enable-preview");
+        arguments.put("--release", Runtime.version().feature());
+      }
+      return arguments;
+    }
 
     static List<Path> modulePaths(Project project, Project.Realm realm) {
       var base = project.base();
