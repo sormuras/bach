@@ -198,6 +198,10 @@ public /*static*/ final class Project {
     public Path modules(String realm) {
       return workspace("modules", realm);
     }
+
+    public Path sources(String realm) {
+      return workspace("sources", realm);
+    }
   }
 
   /** A basic information holder. */

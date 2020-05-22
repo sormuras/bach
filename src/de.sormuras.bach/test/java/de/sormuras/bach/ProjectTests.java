@@ -35,14 +35,16 @@ class ProjectTests {
     assertEquals("Zero 0", project.toTitleAndVersion());
     var base = project.base();
     assertEquals(Path.of(""), base.directory());
-    assertEquals(Path.of(".bach/workspace"), base.workspace());
     assertEquals(Path.of("foo"), base.path("foo"));
+    assertEquals(Path.of("lib"), base.lib());
+    assertEquals(Path.of(".bach/workspace"), base.workspace());
     assertEquals(Path.of(".bach/workspace/foo"), base.workspace("foo"));
     assertEquals(Path.of(".bach/workspace/api"), base.api());
     assertEquals(Path.of(".bach/workspace/classes/realm"), base.classes("realm"));
     assertEquals(Path.of(".bach/workspace/classes/realm/a.b.c"), base.classes("realm", "a.b.c"));
     assertEquals(Path.of(".bach/workspace/image"), base.image());
     assertEquals(Path.of(".bach/workspace/modules/realm"), base.modules("realm"));
+    assertEquals(Path.of(".bach/workspace/sources/realm"), base.sources("realm"));
     var info = project.info();
     assertEquals("Zero", info.title());
     assertEquals("0", info.version().toString());
