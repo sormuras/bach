@@ -35,6 +35,7 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -228,7 +229,6 @@ public class Bach {
           list.add("\t\t\tSources");
           for (var source : unit.sources()) {
             list.add("\t\t\t\tpath: " + source.path());
-            list.add("\t\t\t\tflags: " + source.flags());
             list.add("\t\t\t\trelease: " + source.release());
           }
         }
@@ -292,6 +292,9 @@ public class Bach {
       }
       public Path classes(String realm, String module) {
         return workspace("classes", realm, module);
+      }
+      public Path classes(String realm, String module, int release) {
+        return workspace("classes-versions", String.valueOf(release), realm, module);
       }
       public Path image() {
         return workspace("image");
@@ -404,27 +407,27 @@ public class Bach {
         var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
         return names.collect(Collectors.toCollection(TreeSet::new));
       }
+      public boolean isMultiRelease() {
+        if (sources.isEmpty()) return false;
+        if (sources.size() == 1) return sources.get(0).isTargeted();
+        return sources.stream().allMatch(Source::isTargeted);
+      }
     }
     public static final class Source {
-      public enum Flag {
-        VERSIONED
-      }
-      private final Set<Flag> flags;
       private final Path path;
       private final int release;
-      public Source(Set<Flag> flags, Path path, int release) {
-        this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+      public Source(Path path, int release) {
         this.path = Objects.requireNonNull(path, "path");
         this.release = Objects.checkIndex(release, Runtime.version().feature() + 1);
-      }
-      public Set<Flag> flags() {
-        return flags;
       }
       public Path path() {
         return path;
       }
       public int release() {
         return release;
+      }
+      public boolean isTargeted() {
+        return release != 0;
       }
     }
     public static class Builder {
@@ -513,13 +516,36 @@ public class Bach {
       return Task.sequence("Build Sequence", tasks);
     }
     Task newJavacTask(Project.Realm realm) {
+      var tasks = new ArrayList<Task>();
+      var tool = ToolProvider.findFirst("javac").orElseThrow();
       var classes = project.base().classes(realm.name());
       var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
       tuner.tune(arguments, project, Tuner.context("javac", realm));
-      return new Task.RunTool(
-          "Compile sources of " + realm.toLabelName() + " realm",
-          ToolProvider.findFirst("javac").orElseThrow(),
-          arguments.toStringArray());
+      var args = arguments.toStringArray();
+      tasks.add(new Task.RunTool("Compile modular sources of", tool, args));
+      for (var unit : realm.units().values())
+        if (unit.isMultiRelease()) tasks.add(newJavacTask(realm, unit));
+      return Task.sequence("Compile sources of " + realm.toLabelName() + " realm", tasks);
+    }
+    Task newJavacTask(Project.Realm realm, Project.Unit unit) {
+      var tasks = new ArrayList<Task>();
+      for (var source : unit.sources()) tasks.add(newJavacTask(realm, unit, source));
+      return Task.sequence("Compile multi-release unit " + unit.toName(), tasks);
+    }
+    Task newJavacTask(Project.Realm realm, Project.Unit unit, Project.Source source) {
+      var module = unit.toName();
+      var sourcePaths = List.of(unit.sources().get(0).path(), source.path());
+      var arguments =
+          new Arguments()
+              .put("--release", source.release())
+              .put("-d", project.base().classes(realm.name(), module, source.release()))
+              .put("--source-path", new TreeSet<>(sourcePaths))
+              .put("--class-path", List.of(project.base().classes(realm.name())));
+      Paths.find(List.of(source.path()), 99, Paths::isJavaFile).forEach(arguments::add);
+      tuner.tune(arguments, project, Tuner.context("javac", realm, module));
+      var tool = ToolProvider.findFirst("javac").orElseThrow();
+      var args = arguments.toStringArray();
+      return new Task.RunTool("Compile sources targeted to " + source.release(), tool, args);
     }
     Task newJarTask(Project.Realm realm) {
       var tasks = new ArrayList<Task>();
@@ -535,10 +561,27 @@ public class Bach {
       var base = project.base();
       {
         var file = Helper.jar(project, realm, module);
-        var classes = base.classes(realm.name(), module);
         var arguments = new Arguments().put("--create").put("--file", file);
         unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
-        arguments.add("-C", classes, ".");
+        if (unit.isMultiRelease()) {
+          var sources = new ArrayDeque<>(unit.sources());
+          var sources0 = sources.removeFirst();
+          var classes0 = base.classes(realm.name(), module, sources0.release());
+          arguments.add("-C", classes0, ".");
+          if (Files.notExists(sources0.path().resolve("module-info.java"))) {
+            for (var source : sources) {
+              var classes = base.classes(realm.name(), module, source.release());
+              if (Files.exists(source.path().resolve("module-info.java"))) {
+                arguments.add("-C", classes, "module-info.class");
+                break;
+              }
+            }
+          }
+          for (var source : sources) {
+            arguments.add("--release", source.release());
+            arguments.add("-C", base.classes(realm.name(), module, source.release()), ".");
+          }
+        } else arguments.add("-C", base.classes(realm.name(), module), ".");
         unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
         tuner.tune(arguments, project, Tuner.context("jar", realm, module));
         var args = arguments.toStringArray();
@@ -928,17 +971,6 @@ public class Bach {
         }
       }
     }
-    public static class DeleteEmptyDirectory extends Task {
-      private final Path directory;
-      public DeleteEmptyDirectory(Path directory) {
-        super("Delete directory " + directory + " if it is empty", List.of());
-        this.directory = directory;
-      }
-      public void execute(Bach bach) throws Exception {
-        if (Files.notExists(directory)) return;
-        if (Paths.isEmpty(directory)) Files.deleteIfExists(directory);
-      }
-    }
     public static class ResolveMissingThirdPartyModules extends Task {
       public ResolveMissingThirdPartyModules() {
         super("Resolve missing 3rd-party modules", List.of());
@@ -979,6 +1011,7 @@ public class Bach {
       DEFAULT,
       MAIN_TEST_PREVIEW
     }
+    public static final Pattern JAVA_N_PATTERN = Pattern.compile("java.?(\\d+)");
     private Project.Base base = Project.Base.of();
     private List<Path> moduleInfoFiles = new ArrayList<>();
     private int walkDepthLimit = 9;
@@ -1077,6 +1110,21 @@ public class Bach {
       if (realms.isEmpty()) throw new UnsupportedOperationException("No match in: " + files);
       return List.copyOf(realms);
     }
+    static boolean isMultiRelease(Path directory) {
+      var name = directory.getFileName().toString();
+      if (name.equals("java")) return false;
+      return name.startsWith("java") && JAVA_N_PATTERN.matcher(name).matches();
+    }
+    static boolean isMultiRelease(List<Path> directories) {
+      return findMultiReleaseDirectories(directories).size() >= 1;
+    }
+    static List<Path> findMultiReleaseDirectories(List<Path> directories) {
+      var matches = new ArrayList<Path>();
+      for (var directory : directories) {
+        if (isMultiRelease(directory)) matches.add(directory);
+      }
+      return List.copyOf(matches);
+    }
     private static class RealmBuilder {
       final String name;
       final List<Path> moduleInfoFiles = new ArrayList<>();
@@ -1119,16 +1167,33 @@ public class Bach {
         return new Project.Realm(name, flags, units, upstreams);
       }
       Project.Unit unit(Path info) {
-        var infoParent = info.getParent();
-        var javaSibling = infoParent.resolveSibling("java");
-        var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
+        var parent = info.getParent();
+        var resources = parent.resolveSibling("resources");
+        return new Project.Unit(
+            Modules.describe(info),
+            isMultiRelease(parent) ? multiReleaseSources(info) : singleReleaseSources(info),
+            Files.isDirectory(resources) ? List.of(resources) : List.of());
+      }
+      List<Project.Source> singleReleaseSources(Path info) {
+        var parent = info.getParent();
+        var module = new Project.Source(parent, 0);
+        var java = parent.resolveSibling("java");
+        if (parent.equals(java) || Files.notExists(java)) return List.of(module);
+        return List.of(new Project.Source(java, 0), module);
+      }
+      List<Project.Source> multiReleaseSources(Path info) {
+        var map = new TreeMap<Integer, Path>();
+        var paths = Paths.list(info.getParent().getParent(), Files::isDirectory);
+        for (var path : paths) {
+          var matcher = JAVA_N_PATTERN.matcher(path.getFileName().toString());
+          if (!matcher.matches()) continue;
+          map.put(Integer.parseInt(matcher.group(1)), path);
+        }
+        if (map.isEmpty()) throw new IllegalStateException("No matching source found: " + paths);
         var sources = new ArrayList<Project.Source>();
-        if (javaPresent) sources.add(new Project.Source(Set.of(), javaSibling, 0));
-        sources.add(new Project.Source(Set.of(), info.getParent(), 0));
-        var resourcesPath = infoParent.resolveSibling("resources");
-        var resources = new ArrayList<Path>();
-        if (Files.isDirectory(resourcesPath)) resources.add(resourcesPath);
-        return new Project.Unit(Modules.describe(info), sources, resources);
+        for (var entry : map.entrySet())
+          sources.add(new Project.Source(entry.getValue(), entry.getKey()));
+        return List.copyOf(sources);
       }
     }
   }
@@ -1503,39 +1568,34 @@ public class Bach {
       path.forEach(name -> deque.addFirst(name.toString()));
       return deque;
     }
-    public static boolean isEmpty(Path path) {
-      try {
-        if (Files.isRegularFile(path)) return Files.size(path) == 0L;
-        try (var stream = Files.list(path)) {
-          return stream.findAny().isEmpty();
-        }
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
     public static boolean isRoot(Path path) {
       return path.toAbsolutePath().normalize().getNameCount() == 0;
     }
-    public static boolean isJavadocCommentAvailable(Path path) {
-      try {
-        return Files.readString(path).contains("/**");
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public static boolean isJavaFile(Path path) {
+      return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java");
     }
     public static boolean isModuleInfoJavaFile(Path path) {
       return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
     }
     public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
-      var files = new TreeSet<Path>();
+      var paths = new TreeSet<Path>();
       for (var root : roots) {
         try (var stream = Files.walk(root, maxDepth)) {
-          stream.filter(filter).forEach(files::add);
+          stream.filter(filter).forEach(paths::add);
         } catch (Exception e) {
           throw new Error("Walk directory '" + root + "' failed: " + e, e);
         }
       }
-      return List.copyOf(files);
+      return List.copyOf(paths);
+    }
+    public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+      var paths = new TreeSet<Path>();
+      try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
+        directoryStream.forEach(paths::add);
+      } catch (Exception e) {
+        throw new Error("Stream directory '" + directory + "' failed: " + e, e);
+      }
+      return List.copyOf(paths);
     }
     private Paths() {}
   }
