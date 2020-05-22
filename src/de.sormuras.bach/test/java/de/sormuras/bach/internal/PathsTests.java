@@ -18,14 +18,14 @@
 package de.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.DynamicTest;
@@ -42,6 +42,18 @@ class PathsTests {
       var roots = FileSystems.getDefault().getRootDirectories();
       return StreamSupport.stream(roots.spliterator(), false)
           .map(path -> dynamicTest(path.toString(), () -> Paths.isRoot(path)));
+    }
+  }
+
+  @Nested
+  class ListTests {
+
+    @Test
+    void listingOfBaseDirectory() {
+      var actual = Paths.list(Path.of(""), Files::isRegularFile);
+      assertLinesMatch(
+          List.of(".gitignore", ">> MORE FILES >>", "README.md"),
+          actual.stream().map(Path::toString).collect(Collectors.toList()));
     }
   }
 

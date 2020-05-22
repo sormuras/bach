@@ -17,8 +17,7 @@
 
 package de.sormuras.bach.internal;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -43,12 +42,9 @@ public /*static*/ class Paths {
     return path.toAbsolutePath().normalize().getNameCount() == 0;
   }
 
-  public static boolean isJavadocCommentAvailable(Path path) {
-    try {
-      return Files.readString(path).contains("/**");
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  /** Test supplied path for pointing to a Java compilation unit. */
+  public static boolean isJavaFile(Path path) {
+    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java");
   }
 
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
@@ -58,15 +54,26 @@ public /*static*/ class Paths {
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
   public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
-    var files = new TreeSet<Path>();
+    var paths = new TreeSet<Path>();
     for (var root : roots) {
       try (var stream = Files.walk(root, maxDepth)) {
-        stream.filter(filter).forEach(files::add);
+        stream.filter(filter).forEach(paths::add);
       } catch (Exception e) {
         throw new Error("Walk directory '" + root + "' failed: " + e, e);
       }
     }
-    return List.copyOf(files);
+    return List.copyOf(paths);
+  }
+
+  /** List content of specified directory with the given filter applied in natural order. */
+  public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+    var paths = new TreeSet<Path>();
+    try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
+      directoryStream.forEach(paths::add);
+    } catch (Exception e) {
+      throw new Error("Stream directory '" + directory + "' failed: " + e, e);
+    }
+    return List.copyOf(paths);
   }
 
   private Paths() {}
