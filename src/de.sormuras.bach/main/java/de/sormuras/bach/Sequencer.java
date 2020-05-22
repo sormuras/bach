@@ -25,6 +25,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -52,7 +53,7 @@ public /*static*/ class Sequencer {
     for (var realm : project.realms()) {
       // javac + jar = compile
       tasks.add(newJavacTask(realm));
-      for (var unit : realm.units().values()) tasks.add(newJarTask(realm, unit));
+      tasks.add(newJarTask(realm));
       // javadoc
       if (realm.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION))
         tasks.add(newJavadocTask(realm));
@@ -75,23 +76,46 @@ public /*static*/ class Sequencer {
         arguments.toStringArray());
   }
 
+  Task newJarTask(Project.Realm realm) {
+    var tasks = new ArrayList<Task>();
+    tasks.add(new Task.CreateDirectories(project.base().modules(realm.name())));
+    tasks.add(new Task.CreateDirectories(project.base().sources(realm.name())));
+    for (var unit : realm.units().values()) tasks.add(newJarTask(realm, unit));
+    return Task.sequence("Create JAR files of " + realm.toLabelName() + " realm", tasks);
+  }
+
   Task newJarTask(Project.Realm realm, Project.Unit unit) {
-    var base = project.base();
+    var tasks = new ArrayList<Task>();
     var module = unit.toName();
-    var classes = base.classes(realm.name(), module);
-    var jar = Helper.jar(project, realm, module);
-    var arguments = new Arguments().put("--create").put("--file", jar);
-    unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
-    arguments.add("-C", classes, ".");
-    unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
-    tuner.tune(arguments, project, Tuner.context("jar", realm, module));
-    return Task.sequence(
-        "Create modular JAR file " + jar.getFileName(),
-        new Task.CreateDirectories(jar.getParent()),
-        new Task.RunTool(
-            "Package classes of module " + module,
-            ToolProvider.findFirst("jar").orElseThrow(),
-            arguments.toStringArray()));
+    var tool = ToolProvider.findFirst("jar").orElseThrow();
+    var base = project.base();
+    {
+      var file = Helper.jar(project, realm, module);
+      var classes = base.classes(realm.name(), module);
+      var arguments = new Arguments().put("--create").put("--file", file);
+      unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
+      arguments.add("-C", classes, ".");
+      unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
+      tuner.tune(arguments, project, Tuner.context("jar", realm, module));
+      var args = arguments.toStringArray();
+      tasks.add(new Task.RunTool("Package classes of module " + module, tool, args));
+    }
+    {
+      var version = project.info().version();
+      var file = base.sources(realm.name()).resolve(module + "@" + version + "-sources.jar");
+      var arguments = new Arguments().put("--create").put("--file", file).put("--no-manifest");
+      var sources = new ArrayDeque<>(unit.sources());
+      arguments.add("-C", sources.removeFirst().path(), "."); // API-defining "base" source
+      for (var source : sources) {
+        if (source.release() >= 9) arguments.add("--release", source.release());
+        arguments.add("-C", source.path(), ".");
+      }
+      // unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
+      tuner.tune(arguments, project, Tuner.context("jar", realm, module));
+      var args = arguments.toStringArray();
+      tasks.add(new Task.RunTool("Package sources of module " + module, tool, args));
+    }
+    return Task.sequence("Create JAR files of " + realm.toLabelName() + " realm", tasks);
   }
 
   Task newJavadocTask(Project.Realm realm) {
