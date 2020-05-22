@@ -340,6 +340,12 @@ public /*static*/ final class Project {
       var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
       return names.collect(Collectors.toCollection(TreeSet::new));
     }
+
+    public boolean isMultiRelease() {
+      if (sources.isEmpty()) return false;
+      if (sources.size() == 1) return sources.get(0).isTargeted();
+      return sources.stream().allMatch(Source::isTargeted);
+    }
   }
 
   /** A source path with optional release directive. */
@@ -371,6 +377,10 @@ public /*static*/ final class Project {
 
     public int release() {
       return release;
+    }
+
+    public boolean isTargeted() {
+      return release != 0;
     }
   }
 
