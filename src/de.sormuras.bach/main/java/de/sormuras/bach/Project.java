@@ -103,7 +103,6 @@ public /*static*/ final class Project {
         list.add("\t\t\tSources");
         for (var source : unit.sources()) {
           list.add("\t\t\t\tpath: " + source.path());
-          list.add("\t\t\t\tflags: " + source.flags());
           list.add("\t\t\t\trelease: " + source.release());
         }
       }
@@ -351,25 +350,14 @@ public /*static*/ final class Project {
   /** A source path with optional release directive. */
   public static final class Source {
 
-    /** A source-specific flag enumeration. */
-    public enum Flag {
-      /** Store binary assets in {@code META-INF/versions/${release}/} directory of the JAR file. */
-      VERSIONED
-    }
-
-    private final Set<Flag> flags;
     private final Path path;
     private final int release;
 
-    public Source(Set<Flag> flags, Path path, int release) {
-      this.flags = Set.copyOf(Objects.requireNonNull(flags, "flags"));
+    public Source(Path path, int release) {
       this.path = Objects.requireNonNull(path, "path");
       this.release = Objects.checkIndex(release, Runtime.version().feature() + 1);
     }
 
-    public Set<Flag> flags() {
-      return flags;
-    }
 
     public Path path() {
       return path;
