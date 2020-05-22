@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 /** A builder for building {@link Project.Builder} objects by parsing a directory for modules. */
 public /*static*/ class Walker {
@@ -41,6 +42,8 @@ public /*static*/ class Walker {
     /** Three realms: {@code main}, {@code test}, and {@code test-preview}. */
     MAIN_TEST_PREVIEW
   }
+
+  public static final Pattern JAVA_N_PATTERN = Pattern.compile("java.?(\\d+)");
 
   private Project.Base base = Project.Base.of();
   private List<Path> moduleInfoFiles = new ArrayList<>();
@@ -154,6 +157,24 @@ public /*static*/ class Walker {
     return List.copyOf(realms);
   }
 
+  static boolean isMultiRelease(Path directory) {
+    var name = directory.getFileName().toString();
+    if (name.equals("java")) return false;
+    return name.startsWith("java") && JAVA_N_PATTERN.matcher(name).matches();
+  }
+
+  static boolean isMultiRelease(List<Path> directories) {
+    return findMultiReleaseDirectories(directories).size() >= 1;
+  }
+
+  static List<Path> findMultiReleaseDirectories(List<Path> directories) {
+    var matches = new ArrayList<Path>();
+    for (var directory : directories) {
+      if (isMultiRelease(directory)) matches.add(directory);
+    }
+    return List.copyOf(matches);
+  }
+
   /** A builder for building {@link Project.Realm} objects. */
   private static class RealmBuilder {
     final String name;
@@ -203,16 +224,35 @@ public /*static*/ class Walker {
     }
 
     Project.Unit unit(Path info) {
-      var infoParent = info.getParent();
-      var javaSibling = infoParent.resolveSibling("java");
-      var javaPresent = !infoParent.equals(javaSibling) && Files.isDirectory(javaSibling);
+      var parent = info.getParent();
+      var resources = parent.resolveSibling("resources");
+      return new Project.Unit(
+          Modules.describe(info),
+          isMultiRelease(parent) ? multiReleaseSources(info) : singleReleaseSources(info),
+          Files.isDirectory(resources) ? List.of(resources) : List.of());
+    }
+
+    List<Project.Source> singleReleaseSources(Path info) {
+      var parent = info.getParent();
+      var module = new Project.Source(parent, 0);
+      var java = parent.resolveSibling("java");
+      if (parent.equals(java) || Files.notExists(java)) return List.of(module);
+      return List.of(new Project.Source(java, 0), module);
+    }
+
+    List<Project.Source> multiReleaseSources(Path info) {
+      var map = new TreeMap<Integer, Path>();
+      var paths = Paths.list(info.getParent().getParent(), Files::isDirectory);
+      for (var path : paths) {
+        var matcher = JAVA_N_PATTERN.matcher(path.getFileName().toString());
+        if (!matcher.matches()) continue;
+        map.put(Integer.parseInt(matcher.group(1)), path);
+      }
+      if (map.isEmpty()) throw new IllegalStateException("No matching source found: " + paths);
       var sources = new ArrayList<Project.Source>();
-      if (javaPresent) sources.add(new Project.Source(Set.of(), javaSibling, 0));
-      sources.add(new Project.Source(Set.of(), info.getParent(), 0));
-      var resourcesPath = infoParent.resolveSibling("resources");
-      var resources = new ArrayList<Path>();
-      if (Files.isDirectory(resourcesPath)) resources.add(resourcesPath);
-      return new Project.Unit(Modules.describe(info), sources, resources);
+      for (var entry : map.entrySet())
+        sources.add(new Project.Source(entry.getValue(), entry.getKey()));
+      return List.copyOf(sources);
     }
   }
 }

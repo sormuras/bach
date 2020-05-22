@@ -22,14 +22,48 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.internal.Paths;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class WalkerTests {
+
+  @Nested
+  class IsMultiReleaseTests {
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+            "doc/project/JigsawQuickStart",
+            "doc/project/JigsawQuickStartWorld",
+            "doc/project/MultiRelease/com.foo",
+            "src",
+            "src/bach",
+            "src/de.sormuras.bach",
+            "src/de.sormuras.bach/main",
+            "src/de.sormuras.bach/test",
+            "src/test.base/test",
+            "src/test.preview/test-preview"
+        })
+    void singleRelease(Path directory) {
+      var directories = Paths.list(directory, Files::isDirectory);
+      assertFalse(Walker.isMultiRelease(directories));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"doc/project/MultiRelease/org.bar", "doc/project/MultiRelease/org.baz"})
+    void multiRelease(Path directory) {
+      var directories = Paths.list(directory, Files::isDirectory);
+      assertTrue(Walker.isMultiRelease(directories));
+    }
+  }
 
   @Nested
   class DeSormurasBachTests {
@@ -56,13 +90,6 @@ class WalkerTests {
       assertEquals(Set.of("de.sormuras.bach"), main.units().keySet());
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_API_DOCUMENTATION));
       assertTrue(main.flags().contains(Project.Realm.Flag.CREATE_CUSTOM_RUNTIME_IMAGE));
-      assertFalse(
-          main.unit("de.sormuras.bach")
-              .orElseThrow()
-              .sources()
-              .get(0)
-              .flags()
-              .contains(Project.Source.Flag.VERSIONED));
 
       var test = realms.get(1);
       assertEquals("test", test.name());
@@ -118,6 +145,15 @@ class WalkerTests {
       var test = realms.get(1);
       assertEquals("test", test.name());
       assertEquals(2, test.units().size());
+
+      Bach.of(project).build().assertSuccessful();
+    }
+
+    @Test
+    @ResourceLock("jlink")
+    void walkMultiRelease() {
+      var base = Path.of("doc", "project", "MultiRelease");
+      var project = new Walker().setBase(base).newBuilder().newProject();
 
       Bach.of(project).build().assertSuccessful();
     }
