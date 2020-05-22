@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.internal.Paths;
 import java.io.File;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
@@ -67,13 +68,38 @@ public /*static*/ class Sequencer {
   }
 
   Task newJavacTask(Project.Realm realm) {
+    var tasks = new ArrayList<Task>();
+    var tool = ToolProvider.findFirst("javac").orElseThrow();
     var classes = project.base().classes(realm.name());
     var arguments = Helper.newModuleArguments(project, realm).put("-d", classes);
     tuner.tune(arguments, project, Tuner.context("javac", realm));
-    return new Task.RunTool(
-        "Compile sources of " + realm.toLabelName() + " realm",
-        ToolProvider.findFirst("javac").orElseThrow(),
-        arguments.toStringArray());
+    var args = arguments.toStringArray();
+    tasks.add(new Task.RunTool("Compile modular sources of", tool, args));
+    for (var unit : realm.units().values())
+      if (unit.isMultiRelease()) tasks.add(newJavacTask(realm, unit));
+    return Task.sequence("Compile sources of " + realm.toLabelName() + " realm", tasks);
+  }
+
+  Task newJavacTask(Project.Realm realm, Project.Unit unit) {
+    var tasks = new ArrayList<Task>();
+    for (var source : unit.sources()) tasks.add(newJavacTask(realm, unit, source));
+    return Task.sequence("Compile multi-release unit " + unit.toName(), tasks);
+  }
+
+  Task newJavacTask(Project.Realm realm, Project.Unit unit, Project.Source source) {
+    var module = unit.toName();
+    var sourcePaths = List.of(unit.sources().get(0).path(), source.path());
+    var arguments =
+        new Arguments()
+            .put("--release", source.release())
+            .put("-d", project.base().classes(realm.name(), module, source.release()))
+            .put("--source-path", new TreeSet<>(sourcePaths))
+            .put("--class-path", List.of(project.base().classes(realm.name())));
+    Paths.find(List.of(source.path()), 99, Paths::isJavaFile).forEach(arguments::add);
+    tuner.tune(arguments, project, Tuner.context("javac", realm, module));
+    var tool = ToolProvider.findFirst("javac").orElseThrow();
+    var args = arguments.toStringArray();
+    return new Task.RunTool("Compile sources targeted to " + source.release(), tool, args);
   }
 
   Task newJarTask(Project.Realm realm) {
@@ -91,10 +117,27 @@ public /*static*/ class Sequencer {
     var base = project.base();
     {
       var file = Helper.jar(project, realm, module);
-      var classes = base.classes(realm.name(), module);
       var arguments = new Arguments().put("--create").put("--file", file);
       unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
-      arguments.add("-C", classes, ".");
+      if (unit.isMultiRelease()) {
+        var sources = new ArrayDeque<>(unit.sources());
+        var sources0 = sources.removeFirst();
+        var classes0 = base.classes(realm.name(), module, sources0.release());
+        arguments.add("-C", classes0, ".");
+        if (Files.notExists(sources0.path().resolve("module-info.java"))) {
+          for (var source : sources) {
+            var classes = base.classes(realm.name(), module, source.release());
+            if (Files.exists(source.path().resolve("module-info.java"))) {
+              arguments.add("-C", classes, "module-info.class");
+              break;
+            }
+          }
+        }
+        for (var source : sources) {
+          arguments.add("--release", source.release());
+          arguments.add("-C", base.classes(realm.name(), module, source.release()), ".");
+        }
+      } else arguments.add("-C", base.classes(realm.name(), module), ".");
       unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
       tuner.tune(arguments, project, Tuner.context("jar", realm, module));
       var args = arguments.toStringArray();
