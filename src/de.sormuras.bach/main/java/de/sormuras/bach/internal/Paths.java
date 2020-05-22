@@ -38,18 +38,6 @@ public /*static*/ class Paths {
     return deque;
   }
 
-  /** Test for a regular file of size zero or an empty directory. */
-  public static boolean isEmpty(Path path) {
-    try {
-      if (Files.isRegularFile(path)) return Files.size(path) == 0L;
-      try (var stream = Files.list(path)) {
-        return stream.findAny().isEmpty();
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   /** Test for a path pointing to a file system root like {@code /} or {@code C:\}. */
   public static boolean isRoot(Path path) {
     return path.toAbsolutePath().normalize().getNameCount() == 0;

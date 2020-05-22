@@ -19,7 +19,6 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesResolver;
-import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -172,22 +171,6 @@ public /*static*/ class Task {
         var paths = stream.sorted((p, q) -> -p.compareTo(q));
         for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
       }
-    }
-  }
-
-  public static class DeleteEmptyDirectory extends Task {
-
-    private final Path directory;
-
-    public DeleteEmptyDirectory(Path directory) {
-      super("Delete directory " + directory + " if it is empty", List.of());
-      this.directory = directory;
-    }
-
-    @Override
-    public void execute(Bach bach) throws Exception {
-      if (Files.notExists(directory)) return;
-      if (Paths.isEmpty(directory)) Files.deleteIfExists(directory);
     }
   }
 

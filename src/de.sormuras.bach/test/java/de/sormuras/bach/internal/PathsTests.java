@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,42 +32,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.io.TempDir;
-import test.base.FileSystem;
 
 class PathsTests {
-
-  @Nested
-  class IsEmptyTests {
-
-    @Test
-    void isEmptyWalkThrough(@TempDir Path directory) throws Exception {
-      assertTrue(Paths.isEmpty(directory));
-      var file = Files.createFile(directory.resolve("regular.file"));
-      assertTrue(Paths.isEmpty(file));
-      Files.writeString(file, "Hello world!");
-      assertFalse(Paths.isEmpty(file));
-      assertFalse(Paths.isEmpty(directory));
-      Files.delete(file);
-      assertTrue(Paths.isEmpty(directory));
-      var subdirectory = Files.createDirectory(directory.resolve("subdirectory"));
-      assertFalse(Paths.isEmpty(directory));
-      Files.delete(subdirectory);
-      assertTrue(Paths.isEmpty(directory));
-    }
-
-    @Test
-    void isEmptyFailsForNotReadablePath(@TempDir Path temp) throws Exception {
-      var sub = Files.createDirectory(temp.resolve("sub"));
-      assertTrue(Paths.isEmpty(sub));
-      FileSystem.chmod(sub, false, false, false);
-      try {
-        assertThrows(UncheckedIOException.class, () -> Paths.isEmpty(sub));
-      } finally {
-        FileSystem.chmod(sub, true, true, true);
-      }
-    }
-  }
 
   @Nested
   class IsRootTests {
