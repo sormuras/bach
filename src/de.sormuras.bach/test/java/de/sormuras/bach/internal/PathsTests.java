@@ -52,7 +52,7 @@ class PathsTests {
     void listingOfBaseDirectory() {
       var actual = Paths.list(Path.of(""), Files::isRegularFile);
       assertLinesMatch(
-          List.of(".gitignore", ">> MORE FILES >>", "README.md"),
+          List.of(".gitignore", ">> MORE FILES >>", "README.md", "build.jsh", ">> more files >>"),
           actual.stream().map(Path::toString).collect(Collectors.toList()));
     }
   }

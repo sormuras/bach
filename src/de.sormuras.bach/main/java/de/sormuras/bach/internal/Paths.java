@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.TreeSet;
@@ -67,7 +68,7 @@ public /*static*/ class Paths {
 
   /** List content of specified directory with the given filter applied in natural order. */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
-    var paths = new TreeSet<Path>();
+    var paths = new TreeSet<>(Comparator.comparing(Path::toString));
     try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
       directoryStream.forEach(paths::add);
     } catch (Exception e) {

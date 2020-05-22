@@ -1589,7 +1589,7 @@ public class Bach {
       return List.copyOf(paths);
     }
     public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
-      var paths = new TreeSet<Path>();
+      var paths = new TreeSet<>(Comparator.comparing(Path::toString));
       try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
         directoryStream.forEach(paths::add);
       } catch (Exception e) {
