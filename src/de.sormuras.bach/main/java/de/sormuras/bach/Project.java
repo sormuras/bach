@@ -190,6 +190,10 @@ public /*static*/ final class Project {
       return workspace("classes", realm, module);
     }
 
+    public Path classes(String realm, String module, int release) {
+      return workspace("classes-versions", String.valueOf(release), realm, module);
+    }
+
     public Path image() {
       return workspace("image");
     }
