@@ -1,5 +1,5 @@
 jdk:
-  - openjdk11
+  - openjdk14
 
 before_install:
   - jshell --version
