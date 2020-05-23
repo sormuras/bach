@@ -369,7 +369,8 @@ public /*static*/ class Sequencer {
           arguments.put("--compress", "2");
           arguments.put("--no-header-files");
           arguments.put("--no-man-pages");
-          arguments.put("--strip-debug");
+          // https://medium.com/@david.delabassee/jlink-stripping-out-native-and-java-debug-information-507e7b587dd7
+          // arguments.put("--strip-debug");
           break;
         case "junit":
           var module = context.get("module");

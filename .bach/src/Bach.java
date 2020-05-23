@@ -954,7 +954,6 @@ public class Bach {
             arguments.put("--compress", "2");
             arguments.put("--no-header-files");
             arguments.put("--no-man-pages");
-            arguments.put("--strip-debug");
             break;
           case "junit":
             var module = context.get("module");
