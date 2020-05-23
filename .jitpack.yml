@@ -1,0 +1,6 @@
+before_install:
+  - java --version
+
+install:
+  - unset JAVA_TOOL_OPTIONS
+  - jshell --enable-preview -R-Debug build.jsh
