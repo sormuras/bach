@@ -36,7 +36,7 @@ import java.util.spi.ToolProvider;
 public class Bach {
 
   /** Version of the Java Shell Builder. */
-  public static final Version VERSION = Version.parse("11.0-ea");
+  public static final Version VERSION = Version.parse("11-ea");
 
   /** Default path of the custom build program source file. */
   public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
