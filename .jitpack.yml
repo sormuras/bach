@@ -13,4 +13,5 @@ install:
   - POM_FILE="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"
   - SRC_FILE="-Dsources=${OUT}/sources/main/${MODULE_AND_VERSION}-sources.jar"
-  - mvn install:install-file ${POM_FILE} ${JAR_FILE} ${SRC_FILE}
+  - API_FILE="-Djavadoc=${OUT}/api.jar"
+  - mvn install:install-file ${POM_FILE} ${JAR_FILE} ${SRC_FILE} ${API_FILE}
