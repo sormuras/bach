@@ -4,9 +4,12 @@ before_install:
 
 install:
   - unset JAVA_TOOL_OPTIONS
+  - VERSION=$(java src/bach/Version.java)
+  - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}+${GIT_COMMIT:0:7}; fi
+  - java src/bach/Version.java
   - jshell --enable-preview -R-Debug build.jsh
   - OUT=".bach/workspace"
-  - MODULE_AND_VERSION="de.sormuras.bach@11-ea"
+  - MODULE_AND_VERSION="de.sormuras.bach@${VERSION}"
   - POM_FILE="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"
   - SRC_FILE="-Dsources=${OUT}/sources/main/${MODULE_AND_VERSION}-sources.jar"
