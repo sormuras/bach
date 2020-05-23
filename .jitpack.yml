@@ -1,7 +1,5 @@
-jdk:
-  - source install-jdk.sh --feature 14
-
 before_install:
+  - source install-jdk.sh --feature 14
   - jshell --version
 
 install:
