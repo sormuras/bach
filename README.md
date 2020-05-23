@@ -37,6 +37,12 @@ Use Java source to build your modular Java project.
     In-process.
     Find reports in `.bach/workspace/junit-reports/`.
 
+- 🗄 **Multi-Release** modular JAR file support
+
+    > Place your sources in directories named like `java-N`.
+    `N` stands for Java release feature number.
+    Explore [MultiRelease](doc/project/MultiRelease) for an example project.
+
 - 📋 Structured build **summary** with history
 
     > Stores latest summary as `.bach/workspace/summary.md`.
@@ -46,7 +52,6 @@ Use Java source to build your modular Java project.
 
 - ⌨ More main modes: `clean`, `help`, `info`...
 - 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
-- 🗄 Multi-Release modular JAR file support
 - 🧩 Locator looking up module-to-maven mappings from [sormuras/modules](https://github.com/sormuras/modules)
 
 # install-jdk.sh
