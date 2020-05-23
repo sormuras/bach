@@ -16,7 +16,28 @@
  */
 
 /**
- * Bach's base module.
+ * Defines the API of the 🎼 Java Shell Builder - {@code Bach.java}.
+ *
+ * <h2>Features</h2>
+ *
+ * <ul>
+ *   <li>☕ Java, pristine Java
+ *   <li>🚀 Zero-installation build mode
+ *   <li>📚 API documentation
+ *   <li>💾 Custom runtime image
+ *   <li>✔ Automated Checks: Test program and JUnit Platform support
+ *   <li>🗄 Multi-Release modular JAR file support
+ *   <li>📋 Structured build summary
+ * </ul>
+ *
+ * <h2>Links</h2>
+ *
+ * <ul>
+ *   <li>Bach.java <a href="https://github.com/sormuras/bach">Code &amp; Issues</a>
+ *   <li>Bach.java <a href="https://sormuras.github.io/bach">User Guide</a>
+ *   <li>Java® Development Kit Version 14 <a
+ *       href="https://docs.oracle.com/en/java/javase/14/docs/specs/man/">Tool Specifications</a>
+ * </ul>
  *
  * @uses java.util.spi.ToolProvider
  */
