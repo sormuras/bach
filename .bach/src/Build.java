@@ -24,11 +24,11 @@ class Build {
 
   public static void main(String... args) {
     Bach.of(
-            walker ->
-                walker
-                    .setWalkOffset("src")
-                    .setWalkDepthLimit(5)
-                    .setLayout(Bach.Walker.Layout.MAIN_TEST_PREVIEW),
+            scanner ->
+                scanner
+                    .offset("src")
+                    .limit(5)
+                    .layout(Bach.Scanner.Layout.MAIN_TEST_PREVIEW),
             project ->
                 project
                     .title("\uD83C\uDFBC Bach.java")
