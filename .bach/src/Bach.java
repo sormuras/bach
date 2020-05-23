@@ -775,10 +775,21 @@ public class Bach {
     Task newJavadocTask(Project.Realm realm) {
       var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
       tuner.tune(arguments, project, Tuner.context("javadoc", realm));
-      return new Task.RunTool(
-          "Generate API documentation for " + realm.toLabelName() + " realm",
-          ToolProvider.findFirst("javadoc").orElseThrow(),
-          arguments.toStringArray());
+      return Task.sequence(
+          "Generate and package API documentation for " + realm.toLabelName() + " realm",
+          new Task.RunTool(
+              "Generate API documentation for " + realm.units().size() + " module(s)",
+              ToolProvider.findFirst("javadoc").orElseThrow(),
+              arguments.toStringArray()),
+          new Task.RunTool(
+              "Package API documentation",
+              ToolProvider.findFirst("jar").orElseThrow(),
+              new Arguments()
+                  .put("--create")
+                  .put("--file", project.base().workspace("api.jar"))
+                  .put("--no-manifest")
+                  .put("-C", project.base().api(), ".")
+                  .toStringArray()));
     }
     Task newJLinkTask(Project.Realm realm) {
       var base = project.base();
