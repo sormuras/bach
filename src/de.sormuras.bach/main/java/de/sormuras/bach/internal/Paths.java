@@ -25,8 +25,10 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /** {@link Path}-related utilities. */
 public /*static*/ class Paths {
@@ -43,14 +45,34 @@ public /*static*/ class Paths {
     return path.toAbsolutePath().normalize().getNameCount() == 0;
   }
 
+  /** Multi-release directory name pattern {@code java.?(\d+)}. */
+  public static final Pattern JAVA_N_PATTERN = Pattern.compile("java.?(\\d+)");
+
+  /** Return release feature number if directory's name matches, else an empty optional. */
+  public static Optional<Integer> findMultiReleaseNumber(Path path) {
+    var matcher = JAVA_N_PATTERN.matcher(name(path));
+    if (!matcher.matches()) return Optional.empty();
+    return Optional.of(Integer.parseInt(matcher.group(1)));
+  }
+
+  /** Test supplied path for pointing to a directory whose name matches {@link #JAVA_N_PATTERN}. */
+  public static boolean isMultiReleaseDirectory(Path path) {
+    return Files.isDirectory(path) && JAVA_N_PATTERN.matcher(name(path)).matches();
+  }
+
+  /** Return path's file name as a {@link String}. */
+  public static String name(Path path) {
+    return path.getNameCount() == 0 ? "" : path.getFileName().toString();
+  }
+
   /** Test supplied path for pointing to a Java compilation unit. */
   public static boolean isJavaFile(Path path) {
-    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java");
+    return Files.isRegularFile(path) && name(path).endsWith(".java");
   }
 
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
   public static boolean isModuleInfoJavaFile(Path path) {
-    return Files.isRegularFile(path) && path.getFileName().toString().equals("module-info.java");
+    return Files.isRegularFile(path) && name(path).equals("module-info.java");
   }
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */

@@ -18,52 +18,17 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import de.sormuras.bach.internal.Paths;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class WalkerTests {
-
-  @Nested
-  class IsMultiReleaseTests {
-
-    @ParameterizedTest
-    @ValueSource(
-        strings = {
-            "doc/project/JigsawQuickStart",
-            "doc/project/JigsawQuickStartWorld",
-            "doc/project/MultiRelease/com.foo",
-            "src",
-            "src/bach",
-            "src/de.sormuras.bach",
-            "src/de.sormuras.bach/main",
-            "src/de.sormuras.bach/test",
-            "src/test.base/test",
-            "src/test.preview/test-preview"
-        })
-    void singleRelease(Path directory) {
-      var directories = Paths.list(directory, Files::isDirectory);
-      assertFalse(Walker.isMultiRelease(directories));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"doc/project/MultiRelease/org.bar", "doc/project/MultiRelease/org.baz"})
-    void multiRelease(Path directory) {
-      var directories = Paths.list(directory, Files::isDirectory);
-      assertTrue(Walker.isMultiRelease(directories));
-    }
-  }
 
   @Nested
   class DeSormurasBachTests {
