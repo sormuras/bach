@@ -7,7 +7,7 @@ install:
   - jshell --enable-preview -R-Debug build.jsh
   - OUT=".bach/workspace"
   - MODULE_AND_VERSION="de.sormuras.bach@11-ea"
-  - POM_FILE="-DpomFile=src/bach/pom.xml"
+  - POM_FILE="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"
   - SRC_FILE="-Dsources=${OUT}/sources/main/${MODULE_AND_VERSION}-sources.jar"
   - mvn install:install-file ${POM_FILE} ${JAR_FILE} ${SRC_FILE}
