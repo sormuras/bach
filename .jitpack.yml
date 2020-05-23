@@ -1,5 +1,8 @@
+jdk:
+  - openjdk11
+
 before_install:
-  - java --version
+  - jshell --version
 
 install:
   - unset JAVA_TOOL_OPTIONS
