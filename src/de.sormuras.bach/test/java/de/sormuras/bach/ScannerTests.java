@@ -18,29 +18,39 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
-class WalkerTests {
+class ScannerTests {
+
+  @Test
+  void touchAllSetters() {
+    new Scanner()
+        .base("base", "more")
+        .base(Path.of("base"))
+        .base(Project.Base.of())
+        .moduleInfoFiles(List.of())
+        .offset("off", "set")
+        .offset(Path.of(""))
+        .limit(Integer.MAX_VALUE)
+        .layout(Scanner.Layout.DEFAULT);
+  }
 
   @Nested
   class DeSormurasBachTests {
 
     @Test
-    void walkSelf() {
-      var walker =
-          new Walker()
-              .setWalkOffset(Path.of("src"))
-              .setWalkDepthLimit(5)
-              .setLayout(Walker.Layout.MAIN_TEST_PREVIEW);
-      var project = walker.newBuilder().title("BACH").version("0-TEST").newProject();
+    void selfScan() {
+      var scanner =
+          new Scanner().offset(Path.of("src")).limit(5).layout(Scanner.Layout.MAIN_TEST_PREVIEW);
+      var project = scanner.newBuilder().title("BACH").version("0-TEST").newProject();
 
       // project.toStrings().forEach(System.out::println);
 
@@ -73,10 +83,9 @@ class WalkerTests {
   @Nested
   class DocProject {
     @Test
-    @ResourceLock("jlink")
-    void walkJigsawQuickStart() {
+    void scanJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
-      var project = new Walker().setBase(base).newBuilder().newProject();
+      var project = new Scanner().base(base).newBuilder().newProject();
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("JigsawQuickStart 1-ea", project.toTitleAndVersion());
@@ -84,15 +93,12 @@ class WalkerTests {
       assertEquals(Set.of(), project.toRequiredModuleNames());
       var realm = project.realms().get(0);
       assertEquals("", realm.name());
-
-      Bach.of(project).build().assertSuccessful();
     }
 
     @Test
-    @ResourceLock("jlink")
-    void walkJigsawQuickStartWorld() {
+    void scanJigsawQuickStartWorld() {
       var base = Path.of("doc", "project", "JigsawQuickStartWorld");
-      var project = new Walker().setBase(base).newBuilder().newProject();
+      var project = new Scanner().base(base).newBuilder().newProject();
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("JigsawQuickStartWorld 1-ea", project.toTitleAndVersion());
@@ -101,8 +107,6 @@ class WalkerTests {
       assertEquals(Set.of("com.greetings", "org.astro"), project.toRequiredModuleNames());
       var realms = project.realms();
 
-      Assumptions.assumeTrue(realms.size() == 2);
-
       assertEquals(2, realms.size(), realms.toString());
       var main = realms.get(0);
       assertEquals("main", main.name());
@@ -110,17 +114,24 @@ class WalkerTests {
       var test = realms.get(1);
       assertEquals("test", test.name());
       assertEquals(2, test.units().size());
-
-      Bach.of(project).build().assertSuccessful();
     }
 
     @Test
-    @ResourceLock("jlink")
-    void walkMultiRelease() {
+    void scanMultiRelease() {
       var base = Path.of("doc", "project", "MultiRelease");
-      var project = new Walker().setBase(base).newBuilder().newProject();
+      var project = new Scanner().base(base).newBuilder().newProject();
 
-      Bach.of(project).build().assertSuccessful();
+      var foo = project.realms().get(0).unit("com.foo").orElseThrow();
+      assertFalse(foo.isMultiRelease());
+      assertEquals(0, foo.sources().get(0).release());
+      var bar = project.realms().get(0).unit("org.bar").orElseThrow();
+      assertTrue(bar.isMultiRelease());
+      assertEquals(8, bar.sources().get(0).release());
+      assertEquals(9, bar.sources().get(1).release());
+      assertEquals(11, bar.sources().get(2).release());
+      var baz = project.realms().get(0).unit("org.baz").orElseThrow();
+      assertTrue(baz.isMultiRelease());
+      assertEquals(10, baz.sources().get(0).release());
     }
   }
 }

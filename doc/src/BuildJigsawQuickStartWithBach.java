@@ -20,7 +20,7 @@ class BuildJigsawQuickStartWithBach {
   public static void main(String... args) {
     var bach =
         Bach.of(
-            walker -> walker.setBase("doc/project/JigsawQuickStart"),
+            scanner -> scanner.base("doc/project/JigsawQuickStart"),
             project -> project.title("Module System Quick-Start Guide Greetings").version("17.01"));
     bach.build().assertSuccessful();
   }

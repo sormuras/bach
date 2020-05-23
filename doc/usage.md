@@ -20,12 +20,17 @@ Store a copy of `Bach.java` in your project.
   - `jshell https://sormuras.de/bach-boot`
 
 Offers IDE support with writing your `Build.java` program.
-Namespace uses `Bach.` prefix
+Namespace uses `Bach.` prefix.
+
+Run your build program via
+
+  - `.bach/build`
 
 ### Module `de.sormuras.bach` API
 
 Mount modular `de.sormuras.bach@${VERSION}.jar`.
 Use its API directly in your modular build program.
+With internal packages hidden.
 
 ### API
 
@@ -47,7 +52,7 @@ bach.build();
 
 ```java
 var project = new Project(
-        new Base(/*directories, folders, files, ...*/),
+        new Base(/*folders, files, ...*/),
         new Info(/*title, version, ...*/)
         // here be more immutable component values...
     );
@@ -57,8 +62,8 @@ Bach.of(project).build().assertSuccessful();
 
 ##### Project Builder
 
-A Builder collects custom components and creates a Project instance.
-A Builder provides convenient setters accepting basic types: e.g. `String` instead of `Path`.
+A `Builder` collects custom components and creates a `Project` instance.
+A `Builder` provides convenient setters accepting basic types: e.g. `String` instead of `Path`.
 
 ```java
 var builder = new Project.Builder()
@@ -72,16 +77,16 @@ Bach.of(project).build().assertSuccessful();
 
 ##### Project Builder Builder
 
-A Walker parses a directory and creates a Builder instance -- a builder builder.
-A Walker is customizable like a builder.
+A `Scanner` parses a directory and creates a `Builder` instance -- a builder builder.
+A `Scanner` is customizable like a builder.
 
 ```java
-var walker = new Project.Walker()
+var scanner = new Scanner()
     .base(Path.of(""))
-    .limitDepth(5)
-    .limitModules("foo", "bar");
+    .layout(...)
+    .limit(5);
 
-var builder = walker.newBuilder()
+var builder = scanner.newBuilder()
     .title("Here be dragons...")
     .version("47.11");
 

@@ -30,7 +30,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /** A builder for building {@link Project.Builder} objects by parsing a directory for modules. */
-public /*static*/ class Walker {
+public /*static*/ class Scanner {
 
   /** A layout defines a directory pattern for organizing {@code module-info.java} files. */
   public enum Layout {
@@ -38,60 +38,60 @@ public /*static*/ class Walker {
     AUTOMATIC,
     /** Single unnamed realm. */
     DEFAULT,
-    /** Three realms: {@code main}, {@code test}, and {@code test-preview}. */
+    /** By Three They Come: {@code main}, {@code test}, and {@code test-preview}. */
     MAIN_TEST_PREVIEW
   }
 
   private Project.Base base = Project.Base.of();
   private List<Path> moduleInfoFiles = new ArrayList<>();
-  private int walkDepthLimit = 9;
-  private Path walkOffset = Path.of("");
+  private int limit = 9;
+  private Path offset = Path.of("");
   private Layout layout = Layout.AUTOMATIC;
 
-  public Walker setBase(String directory, String... more) {
-    return setBase(Path.of(directory, more));
+  public Scanner base(String directory, String... more) {
+    return base(Path.of(directory, more));
   }
 
-  public Walker setBase(Path directory) {
-    return setBase(Project.Base.of(directory));
+  public Scanner base(Path directory) {
+    return base(Project.Base.of(directory));
   }
 
-  public Walker setBase(Project.Base base) {
+  public Scanner base(Project.Base base) {
     this.base = base;
     return this;
   }
 
-  public Walker setModuleInfoFiles(List<Path> moduleInfoFiles) {
+  public Scanner moduleInfoFiles(List<Path> moduleInfoFiles) {
     this.moduleInfoFiles = moduleInfoFiles;
     return this;
   }
 
-  public Walker setWalkOffset(String offset, String... more) {
-    return setWalkOffset(Path.of(offset, more));
+  public Scanner offset(String offset, String... more) {
+    return offset(Path.of(offset, more));
   }
 
-  public Walker setWalkOffset(Path walkOffset) {
-    this.walkOffset = walkOffset;
+  public Scanner offset(Path offset) {
+    this.offset = offset;
     return this;
   }
 
-  public Walker setWalkDepthLimit(int walkDepthLimit) {
-    this.walkDepthLimit = walkDepthLimit;
+  public Scanner limit(int limit) {
+    this.limit = limit;
     return this;
   }
 
-  public Walker setLayout(Layout layout) {
+  public Scanner layout(Layout layout) {
     this.layout = layout;
     return this;
   }
 
   public Project.Builder newBuilder() {
     if (moduleInfoFiles.isEmpty()) {
-      var directory = base.directory().resolve(walkOffset);
+      var directory = base.directory().resolve(offset);
       if (Paths.isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
-      var paths = Paths.find(List.of(directory), walkDepthLimit, Paths::isModuleInfoJavaFile);
+      var paths = Paths.find(List.of(directory), limit, Paths::isModuleInfoJavaFile);
       if (paths.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
-      setModuleInfoFiles(paths);
+      moduleInfoFiles(paths);
     }
     var directoryName = base.directory().toAbsolutePath().getFileName();
     var builder = Project.builder();
