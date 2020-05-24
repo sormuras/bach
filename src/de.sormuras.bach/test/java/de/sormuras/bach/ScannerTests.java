@@ -86,6 +86,7 @@ class ScannerTests {
     void scanJigsawQuickStart() {
       var base = Path.of("doc", "project", "JigsawQuickStart");
       var project = new Scanner().base(base).newBuilder().newProject();
+
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("JigsawQuickStart 1-ea", project.toTitleAndVersion());
@@ -99,14 +100,13 @@ class ScannerTests {
     void scanJigsawQuickStartWorld() {
       var base = Path.of("doc", "project", "JigsawQuickStartWorld");
       var project = new Scanner().base(base).newBuilder().newProject();
+
       assertSame(base, project.base().directory());
       assertEquals(base.resolve(".bach/workspace"), project.base().workspace());
       assertEquals("JigsawQuickStartWorld 1-ea", project.toTitleAndVersion());
-      assertEquals(
-          Set.of("com.greetings", "org.astro", "test.modules"), project.toDeclaredModuleNames());
+      assertEquals(Set.of("com.greetings", "org.astro", "test.modules"), project.toDeclaredModuleNames());
       assertEquals(Set.of("com.greetings", "org.astro"), project.toRequiredModuleNames());
       var realms = project.realms();
-
       assertEquals(2, realms.size(), realms.toString());
       var main = realms.get(0);
       assertEquals("main", main.name());
@@ -132,6 +132,16 @@ class ScannerTests {
       var baz = project.realms().get(0).unit("org.baz").orElseThrow();
       assertTrue(baz.isMultiRelease());
       assertEquals(10, baz.sources().get(0).release());
+    }
+
+    @Test
+    void scanSimplicissimus() {
+      var base = Path.of("doc", "project", "Simplicissimus");
+      var project = new Scanner().base(base).newBuilder().newProject();
+
+      var foo = project.realms().get(0).unit("simplicius.simplicissimus").orElseThrow();
+      assertFalse(foo.isMultiRelease());
+      assertEquals(0, foo.sources().get(0).release());
     }
   }
 }
