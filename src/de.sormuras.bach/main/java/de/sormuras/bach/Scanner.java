@@ -203,10 +203,12 @@ public /*static*/ class Scanner {
     }
 
     Project.Unit unit(Path info) {
+      var descriptor = Modules.describe(info);
       var parent = info.getParent();
+      if (parent == null) return new Project.Unit(descriptor, sources(Path.of(".")), List.of());
       var resources = parent.resolveSibling("resources");
       return new Project.Unit(
-          Modules.describe(info),
+          descriptor,
           sources(parent),
           Files.isDirectory(resources) ? List.of(resources) : List.of());
     }
