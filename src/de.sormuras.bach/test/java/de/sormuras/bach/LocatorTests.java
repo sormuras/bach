@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import de.sormuras.bach.internal.Locators;
 import de.sormuras.bach.internal.Maven;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -47,17 +48,12 @@ class LocatorTests {
       assertNull(locator.apply("foo"));
     }
 
-//    @Test
-//    void checkDynamicLocator() {
-//      var locator = new DynamicLocator(Maven.CENTRAL_REPOSITORY, Map.of());
-//      assertEquals(uri, locator.locate(module).orElseThrow().uri());
-//    }
-
     @Test
     @DisabledIfSystemProperty(named = "offline", matches = "true")
     void checkSormurasModulesLocator() {
-      // var locator = new SormurasModulesLocator(Map.of());
-      // assertEquals(uri, locator.locate(module).orElseThrow().uri());
+      var locator = new Locators.SormurasModulesLocator(Map.of(module, "5.6.1"));
+      assertEquals(uri, locator.apply(module));
+      assertNull(locator.apply("foo"));
     }
   }
 }
