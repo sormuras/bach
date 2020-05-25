@@ -190,7 +190,7 @@ public /*static*/ class Task {
         public void accept(Set<String> modules) {
           var resources = new Resources(bach.getHttpClient());
           for (var module : modules) {
-            var raw = library.lookup().apply(module);
+            var raw = library.locator().apply(module);
             if (raw == null) continue;
             try {
               var lib = Files.createDirectories(project.base().lib());

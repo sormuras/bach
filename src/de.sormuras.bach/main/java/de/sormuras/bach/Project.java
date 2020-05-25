@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Locators;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesMap;
 import java.lang.module.ModuleDescriptor;
@@ -237,28 +238,49 @@ public /*static*/ final class Project {
 
   /** An external modules management and lookup service. */
   public static final class Library {
-    public static Library of() {
-      return of(new ModulesMap());
-    }
-
-    public static Library of(Map<String, String> map) {
-      return new Library(Set.of(), map::get);
-    }
-
     private final Set<String> required;
-    private final UnaryOperator<String> lookup;
+    private final Locator locator;
 
-    public Library(Set<String> required, UnaryOperator<String> lookup) {
+    public Library(Set<String> required, Locator locator) {
       this.required = required;
-      this.lookup = lookup;
+      this.locator = locator;
     }
 
     public Set<String> required() {
       return required;
     }
 
-    public UnaryOperator<String> lookup() {
-      return lookup;
+    public Locator locator() {
+      return locator;
+    }
+  }
+
+  /** A function that maps a module name to the string representation of a URI. */
+  @FunctionalInterface
+  public interface Locator extends UnaryOperator<String> {
+
+    /** Return mapped URI for the given module name, may be {@code null} if not mapped. */
+    @Override
+    String apply(String module);
+
+    /** Create a module locator that is composed from a given sequence of module locators. */
+    static Locator of(Locator... locators) {
+      return new Locators.ComposedLocator(List.of(locators));
+    }
+
+    /** Create a direct map-based locator by referencing {@link Map#get(Object)}. */
+    static Locator of(Map<String, String> map) {
+      return map::get;
+    }
+
+    /** Create a Maven Central based locator parsing complete coordinates. */
+    static Locator ofMaven(Map<String, String> coordinates) {
+      return new Locators.MavenLocator(coordinates);
+    }
+
+    /** Create a Maven repository based locator parsing complete coordinates. */
+    static Locator ofMaven(String repository, Map<String, String> coordinates) {
+      return new Locators.MavenLocator(repository, coordinates);
     }
   }
 
@@ -361,7 +383,6 @@ public /*static*/ final class Project {
       this.path = Objects.requireNonNull(path, "path");
       this.release = Objects.checkIndex(release, Runtime.version().feature() + 1);
     }
-
 
     public Path path() {
       return path;
