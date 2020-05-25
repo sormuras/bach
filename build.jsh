@@ -15,44 +15,14 @@
  * limitations under the License.
  */
 
-/*
- * Source printing-related methods into this JShell session.
- */
-/open PRINTING
-
-/*
- * Banner!
- */
-println("    ___      ___      ___      ___   ")
-println("   /\\  \\    /\\  \\    /\\  \\    /\\__\\")
-println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
-println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
-println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
-println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
-println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
-println()
-
-println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
-
-println("| /open src/bach/SingleFileSourceCodeGenerator.java")
+System.out.println("| Generate Bach.java and use it to build this modular Java project.")
+System.out.println("|")
+System.out.println("| /open src/bach/SingleFileSourceCodeGenerator.java")
 /open src/bach/SingleFileSourceCodeGenerator.java
 SingleFileSourceCodeGenerator.main()
 
-println("| /open .bach/src/Bach.java")
-/open .bach/src/Bach.java
-println("| Bach " + Bach.VERSION)
+System.out.println("| ")
+System.out.println("| /open .bach/build.jsh")
+/open .bach/build.jsh
 
-println("| /open .bach/src/Build.java")
-/open .bach/src/Build.java
-
-println("| Build.main()")
-var code = 0
-try {
-  Build.main();
-} catch (Throwable throwable) {
-  System.err.println("Build.main() failed: " + throwable);
-  code = 1;
-}
-
-println("| /exit " + code)
-/exit code
+throw new Error("This should never happen -- /exit command in .bach/build.jsh not triggered?!")
