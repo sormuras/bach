@@ -24,10 +24,11 @@ var upgrade = Boolean.parseBoolean(System.getProperty("upgrade", "false"))
 /*
  * Compute and set variables.
  */
-var source = new URL("https://github.com/sormuras/bach/raw/" + version + "/.bach/src/")
-var target = Path.of(System.getProperty("target", ".bach/src"))
-var bach = target.resolve("Bach.java")
-var build = target.resolve("Build.java")
+var source = "https://github.com/sormuras/bach/raw/" + version
+var target = Path.of(System.getProperty("target", ".bach"))
+var bach = target.resolve("src/Bach.java")
+var build = target.resolve("src/Build.java")
+var script = target.resolve("build.jsh")
 
 /*
  * Source printing-related methods into this JShell session.
@@ -53,10 +54,10 @@ println()
  */
 println()
 println("Download assets to " + target.toAbsolutePath() + "...")
-Files.createDirectories(target)
-for (var asset : Set.of(bach)) {
+for (var asset : List.of(bach, script)) {
   if (Files.notExists(asset) || upgrade) {
-    var remote = new URL(source, asset.getFileName().toString());
+    Files.createDirectories(asset.getParent());
+    var remote = new URL(source + '/' + asset.toString().replace('\\', '/'));
     println("  | " + remote + "...");
     try (var stream = remote.openStream()) {
       Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
@@ -84,28 +85,11 @@ if (Files.notExists(build)) {
 }
 
 /*
- * Generate local launchers.
- */
-var root = target.getParent()
-var boot = root.resolve("boot")
-var directly = "java " + bach
-var compiler = "javac -d " + boot + " " + bach + " " + build
-var launcher = "java -cp " + boot + " Build"
-
-println()
-println("Generate local launchers")
-Files.write(root.resolve("bach"), List.of("/usr/bin/env " + directly + " \"$@\"")).toFile().setExecutable(true)
-Files.write(root.resolve("bach.bat"), List.of("@ECHO OFF", directly + " %*"))
-Files.write(root.resolve("build"), List.of("/usr/bin/env " + compiler, "/usr/bin/env " + launcher + " \"$@\"", "rm -rf " + boot)).toFile().setExecutable(true)
-Files.write(root.resolve("build.bat"), List.of("@ECHO OFF", compiler, launcher + " %*", "rmdir /Q/S " + boot))
-
-
-/*
  * Generate default git ignore configuration file.
  */
 println()
 println("Generate default .gitignore configuration.")
-Files.write(root.resolve(".gitignore"), List.of("/workspace/"))
+Files.write(target.resolve(".gitignore"), List.of("/workspace/"))
 
 /*
  * Smoke test Bach.java by printing its version and help text.
@@ -120,10 +104,10 @@ Bach.main("help")
 println()
 println("Bach.java bootstrap finished. Use the following commands to build your project:")
 println()
-println("- " + root.resolve("bach") + "[.bat]")
-println("    Launch Bach.java's default build program.")
+println("- java " + bach)
+println("    Launch Bach.java's main program.")
 println()
-println("- " + root.resolve("build") + "[.bat]")
+println("- jshell " + target.resolve("build.jsh"))
 println("    Launch your custom build program.")
 println("    Edit " + build.toUri())
 println("    to customize your build program even further.")
