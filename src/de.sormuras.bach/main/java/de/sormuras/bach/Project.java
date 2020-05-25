@@ -179,10 +179,6 @@ public /*static*/ final class Project {
       return workspace.resolve(Path.of(first, more));
     }
 
-    public Path api() {
-      return workspace("api");
-    }
-
     public Path classes(String realm) {
       return workspace("classes", realm);
     }
@@ -193,6 +189,14 @@ public /*static*/ final class Project {
 
     public Path classes(String realm, String module, int release) {
       return workspace("classes-versions", String.valueOf(release), realm, module);
+    }
+
+    public Path documentation() {
+      return workspace("documentation");
+    }
+
+    public Path documentation(String first, String... more) {
+      return documentation().resolve(Path.of(first, more));
     }
 
     public Path image() {

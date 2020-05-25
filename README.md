@@ -22,7 +22,7 @@ Use Java source to build your modular Java project.
 - 📚 **API** documentation
 
     > Calls `javadoc` with the right arguments.
-    Find generated HTML pages in `bach/workspace/api/`.
+    Find generated HTML pages in `bach/workspace/documentaion/api/`.
 
 - 💾 Custom runtime **image**
 

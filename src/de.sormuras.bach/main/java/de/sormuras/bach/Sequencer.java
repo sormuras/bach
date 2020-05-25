@@ -162,7 +162,9 @@ public /*static*/ class Sequencer {
   }
 
   Task newJavadocTask(Project.Realm realm) {
-    var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
+    var api = project.base().documentation("api");
+    var jar = project.base().documentation("api-" + project.info().version() + "-javadoc.jar");
+    var arguments = Helper.newModuleArguments(project, realm).put("-d", api);
     tuner.tune(arguments, project, Tuner.context("javadoc", realm));
     return Task.sequence(
         "Generate and package API documentation for " + realm.toLabelName() + " realm",
@@ -175,9 +177,9 @@ public /*static*/ class Sequencer {
             ToolProvider.findFirst("jar").orElseThrow(),
             new Arguments()
                 .put("--create")
-                .put("--file", project.base().workspace("api.jar"))
+                .put("--file", jar)
                 .put("--no-manifest")
-                .put("-C", project.base().api(), ".")
+                .put("-C", api, ".")
                 .toStringArray()));
   }
 
