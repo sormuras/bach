@@ -59,6 +59,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -95,7 +96,8 @@ public class Bach {
     return of(builder.apply(scanner.apply(new Scanner()).newBuilder()).newProject());
   }
   public static Bach of(Project project) {
-    return new Bach(project, HttpClient.newBuilder()::build);
+    var httpClientBuilder = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL);
+    return new Bach(project, httpClientBuilder::build);
   }
   private final Logbook logbook;
   private final Project project;
@@ -284,9 +286,6 @@ public class Bach {
       public Path workspace(String first, String... more) {
         return workspace.resolve(Path.of(first, more));
       }
-      public Path api() {
-        return workspace("api");
-      }
       public Path classes(String realm) {
         return workspace("classes", realm);
       }
@@ -295,6 +294,12 @@ public class Bach {
       }
       public Path classes(String realm, String module, int release) {
         return workspace("classes-versions", String.valueOf(release), realm, module);
+      }
+      public Path documentation() {
+        return workspace("documentation");
+      }
+      public Path documentation(String first, String... more) {
+        return documentation().resolve(Path.of(first, more));
       }
       public Path image() {
         return workspace("image");
@@ -327,23 +332,36 @@ public class Bach {
       }
     }
     public static final class Library {
-      public static Library of() {
-        return of(new ModulesMap());
-      }
-      public static Library of(Map<String, String> map) {
-        return new Library(Set.of(), map::get);
-      }
       private final Set<String> required;
-      private final UnaryOperator<String> lookup;
-      public Library(Set<String> required, UnaryOperator<String> lookup) {
+      private final Locator locator;
+      public Library(Set<String> required, Locator locator) {
         this.required = required;
-        this.lookup = lookup;
+        this.locator = locator;
       }
       public Set<String> required() {
         return required;
       }
-      public UnaryOperator<String> lookup() {
-        return lookup;
+      public Locator locator() {
+        return locator;
+      }
+    }
+    public interface Locator extends UnaryOperator<String>, Consumer<Bach> {
+      default void accept(Bach bach) {}
+      String apply(String module);
+      static Locator of(Locator... locators) {
+        return new Locators.ComposedLocator(List.of(locators));
+      }
+      static Locator of(Map<String, String> map) {
+        return map::get;
+      }
+      static Locator ofMaven(Map<String, String> coordinates) {
+        return new Locators.MavenLocator(coordinates);
+      }
+      static Locator ofMaven(String repository, Map<String, String> coordinates) {
+        return new Locators.MavenLocator(repository, coordinates);
+      }
+      static Locator ofSormurasModules(Map<String, String> versions) {
+        return new Locators.SormurasModulesLocator(versions);
       }
     }
     public static final class Realm {
@@ -445,7 +463,7 @@ public class Bach {
         return new Project(
             base == null ? new Base(baseDirectory, baseWorkspace) : base,
             info == null ? new Info(infoTitle, Version.parse(infoVersion)) : info,
-            library == null ? new Library(libraryRequired, libraryMap::get) : library,
+            library == null ? new Library(libraryRequired, Locator.of(libraryMap)) : library,
             realms == null ? List.of() : realms);
       }
       public Builder setBase(Base base) {
@@ -775,7 +793,9 @@ public class Bach {
       return Task.sequence("Create JAR files of " + realm.toLabelName() + " realm", tasks);
     }
     Task newJavadocTask(Project.Realm realm) {
-      var arguments = Helper.newModuleArguments(project, realm).put("-d", project.base().api());
+      var api = project.base().documentation("api");
+      var jar = project.base().documentation("api-" + project.info().version() + "-javadoc.jar");
+      var arguments = Helper.newModuleArguments(project, realm).put("-d", api);
       tuner.tune(arguments, project, Tuner.context("javadoc", realm));
       return Task.sequence(
           "Generate and package API documentation for " + realm.toLabelName() + " realm",
@@ -788,9 +808,9 @@ public class Bach {
               ToolProvider.findFirst("jar").orElseThrow(),
               new Arguments()
                   .put("--create")
-                  .put("--file", project.base().workspace("api.jar"))
+                  .put("--file", jar)
                   .put("--no-manifest")
-                  .put("-C", project.base().api(), ".")
+                  .put("-C", api, ".")
                   .toStringArray()));
     }
     Task newJLinkTask(Project.Realm realm) {
@@ -1162,8 +1182,10 @@ public class Bach {
         class Transporter implements Consumer<Set<String>> {
           public void accept(Set<String> modules) {
             var resources = new Resources(bach.getHttpClient());
+            var locator = library.locator();
+            locator.accept(bach);
             for (var module : modules) {
-              var raw = library.lookup().apply(module);
+              var raw = locator.apply(module);
               if (raw == null) continue;
               try {
                 var lib = Files.createDirectories(project.base().lib());
@@ -1206,6 +1228,107 @@ public class Bach {
       return new CachingSupplier();
     }
     private Functions() {}
+  }
+  public static class Locators {
+    public static class ComposedLocator implements Project.Locator {
+      private final Iterable<Project.Locator> locators;
+      public ComposedLocator(Iterable<Project.Locator> locators) {
+        this.locators = locators;
+      }
+      public String apply(String module) {
+        for (var locator : locators) {
+          var uri = locator.apply(module);
+          if (uri != null) return uri;
+        }
+        return null;
+      }
+    }
+    public static class MavenLocator implements Project.Locator {
+      private final String repository;
+      private final Map<String, String> coordinates;
+      public MavenLocator(Map<String, String> coordinates) {
+        this(Maven.CENTRAL_REPOSITORY, coordinates);
+      }
+      public MavenLocator(String repository, Map<String, String> coordinates) {
+        this.repository = repository;
+        this.coordinates = coordinates;
+      }
+      public String apply(String module) {
+        var coordinate = coordinates.get(module);
+        if (coordinate == null) return null;
+        var split = coordinate.split(":");
+        if (split.length < 3) return coordinate;
+        var group = split[0];
+        var artifact = split[1];
+        var version = split[2];
+        var joiner = new Maven.Joiner().repository(repository);
+        joiner.group(group).artifact(artifact).version(version);
+        joiner.classifier(split.length < 4 ? "" : split[3]);
+        return joiner.toString();
+      }
+    }
+    public static class SormurasModulesLocator implements Project.Locator {
+      private final Map<String, String> versions;
+      private Bach bach;
+      private Map<String, String> moduleMaven;
+      private Map<String, String> moduleVersion;
+      public SormurasModulesLocator(Map<String, String> versions) {
+        this.versions = versions;
+      }
+      public void accept(Bach bach) {
+        this.bach = bach;
+      }
+      public String apply(String module) {
+        if (moduleMaven == null && moduleVersion == null)
+          try {
+            if (bach == null) throw new IllegalStateException("Bach field not set");
+            var resources = new Resources(bach.getHttpClient());
+            moduleMaven = load(resources, "module-maven.properties");
+            moduleVersion = load(resources, "module-version.properties");
+          } catch (Exception e) {
+            throw new RuntimeException("Load module properties failed", e);
+          }
+        if (moduleMaven == null) throw new IllegalStateException("Map module-maven is null");
+        if (moduleVersion == null) throw new IllegalStateException("Map module-version is null");
+        var maven = moduleMaven.get(module);
+        if (maven == null) return null;
+        var indexOfColon = maven.indexOf(':');
+        if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+        var version = versions.getOrDefault(module, moduleVersion.get(module));
+        if (version == null) return null;
+        var group = maven.substring(0, indexOfColon);
+        var artifact = maven.substring(indexOfColon + 1);
+        return new Maven.Joiner().group(group).artifact(artifact).version(version).toString();
+      }
+      private static final String ROOT = "https://github.com/sormuras/modules";
+      private static Map<String, String> load(Resources resources, String properties)
+          throws Exception {
+        var user = Path.of(System.getProperty("user.home"));
+        var cache = Files.createDirectories(user.resolve(".bach/modules"));
+        var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+        var target = cache.resolve(properties);
+        var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+        return map(load(new Properties(), path));
+      }
+      private static Properties load(Properties properties, Path path) {
+        if (Files.isRegularFile(path)) {
+          try (var reader = Files.newBufferedReader(path)) {
+            properties.load(reader);
+          } catch (Exception e) {
+            throw new RuntimeException("Load properties failed: " + path, e);
+          }
+        }
+        return properties;
+      }
+      private static Map<String, String> map(Properties properties) {
+        var map = new TreeMap<String, String>();
+        for (var name : properties.stringPropertyNames()) {
+          map.put(name, properties.getProperty(name));
+        }
+        return map;
+      }
+    }
+    private Locators() {}
   }
   public static class Logbook implements System.Logger {
     public static Logbook ofSystem() {
@@ -1279,6 +1402,55 @@ public class Bach {
         return String.format("%c|%s%s", level.name().charAt(0), message, exceptionMessage);
       }
     }
+  }
+  public static class Maven {
+    public static final String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+    public static String central(String group, String artifact, String version) {
+      return central(group, artifact, version, "");
+    }
+    public static String central(String group, String artifact, String version, String classifier) {
+      var central = new Joiner().group(group).artifact(artifact).version(version);
+      return central.classifier(classifier).toString();
+    }
+    public static class Joiner {
+      private String repository = CENTRAL_REPOSITORY;
+      private String group;
+      private String artifact;
+      private String version;
+      private String classifier = "";
+      private String type = "jar";
+      public String toString() {
+        var joiner = new StringJoiner("/").add(repository);
+        joiner.add(group.replace('.', '/')).add(artifact).add(version);
+        var file = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
+        return joiner.add(file + '.' + type).toString();
+      }
+      public Joiner repository(String repository) {
+        this.repository = Objects.requireNonNull(repository, "repository");
+        return this;
+      }
+      public Joiner group(String group) {
+        this.group = Objects.requireNonNull(group, "group");
+        return this;
+      }
+      public Joiner artifact(String artifact) {
+        this.artifact = Objects.requireNonNull(artifact, "artifact");
+        return this;
+      }
+      public Joiner version(String version) {
+        this.version = Objects.requireNonNull(version, "version");
+        return this;
+      }
+      public Joiner classifier(String classifier) {
+        this.classifier = Objects.requireNonNull(classifier, "classifier");
+        return this;
+      }
+      public Joiner type(String type) {
+        this.type = Objects.requireNonNull(type, "type");
+        return this;
+      }
+    }
+    private Maven() {}
   }
   public static class Modules {
     interface Patterns {
