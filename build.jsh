@@ -16,12 +16,10 @@
  */
 
 System.out.println("| Generate Bach.java and use it to build this modular Java project.")
-System.out.println("|")
 System.out.println("| /open src/bach/SingleFileSourceCodeGenerator.java")
 /open src/bach/SingleFileSourceCodeGenerator.java
 SingleFileSourceCodeGenerator.main()
 
-System.out.println("| ")
 System.out.println("| /open .bach/build.jsh")
 /open .bach/build.jsh
 
