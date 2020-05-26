@@ -367,12 +367,18 @@ public /*static*/ class Sequencer {
     void tune(Arguments arguments, Project project, Map<String, String> context);
 
     static void defaults(Arguments arguments, Project project, Map<String, String> context) {
+      var realm = context.getOrDefault("realm", "");
+      var info = project.info();
+      var release = info.compileForJavaRelease();
       switch (context.get("tool")) {
         case "javac":
           arguments.put("-encoding", "UTF-8");
           arguments.put("-parameters");
-          arguments.put("-Werror");
           arguments.put("-X" + "lint");
+          if ("main".equals(realm) || realm.isBlank()) {
+            if (release != 0) arguments.put("--release", release);
+            if (info.terminateCompilationIfWarningsOccur()) arguments.put("-Werror");
+          }
           break;
         case "javadoc":
           arguments.put("-encoding", "UTF-8");

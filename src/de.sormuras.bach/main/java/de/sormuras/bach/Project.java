@@ -219,9 +219,18 @@ public /*static*/ final class Project {
     private final String title;
     private final Version version;
 
-    public Info(String title, Version version) {
+    private final int compileForJavaRelease;
+    private final boolean terminateCompilationIfWarningsOccur;
+
+    public Info(
+        String title,
+        Version version,
+        int compileForJavaRelease,
+        boolean terminateCompilationIfWarningsOccur) {
       this.title = Objects.requireNonNull(title, "title");
       this.version = Objects.requireNonNull(version, "version");
+      this.compileForJavaRelease = compileForJavaRelease;
+      this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
     }
 
     public String title() {
@@ -232,11 +241,21 @@ public /*static*/ final class Project {
       return version;
     }
 
+    public int compileForJavaRelease() {
+      return compileForJavaRelease;
+    }
+
+    public boolean terminateCompilationIfWarningsOccur() {
+      return terminateCompilationIfWarningsOccur;
+    }
+
     @Override
     public String toString() {
       return new StringJoiner(", ", Info.class.getSimpleName() + "[", "]")
           .add("title='" + title + "'")
           .add("version=" + version)
+          .add("compileForJavaRelease=" + compileForJavaRelease)
+          .add("terminateCompilationIfWarningsOccur=" + terminateCompilationIfWarningsOccur)
           .toString();
     }
   }
@@ -421,6 +440,8 @@ public /*static*/ final class Project {
     private Info info = null;
     private String infoTitle = "Untitled";
     private String infoVersion = "1-ea";
+    private int compileForJavaRelease = 0;
+    private boolean terminateCompilationIfWarningsOccur = false;
 
     private Library library = null;
     private final Set<String> libraryRequired = new TreeSet<>();
@@ -432,9 +453,18 @@ public /*static*/ final class Project {
     public Project newProject() {
       return new Project(
           base != null ? base : new Base(baseDirectory, baseWorkspace),
-          info != null ? info : new Info(infoTitle, Version.parse(infoVersion)),
+          info(),
           library(),
           realms != null ? realms : List.of());
+    }
+
+    private Info info() {
+      if (info != null) return info;
+      return new Info(
+          infoTitle,
+          Version.parse(infoVersion),
+          compileForJavaRelease,
+          terminateCompilationIfWarningsOccur);
     }
 
     private Library library() {
@@ -489,6 +519,16 @@ public /*static*/ final class Project {
 
     public Builder version(String version) {
       this.infoVersion = version;
+      return this;
+    }
+
+    public Builder compileForJavaRelease(int release) {
+      this.compileForJavaRelease = release;
+      return this;
+    }
+
+    public Builder terminateCompilationIfWarningsOccur(boolean terminate) {
+      this.terminateCompilationIfWarningsOccur = terminate;
       return this;
     }
 
