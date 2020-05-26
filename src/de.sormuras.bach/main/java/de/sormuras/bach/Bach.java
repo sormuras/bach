@@ -71,7 +71,8 @@ public class Bach {
 
   /** Return Bach instance with the specified project and default components. */
   public static Bach of(Project project) {
-    return new Bach(project, HttpClient.newBuilder()::build);
+    var httpClientBuilder = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL);
+    return new Bach(project, httpClientBuilder::build);
   }
 
   /** The logbook instance collecting all log entries. */
