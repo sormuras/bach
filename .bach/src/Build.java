@@ -24,29 +24,26 @@ class Build {
 
   public static void main(String... args) {
     Bach.of(
-            scanner ->
-                scanner
-                    .offset("src")
-                    .limit(5)
-                    .layout(Bach.Scanner.Layout.MAIN_TEST_PREVIEW),
+            scanner -> scanner.offset("src").limit(5).layout(Bach.Scanner.Layout.MAIN_TEST_PREVIEW),
             project ->
                 project
                     .title("\uD83C\uDFBC Bach.java")
                     .version(Bach.VERSION.toString())
+                    .compileForJavaRelease(11)
+                    .terminateCompilationIfWarningsOccur(true)
                     .requires("org.junit.platform.console"))
         .build(
             (arguments, project, map) -> {
               Bach.Sequencer.Tuner.defaults(arguments, project, map);
               var tool = map.get("tool");
-              if ("main".equals(map.get("realm"))) {
-                if ("javac".equals(tool)) arguments.put("--release", 11);
-                if ("javadoc".equals(tool)) {
-                  arguments.put("-Xdoclint:-missing");
-                  arguments.add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
-                }
+              // any tool call
+              if ("javadoc".equals(tool)) {
+                arguments.put("-Xdoclint:-missing");
+                arguments.add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
               }
+              // "test-preview" realm tool cool
               if ("test-preview".equals(map.get("realm"))) {
-                if (tool.equals("javac")) arguments.put("-Xlint:-preview");
+                if ("javac".equals(tool)) arguments.put("-Xlint:-preview");
               }
             })
         .assertSuccessful();

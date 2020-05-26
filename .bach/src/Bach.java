@@ -314,9 +314,17 @@ public class Bach {
     public static final class Info {
       private final String title;
       private final Version version;
-      public Info(String title, Version version) {
+      private final int compileForJavaRelease;
+      private final boolean terminateCompilationIfWarningsOccur;
+      public Info(
+          String title,
+          Version version,
+          int compileForJavaRelease,
+          boolean terminateCompilationIfWarningsOccur) {
         this.title = Objects.requireNonNull(title, "title");
         this.version = Objects.requireNonNull(version, "version");
+        this.compileForJavaRelease = compileForJavaRelease;
+        this.terminateCompilationIfWarningsOccur = terminateCompilationIfWarningsOccur;
       }
       public String title() {
         return title;
@@ -324,10 +332,18 @@ public class Bach {
       public Version version() {
         return version;
       }
+      public int compileForJavaRelease() {
+        return compileForJavaRelease;
+      }
+      public boolean terminateCompilationIfWarningsOccur() {
+        return terminateCompilationIfWarningsOccur;
+      }
       public String toString() {
         return new StringJoiner(", ", Info.class.getSimpleName() + "[", "]")
             .add("title='" + title + "'")
             .add("version=" + version)
+            .add("compileForJavaRelease=" + compileForJavaRelease)
+            .add("terminateCompilationIfWarningsOccur=" + terminateCompilationIfWarningsOccur)
             .toString();
       }
     }
@@ -455,6 +471,8 @@ public class Bach {
       private Info info = null;
       private String infoTitle = "Untitled";
       private String infoVersion = "1-ea";
+      private int compileForJavaRelease = 0;
+      private boolean terminateCompilationIfWarningsOccur = false;
       private Library library = null;
       private final Set<String> libraryRequired = new TreeSet<>();
       private Locator locator = null;
@@ -463,9 +481,17 @@ public class Bach {
       public Project newProject() {
         return new Project(
             base != null ? base : new Base(baseDirectory, baseWorkspace),
-            info != null ? info : new Info(infoTitle, Version.parse(infoVersion)),
+            info(),
             library(),
             realms != null ? realms : List.of());
+      }
+      private Info info() {
+        if (info != null) return info;
+        return new Info(
+            infoTitle,
+            Version.parse(infoVersion),
+            compileForJavaRelease,
+            terminateCompilationIfWarningsOccur);
       }
       private Library library() {
         if (library != null) return library;
@@ -509,6 +535,14 @@ public class Bach {
       }
       public Builder version(String version) {
         this.infoVersion = version;
+        return this;
+      }
+      public Builder compileForJavaRelease(int release) {
+        this.compileForJavaRelease = release;
+        return this;
+      }
+      public Builder terminateCompilationIfWarningsOccur(boolean terminate) {
+        this.terminateCompilationIfWarningsOccur = terminate;
         return this;
       }
       public Builder requires(String module, String... more) {
@@ -982,12 +1016,18 @@ public class Bach {
       }
       void tune(Arguments arguments, Project project, Map<String, String> context);
       static void defaults(Arguments arguments, Project project, Map<String, String> context) {
+        var realm = context.getOrDefault("realm", "");
+        var info = project.info();
+        var release = info.compileForJavaRelease();
         switch (context.get("tool")) {
           case "javac":
             arguments.put("-encoding", "UTF-8");
             arguments.put("-parameters");
-            arguments.put("-Werror");
             arguments.put("-X" + "lint");
+            if ("main".equals(realm) || realm.isBlank()) {
+              if (release != 0) arguments.put("--release", release);
+              if (info.terminateCompilationIfWarningsOccur()) arguments.put("-Werror");
+            }
             break;
           case "javadoc":
             arguments.put("-encoding", "UTF-8");
