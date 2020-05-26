@@ -12,8 +12,6 @@ Use Java source to build your modular Java project.
 
     > JDK 11+ required.
     Write custom build programs in Java (no XML, YML, Z...).
-    Java modules declarations define dependencies.
-    Missing 3<sup>rd</sup>-party modules are resolved recursively.
 
 - 🚀 **Zero-installation** build mode
 
@@ -43,6 +41,11 @@ Use Java source to build your modular Java project.
     `N` stands for Java release feature number.
     Explore [MultiRelease](doc/project/MultiRelease) for an example project.
 
+- 🧩 **3<sup>rd</sup>-party modules** in plain sight
+
+    > You store and find all required modular JAR files in the top-level `lib/` directory.
+    Missing modules are resolved recursively looking up module-to-maven mappings from [sormuras/modules](https://github.com/sormuras/modules).
+
 - 📋 Structured build **summary** with history
 
     > Stores latest summary as `.bach/workspace/summary.md`.
@@ -52,7 +55,6 @@ Use Java source to build your modular Java project.
 
 - ⌨ More main modes: `clean`, `help`, `info`...
 - 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
-- 🧩 Locator looking up module-to-maven mappings from [sormuras/modules](https://github.com/sormuras/modules)
 
 # install-jdk.sh
 
