@@ -771,6 +771,7 @@ public class Bach {
       var arguments =
           new Arguments()
               .put("--release", source.release())
+              .put("-implicit:none") // generate classes for explicitly referenced source files only
               .put("-d", project.base().classes(realm.name(), module, source.release()))
               .put("--source-path", new TreeSet<>(sourcePaths))
               .put("--class-path", List.of(project.base().classes(realm.name())));
