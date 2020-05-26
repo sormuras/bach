@@ -457,14 +457,20 @@ public class Bach {
       private String infoVersion = "1-ea";
       private Library library = null;
       private final Set<String> libraryRequired = new TreeSet<>();
+      private Locator locator = null;
       private final Map<String, String> libraryMap = new ModulesMap();
       private List<Realm> realms = List.of();
       public Project newProject() {
         return new Project(
-            base == null ? new Base(baseDirectory, baseWorkspace) : base,
-            info == null ? new Info(infoTitle, Version.parse(infoVersion)) : info,
-            library == null ? new Library(libraryRequired, Locator.of(libraryMap)) : library,
-            realms == null ? List.of() : realms);
+            base != null ? base : new Base(baseDirectory, baseWorkspace),
+            info != null ? info : new Info(infoTitle, Version.parse(infoVersion)),
+            library(),
+            realms != null ? realms : List.of());
+      }
+      private Library library() {
+        if (library != null) return library;
+        var composed = Locator.of(Locator.of(libraryMap), Locator.ofSormurasModules(Map.of()));
+        return new Library(libraryRequired, locator != null ? locator : composed);
       }
       public Builder setBase(Base base) {
         this.base = base;
@@ -476,6 +482,10 @@ public class Bach {
       }
       public Builder setLibrary(Library library) {
         this.library = library;
+        return this;
+      }
+      public Builder setLocator(Locator locator) {
+        this.locator = locator;
         return this;
       }
       public Builder setRealms(List<Realm> realms) {

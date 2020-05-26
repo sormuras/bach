@@ -60,7 +60,13 @@ class ProjectTests {
 
     @Test
     void allDirectSettersPermitNullAsAnArgument() {
-      var builder = Project.builder().setBase(null).setInfo(null).setLibrary(null).setRealms(null);
+      var builder =
+          Project.builder()
+              .setBase(null)
+              .setInfo(null)
+              .setLibrary(null)
+              .setLocator(null)
+              .setRealms(null);
       var project = builder.newProject();
       assertEquals("", project.base().directory().toString());
       assertEquals("Untitled 1-ea", project.toTitleAndVersion());
