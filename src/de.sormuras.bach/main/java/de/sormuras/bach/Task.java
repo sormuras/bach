@@ -189,8 +189,10 @@ public /*static*/ class Task {
         @Override
         public void accept(Set<String> modules) {
           var resources = new Resources(bach.getHttpClient());
+          var locator = library.locator();
+          locator.accept(bach);
           for (var module : modules) {
-            var raw = library.locator().apply(module);
+            var raw = locator.apply(module);
             if (raw == null) continue;
             try {
               var lib = Files.createDirectories(project.base().lib());

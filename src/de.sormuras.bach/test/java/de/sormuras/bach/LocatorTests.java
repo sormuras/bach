@@ -20,39 +20,70 @@ package de.sormuras.bach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import de.sormuras.bach.internal.Locators;
-import de.sormuras.bach.internal.Maven;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 class LocatorTests {
+
+  private final String CENTRAL = "https://repo.maven.apache.org/maven2";
+
   @Nested
   class Jupiter {
 
     final String module = "org.junit.jupiter";
-    final String uri = Maven.central("org.junit.jupiter", "junit-jupiter", "5.6.1");
+
+    final String group = "org.junit.jupiter";
+    final String artifact = "junit-jupiter";
+    final String version = "5.6.1";
+
+    final String coordinates = String.join(":", group, artifact, version);
+    final String path = group.replace('.', '/');
+    final String file = artifact + "-" + version + ".jar";
+    final String expected = String.join("/", CENTRAL, path, artifact, version, file);
 
     @Test
     void checkComposedLocator() {
-      var locator = Project.Locator.of(Project.Locator.of(Map.of(module, uri)));
-      assertEquals(uri, locator.apply(module));
+      var locator = Project.Locator.of(Project.Locator.of(Map.of(module, expected)));
+      assertEquals(expected, locator.apply(module));
       assertNull(locator.apply("foo"));
     }
 
     @Test
     void checkDirectLocator() {
-      var locator = Project.Locator.of(Map.of(module, uri));
-      assertEquals(uri, locator.apply(module));
+      var locator = Project.Locator.of(Map.of(module, expected));
+      assertEquals(expected, locator.apply(module));
+      assertNull(locator.apply("foo"));
+    }
+
+    @Test
+    void checkMavenCentralLocator() {
+      var locator = Project.Locator.ofMaven(Map.of(module, coordinates));
+      assertEquals(expected, locator.apply(module));
+      assertNull(locator.apply("foo"));
+    }
+
+    @Test
+    void checkMavenRepositoryLocator() {
+      var locator = Project.Locator.ofMaven(CENTRAL, Map.of(module, coordinates));
+      assertEquals(expected, locator.apply(module));
+      assertNull(locator.apply("foo"));
+    }
+
+    @Test
+    void checkMavenLocatorWithDirectMapping() {
+      var locator = Project.Locator.ofMaven(CENTRAL, Map.of(module, expected));
+      assertEquals(expected, locator.apply(module));
       assertNull(locator.apply("foo"));
     }
 
     @Test
     @DisabledIfSystemProperty(named = "offline", matches = "true")
     void checkSormurasModulesLocator() {
-      var locator = new Locators.SormurasModulesLocator(Map.of(module, "5.6.1"));
-      assertEquals(uri, locator.apply(module));
+      var locator = Project.Locator.ofSormurasModules(Map.of(module, version));
+      locator.accept(Bach.of(Projects.zero()));
+      assertEquals(expected, locator.apply(module));
       assertNull(locator.apply("foo"));
     }
   }

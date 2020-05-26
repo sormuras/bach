@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -261,7 +262,11 @@ public /*static*/ final class Project {
 
   /** A function that maps a module name to the string representation of a URI. */
   @FunctionalInterface
-  public interface Locator extends UnaryOperator<String> {
+  public interface Locator extends UnaryOperator<String>, Consumer<Bach> {
+
+    /** Allows access to the current execution environment. */
+    @Override
+    default void accept(Bach bach) {}
 
     /** Return mapped URI for the given module name, may be {@code null} if not mapped. */
     @Override
@@ -285,6 +290,11 @@ public /*static*/ final class Project {
     /** Create a Maven repository based locator parsing complete coordinates. */
     static Locator ofMaven(String repository, Map<String, String> coordinates) {
       return new Locators.MavenLocator(repository, coordinates);
+    }
+
+    /** Create a locator that loads mappings from {@code sormuras/modules} database. */
+    static Locator ofSormurasModules(Map<String, String> versions) {
+      return new Locators.SormurasModulesLocator(versions);
     }
   }
 
@@ -422,7 +432,7 @@ public /*static*/ final class Project {
       return new Project(
           base == null ? new Base(baseDirectory, baseWorkspace) : base,
           info == null ? new Info(infoTitle, Version.parse(infoVersion)) : info,
-          library == null ? new Library(libraryRequired, libraryMap::get) : library,
+          library == null ? new Library(libraryRequired, Locator.of(libraryMap)) : library,
           realms == null ? List.of() : realms);
     }
 

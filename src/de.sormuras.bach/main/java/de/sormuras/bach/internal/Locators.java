@@ -17,17 +17,15 @@
 
 package de.sormuras.bach.internal;
 
+import de.sormuras.bach.Bach;
 import de.sormuras.bach.Project;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.stream.StreamSupport;
 
 /** {@link Project.Locator}-related utilities. */
 public /*static*/ class Locators {
@@ -42,24 +40,11 @@ public /*static*/ class Locators {
 
     @Override
     public String apply(String module) {
-      return Math.random() <= 0.5 ? withForEach(module) : withStream(module);
-    }
-
-    public String withForEach(String module) {
       for (var locator : locators) {
         var uri = locator.apply(module);
         if (uri != null) return uri;
       }
       return null;
-    }
-
-    public String withStream(String module) {
-      var stream = StreamSupport.stream(locators.spliterator(), false);
-      return stream
-          .map(locator -> locator.apply(module))
-          .filter(Objects::nonNull)
-          .findFirst()
-          .orElse(null);
     }
   }
 
@@ -96,40 +81,43 @@ public /*static*/ class Locators {
   /** https://github.com/sormuras/modules */
   public static class SormurasModulesLocator implements Project.Locator {
 
+    private final Map<String, String> versions;
+    private Bach bach;
     private Map<String, String> moduleMaven;
     private Map<String, String> moduleVersion;
-    private final Map<String, String> variants;
 
-    public SormurasModulesLocator(Map<String, String> variants) {
-      this.variants = variants;
+    public SormurasModulesLocator(Map<String, String> versions) {
+      this.versions = versions;
+    }
+
+    @Override
+    public void accept(Bach bach) {
+      this.bach = bach;
     }
 
     @Override
     public String apply(String module) {
       if (moduleMaven == null && moduleVersion == null)
         try {
-          // TODO var http = bach.getHttpClient();
-          var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-          var resources = new Resources(http);
+          if (bach == null) throw new IllegalStateException("Bach field not set");
+          var resources = new Resources(bach.getHttpClient());
           moduleMaven = load(resources, "module-maven.properties");
           moduleVersion = load(resources, "module-version.properties");
         } catch (Exception e) {
-          throw new RuntimeException("load module properties failed", e);
+          throw new RuntimeException("Load module properties failed", e);
         }
-      if (moduleMaven == null) throw new IllegalStateException("module-maven map is null");
-      if (moduleVersion == null) throw new IllegalStateException("module-version map is null");
+      if (moduleMaven == null) throw new IllegalStateException("Map module-maven is null");
+      if (moduleVersion == null) throw new IllegalStateException("Map module-version is null");
 
       var maven = moduleMaven.get(module);
       if (maven == null) return null;
       var indexOfColon = maven.indexOf(':');
       if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
-      var version = variants.getOrDefault(module, moduleVersion.get(module));
+      var version = versions.getOrDefault(module, moduleVersion.get(module));
       if (version == null) return null;
-      return new Maven.Joiner()
-          .group(maven.substring(0, indexOfColon))
-          .artifact(maven.substring(indexOfColon + 1))
-          .version(version)
-          .toString();
+      var group = maven.substring(0, indexOfColon);
+      var artifact = maven.substring(indexOfColon + 1);
+      return new Maven.Joiner().group(group).artifact(artifact).version(version).toString();
     }
 
     private static final String ROOT = "https://github.com/sormuras/modules";
