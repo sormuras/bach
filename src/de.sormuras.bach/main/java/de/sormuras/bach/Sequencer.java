@@ -189,12 +189,6 @@ public /*static*/ class Sequencer {
     var modulePaths = new ArrayList<Path>();
     modulePaths.add(base.modules(realm.name()));
     modulePaths.addAll(Helper.modulePaths(project, realm));
-    var automaticModules =
-        ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
-            .map(ModuleReference::descriptor)
-            .filter(ModuleDescriptor::isAutomatic)
-            .collect(Collectors.toList());
-    if (!automaticModules.isEmpty()) return Task.sequence("Automatic module: " + automaticModules);
     var units = realm.units();
     var mainModule = Modules.findMainModule(units.values().stream().map(Project.Unit::descriptor));
     var arguments =
@@ -208,11 +202,17 @@ public /*static*/ class Sequencer {
       arguments.put("--launcher", launcher + '=' + module);
     }
     tuner.tune(arguments, project, Tuner.context("jlink", realm));
-    return Task.sequence(
-        "Create custom runtime image",
-        new Task.DeleteDirectories(base.image()),
-        new Task.RunTool(
-            "jlink", ToolProvider.findFirst("jlink").orElseThrow(), arguments.toStringArray()));
+    var jlink = ToolProvider.findFirst("jlink").orElseThrow();
+    return Task.conditional(
+        "Check for explicit modules",
+        bach ->
+            ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+                .map(ModuleReference::descriptor)
+                .noneMatch(ModuleDescriptor::isAutomatic),
+        Task.sequence(
+            "Create custom runtime image",
+            new Task.DeleteDirectories(base.image()),
+            new Task.RunTool("jlink", jlink, arguments.toStringArray())));
   }
 
   Task newTestsTask(Project.Realm realm) {
