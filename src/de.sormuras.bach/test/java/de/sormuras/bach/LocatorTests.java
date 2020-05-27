@@ -47,8 +47,7 @@ class LocatorTests {
     void checkComposedLocator() {
       var locator = Project.Locator.of(Project.Locator.of(Map.of(module, expected)));
       assertEquals(expected, locator.locate(module).orElseThrow());
-      var locator2 = Project.Locator.of(Project.Locator.of(Map.of(module, expected)));
-      assertTrue(locator2.locate("foo").isEmpty());
+      assertTrue(locator.locate("foo").isEmpty());
     }
 
     @Test
