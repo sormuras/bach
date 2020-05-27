@@ -31,10 +31,30 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /** A piece of work to be done or undertaken. */
 public /*static*/ class Task {
+
+  public static final Task NOOP = new Task();
+
+  public static Task conditional(String label, Predicate<Bach> predicate, Task yes) {
+    return conditional(label, predicate, yes, NOOP);
+  }
+
+  public static Task conditional(String label, Predicate<Bach> predicate, Task yes, Task no) {
+    class ConditionalTask extends Task {
+      ConditionalTask() {
+        super(label, List.of());
+      }
+      @Override
+      public void execute(Bach bach) {
+        bach.execute(predicate.test(bach) ? yes : no);
+      }
+    }
+    return new ConditionalTask();
+  }
 
   public static Task sequence(String label, Task... tasks) {
     return sequence(label, List.of(tasks));

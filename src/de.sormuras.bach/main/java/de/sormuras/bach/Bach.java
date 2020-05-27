@@ -125,6 +125,7 @@ public class Bach {
   }
 
   /*private*/ void execute(Task task) {
+    if (task == Task.NOOP) return;
     var label = task.getLabel();
     var tasks = task.getList();
     if (tasks.isEmpty()) {
