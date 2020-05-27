@@ -134,12 +134,13 @@ public class Bach {
     return summary;
   }
   private void execute(Task task) {
+    if (task == Task.NOOP) return;
     var label = task.getLabel();
     var tasks = task.getList();
     if (tasks.isEmpty()) {
       logbook.log(Level.TRACE, "* {0}", label);
+      if (logbook.isDryRun()) return;
       try {
-        if (logbook.isDryRun()) return;
         task.execute(this);
       } catch (Throwable throwable) {
         var message = "Task execution failed";
@@ -871,12 +872,6 @@ public class Bach {
       var modulePaths = new ArrayList<Path>();
       modulePaths.add(base.modules(realm.name()));
       modulePaths.addAll(Helper.modulePaths(project, realm));
-      var automaticModules =
-          ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
-              .map(ModuleReference::descriptor)
-              .filter(ModuleDescriptor::isAutomatic)
-              .collect(Collectors.toList());
-      if (!automaticModules.isEmpty()) return Task.sequence("Automatic module: " + automaticModules);
       var units = realm.units();
       var mainModule = Modules.findMainModule(units.values().stream().map(Project.Unit::descriptor));
       var arguments =
@@ -890,11 +885,17 @@ public class Bach {
         arguments.put("--launcher", launcher + '=' + module);
       }
       tuner.tune(arguments, project, Tuner.context("jlink", realm));
-      return Task.sequence(
-          "Create custom runtime image",
-          new Task.DeleteDirectories(base.image()),
-          new Task.RunTool(
-              "jlink", ToolProvider.findFirst("jlink").orElseThrow(), arguments.toStringArray()));
+      var jlink = ToolProvider.findFirst("jlink").orElseThrow();
+      return Task.conditional(
+          "Check for explicit modules",
+          bach ->
+              ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+                  .map(ModuleReference::descriptor)
+                  .noneMatch(ModuleDescriptor::isAutomatic),
+          Task.sequence(
+              "Create custom runtime image",
+              new Task.DeleteDirectories(base.image()),
+              new Task.RunTool("jlink", jlink, arguments.toStringArray())));
     }
     Task newTestsTask(Project.Realm realm) {
       var base = project.base();
@@ -1127,6 +1128,21 @@ public class Bach {
     }
   }
   public static class Task {
+    public static final Task NOOP = new Task();
+    public static Task conditional(String label, Predicate<Bach> predicate, Task yes) {
+      return conditional(label, predicate, yes, NOOP);
+    }
+    public static Task conditional(String label, Predicate<Bach> predicate, Task yes, Task no) {
+      class ConditionalTask extends Task {
+        ConditionalTask() {
+          super(label, List.of());
+        }
+        public void execute(Bach bach) {
+          bach.execute(predicate.test(bach) ? yes : no);
+        }
+      }
+      return new ConditionalTask();
+    }
     public static Task sequence(String label, Task... tasks) {
       return sequence(label, List.of(tasks));
     }
