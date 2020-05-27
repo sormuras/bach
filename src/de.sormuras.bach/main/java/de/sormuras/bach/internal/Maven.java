@@ -32,12 +32,17 @@ public /*static*/ class Maven {
 
   /** Return the string representation of a JAR file hosted at Maven Central. */
   public static String central(String group, String artifact, String version, String classifier) {
-    var central = new Joiner().group(group).artifact(artifact).version(version);
-    return central.classifier(classifier).toString();
+    return Joiner.of(group, artifact, version).classifier(classifier).toString();
   }
 
-  /** A Maven unified resource identifier builder. */
+  /** A Maven unified resource identifier string representation builder. */
   public static class Joiner {
+
+    /** Create new instance with group, artifact, and version initialized accordingly. */
+    public static Joiner of(String group, String artifact, String version) {
+      return new Joiner().group(group).artifact(artifact).version(version);
+    }
+
     private String repository = CENTRAL_REPOSITORY;
     private String group;
     private String artifact;
@@ -49,7 +54,7 @@ public /*static*/ class Maven {
     public String toString() {
       var joiner = new StringJoiner("/").add(repository);
       joiner.add(group.replace('.', '/')).add(artifact).add(version);
-      var file = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
+      var file = artifact + '-' + (classifier.isBlank() ? version : version + '-' + classifier);
       return joiner.add(file + '.' + type).toString();
     }
 

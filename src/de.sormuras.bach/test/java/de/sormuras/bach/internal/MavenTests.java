@@ -28,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class MavenTests {
 
   @Nested
-  class Resources {
+  class JoinerTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"3.7", "4.13"})
