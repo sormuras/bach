@@ -361,14 +361,17 @@ public class Bach {
         return locator;
       }
     }
-    public interface Locator extends UnaryOperator<String>, Consumer<Bach> {
+    public interface Locator {
       default void accept(Bach bach) {}
-      String apply(String module);
+      Optional<String> locate(String module);
       static Locator of(Locator... locators) {
-        return new Locators.ComposedLocator(List.of(locators));
+        return module ->
+            List.of(locators).stream()
+                .flatMap(locator -> locator.locate(module).stream())
+                .findFirst();
       }
       static Locator of(Map<String, String> map) {
-        return map::get;
+        return module -> Optional.ofNullable(map.get(module));
       }
       static Locator ofMaven(Map<String, String> coordinates) {
         return new Locators.MavenLocator(coordinates);
@@ -1236,11 +1239,11 @@ public class Bach {
             var locator = library.locator();
             locator.accept(bach);
             for (var module : modules) {
-              var raw = locator.apply(module);
-              if (raw == null) continue;
+              var raw = locator.locate(module);
+              if (raw.isEmpty()) continue;
               try {
                 var lib = Files.createDirectories(project.base().lib());
-                var uri = URI.create(raw);
+                var uri = URI.create(raw.get());
                 var name = module + ".jar";
                 var file = resources.copy(uri, lib.resolve(name));
                 var size = Files.size(file);
@@ -1281,19 +1284,6 @@ public class Bach {
     private Functions() {}
   }
   public static class Locators {
-    public static class ComposedLocator implements Project.Locator {
-      private final Iterable<Project.Locator> locators;
-      public ComposedLocator(Iterable<Project.Locator> locators) {
-        this.locators = locators;
-      }
-      public String apply(String module) {
-        for (var locator : locators) {
-          var uri = locator.apply(module);
-          if (uri != null) return uri;
-        }
-        return null;
-      }
-    }
     public static class MavenLocator implements Project.Locator {
       private final String repository;
       private final Map<String, String> coordinates;
@@ -1304,18 +1294,18 @@ public class Bach {
         this.repository = repository;
         this.coordinates = coordinates;
       }
-      public String apply(String module) {
+      public Optional<String> locate(String module) {
         var coordinate = coordinates.get(module);
-        if (coordinate == null) return null;
+        if (coordinate == null) return Optional.empty();
         var split = coordinate.split(":");
-        if (split.length < 3) return coordinate;
+        if (split.length < 3) return Optional.of(coordinate);
         var group = split[0];
         var artifact = split[1];
         var version = split[2];
         var joiner = new Maven.Joiner().repository(repository);
         joiner.group(group).artifact(artifact).version(version);
         joiner.classifier(split.length < 4 ? "" : split[3]);
-        return joiner.toString();
+        return Optional.of(joiner.toString());
       }
     }
     public static class SormurasModulesLocator implements Project.Locator {
@@ -1329,7 +1319,7 @@ public class Bach {
       public void accept(Bach bach) {
         this.bach = bach;
       }
-      public String apply(String module) {
+      public Optional<String> locate(String module) {
         if (moduleMaven == null && moduleVersion == null)
           try {
             if (bach == null) throw new IllegalStateException("Bach field not set");
@@ -1342,14 +1332,14 @@ public class Bach {
         if (moduleMaven == null) throw new IllegalStateException("Map module-maven is null");
         if (moduleVersion == null) throw new IllegalStateException("Map module-version is null");
         var maven = moduleMaven.get(module);
-        if (maven == null) return null;
+        if (maven == null) return Optional.empty();
         var indexOfColon = maven.indexOf(':');
         if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
         var version = versions.getOrDefault(module, moduleVersion.get(module));
-        if (version == null) return null;
+        if (version == null) return Optional.empty();
         var group = maven.substring(0, indexOfColon);
         var artifact = maven.substring(indexOfColon + 1);
-        return new Maven.Joiner().group(group).artifact(artifact).version(version).toString();
+        return Optional.of(Maven.Joiner.of(group, artifact, version).toString());
       }
       private static final String ROOT = "https://github.com/sormuras/modules";
       private static Map<String, String> load(Resources resources, String properties)
@@ -1460,10 +1450,12 @@ public class Bach {
       return central(group, artifact, version, "");
     }
     public static String central(String group, String artifact, String version, String classifier) {
-      var central = new Joiner().group(group).artifact(artifact).version(version);
-      return central.classifier(classifier).toString();
+      return Joiner.of(group, artifact, version).classifier(classifier).toString();
     }
     public static class Joiner {
+      public static Joiner of(String group, String artifact, String version) {
+        return new Joiner().group(group).artifact(artifact).version(version);
+      }
       private String repository = CENTRAL_REPOSITORY;
       private String group;
       private String artifact;
@@ -1473,7 +1465,7 @@ public class Bach {
       public String toString() {
         var joiner = new StringJoiner("/").add(repository);
         joiner.add(group.replace('.', '/')).add(artifact).add(version);
-        var file = artifact + '-' + (classifier.isEmpty() ? version : version + '-' + classifier);
+        var file = artifact + '-' + (classifier.isBlank() ? version : version + '-' + classifier);
         return joiner.add(file + '.' + type).toString();
       }
       public Joiner repository(String repository) {
