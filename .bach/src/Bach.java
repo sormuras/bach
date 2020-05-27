@@ -365,10 +365,15 @@ public class Bach {
       default void accept(Bach bach) {}
       Optional<String> locate(String module);
       static Locator of(Locator... locators) {
-        return module ->
-            List.of(locators).stream()
-                .flatMap(locator -> locator.locate(module).stream())
-                .findFirst();
+        class ComposedLocator implements Locator {
+          public void accept(Bach bach) {
+            for (var locator : locators) locator.accept(bach);
+          }
+          public Optional<String> locate(String module) {
+            return List.of(locators).stream().flatMap(loc -> loc.locate(module).stream()).findFirst();
+          }
+        }
+        return new ComposedLocator();
       }
       static Locator of(Map<String, String> map) {
         return module -> Optional.ofNullable(map.get(module));

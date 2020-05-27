@@ -289,10 +289,18 @@ public /*static*/ final class Project {
 
     /** Create a module locator that is composed from a given sequence of module locators. */
     static Locator of(Locator... locators) {
-      return module ->
-          List.of(locators).stream()
-              .flatMap(locator -> locator.locate(module).stream())
-              .findFirst();
+      class ComposedLocator implements Locator {
+        @Override
+        public void accept(Bach bach) {
+          for (var locator : locators) locator.accept(bach);
+        }
+
+        @Override
+        public Optional<String> locate(String module) {
+          return List.of(locators).stream().flatMap(loc -> loc.locate(module).stream()).findFirst();
+        }
+      }
+      return new ComposedLocator();
     }
 
     /** Create a map-based locator by referencing {@link Map#get(Object)} directly. */
