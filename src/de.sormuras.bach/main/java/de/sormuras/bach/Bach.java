@@ -129,8 +129,8 @@ public class Bach {
     var tasks = task.getList();
     if (tasks.isEmpty()) {
       logbook.log(Level.TRACE, "* {0}", label);
+      if (logbook.isDryRun()) return;
       try {
-        if (logbook.isDryRun()) return;
         task.execute(this);
       } catch (Throwable throwable) {
         var message = "Task execution failed";
