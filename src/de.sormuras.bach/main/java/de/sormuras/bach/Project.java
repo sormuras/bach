@@ -32,8 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -281,24 +279,25 @@ public /*static*/ final class Project {
 
   /** A function that maps a module name to the string representation of a URI. */
   @FunctionalInterface
-  public interface Locator extends UnaryOperator<String>, Consumer<Bach> {
+  public interface Locator {
 
     /** Allows access to the current execution environment. */
-    @Override
     default void accept(Bach bach) {}
 
-    /** Return mapped URI for the given module name, may be {@code null} if not mapped. */
-    @Override
-    String apply(String module);
+    /** Return mapped string representation of a URI for the given module name. */
+    Optional<String> locate(String module);
 
     /** Create a module locator that is composed from a given sequence of module locators. */
     static Locator of(Locator... locators) {
-      return new Locators.ComposedLocator(List.of(locators));
+      return module ->
+          List.of(locators).stream()
+              .flatMap(locator -> locator.locate(module).stream())
+              .findFirst();
     }
 
-    /** Create a direct map-based locator by referencing {@link Map#get(Object)}. */
+    /** Create a map-based locator by referencing {@link Map#get(Object)} directly. */
     static Locator of(Map<String, String> map) {
-      return map::get;
+      return module -> Optional.ofNullable(map.get(module));
     }
 
     /** Create a Maven Central based locator parsing complete coordinates. */

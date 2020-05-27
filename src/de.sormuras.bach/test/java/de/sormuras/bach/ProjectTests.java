@@ -87,7 +87,7 @@ class ProjectTests {
       assertTrue(project.toDeclaredModuleNames().isEmpty());
       assertTrue(project.toRequiredModuleNames().isEmpty());
       assertEquals(Set.of("foo"), project.library().required());
-      assertEquals("https://foo.jar", project.library().locator().apply("foo"));
+      assertEquals("https://foo.jar", project.library().locator().locate("foo").orElseThrow());
     }
   }
 }

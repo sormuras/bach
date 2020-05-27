@@ -24,29 +24,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.TreeMap;
 
 /** {@link Project.Locator}-related utilities. */
 public /*static*/ class Locators {
-
-  public static class ComposedLocator implements Project.Locator {
-
-    private final Iterable<Project.Locator> locators;
-
-    public ComposedLocator(Iterable<Project.Locator> locators) {
-      this.locators = locators;
-    }
-
-    @Override
-    public String apply(String module) {
-      for (var locator : locators) {
-        var uri = locator.apply(module);
-        if (uri != null) return uri;
-      }
-      return null;
-    }
-  }
 
   public static class MavenLocator implements Project.Locator {
 
@@ -63,18 +46,18 @@ public /*static*/ class Locators {
     }
 
     @Override
-    public String apply(String module) {
+    public Optional<String> locate(String module) {
       var coordinate = coordinates.get(module);
-      if (coordinate == null) return null;
+      if (coordinate == null) return Optional.empty();
       var split = coordinate.split(":");
-      if (split.length < 3) return coordinate;
+      if (split.length < 3) return Optional.of(coordinate);
       var group = split[0];
       var artifact = split[1];
       var version = split[2];
       var joiner = new Maven.Joiner().repository(repository);
       joiner.group(group).artifact(artifact).version(version);
       joiner.classifier(split.length < 4 ? "" : split[3]);
-      return joiner.toString();
+      return Optional.of(joiner.toString());
     }
   }
 
@@ -96,7 +79,7 @@ public /*static*/ class Locators {
     }
 
     @Override
-    public String apply(String module) {
+    public Optional<String> locate(String module) {
       if (moduleMaven == null && moduleVersion == null)
         try {
           if (bach == null) throw new IllegalStateException("Bach field not set");
@@ -110,14 +93,14 @@ public /*static*/ class Locators {
       if (moduleVersion == null) throw new IllegalStateException("Map module-version is null");
 
       var maven = moduleMaven.get(module);
-      if (maven == null) return null;
+      if (maven == null) return Optional.empty();
       var indexOfColon = maven.indexOf(':');
       if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
       var version = versions.getOrDefault(module, moduleVersion.get(module));
-      if (version == null) return null;
+      if (version == null) return Optional.empty();
       var group = maven.substring(0, indexOfColon);
       var artifact = maven.substring(indexOfColon + 1);
-      return new Maven.Joiner().group(group).artifact(artifact).version(version).toString();
+      return Optional.of(Maven.Joiner.of(group, artifact, version).toString());
     }
 
     private static final String ROOT = "https://github.com/sormuras/modules";

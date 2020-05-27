@@ -192,11 +192,11 @@ public /*static*/ class Task {
           var locator = library.locator();
           locator.accept(bach);
           for (var module : modules) {
-            var raw = locator.apply(module);
-            if (raw == null) continue;
+            var raw = locator.locate(module);
+            if (raw.isEmpty()) continue;
             try {
               var lib = Files.createDirectories(project.base().lib());
-              var uri = URI.create(raw);
+              var uri = URI.create(raw.get());
               var name = module + ".jar";
               var file = resources.copy(uri, lib.resolve(name));
               var size = Files.size(file);

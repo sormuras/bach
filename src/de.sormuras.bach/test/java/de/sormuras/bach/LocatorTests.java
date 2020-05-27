@@ -18,7 +18,7 @@
 package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -46,36 +46,37 @@ class LocatorTests {
     @Test
     void checkComposedLocator() {
       var locator = Project.Locator.of(Project.Locator.of(Map.of(module, expected)));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      var locator2 = Project.Locator.of(Project.Locator.of(Map.of(module, expected)));
+      assertTrue(locator2.locate("foo").isEmpty());
     }
 
     @Test
     void checkDirectLocator() {
       var locator = Project.Locator.of(Map.of(module, expected));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      assertTrue(locator.locate("foo").isEmpty());
     }
 
     @Test
     void checkMavenCentralLocator() {
       var locator = Project.Locator.ofMaven(Map.of(module, coordinates));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      assertTrue(locator.locate("foo").isEmpty());
     }
 
     @Test
     void checkMavenRepositoryLocator() {
       var locator = Project.Locator.ofMaven(CENTRAL, Map.of(module, coordinates));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      assertTrue(locator.locate("foo").isEmpty());
     }
 
     @Test
     void checkMavenLocatorWithDirectMapping() {
       var locator = Project.Locator.ofMaven(CENTRAL, Map.of(module, expected));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      assertTrue(locator.locate("foo").isEmpty());
     }
 
     @Test
@@ -83,8 +84,8 @@ class LocatorTests {
     void checkSormurasModulesLocator() {
       var locator = Project.Locator.ofSormurasModules(Map.of(module, version));
       locator.accept(Bach.of(Projects.zero()));
-      assertEquals(expected, locator.apply(module));
-      assertNull(locator.apply("foo"));
+      assertEquals(expected, locator.locate(module).orElseThrow());
+      assertTrue(locator.locate("foo").isEmpty());
     }
   }
 }
