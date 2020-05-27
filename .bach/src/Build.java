@@ -38,7 +38,6 @@ class Build {
               var tool = map.get("tool");
               // any tool call
               if ("javadoc".equals(tool)) {
-                arguments.put("-Xdoclint:-missing");
                 arguments.add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
               }
               // "test-preview" realm tool cool

@@ -375,8 +375,8 @@ public /*static*/ class Sequencer {
         case "javac":
           arguments.put("-encoding", "UTF-8");
           arguments.put("-parameters");
-          arguments.put("-X" + "lint");
           if ("main".equals(realm) || realm.isBlank()) {
+            arguments.put("-Xlint"); // Enable recommended warnings
             if (release != 0) arguments.put("--release", release);
             if (info.terminateCompilationIfWarningsOccur()) arguments.put("-Werror");
           }
@@ -384,6 +384,7 @@ public /*static*/ class Sequencer {
         case "javadoc":
           arguments.put("-encoding", "UTF-8");
           arguments.put("-locale", "en");
+          arguments.put("-Xdoclint"); // Enable recommended checks for problems in javadoc comments
           break;
         case "jlink":
           arguments.put("--compress", "2");
