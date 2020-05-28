@@ -269,7 +269,7 @@ public /*static*/ class Sequencer {
   }
 
   /** A static helper. */
-  public interface Helper {
+  private interface Helper {
 
     static Arguments newModuleArguments(Project project, Project.Realm realm) {
       var arguments = new Arguments().put("--module", String.join(",", realm.units().keySet()));

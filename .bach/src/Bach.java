@@ -946,7 +946,7 @@ public class Bach {
         return list.toArray(String[]::new);
       }
     }
-    public interface Helper {
+    private interface Helper {
       static Arguments newModuleArguments(Project project, Project.Realm realm) {
         var arguments = new Arguments().put("--module", String.join(",", realm.units().keySet()));
         var modulePaths = Helper.modulePaths(project, realm);
