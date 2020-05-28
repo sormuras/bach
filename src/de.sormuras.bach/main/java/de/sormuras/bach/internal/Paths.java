@@ -65,6 +65,11 @@ public /*static*/ class Paths {
     return path.getNameCount() == 0 ? "" : path.getFileName().toString();
   }
 
+  /** Test supplied path for pointing to a Java Archive file. */
+  public static boolean isJarFile(Path path) {
+    return Files.isRegularFile(path) && name(path).endsWith(".jar");
+  }
+
   /** Test supplied path for pointing to a Java compilation unit. */
   public static boolean isJavaFile(Path path) {
     return Files.isRegularFile(path) && name(path).endsWith(".java");
