@@ -447,13 +447,13 @@ public /*static*/ final class Project {
     private Info info = null;
     private String infoTitle = "Untitled";
     private String infoVersion = "1-ea";
-    private int compileForJavaRelease = 0;
-    private boolean terminateCompilationIfWarningsOccur = false;
+    private int infoCompileForJavaRelease = 0;
+    private boolean infoTerminateCompilationIfWarningsOccur = false;
 
     private Library library = null;
     private final Set<String> libraryRequired = new TreeSet<>();
     private Locator locator = null;
-    private final Map<String, String> libraryMap = new ModulesMap();
+    private final Map<String, String> locatorMap = new ModulesMap();
 
     private List<Realm> realms = List.of();
 
@@ -470,13 +470,13 @@ public /*static*/ final class Project {
       return new Info(
           infoTitle,
           Version.parse(infoVersion),
-          compileForJavaRelease,
-          terminateCompilationIfWarningsOccur);
+          infoCompileForJavaRelease,
+          infoTerminateCompilationIfWarningsOccur);
     }
 
     private Library library() {
       if (library != null) return library;
-      var composed = Locator.of(Locator.of(libraryMap), Locator.ofSormurasModules(Map.of()));
+      var composed = Locator.of(Locator.of(locatorMap), Locator.ofSormurasModules(Map.of()));
       return new Library(libraryRequired, locator != null ? locator : composed);
     }
 
@@ -530,12 +530,12 @@ public /*static*/ final class Project {
     }
 
     public Builder compileForJavaRelease(int release) {
-      this.compileForJavaRelease = release;
+      this.infoCompileForJavaRelease = release;
       return this;
     }
 
     public Builder terminateCompilationIfWarningsOccur(boolean terminate) {
-      this.terminateCompilationIfWarningsOccur = terminate;
+      this.infoTerminateCompilationIfWarningsOccur = terminate;
       return this;
     }
 
@@ -546,7 +546,7 @@ public /*static*/ final class Project {
     }
 
     public Builder map(String module, String uri) {
-      this.libraryMap.put(module, uri);
+      this.locatorMap.put(module, uri);
       return this;
     }
   }

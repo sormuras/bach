@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,9 @@ class ProjectTests {
       var project = builder.newProject();
       assertEquals("", project.base().directory().toString());
       assertEquals("Untitled 1-ea", project.toTitleAndVersion());
+      assertNotNull(project.library());
+      assertNotNull(project.library().locator());
+      assertEquals(List.of(), project.realms());
     }
 
     @Test
@@ -88,6 +92,20 @@ class ProjectTests {
       assertTrue(project.toRequiredModuleNames().isEmpty());
       assertEquals(Set.of("foo"), project.library().required());
       assertEquals("https://foo.jar", project.library().locator().locate("foo").orElseThrow());
+    }
+
+    @Test
+    void withCustomInfoComponents() {
+      var builder =
+          Project.builder()
+              .title("Custom info components")
+              .version("123")
+              .compileForJavaRelease(123)
+              .terminateCompilationIfWarningsOccur(true);
+      var project = builder.newProject();
+      assertEquals("Custom info components 123", project.toTitleAndVersion());
+      assertEquals(123, project.info().compileForJavaRelease());
+      assertTrue(project.info().terminateCompilationIfWarningsOccur());
     }
   }
 }
