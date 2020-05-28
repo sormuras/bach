@@ -89,24 +89,26 @@ public /*static*/ final class Project {
     list.add("\tLibrary");
     list.add("\t\trequires: " + library().required());
     list.add("\t\tlocator: " + library().locator().getClass().getSimpleName());
-    list.add("\trealms: " + toRealmLabelNames() + " << " + toUnits().count() + " distinct unit(s)");
-    list.add("\tdeclares: " + toDeclaredModuleNames());
-    list.add("\trequires: " + toRequiredModuleNames());
-    list.add("\texternal: " + toExternalModuleNames());
+    list.add("\tAll realms");
+    list.add("\t\tnames: " + toRealmLabelNames());
+    list.add("\t\tunits: " + toUnits().count());
+    list.add("\t\tdeclares: " + toDeclaredModuleNames());
+    list.add("\t\trequires: " + toRequiredModuleNames());
+    list.add("\t\texternal: " + toExternalModuleNames());
     for (var realm : realms()) {
       list.add("\tRealm " + realm.name());
       list.add("\t\tflags: " + realm.flags());
       list.add("\t\tupstreams: " + new TreeSet<>(realm.upstreams()));
-      for (var unit : realm.units().values()) {
+      for (var unit : new TreeSet<>(realm.units().values())) {
         list.add("\t\tUnit " + unit.toName());
         var module = unit.descriptor();
         list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
-        list.add("\t\t\t\tmain-class: " + module.mainClass().orElse("-"));
-        list.add("\t\t\t\trequires: " + unit.toRequiredNames());
+        module.mainClass().ifPresent(name -> list.add("\t\t\t\tmain-class: " + name));
+        list.add("\t\t\t\trequires: " + Modules.required(Stream.of(unit.descriptor())));
         list.add("\t\t\tSources");
         for (var source : unit.sources()) {
           list.add("\t\t\t\tpath: " + source.path());
-          list.add("\t\t\t\trelease: " + source.release());
+          if (source.isTargeted()) list.add("\t\t\t\trelease: " + source.release());
         }
       }
     }
@@ -376,7 +378,7 @@ public /*static*/ final class Project {
   }
 
   /** A module source unit. */
-  public static final class Unit {
+  public static final class Unit implements Comparable<Unit> {
 
     private final ModuleDescriptor descriptor;
     private final List<Source> sources;
@@ -400,13 +402,13 @@ public /*static*/ final class Project {
       return resources;
     }
 
-    public String toName() {
-      return descriptor.name();
+    @Override
+    public int compareTo(Unit o) {
+      return descriptor.compareTo(o.descriptor);
     }
 
-    public Set<String> toRequiredNames() {
-      var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
-      return names.collect(Collectors.toCollection(TreeSet::new));
+    public String toName() {
+      return descriptor.name();
     }
 
     public boolean isMultiRelease() {
