@@ -45,6 +45,7 @@ class Build {
                 if ("javac".equals(tool)) arguments.put("-Xlint:-preview");
               }
             })
-        .assertSuccessful();
+        .assertSuccessful()
+        .printModuleStats();
   }
 }

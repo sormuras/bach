@@ -18,7 +18,12 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Logbook;
+import de.sormuras.bach.internal.Paths;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -28,6 +33,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** A build summary. */
@@ -42,9 +49,9 @@ public /*static*/ class Summary {
   }
 
   /** Return silently if everything's okay, throwing an {@link AssertionError} otherwise. */
-  public void assertSuccessful() {
+  public Summary assertSuccessful() {
     var entries = logbook.entries(Level.WARNING).collect(Collectors.toList());
-    if (entries.isEmpty()) return;
+    if (entries.isEmpty()) return this;
     var lines = new StringJoiner(System.lineSeparator());
     lines.add(String.format("Collected %d error(s)", entries.size()));
     for (var entry : entries) lines.add("\t- " + entry.message());
@@ -53,6 +60,33 @@ public /*static*/ class Summary {
     var error = new AssertionError(lines.toString());
     for (var entry : entries) if (entry.exception() != null) error.addSuppressed(entry.exception());
     throw error;
+  }
+
+  public Summary printModuleStats() {
+    var project = bach.getProject();
+    var directory = project.base().modules(project.realms().get(0).name());
+    return printModuleStats(System.out::println, directory);
+  }
+
+  public Summary printModuleStats(Consumer<String> printer, Path directory) {
+    var uri = directory.toUri().toString();
+    var files = Paths.list(directory, Files::isRegularFile);
+    printer.accept(String.format("Directory %s contains", uri));
+    try {
+      for (var file : files) {
+        printer.accept(String.format("%s [%,d bytes]", file.getFileName(), Files.size(file)));
+        if (!Paths.isJarFile(file)) continue;
+        var string = new StringWriter();
+        var writer = new PrintWriter(string);
+        var jar = ToolProvider.findFirst("jar").orElseThrow();
+        jar.run(writer, writer, "--describe-module", "--file", file.toString());
+        var trim = string.toString().trim().replace(uri, "${DIRECTORY}");
+        printer.accept(trim.replaceAll("(?m)^", "\t"));
+      }
+    } catch (Exception e) {
+      throw new AssertionError("Analyzing JAR files failed", e);
+    }
+    return this;
   }
 
   /** Write summary as markdown */
