@@ -215,24 +215,29 @@ public class Bach {
       list.add("Project");
       list.add("\ttitle: " + info.title());
       list.add("\tversion: " + info.version());
-      list.add("\trealms: " + toRealmLabelNames() + " << " + toUnits().count() + " distinct unit(s)");
-      list.add("\tdeclares: " + toDeclaredModuleNames());
-      list.add("\trequires: " + toRequiredModuleNames());
-      list.add("\texternal: " + toExternalModuleNames());
+      list.add("\tLibrary");
+      list.add("\t\trequires: " + library().required());
+      list.add("\t\tlocator: " + library().locator().getClass().getSimpleName());
+      list.add("\tAll realms");
+      list.add("\t\tnames: " + toRealmLabelNames());
+      list.add("\t\tunits: " + toUnits().count());
+      list.add("\t\tdeclares: " + toDeclaredModuleNames());
+      list.add("\t\trequires: " + toRequiredModuleNames());
+      list.add("\t\texternal: " + toExternalModuleNames());
       for (var realm : realms()) {
         list.add("\tRealm " + realm.name());
         list.add("\t\tflags: " + realm.flags());
         list.add("\t\tupstreams: " + new TreeSet<>(realm.upstreams()));
-        for (var unit : realm.units().values()) {
+        for (var unit : new TreeSet<>(realm.units().values())) {
           list.add("\t\tUnit " + unit.toName());
           var module = unit.descriptor();
           list.add("\t\t\tModule Descriptor " + module.toNameAndVersion());
-          list.add("\t\t\t\tmain-class: " + module.mainClass().orElse("-"));
-          list.add("\t\t\t\trequires: " + unit.toRequiredNames());
+          module.mainClass().ifPresent(name -> list.add("\t\t\t\tmain-class: " + name));
+          list.add("\t\t\t\trequires: " + Modules.required(Stream.of(unit.descriptor())));
           list.add("\t\t\tSources");
           for (var source : unit.sources()) {
             list.add("\t\t\t\tpath: " + source.path());
-            list.add("\t\t\t\trelease: " + source.release());
+            if (source.isTargeted()) list.add("\t\t\t\trelease: " + source.release());
           }
         }
       }
@@ -425,7 +430,7 @@ public class Bach {
         return name.isEmpty() ? "unnamed" : name;
       }
     }
-    public static final class Unit {
+    public static final class Unit implements Comparable<Unit> {
       private final ModuleDescriptor descriptor;
       private final List<Source> sources;
       private final List<Path> resources;
@@ -443,12 +448,11 @@ public class Bach {
       public List<Path> resources() {
         return resources;
       }
+      public int compareTo(Unit o) {
+        return descriptor.compareTo(o.descriptor);
+      }
       public String toName() {
         return descriptor.name();
-      }
-      public Set<String> toRequiredNames() {
-        var names = descriptor.requires().stream().map(ModuleDescriptor.Requires::name);
-        return names.collect(Collectors.toCollection(TreeSet::new));
       }
       public boolean isMultiRelease() {
         if (sources.isEmpty()) return false;
@@ -480,12 +484,12 @@ public class Bach {
       private Info info = null;
       private String infoTitle = "Untitled";
       private String infoVersion = "1-ea";
-      private int compileForJavaRelease = 0;
-      private boolean terminateCompilationIfWarningsOccur = false;
+      private int infoCompileForJavaRelease = 0;
+      private boolean infoTerminateCompilationIfWarningsOccur = false;
       private Library library = null;
       private final Set<String> libraryRequired = new TreeSet<>();
       private Locator locator = null;
-      private final Map<String, String> libraryMap = new ModulesMap();
+      private final Map<String, String> locatorMap = new ModulesMap();
       private List<Realm> realms = List.of();
       public Project newProject() {
         return new Project(
@@ -499,12 +503,12 @@ public class Bach {
         return new Info(
             infoTitle,
             Version.parse(infoVersion),
-            compileForJavaRelease,
-            terminateCompilationIfWarningsOccur);
+            infoCompileForJavaRelease,
+            infoTerminateCompilationIfWarningsOccur);
       }
       private Library library() {
         if (library != null) return library;
-        var composed = Locator.of(Locator.of(libraryMap), Locator.ofSormurasModules(Map.of()));
+        var composed = Locator.of(Locator.of(locatorMap), Locator.ofSormurasModules(Map.of()));
         return new Library(libraryRequired, locator != null ? locator : composed);
       }
       public Builder setBase(Base base) {
@@ -547,11 +551,11 @@ public class Bach {
         return this;
       }
       public Builder compileForJavaRelease(int release) {
-        this.compileForJavaRelease = release;
+        this.infoCompileForJavaRelease = release;
         return this;
       }
       public Builder terminateCompilationIfWarningsOccur(boolean terminate) {
-        this.terminateCompilationIfWarningsOccur = terminate;
+        this.infoTerminateCompilationIfWarningsOccur = terminate;
         return this;
       }
       public Builder requires(String module, String... more) {
@@ -560,7 +564,7 @@ public class Bach {
         return this;
       }
       public Builder map(String module, String uri) {
-        this.libraryMap.put(module, uri);
+        this.locatorMap.put(module, uri);
         return this;
       }
     }
