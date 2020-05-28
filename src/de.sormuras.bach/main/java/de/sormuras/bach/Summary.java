@@ -78,6 +78,7 @@ public /*static*/ class Summary {
     var md = new ArrayList<String>();
     md.add("# Summary for " + bach.getProject().toTitleAndVersion());
     md.addAll(projectDescription());
+    md.addAll(toolCallOverview());
     md.addAll(logbookEntries());
     return md;
   }
@@ -93,6 +94,16 @@ public /*static*/ class Summary {
     md.add("```text");
     md.addAll(project.toStrings());
     md.add("```");
+    return md;
+  }
+
+  private List<String> toolCallOverview() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Tool Call Overview");
+    md.add("|    |Thread|Duration|Tool|Arguments");
+    md.add("|----|-----:|-------:|----|---------");
+    md.addAll(logbook.tools());
     return md;
   }
 

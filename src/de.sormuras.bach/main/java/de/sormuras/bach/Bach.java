@@ -20,12 +20,15 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Functions;
 import de.sormuras.bach.internal.Logbook;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -150,10 +153,12 @@ public class Bach {
     logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
   }
 
-  /*private*/ void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+  /*private*/ void execute(ToolProvider tool, StringWriter out, StringWriter err, String... args) {
     var call = (tool.name() + ' ' + String.join(" ", args)).trim();
     logbook.log(Level.DEBUG, call);
-    var code = tool.run(out, err, args);
+    var start = Instant.now();
+    var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+    logbook.ran(tool, code, Duration.between(start, Instant.now()), args);
     if (code != 0) throw new AssertionError("Tool run exit code: " + code + "\n\t" + call);
   }
 

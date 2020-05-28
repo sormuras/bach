@@ -18,12 +18,14 @@
 package de.sormuras.bach.internal;
 
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,12 +42,14 @@ public /*static*/ class Logbook implements System.Logger {
   private final boolean debug;
   private final boolean dryRun;
   private final Collection<Entry> entries;
+  private final Collection<String> tools;
 
   public Logbook(Consumer<String> consumer, boolean debug, boolean dryRun) {
     this.consumer = consumer;
     this.debug = debug;
     this.dryRun = dryRun;
     this.entries = new ConcurrentLinkedQueue<>();
+    this.tools = new ConcurrentLinkedQueue<>();
   }
 
   public boolean isDebug() {
@@ -80,6 +84,21 @@ public /*static*/ class Logbook implements System.Logger {
   public void log(Level level, ResourceBundle bundle, String pattern, Object... arguments) {
     var message = arguments == null ? pattern : MessageFormat.format(pattern, arguments);
     log(level, bundle, message, (Throwable) null);
+  }
+
+  public void ran(ToolProvider tool, int code, Duration duration, String... args) {
+    var format = "|%4c|%6X|%8d|%20s| %s";
+    var kind = code == 0 ? ' ' : String.valueOf(code);
+    var thread = Thread.currentThread().getId();
+    var millis = duration.toMillis();
+    var name = '`' + tool.name() + '`';
+    var arguments = args.length == 0 ? "" : '`' + String.join(" ", args) + '`';
+    if (arguments.length() > 250) arguments = arguments.substring(0, 250) + "`...";
+    tools.add(String.format(format, kind, thread, millis, name, arguments));
+  }
+
+  public Collection<String> tools() {
+    return tools;
   }
 
   public Stream<Entry> entries(Level threshold) {

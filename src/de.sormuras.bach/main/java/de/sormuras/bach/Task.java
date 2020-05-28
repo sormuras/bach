@@ -20,7 +20,6 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesResolver;
 import de.sormuras.bach.internal.Resources;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.net.URI;
@@ -48,6 +47,7 @@ public /*static*/ class Task {
       ConditionalTask() {
         super(label, List.of());
       }
+
       @Override
       public void execute(Bach bach) {
         bach.execute(predicate.test(bach) ? yes : no);
@@ -120,7 +120,7 @@ public /*static*/ class Task {
 
     @Override
     public void execute(Bach bach) {
-      bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
+      bach.execute(tool, getOut(), getErr(), args);
     }
   }
 
@@ -151,11 +151,11 @@ public /*static*/ class Task {
     private void executeTool(Bach bach, ToolProvider tool) {
       Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
       if (tool.name().equals("test(" + module + ")")) {
-        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
+        bach.execute(tool, getOut(), getErr());
         return;
       }
       if (tool.name().equals("junit")) {
-        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), junitArguments);
+        bach.execute(tool, getOut(), getErr(), junitArguments);
       }
     }
   }
