@@ -158,10 +158,12 @@ public class Bach {
     var duration = System.currentTimeMillis() - start;
     logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
   }
-  private void execute(ToolProvider tool, PrintWriter out, PrintWriter err, String... args) {
+  private void execute(ToolProvider tool, StringWriter out, StringWriter err, String... args) {
     var call = (tool.name() + ' ' + String.join(" ", args)).trim();
     logbook.log(Level.DEBUG, call);
-    var code = tool.run(out, err, args);
+    var start = Instant.now();
+    var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+    logbook.ran(tool, code, Duration.between(start, Instant.now()), args);
     if (code != 0) throw new AssertionError("Tool run exit code: " + code + "\n\t" + call);
   }
   public String toString() {
@@ -1103,6 +1105,7 @@ public class Bach {
       var md = new ArrayList<String>();
       md.add("# Summary for " + bach.getProject().toTitleAndVersion());
       md.addAll(projectDescription());
+      md.addAll(toolCallOverview());
       md.addAll(logbookEntries());
       return md;
     }
@@ -1117,6 +1120,15 @@ public class Bach {
       md.add("```text");
       md.addAll(project.toStrings());
       md.add("```");
+      return md;
+    }
+    private List<String> toolCallOverview() {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Tool Call Overview");
+      md.add("|    |Thread|Duration|Tool|Arguments");
+      md.add("|----|-----:|-------:|----|---------");
+      md.addAll(logbook.tools());
       return md;
     }
     private List<String> logbookEntries() {
@@ -1195,7 +1207,7 @@ public class Bach {
         this.args = args;
       }
       public void execute(Bach bach) {
-        bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), args);
+        bach.execute(tool, getOut(), getErr(), args);
       }
     }
     public static class RunTestModule extends Task {
@@ -1220,11 +1232,11 @@ public class Bach {
       private void executeTool(Bach bach, ToolProvider tool) {
         Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
         if (tool.name().equals("test(" + module + ")")) {
-          bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()));
+          bach.execute(tool, getOut(), getErr());
           return;
         }
         if (tool.name().equals("junit")) {
-          bach.execute(tool, new PrintWriter(getOut()), new PrintWriter(getErr()), junitArguments);
+          bach.execute(tool, getOut(), getErr(), junitArguments);
         }
       }
     }
@@ -1407,11 +1419,13 @@ public class Bach {
     private final boolean debug;
     private final boolean dryRun;
     private final Collection<Entry> entries;
+    private final Collection<String> tools;
     public Logbook(Consumer<String> consumer, boolean debug, boolean dryRun) {
       this.consumer = consumer;
       this.debug = debug;
       this.dryRun = dryRun;
       this.entries = new ConcurrentLinkedQueue<>();
+      this.tools = new ConcurrentLinkedQueue<>();
     }
     public boolean isDebug() {
       return debug;
@@ -1436,6 +1450,19 @@ public class Bach {
     public void log(Level level, ResourceBundle bundle, String pattern, Object... arguments) {
       var message = arguments == null ? pattern : MessageFormat.format(pattern, arguments);
       log(level, bundle, message, (Throwable) null);
+    }
+    public void ran(ToolProvider tool, int code, Duration duration, String... args) {
+      var format = "|%4c|%6X|%8d|%20s| %s";
+      var kind = code == 0 ? ' ' : String.valueOf(code);
+      var thread = Thread.currentThread().getId();
+      var millis = duration.toMillis();
+      var name = '`' + tool.name() + '`';
+      var arguments = args.length == 0 ? "" : '`' + String.join(" ", args) + '`';
+      if (arguments.length() > 250) arguments = arguments.substring(0, 250) + "`...";
+      tools.add(String.format(format, kind, thread, millis, name, arguments));
+    }
+    public Collection<String> tools() {
+      return tools;
     }
     public Stream<Entry> entries(Level threshold) {
       return entries.stream().filter(entry -> entry.level.getSeverity() >= threshold.getSeverity());
