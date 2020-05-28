@@ -86,6 +86,9 @@ public /*static*/ final class Project {
     list.add("Project");
     list.add("\ttitle: " + info.title());
     list.add("\tversion: " + info.version());
+    list.add("\tLibrary");
+    list.add("\t\trequires: " + library().required());
+    list.add("\t\tlocator: " + library().locator().getClass().getSimpleName());
     list.add("\trealms: " + toRealmLabelNames() + " << " + toUnits().count() + " distinct unit(s)");
     list.add("\tdeclares: " + toDeclaredModuleNames());
     list.add("\trequires: " + toRequiredModuleNames());
