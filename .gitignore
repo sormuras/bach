@@ -8,8 +8,3 @@ doc/project/JigsawQuickStartWorld/.bach/src/Build.java
 
 *.args
 *.jar
-
-/bach
-/bach.bat
-/build
-/build.bat
