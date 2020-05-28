@@ -175,7 +175,7 @@ public class Bach {
         System.err.println("Custom build program execution not supported, yet.");
         return;
       }
-      Bach.of().build().assertSuccessful();
+      Bach.of().build().assertSuccessful().printModuleStats();
     }
   }
   public static final class Project {
@@ -1072,9 +1072,9 @@ public class Bach {
       this.bach = bach;
       this.logbook = (Logbook) bach.getLogger();
     }
-    public void assertSuccessful() {
+    public Summary assertSuccessful() {
       var entries = logbook.entries(Level.WARNING).collect(Collectors.toList());
-      if (entries.isEmpty()) return;
+      if (entries.isEmpty()) return this;
       var lines = new StringJoiner(System.lineSeparator());
       lines.add(String.format("Collected %d error(s)", entries.size()));
       for (var entry : entries) lines.add("\t- " + entry.message());
@@ -1083,6 +1083,30 @@ public class Bach {
       var error = new AssertionError(lines.toString());
       for (var entry : entries) if (entry.exception() != null) error.addSuppressed(entry.exception());
       throw error;
+    }
+    public Summary printModuleStats() {
+      var project = bach.getProject();
+      var directory = project.base().modules(project.realms().get(0).name());
+      return printModuleStats(System.out::println, directory);
+    }
+    public Summary printModuleStats(Consumer<String> printer, Path directory) {
+      var uri = directory.toUri().toString();
+      var files = Paths.list(directory, Files::isRegularFile);
+      printer.accept(String.format("Directory %s contains", uri));
+      try {
+        for (var file : files) {
+          printer.accept(String.format("- %s [%,d bytes]", file.getFileName(), Files.size(file)));
+          var string = new StringWriter();
+          var writer = new PrintWriter(string);
+          var jar = ToolProvider.findFirst("jar").orElseThrow();
+          jar.run(writer, writer, "--describe-module", "--file", file.toString());
+          var trim = string.toString().trim().replace(uri, "${DIRECTORY}");
+          printer.accept(trim.replaceAll("(?m)^", "\t"));
+        }
+      } catch (Exception e) {
+        throw new AssertionError("Analyzing JAR files failed", e);
+      }
+      return this;
     }
     public void writeMarkdown(Path file, boolean createCopyWithTimestamp) {
       var markdown = toMarkdown();
@@ -1839,6 +1863,9 @@ public class Bach {
     }
     public static String name(Path path) {
       return path.getNameCount() == 0 ? "" : path.getFileName().toString();
+    }
+    public static boolean isJarFile(Path path) {
+      return Files.isRegularFile(path) && name(path).endsWith(".jar");
     }
     public static boolean isJavaFile(Path path) {
       return Files.isRegularFile(path) && name(path).endsWith(".java");
