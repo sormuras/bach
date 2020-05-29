@@ -52,4 +52,7 @@ module de.sormuras.bach {
   requires jdk.jlink;
 
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      de.sormuras.bach.Main.BachToolProvider;
 }
