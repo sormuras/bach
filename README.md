@@ -53,7 +53,6 @@ Use Java source to build your modular Java project.
 
 ### TODO
 
-- ⌨ More main modes: `clean`, `help`, `info`...
 - 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
 
 # install-jdk.sh
