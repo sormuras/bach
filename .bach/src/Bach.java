@@ -35,6 +35,7 @@ import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -169,13 +170,79 @@ public class Bach {
   public String toString() {
     return "Bach.java " + VERSION;
   }
-  static class Main {
+  public static class Main {
+    public static class BachToolProvider implements ToolProvider {
+      public String name() {
+        return "bach";
+      }
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        return new Main(out, err, args).run();
+      }
+    }
     public static void main(String... args) {
+      var main = new Main(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
+      var code = main.run();
+      if (code != 0) throw new Error("Non-zero exit code: " + code);
+    }
+    private final PrintWriter out, err;
+    private final String[] args;
+    private Main(PrintWriter out, PrintWriter err, String... args) {
+      this.out = out;
+      this.err = err;
+      this.args = args;
+    }
+    private int run() {
+      if (args.length == 0) {
+        build();
+        return 0;
+      }
+      var actions = new ArrayDeque<>(List.of(args));
+      while (actions.size() > 0) {
+        var action = actions.removeFirst();
+        switch (action) {
+          case "build":
+            build();
+            break;
+          case "clean":
+            Paths.delete(Bach.WORKSPACE);
+            break;
+          case "help":
+            help();
+            break;
+          case "info":
+            new Scanner().newBuilder().newProject().toStrings().forEach(out::println);
+            break;
+          case "version":
+            out.println("bach " + Bach.VERSION);
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown action name: " + action);
+        }
+      }
+      return 0;
+    }
+    private void build() {
       if (Bach.findCustomBuildProgram().isPresent()) {
-        System.err.println("Custom build program execution not supported, yet.");
+        err.println("Custom build program execution not supported, yet.");
         return;
       }
       Bach.of().build().assertSuccessful().printModuleStats();
+    }
+    private void help() {
+      out.println("Usage: bach [actions...]");
+      out.println();
+      out.println("Supported actions");
+      out.format("\t%-9s Build modular Java project%n", "build");
+      out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", Bach.WORKSPACE);
+      out.format("\t%-9s Print this help screen%n", "help");
+      out.format("\t%-9s Scan current working directory and print project information%n", "info");
+      out.format("\t%-9s Print version to the output stream%n", "version");
+      out.println();
+      out.println("Provided tools");
+      ServiceLoader.load(ToolProvider.class).stream()
+          .map(provider -> "\t" + provider.get().name())
+          .sorted()
+          .forEach(out::println);
     }
   }
   public static final class Project {
@@ -373,15 +440,7 @@ public class Bach {
       default void accept(Bach bach) {}
       Optional<String> locate(String module);
       static Locator of(Locator... locators) {
-        class ComposedLocator implements Locator {
-          public void accept(Bach bach) {
-            for (var locator : locators) locator.accept(bach);
-          }
-          public Optional<String> locate(String module) {
-            return List.of(locators).stream().flatMap(loc -> loc.locate(module).stream()).findFirst();
-          }
-        }
-        return new ComposedLocator();
+        return new Locators.ComposedLocator(List.of(locators));
       }
       static Locator of(Map<String, String> map) {
         return module -> Optional.ofNullable(map.get(module));
@@ -1095,7 +1154,8 @@ public class Bach {
       printer.accept(String.format("Directory %s contains", uri));
       try {
         for (var file : files) {
-          printer.accept(String.format("- %s [%,d bytes]", file.getFileName(), Files.size(file)));
+          printer.accept(String.format("%s [%,d bytes]", file.getFileName(), Files.size(file)));
+          if (!Paths.isJarFile(file)) continue;
           var string = new StringWriter();
           var writer = new PrintWriter(string);
           var jar = ToolProvider.findFirst("jar").orElseThrow();
@@ -1280,12 +1340,8 @@ public class Bach {
         super("Delete directory " + directory, List.of());
         this.directory = directory;
       }
-      public void execute(Bach bach) throws Exception {
-        if (Files.notExists(directory)) return;
-        try (var stream = Files.walk(directory)) {
-          var paths = stream.sorted((p, q) -> -p.compareTo(q));
-          for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-        }
+      public void execute(Bach bach) {
+        Paths.delete(directory);
       }
     }
     public static class ResolveMissingThirdPartyModules extends Task {
@@ -1346,6 +1402,18 @@ public class Bach {
     private Functions() {}
   }
   public static class Locators {
+    public static class ComposedLocator implements Project.Locator {
+      private final List<Project.Locator> locators;
+      public ComposedLocator(Collection<? extends Project.Locator> locators) {
+        this.locators = List.copyOf(locators);
+      }
+      public void accept(Bach bach) {
+        locators.forEach(locator -> locator.accept(bach));
+      }
+      public Optional<String> locate(String module) {
+        return locators.stream().flatMap(locator -> locator.locate(module).stream()).findFirst();
+      }
+    }
     public static class MavenLocator implements Project.Locator {
       private final String repository;
       private final Map<String, String> coordinates;
@@ -1844,6 +1912,25 @@ public class Bach {
     }
   }
   public static class Paths {
+    public static Path delete(Path directory) {
+      return delete(directory, __ -> true);
+    }
+    public static Path delete(Path directory, Predicate<Path> filter) {
+      try {
+        Files.deleteIfExists(directory);
+        return directory;
+      } catch (DirectoryNotEmptyException ignored) {
+      } catch (Exception e) {
+        throw new RuntimeException("Delete directory failed: " + directory, e);
+      }
+      try (var stream = Files.walk(directory)) {
+        var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+        for (var path : selected.toArray(Path[]::new)) Files.deleteIfExists(path);
+      } catch (Exception e) {
+        throw new RuntimeException("Delete directory failed: " + directory, e);
+      }
+      return directory;
+    }
     public static Deque<String> deque(Path path) {
       var deque = new ArrayDeque<String>();
       path.forEach(name -> deque.addFirst(name.toString()));
