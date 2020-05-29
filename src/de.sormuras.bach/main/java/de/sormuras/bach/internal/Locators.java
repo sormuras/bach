@@ -23,6 +23,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -30,6 +32,25 @@ import java.util.TreeMap;
 
 /** {@link Project.Locator}-related utilities. */
 public /*static*/ class Locators {
+
+  public static class ComposedLocator implements Project.Locator {
+
+    private final List<Project.Locator> locators;
+
+    public ComposedLocator(Collection<? extends Project.Locator> locators) {
+      this.locators = List.copyOf(locators);
+    }
+
+    @Override
+    public void accept(Bach bach) {
+      locators.forEach(locator -> locator.accept(bach));
+    }
+
+    @Override
+    public Optional<String> locate(String module) {
+      return locators.stream().flatMap(locator -> locator.locate(module).stream()).findFirst();
+    }
+  }
 
   public static class MavenLocator implements Project.Locator {
 
