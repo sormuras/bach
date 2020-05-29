@@ -1,3 +1,4 @@
+//usr/bin/env jshell --show-version --enable-preview -R-ea -R-Debug -R-Djava.util.logging.config.file=src/logging.properties "$0" "$@"; exit $?
 /*
  * Bach - Java Shell Builder
  * Copyright (C) 2020 Christian Stein
