@@ -17,14 +17,99 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Paths;
+import java.io.PrintWriter;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.spi.ToolProvider;
+
 /** Bach's main program. */
-/*static*/ class Main {
+public /*static*/ class Main {
+
+  public static class BachToolProvider implements ToolProvider {
+
+    @Override
+    public String name() {
+      return "bach";
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      return new Main(out, err, args).run();
+    }
+  }
+
   public static void main(String... args) {
+    var main = new Main(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
+    var code = main.run();
+    if (code != 0) throw new Error("Non-zero exit code: " + code);
+  }
+
+  private final PrintWriter out, err;
+  private final String[] args;
+
+  private Main(PrintWriter out, PrintWriter err, String... args) {
+    this.out = out;
+    this.err = err;
+    this.args = args;
+  }
+
+  private int run() {
+    if (args.length == 0) {
+      build();
+      return 0;
+    }
+    var actions = new ArrayDeque<>(List.of(args));
+    while (actions.size() > 0) {
+      var action = actions.removeFirst();
+      switch (action) {
+        case "build":
+          build();
+          break;
+        case "clean":
+          Paths.delete(Bach.WORKSPACE);
+          break;
+        case "help":
+          help();
+          break;
+        case "info":
+          new Scanner().newBuilder().newProject().toStrings().forEach(out::println);
+          break;
+        case "version":
+          out.println("bach " + Bach.VERSION);
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown action name: " + action);
+      }
+    }
+    return 0;
+  }
+
+  private void build() {
     if (Bach.findCustomBuildProgram().isPresent()) {
-      System.err.println("Custom build program execution not supported, yet.");
+      err.println("Custom build program execution not supported, yet.");
       return;
     }
-    // Default to build() for the time being.
     Bach.of().build().assertSuccessful().printModuleStats();
+  }
+
+  private void help() {
+    out.println("Usage: bach [actions...]");
+
+    out.println();
+    out.println("Supported actions");
+    out.format("\t%-9s Build modular Java project%n", "build");
+    out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", Bach.WORKSPACE);
+    out.format("\t%-9s Print this help screen%n", "help");
+    out.format("\t%-9s Scan current working directory and print project information%n", "info");
+    out.format("\t%-9s Print version to the output stream%n", "version");
+
+    out.println();
+    out.println("Provided tools");
+    ServiceLoader.load(ToolProvider.class).stream()
+        .map(provider -> "\t" + provider.get().name())
+        .sorted()
+        .forEach(out::println);
   }
 }
