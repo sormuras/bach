@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesResolver;
+import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
@@ -185,12 +186,8 @@ public /*static*/ class Task {
     }
 
     @Override
-    public void execute(Bach bach) throws Exception {
-      if (Files.notExists(directory)) return;
-      try (var stream = Files.walk(directory)) {
-        var paths = stream.sorted((p, q) -> -p.compareTo(q));
-        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-      }
+    public void execute(Bach bach) {
+      Paths.delete(directory);
     }
   }
 

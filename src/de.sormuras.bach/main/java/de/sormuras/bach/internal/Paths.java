@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.internal;
 
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,30 @@ import java.util.regex.Pattern;
 
 /** {@link Path}-related utilities. */
 public /*static*/ class Paths {
+
+  public static Path delete(Path directory) {
+    return delete(directory, __ -> true);
+  }
+
+  public static Path delete(Path directory, Predicate<Path> filter) {
+    // trivial case: delete existing empty directory or single file
+    try {
+      Files.deleteIfExists(directory);
+      return directory;
+    } catch (DirectoryNotEmptyException ignored) {
+      // fall-through
+    } catch (Exception e) {
+      throw new RuntimeException("Delete directory failed: " + directory, e);
+    }
+    // default case: walk the tree...
+    try (var stream = Files.walk(directory)) {
+      var selected = stream.filter(filter).sorted((p, q) -> -p.compareTo(q));
+      for (var path : selected.toArray(Path[]::new)) Files.deleteIfExists(path);
+    } catch (Exception e) {
+      throw new RuntimeException("Delete directory failed: " + directory, e);
+    }
+    return directory;
+  }
 
   /** Convert path element names of the given unit into a reversed deque. */
   public static Deque<String> deque(Path path) {
