@@ -74,7 +74,7 @@ public /*static*/ class Main {
           help();
           break;
         case "info":
-          new Scanner().newBuilder().newProject().toStrings().forEach(out::println);
+          Bach.of().getProject().toStrings().forEach(out::println);
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
