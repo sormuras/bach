@@ -1,5 +1,9 @@
 name: Changelog
-on: push
+on:
+  issues:
+    types: [closed]
+  milestone:
+    types: [closed]
 jobs:
   generate_changelog:
     name: 'Generate changelog'
