@@ -78,7 +78,7 @@ if (Files.notExists(build)) {
   Files.write(build, List.of(
       "class Build {",
       "  public static void main(String... args) {",
-      "    Bach.of(project -> project).build().assertSuccessful();",
+      "    Bach.of(project -> project).build();",
       "  }",
       "}"));
   Files.readAllLines(build).forEach(line -> println("\t" + line));
