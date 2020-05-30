@@ -15,7 +15,7 @@ Use Java source to build your modular Java project.
 
 - 🚀 **Zero-installation** build mode
 
-    > `jshell https://sormuras.de/bach-build` - a copy of [bach-build.jsh](src/bach/bach-build.jsh)
+    > `jshell https://sormuras.de/bach/build` - redirects to [bach-build.jsh](src/bach/bach-build.jsh)
 
 - 📚 **API** documentation
 
