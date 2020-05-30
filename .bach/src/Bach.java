@@ -81,6 +81,7 @@ public class Bach {
   public static final Version VERSION = Version.parse("11-ea");
   public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
   public static final Path WORKSPACE = Path.of(".bach/workspace");
+  public static final Path LIBRARIES = Path.of("lib");
   public static void main(String... args) {
     Main.main(args);
   }
@@ -341,13 +342,15 @@ public class Bach {
       public static Base of() {
         return of(Path.of(""));
       }
-      public static Base of(Path directory) {
-        return new Base(directory, directory.resolve(Bach.WORKSPACE));
+      public static Base of(Path path) {
+        return new Base(path, path.resolve(Bach.LIBRARIES), path.resolve(Bach.WORKSPACE));
       }
       private final Path directory;
+      private final Path libraries;
       private final Path workspace;
-      Base(Path directory, Path workspace) {
+      Base(Path directory, Path libraries, Path workspace) {
         this.directory = Objects.requireNonNull(directory, "directory");
+        this.libraries = Objects.requireNonNull(libraries, "libraries");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
       }
       public Path directory() {
@@ -359,8 +362,8 @@ public class Bach {
       public Path path(String first, String... more) {
         return directory.resolve(Path.of(first, more));
       }
-      public Path lib() {
-        return path("lib");
+      public Path libraries() {
+        return libraries;
       }
       public Path workspace(String first, String... more) {
         return workspace.resolve(Path.of(first, more));
@@ -545,6 +548,7 @@ public class Bach {
     public static class Builder {
       private Base base = null;
       private Path baseDirectory = Path.of("");
+      private Path baseLibraries = Bach.LIBRARIES;
       private Path baseWorkspace = Bach.WORKSPACE;
       private Info info = null;
       private String infoTitle = "Untitled";
@@ -558,7 +562,7 @@ public class Bach {
       private List<Realm> realms = List.of();
       public Project newProject() {
         return new Project(
-            base != null ? base : new Base(baseDirectory, baseWorkspace),
+            base != null ? base : new Base(baseDirectory, baseLibraries, baseWorkspace),
             info(),
             library(),
             realms != null ? realms : List.of());
@@ -601,6 +605,10 @@ public class Bach {
       }
       public Builder base(Path directory) {
         this.baseDirectory = directory;
+        return this;
+      }
+      public Builder libraries(Path libraries) {
+        this.baseLibraries = libraries;
         return this;
       }
       public Builder workspace(Path workspace) {
@@ -1026,7 +1034,7 @@ public class Bach {
       }
       static List<Path> modulePaths(Project project, Project.Realm realm) {
         var base = project.base();
-        var lib = base.lib();
+        var lib = base.libraries();
         var paths = new ArrayList<Path>();
         for (var upstream : realm.upstreams()) paths.add(base.modules(upstream));
         if (Files.isDirectory(lib) || !project.toExternalModuleNames().isEmpty()) paths.add(lib);
@@ -1364,7 +1372,7 @@ public class Bach {
               var raw = locator.locate(module);
               if (raw.isEmpty()) continue;
               try {
-                var lib = Files.createDirectories(project.base().lib());
+                var lib = Files.createDirectories(project.base().libraries());
                 var uri = URI.create(raw.get());
                 var name = module + ".jar";
                 var file = resources.copy(uri, lib.resolve(name));
@@ -1376,7 +1384,7 @@ public class Bach {
             }
           }
         }
-        var modulePaths = List.of(project.base().lib());
+        var modulePaths = List.of(project.base().libraries());
         var declared = project.toDeclaredModuleNames();
         var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
         resolver.resolve(project.toRequiredModuleNames());
