@@ -87,9 +87,11 @@ if (Files.notExists(build)) {
 /*
  * Generate default git ignore configuration file.
  */
-println()
-println("Generate default .gitignore configuration.")
-Files.write(target.resolve(".gitignore"), List.of("/workspace/"))
+if (Files.notExists(target.resolve(".gitignore"))) {
+  println();
+  println("Generate default .gitignore configuration.");
+  Files.write(target.resolve(".gitignore"), List.of("/workspace/"));
+}
 
 /*
  * Smoke test Bach.java by printing its version and help text.
