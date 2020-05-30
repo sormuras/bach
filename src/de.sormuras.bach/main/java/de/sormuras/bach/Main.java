@@ -74,7 +74,7 @@ public /*static*/ class Main {
           help();
           break;
         case "info":
-          Bach.of().getProject().toStrings().forEach(out::println);
+          Bach.of().info();
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
@@ -91,7 +91,7 @@ public /*static*/ class Main {
       err.println("Custom build program execution not supported, yet.");
       return;
     }
-    Bach.of().build().assertSuccessful().printModuleStats();
+    Bach.of().build();
   }
 
   private void help() {

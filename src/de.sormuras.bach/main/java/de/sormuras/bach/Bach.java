@@ -114,7 +114,7 @@ public class Bach {
   }
 
   public Summary build() {
-    return build(Sequencer.Tuner::defaults);
+    return build(Sequencer.Tuner::defaults).assertSuccessful().printModuleStats();
   }
 
   public Summary build(Sequencer.Tuner tuner) {
@@ -125,6 +125,11 @@ public class Bach {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }
     return summary;
+  }
+
+  public Bach info() {
+    project.toStrings().forEach(logbook.consumer());
+    return this;
   }
 
   /*private*/ void execute(Task task) {

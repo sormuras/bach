@@ -52,6 +52,10 @@ public /*static*/ class Logbook implements System.Logger {
     this.tools = new ConcurrentLinkedQueue<>();
   }
 
+  public Consumer<String> consumer() {
+    return consumer;
+  }
+
   public boolean isDebug() {
     return debug;
   }
