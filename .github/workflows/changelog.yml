@@ -1,0 +1,15 @@
+name: Changelog
+on: push
+jobs:
+  generate_changelog:
+    name: 'Generate changelog'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout sources'
+      uses: actions/checkout@v2
+    - name: 'Generate changelog'
+      uses: charmixer/auto-changelog-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: 'Print changelog'
+      run: cat CHANGELOG.md
