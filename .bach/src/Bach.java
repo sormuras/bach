@@ -123,7 +123,7 @@ public class Bach {
     return httpClient.get();
   }
   public Summary build() {
-    return build(Sequencer.Tuner::defaults);
+    return build(Sequencer.Tuner::defaults).assertSuccessful().printModuleStats();
   }
   public Summary build(Sequencer.Tuner tuner) {
     var summary = new Summary(this);
@@ -133,6 +133,10 @@ public class Bach {
       summary.writeMarkdown(project.base().workspace("summary.md"), true);
     }
     return summary;
+  }
+  public Bach info() {
+    project.toStrings().forEach(logbook.consumer());
+    return this;
   }
   private void execute(Task task) {
     if (task == Task.NOOP) return;
@@ -210,7 +214,7 @@ public class Bach {
             help();
             break;
           case "info":
-            Bach.of().getProject().toStrings().forEach(out::println);
+            Bach.of().info();
             break;
           case "version":
             out.println("bach " + Bach.VERSION);
@@ -226,7 +230,7 @@ public class Bach {
         err.println("Custom build program execution not supported, yet.");
         return;
       }
-      Bach.of().build().assertSuccessful().printModuleStats();
+      Bach.of().build();
     }
     private void help() {
       out.println("Usage: bach [actions...]");
@@ -1518,6 +1522,9 @@ public class Bach {
       this.dryRun = dryRun;
       this.entries = new ConcurrentLinkedQueue<>();
       this.tools = new ConcurrentLinkedQueue<>();
+    }
+    public Consumer<String> consumer() {
+      return consumer;
     }
     public boolean isDebug() {
       return debug;
