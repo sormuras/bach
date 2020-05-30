@@ -41,11 +41,14 @@ public class Bach {
   /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("11-ea");
 
-  /** Default path of the custom build program source file. */
+  /** Default path of a custom build program source file. */
   public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
 
-  /** Workspace root directory to used for generated assets. */
+  /** Default workspace directory used to store generated assets to is {@code .bach/workspace/}. */
   public static final Path WORKSPACE = Path.of(".bach/workspace");
+
+  /** Default 3rd-party modules directory is {@code lib/}. */
+  public static final Path LIBRARIES = Path.of("lib");
 
   /** Main entry-point. */
   public static void main(String... args) {

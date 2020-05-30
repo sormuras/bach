@@ -37,7 +37,7 @@ class ProjectTests {
     var base = project.base();
     assertEquals(Path.of(""), base.directory());
     assertEquals(Path.of("foo"), base.path("foo"));
-    assertEquals(Path.of("lib"), base.lib());
+    assertEquals(Path.of("lib"), base.libraries());
     assertEquals(Path.of(".bach/workspace"), base.workspace());
     assertEquals(Path.of(".bach/workspace/foo"), base.workspace("foo"));
     assertEquals(Path.of(".bach/workspace/classes/realm"), base.classes("realm"));
@@ -77,11 +77,13 @@ class ProjectTests {
     }
 
     @Test
-    void withCustomBaseDirectoryAndWorkspace() {
+    void withCustomBaseDirectoryAndLibrariesAndWorkspace() {
       var base = Path.of("base");
+      var libs = Path.of("libs");
       var work = Path.of("work");
-      var project = Project.builder().base(base).workspace(work).newProject();
+      var project = Project.builder().base(base).libraries(libs).workspace(work).newProject();
       assertEquals(base, project.base().directory());
+      assertEquals(libs, project.base().libraries());
       assertEquals(work, project.base().workspace());
     }
 

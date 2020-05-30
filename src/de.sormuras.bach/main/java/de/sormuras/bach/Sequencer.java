@@ -286,7 +286,7 @@ public /*static*/ class Sequencer {
 
     static List<Path> modulePaths(Project project, Project.Realm realm) {
       var base = project.base();
-      var lib = base.lib();
+      var lib = base.libraries();
       var paths = new ArrayList<Path>();
       for (var upstream : realm.upstreams()) paths.add(base.modules(upstream));
       if (Files.isDirectory(lib) || !project.toExternalModuleNames().isEmpty()) paths.add(lib);

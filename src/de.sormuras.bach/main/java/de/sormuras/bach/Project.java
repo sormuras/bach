@@ -151,15 +151,17 @@ public /*static*/ final class Project {
     }
 
     /** Create a base instance for the specified directory. */
-    public static Base of(Path directory) {
-      return new Base(directory, directory.resolve(Bach.WORKSPACE));
+    public static Base of(Path path) {
+      return new Base(path, path.resolve(Bach.LIBRARIES), path.resolve(Bach.WORKSPACE));
     }
 
     private final Path directory;
+    private final Path libraries;
     private final Path workspace;
 
-    Base(Path directory, Path workspace) {
+    Base(Path directory, Path libraries, Path workspace) {
       this.directory = Objects.requireNonNull(directory, "directory");
+      this.libraries = Objects.requireNonNull(libraries, "libraries");
       this.workspace = Objects.requireNonNull(workspace, "workspace");
     }
 
@@ -175,8 +177,8 @@ public /*static*/ final class Project {
       return directory.resolve(Path.of(first, more));
     }
 
-    public Path lib() {
-      return path("lib");
+    public Path libraries() {
+      return libraries;
     }
 
     public Path workspace(String first, String... more) {
@@ -436,6 +438,7 @@ public /*static*/ final class Project {
 
     private Base base = null;
     private Path baseDirectory = Path.of("");
+    private Path baseLibraries = Bach.LIBRARIES;
     private Path baseWorkspace = Bach.WORKSPACE;
 
     private Info info = null;
@@ -453,7 +456,7 @@ public /*static*/ final class Project {
 
     public Project newProject() {
       return new Project(
-          base != null ? base : new Base(baseDirectory, baseWorkspace),
+          base != null ? base : new Base(baseDirectory, baseLibraries, baseWorkspace),
           info(),
           library(),
           realms != null ? realms : List.of());
@@ -505,6 +508,11 @@ public /*static*/ final class Project {
 
     public Builder base(Path directory) {
       this.baseDirectory = directory;
+      return this;
+    }
+
+    public Builder libraries(Path libraries) {
+      this.baseLibraries = libraries;
       return this;
     }
 

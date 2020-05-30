@@ -212,7 +212,7 @@ public /*static*/ class Task {
             var raw = locator.locate(module);
             if (raw.isEmpty()) continue;
             try {
-              var lib = Files.createDirectories(project.base().lib());
+              var lib = Files.createDirectories(project.base().libraries());
               var uri = URI.create(raw.get());
               var name = module + ".jar";
               var file = resources.copy(uri, lib.resolve(name));
@@ -224,7 +224,7 @@ public /*static*/ class Task {
           }
         }
       }
-      var modulePaths = List.of(project.base().lib());
+      var modulePaths = List.of(project.base().libraries());
       var declared = project.toDeclaredModuleNames();
       var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
       resolver.resolve(project.toRequiredModuleNames());
