@@ -13,7 +13,12 @@ jobs:
         java-version: 15-ea
 
     - name: 'Bach.java - Demo 0 - Simplicissimus'
-      run: jshell src/bach/bach-demo-0.jsh
+      run: |
+        jshell src/bach/bach-demo-0.jsh
+        cd bach-demo-0-simplicissimus
+        java -Debug ../.bach/src/Bach.java
 
     - name: 'Bach.java - Demo 99 - Luftballons'
-      run: jshell src/bach/bach-demo-99.jsh
+      run: |
+        jshell src/bach/bach-demo-99.jsh
+        cd bach-demo-99-balloons && jshell https://sormuras.de/bach/build
