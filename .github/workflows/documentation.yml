@@ -6,7 +6,7 @@ on:
       - 'doc/**'
 jobs:
   build:
-    name: "Build projects"
+    name: 'Build projects'
     runs-on: ubuntu-latest
     steps:
     - name: 'Checkout sources'

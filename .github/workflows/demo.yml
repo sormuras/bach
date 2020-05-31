@@ -1,0 +1,19 @@
+name: Demo
+on: push
+jobs:
+  build:
+    name: 'Generate and build demos'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout sources'
+      uses: actions/checkout@v2
+    - name: 'Set up JDK'
+      uses: actions/setup-java@v1
+      with:
+        java-version: 15-ea
+
+    - name: 'Bach.java - Demo 0 - Simplicissimus'
+      run: jshell src/bach/bach-demo-0.jsh
+
+    - name: 'Bach.java - Demo 99 - Luftballons'
+      run: jshell src/bach/bach-demo-99.jsh
