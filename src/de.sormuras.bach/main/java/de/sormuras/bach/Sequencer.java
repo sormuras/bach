@@ -385,6 +385,7 @@ public /*static*/ class Sequencer {
           arguments.put("-encoding", "UTF-8");
           arguments.put("-locale", "en");
           arguments.put("-Xdoclint"); // Enable recommended checks for problems in javadoc comments
+          arguments.put("--show-module-contents", "all");
           break;
         case "jlink":
           arguments.put("--compress", "2");
