@@ -1561,7 +1561,7 @@ public class Bach {
     }
     public void ran(ToolProvider tool, int code, Duration duration, String... args) {
       var format = "|%4c|%6X|%8d|%20s| %s";
-      var kind = code == 0 ? ' ' : String.valueOf(code);
+      var kind = code == 0 ? ' ' : 'X';
       var thread = Thread.currentThread().getId();
       var millis = duration.toMillis();
       var name = '`' + tool.name() + '`';
