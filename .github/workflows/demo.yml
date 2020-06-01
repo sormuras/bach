@@ -16,28 +16,28 @@ jobs:
       run: |
         jshell src/bach/bach-demo-0.jsh
         cd bach-demo-0-simplicissimus
-        java -Debug ../.bach/src/Bach.java
+        java ../.bach/src/Bach.java
         ./.bach/workspace/image/bin/java --list-modules
 
     - name: 'Bach.java - Demo 1 - Jigsaw Greetings!'
       run: |
         jshell src/bach/bach-demo-1.jsh
         cd bach-demo-1-jigsaw-greetings
-        java -Debug ../.bach/src/Bach.java
+        java ../.bach/src/Bach.java
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
-        ./.bach/workspace/image/bin/greetings
         ./.bach/workspace/image/bin/java --list-modules
+        ./.bach/workspace/image/bin/greetings
 
     - name: 'Bach.java - Demo 2 - Jigsaw Greetings World!'
       run: |
         jshell src/bach/bach-demo-2.jsh
         cd bach-demo-2-jigsaw-greetings-world
-        java -Debug ../.bach/src/Bach.java
+        java ../.bach/src/Bach.java
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
-        ./.bach/workspace/image/bin/greetings
         ./.bach/workspace/image/bin/java --list-modules
+        ./.bach/workspace/image/bin/greetings
 
     - name: 'Bach.java - Demo 99 - Luftballons'
       run: |
