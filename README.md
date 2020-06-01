@@ -51,9 +51,6 @@ Use Java source to build your modular Java project.
     > Stores latest summary as `.bach/workspace/summary.md`.
     Find a collection summary files from previous builds in `.bach/workspace/summaries/`.
 
-### TODO
-
-- 🚧 Scaffold sample projects via shell script `bach-boot.jsh`
 
 # install-jdk.sh
 
