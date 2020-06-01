@@ -7,42 +7,12 @@ on:
 
 jobs:
 
-  jdk-15-ea:
-    if: 0 == 1
-    runs-on: ubuntu-latest
-    steps:
-    - run: wget https://download.java.net/java/early_access/jdk15/1/GPL/openjdk-15-ea+1_linux-x64_bin.tar.gz --output-document jdk.tar.gz
-    - uses: actions/setup-java@v1
-      with:
-        java-version: '15-ea'
-        jdkFile: jdk.tar.gz
-    - run: java -version
-
-  jdk-14-ea:
-    if: 0 == 1
-    runs-on: ubuntu-latest
-    steps:
-    - name: 'Download latest-and-greatest JDK 14-ea'
-      run: |
-        DOCKERFILE=${HOME}/jdk-14.dockerfile
-        wget https://github.com/docker-library/openjdk/raw/master/14/jdk/Dockerfile --output-document ${DOCKERFILE}
-        JAVA_URL=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_URL //p')
-        JAVA_VERSION=$(cat ${DOCKERFILE} | sed -n 's/ENV JAVA_VERSION //p')
-        wget --directory-prefix ${HOME} ${JAVA_URL}
-        echo ::set-env name=JAVA_VERSION::${JAVA_VERSION}
-        echo ::set-env name=JDK_FILE::"${HOME}/$(basename ${JAVA_URL})"
-    - uses: actions/setup-java@v1
-      with:
-        java-version: "${{ env.JAVA_VERSION }}"
-        jdkFile: "${{ env.JDK_FILE }}"
-    - run: java -version
-
-  jdk-14-using-sormuras-download-jdk-action:
+  download-jdk-action-with-defaults:
     runs-on: ubuntu-latest
     steps:
     - uses: sormuras/download-jdk@master
     - uses: actions/setup-java@v1
       with:
-        java-version: "${{ env.JAVA_VERSION }}"
+        java-version: "${{ env.JDK_VERSION }}"
         jdkFile: "${{ env.JDK_FILE }}"
     - run: java -version
