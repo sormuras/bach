@@ -1,4 +1,4 @@
-# Bach.java 11.1 - Java Shell Builder
+# Bach.java 11-ea - Java Shell Builder
  
 [![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
