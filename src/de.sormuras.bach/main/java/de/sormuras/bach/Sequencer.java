@@ -376,6 +376,7 @@ public /*static*/ class Sequencer {
           arguments.put("-encoding", "UTF-8");
           arguments.put("-parameters");
           if ("main".equals(realm) || realm.isBlank()) {
+            arguments.put("--module-version", project.info().version());
             arguments.put("-Xlint"); // Enable recommended warnings
             if (release != 0) arguments.put("--release", release);
             if (info.terminateCompilationIfWarningsOccur()) arguments.put("-Werror");
