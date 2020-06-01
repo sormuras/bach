@@ -30,7 +30,7 @@ if (Files.notExists(base)) {
   Files.write(ball00n.resolve("module-info.java"), List.of("module ball00n {}", ""));
 
   // Not 99, yet. Due to https://bugs.openjdk.java.net/browse/JDK-8246197
-  for (int i = 1; i <= 89; i++) {
+  for (int i = 1; i <= 77; i++) {
     var name = String.format("ball%02dn", i);
     var ball = Files.createDirectories(base.resolve("src/" + name));
     var lines = new ArrayList<String>();
