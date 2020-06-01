@@ -20,14 +20,14 @@ jobs:
 
     - name: 'Bach.java - Demo 0 - Simplicissimus'
       run: |
-        jshell src/bach/bach-demo-0.jsh
+        jshell https://sormuras.de/bach/demo-0
         cd bach-demo-0-simplicissimus
         jshell https://sormuras.de/bach/build
         ./.bach/workspace/image/bin/java --list-modules
 
     - name: 'Bach.java - Demo 1 - Jigsaw Greetings!'
       run: |
-        jshell src/bach/bach-demo-1.jsh
+        jshell https://sormuras.de/bach/demo-1
         cd bach-demo-1-jigsaw-greetings
         jshell https://sormuras.de/bach/build
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
@@ -37,7 +37,7 @@ jobs:
 
     - name: 'Bach.java - Demo 2 - Jigsaw Greetings World!'
       run: |
-        jshell src/bach/bach-demo-2.jsh
+        jshell https://sormuras.de/bach/demo-2
         cd bach-demo-2-jigsaw-greetings-world
         jshell https://sormuras.de/bach/build
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
@@ -47,7 +47,7 @@ jobs:
 
     - name: 'Bach.java - Demo 99 - Luftballons'
       run: |
-        jshell src/bach/bach-demo-99.jsh
+        jshell https://sormuras.de/bach/demo-99
         cd bach-demo-99-balloons
         jshell https://sormuras.de/bach/build
         ./.bach/workspace/image/bin/java --list-modules
