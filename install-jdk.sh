@@ -23,12 +23,13 @@ set -o errexit
 
 function initialize() {
     readonly script_name="$(basename "${BASH_SOURCE[0]}")"
-    readonly script_version='2020-03-17'
+    readonly script_version='2020-06-01'
 
     dry=false
     silent=false
     verbose=false
     emit_java_home=false
+    emit_url=false
 
     feature='ea'
     license='GPL' # Force GPLv2+CE
@@ -50,6 +51,7 @@ Options:
   -d|--dry-run              Activates dry-run mode
   -s|--silent               Displays no output
   -e|--emit-java-home       Print value of "JAVA_HOME" to stdout (ignores silent mode)
+     --emit-url             Print value of "url" to stdout (ignores silent mode)
   -v|--verbose              Displays verbose output
 
   -f|--feature 11|12|...|ea JDK feature release number, defaults to "ea"
@@ -110,7 +112,11 @@ function parse_options() {
                 ;;
             -e|-E|--emit-java-home)
                 emit_java_home=true
-                verbose "Emitting JAVA_HOME"
+                verbose "Emit JAVA_HOME"
+                ;;
+            --emit-url)
+                emit_url=true
+                verbose "Emit download URL"
                 ;;
             -f|-F|--feature)
                 feature="$1"
@@ -306,6 +312,7 @@ function main() {
     prepare_variables
 
     if [[ ${silent} == false ]]; then print_variables; fi
+    if [[ ${emit_url} == true ]]; then echo "${url}"; fi
     if [[ ${dry} == true ]]; then exit 0; fi
 
     download_and_extract_and_set_target
