@@ -53,6 +53,7 @@ public class Version {
     var version = args[0];
     // var masterOrVersion = version.endsWith("-ea") ? "master" : version;
 
+    sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
     // sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
