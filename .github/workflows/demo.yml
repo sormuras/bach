@@ -1,5 +1,11 @@
 name: Demo
+
 on: push
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -o pipefail -o xtrace {0}
+
 jobs:
   build:
     name: 'Generate and build demos'
@@ -20,7 +26,6 @@ jobs:
         ./.bach/workspace/image/bin/java --list-modules
 
     - name: 'Bach.java - Demo 1 - Jigsaw Greetings!'
-      shell: bash --noprofile --norc -xeo pipefail {0}
       run: |
         jshell src/bach/bach-demo-1.jsh
         cd bach-demo-1-jigsaw-greetings
