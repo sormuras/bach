@@ -19,7 +19,7 @@ jobs:
       - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64-musl
       - run: ./install-jdk.sh --dry-run --feature 15 --os linux-aarch64
       - run: ./install-jdk.sh --dry-run --feature 15 --os osx-x64
-      - run: ./install-jdk.sh --dry-run --feature 15 --os windows
+      - run: ./install-jdk.sh --dry-run --feature 15 --os windows-x64
 
       - run: ./install-jdk.sh --dry-run --feature 14 --os linux-x64
       - run: ./install-jdk.sh --dry-run --feature 14 --os osx-x64
