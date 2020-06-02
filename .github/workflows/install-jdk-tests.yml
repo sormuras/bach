@@ -42,4 +42,4 @@ jobs:
       - name: 'install-jdk.sh --dry-run'
         run: |
           PATH="/c/msys64/usr/bin:$PATH"
-          ./install-jdk.sh --dry-run --feature ${{ matrix.java }}
+          ./install-jdk.sh --dry-run --verbose --feature ${{ matrix.java }}
