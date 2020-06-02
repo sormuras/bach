@@ -1,4 +1,4 @@
-name: Test `install-jdk.sh`
+name: Dry-run `install-jdk.sh`
 
 on:
   push:
@@ -15,32 +15,9 @@ defaults:
 
 jobs:
   dry-run:
-    name: "Install JDK ${{ matrix.java }} on ${{ matrix.os }}"
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        java: [15, 14, 13, 12, 11, 10, 9]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout sources'
-        uses: actions/checkout@v2
-      - name: 'install-jdk.sh --dry-run'
-        run: ./install-jdk.sh --dry-run --feature ${{ matrix.java }}
-
-  dry-run-windows:
-    if: 0==1
-    name: "Install JDK ${{ matrix.java }} on ${{ matrix.os }}"
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest]
-        java: [15, 14, 13, 12, 11, 10, 9]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: 'Checkout sources'
-        uses: actions/checkout@v2
-      - name: 'install-jdk.sh --dry-run'
-        run: |
-          PATH="/c/msys64/usr/bin:$PATH"
-          ./install-jdk.sh --dry-run --verbose --feature ${{ matrix.java }}
+      - uses: actions/checkout@v2
+      - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 15 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 15 --os windows-x64
