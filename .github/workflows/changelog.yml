@@ -1,5 +1,8 @@
 name: Changelog
 on:
+  push:
+    paths:
+      - '.github/workflows/changelog.yml'
   issues:
     types: [closed]
   milestone:
