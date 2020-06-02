@@ -9,10 +9,6 @@ on:
   schedule:
     - cron:  '0 1 * * *'
 
-defaults:
-  run:
-    shell: bash --noprofile --norc -e -o pipefail -o xtrace {0}
-
 jobs:
   dry-run:
     runs-on: ubuntu-latest
