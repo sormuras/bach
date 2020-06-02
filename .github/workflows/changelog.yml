@@ -15,6 +15,6 @@ jobs:
       uses: charmixer/auto-changelog-action@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        since_tag: '2.1'
+        since_tag: '11.1'
     - name: 'Print changelog'
       run: cat CHANGELOG.md
