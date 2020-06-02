@@ -41,5 +41,5 @@ jobs:
         uses: actions/checkout@v2
       - name: 'install-jdk.sh --dry-run'
         run: |
-          PATH="c/msys64/usr/bin:$PATH"
+          PATH="/c/msys64/usr/bin:$PATH"
           ./install-jdk.sh --dry-run --feature ${{ matrix.java }}
