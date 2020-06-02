@@ -195,23 +195,8 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    local JAVA_NET="https://jdk.java.net/${feature}"
-    local DOWNLOAD='https://download.java.net/java'
-
-    # An official GA build or an archived feature? Use predefined URL
-    case "${feature}" in
-        9) url="${DOWNLOAD}/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_${os}_bin.tar.gz"; return;;
-       10) url="${DOWNLOAD}/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_${os}_bin.tar.gz"; return;;
-       11) url="${DOWNLOAD}/GA/jdk11/9/GPL/openjdk-11.0.2_${os}_bin.tar.gz"; return;;
-       12) url="${DOWNLOAD}/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_${os}_bin.tar.gz"; return;;
-       13) url="${DOWNLOAD}/GA/jdk13.0.2/d4173c853231432d94f001e99d882ca7/8/GPL/openjdk-13.0.2_${os}_bin.tar.gz"; return;;
-       14) url="${DOWNLOAD}/GA/jdk14.0.1/664493ef4a6946b186ff29eb326336a2/7/GPL/openjdk-14.0.1_${os}_bin.tar.gz"; return;;
-    #  15) is still available from its EA/RC location determined below
-    esac
-
-    # EA or RC build? Grab URL from HTML source of jdk.java.net/${feature}
-    local candidates=$(wget --quiet --output-document - ${JAVA_NET} | grep -Eo 'href[[:space:]]*=[[:space:]]*"[^\"]+"' | grep -Eo '(http|https)://[^"]+')
-    url=$(echo "${candidates}" | grep -Eo "${DOWNLOAD}/.+/jdk${feature}/.*${license}/.*jdk-${feature}.+${os}_bin(.tar.gz|.zip)$" || true)
+    local properties='https://github.com/sormuras/bach/raw/master/install-jdk.properties'
+    url=$(wget --quiet --output-document - ${properties} | grep -i "${feature}-${os}=" | awk -F "=" '{print $2}')
 
     if [[ -z ${url} ]]; then
         script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1

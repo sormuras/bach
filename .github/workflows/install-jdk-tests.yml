@@ -4,6 +4,7 @@ on:
   push:
     paths:
     - '.github/workflows/install-jdk-tests.yml'
+    - 'install-jdk.properties'
     - 'install-jdk.sh'
     - 'install-jdk-tests.sh'
   schedule:
