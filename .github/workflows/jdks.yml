@@ -3,16 +3,16 @@ name: JDK
 on:
   push:
     paths:
-    - '.github/workflows/jdks.yml'
+      - '.github/workflows/jdks.yml'
 
 jobs:
 
-  download-jdk-action-with-defaults:
+  defaults:
     runs-on: ubuntu-latest
     steps:
-    - uses: sormuras/download-jdk@master
-    - uses: actions/setup-java@v1
-      with:
-        java-version: "${{ env.JDK_VERSION }}"
-        jdkFile: "${{ env.JDK_FILE }}"
-    - run: java -version
+      - uses: sormuras/download-jdk@master
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "${{ env.JDK_VERSION }}"
+          jdkFile: "${{ env.JDK_FILE }}"
+      - run: java -version
