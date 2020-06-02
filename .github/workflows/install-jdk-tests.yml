@@ -14,6 +14,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64-musl
+      - run: ./install-jdk.sh --dry-run --feature 15 --os linux-aarch64
       - run: ./install-jdk.sh --dry-run --feature 15 --os osx-x64
-      - run: ./install-jdk.sh --dry-run --feature 15 --os windows-x64
+      - run: ./install-jdk.sh --dry-run --feature 15 --os windows
+
+      - run: ./install-jdk.sh --dry-run --feature 14 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 14 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 14 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 13 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 13 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 13 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 12 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 12 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 12 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 11 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 11 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 11 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 10 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 10 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 10 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 9 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 9 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 9 --os windows-x64
