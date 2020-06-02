@@ -3,18 +3,27 @@ name: Test `install-jdk.sh`
 on:
   push:
     paths:
-    - '.github/workflows/install-jdk-tests.yml'
-    - 'install-jdk.properties'
-    - 'install-jdk.sh'
-    - 'install-jdk-tests.sh'
+      - '.github/workflows/install-jdk-tests.yml'
+      - 'install-jdk.properties'
+      - 'install-jdk.sh'
   schedule:
     - cron:  '0 1 * * *'
 
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -o pipefail -o xtrace {0}
+
 jobs:
-  linux:
-    name: Linux
-    runs-on: ubuntu-latest
+  dry-run:
+    name: "Install JDK ${{ matrix.java }} on ${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        java: [15, 14, 13, 12, 11, 10, 9]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - name: Run
-      run: ./install-jdk-tests.sh
+      - name: 'Checkout sources'
+      - uses: actions/checkout@v2
+      - name: 'install-jdk.sh --dry-run'
+        run: ./install-jdk.sh --dry-run --feature ${{ matrix.java }}
