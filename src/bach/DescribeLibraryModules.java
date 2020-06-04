@@ -30,12 +30,21 @@ class DescribeLibraryModules {
 
   public static void main(String... args) throws Exception {
     var modules = new DescribeLibraryModules();
+    // https://repo.maven.apache.org/maven2/org/ow2/asm/asm/
     modules.mapASM("8.0.1");
+    // https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/
     modules.mapByteBuddy("1.10.10");
+    // https://repo.maven.apache.org/maven2/org/openjfx/javafx/
     modules.mapJavaFX("14.0.1");
+    // https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl/
+    modules.mapJLWGL("3.2.3");
+    // https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/
     modules.mapJUnitPlatform("1.7.0-M1");
+    // https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/
     modules.mapJUnitJupiter("5.7.0-M1");
+    // https://repo.maven.apache.org/maven2/org/junit/vintage/junit-vintage-engine/
     modules.mapJUnitVintage("5.7.0-M1");
+    // ...
     modules.mapVariousArtists();
     modules.map.forEach((module, code) -> System.out.printf("put(\"%s\", %s);%n", module, code));
   }
@@ -116,6 +125,54 @@ class DescribeLibraryModules {
 
   void mapJavaFX(String suffix, String version) throws Exception {
     map("javafx." + suffix, "org.openjfx:javafx-" + suffix + ":" + version, "linux", "mac", "win");
+  }
+
+  void mapJLWGL(String version) throws Exception {
+    mapJLWGL("", version);
+    mapJLWGL("assimp", version);
+    mapJLWGL("bgfx", version);
+    mapJLWGL("cuda", version);
+    mapJLWGL("egl", version);
+    mapJLWGL("glfw", version);
+    mapJLWGL("jawt", version);
+    mapJLWGL("jemalloc", version);
+    mapJLWGL("libdivide", version);
+    mapJLWGL("llvm", version);
+    mapJLWGL("lmdb", version);
+    mapJLWGL("lz4", version);
+    mapJLWGL("meow", version);
+    mapJLWGL("nanovg", version);
+    mapJLWGL("nfd", version);
+    mapJLWGL("nuklear", version);
+    mapJLWGL("odbc", version);
+    mapJLWGL("openal", version);
+    mapJLWGL("opencl", version);
+    mapJLWGL("opengl", version);
+    mapJLWGL("opengles", version);
+    mapJLWGL("openvr", version);
+    mapJLWGL("opus", version);
+    mapJLWGL("ovr", version);
+    mapJLWGL("par", version);
+    mapJLWGL("remotery", version);
+    mapJLWGL("rpmalloc", version);
+    mapJLWGL("shaderc", version);
+    mapJLWGL("sse", version);
+    mapJLWGL("stb", version);
+    mapJLWGL("tinyexr", version);
+    mapJLWGL("tinyfd", version);
+    mapJLWGL("tootle", version);
+    mapJLWGL("vma", version);
+    mapJLWGL("vulkan", version);
+    mapJLWGL("xxhash", version);
+    mapJLWGL("yoga", version);
+    mapJLWGL("zstd", version);
+  }
+
+  void mapJLWGL(String name, String version) throws Exception {
+    var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
+    var gav = "org.openjfx:lwjgl" + (name.isEmpty() ? "" : '-' + name) + ':' + version;
+    map(module, gav);
+    map(module + ".natives", gav, "linux", "macos", "windows");
   }
 
   void mapJUnitJupiter(String version) throws Exception {
