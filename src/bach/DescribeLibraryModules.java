@@ -173,7 +173,7 @@ class DescribeLibraryModules {
     var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
     var gav = "org.lwjgl:lwjgl" + (name.isEmpty() ? "" : '-' + name) + ':' + version;
     map(module, gav);
-    var skipNativesMapping = Set.of("opencl", "vulkan", "odbc", "cuda", "egl", "jawt");
+    var skipNativesMapping = Set.of("opencl", "vulkan", "odbc", "cuda", "egl", "jawt", "ovr");
     if (skipNativesMapping.contains(name)) return;
     map(module + ".natives", gav, "natives-linux", "natives-macos", "natives-windows");
   }

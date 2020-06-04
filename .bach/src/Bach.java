@@ -2045,12 +2045,6 @@ public class Bach {
           "org.lwjgl.ovr",
           "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-ovr/3.2.3/lwjgl-ovr-3.2.3.jar");
       put(
-          "org.lwjgl.ovr.natives",
-          platform(
-              "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-ovr/3.2.3/lwjgl-ovr-3.2.3-natives-linux.jar",
-              "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-ovr/3.2.3/lwjgl-ovr-3.2.3-natives-macos.jar",
-              "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-ovr/3.2.3/lwjgl-ovr-3.2.3-natives-windows.jar"));
-      put(
           "org.lwjgl.par",
           "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-par/3.2.3/lwjgl-par-3.2.3.jar");
       put(
