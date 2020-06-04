@@ -170,7 +170,7 @@ class DescribeLibraryModules {
 
   void mapJLWGL(String name, String version) throws Exception {
     var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
-    var gav = "org.openjfx:lwjgl" + (name.isEmpty() ? "" : '-' + name) + ':' + version;
+    var gav = "org.lwjgl:lwjgl" + (name.isEmpty() ? "" : '-' + name) + ':' + version;
     map(module, gav);
     map(module + ".natives", gav, "linux", "macos", "windows");
   }
