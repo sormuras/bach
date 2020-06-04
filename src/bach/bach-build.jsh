@@ -32,11 +32,6 @@ println()
 println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
 println("|")
 
-// The "/open" directive below this comment requires a constant String literal as its argument.
-// Due to this restriction, the URL points
-//   a) to the "master" tag/branch and
-//   b) to ".bach/src/Bach.java", which requires JDK 11 or later.
-
 println("| /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java")
 /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java
 println("| Bach.java " + Bach.VERSION)

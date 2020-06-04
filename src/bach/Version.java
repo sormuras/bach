@@ -28,17 +28,7 @@ public class Version {
   public static void main(String... args) throws Exception {
     if (args.length > 1) throw new Error("Only new version expected: " + List.of(args));
 
-    // IN
     var bach = Path.of("src/de.sormuras.bach/main/java/de/sormuras/bach/Bach.java");
-
-    // OUT
-    var readmeMd = Path.of("README.md");
-    var pomXml = Path.of("src/de.sormuras.bach/main/maven/pom.xml");
-    // var bachJava = Path.of("src/bach/Bach.java");
-    // var buildJava = Path.of("src/bach/Build.java");
-    // var bachInitJsh = Path.of("src/bach/Init.jsh");
-    // var bachBuildJsh = Path.of("src/bach/build.jsh");
-
     var pattern = Pattern.compile("Version VERSION = Version.parse\\(\"(.+)\"\\);");
     var matcher = pattern.matcher(Files.readString(bach));
     if (!matcher.find()) throw new Error("Version constant not found in: " + bach);
@@ -51,15 +41,19 @@ public class Version {
     }
     // Set new version
     var version = args[0];
-    // var masterOrVersion = version.endsWith("-ea") ? "master" : version;
+    var masterOrVersion = version.endsWith("-ea") ? "master" : version;
 
     sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
+
+    var readmeMd = Path.of("README.md");
+    var pomXml = Path.of("src/de.sormuras.bach/main/maven/pom.xml");
+    var bachBootJsh = Path.of("src/bach/bach-boot.jsh");
+    var bachBuildJsh = Path.of("src/bach/bach-build.jsh");
+
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
-    // sed(bachJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
-    // sed(buildJava, "String VERSION = \".+\";", "String VERSION = \"" + version + "\";");
-    // sed(bachInitJsh, "String VERSION = \".+\"", "String VERSION = \"" + masterOrVersion + '"');
-    // sed(bachBuildJsh, "raw/.+/src", "raw/" + masterOrVersion + "/src");
+    sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + masterOrVersion + '"');
+    sed(bachBuildJsh, "bach/raw/.+/.bach", "bach/raw/" + masterOrVersion + "/.bach");
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
