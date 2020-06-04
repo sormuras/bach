@@ -22,6 +22,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
@@ -172,7 +173,9 @@ class DescribeLibraryModules {
     var module = "org.lwjgl" + (name.isEmpty() ? "" : '.' + name);
     var gav = "org.lwjgl:lwjgl" + (name.isEmpty() ? "" : '-' + name) + ':' + version;
     map(module, gav);
-    map(module + ".natives", gav, "linux", "macos", "windows");
+    var skipNativesMapping = Set.of("opencl", "vulkan", "odbc", "cuda", "egl", "jawt");
+    if (skipNativesMapping.contains(name)) return;
+    map(module + ".natives", gav, "natives-linux", "natives-macos", "natives-windows");
   }
 
   void mapJUnitJupiter(String version) throws Exception {

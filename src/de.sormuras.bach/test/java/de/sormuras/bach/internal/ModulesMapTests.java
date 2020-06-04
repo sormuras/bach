@@ -17,21 +17,41 @@
 
 package de.sormuras.bach.internal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.util.List;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
 
 class ModulesMapTests {
 
   @TestFactory
-  Stream<DynamicTest> mapValueIsValidUri() {
-    return new ModulesMap().entrySet().stream().map(e -> checkUriIsValid(e.getKey(), e.getValue()));
+  Stream<DynamicNode> mapValueIsValidUri() {
+    var resources = new Resources(HttpClient.newHttpClient());
+    return new ModulesMap()
+        .entrySet().stream().map(e -> checkUri(resources, e.getKey(), e.getValue()));
   }
 
-  private DynamicTest checkUriIsValid(String module, String uri) {
-    return dynamicTest(module, () -> URI.create(uri));
+  private DynamicContainer checkUri(Resources resources, String module, String uri) {
+    return DynamicContainer.dynamicContainer(
+        module,
+        List.of(
+            dynamicTest("syntax check", () -> URI.create(uri)),
+            dynamicTest("head request", () -> checkHead(resources, uri))));
+  }
+
+  private static void checkHead(Resources resources, String uri) {
+    try {
+      var status = resources.head(URI.create(uri), 1).statusCode();
+      assertEquals(200, status, "Not status 200: " + uri);
+    } catch (Exception exception) {
+      fail("HEAD request failed for: " + uri, exception);
+    }
   }
 }
