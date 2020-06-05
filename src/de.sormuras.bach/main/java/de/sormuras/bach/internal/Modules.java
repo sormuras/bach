@@ -26,6 +26,7 @@ import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.module.ResolutionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -96,7 +97,7 @@ public /*static*/ class Modules {
       loader.setDefaultAssertionStatus(true);
       var services = ServiceLoader.load(layer, ToolProvider.class);
       return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
-    } catch (FindException exception) {
+    } catch (FindException | ResolutionException exception) {
       var message = new StringJoiner(System.lineSeparator());
       message.add(exception.getMessage());
       message.add("Module path:");
