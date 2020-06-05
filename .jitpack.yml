@@ -6,10 +6,11 @@ install:
   - unset JAVA_TOOL_OPTIONS
   - VERSION=$(java src/bach/Version.java)
   - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}+${GIT_COMMIT:0:7}; fi
-  - java src/bach/Version.java
+  - VERSION=$(java src/bach/Version.java)
+  - MODULE_AND_VERSION="de.sormuras.bach@${VERSION}"
+  - echo "MODULE_AND_VERSION=${MODULE_AND_VERSION}"
   - jshell --enable-preview -R-Debug build.jsh
   - OUT=".bach/workspace"
-  - MODULE_AND_VERSION="de.sormuras.bach@${VERSION}"
   - POM_FILE="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"
   - SRC_FILE="-Dsources=${OUT}/sources/main/${MODULE_AND_VERSION}-sources.jar"
