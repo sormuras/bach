@@ -48,7 +48,7 @@ class ModulesMapTests {
 
   private static void checkHead(Resources resources, String uri) {
     try {
-      var status = resources.head(URI.create(uri), 1).statusCode();
+      var status = resources.head(URI.create(uri), 3).statusCode();
       assertEquals(200, status, "Not status 200: " + uri);
     } catch (Exception exception) {
       fail("HEAD request failed for: " + uri, exception);
