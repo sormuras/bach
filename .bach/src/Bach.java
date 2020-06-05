@@ -27,6 +27,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.module.ResolutionException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -1686,7 +1687,7 @@ public class Bach {
       var boot = ModuleLayer.boot();
       var roots = Set.of(module);
       var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
-      var parent = ClassLoader.getPlatformClassLoader();
+      var parent = ClassLoader.getSystemClassLoader();
       try {
         var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
         var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
@@ -1695,7 +1696,7 @@ public class Bach {
         loader.setDefaultAssertionStatus(true);
         var services = ServiceLoader.load(layer, ToolProvider.class);
         return services.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList());
-      } catch (FindException exception) {
+      } catch (FindException | ResolutionException exception) {
         var message = new StringJoiner(System.lineSeparator());
         message.add(exception.getMessage());
         message.add("Module path:");

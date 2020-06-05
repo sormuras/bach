@@ -88,7 +88,7 @@ public /*static*/ class Modules {
     var boot = ModuleLayer.boot();
     var roots = Set.of(module);
     var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
-    var parent = ClassLoader.getPlatformClassLoader();
+    var parent = ClassLoader.getSystemClassLoader();
     try {
       var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
       var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
