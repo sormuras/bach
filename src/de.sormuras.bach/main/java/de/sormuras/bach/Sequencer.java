@@ -223,8 +223,21 @@ public /*static*/ class Sequencer {
       var jar = Helper.jar(project, realm, module);
       var modulePaths = new ArrayList<Path>();
       modulePaths.add(jar);
-      modulePaths.addAll(Helper.modulePaths(project, realm));
+      for (var upstream : realm.upstreams()) modulePaths.add(base.modules(upstream));
       modulePaths.add(base.modules(realm.name()));
+      // lib or not to lib
+      var layer = getClass().getModule().getLayer();
+      if (layer == null) modulePaths.add(base.libraries());
+      else {
+        var finder = ModuleFinder.of(base.libraries());
+        var custom = Modules.declared(finder);
+        var size = custom.size();
+        custom.removeIf(name -> layer.findModule(name).isPresent());
+        if (size == custom.size()) modulePaths.add(base.libraries());
+        else
+          for (var library : custom)
+            modulePaths.add(Path.of(finder.find(library).orElseThrow().location().orElseThrow()));
+      }
       var arguments = new Arguments().put("--select-module", module);
       tuner.tune(arguments, project, Tuner.context("junit", realm, module));
       tasks.add(new Task.RunTestModule(module, modulePaths, arguments.toStringArray()));
