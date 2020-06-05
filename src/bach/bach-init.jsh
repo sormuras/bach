@@ -54,19 +54,48 @@ if (java.lang.module.ModuleFinder.of(Path.of("lib")).find("de.sormuras.bach").is
   load("lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
 }
 
+if (Files.notExists(Path.of(".gitignore"))) {
+  println();
+  println("Generate default .gitignore configuration.");
+  Files.write(Path.of(".gitignore"), List.of("/.bach/workspace/", "", "*.jar"));
+}
+
+var build = Path.of(".bach/build/build/Build.java")
+if (Files.notExists(build)) {
+  println();
+  println("Write default build program " + build);
+  Files.createDirectories(build.getParent());
+  Files.write(build, List.of(
+      "package build;",
+      "",
+      "import de.sormuras.bach.Bach;",
+      "",
+      "class Build {",
+      "  public static void main(String... args) {",
+      "    var bach = Bach.of(",
+      "       scanner -> scanner.offset(\"src\"),",
+      "       project -> project.version(\"1-ea\"));",
+      "",
+      "    bach.build();",
+      "  }",
+      "}"));
+  // Files.readAllLines(build).forEach(line -> println("\t" + line));
+  Files.write(Path.of(".bach/build/module-info.java"), List.of("module build {","  requires de.sormuras.bach;","}"));
+}
+
 println()
 java("--module-path", "lib", "--module", "de.sormuras.bach", "help")
 
 println()
 println("Bach.java initialized. Use the following commands to build your project:")
 println()
-println("- java ...")
+println("- java --module-path lib --module de.sormuras.bach <action>")
 println("    Launch Bach.java's main program.")
 println()
-println("- java ...")
+println("- java --module-path lib --add-modules de.sormuras.bach " + build)
 println("    Launch your custom build program.")
-println("    Edit ...")
-println("    to customize your build program even further.")
+println("    Edit " + build.toUri())
+println("    to customize your build program.")
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
