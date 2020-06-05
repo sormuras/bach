@@ -85,11 +85,11 @@ public /*static*/ class Modules {
 
   /** Return list of tool providers found by resolving the specified module. */
   public static List<ToolProvider> findTools(String module, List<Path> modulePaths) {
-    var boot = ModuleLayer.boot();
     var roots = Set.of(module);
     var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
-    var parent = ClassLoader.getSystemClassLoader();
+    var parent = ClassLoader.getPlatformClassLoader();
     try {
+      var boot = ModuleLayer.boot();
       var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
       var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
       var layer = controller.layer();
