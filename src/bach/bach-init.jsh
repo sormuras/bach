@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+var version = System.getProperty("version", "master-SNAPSHOT")
+
 /open PRINTING
 
 println("    ___      ___      ___      ___   ")
@@ -28,18 +30,32 @@ println()
 println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
 println()
 
-/open https://github.com/sormuras/bach/raw/master/BUILDING
+int java(Object... args) throws Exception {
+  var java = "java"; // find sibling to jshell executable...
+  var processBuilder = new ProcessBuilder(java);
+  Arrays.stream(args).forEach(arg -> processBuilder.command().add(arg.toString()));
+  processBuilder.redirectErrorStream(true);
+  var process = processBuilder.start();
+  process.getInputStream().transferTo(System.out);
+  return process.waitFor();
+}
+
+Path load(String file, String uri) throws Exception {
+  var path = Path.of(file).toAbsolutePath().normalize();
+  Files.createDirectories(path.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
+  return path;
+}
 
 if (java.lang.module.ModuleFinder.of(Path.of("lib")).find("de.sormuras.bach").isEmpty()) {
   println();
   println("Load module de.sormuras.bach via JitPack");
-  println("\thttps://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/build.log";
-  get("lib", URI.create("https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/bach-master-SNAPSHOT.jar"));
+  println("    https://jitpack.io/com/github/sormuras/bach/" + version + "/build.log");
+  load("lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
 }
 
-/open .bach/src/Bach.java
 println()
-exe("java", "--module-path", "lib", "--module", "de.sormuras.bach", "help")
+java("--module-path", "lib", "--module", "de.sormuras.bach", "help")
 
 println()
 println("Bach.java initialized. Use the following commands to build your project:")
