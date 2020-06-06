@@ -74,10 +74,7 @@ if (Files.notExists(build)) {
       "",
       "class Build {",
       "  public static void main(String... args) {",
-      "    var bach = Bach.of(",
-      "       scanner -> scanner.offset(\"src\"),",
-      "       project -> project.version(\"1-ea\"));",
-      "",
+      "    var bach = Bach.of(project -> project.version(\"1-ea\"));",
       "    bach.build();",
       "  }",
       "}"));
