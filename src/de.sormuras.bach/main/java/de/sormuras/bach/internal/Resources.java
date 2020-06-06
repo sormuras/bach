@@ -29,9 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.Locale;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 /** Uniform Resource Identifier ({@link URI}) head, read, and copy support. */
@@ -77,12 +78,10 @@ public /*static*/ class Resources {
         }
         var lastModifiedHeader = response.headers().firstValue("last-modified");
         if (lastModifiedHeader.isPresent()) {
-          @SuppressWarnings("SpellCheckingInspection")
-          var format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
-          var current = System.currentTimeMillis();
-          var millis = format.parse(lastModifiedHeader.get()).getTime(); // 0 means "unknown"
-          var fileTime = FileTime.fromMillis(millis == 0 ? current : millis);
-          Files.setLastModifiedTime(file, fileTime);
+          var text = lastModifiedHeader.get(); // force " GMT" suffix
+          if (!text.endsWith(" GMT")) text = text.substring(0, text.lastIndexOf(' ')) + " GMT";
+          var time = ZonedDateTime.parse(text, DateTimeFormatter.RFC_1123_DATE_TIME);
+          Files.setLastModifiedTime(file, FileTime.from(Instant.from(time)));
         }
       }
       return file;
