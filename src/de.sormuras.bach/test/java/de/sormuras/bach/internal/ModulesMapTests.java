@@ -42,8 +42,8 @@ class ModulesMapTests {
     return DynamicContainer.dynamicContainer(
         module,
         List.of(
-            dynamicTest("syntax check", () -> URI.create(uri)),
-            dynamicTest("head request", () -> checkHead(resources, uri))));
+            dynamicTest("syntax check", () -> URI.create(uri))
+            /*dynamicTest("head request", () -> checkHead(resources, uri))*/ ));
   }
 
   private static void checkHead(Resources resources, String uri) {
