@@ -53,7 +53,7 @@ public class Version {
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
     sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + masterOrVersion + '"');
-    sed(bachBuildJsh, "bach/raw/.+/.bach", "bach/raw/" + masterOrVersion + "/.bach");
+    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + masterOrVersion + '"');
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {

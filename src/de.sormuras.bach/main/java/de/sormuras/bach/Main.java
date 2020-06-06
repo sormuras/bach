@@ -19,8 +19,10 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
 import java.io.PrintWriter;
+import java.lang.module.ModuleDescriptor;
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
@@ -111,5 +113,11 @@ public /*static*/ class Main {
         .map(provider -> "\t" + provider.get().name())
         .sorted()
         .forEach(out::println);
+
+    var descriptor = Optional.ofNullable(getClass().getModule().getDescriptor());
+    var nameAndVersion = descriptor.map(ModuleDescriptor::toNameAndVersion).orElse("<unnamed>");
+    var homepage = "https://github.com/sormuras/bach";
+    out.println();
+    out.printf("Find more documentation about module %s at: %s%n", nameAndVersion, homepage);
   }
 }

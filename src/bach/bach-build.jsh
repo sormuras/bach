@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-/*
- * Zero-installation Bach.java build script.
- */
+var version = System.getProperty("version", "master-SNAPSHOT")
+var lib = Path.of(".bach/lib")
 
 /open PRINTING
 
@@ -27,42 +26,73 @@ println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
 println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
 println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
-println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
+println("   \\/__/    \\/__/    \\/__/    \\/__/.java " + version)
 println()
-println("| Java " + Runtime.version() + " on " + System.getProperty("os.name"))
-println("|")
+println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+println()
 
-println("| /open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java")
-/open https://github.com/sormuras/bach/raw/master/.bach/src/Bach.java
-println("| Bach.java " + Bach.VERSION)
-
-var build = Path.of(".bach/src/Build.java")
-if (Files.notExists(build)) {
-  println("| Create default build program " + build);
-  Files.createDirectories(build.getParent());
-  Files.write(build, List.of(
-      "class Build {",
-      "  public static void main(String... args) {",
-      "    Bach.of(project -> project).build();",
-      "  }",
-      "}"));
-  Files.readAllLines(build).forEach(line -> println("| " + line));
+int java(Object... args) throws Exception {
+  var java = "java"; // TODO find sibling to jshell executable...
+  var processBuilder = new ProcessBuilder(java);
+  Arrays.stream(args).forEach(arg -> processBuilder.command().add(arg.toString()));
+  processBuilder.redirectErrorStream(true);
+  var process = processBuilder.start();
+  process.getInputStream().transferTo(System.out);
+  return process.waitFor();
 }
 
-println("| /open " + build)
-/open .bach/src/Build.java
+Path load(String file, String uri) throws Exception {
+  var path = Path.of(file).toAbsolutePath().normalize();
+  Files.createDirectories(path.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
+  return path;
+}
 
-println("| Build.main()")
+if (java.lang.module.ModuleFinder.of(lib).find("de.sormuras.bach").isEmpty()) {
+  println();
+  println("Load module de.sormuras.bach via JitPack");
+  println("    https://jitpack.io/com/github/sormuras/bach/" + version + "/build.log");
+  load(".bach/lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
+}
+
+if (Files.notExists(Path.of(".bach/.gitignore"))) {
+  println();
+  println("Generate default .gitignore configuration.");
+  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "/lib/"));
+}
+
+var build = Path.of(".bach/src/build/build/Build.java")
+if (Files.notExists(build)) {
+  println();
+  println("Write default build program " + build);
+  Files.createDirectories(build.getParent());
+  Files.write(Path.of(".bach/src/build/module-info.java"), List.of("module build {","  requires de.sormuras.bach;","}"));
+  Files.write(build, List.of(
+      "package build;",
+      "",
+      "import de.sormuras.bach.Bach;",
+      "",
+      "class Build {",
+      "  public static void main(String... args) {",
+      "    var bach = Bach.of(",
+      "       scanner -> scanner.offset(\"src\"),",
+      "       project -> project.version(\"1-ea\"));",
+      "",
+      "    bach.build();",
+      "  }",
+      "}"));
+}
+
+println()
 var code = 0
 try {
-  Build.main(new String[0]);
+  code = java("--module-path", lib.toString(), "--add-modules", "de.sormuras.bach", "build");
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
 }
 
-println("|")
-println("| Have fun! https://github.com/sponsors/sormuras (-:")
-println("|")
-println("| /exit " + code)
+println()
+println("Have fun! https://github.com/sponsors/sormuras (-:")
+println()
 /exit code

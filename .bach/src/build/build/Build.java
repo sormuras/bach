@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
+package build;
+
+import de.sormuras.bach.Bach;
+import de.sormuras.bach.Scanner;
+import de.sormuras.bach.Sequencer;
+
 /**
  * Bach's own build program.
- *
- * <p>Uses single-file source-code {@code Bach.java} to build module {@code de.sormuras.bach}.
  */
 class Build {
 
   public static void main(String... args) {
     Bach.of(
-            scanner -> scanner.offset("src").limit(5).layout(Bach.Scanner.Layout.MAIN_TEST_PREVIEW),
+            scanner -> scanner.offset("src").limit(5).layout(Scanner.Layout.MAIN_TEST_PREVIEW),
             project ->
                 project
                     .title("\uD83C\uDFBC Bach.java")
@@ -34,7 +38,7 @@ class Build {
                     .requires("org.junit.platform.console"))
         .build(
             (arguments, project, map) -> {
-              Bach.Sequencer.Tuner.defaults(arguments, project, map);
+              Sequencer.Tuner.defaults(arguments, project, map);
               var tool = map.get("tool");
               // any tool call
               if ("javadoc".equals(tool)) {

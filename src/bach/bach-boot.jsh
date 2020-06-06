@@ -15,29 +15,11 @@
  * limitations under the License.
  */
 
-/*
- * Read input and declare constants.
- */
-var version = System.getProperty("version", "master")
-var upgrade = Boolean.parseBoolean(System.getProperty("upgrade", "false"))
+var version = System.getProperty("version", "master-SNAPSHOT")
+var lib = Path.of(".bach/lib")
 
-/*
- * Compute and set variables.
- */
-var source = "https://github.com/sormuras/bach/raw/" + version
-var target = Path.of(System.getProperty("target", ".bach"))
-var bach = target.resolve("src/Bach.java")
-var build = target.resolve("src/Build.java")
-var script = target.resolve("build.jsh")
-
-/*
- * Source printing-related methods into this JShell session.
- */
 /open PRINTING
 
-/*
- * Banner!
- */
 println("    ___      ___      ___      ___   ")
 println("   /\\  \\    /\\  \\    /\\  \\    /\\__\\")
 println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
@@ -49,72 +31,73 @@ println()
 println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
 println()
 
-/*
- * Download Bach.java and other assets from GitHub to local project directory.
- */
-println()
-println("Download assets to " + target.toAbsolutePath() + "...")
-for (var asset : List.of(bach, script)) {
-  if (Files.notExists(asset) || upgrade) {
-    Files.createDirectories(asset.getParent());
-    var remote = new URL(source + '/' + asset.toString().replace('\\', '/'));
-    println("  | " + remote + "...");
-    try (var stream = remote.openStream()) {
-      Files.copy(stream, asset, StandardCopyOption.REPLACE_EXISTING);
-    }
-    println("  +-> " + asset.toUri());
-  } else {
-    println("  | reuse existing " + asset.toUri());
-  }
+int java(Object... args) throws Exception {
+  var java = "java"; // TODO find sibling to jshell executable...
+  var processBuilder = new ProcessBuilder(java);
+  Arrays.stream(args).forEach(arg -> processBuilder.command().add(arg.toString()));
+  processBuilder.redirectErrorStream(true);
+  var process = processBuilder.start();
+  process.getInputStream().transferTo(System.out);
+  return process.waitFor();
 }
 
-/*
- * Generate default build program.
- */
+Path load(String file, String uri) throws Exception {
+  var path = Path.of(file).toAbsolutePath().normalize();
+  Files.createDirectories(path.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
+  return path;
+}
+
+if (java.lang.module.ModuleFinder.of(lib).find("de.sormuras.bach").isEmpty()) {
+  println();
+  println("Load module de.sormuras.bach via JitPack");
+  println("    https://jitpack.io/com/github/sormuras/bach/" + version + "/build.log");
+  load(".bach/lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
+}
+
+if (Files.notExists(Path.of(".bach/.gitignore"))) {
+  println();
+  println("Generate default .gitignore configuration.");
+  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "/lib/"));
+}
+
+var build = Path.of(".bach/src/build/build/Build.java")
 if (Files.notExists(build)) {
   println();
   println("Write default build program " + build);
   Files.createDirectories(build.getParent());
+  Files.write(Path.of(".bach/src/build/module-info.java"), List.of("module build {","  requires de.sormuras.bach;","}"));
   Files.write(build, List.of(
+      "package build;",
+      "",
+      "import de.sormuras.bach.Bach;",
+      "",
       "class Build {",
       "  public static void main(String... args) {",
-      "    Bach.of(project -> project).build();",
+      "    var bach = Bach.of(",
+      "       scanner -> scanner.offset(\"src\"),",
+      "       project -> project.version(\"1-ea\"));",
+      "",
+      "    bach.build();",
       "  }",
       "}"));
-  Files.readAllLines(build).forEach(line -> println("\t" + line));
 }
 
-/*
- * Generate default git ignore configuration file.
- */
-if (Files.notExists(target.resolve(".gitignore"))) {
-  println();
-  println("Generate default .gitignore configuration.");
-  Files.write(target.resolve(".gitignore"), List.of("/workspace/"));
-}
+println()
+int code = java("--module-path", lib.toString(), "--module", "de.sormuras.bach", "help")
 
-/*
- * Smoke test Bach.java by printing its version and help text.
- */
-/open .bach/src/Bach.java
 println()
-Bach.main("help")
-
-/*
- * Print some help and wave goodbye.
- */
+println("Bach.java initialized. Use the following commands to build your project:")
 println()
-println("Bach.java bootstrap finished. Use the following commands to build your project:")
-println()
-println("- java " + bach)
+println("- java --module-path " + lib + " --module de.sormuras.bach <action>")
 println("    Launch Bach.java's main program.")
 println()
-println("- jshell " + target.resolve("build.jsh"))
+println("- java --module-path " + lib + " --add-modules de.sormuras.bach " + build)
 println("    Launch your custom build program.")
 println("    Edit " + build.toUri())
-println("    to customize your build program even further.")
+println("    to customize your build program.")
+
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
-
-/exit
+/exit code

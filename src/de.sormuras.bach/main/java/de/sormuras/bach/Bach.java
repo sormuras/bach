@@ -42,7 +42,7 @@ public class Bach {
   public static final Version VERSION = Version.parse("11-ea");
 
   /** Default path of a custom build program source file. */
-  public static final Path BUILD_JAVA = Path.of(".bach/src/Build.java");
+  public static final Path BUILD_JAVA = Path.of(".bach/src/build/build/Build.java");
 
   /** Default workspace directory used to store generated assets to is {@code .bach/workspace/}. */
   public static final Path WORKSPACE = Path.of(".bach/workspace");

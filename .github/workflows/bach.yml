@@ -16,10 +16,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
-    - name: 'Emit version of JShell (trigger creation of user''s preferences directory)'
-      run: jshell --version
     - name: 'Build Bach.java'
-      run: jshell --enable-preview -R-Debug build.jsh
+      run: java --show-version .bach/source/build/build/Bootstrap.java
     - name: 'Upload build artifact'
       uses: actions/upload-artifact@v2
       with:
