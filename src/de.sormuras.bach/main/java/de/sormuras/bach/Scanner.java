@@ -89,7 +89,7 @@ public /*static*/ class Scanner {
     if (moduleInfoFiles.isEmpty()) {
       var directory = base.directory().resolve(offset);
       if (Paths.isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
-      var paths = Paths.find(List.of(directory), limit, Paths::isModuleInfoJavaFile);
+      var paths = Paths.find(List.of(directory), limit, this::isModuleInfoJavaFile);
       if (paths.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
       moduleInfoFiles(paths);
     }
@@ -99,6 +99,10 @@ public /*static*/ class Scanner {
     if (directoryName != null) builder.title(directoryName.toString());
     builder.setRealms(computeRealms());
     return builder;
+  }
+
+  boolean isModuleInfoJavaFile(Path path) {
+    return Paths.isModuleInfoJavaFile(path) && !path.getName(0).toString().equals(".bach");
   }
 
   List<Project.Realm> computeRealms() {
