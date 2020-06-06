@@ -117,7 +117,7 @@ public /*static*/ class Sequencer {
     var tool = ToolProvider.findFirst("jar").orElseThrow();
     var base = project.base();
     {
-      var file = Helper.jar(project, realm, module);
+      var file = project.toJar(realm.name(), module);
       var arguments = new Arguments().put("--create").put("--file", file);
       unit.descriptor().mainClass().ifPresent(main -> arguments.put("--main-class", main));
       if (unit.isMultiRelease()) {
@@ -216,31 +216,12 @@ public /*static*/ class Sequencer {
   }
 
   Task newTestsTask(Project.Realm realm) {
-    var base = project.base();
     var tasks = new ArrayList<Task>();
     for (var unit : realm.units().values()) {
       var module = unit.toName();
-      var jar = Helper.jar(project, realm, module);
-      var modulePaths = new ArrayList<Path>();
-      modulePaths.add(jar);
-      for (var upstream : realm.upstreams()) modulePaths.add(base.modules(upstream));
-      modulePaths.add(base.modules(realm.name()));
-      // lib or not to lib
-      var layer = getClass().getModule().getLayer();
-      if (layer == null) modulePaths.add(base.libraries());
-      else {
-        var finder = ModuleFinder.of(base.libraries());
-        var custom = Modules.declared(finder);
-        var size = custom.size();
-        custom.removeIf(name -> layer.findModule(name).isPresent());
-        if (size == custom.size()) modulePaths.add(base.libraries());
-        else
-          for (var library : custom)
-            modulePaths.add(Path.of(finder.find(library).orElseThrow().location().orElseThrow()));
-      }
       var arguments = new Arguments().put("--select-module", module);
       tuner.tune(arguments, project, Tuner.context("junit", realm, module));
-      tasks.add(new Task.RunTestModule(module, modulePaths, arguments.toStringArray()));
+      tasks.add(new Task.RunTestModule(realm, module, arguments.toStringArray()));
     }
     return Task.sequence("Launch all tests located in " + realm.toLabelName() + " realm", tasks);
   }
@@ -304,11 +285,6 @@ public /*static*/ class Sequencer {
       for (var upstream : realm.upstreams()) paths.add(base.modules(upstream));
       if (Files.isDirectory(lib) || !project.toExternalModuleNames().isEmpty()) paths.add(lib);
       return List.copyOf(paths);
-    }
-
-    static Path jar(Project project, Project.Realm realm, String module) {
-      var modules = project.base().modules(realm.name());
-      return modules.resolve(module + "@" + project.info().version() + ".jar");
     }
 
     /** Compute module-relevant source path for the given unit. */

@@ -23,9 +23,11 @@ import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -127,14 +129,14 @@ public /*static*/ class Task {
 
   public static class RunTestModule extends Task {
 
+    private final Project.Realm realm;
     private final String module;
-    private final List<Path> modulePaths;
     private final String[] junitArguments;
 
-    public RunTestModule(String module, List<Path> modulePaths, String[] junitArguments) {
+    public RunTestModule(Project.Realm realm, String module, String[] junitArguments) {
       super("Run tests for module " + module, List.of());
+      this.realm = realm;
       this.module = module;
-      this.modulePaths = modulePaths;
       this.junitArguments = junitArguments;
     }
 
@@ -143,10 +145,34 @@ public /*static*/ class Task {
       var currentThread = Thread.currentThread();
       var currentContextLoader = currentThread.getContextClassLoader();
       try {
-        for (var tool : Modules.findTools(module, modulePaths)) executeTool(bach, tool);
+        for (var tool : Modules.findTools(module, modulePaths(bach))) executeTool(bach, tool);
       } finally {
         currentThread.setContextClassLoader(currentContextLoader);
       }
+    }
+
+    private List<Path> modulePaths(Bach bach) {
+      var modulePaths = new ArrayList<Path>();
+      var project = bach.getProject();
+      var base = project.base();
+      var jar = project.toJar(realm.name(), module);
+      modulePaths.add(jar);
+      for (var upstream : realm.upstreams()) modulePaths.add(base.modules(upstream));
+      modulePaths.add(base.modules(realm.name()));
+      // lib or not to lib
+      var layer = getClass().getModule().getLayer();
+      if (layer == null) modulePaths.add(base.libraries());
+      else {
+        var finder = ModuleFinder.of(base.libraries());
+        var custom = Modules.declared(finder);
+        var size = custom.size();
+        custom.removeIf(name -> layer.findModule(name).isPresent());
+        if (size == custom.size()) modulePaths.add(base.libraries());
+        else
+          for (var library : custom)
+            modulePaths.add(Path.of(finder.find(library).orElseThrow().location().orElseThrow()));
+      }
+      return modulePaths;
     }
 
     private void executeTool(Bach bach, ToolProvider tool) {

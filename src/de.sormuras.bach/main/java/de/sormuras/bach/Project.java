@@ -130,6 +130,10 @@ public /*static*/ final class Project {
     return externals;
   }
 
+  public Path toJar(String realm, String module) {
+    return base().modules(realm).resolve(module + "@" + info().version() + ".jar");
+  }
+
   public Set<String> toRequiredModuleNames() {
     return Modules.required(toUnits().map(Unit::descriptor));
   }
