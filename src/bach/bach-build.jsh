@@ -86,7 +86,7 @@ if (Files.notExists(build)) {
 println()
 var code = 0
 try {
-  code = java("--module-path", lib.toString(), "--add-modules", "de.sormuras.bach", "build");
+  code = java("--module-path", lib.toString(), "--add-modules", "de.sormuras.bach", build);
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
