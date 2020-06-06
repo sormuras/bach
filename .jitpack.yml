@@ -9,7 +9,7 @@ install:
   - VERSION=$(java src/bach/Version.java)
   - MODULE_AND_VERSION="de.sormuras.bach@${VERSION}"
   - echo "MODULE_AND_VERSION=${MODULE_AND_VERSION}"
-  - jshell --enable-preview -R-Debug build.jsh
+  - java --show-version .bach/src/build/build/Bootstrap.java
   - OUT=".bach/workspace"
   - POM_FILE="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"

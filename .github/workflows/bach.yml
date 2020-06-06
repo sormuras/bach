@@ -17,7 +17,7 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
     - name: 'Build Bach.java'
-      run: java --show-version .bach/source/build/build/Bootstrap.java
+      run: java --show-version .bach/src/build/build/Bootstrap.java
     - name: 'Upload build artifact'
       uses: actions/upload-artifact@v2
       with:
