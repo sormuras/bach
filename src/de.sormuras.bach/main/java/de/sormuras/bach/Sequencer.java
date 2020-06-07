@@ -112,6 +112,8 @@ public class Sequencer {
   }
 
   Task newJarTask(Project.Realm realm, Project.Unit unit) {
+    var jarModuleWithSources = Boolean.getBoolean("jar-module-with-sources");
+
     var tasks = new ArrayList<Task>();
     var module = unit.toName();
     var tool = ToolProvider.findFirst("jar").orElseThrow();
@@ -125,6 +127,7 @@ public class Sequencer {
         var sources0 = sources.removeFirst();
         var classes0 = base.classes(realm.name(), module, sources0.release());
         arguments.add("-C", classes0, ".");
+        if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
         if (Files.notExists(sources0.path().resolve("module-info.java"))) {
           for (var source : sources) {
             var classes = base.classes(realm.name(), module, source.release());
@@ -137,8 +140,12 @@ public class Sequencer {
         for (var source : sources) {
           arguments.add("--release", source.release());
           arguments.add("-C", base.classes(realm.name(), module, source.release()), ".");
+          if (jarModuleWithSources) arguments.add("-C", source.path(), ".");
         }
-      } else arguments.add("-C", base.classes(realm.name(), module), ".");
+      } else {
+        arguments.add("-C", base.classes(realm.name(), module), ".");
+        if (jarModuleWithSources) Helper.addSources(arguments, unit);
+      }
       unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
       tuner.tune(arguments, project, Tuner.context("jar", realm, module));
       var args = arguments.toStringArray();
@@ -148,12 +155,7 @@ public class Sequencer {
       var version = project.info().version();
       var file = base.sources(realm.name()).resolve(module + "@" + version + "-sources.jar");
       var arguments = new Arguments().put("--create").put("--file", file).put("--no-manifest");
-      var sources = new ArrayDeque<>(unit.sources());
-      arguments.add("-C", sources.removeFirst().path(), "."); // API-defining "base" source
-      for (var source : sources) {
-        if (source.release() >= 9) arguments.add("--release", source.release());
-        arguments.add("-C", source.path(), ".");
-      }
+      Helper.addSources(arguments, unit);
       // unit.resources().forEach(resource -> arguments.add("-C", resource, "."));
       tuner.tune(arguments, project, Tuner.context("jar", realm, module));
       var args = arguments.toStringArray();
@@ -297,6 +299,15 @@ public class Sequencer {
         if (Files.exists(pN.resolve("module-info.java"))) return List.of(p0, pN);
       }
       throw new IllegalStateException("No module-info.java found in: " + sources);
+    }
+
+    static void addSources(Arguments arguments, Project.Unit unit) {
+      var sources = new ArrayDeque<>(unit.sources());
+      arguments.add("-C", sources.removeFirst().path(), ".");
+      for (var source : sources) {
+        if (source.isTargeted()) arguments.add("--release", source.release());
+        arguments.add("-C", source.path(), ".");
+      }
     }
 
     static void putModuleSourcePaths(Arguments arguments, Project.Realm realm) {

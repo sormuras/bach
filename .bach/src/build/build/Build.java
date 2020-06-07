@@ -27,6 +27,7 @@ import de.sormuras.bach.Sequencer;
 class Build {
 
   public static void main(String... args) {
+    System.setProperty("jar-module-with-sources", "true");
     Bach.of(
             scanner -> scanner.offset("src").limit(5).layout(Scanner.Layout.MAIN_TEST_PREVIEW),
             project ->
