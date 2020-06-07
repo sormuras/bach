@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /** {@link Path}-related utilities. */
-public /*static*/ class Paths {
+public class Paths {
 
   public static Path delete(Path directory) {
     return delete(directory, __ -> true);

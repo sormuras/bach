@@ -26,7 +26,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 
 /** Resolve required modules, unless a module can be found. */
-public /*static*/ class ModulesResolver {
+public class ModulesResolver {
 
   private final Path[] paths;
   private final Set<String> declared;

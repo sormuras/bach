@@ -36,7 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 /** Uniform Resource Identifier ({@link URI}) head, read, and copy support. */
-public /*static*/ class Resources {
+public class Resources {
 
   private final HttpClient client;
 

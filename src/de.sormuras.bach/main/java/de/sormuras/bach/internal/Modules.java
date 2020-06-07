@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Module-related utilities. */
-public /*static*/ class Modules {
+public class Modules {
 
   /**
    * Source patterns matching parts of "Module Declarations" grammar.

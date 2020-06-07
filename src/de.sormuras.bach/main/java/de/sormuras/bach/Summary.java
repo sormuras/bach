@@ -37,7 +37,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** A build summary. */
-public /*static*/ class Summary {
+public class Summary {
 
   private final Bach bach;
   private final Logbook logbook;

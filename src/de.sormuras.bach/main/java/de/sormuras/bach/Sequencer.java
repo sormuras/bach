@@ -38,7 +38,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** A task factory building the default build sequence. */
-public /*static*/ class Sequencer {
+public class Sequencer {
 
   private final Project project;
   private final Tuner tuner;

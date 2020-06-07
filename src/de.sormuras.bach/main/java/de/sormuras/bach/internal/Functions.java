@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /** {@link java.util.function}-related utilities. */
-public /*static*/ class Functions {
+public class Functions {
 
   /**
    * Cache first result of a supplier.

@@ -96,7 +96,7 @@ public class Bach {
   }
 
   /** Canonical constructor. */
-  /*private*/ Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
+  Bach(Logbook logbook, Project project, Supplier<HttpClient> httpClient) {
     this.logbook = Objects.requireNonNull(logbook, "logbook");
     this.project = Objects.requireNonNull(project, "project");
     this.httpClient = Functions.memoize(httpClient);
@@ -135,7 +135,7 @@ public class Bach {
     return this;
   }
 
-  /*private*/ void execute(Task task) {
+  void execute(Task task) {
     if (task == Task.NOOP) return;
     var label = task.getLabel();
     var tasks = task.getList();
@@ -161,7 +161,7 @@ public class Bach {
     logbook.log(Level.TRACE, "= {0} took {1} ms", label, duration);
   }
 
-  /*private*/ void execute(ToolProvider tool, StringWriter out, StringWriter err, String... args) {
+  void execute(ToolProvider tool, StringWriter out, StringWriter err, String... args) {
     var call = (tool.name() + ' ' + String.join(" ", args)).trim();
     logbook.log(Level.DEBUG, call);
     var start = Instant.now();

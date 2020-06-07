@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.TreeMap;
 
 /** Mutable map of module names to mostly Maven-based coordinate mappings. */
-public /*static*/ class ModulesMap extends TreeMap<String, String> {
+public class ModulesMap extends TreeMap<String, String> {
   private static final long serialVersionUID = -7978021121082640440L;
 
   public static String platform(String linux, String mac, String windows) {

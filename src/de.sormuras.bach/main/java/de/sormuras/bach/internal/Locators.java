@@ -31,7 +31,7 @@ import java.util.Properties;
 import java.util.TreeMap;
 
 /** {@link Project.Locator}-related utilities. */
-public /*static*/ class Locators {
+public class Locators {
 
   public static class ComposedLocator implements Project.Locator {
 

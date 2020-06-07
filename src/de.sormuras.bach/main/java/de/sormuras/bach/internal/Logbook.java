@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** An entry-collecting system logger implementation. */
-public /*static*/ class Logbook implements System.Logger {
+public class Logbook implements System.Logger {
 
   public static Logbook ofSystem() {
     var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));

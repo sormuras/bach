@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** {@link String}-related utilities. */
-public /*static*/ class Strings {
+public class Strings {
 
   public static List<String> list(String tool, String... args) {
     return list(tool, List.of(args));

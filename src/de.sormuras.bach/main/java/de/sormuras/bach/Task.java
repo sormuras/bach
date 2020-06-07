@@ -37,7 +37,7 @@ import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /** A piece of work to be done or undertaken. */
-public /*static*/ class Task {
+public class Task {
 
   public static final Task NOOP = new Task();
 

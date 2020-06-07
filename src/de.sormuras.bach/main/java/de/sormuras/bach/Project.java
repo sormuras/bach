@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** A project descriptor. */
-public /*static*/ final class Project {
+public final class Project {
 
   public static Builder builder() {
     return new Builder();

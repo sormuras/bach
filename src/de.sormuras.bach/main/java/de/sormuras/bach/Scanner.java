@@ -30,7 +30,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /** A builder for building {@link Project.Builder} objects by parsing a directory for modules. */
-public /*static*/ class Scanner {
+public class Scanner {
 
   /** A layout defines a directory pattern for organizing {@code module-info.java} files. */
   public enum Layout {

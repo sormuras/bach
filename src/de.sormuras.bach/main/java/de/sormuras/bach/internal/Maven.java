@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 /** Maven-related utilities. */
-public /*static*/ class Maven {
+public class Maven {
 
   public static final String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
 
