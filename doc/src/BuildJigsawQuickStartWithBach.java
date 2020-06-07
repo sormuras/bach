@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
+import de.sormuras.bach.Bach;
+
 class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
-    System.out.println("TODO BuildJigsawQuickStartWithBach");
-    /*
     var bach =
         Bach.of(
             scanner -> scanner.base("doc/project/JigsawQuickStart"),
             project -> project.title("Module System Quick-Start Guide Greetings").version("17.01"));
     bach.build().assertSuccessful();
-    */
   }
 }
