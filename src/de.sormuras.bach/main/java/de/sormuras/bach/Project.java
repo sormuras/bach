@@ -80,7 +80,11 @@ public final class Project {
         .toString();
   }
 
-  /** Return multi-line string representation of this project's components. */
+  /**
+   * Return multi-line string representation of this project's components.
+   *
+   * @return the list of strings
+   */
   public List<String> toStrings() {
     var list = new ArrayList<String>();
     list.add("Project");
@@ -149,12 +153,21 @@ public final class Project {
   /** A base directory with a set of derived directories, files, locations, and other assets. */
   public static final class Base {
 
-    /** Create a base instance for the current working directory. */
+    /**
+     * Create a base instance for the current working directory.
+     *
+     * @return a new {@link Base} instance for the current working directory
+     */
     public static Base of() {
       return of(Path.of(""));
     }
 
-    /** Create a base instance for the specified directory. */
+    /**
+     * Create a base instance for the specified directory.
+     *
+     * @param path the base directory
+     * @return a new {@link Base} instance for the specified directory
+     */
     public static Base of(Path path) {
       return new Base(path, path.resolve(Bach.LIBRARIES), path.resolve(Bach.WORKSPACE));
     }
@@ -292,33 +305,68 @@ public final class Project {
   @FunctionalInterface
   public interface Locator {
 
-    /** Allows access to the current execution environment. */
+    /**
+     * Allows access to the current execution environment.
+     *
+     * @param bach the {@link Bach} instance to operate on
+     */
     default void accept(Bach bach) {}
 
-    /** Return mapped string representation of a URI for the given module name. */
+    /**
+     * Return mapped string representation of a URI for the given module name.
+     *
+     * @param module the name of the module to locate
+     * @return the mapped URI or empty {@code Optional} if the location is unknown
+     */
     Optional<String> locate(String module);
 
-    /** Create a module locator that is composed from a given sequence of module locators. */
+    /**
+     * Create a module locator that is composed from a given sequence of module locators.
+     *
+     * @param locators a possibly-empty array of locators to combine and query in order
+     * @return a {@link Locator} instance delegating {@link Locator#locate(String)} queries
+     */
     static Locator of(Locator... locators) {
       return new Locators.ComposedLocator(List.of(locators));
     }
 
-    /** Create a map-based locator by referencing {@link Map#get(Object)} directly. */
+    /**
+     * Create a map-based locator.
+     *
+     * @param map the map that contains module names to module URI mappings
+     * @return a {@link Locator} instance referencing {@link Map#get(Object)} directly
+     */
     static Locator of(Map<String, String> map) {
       return module -> Optional.ofNullable(map.get(module));
     }
 
-    /** Create a Maven Central based locator parsing complete coordinates. */
+    /**
+     * Create a Maven Central based locator parsing complete coordinates.
+     *
+     * @param coordinates the map that contains Maven Central coordinates
+     * @return a {@link Locator} instance
+     */
     static Locator ofMaven(Map<String, String> coordinates) {
       return new Locators.MavenLocator(coordinates);
     }
 
-    /** Create a Maven repository based locator parsing complete coordinates. */
+    /**
+     * Create a Maven repository based locator parsing complete coordinates.
+     *
+     * @param repository the host and path to a Maven repository
+     * @param coordinates the map that contains Maven coordinates
+     * @return a {@link Locator} instance
+     */
     static Locator ofMaven(String repository, Map<String, String> coordinates) {
       return new Locators.MavenLocator(repository, coordinates);
     }
 
-    /** Create a locator that loads mappings from {@code sormuras/modules} database. */
+    /**
+     * Create a locator that loads mappings from {@code sormuras/modules} database.
+     *
+     * @param versions the map that contains version overrides
+     * @return a {@link Locator} instance *
+     */
     static Locator ofSormurasModules(Map<String, String> versions) {
       return new Locators.SormurasModulesLocator(versions);
     }

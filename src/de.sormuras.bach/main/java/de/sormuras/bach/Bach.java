@@ -50,32 +50,60 @@ public class Bach {
   /** Default 3rd-party modules directory is {@code lib/}. */
   public static final Path LIBRARIES = Path.of("lib");
 
-  /** Main entry-point. */
+  /**
+   * Main entry-point.
+   *
+   * @param args the arguments
+   */
   public static void main(String... args) {
     Main.main(args);
   }
 
-  /** Return path to the custom build program if it exists. */
+  /**
+   * Return path to the custom build program if it exists.
+   *
+   * @return an optional path to the default custom build program
+   */
   public static Optional<Path> findCustomBuildProgram() {
     return Files.exists(BUILD_JAVA) ? Optional.of(BUILD_JAVA) : Optional.empty();
   }
 
-  /** Return Bach instance with a default project scanned from the current working directory. */
+  /**
+   * Return Bach instance with a default project scanned from the current working directory.
+   *
+   * @return an instance of {@link Bach} with default settings
+   */
   public static Bach of() {
     return of(UnaryOperator.identity());
   }
 
-  /** Return Bach instance with a configured project scanned from the current working directory. */
+  /**
+   * Return Bach instance with a configured project scanned from the current working directory.
+   *
+   * @param builder the project model builder operator
+   * @return an instance of {@link Bach}
+   */
   public static Bach of(UnaryOperator<Project.Builder> builder) {
     return of(UnaryOperator.identity(), builder);
   }
 
-  /** Return Bach instance with both operators applied. */
+  /**
+   * Return Bach instance with both operators applied.
+   *
+   * @param scanner the scanner operator
+   * @param builder the project model builder operator
+   * @return an instance of {@link Bach}
+   */
   public static Bach of(UnaryOperator<Scanner> scanner, UnaryOperator<Project.Builder> builder) {
     return of(builder.apply(scanner.apply(new Scanner()).newBuilder()).newProject());
   }
 
-  /** Return Bach instance with the specified project and default components. */
+  /**
+   * Return Bach instance with the specified project and default components.
+   *
+   * @param project the project to build
+   * @return an instance of {@link Bach}
+   */
   public static Bach of(Project project) {
     var httpClientBuilder = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL);
     return new Bach(project, httpClientBuilder::build);
@@ -90,7 +118,12 @@ public class Bach {
   /** The HttpClient supplier. */
   private final Supplier<HttpClient> httpClient;
 
-  /** Initialize this instance with the specified project and other component values. */
+  /**
+   * Initialize this instance with the specified project and other component values.
+   *
+   * @param project the project to build
+   * @param httpClient the http client supplier
+   */
   public Bach(Project project, Supplier<HttpClient> httpClient) {
     this(Logbook.ofSystem(), project, httpClient);
   }

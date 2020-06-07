@@ -47,7 +47,11 @@ public class Summary {
     this.logbook = (Logbook) bach.getLogger();
   }
 
-  /** Return silently if everything's okay, throwing an {@link AssertionError} otherwise. */
+  /**
+   * Return silently if everything's okay, throwing an {@link AssertionError} otherwise.
+   *
+   * @return this summary
+   */
   public Summary assertSuccessful() {
     var entries = logbook.entries(Level.WARNING).collect(Collectors.toList());
     if (entries.isEmpty()) return this;
@@ -88,7 +92,12 @@ public class Summary {
     return this;
   }
 
-  /** Write summary as markdown */
+  /**
+   * Write summary as markdown
+   *
+   * @param file the path to the file to write to
+   * @param createCopyWithTimestamp copy summary to {@code summaries} directory
+   */
   public void writeMarkdown(Path file, boolean createCopyWithTimestamp) {
     var markdown = toMarkdown();
     try {
