@@ -15,4 +15,4 @@ install:
   - JAR_FILE="-Dfile=${OUT}/modules/main/${MODULE_AND_VERSION}.jar"
   - SRC_FILE="-Dsources=${OUT}/sources/main/${MODULE_AND_VERSION}-sources.jar"
   - API_FILE="-Djavadoc=${OUT}/documentation/api-${VERSION}-javadoc.jar"
-  - mvn install:install-file ${POM_FILE} ${JAR_FILE} ${SRC_FILE} ${API_FILE}
+  - mvn --batch-mode --no-transfer-progress install:install-file ${POM_FILE} ${JAR_FILE} ${SRC_FILE} ${API_FILE}
