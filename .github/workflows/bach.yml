@@ -45,9 +45,9 @@ jobs:
         java-version: 14
     - name: 'Set snapshot version'
       run: |
-        VERSION="$(java src/bach/Version.java)-SNAPSHOT"
-        java src/bach/Version.java ${VERSION}
-        echo ::set-env name=VERSION::${VERSION}
+        SNAPSHOT="$(java src/bach/Version.java)+SNAPSHOT"
+        java src/bach/Version.java ${SNAPSHOT}
+        echo ::set-env name=SNAPSHOT::${SNAPSHOT}
     - name: 'Build Bach.java'
       run: java --show-version .bach/src/build/build/Bootstrap.java
     - name: 'Publish snapshot to GitHub Packages'
@@ -57,5 +57,5 @@ jobs:
         REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
       run: |
         POM="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
-        JAR="-Dfile=.bach/workspace/modules/main/de.sormuras.bach@${VERSION}.jar"
-        echo "mvn ${DEPLOY} ${REPOSITORY} ${POM} ${JAR}"
+        JAR="-Dfile=.bach/workspace/modules/main/de.sormuras.bach@${SNAPSHOT}.jar"
+        mvn ${DEPLOY} ${REPOSITORY} ${POM} ${JAR}
