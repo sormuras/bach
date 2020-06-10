@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-var version = System.getProperty("version", "master-SNAPSHOT")
+var version = System.getProperty("version", "11.2.0.2")
 var lib = Path.of(".bach/lib")
 
 /open PRINTING
