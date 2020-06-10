@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   milestone:
@@ -32,7 +32,7 @@ jobs:
           echo "github.event.milestone.number=${{ github.event.milestone.number }}"
           echo "github.event.milestone.title=${{ github.event.milestone.title }}"
           echo "github.event.milestone.closed_issues=${{ github.event.milestone.closed_issues }}"
-          echo ::set-env name=EA::$(java src/bach/Version.java)
+          echo ::set-env name=PREVIOUS::$(java src/bach/Version.java)
           echo ::set-env name=VERSION::${{ github.event.milestone.title }}
 
       - name: 'Set version, show diff, and build Bach.java'
@@ -71,8 +71,8 @@ jobs:
 
       - name: 'Restore previous version from environment variable'
         run: |
-          java src/bach/Version.java ${EA}
-          git commit --all --message "Back to development of version ${EA}"
+          java src/bach/Version.java ${PREVIOUS}
+          git commit --all --message "Back to development of version ${PREVIOUS}"
           git push origin master
 
       - name: 'Publish to Bintray'
