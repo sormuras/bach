@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    if: github.event_name == milestone && github.event.milestone.open_issues == 0 && contains(github.event.milestone.description, '✔')
+    if: github.event.milestone.open_issues == 0 && contains(github.event.milestone.description, '✔')
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout sources'
