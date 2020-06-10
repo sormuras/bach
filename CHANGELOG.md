@@ -10,7 +10,8 @@ _In progress..._
 
 ## Version [11.2] released 2020-06-10
 
-https://github.com/sormuras/bach/releases/tag/11.2
+- https://github.com/sormuras/bach/releases/tag/11.2
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.2.0.3/
 
 ### Breaking Changes
 - Replace generated `Bach.java` with module `de.sormuras.bach` [#126]
