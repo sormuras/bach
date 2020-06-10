@@ -166,7 +166,7 @@ public class Sequencer {
 
   Task newJavadocTask(Project.Realm realm) {
     var api = project.base().documentation("api");
-    var jar = project.base().documentation("api-" + project.info().version() + "-javadoc.jar");
+    var jar = project.base().documentation("api@" + project.info().version() + "-javadoc.jar");
     var arguments = Helper.newModuleArguments(project, realm).put("-d", api);
     tuner.tune(arguments, project, Tuner.context("javadoc", realm));
     return Task.sequence(
