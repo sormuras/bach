@@ -33,9 +33,10 @@ jobs:
           echo "github.event.milestone.title=${{ github.event.milestone.title }}"
           echo "github.event.milestone.closed_issues=${{ github.event.milestone.closed_issues }}"
           echo ::set-env name=PREVIOUS::$(java src/bach/Version.java)
-          echo ::set-env name=VERSION::${{ github.event.milestone.title }}
 
       - name: 'Set version, show diff, and build Bach.java'
+        env:
+          VERSION: ${{ github.event.milestone.title }}
         run: |
           java src/bach/Version.java ${VERSION}
           git diff
@@ -53,8 +54,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${VERSION}
-          release_name: Release ${VERSION}
+          tag_name: ${{ github.event.milestone.title }}
+          release_name: Release ${{ github.event.milestone.title }}
           body: ${{ github.event.milestone.description }}
           draft: false
           prerelease: false
@@ -65,14 +66,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: .bach/workspace/modules/main/de.sormuras.bach@${VERSION}.jar
-          asset_name: de.sormuras.bach@${VERSION}.jar
+          asset_path: .bach/workspace/modules/main/de.sormuras.bach@${{ github.event.milestone.title }}.jar
+          asset_name: de.sormuras.bach@${{ github.event.milestone.title }}.jar
           asset_content_type: application/java-archive
 
       - name: 'Restore previous version from environment variable'
         run: |
           java src/bach/Version.java ${PREVIOUS}
-          git commit --all --message "Back to development of version ${PREVIOUS}"
+          git commit --all --message "Back to version ${PREVIOUS}"
           git push origin master
 
       - name: 'Publish to Bintray'
@@ -81,6 +82,7 @@ jobs:
           BINTRAY_PASSWORD: ${{ secrets.BINTRAY_KEY }}
           DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
           REPOSITORY: '-DrepositoryId=bintray-sormuras-maven -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=1'
+          VERSION: ${{ github.event.milestone.title }}
         run: |
           POM="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
           JAR="-Dfile=.bach/workspace/modules/main/de.sormuras.bach@${VERSION}.jar"
