@@ -47,6 +47,7 @@ jobs:
       run: |
         SNAPSHOT="$(java src/bach/Version.java)+SNAPSHOT"
         java src/bach/Version.java ${SNAPSHOT}
+        git diff
         echo ::set-env name=SNAPSHOT::${SNAPSHOT}
     - name: 'Build Bach.java'
       run: java --show-version .bach/src/build/build/Bootstrap.java
