@@ -34,15 +34,16 @@ public class Version {
     if (!matcher.find()) throw new Error("Version constant not found in: " + bach);
 
     // Only print current version?
+    var current = matcher.group(1);
     if (args.length == 0) {
-      System.out.println(matcher.group(1));
+      System.out.println(current);
       return;
     }
     // Set new version
     var version = args[0];
     var snapshotOrVersion = version.endsWith("-ea") ? "master-SNAPSHOT" : version;
 
-    System.out.println("Set version of Bach.java to: " + version);
+    System.out.println("Set version of Bach.java to: " + version + " (was: " + current + ")");
 
     sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
 
