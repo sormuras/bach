@@ -79,7 +79,7 @@ jobs:
 
       - name: 'Publish to Bintray'
         env:
-          BINTRAY_USERNAME: bintray-sormuras-maven
+          BINTRAY_USERNAME: sormuras
           BINTRAY_PASSWORD: ${{ secrets.BINTRAY_KEY }}
           DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
           REPOSITORY: '-DrepositoryId=bintray-sormuras-maven -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=1'
