@@ -20,7 +20,7 @@ jobs:
       - name: 'Set up Java (bintray)'
         uses: actions/setup-java@v1
         with: # https://github.com/actions/setup-java#publishing-using-apache-maven
-          java-version: 11
+          java-version: 14
           server-id: bintray-sormuras-maven
           server-username: BINTRAY_USERNAME
           server-password: BINTRAY_PASSWORD
