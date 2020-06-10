@@ -34,33 +34,34 @@ jobs:
           echo "github.event.milestone.closed_issues=${{ github.event.milestone.closed_issues }}"
           echo ::set-env name=PREVIOUS::$(java src/bach/Version.java)
 
-      - name: 'Set version, show diff, and build Bach.java'
+      - name: 'Set version, diff, commit, tag'
         env:
           VERSION: ${{ github.event.milestone.title }}
         run: |
           java src/bach/Version.java ${VERSION}
           git diff
-          java --show-version .bach/src/build/build/Bootstrap.java
-
-      - name: 'Commit all changed files, tag, and push origin'
-        run: |
-          git commit --all --message "Release ${VERSION}"
+          git commit --all --message "Release Bach.java ${VERSION}"
           git tag ${VERSION}
-          git push origin master --tags
 
-      - name: 'Create release (github)'
+      - name: 'Build Bach.java'
+        run: java --show-version .bach/src/build/build/Bootstrap.java
+
+      - name: 'Push release with new tag'
+        run: git push origin master --tags
+
+      - name: 'Create GitHub release'
         id: release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.event.milestone.title }}
-          release_name: Release ${{ github.event.milestone.title }}
+          release_name: Bach.java ${{ github.event.milestone.title }}
           body: ${{ github.event.milestone.description }}
           draft: false
           prerelease: false
 
-      - name: 'Upload module to release (github)'
+      - name: 'Upload module to GitHub release'
         uses: actions/upload-release-asset@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
