@@ -33,15 +33,16 @@ public class Version {
     var matcher = pattern.matcher(Files.readString(bach));
     if (!matcher.find()) throw new Error("Version constant not found in: " + bach);
 
-    var current = matcher.group(1);
     // Only print current version?
     if (args.length == 0) {
-      System.out.println(current);
+      System.out.println(matcher.group(1));
       return;
     }
     // Set new version
     var version = args[0];
-    var masterOrVersion = version.endsWith("-ea") ? "master" : version;
+    var snapshotOrVersion = version.endsWith("-ea") ? "master-SNAPSHOT" : version;
+
+    System.out.println("Set version of Bach.java to: " + version);
 
     sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
 
@@ -52,8 +53,8 @@ public class Version {
 
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
-    sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + masterOrVersion + '"');
-    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + masterOrVersion + '"');
+    sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + snapshotOrVersion + '"');
+    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + snapshotOrVersion + '"');
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
