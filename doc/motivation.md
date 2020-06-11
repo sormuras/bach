@@ -96,7 +96,7 @@ Greetings from module com.greetings!
 TL;DR: Build
 
 ```shell script
-jshell https://sormuras.de/bach-build
+jshell https://sormuras.de/bach/build
 ```
 
 TL;DR: Launch
