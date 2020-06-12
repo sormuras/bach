@@ -6,6 +6,7 @@
       <w>bartholdy</w>
       <w>bintray</w>
       <w>bytecode</w>
+      <w>dependences</w>
       <w>deps</w>
       <w>ebug</w>
       <w>etag</w>
@@ -13,6 +14,7 @@
       <w>gitignore</w>
       <w>ipsum</w>
       <w>javap</w>
+      <w>jbee</w>
       <w>jcenter</w>
       <w>jdeps</w>
       <w>jitpack</w>
