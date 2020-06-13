@@ -17,98 +17,45 @@
 
 package de.sormuras.bach.project;
 
-import java.lang.module.ModuleDescriptor.Version;
-import java.util.function.UnaryOperator;
+import java.net.URI;
+import java.util.Optional;
 
 /** A modular Java project descriptor. */
 public final class Project {
 
-  /**
-   * Return a new {@code Project} instance with default component values.
-   *
-   * <ul>
-   *   <li>{@code version} = {@code "1-ea"}
-   *   <li>{@code library} = An empty library
-   * </ul>
-   *
-   * @return A new default project object
-   */
-  public static Project of() {
-    return new Project(Version.parse("1-ea"), Library.of());
+  public static Project of(String name) {
+    return new Project(Basics.of(name, "1-ea"), Structure.of());
   }
 
-  private final Version version;
-  private final Library library;
+  private final Basics basics;
+  private final Structure structure;
 
-  /**
-   * Initializes a new project instance with the given component values.
-   *
-   * @param version The version of this project
-   * @param library The library of this project
-   */
-  public Project(Version version, Library library) {
-    this.version = version;
-    this.library = library;
+  public Project(Basics basics, Structure structure) {
+    this.basics = basics;
+    this.structure = structure;
   }
 
-  /**
-   * Return the {@code Version} object representing the project's version.
-   *
-   * @return A {@code Version} object
-   */
-  public Version version() {
-    return version;
+  public Basics basics() {
+    return basics;
   }
 
-  /**
-   * Return the {@code Library} object used by this project.
-   *
-   * @return A {@code Library} object
-   */
-  public Library library() {
-    return library;
+  public Structure structure() {
+    return structure;
   }
 
-  /**
-   * Apply an operation based on the this {@code Project} instance.
-   *
-   * @param operator The operator to apply
-   * @return A new {@code Project} instance with the operation applied or the same {@code Project}
-   *     instance indicating no change was applied by the operator
-   * @see UnaryOperator#identity()
-   */
-  public Project apply(UnaryOperator<Project> operator) {
-    return operator.apply(this);
+  public Optional<URI> findModuleUri(String module) {
+    return Optional.ofNullable(structure.locators().get(module)).map(Locator::uri).map(URI::create);
   }
 
-  /**
-   * Set the version of this project.
-   *
-   * @param version The string-representation of the version to set
-   * @return A new {@code Project} instance with given version
-   * @see Version#parse(String)
-   */
-  public Project version(String version) {
-    return version(Version.parse(version));
+  public String toNameAndVersion() {
+    return basics.name() + ' ' + basics.version();
   }
 
-  /**
-   * Set the version of this project.
-   *
-   * @param version The version to set
-   * @return A new {@code Project} instance with given version
-   */
-  public Project version(Version version) {
-    return new Project(version, library());
+  public Project with(Basics basics) {
+    return new Project(basics, structure);
   }
 
-  /**
-   * Set the library of this project.
-   *
-   * @param library The library to set
-   * @return A new {@code Project} instance with given library
-   */
-  public Project library(Library library) {
-    return new Project(version(), library);
+  public Project with(Structure structure) {
+    return new Project(basics, structure);
   }
 }
