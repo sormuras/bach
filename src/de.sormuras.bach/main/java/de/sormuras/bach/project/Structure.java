@@ -17,10 +17,7 @@
 
 package de.sormuras.bach.project;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /** A modular project structure. */
 public final class Structure {
