@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,7 @@ class ProjectTests {
   void test() {
     var project =
         Project.of("project", "11.3")
-            .with(silk("master-SNAPSHOT"))
+            .with(Locator.ofJitPack("se.jbee.inject", "jbee", "silk", "master-SNAPSHOT"))
             .with(new JUnitPlatform())
             .with(new JUnitJupiter())
             .with(new JUnitVintage());
@@ -51,10 +50,6 @@ class ProjectTests {
     assertTrue(junit4.toString().endsWith("4.13.jar"), junit4 + " ends with `4.13.jar`");
   }
 
-  static List<Locator> silk(String version) {
-    return List.of(Locator.of("se.jbee.inject").fromJitPack("jbee", "silk", version));
-  }
-
   static class JUnitPlatform extends TreeSet<Locator> {
 
     final String version = "1.7.0-M1";
@@ -67,7 +62,7 @@ class ProjectTests {
     private Locator locator(String suffix) {
       var module = "org.junit.platform" + suffix;
       var artifact = "junit-platform" + suffix.replace('.', '-');
-      return Locator.of(module).fromMavenCentral("org.junit.platform", artifact, version);
+      return Locator.ofCentral(module, "org.junit.platform", artifact, version);
     }
   }
 
@@ -83,17 +78,17 @@ class ProjectTests {
     private Locator locator(String suffix) {
       var module = "org.junit.jupiter" + suffix;
       var artifact = "junit-jupiter" + suffix.replace('.', '-');
-      return Locator.of(module).fromMavenCentral("org.junit.jupiter", artifact, version);
+      return Locator.ofCentral(module, "org.junit.jupiter", artifact, version);
     }
   }
 
   static class JUnitVintage extends TreeSet<Locator> {
     {
-      add(Locator.of("junit").fromMavenCentral("junit", "junit", "4.13"));
-      add(Locator.of("org.hamcrest").fromMavenCentral("org.hamcrest", "hamcrest", "2.2"));
+      add(Locator.ofCentral("junit", "junit", "junit", "4.13"));
+      add(Locator.ofCentral("org.hamcrest", "org.hamcrest", "hamcrest", "2.2"));
       add(
-          Locator.of("org.junit.vintage.engine")
-              .fromMavenCentral("org.junit.vintage", "junit-vintage-engine", "5.7.0-M1"));
+          Locator.ofCentral(
+              "org.junit.vintage.engine", "org.junit.vintage", "junit-vintage-engine", "5.7.0-M1"));
     }
   }
 }

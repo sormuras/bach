@@ -22,8 +22,34 @@ import de.sormuras.bach.internal.Maven;
 /** A module-uri pair used to resolve external modules. */
 public final class Locator implements Comparable<Locator> {
 
-  public static Resource of(String module) {
-    return new Resource(module);
+  /**
+   * Create a new module locator pointing to an artifact built by JitPack.
+   *
+   * @param user GitHub username or the complete group like {@code "com.azure.${USER}"}
+   * @param repository Name of the repository or project
+   * @param version The version string of the repository or project, which is either a release tag,
+   *     a commit hash, or {@code "${BRANCH}-SNAPSHOT"} for a version that has not been released.
+   * @return A new JitPack-based {@code Locator} instance
+   * @see <a href="https://jitpack.io/docs">jitpack.io</a>
+   */
+  public static Locator ofJitPack(String module, String user, String repository, String version) {
+    var group = user.indexOf('.') == -1 ? "com.github." + user : user;
+    var joiner = Maven.Joiner.of(group, repository, version);
+    return new Locator(module, joiner.repository("https://jitpack.io").toString());
+  }
+
+  /**
+   * Create a new module locator pointing to an artifact hosted at Maven Central.
+   *
+   * @param module The module to used as the nominal part of the pair
+   * @param group Maven Group ID
+   * @param artifact Maven Artifact ID
+   * @param version The version string
+   * @return A new Maven Central-based {@code Locator} instance
+   * @see <a href="https://search.maven.org">search.maven.org</a>
+   */
+  public static Locator ofCentral(String module, String group, String artifact, String version) {
+    return new Locator(module, Maven.central(group, artifact, version));
   }
 
   private final String module;
@@ -47,41 +73,13 @@ public final class Locator implements Comparable<Locator> {
     return module.compareTo(other.module);
   }
 
-  public static class Resource {
-    private final String module;
+  @Override
+  public boolean equals(Object object) {
+    return object instanceof Locator && module.equals(((Locator) object).module);
+  }
 
-    public Resource(String module) {
-      this.module = module;
-    }
-
-    /**
-     * Create a new locator pointing to an artifact built by JitPack.
-     *
-     * @param user GitHub username or the complete group like {@code "com.azure.${USER}"}
-     * @param repository Name of the repository or project
-     * @param version The version string of the repository or project, which is either a release
-     *     tag, a commit hash, or {@code "${BRANCH}-SNAPSHOT"} for a version that has not been
-     *     released.
-     * @return A new JitPack-based {@code Locator} instance
-     * @see <a href="https://jitpack.io/docs">jitpack.io</a>
-     */
-    public Locator fromJitPack(String user, String repository, String version) {
-      var group = user.indexOf('.') == -1 ? "com.github." + user : user;
-      var joiner = Maven.Joiner.of(group, repository, version);
-      return new Locator(module, joiner.repository("https://jitpack.io").toString());
-    }
-
-    /**
-     * Create a new locator pointing to an artifact hosted at Maven Central.
-     *
-     * @param group Maven Group ID
-     * @param artifact Maven Artifact ID
-     * @param version The version string
-     * @return A new Maven Central-based {@code Locator} instance
-     * @see <a href="https://search.maven.org">search.maven.org</a>
-     */
-    public Locator fromMavenCentral(String group, String artifact, String version) {
-      return new Locator(module, Maven.central(group, artifact, version));
-    }
+  @Override
+  public int hashCode() {
+    return module.hashCode();
   }
 }
