@@ -21,8 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -32,63 +31,44 @@ class ProjectTests {
     var project =
         Project.of("project", "11.3")
             .with(Locator.ofJitPack("se.jbee.inject", "jbee", "silk", "master-SNAPSHOT"))
-            .with(new JUnitPlatform())
-            .with(new JUnitJupiter())
-            .with(new JUnitVintage());
+            .with(
+                Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("console", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("engine", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("launcher", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("reporting", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("testkit", "1.7.0-M1"))
+            .with(
+                Locator.ofJUnitJupiter("", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("api", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("engine", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("params", "5.7.0-M1"))
+            .with(
+                Locator.ofCentral("junit", "junit", "junit", "4.13"),
+                Locator.ofCentral("org.hamcrest", "org.hamcrest", "hamcrest", "2.2"),
+                Locator.ofCentral(
+                        "org.junit.vintage.engine",
+                        "org.junit.vintage:junit-vintage-engine:5.7.0-M1")
+                    .withVersion("5.7-M1")
+                    .withSize(63969)
+                    .withDigest("md5", "455be2fc44c7525e7f20099529aec037"));
 
     assertEquals("project 11.3", project.toNameAndVersion());
 
     var basics = project.basics();
     assertEquals("11.3", basics.version().toString());
 
-    var silk = project.findModuleUri("se.jbee.inject").orElseThrow();
+    var silk = project.findLocator("se.jbee.inject").map(Locator::toURI).orElseThrow();
     assertEquals("https", silk.getScheme());
     assertEquals("jitpack.io", silk.getHost());
     assertEquals("silk-master-SNAPSHOT.jar", Path.of(silk.getPath()).getFileName().toString());
 
-    var junit4 = project.findModuleUri("junit").orElseThrow();
+    var junit4 = project.findLocator("junit").map(Locator::toURI).orElseThrow();
     assertTrue(junit4.toString().endsWith("4.13.jar"), junit4 + " ends with `4.13.jar`");
-  }
 
-  static class JUnitPlatform extends TreeSet<Locator> {
-
-    final String version = "1.7.0-M1";
-
-    JUnitPlatform() {
-      var suffixes = Set.of("commons", "console", "engine", "launcher", "reporting", "testkit");
-      for (var suffix : suffixes) add(locator('.' + suffix));
-    }
-
-    private Locator locator(String suffix) {
-      var module = "org.junit.platform" + suffix;
-      var artifact = "junit-platform" + suffix.replace('.', '-');
-      return Locator.ofCentral(module, "org.junit.platform", artifact, version);
-    }
-  }
-
-  static class JUnitJupiter extends TreeSet<Locator> {
-
-    final String version = "5.7.0-M1";
-
-    JUnitJupiter() {
-      var suffixes = Set.of("", ".api", ".engine", ".params");
-      for (var suffix : suffixes) add(locator(suffix));
-    }
-
-    private Locator locator(String suffix) {
-      var module = "org.junit.jupiter" + suffix;
-      var artifact = "junit-jupiter" + suffix.replace('.', '-');
-      return Locator.ofCentral(module, "org.junit.jupiter", artifact, version);
-    }
-  }
-
-  static class JUnitVintage extends TreeSet<Locator> {
-    {
-      add(Locator.ofCentral("junit", "junit", "junit", "4.13"));
-      add(Locator.ofCentral("org.hamcrest", "org.hamcrest", "hamcrest", "2.2"));
-      add(
-          Locator.ofCentral(
-              "org.junit.vintage.engine", "org.junit.vintage", "junit-vintage-engine", "5.7.0-M1"));
-    }
+    var vintage = project.findLocator("org.junit.vintage.engine").orElseThrow();
+    assertEquals("5.7-M1", vintage.findVersion().orElseThrow());
+    assertEquals(63969, vintage.findSize().orElseThrow());
+    assertEquals(Map.of("md5", "455be2fc44c7525e7f20099529aec037"), vintage.findDigests());
   }
 }
