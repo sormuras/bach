@@ -17,14 +17,18 @@
 
 package de.sormuras.bach.project;
 
+import java.lang.module.ModuleDescriptor.Version;
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 
 /** A modular Java project descriptor. */
 public final class Project {
 
-  public static Project of(String name) {
-    return new Project(Basics.of(name, "1-ea"), Structure.of());
+  public static Project of(String name, String version) {
+    return new Project(Basics.of(name, version), Structure.of());
   }
 
   private final Basics basics;
@@ -57,5 +61,23 @@ public final class Project {
 
   public Project with(Structure structure) {
     return new Project(basics, structure);
+  }
+
+  public Project with(Version version) {
+    return with(new Basics(basics().name(), version));
+  }
+
+  public Project with(Paths paths) {
+    return with(new Structure(paths, structure().locators()));
+  }
+
+  public Project with(Locator... locators) {
+    return with(List.of(locators));
+  }
+
+  public Project with(Collection<Locator> locators) {
+    var map = new TreeMap<>(structure().locators());
+    locators.forEach(locator -> map.put(locator.module(), locator));
+    return with(new Structure(structure().paths(), map));
   }
 }

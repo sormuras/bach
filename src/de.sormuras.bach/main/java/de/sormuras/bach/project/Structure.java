@@ -66,35 +66,4 @@ public final class Structure {
     return locators;
   }
 
-  /**
-   * Create new {@code Structure} instance with the given paths.
-   *
-   * @param paths The paths object
-   * @return A new {@code Structure} instance with the given paths
-   */
-  public Structure with(Paths paths) {
-    return new Structure(paths, locators);
-  }
-
-  /**
-   * Create new {@code Structure} instance with the given locators.
-   *
-   * @param locators The locators to use
-   * @return A new {@code Structure} instance with the given locators
-   */
-  public Structure with(Locator... locators) {
-    return with(List.of(locators));
-  }
-
-  /**
-   * Create new {@code Structure} instance with the given locators.
-   *
-   * @param locators The locators to use
-   * @return A new {@code Structure} instance with the given locators
-   */
-  public Structure with(Collection<Locator> locators) {
-    var map = new TreeMap<>(locators());
-    locators.forEach(locator -> map.put(locator.module(), locator));
-    return new Structure(paths, map);
-  }
 }
