@@ -73,6 +73,7 @@ public class Bootstrap {
   static void start(String... command) throws Exception {
     System.out.println(">> " + String.join(" ", command));
     var process = new ProcessBuilder(command).inheritIO().start();
-    if (process.waitFor() != 0) throw new Error("Non-zero exit");
+    int code = process.waitFor();
+    if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 }
