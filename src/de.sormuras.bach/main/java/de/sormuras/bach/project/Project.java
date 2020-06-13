@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -47,8 +46,8 @@ public final class Project {
     return structure;
   }
 
-  public Optional<URI> findModuleUri(String module) {
-    return Optional.ofNullable(structure.locators().get(module)).map(Locator::uri).map(URI::create);
+  public Optional<Locator> findLocator(String module) {
+    return Optional.ofNullable(structure.locators().get(module));
   }
 
   public String toNameAndVersion() {
