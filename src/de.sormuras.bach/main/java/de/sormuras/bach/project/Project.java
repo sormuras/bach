@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -71,12 +70,8 @@ public final class Project {
   }
 
   public Project with(Locator... locators) {
-    return with(List.of(locators));
-  }
-
-  public Project with(Collection<Locator> locators) {
     var map = new TreeMap<>(structure().locators());
-    locators.forEach(locator -> map.put(locator.module(), locator));
+    List.of(locators).forEach(locator -> map.put(locator.module(), locator));
     return with(new Structure(structure().paths(), map));
   }
 }
