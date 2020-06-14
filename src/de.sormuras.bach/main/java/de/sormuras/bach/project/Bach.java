@@ -26,9 +26,31 @@ import java.util.stream.Collectors;
 public class Bach {
 
   public static void main(String[] args) {
-    Bach.ofSystem()
-        // .with(new Logbook(System.out::println, Level.ALL))
-        .build();
+    var project =
+        Project.of("air", "1068-BWV")
+            .with(Locator.ofJitPack("se.jbee.inject", "jbee", "silk", "master-SNAPSHOT"))
+            .with(
+                Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("console", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("engine", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("launcher", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("reporting", "1.7.0-M1"))
+            .with(
+                Locator.ofJUnitJupiter("", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("api", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("engine", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("params", "5.7.0-M1"))
+            .with(
+                Locator.ofCentral("junit", "junit", "junit", "4.13"),
+                Locator.ofCentral("org.hamcrest", "org.hamcrest", "hamcrest", "2.2"),
+                Locator.ofCentral(
+                        "org.junit.vintage.engine",
+                        "org.junit.vintage:junit-vintage-engine:5.7.0-M1")
+                    .withVersion("5.7-M1")
+                    .withSize(63969)
+                    .withDigest("md5", "455be2fc44c7525e7f20099529aec037"));
+
+    Bach.ofSystem().with(new Logbook(System.out::println, Level.ALL)).with(project).build();
   }
 
   public static Bach ofSystem() {
@@ -102,9 +124,11 @@ public class Bach {
 
   public void build() {
     var caption = "Build of " + project().toNameAndVersion();
+    var projectInfoJava = String.join("\n", project.toStrings());
     logbook().print(Level.INFO, "%s started...", caption);
     logbook().print(Level.DEBUG, "\tflags = %s", flags());
-    logbook().print(Level.DEBUG, "\tlogbook = %s", logbook());
+    logbook().print(Level.DEBUG, "\tlogbook.threshold = %s", logbook().directThreshold);
+    logbook().print(Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
 
     var start = Instant.now();
 
@@ -353,8 +377,9 @@ public class Bach {
       md.add("- name: " + project.basics().name());
       md.add("- version: " + project.basics().version());
       md.add("");
+      md.add("### Project Descriptor");
       md.add("```text");
-      md.add("TODO md.addAll(project.toStrings());");
+      md.addAll(project.toStrings());
       md.add("```");
       return md;
     }

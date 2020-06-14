@@ -18,9 +18,11 @@
 package de.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /** A modular Java project descriptor. */
 public final class Project {
@@ -43,6 +45,28 @@ public final class Project {
 
   public Structure structure() {
     return structure;
+  }
+
+  public List<String> toStrings() {
+    var list = new ArrayList<String>();
+    list.add(String.format("project %s {", basics().name()));
+    list.add(String.format("  version \"%s\";", basics().version()));
+
+    var paths = structure().paths();
+    list.add("");
+    list.add("  // base " + paths.base().toUri());
+    list.add("  // library " + paths.library().toUri());
+    list.add("  // workspace " + paths.workspace().toUri());
+
+    var locators = new TreeSet<>(structure().locators().values());
+    list.add("");
+    for (var locator : locators) {
+      list.add(String.format("  locate %s", locator.module()));
+      list.add(String.format("     via \"%s\";", locator.uri()));
+    }
+
+    list.add("}");
+    return list;
   }
 
   public Optional<Locator> findLocator(String module) {
