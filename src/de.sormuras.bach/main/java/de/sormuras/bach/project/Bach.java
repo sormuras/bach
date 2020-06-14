@@ -17,15 +17,14 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
 
   public static void main(String[] args) {
     Bach.ofSystem()
-        .without(Flag.FAIL_FAST)
-        .without(Flag.FAIL_ON_ERROR)
-        .with(new Logbook(System.out::println, Level.WARNING))
+        // .with(new Logbook(System.out::println, Level.ALL))
         .build();
   }
 
@@ -86,6 +85,10 @@ public class Bach {
     return flags.contains(Flag.FAIL_ON_ERROR);
   }
 
+  public Set<Flag> flags() {
+    return flags;
+  }
+
   public Logbook logbook() {
     return logbook;
   }
@@ -95,23 +98,25 @@ public class Bach {
   }
 
   public void build() {
-    logbook().print(Level.INFO, "Build %s...", project().toNameAndVersion());
+    var caption = "Build of " + project().toNameAndVersion();
+    logbook().print(Level.INFO, "%s started...", caption);
+    logbook().print(Level.DEBUG, "\tflags = %s", flags());
+    logbook().print(Level.DEBUG, "\tlogbook = %s", logbook());
 
-    logbook().print(Level.DEBUG, "bach.flags = %s", flags);
+    var start = Instant.now();
 
     call("javac", "--version");
-    call("javac", "4711");
-    call("javac", "--version");
+    call("javadoc", "--version");
+    call("jar", "--version");
 
-    var errors = new ArrayList<Logbook.Call>();
-    for (var call : logbook().calls) {
-      System.out.println(call);
-      if (call.code == 0) continue;
-      errors.add(call);
-      call.toStrings().forEach(System.out::println);
-    }
+    var duration = Duration.between(start, Instant.now());
+    logbook().print(Level.INFO, "%s took %d ms", caption, duration.toMillis());
+
+    var errors = logbook().errors();
     if (errors.isEmpty()) return;
-    var message = "Build error(s) detected: " + errors.size();
+
+    errors.forEach(error -> error.toStrings().forEach(System.err::println));
+    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
     logbook().print(Level.WARNING, message + " -> fail-on-error: " + isFailOnError());
     if (isFailOnError()) throw new AssertionError(message);
   }
@@ -236,6 +241,10 @@ public class Bach {
         this.code = code;
       }
 
+      public boolean error() {
+        return code != 0;
+      }
+
       public List<String> toStrings() {
         var message = new ArrayList<String>();
         message.add("");
@@ -305,6 +314,10 @@ public class Bach {
 
     public void called(Call call) {
       calls.add(call);
+    }
+
+    public List<Call> errors() {
+      return calls.stream().filter(Call::error).collect(Collectors.toList());
     }
   }
 }
