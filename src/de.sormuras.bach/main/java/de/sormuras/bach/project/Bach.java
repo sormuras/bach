@@ -352,6 +352,8 @@ public class Bach {
 
     public void called(Call call) {
       calls.add(call);
+      print(Level.TRACE, call.out);
+      print(Level.TRACE, call.err);
     }
 
     public List<Call> errors() {
