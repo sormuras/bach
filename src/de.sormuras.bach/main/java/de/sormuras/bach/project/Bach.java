@@ -1,9 +1,12 @@
 package de.sormuras.bach.project;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -111,6 +114,15 @@ public class Bach {
 
     var duration = Duration.between(start, Instant.now());
     logbook().print(Level.INFO, "%s took %d ms", caption, duration.toMillis());
+
+    var markdown = logbook().toMarkdown(project);
+    try {
+      var logfile = project().structure().paths().workspace("logbook.md");
+      Files.write(logfile, markdown);
+      logbook().print(Level.INFO, "Logfile written to %s", logfile.toUri());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
 
     var errors = logbook().errors();
     if (errors.isEmpty()) return;
@@ -245,6 +257,10 @@ public class Bach {
         return code != 0;
       }
 
+      public String toDetailedCaption() {
+        return tool + '-' + Integer.toHexString(System.identityHashCode(this));
+      }
+
       public List<String> toStrings() {
         var message = new ArrayList<String>();
         message.add("");
@@ -318,6 +334,82 @@ public class Bach {
 
     public List<Call> errors() {
       return calls.stream().filter(Call::error).collect(Collectors.toList());
+    }
+
+    public List<String> toMarkdown(Project project) {
+      var md = new ArrayList<String>();
+      md.add("# Logbook of " + project.toNameAndVersion());
+      md.addAll(projectDescription(project));
+      md.addAll(toolCallOverview());
+      md.addAll(toolCallDetails());
+      md.addAll(logbookLines());
+      return md;
+    }
+
+    private List<String> projectDescription(Project project) {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Project");
+      md.add("- name: " + project.basics().name());
+      md.add("- version: " + project.basics().version());
+      md.add("");
+      md.add("```text");
+      md.add("TODO md.addAll(project.toStrings());");
+      md.add("```");
+      return md;
+    }
+
+    private List<String> toolCallOverview() {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Tool Call Overview");
+      md.add("|    |Thread|Duration|Tool|Arguments");
+      md.add("|----|-----:|-------:|----|---------");
+      for (var call : calls) {
+        var kind = ' ';
+        var thread = call.thread;
+        var millis = call.duration.toMillis();
+        var tool = "[" + call.tool + "](#" + call.toDetailedCaption() + ")";
+        var arguments = String.join(" ", call.args);
+        var row = String.format("|%4c|%6X|%8d|%s|%s", kind, thread, millis, tool, arguments);
+        md.add(row);
+      }
+      return md;
+    }
+
+    private List<String> toolCallDetails() {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Tool Call Details");
+      for (var call : calls) {
+        md.add("");
+        md.add("### " + call.toDetailedCaption());
+        md.add("- tool = `" + call.tool + '`');
+        md.add("- args = `" + String.join(" ", call.args) + '`');
+        if (!call.out.isEmpty()) {
+          md.add("```text");
+          md.add(call.out);
+          md.add("```");
+        }
+        if (!call.err.isEmpty()) {
+          md.add("```text");
+          md.add(call.err);
+          md.add("```");
+        }
+      }
+      return md;
+    }
+
+    private List<String> logbookLines() {
+      var md = new ArrayList<String>();
+      md.add("");
+      md.add("## Lines");
+      for (var line : lines) {
+        md.add("- " + line.level);
+        var one = line.text.lines().count() == 1;
+        md.add((one ? "`" : "```text\n") + line.text + (one ? "`" : "\n```"));
+      }
+      return md;
     }
   }
 }
