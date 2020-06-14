@@ -243,11 +243,7 @@ public class Bach {
 
       @Override
       public String toString() {
-        return new StringJoiner(", ", Line.class.getSimpleName() + "[", "]")
-            .add("thread=" + thread)
-            .add("level=" + level)
-            .add("text='" + text + "'")
-            .toString();
+        return String.format("%-7s %6X| %s", level, thread, text);
       }
     }
 
@@ -343,12 +339,14 @@ public class Bach {
     }
 
     public void print(Level level, String text) {
+      if (text.isEmpty()) return;
       var thread = Thread.currentThread().getId();
-      lines.add(new Line(thread, level, text));
+      var line = new Line(thread, level, text);
+      lines.add(line);
       if (level.getSeverity() < directThreshold.getSeverity()) return;
       synchronized (lines) {
         var all = directThreshold == Level.ALL;
-        directConsumer.accept(all ? String.format("%-7s %6X| %s", level, thread, text) : text);
+        directConsumer.accept(all ? line.toString() : text);
       }
     }
 
@@ -428,12 +426,10 @@ public class Bach {
     private List<String> logbookLines() {
       var md = new ArrayList<String>();
       md.add("");
-      md.add("## Lines");
-      for (var line : lines) {
-        md.add("- " + line.level);
-        var one = line.text.lines().count() == 1;
-        md.add((one ? "`" : "```text\n") + line.text + (one ? "`" : "\n```"));
-      }
+      md.add("## All Lines");
+      md.add("```");
+      for (var line : lines) md.add(line.toString());
+      md.add("```");
       return md;
     }
   }
