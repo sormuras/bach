@@ -61,8 +61,8 @@ public final class Project {
     var locators = new TreeSet<>(structure().locators().values());
     list.add("");
     for (var locator : locators) {
-      list.add(String.format("  locate %s", locator.module()));
-      list.add(String.format("     via \"%s\";", locator.uri()));
+      list.add(String.format("  locates %s via", locator.module()));
+      list.add(String.format("      \"%s\";", locator.uri()));
     }
 
     list.add("}");
