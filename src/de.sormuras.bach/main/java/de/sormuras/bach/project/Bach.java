@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,8 +44,19 @@ import java.util.stream.Collectors;
 public class Bach {
 
   public static void main(String[] args) {
+    var paths = Paths.of(Path.of("doc/project/JigsawQuickStart"));
     var project =
         Project.of("air", "1068-BWV")
+            .with(paths)
+            .with(
+                Presets.of()
+                    .withMainModulesJavaCompilerArguments(
+                        "-d",
+                        paths.classes("", Runtime.version().feature()),
+                        "--module-source-path",
+                        paths.base(),
+                        "--module",
+                        "com.greetings"))
             .with(Locator.ofJitPack("se.jbee.inject", "jbee", "silk", "master-SNAPSHOT"))
             .with(
                 Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
@@ -149,9 +161,9 @@ public class Bach {
 
     var start = Instant.now();
 
-    call("javac", "--version");
-    call("javadoc", "--version");
-    call("jar", "--version");
+    call(
+        "javac",
+        project().presets().mainModulesJavaCompilerArguments().orElse(new Object[] {"--version"}));
 
     var duration = Duration.between(start, Instant.now());
     logbook().print(Level.INFO, "%s took %d ms", caption, duration.toMillis());

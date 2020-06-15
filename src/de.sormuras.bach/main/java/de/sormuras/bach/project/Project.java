@@ -28,15 +28,17 @@ import java.util.TreeSet;
 public final class Project {
 
   public static Project of(String name, String version) {
-    return new Project(Basics.of(name, version), Structure.of());
+    return new Project(Basics.of(name, version), Structure.of(), Presets.of());
   }
 
   private final Basics basics;
   private final Structure structure;
+  private final Presets presets;
 
-  public Project(Basics basics, Structure structure) {
+  public Project(Basics basics, Structure structure, Presets presets) {
     this.basics = basics;
     this.structure = structure;
+    this.presets = presets;
   }
 
   public Basics basics() {
@@ -45,6 +47,10 @@ public final class Project {
 
   public Structure structure() {
     return structure;
+  }
+
+  public Presets presets() {
+    return presets;
   }
 
   public List<String> toStrings() {
@@ -78,11 +84,15 @@ public final class Project {
   }
 
   public Project with(Basics basics) {
-    return new Project(basics, structure);
+    return new Project(basics, structure, presets);
   }
 
   public Project with(Structure structure) {
-    return new Project(basics, structure);
+    return new Project(basics, structure, presets);
+  }
+
+  public Project with(Presets presets) {
+    return new Project(basics, structure, presets);
   }
 
   public Project with(Version version) {
