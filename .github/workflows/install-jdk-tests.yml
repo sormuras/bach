@@ -15,9 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - run: ./install-jdk.sh --dry-run --feature 16 --os linux-aarch64
+      - run: ./install-jdk.sh --dry-run --feature 16 --os linux-x64
+      - run: ./install-jdk.sh --dry-run --feature 16 --os osx-x64
+      - run: ./install-jdk.sh --dry-run --feature 16 --os windows-x64
+
+      - run: ./install-jdk.sh --dry-run --feature 15 --os linux-aarch64
       - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64
       - run: ./install-jdk.sh --dry-run --feature 15 --os linux-x64-musl
-      - run: ./install-jdk.sh --dry-run --feature 15 --os linux-aarch64
       - run: ./install-jdk.sh --dry-run --feature 15 --os osx-x64
       - run: ./install-jdk.sh --dry-run --feature 15 --os windows-x64
 
