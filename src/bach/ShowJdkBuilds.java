@@ -36,10 +36,12 @@ public class ShowJdkBuilds {
     var builds = new TreeMap<>(parseArchive());
     builds.put(14, parse(14)); // GA
     builds.put(15, parse(15)); // EA
+    builds.put(16, parse(16)); // EA
 
     var features = new ArrayList<>(builds.keySet());
     features.sort(Comparator.reverseOrder());
     for (var feature : features) {
+      System.out.println();
       System.out.println("#");
       System.out.println("# JDK " + feature);
       System.out.println("#");
