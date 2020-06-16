@@ -1,6 +1,12 @@
 name: Update install-jdk.properties
 
-on: push
+on:
+  push:
+    paths:
+      - '.github/workflows/install-jdk-update.yml'
+      - 'install-jdk.sh'
+  schedule:
+    - cron:  '0 0 * * *'
 
 jobs:
   update:
