@@ -19,16 +19,17 @@ jobs:
         with:
           java-version: 11
 
-      - name: 'Show JDK builds listed at https://jdk.java.net'
+      - name: 'Show JDK builds published at https://jdk.java.net'
         id: update
         run: |
           java src/bach/ShowJdkBuilds.java > install-jdk.properties
           git diff
-          run: echo ::set-output name=modified::$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)
+          echo ::set-output name=modified::$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)
 
       - name: 'Commit and push changed install-jdk.properties'
         if: steps.update.outputs.modified == 'true'
         run: |
+          git status
           git commit --all --message "Update install-jdk.properties"
+          git status
           echo "git push origin master"
-
