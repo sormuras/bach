@@ -44,6 +44,7 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
   // hide de.sormuras.bach.internal;
+  exports de.sormuras.bach.project;
 
   requires transitive java.net.http;
   requires jdk.compiler;
