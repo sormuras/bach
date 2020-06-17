@@ -17,9 +17,9 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.internal.Paths;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -70,13 +70,13 @@ public class Main {
           build();
           break;
         case "clean":
-          Paths.delete(Bach.WORKSPACE);
+          out.println("TODO: Action 'clean' is not supported, yet.");
           break;
         case "help":
           help();
           break;
         case "info":
-          Bach.of().info();
+          Bach.ofSystem().info();
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
@@ -89,11 +89,11 @@ public class Main {
   }
 
   private void build() {
-    if (Bach.findCustomBuildProgram().isPresent()) {
-      err.println("Custom build program execution not supported, yet.");
+    if (Files.exists(Bach.BUILD_JAVA)) {
+      err.println("TODO: Custom build program execution is not supported, yet.");
       return;
     }
-    Bach.of().build();
+    Bach.ofSystem().build();
   }
 
   private void help() {
@@ -102,7 +102,7 @@ public class Main {
     out.println();
     out.println("Supported actions");
     out.format("\t%-9s Build modular Java project%n", "build");
-    out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", Bach.WORKSPACE);
+    // out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", WORKSPACE);
     out.format("\t%-9s Print this help screen%n", "help");
     out.format("\t%-9s Scan current working directory and print project information%n", "info");
     out.format("\t%-9s Print version to the output stream%n", "version");
