@@ -70,6 +70,11 @@ public class Paths {
     return path.toAbsolutePath().normalize().getNameCount() == 0;
   }
 
+  /** Return {@code true} if the given name of the view is supported by the given file. */
+  public static boolean supportsView(Path file, String view) {
+    return file.getFileSystem().supportedFileAttributeViews().contains(view);
+  }
+
   /** Multi-release directory name pattern {@code java.?(\d+)}. */
   public static final Pattern JAVA_N_PATTERN = Pattern.compile("java.?(\\d+)");
 

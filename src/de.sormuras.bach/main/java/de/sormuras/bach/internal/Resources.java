@@ -60,7 +60,7 @@ public class Resources {
   /** Copy all content from a uri to a target file. */
   public Path copy(URI uri, Path file, CopyOption... options) throws Exception {
     var request = HttpRequest.newBuilder(uri).GET();
-    if (Files.exists(file) && Files.getFileStore(file).supportsFileAttributeView("user")) {
+    if (Files.exists(file) && Paths.supportsView(file, "user")) {
       var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
       var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
       request.setHeader("If-None-Match", etag);
@@ -72,7 +72,7 @@ public class Resources {
     if (response.statusCode() == 200) {
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
         var etagHeader = response.headers().firstValue("etag");
-        if (etagHeader.isPresent() && Files.getFileStore(file).supportsFileAttributeView("user")) {
+        if (etagHeader.isPresent() && Paths.supportsView(file, "user")) {
           var etag = StandardCharsets.UTF_8.encode(etagHeader.get());
           Files.setAttribute(file, "user:etag", etag);
         }
