@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Concurrency;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -24,7 +25,6 @@ import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -43,50 +44,15 @@ import java.util.stream.Collectors;
 /** Bach - Java Shell Builder. */
 public class Bach {
 
-  public static void main(String[] args) {
-    var paths = Paths.of(Path.of("doc/project/JigsawQuickStart"));
-    var project =
-        Project.of("air", "1068-BWV")
-            .with(paths)
-            .with(
-                Presets.of()
-                    .withMainModulesJavaCompilerArguments(
-                        "-d",
-                        paths.classes("", Runtime.version().feature()),
-                        "--module-source-path",
-                        paths.base(),
-                        "--module",
-                        "com.greetings"))
-            .with(Locator.ofJitPack("se.jbee.inject", "jbee", "silk", "master-SNAPSHOT"))
-            .with(
-                Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("console", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("engine", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("launcher", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("reporting", "1.7.0-M1"))
-            .with(
-                Locator.ofJUnitJupiter("", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("api", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("engine", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("params", "5.7.0-M1"))
-            .with(
-                Locator.ofCentral("junit", "junit", "junit", "4.13"),
-                Locator.ofCentral("org.hamcrest", "org.hamcrest", "hamcrest", "2.2"),
-                Locator.ofCentral(
-                        "org.junit.vintage.engine",
-                        "org.junit.vintage:junit-vintage-engine:5.7.0-M1")
-                    .withVersion("5.7-M1")
-                    .withSize(63969)
-                    .withDigest("md5", "455be2fc44c7525e7f20099529aec037"));
-
-    Bach.ofSystem().with(new Logbook(System.out::println, Level.ALL)).with(project).build();
-  }
-
   public static Bach ofSystem() {
     var projectName = System.getProperty("project.name", "unnamed");
     var projectVersion = System.getProperty("project.name", "1-ea");
     var project = Project.of(projectName, projectVersion);
 
+    return of(project);
+  }
+
+  public static Bach of(Project project) {
     return new Bach(Flag.ofSystem(), Logbook.ofSystem(), project);
   }
 
@@ -153,7 +119,7 @@ public class Bach {
 
   public void build() {
     var caption = "Build of " + project().toNameAndVersion();
-    var projectInfoJava = String.join("\n", project.toStrings());
+    var projectInfoJava = String.join(System.lineSeparator(), project.toStrings());
     logbook().print(Level.INFO, "%s started...", caption);
     logbook().print(Level.DEBUG, "\tflags = %s", flags());
     logbook().print(Level.DEBUG, "\tlogbook.threshold = %s", logbook().directThreshold);
@@ -161,16 +127,19 @@ public class Bach {
 
     var start = Instant.now();
 
-    call(
-        "javac",
-        project().presets().mainModulesJavaCompilerArguments().orElse(new Object[] {"--version"}));
+    var factory = Executors.defaultThreadFactory();
+    try (var executor = Concurrency.shutdownOnClose(Executors.newFixedThreadPool(2, factory))) {
+      executor.submit(this::compile);
+      executor.submit(this::generateApiDocumentation);
+    }
 
     var duration = Duration.between(start, Instant.now());
     logbook().print(Level.INFO, "%s took %d ms", caption, duration.toMillis());
 
     var markdown = logbook().toMarkdown(project);
     try {
-      var logfile = project().structure().paths().workspace("logbook.md");
+      var logfile = project().structure().base().workspace("logbook.md");
+      Files.createDirectories(logfile.getParent());
       Files.write(logfile, markdown);
       logbook().print(Level.INFO, "Logfile written to %s", logfile.toUri());
     } catch (IOException e) {
@@ -220,6 +189,15 @@ public class Bach {
     message.add(caption);
     call.toStrings().forEach(message::add);
     if (isFailFast()) throw new AssertionError(message);
+  }
+
+  public void compile() {
+    call("javac", "--version");
+    project().main().unitNames().forEach(name -> call("jar", "--version"));
+  }
+
+  public void generateApiDocumentation() {
+    call("javadoc", "--version");
   }
 
   private IllegalStateException newToolNotFoundException(String name) {

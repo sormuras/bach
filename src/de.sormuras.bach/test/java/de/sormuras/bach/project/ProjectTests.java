@@ -18,9 +18,13 @@
 package de.sormuras.bach.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -70,5 +74,24 @@ class ProjectTests {
     assertEquals("5.7-M1", vintage.findVersion().orElseThrow());
     assertEquals(63969, vintage.findSize().orElseThrow());
     assertEquals(Map.of("md5", "455be2fc44c7525e7f20099529aec037"), vintage.findDigests());
+  }
+
+  @Test
+  void buildDocProjectJigsawQuickStart() {
+    var paths = Base.of("doc/project", "JigsawQuickStart");
+    var project =
+        Project.of("greetings", "1")
+            .with(paths)
+            .with(MainSources.of().with(ModuleSource.of(paths.directory("com.greetings"))));
+
+    var lines = new ArrayList<String>();
+    var bach =
+        Bach.of(project)
+            .with(new Bach.Logbook(string -> string.lines().forEach(lines::add), Level.ALL));
+
+    bach.build();
+
+    assertLinesMatch(
+        List.of(">> BEGIN >>", "project greetings {", ">>>>", "}", ">> END. >>"), lines);
   }
 }
