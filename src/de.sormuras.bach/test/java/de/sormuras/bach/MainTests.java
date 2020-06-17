@@ -45,7 +45,8 @@ class MainTests {
       System.clearProperty("ebug");
     }
     try {
-      assertTrue(streams.errors().contains("Custom build program execution not supported, yet."));
+      var message = "TODO: Custom build program execution is not supported, yet.";
+      assertTrue(streams.errors().contains(message));
       // assertTrue(streams.lines().contains("Bach.java " + Bach.VERSION));
     } catch (Throwable throwable) {
       streams.addShutdownHook(() -> System.err.println(streams));
