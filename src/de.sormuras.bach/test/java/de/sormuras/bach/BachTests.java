@@ -19,39 +19,21 @@ package de.sormuras.bach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import de.sormuras.bach.internal.Logbook;
+import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
-import java.lang.module.ModuleDescriptor.Version;
-import java.net.http.HttpClient;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
-  static Bach zero() {
-    var logbook = new Logbook(__ -> {}, true, false);
-    var zero = Projects.zero();
-    return new Bach(logbook, zero, HttpClient.newBuilder()::build);
-  }
-
   @Test
   void defaults() {
-    var bach = zero();
+    var bach = Bach.of(Project.of("zero", "0"));
     var expectedStringRepresentation = "Bach.java " + Bach.VERSION;
-    assertNotNull(bach.getLogger());
-    assertEquals("0", bach.getProject().info().version().toString());
-    assertNotNull(bach.getHttpClient());
     assertEquals(expectedStringRepresentation, bach.toString());
-
-    var logbook = ((Logbook) bach.getLogger());
-    var initialMessage = "Initialized " + expectedStringRepresentation;
-    var projectMessage = "Zero 0";
-    assertLinesMatch(List.of(initialMessage, projectMessage), logbook.messages());
-    assertLinesMatch(
-        List.of("T|" + initialMessage, "D|" + projectMessage), logbook.lines(Object::toString));
   }
 
   @Test
@@ -70,12 +52,12 @@ class BachTests {
       }
     }
 
-    var bach = zero();
-    var task = new Task.RunTool("local no-op tool", new Local(), "1", "2", "3");
-    bach.execute(task);
-    var logbook = ((Logbook) bach.getLogger());
+    var zero = Project.of("zero", "0");
+    var bach = Bach.of(zero);
+    bach.call(new Local(), "1", "2", "3");
+
     assertLinesMatch(
-        List.of(">> INIT >>", "T|* local no-op tool", "D|local 1 2 3", "D|args -> 1-2-3"),
-        logbook.lines(Object::toString));
+        List.of(">>>>", "INFO.+local 1 2 3", "TRACE.+" + Pattern.quote("args -> 1-2-3"), "```"),
+        bach.logbook().toMarkdown(zero));
   }
 }

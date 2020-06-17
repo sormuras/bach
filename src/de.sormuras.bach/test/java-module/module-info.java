@@ -17,6 +17,7 @@
 
 open /*test*/ module de.sormuras.bach {
   exports de.sormuras.bach;
+  exports de.sormuras.bach.project;
 
   requires transitive java.net.http;
   requires jdk.compiler;

@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.sormuras.bach.Bach;
+import de.sormuras.bach.Logbook;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -86,8 +88,7 @@ class ProjectTests {
 
     var lines = new ArrayList<String>();
     var bach =
-        Bach.of(project)
-            .with(new Bach.Logbook(string -> string.lines().forEach(lines::add), Level.ALL));
+        Bach.of(project).with(new Logbook(string -> string.lines().forEach(lines::add), Level.ALL));
 
     bach.build();
 
