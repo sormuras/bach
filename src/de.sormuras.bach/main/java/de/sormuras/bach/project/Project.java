@@ -28,17 +28,17 @@ import java.util.TreeSet;
 public final class Project {
 
   public static Project of(String name, String version) {
-    return new Project(Basics.of(name, version), Structure.of(), Presets.of());
+    return new Project(Basics.of(name, version), Structure.of(), MainSources.of());
   }
 
   private final Basics basics;
   private final Structure structure;
-  private final Presets presets;
+  private final MainSources main;
 
-  public Project(Basics basics, Structure structure, Presets presets) {
+  public Project(Basics basics, Structure structure, MainSources main) {
     this.basics = basics;
     this.structure = structure;
-    this.presets = presets;
+    this.main = main;
   }
 
   public Basics basics() {
@@ -49,8 +49,8 @@ public final class Project {
     return structure;
   }
 
-  public Presets presets() {
-    return presets;
+  public MainSources main() {
+    return main;
   }
 
   public List<String> toStrings() {
@@ -58,17 +58,20 @@ public final class Project {
     list.add(String.format("project %s {", basics().name()));
     list.add(String.format("  version \"%s\";", basics().version()));
 
-    var paths = structure().paths();
+    var base = structure().base();
     list.add("");
-    list.add("  // base " + paths.base().toUri());
-    list.add("  // library " + paths.library().toUri());
-    list.add("  // workspace " + paths.workspace().toUri());
+    list.add("  // base");
+    list.add("  //   .directory " + base.directory().toUri());
+    list.add("  //   .libraries " + base.libraries().toUri());
+    list.add("  //   .workspace " + base.workspace().toUri());
 
     var locators = new TreeSet<>(structure().locators().values());
-    list.add("");
-    for (var locator : locators) {
-      list.add(String.format("  locates %s via", locator.module()));
-      list.add(String.format("      \"%s\";", locator.uri()));
+    if (!locators.isEmpty()) {
+      list.add("");
+      for (var locator : locators) {
+        list.add(String.format("  locates %s via", locator.module()));
+        list.add(String.format("      \"%s\";", locator.uri()));
+      }
     }
 
     list.add("}");
@@ -84,28 +87,28 @@ public final class Project {
   }
 
   public Project with(Basics basics) {
-    return new Project(basics, structure, presets);
+    return new Project(basics, structure, main);
   }
 
   public Project with(Structure structure) {
-    return new Project(basics, structure, presets);
+    return new Project(basics, structure, main);
   }
 
-  public Project with(Presets presets) {
-    return new Project(basics, structure, presets);
+  public Project with(MainSources main) {
+    return new Project(basics, structure, main);
   }
 
   public Project with(Version version) {
     return with(new Basics(basics().name(), version));
   }
 
-  public Project with(Paths paths) {
-    return with(new Structure(paths, structure().locators()));
+  public Project with(Base base) {
+    return with(new Structure(base, structure().locators()));
   }
 
   public Project with(Locator... locators) {
     var map = new TreeMap<>(structure().locators());
     List.of(locators).forEach(locator -> map.put(locator.module(), locator));
-    return with(new Structure(structure().paths(), map));
+    return with(new Structure(structure().base(), map));
   }
 }

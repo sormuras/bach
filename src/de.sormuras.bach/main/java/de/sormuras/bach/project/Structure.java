@@ -28,30 +28,30 @@ public final class Structure {
    * @return A new default structure object
    */
   public static Structure of() {
-    return new Structure(Paths.of(), Map.of());
+    return new Structure(Base.of(), Map.of());
   }
 
-  private final Paths paths;
+  private final Base base;
   private final Map<String, Locator> locators;
 
   /**
    * Initializes a new structure instance with the given component values.
    *
-   * @param paths The paths instance
+   * @param base The base instance
    * @param locators The locator map
    */
-  public Structure(Paths paths, Map<String, Locator> locators) {
-    this.paths = paths;
+  public Structure(Base base, Map<String, Locator> locators) {
+    this.base = base;
     this.locators = Map.copyOf(locators);
   }
 
   /**
-   * Return the {@code Paths} instance of this project.
+   * Return the {@code Base} instance of this project.
    *
-   * @return A paths object
+   * @return A base object
    */
-  public Paths paths() {
-    return paths;
+  public Base base() {
+    return base;
   }
 
   /**
