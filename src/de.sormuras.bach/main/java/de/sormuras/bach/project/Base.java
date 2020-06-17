@@ -20,14 +20,14 @@ package de.sormuras.bach.project;
 import java.nio.file.Path;
 
 /**
- * A collection of well-known directories and derived paths.
+ * A collection of project-defining directories and derived paths.
  *
  * <h3>Example</h3>
  *
  * <pre><code>
  * Component     Directory Tree Example
  * --------------------------------------------------------
- * base -------> jigsaw-quick-start
+ * directory --> jigsaw-quick-start
  *               ├───.bach
  *               │   │   build.jsh
  *               │   ├───lib
@@ -49,7 +49,7 @@ import java.nio.file.Path;
  *               │       ├───modules-test
  *               │       ├───reports
  *               │       └───sources
- * library ----> ├───lib
+ * libraries --> ├───lib
  *               └───src
  *                   └───com.greetings
  *                       │   module-info.java
@@ -58,75 +58,93 @@ import java.nio.file.Path;
  *                                   Main.java
  *             </code></pre>
  */
-public final class Paths {
+public final class Base {
 
   /**
-   * Return a new {@code Paths} instance for the current user directory.
+   * Return a new {@code Base} instance for the current user directory.
    *
    * <ul>
-   *   <li>{@code base} = {@code Path.of("")}
-   *   <li>{@code library} = {@code Path.of("lib")}
+   *   <li>{@code directory} = {@code Path.of("")}
+   *   <li>{@code libraries} = {@code Path.of("lib")}
    *   <li>{@code workspace} = {@code Path.of(".bach", "workspace")}
    * </ul>
    *
-   * @return A new default paths object
+   * @return A new default base object
    */
-  public static Paths of() {
-    return of(Path.of(""));
+  public static Base of() {
+    return of("");
+  }
+
+
+  /**
+   * Return a new {@code Base} instance for the given directory.
+   *
+   * <ul>
+   *   <li>{@code directory} = {@code Path.of(first, more)}
+   *   <li>{@code libraries} = {@code Path.of(first, more, "lib")}
+   *   <li>{@code workspace} = {@code Path.of(first, more, ".bach", "workspace")}
+   * </ul>
+   *
+   * @param first The first path element to use as the base directory
+   * @param more The array of path elements to complete the base directory
+   * @return A new base object initialized for the given directory
+   */
+  public static Base of(String first, String... more) {
+    return of(Path.of(first, more));
   }
 
   /**
-   * Return a new {@code Paths} instance for the given base directory.
+   * Return a new {@code Base} instance for the given directory.
    *
    * <ul>
-   *   <li>{@code base} = {@code Path.of("project")}
-   *   <li>{@code library} = {@code Path.of("project", "lib")}
-   *   <li>{@code workspace} = {@code Path.of("project", ".bach", "workspace")}
+   *   <li>{@code directory} = {@code directory}
+   *   <li>{@code libraries} = {@code directory.resolve("lib")}
+   *   <li>{@code workspace} = {@code directory.resolve(".bach", "workspace")}
    * </ul>
    *
-   * @param directory The path to used as the base directory
-   * @return A new paths object initialized for the given base directory
+   * @param directory The path to use as the base directory
+   * @return A new base object initialized for the given directory
    */
-  public static Paths of(Path directory) {
+  public static Base of(Path directory) {
     var base = directory.normalize();
-    return new Paths(base, base.resolve("lib"), base.resolve(".bach/workspace"));
+    return new Base(base, base.resolve("lib"), base.resolve(".bach/workspace"));
   }
 
-  private final Path base;
-  private final Path library;
+  private final Path directory;
+  private final Path libraries;
   private final Path workspace;
 
   /**
-   * Initializes a new {@code Paths} instance with the given component values.
+   * Initializes a new {@code Base} instance with the given component values.
    *
-   * @param base The path to the root directory of the project
-   * @param library The directory that contains 3rd-party modules
+   * @param directory The path to the base directory of the project
+   * @param libraries The directory that contains 3rd-party modules
    * @param workspace The directory that collects all generated assets
    */
-  public Paths(Path base, Path library, Path workspace) {
-    this.base = base;
-    this.library = library;
+  public Base(Path directory, Path libraries, Path workspace) {
+    this.directory = directory;
+    this.libraries = libraries;
     this.workspace = workspace;
   }
 
-  public Path base() {
-    return base;
+  public Path directory() {
+    return directory;
   }
 
-  public Path library() {
-    return library;
+  public Path libraries() {
+    return libraries;
   }
 
   public Path workspace() {
     return workspace;
   }
 
-  public Path base(String entry, String... more) {
-    return base.resolve(Path.of(entry, more));
+  public Path directory(String entry, String... more) {
+    return directory.resolve(Path.of(entry, more));
   }
 
-  public Path library(String entry) {
-    return library.resolve(entry);
+  public Path libraries(String entry) {
+    return libraries.resolve(entry);
   }
 
   public Path workspace(String entry, String... more) {
