@@ -18,39 +18,24 @@
 package build;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Scanner;
-import de.sormuras.bach.Sequencer;
+import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.ModuleSource;
+import de.sormuras.bach.project.Project;
+import java.nio.file.Path;
 
-/**
- * Bach's own build program.
- */
+/** Bach's own build program. */
 class Build {
 
   public static void main(String... args) {
-    System.setProperty("jar-module-with-sources", "true");
-    Bach.of(
-            scanner -> scanner.offset("src").limit(5).layout(Scanner.Layout.MAIN_TEST_PREVIEW),
-            project ->
-                project
-                    .title("\uD83C\uDFBC Bach.java")
-                    .version(Bach.VERSION.toString())
-                    .compileForJavaRelease(11)
-                    .terminateCompilationIfWarningsOccur(true)
-                    .requires("org.junit.platform.console"))
-        .build(
-            (arguments, project, map) -> {
-              Sequencer.Tuner.defaults(arguments, project, map);
-              var tool = map.get("tool");
-              // any tool call
-              if ("javadoc".equals(tool)) {
-                arguments.add("-link", "https://docs.oracle.com/en/java/javase/11/docs/api");
-              }
-              // "test-preview" realm tool cool
-              if ("test-preview".equals(map.get("realm"))) {
-                if ("javac".equals(tool)) arguments.put("-Xlint:-preview");
-              }
-            })
-        .assertSuccessful()
-        .printModuleStats();
+    var project =
+        Project.of("bach", Bach.VERSION.toString())
+            // .title("\uD83C\uDFBC Bach.java")
+            // .compileForJavaRelease(11)
+            // .terminateCompilationIfWarningsOccur(true)
+            // .requires("org.junit.platform.console")
+            .with(
+                MainSources.of().with(ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))));
+
+    Bach.of(project).build();
   }
 }

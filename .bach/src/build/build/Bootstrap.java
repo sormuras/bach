@@ -18,6 +18,7 @@
 package build;
 
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -54,10 +55,16 @@ public class Bootstrap {
         "--module-path=" + destination,
         "--module=build/build.Build");
 
+    var modules = Path.of(".bach/workspace/modules");
+    if (Files.notExists(modules)) {
+      System.err.println("Modules directory not found: " + modules);
+      return;
+    }
+
     start(
         java,
         "--module-path",
-        Path.of(".bach/workspace/modules/main").toString(),
+        modules.toString(),
         "--module",
         "de.sormuras.bach",
         "help");
