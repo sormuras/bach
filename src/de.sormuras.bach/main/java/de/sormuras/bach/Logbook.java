@@ -47,7 +47,7 @@ public class Logbook {
     }
   }
 
-  public static final class Call {
+  public static final class Called {
     private final long thread;
     private final String tool;
     private final String[] args;
@@ -56,7 +56,7 @@ public class Logbook {
     private final Duration duration;
     private final int code;
 
-    Call(
+    Called(
         long thread,
         String tool,
         String[] args,
@@ -104,7 +104,7 @@ public class Logbook {
   }
 
   private final Queue<Entry> entries = new ConcurrentLinkedQueue<>();
-  private final Queue<Call> calls = new ConcurrentLinkedQueue<>();
+  private final Queue<Called> calls = new ConcurrentLinkedQueue<>();
   private final Consumer<String> directConsumer;
   private final Level directThreshold;
 
@@ -145,14 +145,14 @@ public class Logbook {
     }
   }
 
-  public void called(Call call) {
+  public void called(Called call) {
     calls.add(call);
     print(Level.TRACE, call.out);
     print(Level.TRACE, call.err);
   }
 
-  public List<Call> errors() {
-    return calls.stream().filter(Call::error).collect(Collectors.toList());
+  public List<Called> errors() {
+    return calls.stream().filter(Called::error).collect(Collectors.toList());
   }
 
   public List<String> toMarkdown(Project project) {
