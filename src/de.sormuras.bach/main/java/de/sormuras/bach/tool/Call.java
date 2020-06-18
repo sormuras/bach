@@ -18,6 +18,7 @@
 package de.sormuras.bach.tool;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
@@ -39,18 +40,21 @@ public interface Call<T> {
     return ToolProvider.findFirst(name());
   }
 
-  default T with(String option) {
+  default T with(Argument argument, Argument... arguments) {
     var list = new ArrayList<>(arguments());
-    list.add(new Argument(option, List.of()));
+    list.add(argument);
+    if (arguments.length > 0) Collections.addAll(list, arguments);
     return with(list);
+  }
+
+  default T with(String option) {
+    return with(new Argument(option, List.of()));
   }
 
   default T with(String option, Object... values) {
     var strings = new ArrayList<String>();
     for (var value : values) strings.add(value.toString());
-    var list = new ArrayList<>(arguments());
-    list.add(new Argument(option, strings));
-    return with(list);
+    return with(new Argument(option, strings));
   }
 
   default String[] toStringArray() {
