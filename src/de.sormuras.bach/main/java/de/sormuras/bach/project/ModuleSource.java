@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.tool.Jar;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,18 +37,20 @@ public final class ModuleSource {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var moduleDescriptor = Modules.describe(info);
     var sourceDirectory = SourceDirectory.of(info.getParent());
-    return new ModuleSource(moduleDescriptor, List.of(sourceDirectory), List.of());
+    return new ModuleSource(moduleDescriptor, List.of(sourceDirectory), List.of(), Jar.of());
   }
 
   private final ModuleDescriptor module;
   private final List<SourceDirectory> sources;
   private final List<Path> resources;
+  private final Jar jar;
 
   public ModuleSource(
-      ModuleDescriptor module, List<SourceDirectory> sources, List<Path> resources) {
+      ModuleDescriptor module, List<SourceDirectory> sources, List<Path> resources, Jar jar) {
     this.module = module;
     this.sources = List.copyOf(sources);
     this.resources = List.copyOf(resources);
+    this.jar = jar;
   }
 
   public ModuleDescriptor module() {
@@ -62,22 +65,30 @@ public final class ModuleSource {
     return resources;
   }
 
+  public Jar jar() {
+    return jar;
+  }
+
   public String name() {
     return module().name();
   }
 
   public ModuleSource with(ModuleDescriptor module) {
-    return new ModuleSource(module, sources, resources);
+    return new ModuleSource(module, sources, resources, jar);
   }
 
   public ModuleSource with(SourceDirectory additionalDirectory, SourceDirectory... more) {
     var list = new ArrayList<>(sources);
     list.add(additionalDirectory);
     if (more.length > 0) Collections.addAll(list, more);
-    return new ModuleSource(module, list, resources);
+    return new ModuleSource(module, list, resources, jar);
   }
 
   public ModuleSource with(List<Path> resources) {
-    return new ModuleSource(module, sources, resources);
+    return new ModuleSource(module, sources, resources, jar);
+  }
+
+  public ModuleSource with(Jar jar) {
+    return new ModuleSource(module, sources, resources, jar);
   }
 }

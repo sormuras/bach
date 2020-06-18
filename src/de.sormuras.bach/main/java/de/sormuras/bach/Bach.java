@@ -202,7 +202,11 @@ public class Bach {
   public void compile() {
     var javac = project().main().javac();
     if (javac.activated()) call(javac);
-    // project().main().unitNames().forEach(name -> call("jar", "--version"));
+    // TODO Files.createDirectories(project().structure().base().modules(""));
+    for (var unit : project().main().units().values()) {
+      var jar = unit.jar();
+      if (jar.activated()) call(jar);
+    }
   }
 
   public void generateApiDocumentation() {
