@@ -18,23 +18,38 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.ModuleSource;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Javac;
 import java.nio.file.Path;
 
 /** Bach's own build program. */
 class Build {
 
   public static void main(String... args) {
+    var base = Base.of();
+    var release = 11;
     var project =
         Project.of("bach", Bach.VERSION.toString())
+            .with(base)
             // .title("\uD83C\uDFBC Bach.java")
-            // .compileForJavaRelease(11)
-            // .terminateCompilationIfWarningsOccur(true)
             // .requires("org.junit.platform.console")
             .with(
-                MainSources.of().with(ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))));
+                MainSources.of()
+                    .with(
+                        Javac.of()
+                            .with("-d", base.classes("", release))
+                            .with("--module", "de.sormuras.bach")
+                            .with("--module-source-path", "src/*/main/java")
+                            .withCompileForJavaRelease(release)
+                            .withRecommendedWarnings()
+                            .withWarnings("all", "-preview")
+                            .withTerminateCompilationIfWarningsOccur()
+                            .with("--module-version", Bach.VERSION)
+                            .with("-encoding", "UTF-8"))
+                    .with(ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))));
 
     Bach.of(project).build();
   }
