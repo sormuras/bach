@@ -23,15 +23,17 @@ import java.lang.module.ModuleDescriptor.Version;
 public final class Basics {
 
   public static Basics of(String name, String version) {
-    return new Basics(name, Version.parse(version));
+    return new Basics(name, Version.parse(version), JavaRelease.ofRuntime());
   }
 
   private final String name;
   private final Version version;
+  private final JavaRelease release;
 
-  public Basics(String name, Version version) {
+  public Basics(String name, Version version, JavaRelease release) {
     this.name = name;
     this.version = version;
+    this.release = release;
   }
 
   public String name() {
@@ -40,5 +42,17 @@ public final class Basics {
 
   public Version version() {
     return version;
+  }
+
+  public JavaRelease release() {
+    return release;
+  }
+
+  public Basics with(Version version) {
+    return new Basics(name, version, release);
+  }
+
+  public Basics with(JavaRelease release) {
+    return new Basics(name, version, release);
   }
 }

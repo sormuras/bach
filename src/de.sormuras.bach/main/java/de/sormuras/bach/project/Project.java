@@ -99,7 +99,11 @@ public final class Project {
   }
 
   public Project with(Version version) {
-    return with(new Basics(basics().name(), version));
+    return with(basics().with(version));
+  }
+
+  public Project with(JavaRelease release) {
+    return with(basics.with(release));
   }
 
   public Project with(Base base) {
