@@ -32,9 +32,10 @@ class Build {
 
   public static void main(String... args) {
     var base = Base.of();
+    var version = Bach.VERSION;
     var release = 11;
     var project =
-        Project.of("bach", Bach.VERSION.toString())
+        Project.of("bach", version.toString())
             .with(base)
             .with(JavaRelease.of(release))
             // .title("\uD83C\uDFBC Bach.java")
@@ -46,19 +47,20 @@ class Build {
                             .with("-d", base.classes("", release))
                             .with("--module", "de.sormuras.bach")
                             .with("--module-source-path", "src/*/main/java")
+                            .with("--module-version", version)
                             .withCompileForJavaRelease(release)
+                            .with("-encoding", "UTF-8")
                             .withRecommendedWarnings()
                             .withWarnings("all", "-preview")
-                            .withTerminateCompilationIfWarningsOccur()
-                            .with("--module-version", Bach.VERSION)
-                            .with("-encoding", "UTF-8"))
+                            .withTerminateCompilationIfWarningsOccur())
                     .with(
                         ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))
                             .with(
                                 Jar.of(
                                         base.modules("")
-                                            .resolve("de.sormuras.bach@" + Bach.VERSION + ".jar"))
+                                            .resolve("de.sormuras.bach@" + version + ".jar"))
                                     .with("--verbose")
+                                    .with("--main-class", "de.sormuras.bach.Main")
                                     .withChangeDirectoryAndIncludeFiles(
                                         base.classes("", release, "de.sormuras.bach"), "."))));
 
