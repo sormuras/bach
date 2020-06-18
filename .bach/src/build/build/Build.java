@@ -19,9 +19,11 @@ package build;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.ModuleSource;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import java.nio.file.Path;
 
@@ -34,6 +36,7 @@ class Build {
     var project =
         Project.of("bach", Bach.VERSION.toString())
             .with(base)
+            .with(JavaRelease.of(release))
             // .title("\uD83C\uDFBC Bach.java")
             // .requires("org.junit.platform.console")
             .with(
@@ -49,7 +52,15 @@ class Build {
                             .withTerminateCompilationIfWarningsOccur()
                             .with("--module-version", Bach.VERSION)
                             .with("-encoding", "UTF-8"))
-                    .with(ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))));
+                    .with(
+                        ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))
+                            .with(
+                                Jar.of(
+                                        base.modules("")
+                                            .resolve("de.sormuras.bach@" + Bach.VERSION + ".jar"))
+                                    .with("--verbose")
+                                    .withChangeDirectoryAndIncludeFiles(
+                                        base.classes("", release, "de.sormuras.bach"), "."))));
 
     Bach.of(project).build();
   }
