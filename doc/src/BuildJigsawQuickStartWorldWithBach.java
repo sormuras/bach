@@ -20,10 +20,13 @@ import de.sormuras.bach.Bach;
 class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
+    System.out.println("TODO");
+    /*
     var bach =
         Bach.of(
             scanner -> scanner.base("doc/project/JigsawQuickStartWorld"),
             project -> project.title("Module System Quick-Start Guide World").version("47.11"));
-    bach.build().assertSuccessful();
+    bach.build();
+    */
   }
 }
