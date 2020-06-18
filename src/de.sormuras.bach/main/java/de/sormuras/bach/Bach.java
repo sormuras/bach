@@ -17,17 +17,13 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.internal.Concurrency;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.Call;
 import de.sormuras.bach.tool.ToolNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,7 +31,6 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.concurrent.Executors;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -77,6 +72,18 @@ public class Bach {
     this.project = project;
   }
 
+  public Set<Flag> flags() {
+    return flags;
+  }
+
+  public Logbook logbook() {
+    return logbook;
+  }
+
+  public Project project() {
+    return project;
+  }
+
   public Bach with(Flag flag) {
     var flags = new TreeSet<>(this.flags);
     flags.add(flag);
@@ -113,58 +120,12 @@ public class Bach {
     return flags.contains(Flag.FAIL_ON_ERROR);
   }
 
-  public Set<Flag> flags() {
-    return flags;
-  }
-
-  public Logbook logbook() {
-    return logbook;
-  }
-
-  public Project project() {
-    return project;
-  }
-
   public void info() {
     project().toStrings().forEach(logbook().consumer());
   }
 
   public void build() {
-    var caption = "Build of " + project().toNameAndVersion();
-    var projectInfoJava = String.join(System.lineSeparator(), project.toStrings());
-    logbook().print(Level.INFO, "%s started...", caption);
-    logbook().print(Level.DEBUG, "\tflags = %s", flags());
-    logbook().print(Level.DEBUG, "\tlogbook.threshold = %s", logbook().threshold());
-    logbook().print(Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
-
-    var start = Instant.now();
-
-    var factory = Executors.defaultThreadFactory();
-    try (var executor = Concurrency.shutdownOnClose(Executors.newFixedThreadPool(2, factory))) {
-      executor.submit(this::compile);
-      executor.submit(this::generateApiDocumentation);
-    }
-
-    var duration = Duration.between(start, Instant.now());
-    logbook().print(Level.INFO, "%s took %d ms", caption, duration.toMillis());
-
-    var markdown = logbook().toMarkdown(project);
-    try {
-      var logfile = project().structure().base().workspace("logbook.md");
-      Files.createDirectories(logfile.getParent());
-      Files.write(logfile, markdown);
-      logbook().print(Level.INFO, "Logfile written to %s", logfile.toUri());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    var errors = logbook().errors();
-    if (errors.isEmpty()) return;
-
-    errors.forEach(error -> error.toStrings().forEach(System.err::println));
-    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    logbook().print(Level.WARNING, message + " -> fail-on-error: " + isFailOnError());
-    if (isFailOnError()) throw new AssertionError(message);
+    new Builder(this).build();
   }
 
   void call(Call<?> call) {
@@ -197,20 +158,6 @@ public class Bach {
     message.add(caption);
     called.toStrings().forEach(message::add);
     if (isFailFast()) throw new AssertionError(message);
-  }
-
-  public void compile() {
-    var javac = project().main().javac();
-    if (javac.activated()) call(javac);
-    // TODO Files.createDirectories(project().structure().base().modules(""));
-    for (var unit : project().main().units().values()) {
-      var jar = unit.jar();
-      if (jar.activated()) call(jar);
-    }
-  }
-
-  public void generateApiDocumentation() {
-    // call("javadoc", "--version");
   }
 
   private ToolNotFoundException newToolNotFoundException(Call<?> call) {
