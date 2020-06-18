@@ -19,6 +19,8 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Concurrency;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Call;
+import de.sormuras.bach.tool.ToolNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -29,13 +31,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
-import java.util.spi.ToolProvider;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -167,16 +167,12 @@ public class Bach {
     if (isFailOnError()) throw new AssertionError(message);
   }
 
-  public void call(String tool, Object... args) {
-    var provider = ToolProvider.findFirst(tool).orElseThrow(() -> newToolNotFoundException(tool));
-    var arguments = Arrays.stream(args).map(String::valueOf).toArray(String[]::new);
-    call(provider, arguments);
-  }
+  void call(Call<?> call) {
+    var provider = call.tool().orElseThrow(() -> newToolNotFoundException(call));
+    var arguments = call.toStringArray();
 
-  void call(ToolProvider tool, String... args) {
-    var name = tool.name();
-    var command = (name + ' ' + String.join(" ", args)).trim();
-    logbook().print(Level.INFO, command);
+    var tool = provider.name();
+    logbook().print(Level.INFO, (tool + ' ' + String.join(" ", arguments)).trim());
 
     if (isDryRun()) return;
 
@@ -185,37 +181,38 @@ public class Bach {
     var err = new StringWriter();
     var start = Instant.now();
 
-    var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+    var code = provider.run(new PrintWriter(out), new PrintWriter(err), arguments);
 
     var duration = Duration.between(start, Instant.now());
     var normal = out.toString().strip();
     var errors = err.toString().strip();
-    var call = new Logbook.Call(thread, name, args, normal, errors, duration, code);
-    logbook().called(call);
+    var called = new Logbook.Called(thread, tool, arguments, normal, errors, duration, code);
+    logbook().called(called);
 
     if (code == 0) return;
 
-    var caption = String.format("%s failed with exit code %d", name, code);
+    var caption = String.format("%s failed with exit code %d", tool, code);
     logbook().print(Level.ERROR, caption);
     var message = new StringJoiner(System.lineSeparator());
     message.add(caption);
-    call.toStrings().forEach(message::add);
+    called.toStrings().forEach(message::add);
     if (isFailFast()) throw new AssertionError(message);
   }
 
   public void compile() {
-    call("javac", "--version");
-    project().main().unitNames().forEach(name -> call("jar", "--version"));
+    var javac = project().main().javac();
+    if (javac.activated()) call(javac);
+    // project().main().unitNames().forEach(name -> call("jar", "--version"));
   }
 
   public void generateApiDocumentation() {
-    call("javadoc", "--version");
+    // call("javadoc", "--version");
   }
 
-  private IllegalStateException newToolNotFoundException(String name) {
-    var message = "Tool with name \"" + name + "\" not found";
-    logbook().print(Level.ERROR, message);
-    return new IllegalStateException(message);
+  private ToolNotFoundException newToolNotFoundException(Call<?> call) {
+    var exception = new ToolNotFoundException(call.name());
+    logbook().print(Level.ERROR, exception.getMessage());
+    return exception;
   }
 
   @Override

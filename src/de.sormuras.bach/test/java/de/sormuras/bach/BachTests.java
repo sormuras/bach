@@ -21,8 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Argument;
+import de.sormuras.bach.tool.Call;
 import java.io.PrintWriter;
+import java.lang.System.Logger.Level;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
@@ -38,11 +42,36 @@ class BachTests {
 
   @Test
   void executeLocalTool() {
-    class Local implements ToolProvider {
+    class Local implements Call<Local>, ToolProvider {
+
+      final List<Argument> arguments;
+
+      Local() {
+        this(List.of());
+      }
+
+      Local(List<Argument> arguments) {
+        this.arguments = arguments;
+      }
+
+      @Override
+      public Optional<ToolProvider> tool() {
+        return Optional.of(this);
+      }
 
       @Override
       public String name() {
         return "local";
+      }
+
+      @Override
+      public List<Argument> arguments() {
+        return arguments;
+      }
+
+      @Override
+      public Local with(List<Argument> arguments) {
+        return new Local(arguments);
       }
 
       @Override
@@ -53,8 +82,8 @@ class BachTests {
     }
 
     var zero = Project.of("zero", "0");
-    var bach = Bach.of(zero);
-    bach.call(new Local(), "1", "2", "3");
+    var bach = Bach.of(zero).with(new Logbook(__ -> {}, Level.OFF));
+    bach.call(new Local().with("1", 2, 3));
 
     assertLinesMatch(
         List.of(">>>>", "INFO.+local 1 2 3", "TRACE.+" + Pattern.quote("args -> 1-2-3"), "```"),
