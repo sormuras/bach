@@ -44,7 +44,7 @@ public interface Call<T> {
   /**
    * Create new instance of a tool call configuration with the given arguments.
    *
-   * @param argument The possible emtpy list of argument objects
+   * @param arguments The possible empty list of argument objects
    */
   T with(List<Argument> arguments);
 
