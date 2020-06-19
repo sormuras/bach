@@ -25,6 +25,7 @@ import de.sormuras.bach.project.ModuleSource;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.nio.file.Path;
 
 /** Bach's own build program. */
@@ -38,7 +39,7 @@ class Build {
         Project.of("bach", version.toString())
             .with(base)
             .with(JavaRelease.of(release))
-            // .title("\uD83C\uDFBC Bach.java")
+            // .with(Documentation.of("\uD83C\uDFBC Bach.java"))
             // .requires("org.junit.platform.console")
             .with(
                 MainSources.of()
@@ -53,6 +54,16 @@ class Build {
                             .withRecommendedWarnings()
                             .withWarnings("all", "-preview")
                             .withTerminateCompilationIfWarningsOccur())
+                    .with(
+                        Javadoc.of()
+                            .with("-d", base.workspace("documentation", "api"))
+                            .with("--module", "de.sormuras.bach")
+                            .with("--module-source-path", "src/*/main/java")
+                            .with("-encoding", "UTF-8")
+                            .with("-locale", "en")
+                            .with("-Xdoclint")
+                            .with("--show-module-contents", "all")
+                            .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api"))
                     .with(
                         ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))
                             .with(
