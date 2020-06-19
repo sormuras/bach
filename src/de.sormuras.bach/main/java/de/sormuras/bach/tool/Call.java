@@ -26,37 +26,89 @@ import java.util.spi.ToolProvider;
 /** A tool call configuration. */
 public interface Call<T> {
 
+  /**
+   * Return the name of this tool call configuration.
+   *
+   * @return A string representation of a tool
+   * @see #tool()
+   */
   String name();
 
+  /**
+   * Return the arguments of this tool call configuration.
+   *
+   * @return A possible empty list of argument instances
+   */
   List<Argument> arguments();
 
+  /**
+   * Create new instance of a tool call configuration with the given arguments.
+   *
+   * @param argument The possible emtpy list of argument objects
+   */
   T with(List<Argument> arguments);
 
+  /**
+   * Return the activation state of this tool call configuration.
+   *
+   * @return {@code true} if this tool call is to executed, else {@code false}
+   */
   default boolean activated() {
     return !arguments().isEmpty();
   }
 
+  /**
+   * Return a tool provider instance in an optional object.
+   *
+   * @return An optional tool provider instance
+   * @see #name()
+   */
   default Optional<ToolProvider> tool() {
     return ToolProvider.findFirst(name());
   }
 
+  /**
+   * Create new call instance with the given additional arguments.
+   *
+   * @param argument The first additional argument
+   * @param arguments The array of more additional arguments
+   * @return A new call instance with the given arguments
+   */
   default T with(Argument argument, Argument... arguments) {
     var list = new ArrayList<>(arguments());
     list.add(argument);
     if (arguments.length > 0) Collections.addAll(list, arguments);
     return with(list);
   }
-
+  
+  /**
+   * Create new call instance with one additional argument.
+   *
+   * @param option The option to used as an additional argument
+   * @return A new call instance with the given argument
+   */
   default T with(String option) {
     return with(new Argument(option, List.of()));
   }
-
+  
+  /**
+   * Create new call instance with one or more additional arguments.
+   *
+   * @param option The option to used as an additional argument
+   * @param values The possible empty array of additional arguments
+   * @return A new call instance with the given arguments
+   */
   default T with(String option, Object... values) {
     var strings = new ArrayList<String>();
     for (var value : values) strings.add(value.toString());
     return with(new Argument(option, strings));
   }
 
+  /**
+   * Return the arguments of this tool call configuration as an array of string objects.
+   *
+   * @return An array of strings representing the arguments of this tool call.
+   */
   default String[] toStringArray() {
     var list = new ArrayList<String>();
     for (var argument : arguments()) {
