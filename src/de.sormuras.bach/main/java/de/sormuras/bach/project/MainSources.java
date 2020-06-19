@@ -18,6 +18,7 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,15 +29,17 @@ import java.util.stream.Collectors;
 public final class MainSources {
 
   public static MainSources of() {
-    return new MainSources(Map.of(), Javac.of());
+    return new MainSources(Map.of(), Javac.of(), Javadoc.of());
   }
 
   private final Map<String, ModuleSource> units;
   private final Javac javac;
+  private final Javadoc javadoc;
 
-  public MainSources(Map<String, ModuleSource> units, Javac javac) {
+  public MainSources(Map<String, ModuleSource> units, Javac javac, Javadoc javadoc) {
     this.units = Map.copyOf(units);
     this.javac = javac;
+    this.javadoc = javadoc;
   }
 
   public Map<String, ModuleSource> units() {
@@ -45,6 +48,10 @@ public final class MainSources {
 
   public Javac javac() {
     return javac;
+  }
+
+  public Javadoc javadoc() {
+    return javadoc;
   }
 
   public List<String> unitNames() {
@@ -59,10 +66,14 @@ public final class MainSources {
     var mergedUnits = new TreeMap<>(units);
     mergedUnits.put(unit.module().name(), unit);
     for (var m : more) mergedUnits.put(m.module().name(), unit);
-    return new MainSources(mergedUnits, javac);
+    return new MainSources(mergedUnits, javac, javadoc);
   }
 
   public MainSources with(Javac javac) {
-    return new MainSources(units, javac);
+    return new MainSources(units, javac, javadoc);
+  }
+
+  public MainSources with(Javadoc javadoc) {
+    return new MainSources(units, javac, javadoc);
   }
 }
