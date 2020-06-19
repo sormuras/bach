@@ -61,6 +61,7 @@ public final class Locator implements Comparable<Locator> {
   /**
    * Create a new module locator pointing to an artifact built by JitPack.
    *
+   * @param module The module to used as the nominal part of the pair
    * @param user GitHub username or the complete group like {@code "com.azure.${USER}"}
    * @param repository Name of the repository or project
    * @param version The version string of the repository or project, which is either a release tag,
