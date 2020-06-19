@@ -96,6 +96,7 @@ public class Builder {
   }
 
   public void generateApiDocumentation() {
-    // call("javadoc", "--version");
+    var javadoc = project.main().javadoc();
+    if (javadoc.activated()) bach.call(javadoc);
   }
 }
