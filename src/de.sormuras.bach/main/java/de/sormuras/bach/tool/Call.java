@@ -45,6 +45,7 @@ public interface Call<T> {
    * Create new instance of a tool call configuration with the given arguments.
    *
    * @param arguments The possible empty list of argument objects
+   * @return An instance of {@code T} with the given arguments
    */
   T with(List<Argument> arguments);
 

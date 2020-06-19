@@ -22,18 +22,18 @@ import java.nio.file.Path;
 /**
  * A collection of project-defining directories and derived paths.
  *
- * <h3>Example</h3>
+ * <h2>Example</h2>
  *
  * <pre><code>
  * Component     Directory Tree Example
  * --------------------------------------------------------
- * directory --> jigsaw-quick-start
+ * directory --- jigsaw-quick-start
  *               ├───.bach
  *               │   │   build.jsh
  *               │   ├───lib
  *               │   │       de.sormuras.bach@11.3.jar
  *               │   ├───src
- * workspace ----│-> └───workspace
+ * workspace ----│-- └───workspace
  *               │       ├───classes
  *               │       │   └───11
  *               │       │       ├───com.greetings
@@ -49,7 +49,7 @@ import java.nio.file.Path;
  *               │       ├───modules-test
  *               │       ├───reports
  *               │       └───sources
- * libraries --> ├───lib
+ * libraries --- ├───lib
  *               └───src
  *                   └───com.greetings
  *                       │   module-info.java
@@ -74,7 +74,6 @@ public final class Base {
   public static Base of() {
     return of("");
   }
-
 
   /**
    * Return a new {@code Base} instance for the given directory.
