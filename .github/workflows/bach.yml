@@ -30,7 +30,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: artifact-${{ matrix.java }}-${{ matrix.os }}
-        path: .bach/workspace/summary.md
+        path: .bach/workspace/logbook.md
 
   publish_snapshot:
     name: Publish Snapshot
