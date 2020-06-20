@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.spi.ToolProvider;
 
 /** A tool call configuration. */
-public interface Call<T> {
+public interface Call<T extends Call<T>> {
 
   /**
    * Return the name of this tool call configuration.
