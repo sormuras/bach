@@ -27,7 +27,7 @@ import de.sormuras.bach.project.SourceDirectory;
 import de.sormuras.bach.tool.Call;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
-
+import de.sormuras.bach.tool.Javadoc;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.FindException;
@@ -101,8 +101,14 @@ public class Scanner {
             .with("--module", String.join(",", moduleNames))
             .with("--module-version", version);
     javac = withModuleSourcePaths(javac, project.main().units().values());
-    project = project.with(main.with(javac));
+    project = project.with(main = main.with(javac));
     // generate javadoc call
+    var javadoc =
+        Javadoc.of()
+            .with("-d", base.workspace("documentation", "api"))
+            .with("--module", String.join(",", moduleNames));
+    javadoc = withModuleSourcePaths(javadoc, project.main().units().values());
+    project = project.with(main.with(javadoc));
     return project;
   }
 

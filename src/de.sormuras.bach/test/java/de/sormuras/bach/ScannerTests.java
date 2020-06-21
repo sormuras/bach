@@ -54,12 +54,22 @@ class ScannerTests {
         project.main().javac().toStrings());
     assertLinesMatch(
         List.of(
+            "-d",
+            base.workspace("documentation", "api").toString(),
+            "--module",
+            "com.greetings",
+            "--module-source-path",
+            base.directory().toString()),
+        project.main().javadoc().toStrings());
+    var greetings = project.main().unit("com.greetings").orElseThrow();
+    assertLinesMatch(
+        List.of(
             "--create",
             "--file",
             base.modules("").resolve("com.greetings@1-ea.jar").toString(),
             "-C",
             base.classes("", Runtime.version().feature()) + File.separator + "com.greetings",
             "."),
-        project.main().unit("com.greetings").orElseThrow().jar().toStrings());
+        greetings.jar().toStrings());
   }
 }
