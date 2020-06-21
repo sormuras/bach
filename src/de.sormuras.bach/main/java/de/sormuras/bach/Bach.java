@@ -130,7 +130,7 @@ public class Bach {
 
   void call(Call<?> call) {
     var provider = call.tool().orElseThrow(() -> newToolNotFoundException(call));
-    var arguments = call.toStringArray();
+    var arguments = call.toStrings().toArray(String[]::new);
 
     var tool = provider.name();
     logbook().print(Level.INFO, (tool + ' ' + String.join(" ", arguments)).trim());

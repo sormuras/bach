@@ -17,18 +17,16 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.project.Base;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import de.sormuras.bach.project.Base;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import org.junit.jupiter.api.Test;
 
 class ScannerTests {
 
@@ -40,6 +38,7 @@ class ScannerTests {
     var files = Scanner.findModuleInfoJavaFiles(base, Path.of(""), 3);
     var scanner = new Scanner(logbook, base, Scanner.Layout.AUTOMATIC, files);
     var project = scanner.scan();
+    assertLinesMatch(List.of(">> SCAN DIRECTORY >>"), logs);
     assertEquals("JigsawQuickStart 1-ea", project.toNameAndVersion());
     assertLinesMatch(List.of("project JigsawQuickStart {", ">>>>", "}"), project.toStrings());
     assertLinesMatch(
@@ -52,7 +51,7 @@ class ScannerTests {
             "1-ea",
             "--module-source-path",
             base.directory().toString()),
-        List.of(project.main().javac().toStringArray()));
+        project.main().javac().toStrings());
     assertLinesMatch(
         List.of(
             "--create",
@@ -61,6 +60,6 @@ class ScannerTests {
             "-C",
             base.classes("", Runtime.version().feature()) + File.separator + "com.greetings",
             "."),
-        List.of(project.main().unit("com.greetings").orElseThrow().jar().toStringArray()));
+        project.main().unit("com.greetings").orElseThrow().jar().toStrings());
   }
 }
