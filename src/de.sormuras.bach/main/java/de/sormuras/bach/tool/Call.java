@@ -106,16 +106,38 @@ public interface Call<T extends Call<T>> {
   }
 
   /**
-   * Return the arguments of this tool call configuration as an array of string objects.
+   * Create new call instance with one or more arguments removed by their name.
    *
-   * @return An array of strings representing the arguments of this tool call.
+   * @param option The option to be removed from the list of arguments
+   * @return A new call instance without the named argument(s)
    */
-  default String[] toStringArray() {
+  default T without(String option) {
+    var arguments = new ArrayList<>(arguments());
+    arguments.removeIf(argument -> argument.key().equals(option));
+    return with(arguments);
+  }
+
+  /**
+   * Return the arguments of this tool call configuration as a list of string objects.
+   *
+   * @return A list of strings representing the arguments of this tool call.
+   */
+  default List<String> toStrings() {
     var list = new ArrayList<String>();
     for (var argument : arguments()) {
       list.add(argument.key());
       list.addAll(argument.values());
     }
-    return list.toArray(String[]::new);
+    return list;
+  }
+
+  /**
+   * Create new arbitrary tool call configuration for the given name.
+   *
+   * @param name The name of the tool to call
+   * @return A new named tool call object
+   */
+  static Tool tool(String name) {
+    return Tool.of(name);
   }
 }
