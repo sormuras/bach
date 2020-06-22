@@ -105,9 +105,11 @@ public class Builder {
 
   public void printModuleStatistics(Level level) {
     var directory = project.structure().base().modules("");
+    if (Files.notExists(directory)) return;
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Paths::isJarFile);
     logbook.print(level, "Directory %s contains", uri);
+    if (files.isEmpty()) logbook.print(Level.WARNING, "Not a single JAR file?!");
     for (var file : files) logbook.print(level, "%,12d %s", Paths.size(file), file.getFileName());
   }
 }
