@@ -22,6 +22,7 @@ import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,10 +44,10 @@ public class Builder {
   public void build() {
     var caption = "Build of " + project.toNameAndVersion();
     var projectInfoJava = String.join(System.lineSeparator(), project.toStrings());
-    logbook.print(System.Logger.Level.INFO, "%s started...", caption);
-    logbook.print(System.Logger.Level.DEBUG, "\tflags = %s", bach.flags());
-    logbook.print(System.Logger.Level.DEBUG, "\tlogbook.threshold = %s", logbook.threshold());
-    logbook.print(System.Logger.Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
+    logbook.print(Level.INFO, "%s started...", caption);
+    logbook.print(Level.DEBUG, "\tflags = %s", bach.flags());
+    logbook.print(Level.DEBUG, "\tlogbook.threshold = %s", logbook.threshold());
+    logbook.print(Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
 
     var start = Instant.now();
 
@@ -56,15 +57,17 @@ public class Builder {
       executor.submit(this::generateApiDocumentation);
     }
 
+    printModuleStatistics(Level.INFO);
+
     var duration = Duration.between(start, Instant.now());
-    logbook.print(System.Logger.Level.INFO, "%s took %d ms", caption, duration.toMillis());
+    logbook.print(Level.INFO, "%s took %d ms", caption, duration.toMillis());
 
     var markdown = logbook.toMarkdown(project);
     try {
       var logfile = project.structure().base().workspace("logbook.md");
       Files.createDirectories(logfile.getParent());
       Files.write(logfile, markdown);
-      logbook.print(System.Logger.Level.INFO, "Logfile written to %s", logfile.toUri());
+      logbook.print(Level.INFO, "Logfile written to %s", logfile.toUri());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -75,7 +78,7 @@ public class Builder {
     errors.forEach(error -> error.toStrings().forEach(System.err::println));
     var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
     var failOnError = bach.isFailOnError();
-    logbook.print(System.Logger.Level.WARNING, message + " -> fail-on-error: " + failOnError);
+    logbook.print(Level.WARNING, message + " -> fail-on-error: " + failOnError);
     if (failOnError) throw new AssertionError(message);
   }
 
@@ -98,5 +101,13 @@ public class Builder {
   public void generateApiDocumentation() {
     var javadoc = project.main().javadoc();
     if (javadoc.activated()) bach.call(javadoc);
+  }
+
+  public void printModuleStatistics(Level level) {
+    var directory = project.structure().base().modules("");
+    var uri = directory.toUri().toString();
+    var files = Paths.list(directory, Paths::isJarFile);
+    logbook.print(level, "Directory %s contains", uri);
+    for (var file : files) logbook.print(level, "%,12d %s", Paths.size(file), file.getFileName());
   }
 }
