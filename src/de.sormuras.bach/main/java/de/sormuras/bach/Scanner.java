@@ -135,8 +135,11 @@ public class Scanner {
     if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("");
     if (!patterns.isEmpty())
       call = call.with("--module-source-path", String.join(File.pathSeparator, patterns));
-    for (var entry : specific.entrySet())
-      call = call.with("--module-source-path", entry.getKey() + "=", entry.getValue());
+    for (var entry : specific.entrySet()) {
+      var module = entry.getKey();
+      var paths = Paths.join(entry.getValue());
+      call = call.with("--module-source-path", module + "=" + paths);
+    }
     return call;
   }
 }
