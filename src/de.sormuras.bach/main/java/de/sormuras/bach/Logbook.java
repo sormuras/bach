@@ -17,8 +17,11 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,10 +161,38 @@ public class Logbook {
   public List<String> toMarkdown(Project project) {
     var md = new ArrayList<String>();
     md.add("# Logbook of " + project.toNameAndVersion());
+    md.addAll(projectModules(project.structure().base().modules("")));
     md.addAll(projectDescription(project));
     md.addAll(toolCallOverview());
     md.addAll(toolCallDetails());
     md.addAll(logbookEntries());
+    return md;
+  }
+
+  private List<String> projectModules(Path directory) {
+    var md = new ArrayList<String>();
+    var files = Paths.list(directory, Paths::isJarFile);
+    md.add("");
+    md.add("## Modules");
+    md.add("- directory: " + directory.toUri());
+    md.add("- files: " + files.size());
+    if (files.isEmpty()) return md;
+    md.add("");
+    md.add("|  Size|Modular JAR|Name|Version|Exports");
+    md.add("|-----:|:----------|----|-------|-------");
+    for (var file : files) {
+      var size = Paths.size(file);
+      var bytes = file.getFileName();
+      var descriptor = ModuleFinder.of(file).findAll().iterator().next().descriptor();
+      var module = descriptor.name();
+      var version = descriptor.version().map(Object::toString).orElse("-");
+      var exports =
+          descriptor.exports().stream()
+              .map(Object::toString)
+              .sorted()
+              .collect(Collectors.joining("<br>"));
+      md.add(String.format("|%,d|%s|%s|%s|%s", size, bytes, module, version, exports));
+    }
     return md;
   }
 
