@@ -35,8 +35,9 @@ public final class ModuleSource {
 
   public static ModuleSource of(Path path) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
+    var parent = info.getParent() != null ? info.getParent() : Path.of(".");
     var moduleDescriptor = Modules.describe(info);
-    var sourceDirectory = SourceDirectory.of(info.getParent());
+    var sourceDirectory = SourceDirectory.of(parent);
     return new ModuleSource(moduleDescriptor, List.of(sourceDirectory), List.of(), Jar.of());
   }
 
