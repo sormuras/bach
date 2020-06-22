@@ -22,6 +22,12 @@ import java.util.List;
 /** An arbitrary tool call configuration. */
 public final class Tool implements Call<Tool> {
 
+  /**
+   * Create an empty tool call configuration with the given tool name.
+   *
+   * @param name The name of the tool to call
+   * @return An empty tool call object with the given name
+   */
   public static Tool of(String name) {
     return new Tool(name, List.of());
   }

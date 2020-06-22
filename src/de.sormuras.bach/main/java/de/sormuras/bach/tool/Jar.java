@@ -37,14 +37,31 @@ public final class Jar implements Call<Jar> {
     UPDATE
   }
 
+  /**
+   * Create an empty jar call.
+   *
+   * @return An empty {@code Jar} instance.
+   */
   public static Jar of() {
     return new Jar(List.of());
   }
 
+  /**
+   * Create a jar call with the given main operation mode.
+   *
+   * @param mode The main operation mode
+   * @return An {@code Jar} instance with the given main operation mode.
+   */
   public static Jar of(Mode mode) {
     return of().with("--" + mode.name().toLowerCase());
   }
 
+  /**
+   * Create a jar call in {@link Mode#CREATE CREATE} mode with the given archive file.
+   *
+   * @param file The path to the archive file
+   * @return An {@code Jar} instance for creating the given archive file.
+   */
   public static Jar of(Path file) {
     return of(Mode.CREATE).withArchive(file);
   }
@@ -70,10 +87,23 @@ public final class Jar implements Call<Jar> {
     return new Jar(arguments);
   }
 
+  /**
+   * Create new jar instance with the given archive file name.
+   *
+   * @param file The archive file name
+   * @return A new {@code Jar} instance with the archive file name
+   */
   public Jar withArchive(Path file) {
     return with("--file", file);
   }
 
+  /**
+   * Change into the specified directory and includes the given files.
+   *
+   * @param directory The directory to change into
+   * @param files The files to include
+   * @return A new {@code Jar} instance with {@code -C} option appended
+   */
   public Jar withChangeDirectoryAndIncludeFiles(Path directory, String... files) {
     var values = new ArrayList<String>();
     values.add(directory.toString());

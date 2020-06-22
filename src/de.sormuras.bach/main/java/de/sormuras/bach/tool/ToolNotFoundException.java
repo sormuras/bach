@@ -22,7 +22,11 @@ public class ToolNotFoundException extends IllegalStateException {
 
   private static final long serialVersionUID = 1471606379434991753L;
 
-  /** Initialize an exception instance with the tool name included in the detail message. */
+  /**
+   * Initialize an exception instance with the tool name included in the detail message.
+   *
+   * @param name The name of tool that couldn't be found
+   */
   public ToolNotFoundException(String name) {
     super("Tool with name '" + name + "' not found");
   }
