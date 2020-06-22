@@ -90,6 +90,15 @@ public class Paths {
     return Files.isDirectory(path) && JAVA_N_PATTERN.matcher(name(path)).matches();
   }
 
+  /** Return the size of a file in bytes. */
+  public static long size(Path path) {
+    try {
+      return Files.size(path);
+    } catch (Exception e) {
+      throw new Error("Size of file failed: " + e, e);
+    }
+  }
+
   /** Return path's file name as a {@link String}. */
   public static String name(Path path) {
     return path.getNameCount() == 0 ? "" : path.getFileName().toString();
@@ -107,7 +116,7 @@ public class Paths {
 
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
   public static boolean isModuleInfoJavaFile(Path path) {
-    return Files.isRegularFile(path) && name(path).equals("module-info.java");
+    return isJavaFile(path) && name(path).equals("module-info.java");
   }
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
