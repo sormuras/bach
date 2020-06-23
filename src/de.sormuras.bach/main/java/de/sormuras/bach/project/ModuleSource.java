@@ -74,6 +74,15 @@ public final class ModuleSource {
     return module().name();
   }
 
+  /** Return list of module-relevant source path instances of this unit. */
+  public List<Path> toRelevantSourcePaths() {
+    var s0 = sources.get(0);
+    if (s0.isModuleInfoJavaPresent()) return List.of(s0.path());
+    for (var source : sources)
+      if (source.isModuleInfoJavaPresent()) return List.of(s0.path(), source.path());
+    throw new IllegalStateException("No module-info.java found in: " + sources);
+  }
+
   public ModuleSource with(ModuleDescriptor module) {
     return new ModuleSource(module, sources, resources, jar);
   }
