@@ -20,9 +20,11 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.JavaRelease;
+import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.TestSources;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -35,12 +37,12 @@ class Build {
     var base = Base.of();
     var version = Bach.VERSION;
     var release = 11;
+    var feature = Runtime.version().feature();
     var project =
         Project.of("bach", version.toString())
             .with(base)
             .with(JavaRelease.of(release))
             // .with(Documentation.of("\uD83C\uDFBC Bach.java"))
-            // .requires("org.junit.platform.console")
             .with(
                 MainSources.of()
                     .with(
@@ -74,7 +76,42 @@ class Build {
                                     .with("--verbose")
                                     .with("--main-class", "de.sormuras.bach.Main")
                                     .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("", release, "de.sormuras.bach"), "."))));
+                                        base.classes("", release, "de.sormuras.bach"), "."))))
+            .with(
+                TestSources.of()
+                    .with(
+                        Javac.of()
+                            .with("-d", base.classes("test", feature))
+                            .with("--module", "test.base")
+                            .with("--module-source-path", "src/*/test/java")
+                            .with("--module-path", "lib")
+                            .with("-encoding", "UTF-8")
+                            .withRecommendedWarnings()
+                            .withTerminateCompilationIfWarningsOccur())
+                    .with(
+                        SourceUnit.of(Path.of("src/test.base/test/java"))
+                            .with(
+                                Jar.of(
+                                        base.modules("test")
+                                            .resolve("test.base@" + version + ".jar"))
+                                    .withChangeDirectoryAndIncludeFiles(
+                                        base.classes("test", feature, "test.base"), "."))))
+            .with(
+                Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("console", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("engine", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("launcher", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("reporting", "1.7.0-M1"),
+                Locator.ofJUnitPlatform("testkit", "1.7.0-M1"))
+            .with(
+                Locator.ofJUnitJupiter("", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("api", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("engine", "5.7.0-M1"),
+                Locator.ofJUnitJupiter("params", "5.7.0-M1"))
+            .with(
+                Locator.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
+                Locator.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
+            .withRequires("org.junit.platform.console");
 
     Bach.of(project).build();
   }
