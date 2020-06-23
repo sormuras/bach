@@ -126,8 +126,15 @@ public final class Project {
   }
 
   public Project withSources() {
-    var files = Paths.findModuleInfoJavaFiles(structure().base().directory(), 5);
-    return withMainSources(files);
+    var mains = new ArrayList<Path>();
+    var tests = new ArrayList<Path>();
+    var previews = new ArrayList<Path>();
+    for (var info : Paths.findModuleInfoJavaFiles(structure().base().directory(), 9)) {
+      if (Paths.isModuleInfoJavaFileForRealm(info, "test")) tests.add(info);
+      else if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) previews.add(info);
+      else mains.add(info);
+    }
+    return withMainSources(mains).withTestSources(tests).withTestPreviewSources(previews);
   }
 
   public Project withMainSources(List<Path> mainInfoFiles) {
