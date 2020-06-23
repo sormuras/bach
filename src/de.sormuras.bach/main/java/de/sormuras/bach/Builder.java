@@ -180,7 +180,11 @@ public class Builder {
       var testModule = new TestModule(module, modulePaths);
       if (testModule.tool().isPresent()) bach.call(testModule);
 
-      var junit = new JUnit(module, modulePaths, List.of());
+      var junit =
+          new JUnit(module, modulePaths, List.of())
+              .with("--select-module", module)
+              .with("--disable-ansi-colors")
+              .with("--reports-dir", base.workspace("junit-reports", module));
       if (junit.tool().isPresent()) bach.call(junit);
     }
   }
