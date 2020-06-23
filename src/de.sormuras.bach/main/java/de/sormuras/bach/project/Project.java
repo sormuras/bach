@@ -17,17 +17,23 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** A modular Java project descriptor. */
 public final class Project {
@@ -76,6 +82,10 @@ public final class Project {
     list.add("  //   .directory " + base.directory().toUri());
     list.add("  //   .libraries " + base.libraries().toUri());
     list.add("  //   .workspace " + base.workspace().toUri());
+    list.add("  // modules");
+    list.add("  //    declares " + toDeclaredModuleNames());
+    list.add("  //    requires " + toRequiredModuleNames());
+    list.add("  //    external " + toExternalModuleNames());
 
     var locators = new TreeSet<>(structure().locators().values());
     if (!locators.isEmpty()) {
@@ -96,6 +106,25 @@ public final class Project {
 
   public String toNameAndVersion() {
     return basics.name() + ' ' + basics.version();
+  }
+
+  public Set<String> toDeclaredModuleNames() {
+    return toUnits().map(SourceUnit::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public Set<String> toExternalModuleNames() {
+    var externals = new TreeSet<>(toRequiredModuleNames());
+    externals.removeAll(toDeclaredModuleNames());
+    externals.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    return externals;
+  }
+
+  public Set<String> toRequiredModuleNames() {
+    return Modules.required(toUnits().map(SourceUnit::module));
+  }
+
+  public Stream<SourceUnit> toUnits() {
+    return Stream.concat(main().units().values().stream(), test().units().values().stream());
   }
 
   public Project with(Basics basics) {
@@ -123,13 +152,20 @@ public final class Project {
   }
 
   public Project with(Base base) {
-    return with(new Structure(base, structure().locators()));
+    return with(new Structure(base, structure().requires(), structure().locators()));
+  }
+
+  public Project withRequires(String module, String... more) {
+    var set = new TreeSet<>(structure().requires());
+    set.add(module);
+    Collections.addAll(set, more);
+    return with(new Structure(structure().base(), set, structure().locators()));
   }
 
   public Project with(Locator... locators) {
     var map = new TreeMap<>(structure().locators());
     List.of(locators).forEach(locator -> map.put(locator.module(), locator));
-    return with(new Structure(structure().base(), map));
+    return with(new Structure(structure().base(), structure().requires(), map));
   }
 
   public Project withBaseDirectory(String first, String... more) {
