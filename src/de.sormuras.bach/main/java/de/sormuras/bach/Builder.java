@@ -20,12 +20,17 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Concurrency;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.JUnit;
+import de.sormuras.bach.tool.TestModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 /** A builder builds the project assigned to the given bach instance. */
@@ -52,10 +57,13 @@ public class Builder {
     var start = Instant.now();
 
     var factory = Executors.defaultThreadFactory();
-    try (var executor = Concurrency.shutdownOnClose(Executors.newFixedThreadPool(2, factory))) {
-      executor.submit(this::compile);
+    try (var executor = Concurrency.shutdownOnClose(Executors.newCachedThreadPool(factory))) {
+      executor.submit(this::compileMainSources);
       executor.submit(this::generateApiDocumentation);
     }
+
+    compileTestSources();
+    executeTestModules();
 
     printModuleStatistics(Level.INFO);
 
@@ -69,7 +77,7 @@ public class Builder {
       Files.write(logfile, markdown);
       logbook.print(Level.INFO, "Logfile written to %s", logfile.toUri());
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      throw new UncheckedIOException("Write logfile failed: " + e, e);
     }
 
     var errors = logbook.errors();
@@ -82,25 +90,58 @@ public class Builder {
     if (failOnError) throw new AssertionError(message);
   }
 
-  public Builder compile() throws Exception {
+  public void compileMainSources() {
     var javac = project.main().javac();
     if (javac.activated()) bach.call(javac);
 
     var modules = project.structure().base().modules("");
-    Paths.delete(modules);
-    Files.createDirectories(modules);
+    Paths.deleteDirectories(modules);
+    Paths.createDirectories(modules);
 
     for (var unit : project.main().units().values()) {
       var jar = unit.jar();
       if (jar.activated()) bach.call(jar);
     }
-
-    return this;
   }
 
   public void generateApiDocumentation() {
     var javadoc = project.main().javadoc();
     if (javadoc.activated()) bach.call(javadoc);
+  }
+
+  public void compileTestSources() {
+    var test = project.test();
+    var javac = test.javac();
+    if (javac.activated()) bach.call(javac);
+
+    var modules = project.structure().base().modules(test.name());
+    Paths.deleteDirectories(modules);
+    Paths.createDirectories(modules);
+
+    for (var unit : test.units().values()) {
+      var jar = unit.jar();
+      if (jar.activated()) bach.call(jar);
+    }
+  }
+
+  public void executeTestModules() {
+    var base = project.structure().base();
+    var test = project.test();
+    var lib = base.libraries();
+    for (var unit : test.units().values()) {
+      var modulePaths = new ArrayList<Path>();
+      modulePaths.add(Path.of(unit.jar().find("--file").orElseThrow())); // modular JAR
+      modulePaths.add(base.modules("")); // main modules
+      modulePaths.add(base.modules("test")); // other test modules
+      if (Files.exists(lib)) modulePaths.add(lib); // external modules
+
+      var module = unit.name();
+      var testModule = new TestModule(module, modulePaths);
+      if (testModule.tool().isPresent()) bach.call(testModule);
+
+      var junit = new JUnit(module, modulePaths, List.of());
+      if (junit.tool().isPresent()) bach.call(junit);
+    }
   }
 
   public void printModuleStatistics(Level level) {
