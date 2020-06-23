@@ -74,7 +74,11 @@ public final class ModuleSource {
     return module().name();
   }
 
-  /** Return list of module-relevant source path instances of this unit. */
+  /**
+   * Return list of module-relevant source path instances of this unit.
+   *
+   * @return A list with exactly one or two path objects
+   */
   public List<Path> toRelevantSourcePaths() {
     var s0 = sources.get(0);
     if (s0.isModuleInfoJavaPresent()) return List.of(s0.path());
