@@ -142,22 +142,33 @@ public class Bach {
     var err = new StringWriter();
     var start = Instant.now();
 
-    var code = provider.run(new PrintWriter(out), new PrintWriter(err), arguments);
+    var currentThread = Thread.currentThread();
+    var currentContextLoader = currentThread.getContextClassLoader();
+    try {
+      currentThread.setContextClassLoader(provider.getClass().getClassLoader());
+      var code = provider.run(new PrintWriter(out), new PrintWriter(err), arguments);
 
-    var duration = Duration.between(start, Instant.now());
-    var normal = out.toString().strip();
-    var errors = err.toString().strip();
-    var called = new Logbook.Called(thread, tool, arguments, normal, errors, duration, code);
-    logbook().called(called);
+      var duration = Duration.between(start, Instant.now());
+      var normal = out.toString().strip();
+      var errors = err.toString().strip();
+      var called = new Logbook.Called(thread, tool, arguments, normal, errors, duration, code);
+      logbook().called(called);
 
-    if (code == 0) return;
+      if (code == 0) return;
 
-    var caption = String.format("%s failed with exit code %d", tool, code);
-    logbook().print(Level.ERROR, caption);
-    var message = new StringJoiner(System.lineSeparator());
-    message.add(caption);
-    called.toStrings().forEach(message::add);
-    if (isFailFast()) throw new AssertionError(message);
+      var caption = String.format("%s failed with exit code %d", tool, code);
+      logbook().print(Level.ERROR, caption);
+      var message = new StringJoiner(System.lineSeparator());
+      message.add(caption);
+      called.toStrings().forEach(message::add);
+      if (isFailFast()) throw new AssertionError(message);
+    } catch (Throwable throwable) {
+      var caption = String.format("%s failed throwing %s", tool, throwable);
+      logbook().print(Level.ERROR, caption);
+      if (isFailFast()) throw throwable;
+    } finally {
+      currentThread.setContextClassLoader(currentContextLoader);
+    }
   }
 
   private ToolNotFoundException newToolNotFoundException(Call<?> call) {
