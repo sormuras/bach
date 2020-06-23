@@ -125,18 +125,19 @@ public final class Project {
     return with(Base.of(first, more));
   }
 
-  public Project withModulesParsedFromBase() {
-    return withModules(Paths.findModuleInfoJavaFiles(structure().base().directory(), 5));
+  public Project withSources() {
+    var files = Paths.findModuleInfoJavaFiles(structure().base().directory(), 5);
+    return withMainSources(files);
   }
 
-  public Project withModules(List<Path> mainInfoFiles) {
+  public Project withMainSources(List<Path> mainInfoFiles) {
     var project = this;
     var release = basics().release().feature();
     var version = basics().version();
     var base = structure().base();
     var main = main();
     for (var info : mainInfoFiles) {
-      var unit = ModuleSource.of(info);
+      var unit = SourceUnit.of(info);
       var module = unit.name();
       var file = module + '@' + version + ".jar";
       var jar =
@@ -155,7 +156,7 @@ public final class Project {
         Javac.of()
             .with("-d", base.classes("", release))
             .with(releases, (tool, value) -> tool.with("--release", value))
-            .with("--module", String.join(",", main.unitNames()))
+            .with("--module", String.join(",", main.toUnitNames()))
             .with("--module-version", version)
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
     project = project.with(main = main.with(javac));
@@ -164,9 +165,17 @@ public final class Project {
     var javadoc =
         Javadoc.of()
             .with("-d", base.workspace("documentation", "api"))
-            .with("--module", String.join(",", main.unitNames()))
+            .with("--module", String.join(",", main.toUnitNames()))
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
 
     return project.with(main.with(javadoc));
+  }
+
+  public Project withTestSources(List<Path> testInfoFiles) {
+    return this;
+  }
+
+  public Project withTestPreviewSources(List<Path> testPreviewInfoFiles) {
+    return this;
   }
 }

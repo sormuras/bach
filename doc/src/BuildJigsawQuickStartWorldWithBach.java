@@ -16,17 +16,22 @@
  */
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.project.Project;
+import java.nio.file.Path;
+import java.util.List;
 
 class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
-    System.out.println("TODO");
-    /*
-    var bach =
-        Bach.of(
-            scanner -> scanner.base("doc/project/JigsawQuickStartWorld"),
-            project -> project.title("Module System Quick-Start Guide World").version("47.11"));
-    bach.build();
-    */
+    var project =
+        Project.of("world", "1.3")
+            .withBaseDirectory("doc/project/JigsawQuickStartWorld")
+            .withMainSources(
+                List.of(
+                    Path.of(
+                        "doc/project/JigsawQuickStartWorld", "com.greetings/main/module-info.java"),
+                    Path.of(
+                        "doc/project/JigsawQuickStartWorld", "org.astro/main/module-info.java")));
+    Bach.of(project).build();
   }
 }

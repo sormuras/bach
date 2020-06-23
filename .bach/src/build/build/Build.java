@@ -21,7 +21,7 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.ModuleSource;
+import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
@@ -66,7 +66,7 @@ class Build {
                             .with("--show-module-contents", "all")
                             .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api"))
                     .with(
-                        ModuleSource.of(Path.of("src/de.sormuras.bach/main/java"))
+                        SourceUnit.of(Path.of("src/de.sormuras.bach/main/java"))
                             .with(
                                 Jar.of(
                                         base.modules("")

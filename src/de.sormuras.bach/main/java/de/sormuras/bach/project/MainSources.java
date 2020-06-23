@@ -39,17 +39,17 @@ public final class MainSources {
     return new MainSources(Map.of(), Javac.of(), Javadoc.of());
   }
 
-  private final Map<String, ModuleSource> units;
+  private final Map<String, SourceUnit> units;
   private final Javac javac;
   private final Javadoc javadoc;
 
-  public MainSources(Map<String, ModuleSource> units, Javac javac, Javadoc javadoc) {
+  public MainSources(Map<String, SourceUnit> units, Javac javac, Javadoc javadoc) {
     this.units = Map.copyOf(units);
     this.javac = javac;
     this.javadoc = javadoc;
   }
 
-  public Map<String, ModuleSource> units() {
+  public Map<String, SourceUnit> units() {
     return units;
   }
 
@@ -61,12 +61,12 @@ public final class MainSources {
     return javadoc;
   }
 
-  public List<String> unitNames() {
-    return units.keySet().stream().sorted().collect(Collectors.toUnmodifiableList());
+  public Optional<SourceUnit> unit(String name) {
+    return Optional.ofNullable(units.get(name));
   }
 
-  public Optional<ModuleSource> unit(String name) {
-    return Optional.ofNullable(units.get(name));
+  public List<String> toUnitNames() {
+    return units.keySet().stream().sorted().collect(Collectors.toUnmodifiableList());
   }
 
   public List<String> toModuleSourcePaths() {
@@ -88,7 +88,7 @@ public final class MainSources {
     return List.copyOf(paths);
   }
 
-  public MainSources with(ModuleSource unit, ModuleSource... more) {
+  public MainSources with(SourceUnit unit, SourceUnit... more) {
     var mergedUnits = new TreeMap<>(units);
     mergedUnits.put(unit.module().name(), unit);
     for (var m : more) mergedUnits.put(m.module().name(), unit);
