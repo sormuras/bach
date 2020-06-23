@@ -17,21 +17,20 @@
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.Project;
-import java.nio.file.Path;
-import java.util.List;
 
 class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
-    var project =
-        Project.of("world", "1.3")
-            .withBaseDirectory("doc/project/JigsawQuickStartWorld")
-            .withMainSources(
-                List.of(
-                    Path.of(
-                        "doc/project/JigsawQuickStartWorld", "com.greetings/main/module-info.java"),
-                    Path.of(
-                        "doc/project/JigsawQuickStartWorld", "org.astro/main/module-info.java")));
+    var base = "doc/project/JigsawQuickStartWorld";
+    var project = Project.of("world", "1.3").withBaseDirectory(base).withSources();
+    //            .withMainSources(
+    //                List.of(
+    //                    Path.of(base, "com.greetings/main/module-info.java"),
+    //                    Path.of(base, "org.astro/main/module-info.java")))
+    //            .withTestSources(
+    //                List.of(
+    //                    Path.of(base, "org.astro/test/module-info.java"),
+    //                    Path.of(base, "test.modules/test/module-info.java")));
     Bach.of(project).build();
   }
 }
