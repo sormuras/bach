@@ -20,6 +20,7 @@ package de.sormuras.bach.tool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.spi.ToolProvider;
@@ -67,6 +68,21 @@ public interface Call<T extends Call<T>> {
    */
   default Optional<ToolProvider> tool() {
     return ToolProvider.findFirst(name());
+  }
+
+  /**
+   * Find first argument by its option key and return its sole attached value as a string.
+   *
+   * @param option The option key to look for
+   * @return An empty optional if the key was not found, else the wrapped string value
+   * @throws NoSuchElementException If the argument was found but it doesn't provide a singleton
+   */
+  default Optional<String> find(String option) {
+    var first = arguments().stream().filter(argument -> argument.key().equals(option)).findFirst();
+    if (first.isEmpty()) return Optional.empty();
+    var values = first.get().values();
+    if (values.size() == 1) return Optional.of(values.get(0));
+    throw new NoSuchElementException("Expected one value for " + option + ", but got: " + values);
   }
 
   /**
