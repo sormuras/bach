@@ -33,17 +33,20 @@ import java.util.TreeSet;
 public final class Project {
 
   public static Project of(String name, String version) {
-    return new Project(Basics.of(name, version), Structure.of(), MainSources.of());
+    var basics = Basics.of(name, version);
+    return new Project(basics, Structure.of(), MainSources.of(), TestSources.of());
   }
 
   private final Basics basics;
   private final Structure structure;
   private final MainSources main;
+  private final TestSources test;
 
-  public Project(Basics basics, Structure structure, MainSources main) {
+  public Project(Basics basics, Structure structure, MainSources main, TestSources test) {
     this.basics = basics;
     this.structure = structure;
     this.main = main;
+    this.test = test;
   }
 
   public Basics basics() {
@@ -56,6 +59,10 @@ public final class Project {
 
   public MainSources main() {
     return main;
+  }
+
+  public TestSources test() {
+    return test;
   }
 
   public List<String> toStrings() {
@@ -92,15 +99,19 @@ public final class Project {
   }
 
   public Project with(Basics basics) {
-    return new Project(basics, structure, main);
+    return new Project(basics, structure, main, test);
   }
 
   public Project with(Structure structure) {
-    return new Project(basics, structure, main);
+    return new Project(basics, structure, main, test);
   }
 
   public Project with(MainSources main) {
-    return new Project(basics, structure, main);
+    return new Project(basics, structure, main, test);
+  }
+
+  public Project with(TestSources test) {
+    return new Project(basics, structure, main, test);
   }
 
   public Project with(Version version) {
@@ -179,7 +190,40 @@ public final class Project {
   }
 
   public Project withTestSources(List<Path> testInfoFiles) {
-    return this;
+    if (testInfoFiles.isEmpty()) return with(TestSources.of());
+    var project = this;
+    var release = Runtime.version().feature();
+    var version = Version.parse(basics().version().toString() + "-test");
+    var base = structure().base();
+    var test = TestSources.of();
+    for (var info : testInfoFiles) {
+      var unit = SourceUnit.of(info);
+      var module = unit.name();
+      var file = module + '@' + version + ".jar";
+      var jar =
+          Jar.of(base.modules("test").resolve(file))
+              // .with("--verbose")
+              .withChangeDirectoryAndIncludeFiles(base.classes("test", release, module), ".");
+      test = test.with(unit.with(jar));
+    }
+    // pre-compute some arguments
+    var modulePath = Paths.join(List.of(base.modules("")));
+    var moduleSourcePaths = test.toModuleSourcePaths();
+    var modulePatches = test.toModulePatchPaths(main);
+    // generate javac call
+    var javac =
+        Javac.of()
+            .with("-d", base.classes("test", release))
+            .with("--module", String.join(",", test.toUnitNames()))
+            .with("--module-version", version)
+            .with("--module-path", modulePath)
+            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value))
+            .with(
+                modulePatches.entrySet(),
+                (tool, patch) ->
+                    tool.with("--patch-module", patch.getKey() + '=' + patch.getValue()));
+    test = test.with(javac);
+    return project.with(test);
   }
 
   public Project withTestPreviewSources(List<Path> testPreviewInfoFiles) {
