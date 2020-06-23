@@ -31,14 +31,14 @@ import java.util.List;
  *
  * @see ModuleDescriptor
  */
-public final class ModuleSource {
+public final class SourceUnit {
 
-  public static ModuleSource of(Path path) {
+  public static SourceUnit of(Path path) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
     var moduleDescriptor = Modules.describe(info);
     var sourceDirectory = SourceDirectory.of(parent);
-    return new ModuleSource(moduleDescriptor, List.of(sourceDirectory), List.of(), Jar.of());
+    return new SourceUnit(moduleDescriptor, List.of(sourceDirectory), List.of(), Jar.of());
   }
 
   private final ModuleDescriptor module;
@@ -46,7 +46,7 @@ public final class ModuleSource {
   private final List<Path> resources;
   private final Jar jar;
 
-  public ModuleSource(
+  public SourceUnit(
       ModuleDescriptor module, List<SourceDirectory> sources, List<Path> resources, Jar jar) {
     this.module = module;
     this.sources = List.copyOf(sources);
@@ -87,22 +87,22 @@ public final class ModuleSource {
     throw new IllegalStateException("No module-info.java found in: " + sources);
   }
 
-  public ModuleSource with(ModuleDescriptor module) {
-    return new ModuleSource(module, sources, resources, jar);
+  public SourceUnit with(ModuleDescriptor module) {
+    return new SourceUnit(module, sources, resources, jar);
   }
 
-  public ModuleSource with(SourceDirectory additionalDirectory, SourceDirectory... more) {
+  public SourceUnit with(SourceDirectory additionalDirectory, SourceDirectory... more) {
     var list = new ArrayList<>(sources);
     list.add(additionalDirectory);
     if (more.length > 0) Collections.addAll(list, more);
-    return new ModuleSource(module, list, resources, jar);
+    return new SourceUnit(module, list, resources, jar);
   }
 
-  public ModuleSource with(List<Path> resources) {
-    return new ModuleSource(module, sources, resources, jar);
+  public SourceUnit with(List<Path> resources) {
+    return new SourceUnit(module, sources, resources, jar);
   }
 
-  public ModuleSource with(Jar jar) {
-    return new ModuleSource(module, sources, resources, jar);
+  public SourceUnit with(Jar jar) {
+    return new SourceUnit(module, sources, resources, jar);
   }
 }

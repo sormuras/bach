@@ -22,6 +22,6 @@ class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
     var project = Project.of("greetings", "1701").withBaseDirectory("doc/project/JigsawQuickStart");
-    Bach.of(project.withModulesParsedFromBase()).build();
+    Bach.of(project.withSources()).build();
   }
 }
