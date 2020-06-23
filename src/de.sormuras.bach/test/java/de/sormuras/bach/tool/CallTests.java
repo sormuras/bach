@@ -37,6 +37,15 @@ class CallTests {
   }
 
   @Test
+  void withIterable() {
+    var call = Call.tool("any");
+    call = call.with(List.of(), (tool, object) -> tool.with(String.valueOf(object)));
+    assertTrue(call.arguments().isEmpty());
+    call = call.with(List.of(1, '2', "3"), (tool, object) -> tool.with(String.valueOf(object)));
+    assertLinesMatch(List.of("1", "2", "3"), call.toStrings());
+  }
+
+  @Test
   void withOptionsSharingOneName() {
     var call = Call.tool("any").with("x").with("y").with("y").with("z", "y");
     assertTrue(call.activated());

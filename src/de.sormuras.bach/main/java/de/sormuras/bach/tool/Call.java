@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.spi.ToolProvider;
 
 /** A tool call configuration. */
@@ -81,7 +82,7 @@ public interface Call<T extends Call<T>> {
     if (arguments.length > 0) Collections.addAll(list, arguments);
     return with(list);
   }
-  
+
   /**
    * Create new call instance with one additional argument.
    *
@@ -91,7 +92,7 @@ public interface Call<T extends Call<T>> {
   default T with(String option) {
     return with(new Argument(option, List.of()));
   }
-  
+
   /**
    * Create new call instance with one or more additional arguments.
    *
@@ -103,6 +104,21 @@ public interface Call<T extends Call<T>> {
     var strings = new ArrayList<String>();
     for (var value : values) strings.add(value.toString());
     return with(new Argument(option, strings));
+  }
+
+  /**
+   * Create new call instance for each given element.
+   *
+   * @param elements The elements to iterate and pass the function
+   * @param function The function to be applied to this tool and each element
+   * @param <E> The element type of the iterable
+   * @return A new call instance with the given function applied
+   */
+  default <E> T with(Iterable<E> elements, BiFunction<T, E, T> function) {
+    @SuppressWarnings("unchecked")
+    var that = (T) this; // var that = with(arguments());
+    for (var element : elements) that = function.apply(that, element);
+    return that;
   }
 
   /**
