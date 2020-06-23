@@ -23,11 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Logbook;
+import java.io.File;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ProjectTests {
@@ -78,21 +80,66 @@ class ProjectTests {
     assertEquals(Map.of("md5", "455be2fc44c7525e7f20099529aec037"), vintage.findDigests());
   }
 
-  @Test
-  void buildDocProjectJigsawQuickStart() {
-    var paths = Base.of("doc/project", "JigsawQuickStart");
-    var project =
-        Project.of("greetings", "1")
-            .with(paths)
-            .with(MainSources.of().with(ModuleSource.of(paths.directory("com.greetings"))));
+  @Nested
+  class DocProjectJigsawQuickStart {
 
-    var lines = new ArrayList<String>();
-    var bach =
-        Bach.of(project).with(new Logbook(string -> string.lines().forEach(lines::add), Level.ALL));
+    private final Base base = Base.of("doc/project", "JigsawQuickStart");
+    private final JavaRelease release = JavaRelease.of(9);
 
-    bach.build();
+    @Test
+    void scan() {
+      var project =
+          Project.of("greetings", "0-scan").with(base).with(release).withModulesParsedFromBase();
 
-    assertLinesMatch(
-        List.of(">> BEGIN >>", "project greetings {", ">>>>", "}", ">> END. >>"), lines);
+      assertLinesMatch(
+          List.of(
+              "-d",
+              "" + base.classes("", release.feature()),
+              "--release",
+              "" + release.feature(),
+              "--module",
+              "com.greetings",
+              "--module-version",
+              "0-scan",
+              "--module-source-path",
+              "" + base.directory()),
+          project.main().javac().toStrings());
+
+      assertLinesMatch(
+          List.of(
+              "-d",
+              "" + base.workspace("documentation", "api"),
+              "--module",
+              "com.greetings",
+              "--module-source-path",
+              "" + base.directory()),
+          project.main().javadoc().toStrings());
+
+      var greetings = project.main().unit("com.greetings").orElseThrow();
+      assertLinesMatch(
+          List.of(
+              "--create",
+              "--file",
+              "" + base.modules("").resolve("com.greetings@0-scan.jar"),
+              "-C",
+              base.classes("", release.feature()) + File.separator + "com.greetings",
+              "."),
+          greetings.jar().toStrings());
+    }
+
+    @Test
+    void build() {
+      var project =
+          Project.of("greetings", "0-build").with(base).with(release).withModulesParsedFromBase();
+
+      var lines = new ArrayList<String>();
+      var logbook = new Logbook(string -> string.lines().forEach(lines::add), Level.ALL);
+      var bach = Bach.of(project).with(logbook);
+
+      bach.build();
+
+      assertLinesMatch(
+          List.of(">> BEGIN >>", "project greetings {", ">>>>", "}", ">> END. >>"), lines);
+    }
   }
 }
