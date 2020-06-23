@@ -17,7 +17,12 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.tool.Jar;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -114,5 +119,54 @@ public final class Project {
     var map = new TreeMap<>(structure().locators());
     List.of(locators).forEach(locator -> map.put(locator.module(), locator));
     return with(new Structure(structure().base(), map));
+  }
+
+  public Project withBaseDirectory(String first, String... more) {
+    return with(Base.of(first, more));
+  }
+
+  public Project withModulesParsedFromBase() {
+    return withModules(Paths.findModuleInfoJavaFiles(structure().base().directory(), 5));
+  }
+
+  public Project withModules(List<Path> mainInfoFiles) {
+    var project = this;
+    var release = basics().release().feature();
+    var version = basics().version();
+    var base = structure().base();
+    var main = main();
+    for (var info : mainInfoFiles) {
+      var unit = ModuleSource.of(info);
+      var module = unit.name();
+      var file = module + '@' + version + ".jar";
+      var jar =
+          Jar.of(base.modules("").resolve(file))
+              // .with("--verbose")
+              .withChangeDirectoryAndIncludeFiles(base.classes("", release, module), ".");
+      project = project.with(main = main.with(unit.with(jar)));
+    }
+
+    // pre-compute some arguments
+    var releases = Runtime.version().feature() == release ? List.of() : List.of(release);
+    var moduleSourcePaths = main.toModuleSourcePaths();
+
+    // generate javac call
+    var javac =
+        Javac.of()
+            .with("-d", base.classes("", release))
+            .with(releases, (tool, value) -> tool.with("--release", value))
+            .with("--module", String.join(",", main.unitNames()))
+            .with("--module-version", version)
+            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
+    project = project.with(main = main.with(javac));
+
+    // generate javadoc call
+    var javadoc =
+        Javadoc.of()
+            .with("-d", base.workspace("documentation", "api"))
+            .with("--module", String.join(",", main.unitNames()))
+            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
+
+    return project.with(main.with(javadoc));
   }
 }
