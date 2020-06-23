@@ -37,11 +37,19 @@ import java.util.stream.Collectors;
 /** {@link Path}-related utilities. */
 public class Paths {
 
-  public static Path delete(Path directory) {
-    return delete(directory, __ -> true);
+  public static Path createDirectories(Path directory) {
+    try {
+      return Files.createDirectories(directory);
+    } catch (Exception e) {
+      throw new RuntimeException("Create directory failed: " + directory, e);
+    }
   }
 
-  public static Path delete(Path directory, Predicate<Path> filter) {
+  public static Path deleteDirectories(Path directory) {
+    return deleteDirectories(directory, __ -> true);
+  }
+
+  public static Path deleteDirectories(Path directory, Predicate<Path> filter) {
     // trivial case: delete existing empty directory or single file
     try {
       Files.deleteIfExists(directory);

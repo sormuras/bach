@@ -69,7 +69,7 @@ class PathsTests {
     void deleteEmptyDirectory() throws Exception {
       var empty = Files.createTempDirectory("deleteEmptyDirectory");
       assertTrue(Files.exists(empty));
-      var deleted = Paths.delete(empty);
+      var deleted = Paths.deleteDirectories(empty);
       assertSame(empty, deleted);
       assertTrue(Files.notExists(deleted));
     }
@@ -77,7 +77,7 @@ class PathsTests {
     @Test
     void deleteNonExistingPath() {
       var root = Path.of("does not exist");
-      assertDoesNotThrow(() -> Paths.delete(root));
+      assertDoesNotThrow(() -> Paths.deleteDirectories(root));
     }
   }
 
@@ -197,7 +197,7 @@ class PathsTests {
           "x/file-2",
           "x/file-3");
 
-      Paths.delete(root, path -> path.startsWith(root.resolve("b")));
+      Paths.deleteDirectories(root, path -> path.startsWith(root.resolve("b")));
       assertTreeWalkMatches(
           root,
           "a",
@@ -213,7 +213,7 @@ class PathsTests {
           "x/file-2",
           "x/file-3");
 
-      Paths.delete(root, path -> path.endsWith("file-0"));
+      Paths.deleteDirectories(root, path -> path.endsWith("file-0"));
       assertTreeWalkMatches(
           root,
           "a",
@@ -373,7 +373,7 @@ class PathsTests {
   /** Delete directory. */
   static Path deleteIfExists(Path directory) {
     if (Files.notExists(directory)) return directory;
-    return Paths.delete(directory, __ -> true);
+    return Paths.deleteDirectories(directory, __ -> true);
   }
 
   /** Walk directory tree structure. */
