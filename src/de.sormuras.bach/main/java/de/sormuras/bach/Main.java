@@ -17,7 +17,8 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.project.Base;
+import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
@@ -95,12 +96,12 @@ public class Main {
       err.println("TODO: Custom build program execution is not supported, yet.");
       return;
     }
-    var base = Base.of();
-    var files = Scanner.findModuleInfoJavaFiles(base, Path.of(""), 9);
-    var logbook = Logbook.ofSystem();
-    var scanner = new Scanner(logbook, base, Scanner.Layout.AUTOMATIC, files);
-    var project = scanner.scan();
-    Bach.of(project).build();
+    var directory = Path.of("").toAbsolutePath();
+    var projectName = System.getProperty("project.name", Paths.name(directory));
+    var projectVersion = System.getProperty("project.name", "1-ea");
+    var project = Project.of(projectName, projectVersion);
+    var bach = Bach.of(project.withModulesParsedFromBase());
+    bach.build();
   }
 
   private void help() {
