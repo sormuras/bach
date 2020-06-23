@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
@@ -119,6 +120,11 @@ public class Paths {
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
   public static boolean isModuleInfoJavaFile(Path path) {
     return isJavaFile(path) && name(path).equals("module-info.java");
+  }
+
+  /** Test supplied path for pointing to a Java module declaration for a given realm. */
+  public static boolean isModuleInfoJavaFileForRealm(Path info, String realm) {
+    return isModuleInfoJavaFile(info) && Collections.frequency(deque(info), realm) == 1;
   }
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
