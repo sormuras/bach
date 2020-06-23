@@ -62,6 +62,7 @@ class Build {
                             .with("-encoding", "UTF-8")
                             .with("-locale", "en")
                             .with("-Xdoclint")
+                            .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
                             .with("--show-module-contents", "all")
                             .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api"))
                     .with(
