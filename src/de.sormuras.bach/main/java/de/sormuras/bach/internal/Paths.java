@@ -134,6 +134,13 @@ public class Paths {
     return List.copyOf(paths);
   }
 
+  public static List<Path> findModuleInfoJavaFiles(Path directory, int limit) {
+    if (isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
+    var units = find(List.of(directory), limit, Paths::isModuleInfoJavaFile);
+    if (units.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
+    return List.copyOf(units);
+  }
+
   /** List content of specified directory with the given filter applied in natural order. */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
