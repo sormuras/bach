@@ -18,20 +18,26 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Concurrency;
+import de.sormuras.bach.internal.ModulesResolver;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.TestModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
+import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /** A builder builds the project assigned to the given bach instance. */
 public class Builder {
@@ -55,6 +61,8 @@ public class Builder {
     logbook.print(Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
 
     var start = Instant.now();
+
+    resolveMissingModules();
 
     var factory = Executors.defaultThreadFactory();
     try (var executor = Concurrency.shutdownOnClose(Executors.newCachedThreadPool(factory))) {
@@ -88,6 +96,39 @@ public class Builder {
     var failOnError = bach.isFailOnError();
     logbook.print(Level.WARNING, message + " -> fail-on-error: " + failOnError);
     if (failOnError) throw new AssertionError(message);
+  }
+
+  public void resolveMissingModules() {
+    var httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    var resources = new Resources(httpClient);
+    var libraries = project.structure().base().libraries();
+    class Transporter implements Consumer<Set<String>> {
+      @Override
+      public void accept(Set<String> modules) {
+        for (var module : modules) {
+          var raw = project.findLocator(module);
+          if (raw.isEmpty()) {
+            bach.logbook().print(Level.WARNING, "Module %s not locatable", module);
+            continue;
+          }
+          try {
+            var lib = Paths.createDirectories(libraries);
+            var uri = URI.create(raw.get().uri());
+            var name = module + ".jar";
+            var file = resources.copy(uri, lib.resolve(name));
+            var size = Files.size(file);
+            bach.logbook().print(Level.INFO, "%s (%d bytes) << %s", file, size, uri);
+          } catch (Exception e) {
+            throw new Error("Resolve module '" + module + "' failed: " + raw + "\n\t" + e, e);
+          }
+        }
+      }
+    }
+    var modulePaths = List.of(libraries);
+    var declared = project.toDeclaredModuleNames();
+    var resolver = new ModulesResolver(modulePaths, declared, new Transporter());
+    resolver.resolve(project.toRequiredModuleNames());
+    resolver.resolve(project.structure().requires());
   }
 
   public void compileMainSources() {
