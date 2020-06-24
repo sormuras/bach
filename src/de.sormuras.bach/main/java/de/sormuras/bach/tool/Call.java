@@ -138,6 +138,18 @@ public interface Call<T extends Call<T>> {
   }
 
   /**
+   * Create new call instance with all elements added a single arguments.
+   *
+   * @param elements The elements to iterate and add each string representation
+   * @return A new call instance with the given elements added as arguments
+   */
+  default T with(Iterable<?> elements) {
+    var list = new ArrayList<>(arguments());
+    for (var element : elements) list.add(new Argument(element.toString(), List.of()));
+    return with(list);
+  }
+
+  /**
    * Create new call instance with one or more arguments removed by their name.
    *
    * @param option The option to be removed from the list of arguments

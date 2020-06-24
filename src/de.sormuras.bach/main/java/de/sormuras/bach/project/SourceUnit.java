@@ -21,10 +21,12 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.tool.Jar;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * A module source connects a module compilation unit with source directories and resource paths.
@@ -36,9 +38,30 @@ public final class SourceUnit {
   public static SourceUnit of(Path path) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var moduleDescriptor = Modules.describe(info);
-    var sourceDirectory = SourceDirectory.of(parent);
-    return new SourceUnit(moduleDescriptor, List.of(sourceDirectory), List.of(), Jar.of());
+    var descriptor = Modules.describe(info);
+    var directories = directories(parent);
+    var resources = resources(parent);
+    return new SourceUnit(descriptor, directories, resources, Jar.of());
+  }
+
+  public static List<SourceDirectory> directories(Path infoDirectory) {
+    if (Paths.isMultiReleaseDirectory(infoDirectory)) {
+      var map = new TreeMap<Integer, Path>(); // sorted by release number
+      var paths = Paths.list(infoDirectory.getParent(), Files::isDirectory);
+      for (var path : paths) Paths.findMultiReleaseNumber(path).ifPresent(n -> map.put(n, path));
+      var sources = new ArrayList<SourceDirectory>();
+      map.forEach((release, path) -> sources.add(new SourceDirectory(path, release)));
+      return List.copyOf(sources);
+    }
+    var info = new SourceDirectory(infoDirectory, 0); // contains module-info.java file
+    var java = infoDirectory.resolveSibling("java");
+    if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(info);
+    return List.of(new SourceDirectory(java, 0), info);
+  }
+
+  public static List<Path> resources(Path infoDirectory) {
+    var resources = infoDirectory.resolveSibling("resources");
+    return Files.isDirectory(resources) ? List.of(resources) : List.of();
   }
 
   private final ModuleDescriptor module;
@@ -72,6 +95,12 @@ public final class SourceUnit {
 
   public String name() {
     return module().name();
+  }
+
+  public boolean isMultiRelease() {
+    if (sources.isEmpty()) return false;
+    if (sources.size() == 1) return sources.get(0).isTargeted();
+    return sources.stream().allMatch(SourceDirectory::isTargeted);
   }
 
   /**
