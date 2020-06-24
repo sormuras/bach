@@ -60,7 +60,7 @@ class Build {
                             .withTerminateCompilationIfWarningsOccur())
                     .with(
                         Javadoc.of()
-                            .with("-d", base.workspace("documentation", "api"))
+                            .with("-d", base.documentation("api"))
                             .with("--module", "de.sormuras.bach")
                             .with("--module-source-path", "src/*/main/java")
                             .with("-encoding", "UTF-8")

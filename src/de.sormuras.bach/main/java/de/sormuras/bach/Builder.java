@@ -23,6 +23,7 @@ import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.JUnit;
+import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.TestModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -151,7 +152,17 @@ public class Builder {
 
   public void generateApiDocumentation() {
     var javadoc = project.main().javadoc();
-    if (javadoc.activated()) bach.call(javadoc);
+    if (javadoc.activated()) {
+      bach.call(javadoc);
+      var destination = Path.of(javadoc.find("-d").orElseThrow());
+      var base = project.structure().base();
+      var file = project.basics().name() + "-" + project.basics().version() + "-api.jar";
+      var jar =
+          Jar.of(base.documentation(file))
+              .with("--no-manifest")
+              .withChangeDirectoryAndIncludeFiles(destination, ".");
+      bach.call(jar);
+    }
   }
 
   public void compileTestSources() {
