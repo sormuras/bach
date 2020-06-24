@@ -173,4 +173,8 @@ public final class Base {
   static String realm(String name) {
     return name.isEmpty() ? "" : "-" + name;
   }
+
+  public Path reports(String entry, String... more) {
+    return workspace("reports").resolve(Path.of(entry, more));
+  }
 }

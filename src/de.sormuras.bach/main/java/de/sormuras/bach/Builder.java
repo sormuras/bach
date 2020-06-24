@@ -199,7 +199,7 @@ public class Builder {
           new JUnit(module, modulePaths, List.of())
               .with("--select-module", module)
               .with("--disable-ansi-colors")
-              .with("--reports-dir", base.workspace("junit-reports", module));
+              .with("--reports-dir", base.reports("junit", module));
       if (junit.tool().isPresent()) bach.call(junit);
     }
   }
