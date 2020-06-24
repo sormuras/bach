@@ -60,18 +60,22 @@ public class Builder {
     logbook.print(Level.DEBUG, "\tlogbook.threshold = %s", logbook.threshold());
     logbook.print(Level.TRACE, "\tproject-info.java = ...\n%s", projectInfoJava);
 
+    var factory = Executors.defaultThreadFactory();
     var start = Instant.now();
 
     resolveMissingModules();
 
-    var factory = Executors.defaultThreadFactory();
-    try (var executor = Concurrency.shutdownOnClose(Executors.newCachedThreadPool(factory))) {
-      executor.submit(this::compileMainSources);
-      executor.submit(this::generateApiDocumentation);
+    if (project.isMainSourcePresent()) {
+      try (var executor = Concurrency.shutdownOnClose(Executors.newCachedThreadPool(factory))) {
+        executor.submit(this::compileMainSources);
+        executor.submit(this::generateApiDocumentation);
+      }
     }
 
-    compileTestSources();
-    executeTestModules();
+    if (project.isTestSourcePresent()) {
+      compileTestSources();
+      executeTestModules();
+    }
 
     printModuleStatistics(Level.INFO);
 
@@ -139,7 +143,7 @@ public class Builder {
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
 
-    for (var unit : project.main().units().values()) {
+    for (var unit : project.main().units().units().values()) {
       var jar = unit.jar();
       if (jar.activated()) bach.call(jar);
     }
@@ -159,7 +163,7 @@ public class Builder {
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
 
-    for (var unit : test.units().values()) {
+    for (var unit : test.units().units().values()) {
       var jar = unit.jar();
       if (jar.activated()) bach.call(jar);
     }
@@ -169,7 +173,7 @@ public class Builder {
     var base = project.structure().base();
     var test = project.test();
     var lib = base.libraries();
-    for (var unit : test.units().values()) {
+    for (var unit : test.units().units().values()) {
       var modulePaths = new ArrayList<Path>();
       modulePaths.add(Path.of(unit.jar().find("--file").orElseThrow())); // modular JAR
       modulePaths.add(base.modules("")); // main modules

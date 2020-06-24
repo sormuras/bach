@@ -115,7 +115,7 @@ class ProjectTests {
               "" + base.directory()),
           project.main().javadoc().toStrings());
 
-      var greetings = project.main().unit("com.greetings").orElseThrow();
+      var greetings = project.main().units().unit("com.greetings").orElseThrow();
       assertLinesMatch(
           List.of(
               "--create",

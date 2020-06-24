@@ -71,6 +71,14 @@ public final class Project {
     return test;
   }
 
+  public boolean isMainSourcePresent() {
+    return !main().units().isEmpty();
+  }
+
+  public boolean isTestSourcePresent() {
+    return !test().units().isEmpty();
+  }
+
   public List<String> toStrings() {
     var list = new ArrayList<String>();
     list.add(String.format("project %s {", basics().name()));
@@ -124,7 +132,7 @@ public final class Project {
   }
 
   public Stream<SourceUnit> toUnits() {
-    return Stream.concat(main().units().values().stream(), test().units().values().stream());
+    return Stream.concat(main().units().toUnits(), test().units().toUnits());
   }
 
   public Project with(Basics basics) {
@@ -181,7 +189,8 @@ public final class Project {
       else if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) previews.add(info);
       else mains.add(info);
     }
-    return withMainSources(mains).withTestSources(tests).withTestPreviewSources(previews);
+    if (!previews.isEmpty()) throw new IllegalStateException("'test-preview' not supported, yet");
+    return withMainSources(mains).withTestSources(tests);
   }
 
   public Project withMainSources(List<Path> mainInfoFiles) {
@@ -203,14 +212,14 @@ public final class Project {
 
     // pre-compute some arguments
     var releases = Runtime.version().feature() == release ? List.of() : List.of(release);
-    var moduleSourcePaths = main.toModuleSourcePaths();
+    var moduleSourcePaths = main.units().toModuleSourcePaths(false);
 
     // generate javac call
     var javac =
         Javac.of()
             .with("-d", base.classes("", release))
             .with(releases, (tool, value) -> tool.with("--release", value))
-            .with("--module", String.join(",", main.toUnitNames()))
+            .with("--module", main.units().toNames(","))
             .with("--module-version", version)
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
     project = project.with(main = main.with(javac));
@@ -219,7 +228,7 @@ public final class Project {
     var javadoc =
         Javadoc.of()
             .with("-d", base.workspace("documentation", "api"))
-            .with("--module", String.join(",", main.toUnitNames()))
+            .with("--module", main.units().toNames(","))
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
 
     return project.with(main.with(javadoc));
@@ -244,13 +253,13 @@ public final class Project {
     }
     // pre-compute some arguments
     var modulePath = Paths.join(List.of(base.modules("")));
-    var moduleSourcePaths = test.toModuleSourcePaths();
-    var modulePatches = test.toModulePatchPaths(main);
+    var moduleSourcePaths = test.units().toModuleSourcePaths(true);
+    var modulePatches = test.units().toModulePatches(main.units());
     // generate javac call
     var javac =
         Javac.of()
             .with("-d", base.classes("test", release))
-            .with("--module", String.join(",", test.toUnitNames()))
+            .with("--module", test.units().toNames(","))
             .with("--module-version", version)
             .with("--module-path", modulePath)
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value))
@@ -260,9 +269,5 @@ public final class Project {
                     tool.with("--patch-module", patch.getKey() + '=' + patch.getValue()));
     test = test.with(javac);
     return project.with(test);
-  }
-
-  public Project withTestPreviewSources(List<Path> testPreviewInfoFiles) {
-    return this;
   }
 }
