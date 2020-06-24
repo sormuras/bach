@@ -88,8 +88,7 @@ class ProjectTests {
 
     @Test
     void scan() {
-      var project =
-          Project.of("greetings", "0-scan").with(base).with(release).withSources();
+      var project = Project.of("greetings", "0-scan").with(base).with(release).withSources();
 
       assertLinesMatch(
           List.of(
@@ -108,7 +107,7 @@ class ProjectTests {
       assertLinesMatch(
           List.of(
               "-d",
-              "" + base.workspace("documentation", "api"),
+              "" + base.documentation("api"),
               "--module",
               "com.greetings",
               "--module-source-path",
@@ -129,8 +128,7 @@ class ProjectTests {
 
     @Test
     void build() {
-      var project =
-          Project.of("greetings", "0-build").with(base).with(release).withSources();
+      var project = Project.of("greetings", "0-build").with(base).with(release).withSources();
 
       var lines = new ArrayList<String>();
       var logbook = new Logbook(string -> string.lines().forEach(lines::add), Level.ALL);

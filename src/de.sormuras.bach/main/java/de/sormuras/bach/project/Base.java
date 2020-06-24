@@ -158,6 +158,10 @@ public final class Base {
     return classes(realm, release).resolve(module);
   }
 
+  public Path documentation(String entry) {
+    return workspace("documentation", entry);
+  }
+
   public Path modules(String realm) {
     return workspace("modules" + realm(realm));
   }

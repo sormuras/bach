@@ -227,7 +227,7 @@ public final class Project {
     // generate javadoc call
     var javadoc =
         Javadoc.of()
-            .with("-d", base.workspace("documentation", "api"))
+            .with("-d", base.documentation("api"))
             .with("--module", main.units().toNames(","))
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
 
