@@ -123,6 +123,21 @@ public interface Call<T extends Call<T>> {
   }
 
   /**
+   * Create new call instance for the given optional object.
+   *
+   * @param function The function to be applied to this tool and element, if present
+   * @param <E> The element type of the optional
+   * @return A new call instance with the given function applied or the same instance
+   */
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  default <E> T with(Optional<E> optional, BiFunction<T, E, T> function) {
+    @SuppressWarnings("unchecked")
+    var that = (T) this; // var that = with(arguments());
+    if (optional.isEmpty()) return that;
+    return function.apply(that, optional.get());
+  }
+
+  /**
    * Create new call instance for each given element.
    *
    * @param elements The elements to iterate and pass the function
