@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Concurrency;
+import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.ModulesResolver;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
@@ -28,6 +29,7 @@ import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.TestModule;
+import de.sormuras.bach.tool.Tool;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
@@ -76,6 +78,7 @@ public class Builder {
         executor.submit(this::compileMainSources);
         executor.submit(this::generateApiDocumentation);
       }
+      createCustomRuntimeImage();
     }
 
     if (project.isTestSourcePresent()) {
@@ -214,6 +217,32 @@ public class Builder {
               .withChangeDirectoryAndIncludeFiles(destination, ".");
       bach.call(jar);
     }
+  }
+
+  public void createCustomRuntimeImage() {
+    // https://medium.com/@david.delabassee/jlink-stripping-out-native-and-java-debug-information-507e7b587dd7
+    // .with("--strip-debug")
+    var base = project.structure().base();
+    var modulePaths = new ArrayList<Path>();
+    modulePaths.add(base.modules(""));
+    modulePaths.add(base.libraries());
+    if (Modules.isAutomaticModulePresent(modulePaths)) return;
+
+    var launcher = project.basics().name();
+    var main = project.main();
+    var mainModule = Modules.findMainModule(main.units().toUnits().map(SourceUnit::module));
+    var image = base.workspace("image");
+    var jlink =
+        Tool.of("jlink")
+            .with("--add-modules", main.units().toNames(","))
+            .with("--module-path", Paths.join(modulePaths))
+            .with("--output", image)
+            .with(mainModule, (tool, module) -> tool.with("--launcher", launcher + '=' + module))
+            .with("--compress", "2")
+            .with("--no-header-files")
+            .with("--no-man-pages");
+    Paths.deleteDirectories(image);
+    bach.call(jlink);
   }
 
   public void compileTestSources() {

@@ -159,6 +159,12 @@ public class Modules {
     return pattern;
   }
 
+  public static boolean isAutomaticModulePresent(List<Path> modulePaths) {
+    return ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+        .map(ModuleReference::descriptor)
+        .anyMatch(ModuleDescriptor::isAutomatic);
+  }
+
   public static Set<String> declared(ModuleFinder finder) {
     return declared(finder.findAll().stream().map(ModuleReference::descriptor));
   }
