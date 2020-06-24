@@ -22,12 +22,14 @@ import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.SourceDirectory;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.TestSources;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import java.io.File;
 import java.nio.file.Path;
 
 /** Bach's own build program. */
@@ -54,7 +56,6 @@ class Build {
                             .withCompileForJavaRelease(release)
                             .with("-encoding", "UTF-8")
                             .withRecommendedWarnings()
-                            .withWarnings("all", "-preview")
                             .withTerminateCompilationIfWarningsOccur())
                     .with(
                         Javadoc.of()
@@ -82,18 +83,37 @@ class Build {
                     .with(
                         Javac.of()
                             .with("-d", base.classes("test", feature))
-                            .with("--module", "test.base")
-                            .with("--module-source-path", "src/*/test/java")
+                            .with("--module", "de.sormuras.bach,test.base")
+                            .with("--module-version", version + "-test")
+                            .with(
+                                "--module-source-path",
+                                "src/*/test/java" + File.pathSeparator + "src/*/test/java-module")
                             .with("--module-path", "lib")
+                            .with(
+                                "--patch-module",
+                                "de.sormuras.bach="
+                                    + base.modules("")
+                                        .resolve("de.sormuras.bach@" + version + ".jar"))
                             .with("-encoding", "UTF-8")
+                            .withWarnings("all", "-preview")
                             .withRecommendedWarnings()
                             .withTerminateCompilationIfWarningsOccur())
                     .with(
+                        SourceUnit.of(Path.of("src/de.sormuras.bach/test/java-module"))
+                            .with(SourceDirectory.of(Path.of("src/de.sormuras.bach/test/java")))
+                            .with(
+                                Jar.of(
+                                        base.modules("test")
+                                            .resolve("de.sormuras.bach@" + version + "-test.jar"))
+                                    .withChangeDirectoryAndIncludeFiles(
+                                        base.classes("test", feature, "de.sormuras.bach"), ".")
+                                    .withChangeDirectoryAndIncludeFiles(
+                                        base.classes("", release, "de.sormuras.bach"), ".")),
                         SourceUnit.of(Path.of("src/test.base/test/java"))
                             .with(
                                 Jar.of(
                                         base.modules("test")
-                                            .resolve("test.base@" + version + ".jar"))
+                                            .resolve("test.base@" + version + "-test.jar"))
                                     .withChangeDirectoryAndIncludeFiles(
                                         base.classes("test", feature, "test.base"), "."))))
             .with(
