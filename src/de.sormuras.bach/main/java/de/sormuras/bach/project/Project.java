@@ -202,10 +202,12 @@ public final class Project {
     for (var info : mainInfoFiles) {
       var unit = SourceUnit.of(info);
       var module = unit.name();
+      var mainClass = Modules.findMainClass(info, module);
       var file = module + '@' + version + ".jar";
       var jar =
           Jar.of(base.modules("").resolve(file))
               // .with("--verbose")
+              .with(mainClass, (tool, name) -> tool.with("--main-class", name))
               // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
               .withChangeDirectoryAndIncludeFiles(base.classes("", release, module), ".");
       project = project.with(main = main.with(unit.with(jar)));
