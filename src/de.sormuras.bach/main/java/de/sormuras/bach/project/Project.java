@@ -206,6 +206,7 @@ public final class Project {
       var jar =
           Jar.of(base.modules("").resolve(file))
               // .with("--verbose")
+              // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
               .withChangeDirectoryAndIncludeFiles(base.classes("", release, module), ".");
       project = project.with(main = main.with(unit.with(jar)));
     }

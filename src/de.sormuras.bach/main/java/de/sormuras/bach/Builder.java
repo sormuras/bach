@@ -22,8 +22,11 @@ import de.sormuras.bach.internal.ModulesResolver;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.SourceDirectory;
+import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
+import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.TestModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,9 +37,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
@@ -144,10 +149,53 @@ public class Builder {
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
 
+    var base = project.structure().base();
     for (var unit : project.main().units().units().values()) {
       var jar = unit.jar();
+      if (unit.isMultiRelease()) {
+        for (var directory : unit.sources()) compile("", unit, directory);
+        var module = unit.name();
+        var sources = new ArrayDeque<>(unit.sources());
+        var sources0 = sources.removeFirst();
+        var classes0 = base.classes("", sources0.release(), module);
+        jar = jar.without("-C");
+        jar = jar.withChangeDirectoryAndIncludeFiles(classes0, ".");
+        // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
+        if (Files.notExists(sources0.path().resolve("module-info.java"))) {
+          for (var source : sources) {
+            var classes = base.classes("", source.release(), module);
+            if (Files.exists(source.path().resolve("module-info.java"))) {
+              jar = jar.withChangeDirectoryAndIncludeFiles(classes, "module-info.class");
+              break;
+            }
+          }
+        }
+        for (var source : sources) {
+          jar =
+              jar.with("--release", source.release())
+                  .withChangeDirectoryAndIncludeFiles(
+                      base.classes("", source.release(), module), ".");
+          // if (jarModuleWithSources) arguments.add("-C", source.path(), ".");
+        }
+      }
       if (jar.activated()) bach.call(jar);
     }
+  }
+
+  void compile(String realm, SourceUnit unit, SourceDirectory directory) {
+    var base = project.structure().base();
+    var module = unit.name();
+    var sourcePaths = List.of(unit.sources().get(0).path(), directory.path());
+    var baseClasses = base.classes(realm, project.basics().release().feature());
+    var javac =
+        Javac.of()
+            .with("--release", directory.release())
+            .with("-implicit:none") // generate classes for explicitly referenced source files only
+            .with("-d", base.classes(realm, directory.release(), module))
+            .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
+            .with("--class-path", Paths.join(List.of(baseClasses)))
+            .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
+    bach.call(javac);
   }
 
   public void generateApiDocumentation() {
