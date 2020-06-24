@@ -55,6 +55,7 @@ class Build {
                             .with("--module-version", version)
                             .withCompileForJavaRelease(release)
                             .with("-encoding", "UTF-8")
+                            .with("-parameters")
                             .withRecommendedWarnings()
                             .withTerminateCompilationIfWarningsOccur())
                     .with(
