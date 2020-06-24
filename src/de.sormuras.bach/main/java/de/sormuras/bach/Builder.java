@@ -161,20 +161,23 @@ public class Builder {
         jar = jar.without("-C");
         jar = jar.withChangeDirectoryAndIncludeFiles(classes0, ".");
         // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
-        if (Files.notExists(sources0.path().resolve("module-info.java"))) {
+        var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
+        if (Files.notExists(classes0.resolve("module-info.class"))) {
           for (var source : sources) {
             var classes = base.classes("", source.release(), module);
-            if (Files.exists(source.path().resolve("module-info.java"))) {
+            if (Files.exists(classes.resolve("module-info.class"))) {
               jar = jar.withChangeDirectoryAndIncludeFiles(classes, "module-info.class");
+              var size = Paths.list(classes, __ -> true).size();
+              if (size == 1) sourceDirectoryWithSolitaryModuleInfoClass = source;
               break;
             }
           }
         }
         for (var source : sources) {
-          jar =
-              jar.with("--release", source.release())
-                  .withChangeDirectoryAndIncludeFiles(
-                      base.classes("", source.release(), module), ".");
+          if (source == sourceDirectoryWithSolitaryModuleInfoClass) continue;
+          var classes = base.classes("", source.release(), module);
+          jar = jar.with("--release", source.release());
+          jar = jar.withChangeDirectoryAndIncludeFiles(classes, ".");
           // if (jarModuleWithSources) arguments.add("-C", source.path(), ".");
         }
       }
