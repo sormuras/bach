@@ -120,6 +120,8 @@ class ProjectTests {
               "--create",
               "--file",
               "" + base.modules("").resolve("com.greetings@0-scan.jar"),
+              "--main-class",
+              "com.greetings.Main",
               "-C",
               base.classes("", release.feature()) + File.separator + "com.greetings",
               "."),
