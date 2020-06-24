@@ -77,7 +77,9 @@ class Build {
                                     .with("--verbose")
                                     .with("--main-class", "de.sormuras.bach.Main")
                                     .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("", release, "de.sormuras.bach"), "."))))
+                                        base.classes("", release, "de.sormuras.bach"), ".")
+                                    .withChangeDirectoryAndIncludeFiles(
+                                        Path.of("src/de.sormuras.bach/main/java"), "."))))
             .with(
                 TestSources.of()
                     .with(
