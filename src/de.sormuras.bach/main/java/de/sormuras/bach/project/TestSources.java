@@ -17,28 +17,20 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.tool.Javac;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
-/** A set of module units and tool arguments for testing main modules. */
+/** A test module sources descriptor. */
 public final class TestSources {
 
   public static TestSources of() {
-    return new TestSources(Map.of(), Javac.of());
+    return new TestSources(SourceUnits.of(), Javac.of());
   }
 
-  private final Map<String, SourceUnit> units;
+  private final SourceUnits units;
   private final Javac javac;
 
-  public TestSources(Map<String, SourceUnit> units, Javac javac) {
-    this.units = Map.copyOf(units);
+  public TestSources(SourceUnits units, Javac javac) {
+    this.units = units;
     this.javac = javac;
   }
 
@@ -46,7 +38,7 @@ public final class TestSources {
     return "test";
   }
 
-  public Map<String, SourceUnit> units() {
+  public SourceUnits units() {
     return units;
   }
 
@@ -54,45 +46,8 @@ public final class TestSources {
     return javac;
   }
 
-  public Optional<SourceUnit> unit(String name) {
-    return Optional.ofNullable(units.get(name));
-  }
-
-  public List<String> toUnitNames() {
-    return units.keySet().stream().sorted().collect(Collectors.toUnmodifiableList());
-  }
-
-  public List<String> toModuleSourcePaths() {
-    var paths = new ArrayList<String>();
-    var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
-    for (var unit : units().values()) {
-      var sourcePaths = unit.toRelevantSourcePaths();
-      specific.put(unit.name(), sourcePaths);
-    }
-    if (specific.isEmpty()) throw new IllegalStateException("");
-    var entries = specific.entrySet();
-    for (var entry : entries) paths.add(entry.getKey() + "=" + Paths.join(entry.getValue()));
-    return List.copyOf(paths);
-  }
-
-  public Map<String, String> toModulePatchPaths(MainSources main) {
-    if (units.isEmpty() || main.units().isEmpty()) return Map.of();
-    var patches = new TreeMap<String, String>();
-    for (var unit : units.values()) {
-      var module = unit.name();
-      main.units().values().stream()
-          .filter(up -> up.name().equals(module))
-          .findAny()
-          .ifPresent(up -> patches.put(module, Paths.join(up.toRelevantSourcePaths())));
-    }
-    return patches;
-  }
-
-  public TestSources with(SourceUnit unit, SourceUnit... more) {
-    var mergedUnits = new TreeMap<>(units);
-    mergedUnits.put(unit.module().name(), unit);
-    for (var m : more) mergedUnits.put(m.module().name(), unit);
-    return new TestSources(mergedUnits, javac);
+  public TestSources with(SourceUnit... units) {
+    return new TestSources(units().with(units), javac);
   }
 
   public TestSources with(Javac javac) {

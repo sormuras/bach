@@ -17,39 +17,27 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.internal.Modules;
-import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
-import java.io.File;
-import java.lang.module.FindException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
-/** A set of module units and tool arguments. */
+/** A main module sources descriptor. */
 public final class MainSources {
 
   public static MainSources of() {
-    return new MainSources(Map.of(), Javac.of(), Javadoc.of());
+    return new MainSources(SourceUnits.of(), Javac.of(), Javadoc.of());
   }
 
-  private final Map<String, SourceUnit> units;
+  private final SourceUnits units;
   private final Javac javac;
   private final Javadoc javadoc;
 
-  public MainSources(Map<String, SourceUnit> units, Javac javac, Javadoc javadoc) {
-    this.units = Map.copyOf(units);
+  public MainSources(SourceUnits units, Javac javac, Javadoc javadoc) {
+    this.units = units;
     this.javac = javac;
     this.javadoc = javadoc;
   }
 
-  public Map<String, SourceUnit> units() {
+  public SourceUnits units() {
     return units;
   }
 
@@ -61,38 +49,8 @@ public final class MainSources {
     return javadoc;
   }
 
-  public Optional<SourceUnit> unit(String name) {
-    return Optional.ofNullable(units.get(name));
-  }
-
-  public List<String> toUnitNames() {
-    return units.keySet().stream().sorted().collect(Collectors.toUnmodifiableList());
-  }
-
-  public List<String> toModuleSourcePaths() {
-    var paths = new ArrayList<String>();
-    var patterns = new TreeSet<String>(); // "src:etc/*/java"
-    var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
-    for (var unit : units().values()) {
-      var sourcePaths = unit.toRelevantSourcePaths();
-      try {
-        for (var path : sourcePaths) patterns.add(Modules.modulePatternForm(path, unit.name()));
-      } catch (FindException e) {
-        specific.put(unit.name(), sourcePaths);
-      }
-    }
-    if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("");
-    if (!patterns.isEmpty()) paths.add(String.join(File.pathSeparator, patterns));
-    var entries = specific.entrySet();
-    for (var entry : entries) paths.add(entry.getKey() + "=" + Paths.join(entry.getValue()));
-    return List.copyOf(paths);
-  }
-
-  public MainSources with(SourceUnit unit, SourceUnit... more) {
-    var mergedUnits = new TreeMap<>(units);
-    mergedUnits.put(unit.module().name(), unit);
-    for (var m : more) mergedUnits.put(m.module().name(), unit);
-    return new MainSources(mergedUnits, javac, javadoc);
+  public MainSources with(SourceUnit... units) {
+    return new MainSources(units().with(units), javac, javadoc);
   }
 
   public MainSources with(Javac javac) {
