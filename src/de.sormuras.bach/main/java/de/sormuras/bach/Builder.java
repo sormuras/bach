@@ -29,7 +29,6 @@ import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.TestModule;
-import de.sormuras.bach.tool.Tool;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
@@ -220,28 +219,18 @@ public class Builder {
   }
 
   public void createCustomRuntimeImage() {
-    // https://medium.com/@david.delabassee/jlink-stripping-out-native-and-java-debug-information-507e7b587dd7
-    // .with("--strip-debug")
-    var base = project.structure().base();
-    var modulePaths = new ArrayList<Path>();
-    modulePaths.add(base.modules(""));
-    modulePaths.add(base.libraries());
-    if (Modules.isAutomaticModulePresent(modulePaths)) return;
+    var jlink = project.main().jlink();
+    if (!jlink.activated()) return;
 
-    var launcher = project.basics().name();
-    var main = project.main();
-    var mainModule = Modules.findMainModule(main.units().toUnits().map(SourceUnit::module));
-    var image = base.workspace("image");
-    var jlink =
-        Tool.of("jlink")
-            .with("--add-modules", main.units().toNames(","))
-            .with("--module-path", Paths.join(modulePaths))
-            .with("--output", image)
-            .with(mainModule, (tool, module) -> tool.with("--launcher", launcher + '=' + module))
-            .with("--compress", "2")
-            .with("--no-header-files")
-            .with("--no-man-pages");
-    Paths.deleteDirectories(image);
+    var modulePaths = Paths.parse(jlink.find("--module-path").orElseThrow());
+    var autos = Modules.findAutomaticModules(modulePaths);
+    if (autos.size() > 0) {
+      bach.logbook().print(Level.WARNING, "Automatic module(s) detected: %s", autos);
+      return;
+    }
+
+    var output = Path.of(jlink.find("--output").orElseThrow());
+    Paths.deleteDirectories(output);
     bach.call(jlink);
   }
 
