@@ -22,10 +22,11 @@ import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Locator;
 import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceDirectory;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.TestSources;
+import de.sormuras.bach.tool.JLink;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -69,6 +70,15 @@ class Build {
                             .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
                             .with("--show-module-contents", "all")
                             .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api"))
+                    .with(
+                        JLink.of()
+                            .with("--add-modules", "de.sormuras.bach")
+                            .with("--module-path", base.modules("") + File.pathSeparator + "lib")
+                            .with("--output", base.workspace("image"))
+                            .with("--launcher", "bach=de.sormuras.bach")
+                            .with("--compress", "2")
+                            .with("--no-header-files")
+                            .with("--no-man-pages"))
                     .with(
                         SourceUnit.of(Path.of("src/de.sormuras.bach/main/java"))
                             .with(
