@@ -23,6 +23,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -169,6 +170,12 @@ public class Paths {
   /** Join a collection of path objects to a string using the system-dependent separator. */
   public static String join(Collection<Path> paths) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
+  public static List<Path> parse(String path) {
+    var paths = new ArrayList<Path>();
+    for (var element : path.split(File.pathSeparator)) paths.add(Path.of(element));
+    return List.copyOf(paths);
   }
 
   private Paths() {}
