@@ -177,6 +177,10 @@ public final class Project {
             structure().base(), structure().requires(), structure().locators().with(locators)));
   }
 
+  public Project withDynamicLocatorLookupAndVolatileVersions() {
+    return withDynamicLocatorLookup(Map.of());
+  }
+
   public Project withDynamicLocatorLookup(Map<String, String> versions) {
     return with(
         new Structure(

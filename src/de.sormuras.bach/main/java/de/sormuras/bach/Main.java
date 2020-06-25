@@ -100,7 +100,7 @@ public class Main {
     var projectName = System.getProperty("project.name", Paths.name(directory));
     var projectVersion = System.getProperty("project.name", "1-ea");
     var project = Project.of(projectName, projectVersion);
-    var bach = Bach.of(project.withSources());
+    var bach = Bach.of(project.withSources().withDynamicLocatorLookupAndVolatileVersions());
     bach.build();
   }
 
