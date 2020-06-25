@@ -125,7 +125,8 @@ public interface Call<T extends Call<T>> {
   /**
    * Create new call instance for the given optional object.
    *
-   * @param function The function to be applied to this tool and element, if present
+   * @param optional The optional object possibly containing an element
+   * @param function The function to be applied to this tool call and element, if present
    * @param <E> The element type of the optional
    * @return A new call instance with the given function applied or the same instance
    */
