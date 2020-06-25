@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -174,6 +175,14 @@ public final class Project {
     return with(
         new Structure(
             structure().base(), structure().requires(), structure().locators().with(locators)));
+  }
+
+  public Project withDynamicLocatorLookup(Map<String, String> versions) {
+    return with(
+        new Structure(
+            structure().base(),
+            structure().requires(),
+            structure().locators().withDynamicSormurasModulesLocatorFactory(versions)));
   }
 
   public Project withBaseDirectory(String first, String... more) {

@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.SormurasModulesProperties;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -61,7 +62,21 @@ public final class Locators {
     return new Locators(fixed, dynamic);
   }
 
-  public Locators withoutDynamicLocator() {
-    return with(__ -> Optional.empty());
+  public Locators withDynamicSormurasModulesLocatorFactory(Map<String, String> versions) {
+    return with(new SormurasModulesLocatorFactory(versions));
+  }
+
+  static class SormurasModulesLocatorFactory implements Function<String, Optional<Locator>> {
+
+    private final SormurasModulesProperties properties;
+
+    public SormurasModulesLocatorFactory(Map<String, String> versions) {
+      this.properties = new SormurasModulesProperties(versions);
+    }
+
+    @Override
+    public Optional<Locator> apply(String module) {
+      return properties.lookup(module).map(uri -> new Locator(module, uri));
+    }
   }
 }
