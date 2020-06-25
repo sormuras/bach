@@ -52,6 +52,17 @@ public interface Call<T extends Call<T>> {
   T with(List<Argument> arguments);
 
   /**
+   * Return {@code this} instance.
+   *
+   * @return This instance.
+   */
+  default T self() {
+    @SuppressWarnings("unchecked")
+    var self = (T) this; // var self = with(arguments());
+    return self;
+  }
+
+  /**
    * Return the activation state of this tool call configuration.
    *
    * @return {@code true} if this tool call is to executed, else {@code false}
@@ -123,19 +134,16 @@ public interface Call<T extends Call<T>> {
   }
 
   /**
-   * Create new call instance for the given optional object.
+   * Create new call instance with one or more arguments if the condition is {@code true}.
    *
-   * @param optional The optional object possibly containing an element
-   * @param function The function to be applied to this tool call and element, if present
-   * @param <E> The element type of the optional
-   * @return A new call instance with the given function applied or the same instance
+   * @param condition If false, the same instance is returned
+   * @param option The option to used as an additional argument
+   * @param values The possible empty array of additional arguments
+   * @return A new call instance with the given arguments or this instance
    */
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  default <E> T with(Optional<E> optional, BiFunction<T, E, T> function) {
-    @SuppressWarnings("unchecked")
-    var that = (T) this; // var that = with(arguments());
-    if (optional.isEmpty()) return that;
-    return function.apply(that, optional.get());
+  default T with(boolean condition, String option, Object... values) {
+    if (!condition) return self();
+    return with(option, values);
   }
 
   /**
@@ -147,10 +155,9 @@ public interface Call<T extends Call<T>> {
    * @return A new call instance with the given function applied
    */
   default <E> T with(Iterable<E> elements, BiFunction<T, E, T> function) {
-    @SuppressWarnings("unchecked")
-    var that = (T) this; // var that = with(arguments());
-    for (var element : elements) that = function.apply(that, element);
-    return that;
+    var self = self();
+    for (var element : elements) self = function.apply(self, element);
+    return self;
   }
 
   /**
