@@ -70,6 +70,16 @@ public class Modules {
                 + "\\s*;"); // end marker
   }
 
+  public static List<Path> findAutomaticModules(List<Path> modulePaths) {
+    return ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
+        .filter(ref -> ref.descriptor().isAutomatic())
+        .map(ModuleReference::location)
+        .map(Optional::orElseThrow)
+        .map(Path::of)
+        .sorted()
+        .collect(Collectors.toList());
+  }
+
   /** Return name of main class of the specified module. */
   public static Optional<String> findMainClass(Path info, String module) {
     var main = Path.of(module.replace('.', '/'), "Main.java");
@@ -157,12 +167,6 @@ public class Modules {
     if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
     if (pattern.startsWith("*")) return "." + File.separator + pattern;
     return pattern;
-  }
-
-  public static boolean isAutomaticModulePresent(List<Path> modulePaths) {
-    return ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
-        .map(ModuleReference::descriptor)
-        .anyMatch(ModuleDescriptor::isAutomatic);
   }
 
   public static Set<String> declared(ModuleFinder finder) {
