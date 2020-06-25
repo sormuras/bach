@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.tool.JLink;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 
@@ -24,17 +25,19 @@ import de.sormuras.bach.tool.Javadoc;
 public final class MainSources {
 
   public static MainSources of() {
-    return new MainSources(SourceUnits.of(), Javac.of(), Javadoc.of());
+    return new MainSources(SourceUnits.of(), Javac.of(), Javadoc.of(), JLink.of());
   }
 
   private final SourceUnits units;
   private final Javac javac;
   private final Javadoc javadoc;
+  private final JLink jlink;
 
-  public MainSources(SourceUnits units, Javac javac, Javadoc javadoc) {
+  public MainSources(SourceUnits units, Javac javac, Javadoc javadoc, JLink jlink) {
     this.units = units;
     this.javac = javac;
     this.javadoc = javadoc;
+    this.jlink = jlink;
   }
 
   public SourceUnits units() {
@@ -49,15 +52,23 @@ public final class MainSources {
     return javadoc;
   }
 
+  public JLink jlink() {
+    return jlink;
+  }
+
   public MainSources with(SourceUnit... units) {
-    return new MainSources(units().with(units), javac, javadoc);
+    return new MainSources(units().with(units), javac, javadoc, jlink);
   }
 
   public MainSources with(Javac javac) {
-    return new MainSources(units, javac, javadoc);
+    return new MainSources(units, javac, javadoc, jlink);
   }
 
   public MainSources with(Javadoc javadoc) {
-    return new MainSources(units, javac, javadoc);
+    return new MainSources(units, javac, javadoc, jlink);
+  }
+
+  public MainSources with(JLink jlink) {
+    return new MainSources(units, javac, javadoc, jlink);
   }
 }
