@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import java.util.Map;
 import java.util.Set;
 
 /** A modular project structure. */
@@ -29,24 +28,24 @@ public final class Structure {
    * @return A new default structure object
    */
   public static Structure of() {
-    return new Structure(Base.of(), Set.of(), Map.of());
+    return new Structure(Base.of(), Set.of(), Locators.of());
   }
 
   private final Base base;
   private final Set<String> requires;
-  private final Map<String, Locator> locators;
+  private final Locators locators;
 
   /**
    * Initializes a new structure instance with the given component values.
    *
    * @param base The base instance
    * @param requires The names of required modules
-   * @param locators The locator map
+   * @param locators The locator manager
    */
-  public Structure(Base base, Set<String> requires, Map<String, Locator> locators) {
+  public Structure(Base base, Set<String> requires, Locators locators) {
     this.base = base;
     this.requires = Set.copyOf(requires);
-    this.locators = Map.copyOf(locators);
+    this.locators = locators;
   }
 
   /**
@@ -68,11 +67,11 @@ public final class Structure {
   }
 
   /**
-   * Return the locators map of this project.
+   * Return the locator manager of this project.
    *
-   * @return A map of locator
+   * @return A locators object
    */
-  public Map<String, Locator> locators() {
+  public Locators locators() {
     return locators;
   }
 }

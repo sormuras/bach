@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,7 +95,7 @@ public final class Project {
     list.add("  //    requires " + toRequiredModuleNames());
     list.add("  //    external " + toExternalModuleNames());
 
-    var locators = new TreeSet<>(structure().locators().values());
+    var locators = new TreeSet<>(structure().locators().fixed().values());
     if (!locators.isEmpty()) {
       list.add("");
       for (var locator : locators) {
@@ -110,7 +109,7 @@ public final class Project {
   }
 
   public Optional<Locator> findLocator(String module) {
-    return Optional.ofNullable(structure.locators().get(module));
+    return structure().locators().findLocator(module);
   }
 
   public String toNameAndVersion() {
@@ -172,9 +171,9 @@ public final class Project {
   }
 
   public Project with(Locator... locators) {
-    var map = new TreeMap<>(structure().locators());
-    List.of(locators).forEach(locator -> map.put(locator.module(), locator));
-    return with(new Structure(structure().base(), structure().requires(), map));
+    return with(
+        new Structure(
+            structure().base(), structure().requires(), structure().locators().with(locators)));
   }
 
   public Project withBaseDirectory(String first, String... more) {
