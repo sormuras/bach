@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.tool.JLink;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -194,11 +195,12 @@ public final class Project {
   }
 
   public Project withMainSources(List<Path> mainInfoFiles) {
-    var project = this;
+    var main = MainSources.of();
+
     var release = basics().release().feature();
     var version = basics().version();
     var base = structure().base();
-    var main = main();
+
     for (var info : mainInfoFiles) {
       var unit = SourceUnit.of(info);
       var module = unit.name();
@@ -210,31 +212,50 @@ public final class Project {
               .with(mainClass, (tool, name) -> tool.with("--main-class", name))
               // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
               .withChangeDirectoryAndIncludeFiles(base.classes("", release, module), ".");
-      project = project.with(main = main.with(unit.with(jar)));
+      main = main.with(unit.with(jar));
     }
 
     // pre-compute some arguments
-    var releases = Runtime.version().feature() == release ? List.of() : List.of(release);
+    var moduleNames = main.units().toNames(",");
     var moduleSourcePaths = main.units().toModuleSourcePaths(false);
 
     // generate javac call
+    var releases = Runtime.version().feature() == release ? Optional.empty() : Optional.of(release);
     var javac =
         Javac.of()
             .with("-d", base.classes("", release))
             .with(releases, (tool, value) -> tool.with("--release", value))
-            .with("--module", main.units().toNames(","))
+            .with("--module", moduleNames)
             .with("--module-version", version)
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
-    project = project.with(main = main.with(javac));
+    main = main.with(javac);
 
     // generate javadoc call
     var javadoc =
         Javadoc.of()
             .with("-d", base.documentation("api"))
-            .with("--module", main.units().toNames(","))
+            .with("--module", moduleNames)
             .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
+    main = main.with(javadoc);
 
-    return project.with(main.with(javadoc));
+    // generate jlink call
+    var launcher = basics().name();
+    var modulePaths = List.of(base.modules(""), base.libraries());
+    var mainModule = Modules.findMainModule(main.units().toUnits().map(SourceUnit::module));
+    var jlink =
+        JLink.of()
+            .with("--add-modules", moduleNames)
+            .with("--module-path", Paths.join(modulePaths))
+            .with("--output", base.workspace("image"))
+            .with(mainModule, (tool, module) -> tool.with("--launcher", launcher + '=' + module))
+            .with("--compress", "2")
+            .with("--no-header-files")
+            .with("--no-man-pages");
+    // https://medium.com/@david.delabassee/jlink-stripping-out-native-and-java-debug-information-507e7b587dd7
+    // .with("--strip-debug")
+    main = main.with(jlink);
+
+    return with(main);
   }
 
   public Project withTestSources(List<Path> testInfoFiles) {
@@ -255,7 +276,7 @@ public final class Project {
       test = test.with(unit.with(jar));
     }
     // pre-compute some arguments
-    var modulePath = Paths.join(List.of(base.modules("")));
+    var modulePath = Paths.join(List.of(base.modules(""), base.libraries()));
     var moduleSourcePaths = test.units().toModuleSourcePaths(true);
     var modulePatches = test.units().toModulePatches(main.units());
     // generate javac call
