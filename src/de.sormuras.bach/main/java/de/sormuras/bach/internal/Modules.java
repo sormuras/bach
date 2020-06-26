@@ -30,6 +30,7 @@ import java.lang.module.ResolutionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +71,7 @@ public class Modules {
                 + "\\s*;"); // end marker
   }
 
+  /** Return the paths of all automatic modules a finder can locate in the given module paths. */
   public static List<Path> findAutomaticModules(List<Path> modulePaths) {
     return ModuleFinder.of(modulePaths.toArray(Path[]::new)).findAll().stream()
         .filter(ref -> ref.descriptor().isAutomatic())
@@ -191,6 +193,14 @@ public class Modules {
         .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
         .map(Requires::name)
         .collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  /** Return distinct names of external modules. */
+  public static Set<String> external(Collection<String> declared, Collection<String> required) {
+    var externalModuleNames = new TreeSet<>(required);
+    externalModuleNames.removeAll(declared);
+    externalModuleNames.removeAll(declared(ModuleFinder.ofSystem()));
+    return externalModuleNames;
   }
 
   private Modules() {}
