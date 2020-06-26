@@ -24,7 +24,6 @@ import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
-import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -122,10 +121,7 @@ public final class Project {
   }
 
   public Set<String> toExternalModuleNames() {
-    var externals = new TreeSet<>(toRequiredModuleNames());
-    externals.removeAll(toDeclaredModuleNames());
-    externals.removeAll(Modules.declared(ModuleFinder.ofSystem()));
-    return externals;
+    return Modules.external(toDeclaredModuleNames(), toRequiredModuleNames());
   }
 
   public Set<String> toRequiredModuleNames() {
