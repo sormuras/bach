@@ -203,11 +203,14 @@ public final class Project {
   }
 
   public Project withMainSources(List<Path> mainInfoFiles) {
+    if (mainInfoFiles.isEmpty()) return with(MainSources.of());
     var main = MainSources.of();
 
     var release = basics().release().feature();
     var version = basics().version();
     var base = structure().base();
+    var declaredModuleNames = new TreeSet<String>();
+    var requiredModuleNames = new TreeSet<String>();
 
     for (var info : mainInfoFiles) {
       var unit = SourceUnit.of(info);
@@ -216,34 +219,40 @@ public final class Project {
       var file = module + '@' + version + ".jar";
       var jar =
           Jar.of(base.modules("").resolve(file))
-              // .with("--verbose")
-              .with(mainClass, (tool, name) -> tool.with("--main-class", name))
+              .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               // if (jarModuleWithSources) arguments.add("-C", sources0.path(), ".");
               .withChangeDirectoryAndIncludeFiles(base.classes("", release, module), ".");
       main = main.with(unit.with(jar));
+      declaredModuleNames.add(module);
+      requiredModuleNames.addAll(Modules.required(Stream.of(unit.module())));
     }
 
     // pre-compute some arguments
-    var moduleNames = main.units().toNames(",");
+    var moduleNames = String.join(",", declaredModuleNames);
     var moduleSourcePaths = main.units().toModuleSourcePaths(false);
+    var externalModuleNames = Modules.external(declaredModuleNames, requiredModuleNames);
 
     // generate javac call
-    var releases = Runtime.version().feature() == release ? Optional.empty() : Optional.of(release);
     var javac =
         Javac.of()
-            .with("-d", base.classes("", release))
-            .with(releases, (tool, value) -> tool.with("--release", value))
             .with("--module", moduleNames)
             .with("--module-version", version)
-            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
+            .withModuleSourcePaths(moduleSourcePaths)
+            .with(externalModuleNames.size() > 0, "--module-path", base.libraries())
+            .with(Runtime.version().feature() != release, "--release", release)
+            .withRecommendedWarnings()
+            .with("-d", base.classes("", release));
     main = main.with(javac);
 
     // generate javadoc call
     var javadoc =
         Javadoc.of()
-            .with("-d", base.documentation("api"))
             .with("--module", moduleNames)
-            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value));
+            .with(moduleSourcePaths, (call, value) -> call.with("--module-source-path", value))
+            .with(externalModuleNames.size() > 0, "--module-path", base.libraries())
+            .with("-Xdoclint")
+            .with("-d", base.documentation("api"));
+
     main = main.with(javadoc);
 
     // generate jlink call
@@ -254,13 +263,11 @@ public final class Project {
         JLink.of()
             .with("--add-modules", moduleNames)
             .with("--module-path", Paths.join(modulePaths))
-            .with("--output", base.workspace("image"))
-            .with(mainModule, (tool, module) -> tool.with("--launcher", launcher + '=' + module))
+            .with(mainModule.isPresent(), "--launcher", launcher + '=' + mainModule.orElse("?"))
             .with("--compress", "2")
             .with("--no-header-files")
-            .with("--no-man-pages");
-    // https://medium.com/@david.delabassee/jlink-stripping-out-native-and-java-debug-information-507e7b587dd7
-    // .with("--strip-debug")
+            .with("--no-man-pages")
+            .with("--output", base.workspace("image"));
     main = main.with(jlink);
 
     return with(main);
@@ -268,38 +275,47 @@ public final class Project {
 
   public Project withTestSources(List<Path> testInfoFiles) {
     if (testInfoFiles.isEmpty()) return with(TestSources.of());
-    var project = this;
+
+    var test = TestSources.of();
+
     var release = Runtime.version().feature();
     var version = Version.parse(basics().version().toString() + "-test");
     var base = structure().base();
-    var test = TestSources.of();
+    var declaredModuleNames = new TreeSet<String>();
+    var requiredModuleNames = new TreeSet<String>();
+
     for (var info : testInfoFiles) {
       var unit = SourceUnit.of(info);
       var module = unit.name();
       var file = module + '@' + version + ".jar";
       var jar =
           Jar.of(base.modules("test").resolve(file))
-              // .with("--verbose")
               .withChangeDirectoryAndIncludeFiles(base.classes("test", release, module), ".");
       test = test.with(unit.with(jar));
+      declaredModuleNames.add(module);
+      requiredModuleNames.addAll(Modules.required(Stream.of(unit.module())));
     }
+
     // pre-compute some arguments
-    var modulePath = Paths.join(List.of(base.modules(""), base.libraries()));
+    var externalModuleNames = Modules.external(declaredModuleNames, requiredModuleNames);
+    var externalModulesPresent = externalModuleNames.size() + toExternalModuleNames().size() > 0;
+    var modulePaths = new ArrayList<Path>();
+    if (isMainSourcePresent()) modulePaths.add(base.modules(""));
+    if (externalModulesPresent) modulePaths.add(base.libraries());
     var moduleSourcePaths = test.units().toModuleSourcePaths(true);
-    var modulePatches = test.units().toModulePatches(main.units());
+    var modulePatches = test.units().toModulePatches(main().units());
+
     // generate javac call
     var javac =
         Javac.of()
-            .with("-d", base.classes("test", release))
-            .with("--module", test.units().toNames(","))
+            .with("--module", String.join(",", declaredModuleNames))
             .with("--module-version", version)
-            .with("--module-path", modulePath)
-            .with(moduleSourcePaths, (tool, value) -> tool.with("--module-source-path", value))
-            .with(
-                modulePatches.entrySet(),
-                (tool, patch) ->
-                    tool.with("--patch-module", patch.getKey() + '=' + patch.getValue()));
+            .with(modulePaths.size() > 0, "--module-path", Paths.join(modulePaths))
+            .withModuleSourcePaths(moduleSourcePaths)
+            .withPatchModules(modulePatches)
+            .with("-d", base.classes("test", release));
     test = test.with(javac);
-    return project.with(test);
+
+    return with(test);
   }
 }

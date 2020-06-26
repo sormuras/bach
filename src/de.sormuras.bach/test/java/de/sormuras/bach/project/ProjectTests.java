@@ -92,26 +92,28 @@ class ProjectTests {
 
       assertLinesMatch(
           List.of(
-              "-d",
-              "" + base.classes("", release.feature()),
-              "--release",
-              "" + release.feature(),
               "--module",
               "com.greetings",
               "--module-version",
               "0-scan",
               "--module-source-path",
-              "" + base.directory()),
+              "" + base.directory(),
+              "--release",
+              "" + release.feature(),
+              "-Xlint",
+              "-d",
+              "" + base.classes("", release.feature())),
           project.main().javac().toStrings());
 
       assertLinesMatch(
           List.of(
-              "-d",
-              "" + base.documentation("api"),
               "--module",
               "com.greetings",
               "--module-source-path",
-              "" + base.directory()),
+              "" + base.directory(),
+              "-Xdoclint",
+              "-d",
+              "" + base.documentation("api")),
           project.main().javadoc().toStrings());
 
       var greetings = project.main().units().unit("com.greetings").orElseThrow();
