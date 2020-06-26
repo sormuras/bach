@@ -18,6 +18,7 @@
 package de.sormuras.bach.tool;
 
 import java.util.List;
+import java.util.Map;
 
 /** A {@code javac} tool call configuration. */
 public final class Javac implements Call<Javac> {
@@ -57,6 +58,26 @@ public final class Javac implements Call<Javac> {
 
   public Javac withRecommendedWarnings() {
     return with("-X" + "lint");
+  }
+
+  public Javac withModuleSourcePaths(Iterable<String> moduleSourcePaths) {
+    return with(moduleSourcePaths, Javac::withModuleSourcePath);
+  }
+
+  public Javac withModuleSourcePath(String moduleSourcePath) {
+    return with("--module-source-path", moduleSourcePath);
+  }
+
+  public Javac withPatchModules(Map<String, String> patches) {
+    return with(patches.entrySet(), Javac::withPatchModule);
+  }
+
+  private Javac withPatchModule(Map.Entry<String, String> patch) {
+    return withPatchModule(patch.getKey(), patch.getValue());
+  }
+
+  public Javac withPatchModule(String module, String path) {
+    return with("--patch-module", module + '=' + path);
   }
 
   public Javac withWarnings(String key, String... more) {
