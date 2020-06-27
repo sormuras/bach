@@ -58,5 +58,5 @@ jobs:
         REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
       run: |
         POM="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
-        JAR="-Dfile=.bach/workspace/modules/main/de.sormuras.bach@${SNAPSHOT}.jar"
+        JAR="-Dfile=.bach/workspace/modules/de.sormuras.bach@${SNAPSHOT}.jar"
         mvn ${DEPLOY} ${REPOSITORY} ${POM} ${JAR}
