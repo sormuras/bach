@@ -9,23 +9,31 @@ public class RecordBasedApiTests {
 
   @Test
   void check() {
-    assertEquals("1-ea",
-        Project.of().version().toString());
+    var project = Project.of();
+    assertEquals("1-ea", project.version().toString());
+    assertEquals(Runtime.version().feature(), project.main().release());
 
-    assertEquals("javac --module-version 1-ea",
-        Project.of().getJavacForMainSources());
+    project = project
+        .with(Version.parse("17.01"))
+        .with(new MainSources(8));
 
-    assertEquals("javac --module-version 17.01",
-        Project.of().with(Version.parse("17.01")).getJavacForMainSources());
+    assertEquals("17.01", project.version().toString());
 
-    assertEquals("javac --module-version 47.11",
-        Project.of().with(new MainSources("javac --module-version 47.11")).getJavacForMainSources());
+    var builder = new Builder(project) {
+      @Override
+      public String computeJavac(MainSources main) {
+        // generate and return custom javac or...
+        return super.computeJavac(main).toUpperCase(); // tweak super
+      }
+    };
+
+    builder.build();
   }
 
   record Project(Version version, MainSources main) {
 
     public static Project of() {
-      return new Project(Version.parse("1-ea"), new MainSources(""));
+      return new Project(Version.parse("1-ea"), new MainSources(Runtime.version().feature()));
     }
 
     public Project with(Version version) {
@@ -36,12 +44,26 @@ public class RecordBasedApiTests {
       return new Project(version, main);
     }
 
-    public String getJavacForMainSources() {
-      var javac = main().customJavac();
-      return javac.isEmpty() ? "javac --module-version " + version() : javac;
+    public Builder toBuilder() {
+      return new Builder(this);
     }
   }
 
-  record MainSources(String customJavac) {}
+  record MainSources(int release) {}
 
+  static class Builder {
+    private final Project project;
+
+    Builder(Project project) {
+      this.project = project;
+    }
+
+    void build() {
+      System.out.println(computeJavac(project.main()));
+    }
+
+    public String computeJavac(MainSources main) {
+      return "javac --module-version " + project.version() + " --release " + main.release();
+    }
+  }
 }
