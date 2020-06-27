@@ -9,25 +9,27 @@ public class RecordBasedApiTests {
 
   @Test
   void check() {
-    var project = Project.of();
-    assertEquals("1-ea", project.version().toString());
-    assertEquals(Runtime.version().feature(), project.main().release());
-
-    project = project
+    var project = Project.of()
         .with(Version.parse("17.01"))
         .with(new MainSources(8));
 
     assertEquals("17.01", project.version().toString());
+    assertEquals(8, project.main().release());
 
-    var builder = new Builder(project) {
+    project.build();
+
+    class CustomBuilder extends Builder {
+      CustomBuilder() {
+        super(project);
+      }
+
       @Override
       public String computeJavac(MainSources main) {
-        // generate and return custom javac or...
-        return super.computeJavac(main).toUpperCase(); // tweak super
+        return super.computeJavac(main).toUpperCase();
       }
-    };
+    }
 
-    builder.build();
+    new CustomBuilder().build();
   }
 
   record Project(Version version, MainSources main) {
@@ -44,8 +46,8 @@ public class RecordBasedApiTests {
       return new Project(version, main);
     }
 
-    public Builder toBuilder() {
-      return new Builder(this);
+    public void build() {
+      new Builder(this).build();
     }
   }
 
@@ -59,6 +61,7 @@ public class RecordBasedApiTests {
     }
 
     void build() {
+      System.out.println("\n" + getClass());
       System.out.println(computeJavac(project.main()));
     }
 
