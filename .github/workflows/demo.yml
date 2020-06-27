@@ -9,6 +9,7 @@ defaults:
 jobs:
   build:
     name: 'Generate and build demos'
+    if: false
     runs-on: ubuntu-latest
     steps:
     - name: 'Checkout sources'
@@ -17,11 +18,12 @@ jobs:
       uses: sormuras/download-jdk@v1
       with:
         feature: 16
-    - name: 'Set up JDK'
+    - name: 'Setup JDK'
       uses: actions/setup-java@v1
       with:
         java-version: ${{ env.JDK_VERSION }}
         jdkFile: ${{ env.JDK_FILE }}
+
     - name: 'Bach.java - Demo 0 - Simplicissimus'
       run: |
         jshell https://sormuras.de/bach/demo-0

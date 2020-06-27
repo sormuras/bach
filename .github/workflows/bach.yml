@@ -20,12 +20,14 @@ jobs:
     steps:
     - name: 'Checkout sources'
       uses: actions/checkout@v2
-    - name: 'Set up JDK'
+    - name: 'Setup JDK'
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java }}
+
     - name: 'Build Bach.java'
-      run: java --show-version .bach/src/build/build/Bootstrap.java
+      run: java .bach/src/build/build/Bootstrap.java
+
     - name: 'Upload build artifact'
       uses: actions/upload-artifact@v2
       with:
@@ -33,24 +35,27 @@ jobs:
         path: .bach/workspace/logbook.md
 
   publish_snapshot:
-    name: Publish Snapshot
+    name: 'Publish Snapshot'
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/master'
     steps:
     - uses: actions/checkout@v2
-    - name: 'Set up JDK'
+    - name: 'Setup JDK'
       uses: actions/setup-java@v1
       with:
         java-version: 14
+
     - name: 'Set snapshot version'
       run: |
         SNAPSHOT="$(java src/bach/Version.java)+SNAPSHOT"
         java src/bach/Version.java ${SNAPSHOT}
         git diff
         echo ::set-env name=SNAPSHOT::${SNAPSHOT}
+
     - name: 'Build Bach.java'
-      run: java --show-version .bach/src/build/build/Bootstrap.java
+      run: java .bach/src/build/build/Bootstrap.java
+
     - name: 'Publish snapshot to GitHub Packages'
       env:
         GITHUB_TOKEN: ${{ github.token }}

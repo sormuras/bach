@@ -11,7 +11,7 @@ jobs:
     steps:
     - name: 'Checkout sources'
       uses: actions/checkout@v2
-    - name: 'Set up JDK'
+    - name: 'Setup JDK'
       uses: actions/setup-java@v1
       with:
         java-version: 15-ea
@@ -20,6 +20,7 @@ jobs:
       run: java doc/src/BuildJigsawQuickStart.java
 
     - name: 'Build Jigsaw Quick-Start (jshell)'
+      if: false
       working-directory: doc/project/JigsawQuickStart
       run: jshell -R-Debug ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
 
@@ -27,9 +28,11 @@ jobs:
       run: java doc/src/BuildJigsawQuickStartWorld.java
 
     - name: 'Build Jigsaw Quick-Start World (jshell)'
+      if: false
       working-directory: doc/project/JigsawQuickStart
       run: jshell -R-Debug ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
 
     - name: 'Build Sample with all bells and whistles (jshell)'
+      if: false
       working-directory: doc/project/SampleWithAllBellsAndWhistles
       run: jshell -R-Debug ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
