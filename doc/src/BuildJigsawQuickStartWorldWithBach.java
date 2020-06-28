@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-import de.sormuras.bach.Bach;
-import de.sormuras.bach.project.Project;
-
 class BuildJigsawQuickStartWorldWithBach {
 
   public static void main(String... arguments) {
     var base = "doc/project/JigsawQuickStartWorld";
-    var project = Project.of("world", "1.3").withBaseDirectory(base).withSources();
-    //            .withMainSources(
-    //                List.of(
-    //                    Path.of(base, "com.greetings/main/module-info.java"),
-    //                    Path.of(base, "org.astro/main/module-info.java")))
-    //            .withTestSources(
-    //                List.of(
-    //                    Path.of(base, "org.astro/test/module-info.java"),
-    //                    Path.of(base, "test.modules/test/module-info.java")));
-    Bach.of(project).build();
+    System.err.println(base + " not implemented, yet");
   }
 }

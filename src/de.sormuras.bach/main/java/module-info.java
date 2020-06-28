@@ -23,11 +23,6 @@
  * <ul>
  *   <li>☕ Java, pristine Java
  *   <li>🚀 Zero-installation build mode
- *   <li>📚 API documentation
- *   <li>💾 Custom runtime image
- *   <li>✔ Automated Checks: Test program and JUnit Platform support
- *   <li>🗄 Multi-Release modular JAR file support
- *   <li>📋 Structured build summary
  * </ul>
  *
  * <h2>Links</h2>
@@ -44,8 +39,6 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
   // hide de.sormuras.bach.internal;
-  exports de.sormuras.bach.project;
-  exports de.sormuras.bach.tool;
 
   requires transitive java.net.http;
   requires jdk.compiler;

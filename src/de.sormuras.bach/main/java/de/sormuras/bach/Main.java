@@ -17,12 +17,8 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +75,7 @@ public class Main {
           help();
           break;
         case "info":
-          Bach.ofSystem().info();
+          out.println("TODO: Action 'info' is not supported, yet.");
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
@@ -92,16 +88,7 @@ public class Main {
   }
 
   private void build() {
-    if (Files.exists(Bach.BUILD_JAVA)) {
-      err.println("TODO: Custom build program execution is not supported, yet.");
-      return;
-    }
-    var directory = Path.of("").toAbsolutePath();
-    var projectName = System.getProperty("project.name", Paths.name(directory));
-    var projectVersion = System.getProperty("project.name", "1-ea");
-    var project = Project.of(projectName, projectVersion);
-    var bach = Bach.of(project.withSources().withDynamicLocatorLookupAndVolatileVersions());
-    bach.build();
+    err.println("TODO: Action 'build' is not supported, yet.");
   }
 
   private void help() {

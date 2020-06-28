@@ -18,25 +18,46 @@
 package build;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.project.Base;
-import de.sormuras.bach.project.JavaRelease;
-import de.sormuras.bach.project.Locator;
-import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.Project;
-import de.sormuras.bach.project.SourceDirectory;
-import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.TestSources;
-import de.sormuras.bach.tool.JLink;
-import de.sormuras.bach.tool.Jar;
-import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.Javadoc;
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.spi.ToolProvider;
 
 /** Bach's own build program. */
 class Build {
 
-  public static void main(String... args) {
+  public static void main(String... args) throws Exception {
+    var version = Bach.VERSION;
+    var release = 14;
+    var classes = Path.of(".bach/workspace/classes/" + release);
+    run(
+        "javac",
+        "--module=de.sormuras.bach",
+        "--module-source-path=src/*/main/java",
+        "--module-version=" + version,
+        "--release=" + release,
+        "-encoding",
+        "UTF-8",
+        "-W" + "error",
+        "-X" + "lint",
+        "-d",
+        "" + classes);
+
+    var modules = Files.createDirectories(Path.of(".bach/workspace/modules"));
+    run(
+        "jar",
+        "--create",
+        "--file",
+        "" + modules.resolve("de.sormuras.bach@" + version + ".jar"),
+        "--main-class",
+        "de.sormuras.bach.Main",
+        "-C",
+        "" + classes.resolve("de.sormuras.bach"),
+        ".",
+        "-C",
+        "" + Path.of("src/de.sormuras.bach/main/java"),
+        ".");
+
+    /*
     var base = Base.of();
     var version = Bach.VERSION;
     var release = 11;
@@ -52,7 +73,7 @@ class Build {
                         Javac.of()
                             .with("-d", base.classes("", release))
                             .with("--module", "de.sormuras.bach")
-                            .with("--module-source-path", "src/*/main/java")
+                            .with("--module-source-path", "src/./main/java")
                             .with("--module-version", version)
                             .withCompileForJavaRelease(release)
                             .with("-encoding", "UTF-8")
@@ -63,7 +84,7 @@ class Build {
                         Javadoc.of()
                             .with("-d", base.documentation("api"))
                             .with("--module", "de.sormuras.bach")
-                            .with("--module-source-path", "src/*/main/java")
+                            .with("--module-source-path", "src/./main/java")
                             .with("-encoding", "UTF-8")
                             .with("-locale", "en")
                             .with("-Xdoclint")
@@ -100,7 +121,7 @@ class Build {
                             .with("--module-version", version + "-test")
                             .with(
                                 "--module-source-path",
-                                "src/*/test/java" + File.pathSeparator + "src/*/test/java-module")
+                                "src/./test/java" + File.pathSeparator + "src/./test/java-module")
                             .with("--module-path", "lib")
                             .with(
                                 "--patch-module",
@@ -145,7 +166,13 @@ class Build {
                 Locator.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                 Locator.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withRequires("org.junit.platform.console");
+    */
+  }
 
-    Bach.of(project).build();
+  static void run(String name, String... args) {
+    System.out.printf(">> %s %s%n", name, String.join(" ", args));
+    var tool = ToolProvider.findFirst(name).orElseThrow(() -> new Error(name));
+    int code = tool.run(System.out, System.err, args);
+    if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 }

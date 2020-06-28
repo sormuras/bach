@@ -15,13 +15,10 @@
  * limitations under the License.
  */
 
-import de.sormuras.bach.Bach;
-import de.sormuras.bach.project.Project;
-
 class BuildJigsawQuickStartWithBach {
 
   public static void main(String... args) {
-    var project = Project.of("greetings", "1701").withBaseDirectory("doc/project/JigsawQuickStart");
-    Bach.of(project.withSources()).build();
+    var base = "doc/project/JigsawQuickStart";
+    System.err.println(base + " not implemented, yet");
   }
 }

@@ -1,55 +1,21 @@
-# Bach.java 11-ea - Java Shell Builder
+# Bach.java 14-ea - Java Shell Builder
  
-[![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
+[![jdk14](https://img.shields.io/badge/JDK-14+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
-Use Java source to build your modular Java project.
+Build modular Java projects with [JDK Foundation Tools].
 
 ## Features
 
 - ☕ **Java**, pristine Java
 
-    > JDK 11+ required.
+    > JDK 14+ required.
     Write custom build programs in Java (no XML, YML, Z...).
 
 - 🚀 **Zero-installation** build mode
 
     > `jshell https://sormuras.de/bach/build` - redirects to [bach-build.jsh](src/bach/bach-build.jsh)
-
-- 📚 **API** documentation
-
-    > Calls `javadoc` with the right arguments.
-    Find generated HTML pages in `bach/workspace/documentaion/api/`.
-
-- 💾 Custom runtime **image**
-
-    > Calls `jlink` with the right arguments.
-    Find binary assets in `bach/workspace/image/`.
-
-- ✔ Automated Checks: **Test** program and JUnit Platform support
-
-    > Runs custom `ToolProvider`-based test programs named `test(${MODULE})`.
-    In-process.
-    Launches [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher) with the right arguments.
-    In-process.
-    Find reports in `.bach/workspace/junit-reports/`.
-
-- 🗄 **Multi-Release** modular JAR file support
-
-    > Place your sources in directories named like `java-N`.
-    `N` stands for Java release feature number.
-    Explore [MultiRelease](doc/project/MultiRelease) for an example project.
-
-- 🧩 **3<sup>rd</sup>-party modules** in plain sight
-
-    > You store and find all required modular JAR files in the top-level `lib/` directory.
-    Missing modules are resolved recursively looking up module-to-maven mappings from [sormuras/modules](https://github.com/sormuras/modules).
-
-- 📋 Structured build **summary** with history
-
-    > Stores latest summary as `.bach/workspace/summary.md`.
-    Find a collection summary files from previous builds in `.bach/workspace/summaries/`.
 
 
 # install-jdk.sh
@@ -91,8 +57,4 @@ Find a Travis CI matrix configuration at [sormuras.github.io/.travis.yml](https:
 # be free - have fun
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[Apache Ant]: https://ant.apache.org
-[install-jdk.sh]: https://github.com/sormuras/bach/blob/master/install-jdk.sh
-[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/11/tools/main-tools-create-and-build-applications.html
-[jlink]: https://docs.oracle.com/en/java/javase/11/tools/jlink.html
-[jshell]: https://docs.oracle.com/en/java/javase/11/tools/jshell.html
+[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/14/docs/specs/man

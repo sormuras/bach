@@ -4,7 +4,7 @@ All notable changes to [Bach.java](https://github.com/sormuras/bach) will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
-## Version [11-ea] unreleased
+## Version [14-ea] unreleased
 
 _In progress..._
 
@@ -45,7 +45,7 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[11-ea]: https://github.com/sormuras/bach/compare/11.2...master
+[14-ea]: https://github.com/sormuras/bach/compare/11.2...master
 [11.2]: https://github.com/sormuras/bach/compare/11.1...11.2
 [11.1]: https://github.com/sormuras/bach/commits/11.1
 [2.1]: https://github.com/sormuras/bach/compare/2.0...2.1
