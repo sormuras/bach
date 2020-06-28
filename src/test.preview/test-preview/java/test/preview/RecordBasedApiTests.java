@@ -23,35 +23,32 @@ public class RecordBasedApiTests {
     bach.build(project);
 
     class CustomWorkflow extends Workflow {
-      CustomWorkflow(Bach bach, Project project) {
-        super(bach, project);
-      }
 
       @Override
-      public String computeJavac(MainSources main) {
-        return super.computeJavac(main).toUpperCase();
+      public String computeMainJavac(Project project) {
+        return super.computeMainJavac(project).toUpperCase();
       }
     }
 
-    bach.with(CustomWorkflow::new).build(project);
+    bach.with(new CustomWorkflow()).build(project);
   }
 
-  record Bach(Level threshold, Workflow.Constructor workflowConstructor) {
+  record Bach(Level threshold, Workflow workflow) {
 
     public static Bach of() {
-      return new Bach(Level.INFO, Workflow::new);
+      return new Bach(Level.INFO, new Workflow());
     }
 
     Bach with(Level threshold) {
-      return new Bach(threshold, workflowConstructor);
+      return new Bach(threshold, workflow);
     }
 
-    Bach with(Workflow.Constructor workflowConstructor) {
-      return new Bach(threshold, workflowConstructor);
+    Bach with(Workflow workflow) {
+      return new Bach(threshold, workflow);
     }
 
     void build(Project project) {
-      workflowConstructor.newWorkflow(this, project).build();
+      workflow.build(this, project);
     }
 
     boolean log(Level level) {
@@ -82,26 +79,13 @@ public class RecordBasedApiTests {
 
   static class Workflow {
 
-    @FunctionalInterface
-    interface Constructor {
-      Workflow newWorkflow(Bach bach, Project project);
-    }
-
-    private final Bach bach;
-    private final Project project;
-
-    Workflow(Bach bach, Project project) {
-      this.bach = bach;
-      this.project = project;
-    }
-
-    void build() {
+    void build(Bach bach, Project project) {
       if (bach.log(Level.DEBUG)) System.out.println("\n" + getClass());
-      System.out.println(computeJavac(project.main()));
+      System.out.println(computeMainJavac(project));
     }
 
-    public String computeJavac(MainSources main) {
-      return "javac --module-version " + project.version() + " --release " + main.release();
+    public String computeMainJavac(Project project) {
+      return "javac --module-version " + project.version() + " --release " + project.main().release();
     }
   }
 }
