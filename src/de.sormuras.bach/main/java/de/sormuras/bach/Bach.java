@@ -44,15 +44,17 @@ public class Bach {
   }
 
   public static Bach ofSystem() {
-    return new Bach(Flags.ofSystem(), Logbook.ofSystem());
+    return new Bach(Flags.ofSystem(), Logbook.ofSystem(), Workflow.ofSystem());
   }
 
   private final Flags flags;
   private final Logbook logbook;
+  private final Workflow workflow;
 
-  public Bach(Flags flags, Logbook logbook) {
+  public Bach(Flags flags, Logbook logbook, Workflow workflow) {
     this.flags = flags;
     this.logbook = logbook;
+    this.workflow = workflow;
   }
 
   public Flags flags() {
@@ -64,11 +66,15 @@ public class Bach {
   }
 
   public Bach with(Flags flags) {
-    return new Bach(flags, logbook);
+    return new Bach(flags, logbook, workflow);
   }
 
   public Bach with(Logbook logbook) {
-    return new Bach(flags, logbook);
+    return new Bach(flags, logbook, workflow);
+  }
+
+  public Bach with(Workflow workflow) {
+    return new Bach(flags, logbook, workflow);
   }
 
   public Bach with(Flag... flags) {
@@ -92,6 +98,15 @@ public class Bach {
     logbook.log(level, "\tflags.set=%s", flags.set());
     logbook.log(level, "\tlogbook.threshold=%s", logbook.threshold());
     return this;
+  }
+
+  public void build() {
+    try {
+      workflow.build(this);
+    } catch (Exception exception) {
+      var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
+      if (flags.isFailOnError()) throw new AssertionError(message, exception);
+    }
   }
 
   public void execute(Call<?> call) {
