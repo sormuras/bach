@@ -83,6 +83,17 @@ public class Bach {
     return with(logbook().with(threshold));
   }
 
+  public Bach check() {
+    return check(Level.INFO);
+  }
+
+  public Bach check(Level level) {
+    logbook.log(level, toString());
+    logbook.log(level, "\tflags.set=%s", flags.set());
+    logbook.log(level, "\tlogbook.threshold=%s", logbook.threshold());
+    return this;
+  }
+
   public void execute(Call<?> call) {
     logbook.log(Level.INFO, call.toCommandLine());
 

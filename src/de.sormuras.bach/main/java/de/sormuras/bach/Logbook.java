@@ -48,6 +48,10 @@ public class Logbook {
     this.threshold = threshold;
   }
 
+  public Level threshold() {
+    return threshold;
+  }
+
   public Logbook with(Consumer<String> consumer) {
     return new Logbook(consumer, threshold);
   }
