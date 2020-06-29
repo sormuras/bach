@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,6 +40,10 @@ public interface Call<T> {
 
   static Javac javac() {
     return new Javac(List.of());
+  }
+
+  static Javadoc javadoc() {
+    return new Javadoc(List.of());
   }
 
   static Jar jar() {
