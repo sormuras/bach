@@ -18,7 +18,9 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Bach.Flag;
 import de.sormuras.bach.Call;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,7 +33,7 @@ class Build {
     var release = 14;
     var classes = Path.of(".bach/workspace/classes/" + release);
 
-    var bach = Bach.ofSystem();
+    var bach = Bach.ofSystem().without(Flag.FAIL_FAST).with(Level.ALL).check();
 
     bach.execute(
         Call.javac()

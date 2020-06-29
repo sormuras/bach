@@ -19,34 +19,20 @@ package de.sormuras.bach;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.module.ModuleDescriptor.Version;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor.Version;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
 
   /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("14-ea");
-
-  /** A flag represents a feature toggle. */
-  public enum Flag {
-    DRY_RUN(false),
-    FAIL_FAST(true),
-    FAIL_ON_ERROR(true);
-
-    private final boolean enabledByDefault;
-
-    Flag(boolean enabledByDefault) {
-      this.enabledByDefault = enabledByDefault;
-    }
-
-    public boolean isEnabledByDefault() {
-      return enabledByDefault;
-    }
-  }
 
   /**
    * Main entry-point.
@@ -83,6 +69,18 @@ public class Bach {
 
   public Bach with(Logbook logbook) {
     return new Bach(flags, logbook);
+  }
+
+  public Bach with(Flag... flags) {
+    return with(flags().with(flags));
+  }
+
+  public Bach without(Flag... flags) {
+    return with(flags().without(flags));
+  }
+
+  public Bach with(Level threshold) {
+    return with(logbook().with(threshold));
   }
 
   public void execute(Call<?> call) {
@@ -133,5 +131,74 @@ public class Bach {
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
+  }
+
+  /** A flag represents a feature toggle. */
+  public enum Flag {
+    DRY_RUN(false),
+    FAIL_FAST(true),
+    FAIL_ON_ERROR(true);
+
+    private final boolean enabledByDefault;
+
+    Flag(boolean enabledByDefault) {
+      this.enabledByDefault = enabledByDefault;
+    }
+
+    public boolean isEnabledByDefault() {
+      return enabledByDefault;
+    }
+  }
+
+  /** A set of modifiers and feature toggles. */
+  public static class Flags {
+
+    public static Flags ofSystem() {
+      var flags = new TreeSet<Flag>();
+      for (var flag : Flag.values()) {
+        var key = "bach." + flag.name().toLowerCase().replace('_', '-');
+        var property = System.getProperty(key, flag.isEnabledByDefault() ? "true" : "false");
+        if (Boolean.parseBoolean(property)) flags.add(flag);
+      }
+      return new Flags(flags);
+    }
+
+    private final Set<Flag> set;
+
+    public Flags(Set<Flag> set) {
+      this.set = set.isEmpty() ? Set.of() : EnumSet.copyOf(set);
+    }
+
+    public Set<Flag> set() {
+      return set;
+    }
+
+    public boolean isDryRun() {
+      return set.contains(Flag.DRY_RUN);
+    }
+
+    public boolean isFailFast() {
+      return set.contains(Flag.FAIL_FAST);
+    }
+
+    public boolean isFailOnError() {
+      return set.contains(Flag.FAIL_ON_ERROR);
+    }
+
+    public Flags with(Set<Flag> set) {
+      return new Flags(set);
+    }
+
+    public Flags with(Flag... additionalFlags) {
+      var flags = new TreeSet<>(set);
+      flags.addAll(Set.of(additionalFlags));
+      return with(flags);
+    }
+
+    public Flags without(Flag... redundantFlags) {
+      var flags = new TreeSet<>(set());
+      flags.removeAll(Set.of(redundantFlags));
+      return with(flags);
+    }
   }
 }
