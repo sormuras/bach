@@ -17,6 +17,7 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** A logbook records textual log entries of all levels and also records tool call results. */
-public class Logbook {
+public final class Logbook {
 
   public static Logbook ofSystem() {
     var logbookThreshold = System.getProperty("bach.logbook.threshold", "INFO");
@@ -96,10 +97,10 @@ public class Logbook {
     return results.stream().filter(Result::isError).collect(Collectors.toList());
   }
 
-  public List<String> toMarkdown(/*Project project*/ ) {
+  public List<String> toMarkdown(Project project) {
     var md = new ArrayList<String>();
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    md.add("# Logbook");
+    md.add("# Logbook of " + project.toNameAndVersion());
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
     // md.addAll(projectModules(project.structure().base().modules("")));
