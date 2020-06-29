@@ -18,9 +18,10 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Call;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.spi.ToolProvider;
+import java.util.List;
 
 /** Bach's own build program. */
 class Build {
@@ -29,33 +30,30 @@ class Build {
     var version = Bach.VERSION;
     var release = 14;
     var classes = Path.of(".bach/workspace/classes/" + release);
-    run(
-        "javac",
-        "--module=de.sormuras.bach",
-        "--module-source-path=src/*/main/java",
-        "--module-version=" + version,
-        "--release=" + release,
-        "-encoding",
-        "UTF-8",
-        "-W" + "error",
-        "-X" + "lint",
-        "-d",
-        "" + classes);
+
+    var bach = Bach.ofSystem();
+
+    bach.execute(
+        Call.javac()
+            .withModule(List.of("de.sormuras.bach"))
+            .withModuleSourcePath("src/*/main/java")
+            .with("--module-version", version)
+            .with("--release", release)
+            .withEncoding("UTF-8")
+            .withRecommendedWarnings()
+            .with("-Werror")
+            .with("-d", classes));
 
     var modules = Files.createDirectories(Path.of(".bach/workspace/modules"));
-    run(
-        "jar",
-        "--create",
-        "--file",
-        "" + modules.resolve("de.sormuras.bach@" + version + ".jar"),
-        "--main-class",
-        "de.sormuras.bach.Main",
-        "-C",
-        "" + classes.resolve("de.sormuras.bach"),
-        ".",
-        "-C",
-        "" + Path.of("src/de.sormuras.bach/main/java"),
-        ".");
+    bach.execute(
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(modules.resolve("de.sormuras.bach@" + version + ".jar"))
+            .with("--main-class", "de.sormuras.bach.Main")
+            .with("-C", classes.resolve("de.sormuras.bach"), ".")
+            .with("-C", Path.of("src/de.sormuras.bach/main/java"), "."));
+
+    Files.write(Path.of(".bach/workspace/logbook.md"), bach.logbook().toMarkdown());
 
     /*
     var base = Base.of();
@@ -167,12 +165,5 @@ class Build {
                 Locator.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withRequires("org.junit.platform.console");
     */
-  }
-
-  static void run(String name, String... args) {
-    System.out.printf(">> %s %s%n", name, String.join(" ", args));
-    var tool = ToolProvider.findFirst(name).orElseThrow(() -> new Error(name));
-    int code = tool.run(System.out, System.err, args);
-    if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 }

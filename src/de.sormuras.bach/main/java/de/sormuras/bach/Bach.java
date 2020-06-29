@@ -17,7 +17,13 @@
 
 package de.sormuras.bach;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.System.Logger.Level;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.StringJoiner;
 
 /** Bach - Java Shell Builder. */
 public class Bach {
@@ -77,6 +83,51 @@ public class Bach {
 
   public Bach with(Logbook logbook) {
     return new Bach(flags, logbook);
+  }
+
+  public void execute(Call<?> call) {
+    logbook.log(Level.INFO, call.toCommandLine());
+
+    var provider = call.findProvider();
+    if (provider.isEmpty()) {
+      var message = logbook.log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
+      if (flags.isFailFast()) throw new AssertionError(message);
+      return;
+    }
+
+    if (flags.isDryRun()) return;
+
+    var tool = provider.get();
+    var currentThread = Thread.currentThread();
+    var currentContextLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(tool.getClass().getClassLoader());
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = call.toStringArray();
+    var start = Instant.now();
+
+    try {
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+
+      var duration = Duration.between(start, Instant.now());
+      var normal = out.toString().strip();
+      var errors = err.toString().strip();
+      var result = logbook.print(call, normal, errors, duration, code);
+      logbook.log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
+
+      if (code == 0) return;
+
+      var caption = logbook.log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
+      var message = new StringJoiner(System.lineSeparator());
+      message.add(caption);
+      result.toStrings().forEach(message::add);
+      if (flags.isFailFast()) throw new AssertionError(message);
+    } catch (RuntimeException exception) {
+      logbook.log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
+      if (flags.isFailFast()) throw exception;
+    } finally {
+      currentThread.setContextClassLoader(currentContextLoader);
+    }
   }
 
   @Override
