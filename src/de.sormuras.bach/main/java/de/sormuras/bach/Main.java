@@ -26,9 +26,9 @@ import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
 /** Bach's main program. */
-public class Main {
+public final class Main {
 
-  public static class BachToolProvider implements ToolProvider {
+  public static final class BachToolProvider implements ToolProvider {
 
     @Override
     public String name() {
