@@ -29,11 +29,11 @@ import java.util.List;
 /** Bach's own build program. */
 class Build {
 
-  private static class CustomWorkflow extends Builder {
+  private static class CustomBuilder extends Builder {
 
     private final int release = 14;
 
-    private CustomWorkflow(Bach bach) {
+    private CustomBuilder(Bach bach) {
       super(bach);
     }
 
@@ -72,7 +72,7 @@ class Build {
         .without(Flag.FAIL_FAST)
         .with(System.Logger.Level.ALL)
         .with(Project.of("bach", Bach.VERSION))
-        .with(CustomWorkflow::new)
+        .with(CustomBuilder::new)
         .checkComponents()
         .buildProject();
 
