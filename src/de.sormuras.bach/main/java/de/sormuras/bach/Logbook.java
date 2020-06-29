@@ -19,6 +19,9 @@ package de.sormuras.bach;
 
 import java.lang.System.Logger.Level;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -34,6 +37,7 @@ public class Logbook {
     return new Logbook(System.out::println, Level.valueOf(logbookThreshold));
   }
 
+  private final LocalDateTime created = LocalDateTime.now(ZoneOffset.UTC);
   private final Queue<Entry> entries = new ConcurrentLinkedQueue<>();
   private final Queue<Result> results = new ConcurrentLinkedQueue<>();
   private final Consumer<String> printer;
@@ -44,14 +48,6 @@ public class Logbook {
     this.threshold = threshold;
   }
 
-  public Consumer<String> printer() {
-    return printer;
-  }
-
-  public Level threshold() {
-    return threshold;
-  }
-
   public Logbook with(Consumer<String> consumer) {
     return new Logbook(consumer, threshold);
   }
@@ -60,30 +56,36 @@ public class Logbook {
     return new Logbook(printer, threshold);
   }
 
-  public void log(Level level, String format, Object... arguments) {
-    log(level, String.format(format, arguments));
+  public String log(Level level, String format, Object... arguments) {
+    return log(level, String.format(format, arguments));
   }
 
-  public void log(Level level, String text) {
-    if (text.isEmpty()) return;
+  public String log(Level level, String text) {
+    return print(level, text, true);
+  }
+
+  private String print(Level level, String text, boolean add) {
+    if (text.isEmpty()) return text;
     var thread = Thread.currentThread().getId();
     var entry = new Entry(thread, level, text);
-    entries.add(entry);
-    if (level.getSeverity() < threshold.getSeverity()) return;
+    if (add) entries.add(entry);
+    if (level.getSeverity() < threshold.getSeverity()) return text;
     synchronized (entries) {
       var all = threshold == Level.ALL;
       printer.accept(all ? entry.toString() : text);
     }
+    return text;
   }
 
-  void log(Call<?> call, String out, String err, Duration duration, int code) {
+  Result print(Call<?> call, String out, String err, Duration duration, int code) {
     var thread = Thread.currentThread().getId();
     var tool = call.name();
     var args = call.toStringArray();
     var result = new Result(thread, tool, args, out, err, duration, code);
     results.add(result);
-    log(Level.TRACE, result.out);
-    log(Level.TRACE, result.err);
+    print(Level.TRACE, out, false);
+    print(Level.TRACE, err, false);
+    return result;
   }
 
   List<Result> errors() {
@@ -92,7 +94,10 @@ public class Logbook {
 
   public List<String> toMarkdown(/*Project project*/ ) {
     var md = new ArrayList<String>();
-    // md.add("# Logbook of " + project.toNameAndVersion());
+    var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    md.add("# Logbook");
+    md.add("- Created at " + formatter.format(created));
+    md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
     // md.addAll(projectModules(project.structure().base().modules("")));
     // md.addAll(projectDescription(project));
     md.addAll(toToolCallOverview());
