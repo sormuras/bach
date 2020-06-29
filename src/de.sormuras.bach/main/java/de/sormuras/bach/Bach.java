@@ -17,10 +17,12 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -29,7 +31,7 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 
 /** Bach - Java Shell Builder. */
-public class Bach {
+public final class Bach {
 
   /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("14-ea");
@@ -44,37 +46,23 @@ public class Bach {
   }
 
   public static Bach ofSystem() {
-    return new Bach(Flags.ofSystem(), Logbook.ofSystem(), Workflow.ofSystem());
-  }
-
-  private final Flags flags;
-  private final Logbook logbook;
-  private final Workflow workflow;
-
-  public Bach(Flags flags, Logbook logbook, Workflow workflow) {
-    this.flags = flags;
-    this.logbook = logbook;
-    this.workflow = workflow;
-  }
-
-  public Flags flags() {
-    return flags;
-  }
-
-  public Logbook logbook() {
-    return logbook;
+    return new Bach(Flags.ofSystem(), Logbook.ofSystem(), Project.ofSystem(), Builder::new);
   }
 
   public Bach with(Flags flags) {
-    return new Bach(flags, logbook, workflow);
+    return new Bach(flags, logbook, project, builder);
   }
 
   public Bach with(Logbook logbook) {
-    return new Bach(flags, logbook, workflow);
+    return new Bach(flags, logbook, project, builder);
   }
 
-  public Bach with(Workflow workflow) {
-    return new Bach(flags, logbook, workflow);
+  public Bach with(Project project) {
+    return new Bach(flags, logbook, project, builder);
+  }
+
+  public Bach with(Builder.Factory workflow) {
+    return new Bach(flags, logbook, project, workflow);
   }
 
   public Bach with(Flag... flags) {
@@ -89,27 +77,57 @@ public class Bach {
     return with(logbook().with(threshold));
   }
 
-  public Bach check() {
-    return check(Level.INFO);
+  private final Flags flags;
+  private final Logbook logbook;
+  private final Project project;
+  private final Builder.Factory builder;
+
+  public Bach(Flags flags, Logbook logbook, Project project, Builder.Factory builder) {
+    this.flags = flags;
+    this.logbook = logbook;
+    this.project = project;
+    this.builder = builder;
   }
 
-  public Bach check(Level level) {
+  public Flags flags() {
+    return flags;
+  }
+
+  public Logbook logbook() {
+    return logbook;
+  }
+
+  public Project project() {
+    return project;
+  }
+
+  public Bach checkComponents() {
+    return checkComponents(Level.INFO);
+  }
+
+  public Bach checkComponents(Level level) {
     logbook.log(level, toString());
     logbook.log(level, "\tflags.set=%s", flags.set());
     logbook.log(level, "\tlogbook.threshold=%s", logbook.threshold());
     return this;
   }
 
-  public void build() {
+  public void buildProject() {
+    logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
     try {
-      workflow.build(this);
+      var start = Instant.now();
+      builder.create(this).build();
+      var duration = Duration.between(start, Instant.now()).toMillis();
+      logbook.log(Level.INFO, "Build of %s took %d ms", project.toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
       if (flags.isFailOnError()) throw new AssertionError(message, exception);
+    } finally {
+      writeLogbook();
     }
   }
 
-  public void execute(Call<?> call) {
+  public void executeCall(Call<?> call) {
     logbook.log(Level.INFO, call.toCommandLine());
 
     var provider = call.findProvider();
@@ -151,6 +169,17 @@ public class Bach {
       if (flags.isFailFast()) throw exception;
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
+    }
+  }
+
+  public void writeLogbook() {
+    try {
+      var path = project.base().workspace("logbook.md");
+      Files.write(path, logbook.toMarkdown(project));
+      logbook.log(Level.INFO, "Wrote logbook to %s", path.toUri());
+    } catch (Exception exception) {
+      var message = logbook.log(Level.ERROR, "write logbook failed: %s", exception);
+      if (flags.isFailOnError()) throw new AssertionError(message, exception);
     }
   }
 

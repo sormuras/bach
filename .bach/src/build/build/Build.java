@@ -20,54 +20,61 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Bach.Flag;
 import de.sormuras.bach.Call;
-import de.sormuras.bach.Workflow;
-import de.sormuras.bach.project.Base;
-import java.lang.module.ModuleDescriptor.Version;
+import de.sormuras.bach.Builder;
+import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Javac;
 import java.nio.file.Files;
 import java.util.List;
 
 /** Bach's own build program. */
 class Build {
 
-  private static class CustomWorkflow extends Workflow {
+  private static class CustomWorkflow extends Builder {
 
-    final Version version = Bach.VERSION;
-    final int release = 14;
-    final Base base = Base.of();
+    private final int release = 14;
+
+    private CustomWorkflow(Bach bach) {
+      super(bach);
+    }
 
     @Override
-    public void build(Bach bach) throws Exception {
-      bach.execute(
-          Call.javac()
-              .withModule(List.of("de.sormuras.bach"))
-              .withModuleSourcePath("src/*/main/java")
-              .with("--module-version", version)
-              .with("--release", release)
-              .withEncoding("UTF-8")
-              .withRecommendedWarnings()
-              .with("-Werror")
-              .with("-d", base.classes("", release)));
-
-      var modules = Files.createDirectories(base.modules(""));
-      bach.execute(
+    public void build() throws Exception {
+      super.build();
+      var modules = Files.createDirectories(base().modules(""));
+      bach().executeCall(
           Call.jar()
               .with("--create")
-              .withArchiveFile(modules.resolve("de.sormuras.bach@" + version + ".jar"))
+              .withArchiveFile(modules.resolve("de.sormuras.bach@" + project().version() + ".jar"))
               .with("--main-class", "de.sormuras.bach.Main")
-              .with("-C", base.classes("", release).resolve("de.sormuras.bach"), ".")
-              .with("-C", base.directory("src/de.sormuras.bach/main/java"), "."));
-
-      Files.write(base.workspace("logbook.md"), bach.logbook().toMarkdown());
+              .with("-C", base().classes("", release).resolve("de.sormuras.bach"), ".")
+              .with("-C", base().directory("src/de.sormuras.bach/main/java"), "."));
     }
+
+    @Override
+    public Javac computeJavacForMainSources() {
+      return super.computeJavacForMainSources()
+          .without("-verbose")
+          .withModule(List.of("de.sormuras.bach"))
+          .withModuleSourcePath("src/*/main/java")
+          .with("--module-version", project().version())
+          .with("--release", release)
+          .withEncoding("UTF-8")
+          .withRecommendedWarnings()
+          .with("-Werror")
+          .with("-d", base().classes("", release));
+    }
+
+
   }
 
   public static void main(String... args) {
     Bach.ofSystem()
-        .with(System.Logger.Level.ALL)
-        .with(new CustomWorkflow())
         .without(Flag.FAIL_FAST)
-        .check()
-        .build();
+        .with(System.Logger.Level.ALL)
+        .with(Project.of("bach", Bach.VERSION))
+        .with(CustomWorkflow::new)
+        .checkComponents()
+        .buildProject();
 
     /*
     var feature = Runtime.version().feature();
