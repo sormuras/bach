@@ -20,42 +20,54 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Bach.Flag;
 import de.sormuras.bach.Call;
+import de.sormuras.bach.Workflow;
 import de.sormuras.bach.project.Base;
-import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.util.List;
 
 /** Bach's own build program. */
 class Build {
 
-  public static void main(String... args) throws Exception {
-    var version = Bach.VERSION;
-    var release = 14;
-    var base = Base.of();
+  private static class CustomWorkflow extends Workflow {
 
-    var bach = Bach.ofSystem().without(Flag.FAIL_FAST).with(Level.ALL).check();
+    final Version version = Bach.VERSION;
+    final int release = 14;
+    final Base base = Base.of();
 
-    bach.execute(
-        Call.javac()
-            .withModule(List.of("de.sormuras.bach"))
-            .withModuleSourcePath("src/*/main/java")
-            .with("--module-version", version)
-            .with("--release", release)
-            .withEncoding("UTF-8")
-            .withRecommendedWarnings()
-            .with("-Werror")
-            .with("-d", base.classes("", release)));
+    @Override
+    public void build(Bach bach) throws Exception {
+      bach.execute(
+          Call.javac()
+              .withModule(List.of("de.sormuras.bach"))
+              .withModuleSourcePath("src/*/main/java")
+              .with("--module-version", version)
+              .with("--release", release)
+              .withEncoding("UTF-8")
+              .withRecommendedWarnings()
+              .with("-Werror")
+              .with("-d", base.classes("", release)));
 
-    var modules = Files.createDirectories(base.modules(""));
-    bach.execute(
-        Call.jar()
-            .with("--create")
-            .withArchiveFile(modules.resolve("de.sormuras.bach@" + version + ".jar"))
-            .with("--main-class", "de.sormuras.bach.Main")
-            .with("-C", base.classes("", release).resolve("de.sormuras.bach"), ".")
-            .with("-C", base.directory("src/de.sormuras.bach/main/java"), "."));
+      var modules = Files.createDirectories(base.modules(""));
+      bach.execute(
+          Call.jar()
+              .with("--create")
+              .withArchiveFile(modules.resolve("de.sormuras.bach@" + version + ".jar"))
+              .with("--main-class", "de.sormuras.bach.Main")
+              .with("-C", base.classes("", release).resolve("de.sormuras.bach"), ".")
+              .with("-C", base.directory("src/de.sormuras.bach/main/java"), "."));
 
-    Files.write(base.workspace("logbook.md"), bach.logbook().toMarkdown());
+      Files.write(base.workspace("logbook.md"), bach.logbook().toMarkdown());
+    }
+  }
+
+  public static void main(String... args) {
+    Bach.ofSystem()
+        .with(System.Logger.Level.ALL)
+        .with(new CustomWorkflow())
+        .without(Flag.FAIL_FAST)
+        .check()
+        .build();
 
     /*
     var feature = Runtime.version().feature();
