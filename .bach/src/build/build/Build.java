@@ -20,9 +20,9 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Bach.Flag;
 import de.sormuras.bach.Call;
+import de.sormuras.bach.project.Base;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 /** Bach's own build program. */
@@ -31,7 +31,7 @@ class Build {
   public static void main(String... args) throws Exception {
     var version = Bach.VERSION;
     var release = 14;
-    var classes = Path.of(".bach/workspace/classes/" + release);
+    var base = Base.of();
 
     var bach = Bach.ofSystem().without(Flag.FAIL_FAST).with(Level.ALL).check();
 
@@ -44,23 +44,20 @@ class Build {
             .withEncoding("UTF-8")
             .withRecommendedWarnings()
             .with("-Werror")
-            .with("-d", classes));
+            .with("-d", base.classes("", release)));
 
-    var modules = Files.createDirectories(Path.of(".bach/workspace/modules"));
+    var modules = Files.createDirectories(base.modules(""));
     bach.execute(
         Call.jar()
             .with("--create")
             .withArchiveFile(modules.resolve("de.sormuras.bach@" + version + ".jar"))
             .with("--main-class", "de.sormuras.bach.Main")
-            .with("-C", classes.resolve("de.sormuras.bach"), ".")
-            .with("-C", Path.of("src/de.sormuras.bach/main/java"), "."));
+            .with("-C", base.classes("", release).resolve("de.sormuras.bach"), ".")
+            .with("-C", base.directory("src/de.sormuras.bach/main/java"), "."));
 
-    Files.write(Path.of(".bach/workspace/logbook.md"), bach.logbook().toMarkdown());
+    Files.write(base.workspace("logbook.md"), bach.logbook().toMarkdown());
 
     /*
-    var base = Base.of();
-    var version = Bach.VERSION;
-    var release = 11;
     var feature = Runtime.version().feature();
     var project =
         Project.of("bach", version.toString())

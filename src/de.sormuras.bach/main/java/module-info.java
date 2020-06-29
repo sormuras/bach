@@ -39,6 +39,7 @@
 module de.sormuras.bach {
   exports de.sormuras.bach;
   // hide de.sormuras.bach.internal;
+  exports de.sormuras.bach.project;
   exports de.sormuras.bach.tool;
 
   requires transitive java.net.http;

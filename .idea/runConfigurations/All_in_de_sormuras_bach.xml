@@ -3,7 +3,7 @@
     <module name="de.sormuras.bach" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="de.sormuras.bach.*" />
+        <option name="PATTERN" value="de.sormuras.bach.project.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
