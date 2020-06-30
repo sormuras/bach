@@ -17,17 +17,20 @@
 
 package de.sormuras.bach.internal;
 
+import java.io.File;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /** {@link Path}-related utilities. */
 public final class Paths {
@@ -100,6 +103,11 @@ public final class Paths {
       throw new Error("Stream directory '" + directory + "' failed: " + e, e);
     }
     return List.copyOf(paths);
+  }
+
+  /** Join a collection of path objects to a string using the system-dependent separator. */
+  public static String join(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
   }
 
   /** Return path's file name as a {@link String}. */
