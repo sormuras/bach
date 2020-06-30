@@ -19,9 +19,15 @@ package build;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Bach.Flag;
-import de.sormuras.bach.Call;
 import de.sormuras.bach.Builder;
+import de.sormuras.bach.Call;
+import de.sormuras.bach.project.JavaRelease;
+import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.Sources;
+import de.sormuras.bach.project.TestSources;
 import de.sormuras.bach.tool.Javac;
 import java.nio.file.Files;
 import java.util.List;
@@ -41,13 +47,15 @@ class Build {
     public void build() throws Exception {
       super.build();
       var modules = Files.createDirectories(base().modules(""));
-      bach().executeCall(
-          Call.jar()
-              .with("--create")
-              .withArchiveFile(modules.resolve("de.sormuras.bach@" + project().version() + ".jar"))
-              .with("--main-class", "de.sormuras.bach.Main")
-              .with("-C", base().classes("", release).resolve("de.sormuras.bach"), ".")
-              .with("-C", base().directory("src/de.sormuras.bach/main/java"), "."));
+      bach()
+          .executeCall(
+              Call.jar()
+                  .with("--create")
+                  .withArchiveFile(
+                      modules.resolve("de.sormuras.bach@" + project().version() + ".jar"))
+                  .with("--main-class", "de.sormuras.bach.Main")
+                  .with("-C", base().classes("", release).resolve("de.sormuras.bach"), ".")
+                  .with("-C", base().directory("src/de.sormuras.bach/main/java"), "."));
     }
 
     @Override
@@ -63,17 +71,32 @@ class Build {
           .with("-Werror")
           .with("-d", base().classes("", release));
     }
-
-
   }
 
   public static void main(String... args) {
+    var project =
+        Project.of("bach", Bach.VERSION)
+            .with(
+                Sources.of()
+                    .with(
+                        MainSources.of()
+                            .with(JavaRelease.of(11))
+                            .with(SourceUnit.of("src/de.sormuras.bach/main/java")))
+                    .with(
+                        TestSources.of()
+                            .with(SourceUnit.of("src/de.sormuras.bach/test/java-module"))
+                            .with(SourceUnit.of("src/test.base/test/java")))
+                    .with(
+                        TestPreview.of()
+                            .with(SourceUnit.of("src/test.preview/test-preview/java"))));
+
+    project.toStrings().forEach(System.out::println);
+
     Bach.ofSystem()
         .without(Flag.FAIL_FAST)
         .with(System.Logger.Level.ALL)
-        .with(Project.of("bach", Bach.VERSION))
+        .with(project)
         .with(CustomBuilder::new)
-        .checkComponents()
         .buildProject();
 
     /*
