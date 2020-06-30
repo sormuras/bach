@@ -101,18 +101,10 @@ public final class Bach {
     return project;
   }
 
-  public Bach checkComponents() {
-    return checkComponents(Level.INFO);
-  }
-
-  public Bach checkComponents(Level level) {
-    logbook.log(level, toString());
-    logbook.log(level, "\tflags.set=%s", flags.set());
-    logbook.log(level, "\tlogbook.threshold=%s", logbook.threshold());
-    return this;
-  }
-
   public void buildProject() {
+    logbook.log(Level.TRACE, toString());
+    logbook.log(Level.TRACE, "\tflags.set=%s", flags.set());
+    logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
     logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
     try {
       var start = Instant.now();
