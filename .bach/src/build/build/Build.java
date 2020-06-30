@@ -18,139 +18,26 @@
 package build;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Bach.Flag;
-import de.sormuras.bach.Builder;
-import de.sormuras.bach.Call;
-import de.sormuras.bach.project.JavaRelease;
-import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.Project;
-import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.Sources;
-import de.sormuras.bach.project.TestSources;
-import de.sormuras.bach.tool.Javac;
-import java.nio.file.Files;
-import java.util.List;
 
 /** Bach's own build program. */
 class Build {
 
-  private static class CustomBuilder extends Builder {
-
-    private final int release = 14;
-
-    private CustomBuilder(Bach bach) {
-      super(bach);
-    }
-
-    @Override
-    public void build() throws Exception {
-      super.build();
-      var modules = Files.createDirectories(base().modules(""));
-      bach()
-          .executeCall(
-              Call.jar()
-                  .with("--create")
-                  .withArchiveFile(
-                      modules.resolve("de.sormuras.bach@" + project().version() + ".jar"))
-                  .with("--main-class", "de.sormuras.bach.Main")
-                  .with("-C", base().classes("", release).resolve("de.sormuras.bach"), ".")
-                  .with("-C", base().directory("src/de.sormuras.bach/main/java"), "."));
-    }
-
-    @Override
-    public Javac computeJavacForMainSources() {
-      return super.computeJavacForMainSources()
-          .without("-verbose")
-          .withModule(List.of("de.sormuras.bach"))
-          .withModuleSourcePath("src/*/main/java")
-          .with("--module-version", project().version())
-          .with("--release", release)
-          .withEncoding("UTF-8")
-          .withRecommendedWarnings()
-          .with("-Werror")
-          .with("-d", base().classes("", release));
-    }
-  }
-
   public static void main(String... args) {
     var project =
         Project.of("bach", Bach.VERSION)
-            .with(
-                Sources.of()
-                    .with(
-                        MainSources.of()
-                            .with(JavaRelease.of(11))
-                            .with(SourceUnit.of("src/de.sormuras.bach/main/java")))
-                    .with(
-                        TestSources.of()
-                            .with(SourceUnit.of("src/de.sormuras.bach/test/java-module"))
-                            .with(SourceUnit.of("src/test.base/test/java")))
-                    .with(
-                        TestPreview.of()
-                            .with(SourceUnit.of("src/test.preview/test-preview/java"))));
+            .withCompileMainSourcesForJavaRelease(11)
+            .withMainSource("src/de.sormuras.bach/main/java")
+            .withTestSource("src/de.sormuras.bach/test/java-module")
+            .withTestSource("src/test.base/test/java")
+            .withPreview("src/test.preview/test-preview/java");
 
     project.toStrings().forEach(System.out::println);
 
-    Bach.ofSystem()
-        .without(Flag.FAIL_FAST)
-        .with(System.Logger.Level.ALL)
-        .with(project)
-        .with(CustomBuilder::new)
-        .buildProject();
+    Bach.ofSystem().with(System.Logger.Level.INFO).with(project).buildProject();
 
     /*
-    var feature = Runtime.version().feature();
-    var project =
-        Project.of("bach", version.toString())
-            .with(base)
-            .with(JavaRelease.of(release))
-            // .with(Documentation.of("\uD83C\uDFBC Bach.java"))
-            .with(
-                MainSources.of()
-                    .with(
-                        Javac.of()
-                            .with("-d", base.classes("", release))
-                            .with("--module", "de.sormuras.bach")
-                            .with("--module-source-path", "src/./main/java")
-                            .with("--module-version", version)
-                            .withCompileForJavaRelease(release)
-                            .with("-encoding", "UTF-8")
-                            .with("-parameters")
-                            .withRecommendedWarnings()
-                            .withTerminateCompilationIfWarningsOccur())
-                    .with(
-                        Javadoc.of()
-                            .with("-d", base.documentation("api"))
-                            .with("--module", "de.sormuras.bach")
-                            .with("--module-source-path", "src/./main/java")
-                            .with("-encoding", "UTF-8")
-                            .with("-locale", "en")
-                            .with("-Xdoclint")
-                            .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
-                            .with("--show-module-contents", "all")
-                            .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api"))
-                    .with(
-                        JLink.of()
-                            .with("--add-modules", "de.sormuras.bach")
-                            .with("--module-path", base.modules("") + File.pathSeparator + "lib")
-                            .with("--output", base.workspace("image"))
-                            .with("--launcher", "bach=de.sormuras.bach")
-                            .with("--compress", "2")
-                            .with("--no-header-files")
-                            .with("--no-man-pages"))
-                    .with(
-                        SourceUnit.of(Path.of("src/de.sormuras.bach/main/java"))
-                            .with(
-                                Jar.of(
-                                        base.modules("")
-                                            .resolve("de.sormuras.bach@" + version + ".jar"))
-                                    .with("--verbose")
-                                    .with("--main-class", "de.sormuras.bach.Main")
-                                    .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("", release, "de.sormuras.bach"), ".")
-                                    .withChangeDirectoryAndIncludeFiles(
-                                        Path.of("src/de.sormuras.bach/main/java"), "."))))
+            .with(Documentation.of("\uD83C\uDFBC Bach.java"))
             .with(
                 TestSources.of()
                     .with(
