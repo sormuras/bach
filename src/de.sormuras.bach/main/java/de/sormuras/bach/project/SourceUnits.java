@@ -17,8 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -68,6 +66,14 @@ public final class SourceUnits {
     return units().isEmpty();
   }
 
+  public boolean isPresent() {
+    return units.size() >= 1;
+  }
+
+  public int size() {
+    return units.size();
+  }
+
   public Stream<String> toNames() {
     return units().keySet().stream().sorted();
   }
@@ -79,6 +85,4 @@ public final class SourceUnits {
   public Stream<SourceUnit> toUnits() {
     return units().values().stream();
   }
-
-
 }
