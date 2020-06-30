@@ -57,6 +57,22 @@ public final class Project {
     return new Project(base, name, version, sources);
   }
 
+  public Project withCompileMainSourcesForJavaRelease(int feature) {
+    return with(sources.with(sources.main().with(JavaRelease.of(feature))));
+  }
+
+  public Project withMainSource(String path) {
+    return with(sources.with(sources.main().with(SourceUnit.of(path))));
+  }
+
+  public Project withTestSource(String path) {
+    return with(sources.with(sources.test().with(SourceUnit.of(path))));
+  }
+
+  public Project withPreview(String path) {
+    return with(sources.with(sources.preview().with(SourceUnit.of(path))));
+  }
+
   private final Base base;
   private final String name;
   private final Version version;

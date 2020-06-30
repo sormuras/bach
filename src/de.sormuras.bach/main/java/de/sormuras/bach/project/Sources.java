@@ -36,18 +36,6 @@ public final class Sources {
     return new Sources(main, test, preview);
   }
 
-  public Sources withMainUnit(SourceUnit unit) {
-    return with(main.with(unit));
-  }
-
-  public Sources withTestUnit(SourceUnit unit) {
-    return with(test.with(unit));
-  }
-
-  public Sources withPreviewUnit(SourceUnit unit) {
-    return with(preview.with(unit));
-  }
-
   private final MainSources main;
   private final TestSources test;
   private final TestPreview preview;
