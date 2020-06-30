@@ -17,7 +17,12 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** Bach's project model. */
 public final class Project {
@@ -33,29 +38,35 @@ public final class Project {
   }
 
   public static Project of(String name, Version version) {
-    return new Project(Base.of(), name, version);
+    return new Project(Base.of(), name, version, Sources.of());
   }
 
   public Project with(Base base) {
-    return new Project(base, name, version);
+    return new Project(base, name, version, sources);
   }
 
   public Project with(String name) {
-    return new Project(base, name, version);
+    return new Project(base, name, version, sources);
   }
 
   public Project with(Version version) {
-    return new Project(base, name, version);
+    return new Project(base, name, version, sources);
+  }
+
+  public Project with(Sources sources) {
+    return new Project(base, name, version, sources);
   }
 
   private final Base base;
   private final String name;
   private final Version version;
+  private final Sources sources;
 
-  public Project(Base base, String name, Version version) {
+  public Project(Base base, String name, Version version, Sources sources) {
     this.base = base;
     this.name = name;
     this.version = version;
+    this.sources = sources;
   }
 
   public Base base() {
@@ -70,7 +81,52 @@ public final class Project {
     return version;
   }
 
+  public Sources sources() {
+    return sources;
+  }
+
   public String toNameAndVersion() {
     return name + ' ' + version;
+  }
+
+  public List<String> toStrings() {
+    var list = new ArrayList<String>();
+    list.add("project " + name + '@' + version + " {");
+    list.add("");
+    list.add("  // base");
+    list.add("  directory " + Paths.quote(base.directory()) + "; // " + base.directory().toUri());
+    list.add("  libraries " + Paths.quote(base.libraries()) + ';');
+    list.add("  workspace " + Paths.quote(base.workspace()) + ';');
+    list.add("");
+    list.add("  // main");
+    list.add("  release " + sources.main().release().feature() + ';');
+    toStrings(list, sources.main().units());
+    list.add("");
+    list.add("  // test");
+    toStrings(list, sources.test().units());
+    list.add("");
+    list.add("  // test-preview");
+    toStrings(list, sources.preview().units());
+    list.add("}");
+    return List.copyOf(list);
+  }
+
+  private void toStrings(List<String> list, SourceUnits units) {
+    for (var unit : units.units().values()) {
+      list.add("  " + unit.name());
+      list.add("    module");
+      list.add("      requires " + Modules.required(unit.descriptor()) + ';');
+      unit.descriptor().mainClass().ifPresent(main -> list.add("      main-class " + main + ';'));
+      list.add("    sources");
+      for (var directory : unit.sources().directories()) {
+        if (directory.isTargeted()) list.add("      release " + directory.release() + ';');
+        var comment = directory.isModuleInfoJavaPresent() ? " // module-info.java" : "";
+        list.add("      path " + Paths.quote(directory.path()) + ';' + comment);
+      }
+      if (!unit.resources().isEmpty()) {
+        var quoted = unit.resources().stream().map(Paths::quote).sorted();
+        list.add("    resources " + quoted.collect(Collectors.joining(", ")));
+      }
+    }
   }
 }
