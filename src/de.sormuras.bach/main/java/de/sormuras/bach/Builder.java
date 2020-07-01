@@ -27,12 +27,15 @@ import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceDirectory;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.SourceUnits;
+import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.TestModule;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -112,6 +115,7 @@ public class Builder {
     if (project().sources().test().units().isPresent()) {
       buildTestModules();
       bach.printStatistics(Level.DEBUG, base().modules("test"));
+      buildTestReportsByExecutingTestModules();
     }
 
     if (main().units().isPresent()) {
@@ -189,6 +193,29 @@ public class Builder {
     bach.executeCall(computeJavacForTestSources());
     Paths.createDirectories(base().modules("test"));
     units.toUnits().map(this::computeJarForTestModule).forEach(bach::executeCall);
+  }
+
+  public void buildTestReportsByExecutingTestModules() {
+    var test = project().sources().test();
+    for (var unit : test.units().units().values())
+      buildTestReportsByExecutingTestModule("test", unit);
+  }
+
+  public void buildTestReportsByExecutingTestModule(String realm, SourceUnit unit) {
+    var module = unit.name();
+    var modulePaths =
+        toModulePaths(
+            toModuleArchive(realm, module), // test module
+            base().modules(""), // main modules
+            base().modules(realm), // other test modules
+            base().libraries()); // external modules
+    bach.logbook().log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
+
+    var testModule = new TestModule(module, modulePaths);
+    if (testModule.findProvider().isPresent()) bach.executeCall(testModule);
+
+    var junit = computeJUnitCall(realm, unit, modulePaths);
+    if (junit.findProvider().isPresent()) bach.executeCall(junit);
   }
 
   public SormurasModulesProperties computeSormurasModulesProperties() {
@@ -287,13 +314,28 @@ public class Builder {
 
   public Jar computeJarForTestModule(SourceUnit unit) {
     var module = unit.name();
-    var archive = base().modules("test").resolve(module + '@' + project().version() + "-test.jar");
     var release = Runtime.version().feature();
-
     return Call.jar()
         .with("--create")
-        .withArchiveFile(archive)
+        .withArchiveFile(toModuleArchive("test", module))
         .with("-C", base().classes("test", release, module), ".");
+  }
+
+  public JUnit computeJUnitCall(String realm, SourceUnit unit, List<Path> modulePaths) {
+    var module = unit.name();
+    return new JUnit(module, modulePaths, List.of())
+        .with("--select-module", module)
+        .with("--disable-ansi-colors")
+        .with("--reports-dir", base().reports("junit-" + realm, module));
+  }
+
+  public Path toModuleArchive(String realm, String module) {
+    return toModuleArchive(realm, module, project().version());
+  }
+
+  public Path toModuleArchive(String realm, String module, Version version) {
+    var suffix = realm.isEmpty() ? "" : '-' + realm;
+    return base().modules(realm).resolve(module + '@' + version + suffix + ".jar");
   }
 
   public List<String> toModulePath(Path... elements) {
