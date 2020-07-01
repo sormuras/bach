@@ -17,8 +17,13 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +32,8 @@ import java.util.spi.ToolProvider;
 
 /** Bach's main program. */
 public final class Main {
+
+  private static final Path WORKSPACE = Base.of().workspace();
 
   public static final class BachToolProvider implements ToolProvider {
 
@@ -69,13 +76,13 @@ public final class Main {
           build();
           break;
         case "clean":
-          out.println("TODO: Action 'clean' is not supported, yet.");
+          Paths.deleteDirectories(WORKSPACE);
           break;
         case "help":
           help();
           break;
         case "info":
-          out.println("TODO: Action 'info' is not supported, yet.");
+          Project.of(Base.of()).toStrings().forEach(out::println);
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
@@ -88,7 +95,11 @@ public final class Main {
   }
 
   private void build() {
-    err.println("TODO: Action 'build' is not supported, yet.");
+    if (Files.exists(Path.of(".bach/src/build/build/Build.java"))) {
+      err.println("TODO: Custom build program execution is not supported, yet.");
+      return;
+    }
+    Bach.ofSystem().with(Project.of(Base.of())).buildProject();
   }
 
   private void help() {
@@ -97,7 +108,7 @@ public final class Main {
     out.println();
     out.println("Supported actions");
     out.format("\t%-9s Build modular Java project%n", "build");
-    // out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", WORKSPACE);
+    out.format("\t%-9s Delete workspace directory (%s) recursively%n", "clean", WORKSPACE);
     out.format("\t%-9s Print this help screen%n", "help");
     out.format("\t%-9s Scan current working directory and print project information%n", "info");
     out.format("\t%-9s Print version to the output stream%n", "version");
