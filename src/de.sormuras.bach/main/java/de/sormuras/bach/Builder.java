@@ -19,7 +19,9 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceDirectory;
@@ -31,16 +33,25 @@ import de.sormuras.bach.tool.Javadoc;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.FindException;
+import java.lang.module.ModuleFinder;
+import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /** An extensible build workflow. */
 public class Builder {
@@ -51,9 +62,12 @@ public class Builder {
   }
 
   private final Bach bach;
+  private HttpClient http;
+  private final SormurasModulesProperties sormurasModulesProperties;
 
   public Builder(Bach bach) {
     this.bach = bach;
+    this.sormurasModulesProperties = computeSormurasModulesProperties();
   }
 
   public final Bach bach() {
@@ -72,8 +86,15 @@ public class Builder {
     return bach.project().sources().main();
   }
 
+  public final HttpClient http() {
+    if (http == null) {
+      http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    }
+    return http;
+  }
+
   public void build() {
-    // TODO downloadMissingExternalModules();
+    buildLibrariesDirectoryByResolvingMissingExternalModules();
     if (main().units().isPresent()) {
       buildMainModules();
       var service = Executors.newWorkStealingPool();
@@ -87,6 +108,53 @@ public class Builder {
         // return;
       }
     }
+  }
+
+  public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
+    // get external requires from all module-info.java files
+    // get external modules from project descriptor
+    // download them
+    // get missing external modules from libraries directory
+    // download them recursively
+
+    var libraries = base().libraries();
+    var declared = project().toDeclaredModuleNames();
+    var resolver =
+        new Resolver(List.of(libraries), declared, this::buildLibrariesDirectoryByResolvingModules);
+    resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
+    resolver.resolve(project().library().requires()); // from project descriptor
+  }
+
+  public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
+    bach.logbook().log(Level.DEBUG, "Resolve missing external modules: " + modules);
+    var resources = new Resources(http());
+    for (var module : modules) {
+      var optionalLink =
+          project().library().findLink(module).or(() -> computeLinkForExternalModule(module));
+      if (optionalLink.isEmpty()) {
+        bach.logbook().log(Level.WARNING, "Module %s not locatable", module);
+        continue;
+      }
+      var link = optionalLink.orElseThrow();
+      var uri = link.toURI();
+      var name = module + ".jar";
+      try {
+        var lib = Paths.createDirectories(base().libraries());
+        var file = resources.copy(uri, lib.resolve(name));
+        var size = Paths.size(file);
+        bach.logbook().log(Level.INFO, "%9d %-50s << %s", size, file, uri);
+      } catch (Exception e) {
+        throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
+      }
+    }
+  }
+
+  public SormurasModulesProperties computeSormurasModulesProperties() {
+    return new SormurasModulesProperties(Map.of());
+  }
+
+  public Optional<Link> computeLinkForExternalModule(String module) {
+    return sormurasModulesProperties.lookup(module);
   }
 
   public void buildMainModules() {
@@ -103,7 +171,7 @@ public class Builder {
   }
 
   public void buildCustomRuntimeImage() {
-    var modulePaths = modulePaths(base().modules(""), base().libraries());
+    var modulePaths = toModulePaths(base().modules(""), base().libraries());
     var autos = Modules.findAutomaticModules(modulePaths);
     if (autos.size() > 0) {
       bach.logbook().log(Level.WARNING, "Automatic module(s) detected: %s", autos);
@@ -116,11 +184,11 @@ public class Builder {
 
   public Javac computeJavacForMainSources() {
     var release = main().release().feature();
-    var modulePath = modulePath(base().libraries());
+    var modulePath = toModulePath(base().libraries());
     return Call.javac()
         .withModule(main().units().units().keySet())
         .with("--module-version", project().version())
-        .with(moduleSourcePaths(main().units(), false), Javac::withModuleSourcePath)
+        .with(toModuleSourcePaths(main().units(), false), Javac::withModuleSourcePath)
         .with(modulePath, Javac::withModulePath)
         .withEncoding("UTF-8")
         .with("-parameters")
@@ -145,10 +213,10 @@ public class Builder {
 
   public Javadoc computeJavadocForMainSources() {
     var release = main().release().feature();
-    var modulePath = modulePath(base().libraries());
+    var modulePath = toModulePath(base().libraries());
     return Call.javadoc()
         .withModule(main().units().units().keySet())
-        .with(moduleSourcePaths(main().units(), false), Javadoc::withModuleSourcePath)
+        .with(toModuleSourcePaths(main().units(), false), Javadoc::withModuleSourcePath)
         .with(modulePath, Javadoc::withModulePath)
         .with("-d", base().documentation("api"))
         .withEncoding("UTF-8")
@@ -173,7 +241,7 @@ public class Builder {
     var mainModule = Modules.findMainModule(main().units().toUnits().map(SourceUnit::descriptor));
     return Call.tool("jlink")
         .with("--add-modules", main().units().toNames(","))
-        .with("--module-path", modulePath(base().modules(""), base().libraries()).get(0))
+        .with("--module-path", toModulePath(base().modules(""), base().libraries()).get(0))
         .with(mainModule.isPresent(), "--launcher", project().name() + '=' + mainModule.orElse("?"))
         .with("--compress", "2")
         .with("--no-header-files")
@@ -181,29 +249,29 @@ public class Builder {
         .with("--output", base().workspace("image"));
   }
 
-  public static List<String> modulePath(Path... elements) {
-    var paths = modulePaths(elements);
+  public List<String> toModulePath(Path... elements) {
+    var paths = toModulePaths(elements);
     return paths.isEmpty() ? List.of() : List.of(Paths.join(paths));
   }
 
-  public static List<Path> modulePaths(Path... elements) {
+  public List<Path> toModulePaths(Path... elements) {
     var paths = new ArrayList<Path>();
     for (var element : elements) if (Files.exists(element)) paths.add(element);
     return List.copyOf(paths);
   }
 
-  public List<String> moduleSourcePaths(SourceUnits units, boolean forceModuleSpecificForm) {
+  public List<String> toModuleSourcePaths(SourceUnits units, boolean forceModuleSpecificForm) {
     var paths = new ArrayList<String>();
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
     for (var unit : units.units().values()) {
-      var sourcePaths = moduleSpecificSourcePaths(unit.sources().directories());
+      var sourcePaths = toModuleSpecificSourcePaths(unit.sources().directories());
       if (forceModuleSpecificForm) {
         specific.put(unit.name(), sourcePaths);
         continue;
       }
       try {
-        for (var path : sourcePaths) patterns.add(moduleSourcePathPatternForm(path, unit.name()));
+        for (var path : sourcePaths) patterns.add(toModuleSourcePathPatternForm(path, unit.name()));
       } catch (FindException e) {
         specific.put(unit.name(), sourcePaths);
       }
@@ -215,7 +283,7 @@ public class Builder {
     return List.copyOf(paths);
   }
 
-  public String moduleSourcePathPatternForm(Path info, String module) {
+  public String toModuleSourcePathPatternForm(Path info, String module) {
     var deque = new ArrayDeque<String>();
     for (var element : info.normalize()) {
       var name = element.toString();
@@ -230,11 +298,128 @@ public class Builder {
     return pattern;
   }
 
-  public List<Path> moduleSpecificSourcePaths(Set<SourceDirectory> sources) {
+  public List<Path> toModuleSpecificSourcePaths(Set<SourceDirectory> sources) {
     var s0 = sources.iterator().next();
     if (s0.isModuleInfoJavaPresent()) return List.of(s0.path());
     for (var source : sources)
       if (source.isModuleInfoJavaPresent()) return List.of(s0.path(), source.path());
     throw new IllegalStateException("No module-info.java found in: " + sources);
+  }
+
+  /** Resolve missing external modules. */
+  public static class Resolver {
+
+    private final Path[] paths;
+    private final Set<String> declared;
+    private final Consumer<Set<String>> transporter;
+    private final Set<String> system;
+
+    public Resolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
+      this.paths = Objects.requireNonNull(paths, "paths").toArray(Path[]::new);
+      this.declared = new TreeSet<>(Objects.requireNonNull(declared, "declared"));
+      this.transporter = Objects.requireNonNull(transporter, "transporter");
+      this.system = Modules.declared(ModuleFinder.ofSystem());
+      if (paths.isEmpty()) throw new IllegalArgumentException("At least one path expected");
+    }
+
+    public void resolve(Set<String> required) {
+      resolveModules(required);
+      resolveLibraryModules();
+    }
+
+    public void resolveModules(Set<String> required) {
+      var missing = missing(required);
+      if (missing.isEmpty()) return;
+      transporter.accept(missing);
+      var unresolved = missing(required);
+      if (unresolved.isEmpty()) return;
+      throw new IllegalStateException("Unresolved modules: " + unresolved);
+    }
+
+    public void resolveLibraryModules() {
+      do {
+        var missing = missing(Modules.required(ModuleFinder.of(paths)));
+        if (missing.isEmpty()) return;
+        resolveModules(missing);
+      } while (true);
+    }
+
+    Set<String> missing(Set<String> required) {
+      var missing = new TreeSet<>(required);
+      missing.removeAll(declared);
+      if (required.isEmpty()) return Set.of();
+      missing.removeAll(system);
+      if (required.isEmpty()) return Set.of();
+      var library = Modules.declared(ModuleFinder.of(paths));
+      missing.removeAll(library);
+      return missing;
+    }
+  }
+
+  /** https://github.com/sormuras/modules */
+  public class SormurasModulesProperties {
+
+    private Map<String, String> moduleMaven;
+    private Map<String, String> moduleVersion;
+    private final Map<String, String> variants;
+
+    public SormurasModulesProperties(Map<String, String> variants) {
+      this.variants = variants;
+    }
+
+    public Optional<Link> lookup(String module) {
+      if (moduleMaven == null && moduleVersion == null)
+        try {
+          var resources = new Resources(http());
+          moduleMaven = load(resources, "module-maven.properties");
+          moduleVersion = load(resources, "module-version.properties");
+        } catch (Exception e) {
+          throw new RuntimeException("Load module properties failed", e);
+        }
+      if (moduleMaven == null) throw new IllegalStateException("module-maven map is null");
+      if (moduleVersion == null) throw new IllegalStateException("module-version map is null");
+
+      var maven = moduleMaven.get(module);
+      if (maven == null) return Optional.empty();
+      var indexOfColon = maven.indexOf(':');
+      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+      var version = variants.getOrDefault(module, moduleVersion.get(module));
+      if (version == null) return Optional.empty();
+      var group = maven.substring(0, indexOfColon);
+      var artifact = maven.substring(indexOfColon + 1);
+      return Optional.of(Link.ofCentral(module, group, artifact, version));
+    }
+
+    private static final String ROOT = "https://github.com/sormuras/modules";
+
+    private Map<String, String> load(Resources resources, String properties) throws Exception {
+      var root = Path.of(System.getProperty("user.home", ""));
+      var cache = Files.createDirectories(root.resolve(".bach/modules"));
+      var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+      var target = cache.resolve(properties);
+      var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+      return map(load(new Properties(), path));
+    }
+
+    /** Load all strings from the specified file into the passed properties instance. */
+    private Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (Exception e) {
+          throw new RuntimeException("Load properties failed: " + path, e);
+        }
+      }
+      return properties;
+    }
+
+    /** Convert all {@link String}-based properties into a {@code Map<String, String>}. */
+    private Map<String, String> map(Properties properties) {
+      var map = new TreeMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        map.put(name, properties.getProperty(name));
+      }
+      return map;
+    }
   }
 }
