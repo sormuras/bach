@@ -177,6 +177,7 @@ public final class Bach {
 
   public void writeLogbook() {
     try {
+      Paths.createDirectories(project.base().workspace());
       var path = project.base().workspace("logbook.md");
       Files.write(path, logbook.toMarkdown(project));
       logbook.log(Level.INFO, "Wrote logbook to %s", path.toUri());
