@@ -32,6 +32,7 @@ class Build {
             .withMainSource("src/de.sormuras.bach/main/java")
             .withTestSource("src/de.sormuras.bach/test/java-module")
             .withTestSource("src/test.base/test/java")
+            .withTestSource("src/test.modules/test/java")
             .withPreview("src/test.preview/test-preview/java")
             .with(
                 Library.of()
