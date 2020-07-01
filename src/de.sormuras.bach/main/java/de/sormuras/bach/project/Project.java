@@ -22,7 +22,10 @@ import de.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Bach's project model. */
 public final class Project {
@@ -38,23 +41,27 @@ public final class Project {
   }
 
   public static Project of(String name, Version version) {
-    return new Project(Base.of(), name, version, Sources.of());
+    return new Project(Base.of(), name, version, Sources.of(), Library.of());
   }
 
   public Project with(Base base) {
-    return new Project(base, name, version, sources);
+    return new Project(base, name, version, sources, library);
   }
 
   public Project with(String name) {
-    return new Project(base, name, version, sources);
+    return new Project(base, name, version, sources, library);
   }
 
   public Project with(Version version) {
-    return new Project(base, name, version, sources);
+    return new Project(base, name, version, sources, library);
   }
 
   public Project with(Sources sources) {
-    return new Project(base, name, version, sources);
+    return new Project(base, name, version, sources, library);
+  }
+
+  public Project with(Library library) {
+    return new Project(base, name, version, sources, library);
   }
 
   public Project withCompileMainSourcesForJavaRelease(int feature) {
@@ -77,12 +84,14 @@ public final class Project {
   private final String name;
   private final Version version;
   private final Sources sources;
+  private final Library library;
 
-  public Project(Base base, String name, Version version, Sources sources) {
+  public Project(Base base, String name, Version version, Sources sources, Library library) {
     this.base = base;
     this.name = name;
     this.version = version;
     this.sources = sources;
+    this.library = library;
   }
 
   public Base base() {
@@ -101,8 +110,30 @@ public final class Project {
     return sources;
   }
 
+  public Library library() {
+    return library;
+  }
+
   public String toNameAndVersion() {
     return name + ' ' + version;
+  }
+
+  public Set<String> toDeclaredModuleNames() {
+    return toUnits().map(SourceUnit::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public Set<String> toExternalModuleNames() {
+    return Modules.external(toDeclaredModuleNames(), toRequiredModuleNames());
+  }
+
+  public Set<String> toRequiredModuleNames() {
+    return Modules.required(toUnits().map(SourceUnit::descriptor));
+  }
+
+  public Stream<SourceUnit> toUnits() {
+    return Stream.concat(
+        sources.main().units().toUnits(),
+        Stream.concat(sources.test().units().toUnits(), sources.preview().units().toUnits()));
   }
 
   public List<String> toStrings() {
@@ -123,6 +154,18 @@ public final class Project {
     list.add("");
     list.add("  // test-preview");
     toStrings(list, sources.preview().units());
+    list.add("");
+    list.add("  // modules");
+    list.add("  //   declared " + toDeclaredModuleNames());
+    list.add("  //   required " + toRequiredModuleNames());
+    list.add("  //   external " + toExternalModuleNames());
+    list.add("");
+    list.add("  // library");
+    list.add("  requires " + library.requires() + ';');
+    for (var link : library.links().values()) {
+      list.add("  links " + link.module() + " to");
+      list.add("    " + link.uri() + ';');
+    }
     list.add("}");
     return List.copyOf(list);
   }
