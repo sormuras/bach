@@ -94,6 +94,11 @@ public final class Paths {
     return isModuleInfoJavaFile(info) && Collections.frequency(deque(info), realm) == 1;
   }
 
+  /** Test for a path pointing to a file system root like {@code /} or {@code C:\}. */
+  public static boolean isRoot(Path path) {
+    return path.toAbsolutePath().normalize().getNameCount() == 0;
+  }
+
   /** Return {@code true} if the given name of the view is supported by the given file. */
   public static boolean isViewSupported(Path file, String view) {
     return file.getFileSystem().supportedFileAttributeViews().contains(view);
