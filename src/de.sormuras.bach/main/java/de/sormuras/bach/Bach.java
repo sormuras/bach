@@ -108,6 +108,7 @@ public final class Bach {
     logbook.log(Level.TRACE, "\tflags.set=%s", flags.set());
     logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
     logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
+    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project.toStrings()));
     try {
       var start = Instant.now();
       builder.create(this).build();
