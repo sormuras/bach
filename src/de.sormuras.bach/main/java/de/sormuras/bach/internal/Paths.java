@@ -94,6 +94,11 @@ public final class Paths {
     return isModuleInfoJavaFile(info) && Collections.frequency(deque(info), realm) == 1;
   }
 
+  /** Return {@code true} if the given name of the view is supported by the given file. */
+  public static boolean isViewSupported(Path file, String view) {
+    return file.getFileSystem().supportedFileAttributeViews().contains(view);
+  }
+
   /** List content of specified directory in natural order with the given filter applied. */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
