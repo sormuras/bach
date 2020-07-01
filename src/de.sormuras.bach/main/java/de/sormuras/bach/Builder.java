@@ -105,12 +105,17 @@ public class Builder {
         service.awaitTermination(1, TimeUnit.DAYS);
       } catch (InterruptedException e) {
         Thread.interrupted();
-        // return;
+        return;
       }
     }
 
     if (project().sources().test().units().isPresent()) {
       buildTestModules();
+      bach.printStatistics(Level.DEBUG, base().modules("test"));
+    }
+
+    if (main().units().isPresent()) {
+      bach.printStatistics(Level.INFO, base().modules(""));
     }
   }
 
@@ -146,7 +151,7 @@ public class Builder {
         var lib = Paths.createDirectories(base().libraries());
         var file = resources.copy(uri, lib.resolve(name));
         var size = Paths.size(file);
-        bach.logbook().log(Level.INFO, "%9d %-50s << %s", size, file, uri);
+        bach.logbook().log(Level.INFO, "%,12d %-42s << %s", size, file, uri);
       } catch (Exception e) {
         throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
       }

@@ -17,12 +17,14 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -162,6 +164,14 @@ public final class Bach {
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
     }
+  }
+
+  public void printStatistics(Level level, Path directory) {
+    var uri = directory.toUri().toString();
+    var files = Paths.list(directory, Paths::isJarFile);
+    logbook.log(level, "Directory %s contains", uri);
+    if (files.isEmpty()) logbook.log(Level.WARNING, "Not a single JAR file?!");
+    for (var file : files) logbook.log(level, "%,12d %s", Paths.size(file), file.getFileName());
   }
 
   public void writeLogbook() {
