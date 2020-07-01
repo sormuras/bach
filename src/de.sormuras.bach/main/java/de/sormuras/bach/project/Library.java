@@ -31,7 +31,7 @@ public final class Library {
     return new Library(Set.of(), Map.of());
   }
 
-  public Library with(String... moreRequires) {
+  public Library withRequires(String... moreRequires) {
     var requires = new TreeSet<>(requires());
     Collections.addAll(requires, moreRequires);
     return new Library(requires, links);

@@ -35,7 +35,7 @@ class Build {
             .withPreview("src/test.preview/test-preview/java")
             .with(
                 Library.of()
-                    .with("org.junit.platform.console")
+                    .withRequires("org.junit.platform.console")
                     .with(
                         Link.ofJUnitPlatform("commons", "1.7.0-M1"),
                         Link.ofJUnitPlatform("console", "1.7.0-M1"),
