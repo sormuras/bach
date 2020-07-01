@@ -153,14 +153,6 @@ public class Builder {
     }
   }
 
-  public SormurasModulesProperties computeSormurasModulesProperties() {
-    return new SormurasModulesProperties(Map.of());
-  }
-
-  public Optional<Link> computeLinkForExternalModule(String module) {
-    return sormurasModulesProperties.lookup(module);
-  }
-
   public void buildMainModules() {
     var units = main().units();
     bach.logbook().log(Level.DEBUG, "Build of %d main module(s) started", units.size());
@@ -192,6 +184,14 @@ public class Builder {
     bach.executeCall(computeJavacForTestSources());
     Paths.createDirectories(base().modules("test"));
     units.toUnits().map(this::computeJarForTestModule).forEach(bach::executeCall);
+  }
+
+  public SormurasModulesProperties computeSormurasModulesProperties() {
+    return new SormurasModulesProperties(Map.of());
+  }
+
+  public Optional<Link> computeLinkForExternalModule(String module) {
+    return sormurasModulesProperties.lookup(module);
   }
 
   public Javac computeJavacForMainSources() {

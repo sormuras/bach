@@ -57,47 +57,5 @@ class Build {
     project.toStrings().forEach(System.out::println);
 
     Bach.ofSystem().with(System.Logger.Level.DEBUG).with(project).buildProject();
-
-    /*
-            .with(Documentation.of("\uD83C\uDFBC Bach.java"))
-            .with(
-                TestSources.of()
-                    .with(
-                        Javac.of()
-                            .with("-d", base.classes("test", feature))
-                            .with("--module", "de.sormuras.bach,test.base")
-                            .with("--module-version", version + "-test")
-                            .with(
-                                "--module-source-path",
-                                "src/./test/java" + File.pathSeparator + "src/./test/java-module")
-                            .with("--module-path", "lib")
-                            .with(
-                                "--patch-module",
-                                "de.sormuras.bach="
-                                    + base.modules("")
-                                        .resolve("de.sormuras.bach@" + version + ".jar"))
-                            .with("-encoding", "UTF-8")
-                            .withWarnings("all", "-preview")
-                            .withRecommendedWarnings()
-                            .withTerminateCompilationIfWarningsOccur())
-                    .with(
-                        SourceUnit.of(Path.of("src/de.sormuras.bach/test/java-module"))
-                            .with(SourceDirectory.of(Path.of("src/de.sormuras.bach/test/java")))
-                            .with(
-                                Jar.of(
-                                        base.modules("test")
-                                            .resolve("de.sormuras.bach@" + version + "-test.jar"))
-                                    .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("test", feature, "de.sormuras.bach"), ".")
-                                    .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("", release, "de.sormuras.bach"), ".")),
-                        SourceUnit.of(Path.of("src/test.base/test/java"))
-                            .with(
-                                Jar.of(
-                                        base.modules("test")
-                                            .resolve("test.base@" + version + "-test.jar"))
-                                    .withChangeDirectoryAndIncludeFiles(
-                                        base.classes("test", feature, "test.base"), "."))))
-    */
   }
 }
