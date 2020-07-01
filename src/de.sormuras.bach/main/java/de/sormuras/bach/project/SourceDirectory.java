@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** A source directory potentially targeting a specific Java SE release. */
-public final class SourceDirectory implements Comparator<SourceDirectory> {
+public final class SourceDirectory implements Comparable<SourceDirectory> {
 
   private static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
 
@@ -83,8 +83,8 @@ public final class SourceDirectory implements Comparator<SourceDirectory> {
   }
 
   @Override
-  public int compare(SourceDirectory o1, SourceDirectory o2) {
-    return COMPARATOR.compare(o1, o2);
+  public int compareTo(SourceDirectory other) {
+    return COMPARATOR.compare(this, other);
   }
 
   public boolean isTargeted() {
