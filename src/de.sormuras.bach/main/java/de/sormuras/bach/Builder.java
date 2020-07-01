@@ -108,6 +108,10 @@ public class Builder {
         // return;
       }
     }
+
+    if (project().sources().test().units().isPresent()) {
+      buildTestModules();
+    }
   }
 
   public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
@@ -182,6 +186,14 @@ public class Builder {
     bach.executeCall(jlink);
   }
 
+  public void buildTestModules() {
+    var units = project().sources().test().units();
+    bach.logbook().log(Level.DEBUG, "Build of %d test module(s) started", units.size());
+    bach.executeCall(computeJavacForTestSources());
+    Paths.createDirectories(base().modules("test"));
+    units.toUnits().map(this::computeJarForTestModule).forEach(bach::executeCall);
+  }
+
   public Javac computeJavacForMainSources() {
     var release = main().release().feature();
     var modulePath = toModulePath(base().libraries());
@@ -249,6 +261,36 @@ public class Builder {
         .with("--output", base().workspace("image"));
   }
 
+  public Javac computeJavacForTestSources() {
+    var release = Runtime.version().feature();
+    var sources = project().sources();
+    var units = sources.test().units();
+    var modulePath = toModulePath(base().modules(""), base().libraries());
+    return Call.javac()
+        .withModule(units.units().keySet())
+        .with("--module-version", project().version().toString() + "-test")
+        .with(toModuleSourcePaths(units, false), Javac::withModuleSourcePath)
+        .with(
+            toModulePatches(units, main().units()).entrySet(),
+            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
+        .with(modulePath, Javac::withModulePath)
+        .withEncoding("UTF-8")
+        .with("-parameters")
+        .withRecommendedWarnings()
+        .with("-d", base().classes("test", release));
+  }
+
+  public Jar computeJarForTestModule(SourceUnit unit) {
+    var module = unit.name();
+    var archive = base().modules("test").resolve(module + '@' + project().version() + "-test.jar");
+    var release = Runtime.version().feature();
+
+    return Call.jar()
+        .with("--create")
+        .withArchiveFile(archive)
+        .with("-C", base().classes("test", release, module), ".");
+  }
+
   public List<String> toModulePath(Path... elements) {
     var paths = toModulePaths(elements);
     return paths.isEmpty() ? List.of() : List.of(Paths.join(paths));
@@ -304,6 +346,22 @@ public class Builder {
     for (var source : sources)
       if (source.isModuleInfoJavaPresent()) return List.of(s0.path(), source.path());
     throw new IllegalStateException("No module-info.java found in: " + sources);
+  }
+
+  public Map<String, String> toModulePatches(SourceUnits units, SourceUnits upstream) {
+    if (units.units().isEmpty() || upstream.isEmpty()) return Map.of();
+    var patches = new TreeMap<String, String>();
+    for (var unit : units.units().values()) {
+      var module = unit.name();
+      upstream.units().values().stream()
+          .filter(up -> up.name().equals(module))
+          .findAny()
+          .ifPresent(
+              up ->
+                  patches.put(
+                      module, Paths.join(toModuleSpecificSourcePaths(up.sources().directories()))));
+    }
+    return patches;
   }
 
   /** Resolve missing external modules. */
