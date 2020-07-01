@@ -115,6 +115,26 @@ public final class Paths {
     return List.copyOf(paths);
   }
 
+  /** Walk all trees to find matching paths the given filter starting at given root paths. */
+  public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
+    var paths = new TreeSet<Path>();
+    for (var root : roots) {
+      try (var stream = Files.walk(root, maxDepth)) {
+        stream.filter(filter).forEach(paths::add);
+      } catch (Exception e) {
+        throw new Error("Walk directory '" + root + "' failed: " + e, e);
+      }
+    }
+    return List.copyOf(paths);
+  }
+
+  public static List<Path> findModuleInfoJavaFiles(Path directory, int limit) {
+    if (isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
+    var units = find(List.of(directory), limit, Paths::isModuleInfoJavaFile);
+    if (units.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
+    return List.copyOf(units);
+  }
+
   /** Join a collection of path objects to a string using the system-dependent separator. */
   public static String join(Collection<Path> paths) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));

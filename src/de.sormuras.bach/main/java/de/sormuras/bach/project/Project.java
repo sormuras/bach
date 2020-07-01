@@ -44,6 +44,29 @@ public final class Project {
     return new Project(Base.of(), name, version, Sources.of(), Library.of());
   }
 
+  public static Project of(Base base) {
+    var mainSources = MainSources.of();
+    var testSources = TestSources.of();
+    var testPreview = TestPreview.of();
+    for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
+      var unit = SourceUnit.of(info);
+      if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
+        testSources = testSources.with(unit);
+        continue;
+      }
+      if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) {
+        testPreview = testPreview.with(unit);
+        continue;
+      }
+      mainSources = mainSources.with(unit);
+    }
+    var sources = new Sources(mainSources, testSources, testPreview);
+    var absolute = base.directory().toAbsolutePath();
+    var name = System.getProperty("bach.project.name", Paths.name(absolute).toLowerCase());
+    var version = System.getProperty("bach.project.version", "1-ea");
+    return new Project(base, name, Version.parse(version), sources, Library.of());
+  }
+
   public Project with(Base base) {
     return new Project(base, name, version, sources, library);
   }
