@@ -18,6 +18,8 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.Project;
 
 /** Bach's own build program. */
@@ -30,11 +32,30 @@ class Build {
             .withMainSource("src/de.sormuras.bach/main/java")
             .withTestSource("src/de.sormuras.bach/test/java-module")
             .withTestSource("src/test.base/test/java")
-            .withPreview("src/test.preview/test-preview/java");
+            .withPreview("src/test.preview/test-preview/java")
+            .with(
+                Library.of()
+                    .with("org.junit.platform.console")
+                    .with(
+                        Link.ofJUnitPlatform("commons", "1.7.0-M1"),
+                        Link.ofJUnitPlatform("console", "1.7.0-M1"),
+                        Link.ofJUnitPlatform("engine", "1.7.0-M1"),
+                        Link.ofJUnitPlatform("launcher", "1.7.0-M1"),
+                        Link.ofJUnitPlatform("reporting", "1.7.0-M1"),
+                        Link.ofJUnitPlatform("testkit", "1.7.0-M1"))
+                    .with(
+                        Link.ofJUnitJupiter("", "5.7.0-M1"),
+                        Link.ofJUnitJupiter("api", "5.7.0-M1"),
+                        Link.ofJUnitJupiter("engine", "5.7.0-M1"),
+                        Link.ofJUnitJupiter("params", "5.7.0-M1"))
+                    .with(
+                        Link.ofCentral(
+                            "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
+                        Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
     project.toStrings().forEach(System.out::println);
 
-    Bach.ofSystem().with(System.Logger.Level.INFO).with(project).buildProject();
+    Bach.ofSystem().with(System.Logger.Level.DEBUG).with(project).buildProject();
 
     /*
             .with(Documentation.of("\uD83C\uDFBC Bach.java"))
@@ -76,22 +97,6 @@ class Build {
                                             .resolve("test.base@" + version + "-test.jar"))
                                     .withChangeDirectoryAndIncludeFiles(
                                         base.classes("test", feature, "test.base"), "."))))
-            .with(
-                Locator.ofJUnitPlatform("commons", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("console", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("engine", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("launcher", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("reporting", "1.7.0-M1"),
-                Locator.ofJUnitPlatform("testkit", "1.7.0-M1"))
-            .with(
-                Locator.ofJUnitJupiter("", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("api", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("engine", "5.7.0-M1"),
-                Locator.ofJUnitJupiter("params", "5.7.0-M1"))
-            .with(
-                Locator.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
-                Locator.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
-            .withRequires("org.junit.platform.console");
     */
   }
 }
