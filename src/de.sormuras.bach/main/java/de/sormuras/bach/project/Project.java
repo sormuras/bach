@@ -49,6 +49,7 @@ public final class Project {
     var testSources = TestSources.of();
     var testPreview = TestPreview.of();
     for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
+      if (info.startsWith(".bach")) continue;
       var unit = SourceUnit.of(info);
       if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
         testSources = testSources.with(unit);
