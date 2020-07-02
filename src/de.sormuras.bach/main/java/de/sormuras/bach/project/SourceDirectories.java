@@ -17,44 +17,67 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Paths;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/** A set of source directory objects. */
+/** A list of source directory objects. */
 public final class SourceDirectories {
 
   public static SourceDirectories of() {
-    return new SourceDirectories(Set.of());
+    return new SourceDirectories(List.of());
   }
 
   public static SourceDirectories of(Path infoDirectory) {
-    return new SourceDirectories(SourceDirectory.ofAll(infoDirectory));
+    return new SourceDirectories(list(infoDirectory));
+  }
+
+  static List<SourceDirectory> list(Path infoDirectory) {
+    var source = SourceDirectory.of(infoDirectory); // contains module-info.java file
+    var parent = infoDirectory.getParent();
+    if (source.release() == 0 || parent == null) {
+      var java = infoDirectory.resolveSibling("java");
+      if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
+      return List.of(new SourceDirectory(java, 0), source);
+    }
+    return Paths.list(parent, Files::isDirectory).stream()
+        .map(SourceDirectory::of)
+        .filter(SourceDirectory::isTargeted)
+        .sorted(Comparator.comparingInt(SourceDirectory::release))
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public SourceDirectories with(SourceDirectory directory) {
-    var directories = toTreeSet();
+    var directories = new ArrayList<>(directories());
     directories.add(directory);
     return new SourceDirectories(directories);
   }
 
-  private final Set<SourceDirectory> directories;
+  private final List<SourceDirectory> directories;
 
-  public SourceDirectories(Set<SourceDirectory> directories) {
-    this.directories = Set.copyOf(directories);
+  public SourceDirectories(List<SourceDirectory> directories) {
+    this.directories = List.copyOf(directories);
   }
 
-  public Set<SourceDirectory> directories() {
+  public List<SourceDirectory> directories() {
     return directories;
+  }
+
+  public SourceDirectory first() {
+    return directories.get(0);
+  }
+
+  public SourceDirectory last() {
+    return directories.get(directories.size() - 1);
   }
 
   public boolean isMultiTarget() {
     if (directories.isEmpty()) return false;
-    if (directories.size() == 1) return directories.iterator().next().isTargeted();
+    if (directories.size() == 1) return first().isTargeted();
     return directories.stream().allMatch(SourceDirectory::isTargeted);
-  }
-
-  public TreeSet<SourceDirectory> toTreeSet() {
-    return new TreeSet<>(directories);
   }
 }

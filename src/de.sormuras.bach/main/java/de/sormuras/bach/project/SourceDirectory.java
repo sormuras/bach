@@ -17,41 +17,20 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.internal.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /** A source directory potentially targeting a specific Java SE release. */
-public final class SourceDirectory implements Comparable<SourceDirectory> {
+public final class SourceDirectory {
 
   private static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
-
-  private static final Comparator<SourceDirectory> COMPARATOR =
-      Comparator.comparingInt(SourceDirectory::release).thenComparing(SourceDirectory::path);
 
   public static SourceDirectory of(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
     var file = path.normalize().getFileName();
     var name = file != null ? file : path.toAbsolutePath().getFileName();
     return new SourceDirectory(path, parseRelease(name.toString()));
-  }
-
-  public static Set<SourceDirectory> ofAll(Path infoDirectory) {
-    var source = of(infoDirectory); // contains module-info.java file
-    var parent = infoDirectory.getParent();
-    if (source.release() == 0 || parent == null) {
-      var java = infoDirectory.resolveSibling("java");
-      if (java.equals(infoDirectory) || Files.notExists(java)) return Set.of(source);
-      return Set.of(new SourceDirectory(java, 0), source);
-    }
-    return Paths.list(parent, Files::isDirectory).stream()
-        .map(SourceDirectory::of)
-        .filter(SourceDirectory::isTargeted)
-        .collect(Collectors.toUnmodifiableSet());
   }
 
   static int parseRelease(String name) {
@@ -80,11 +59,6 @@ public final class SourceDirectory implements Comparable<SourceDirectory> {
 
   public int release() {
     return release;
-  }
-
-  @Override
-  public int compareTo(SourceDirectory other) {
-    return COMPARATOR.compare(this, other);
   }
 
   public boolean isTargeted() {
