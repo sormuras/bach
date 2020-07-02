@@ -17,8 +17,11 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -104,11 +107,52 @@ public final class Logbook {
     md.add("# Logbook of " + project.toNameAndVersion());
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
-    // md.addAll(projectModules(project.structure().base().modules("")));
-    // md.addAll(projectDescription(project));
+    md.addAll(projectModules(project.base().modules("")));
+    md.addAll(projectDescription(project));
     md.addAll(toToolCallOverview());
     md.addAll(toToolCallDetails());
     md.addAll(toLogbookEntries());
+    return md;
+  }
+
+  private List<String> projectModules(Path directory) {
+    var md = new ArrayList<String>();
+    var files = Paths.list(directory, Paths::isJarFile);
+    md.add("");
+    md.add("## Modules");
+    md.add("- directory: " + directory.toUri());
+    md.add("- files: " + files.size());
+    if (files.isEmpty()) return md;
+    md.add("");
+    md.add("| Bytes|Modular JAR|Name|Version|Exports");
+    md.add("|-----:|:----------|----|-------|-------");
+    for (var file : files) {
+      var size = Paths.size(file);
+      var name = file.getFileName();
+      var descriptor = ModuleFinder.of(file).findAll().iterator().next().descriptor();
+      var module = descriptor.name();
+      var version = descriptor.version().map(Object::toString).orElse("-");
+      var exports =
+          descriptor.exports().stream()
+              .map(Object::toString)
+              .sorted()
+              .collect(Collectors.joining("<br>"));
+      md.add(String.format("|%,d|%s|%s|%s|%s", size, name, module, version, exports));
+    }
+    return md;
+  }
+
+  private List<String> projectDescription(Project project) {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Project");
+    md.add("- name: " + project.name());
+    md.add("- version: " + project.version());
+    md.add("");
+    md.add("### Project Descriptor");
+    md.add("```text");
+    md.addAll(project.toStrings());
+    md.add("```");
     return md;
   }
 
