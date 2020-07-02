@@ -22,6 +22,7 @@ import de.sormuras.bach.Builder;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
 class Build {
@@ -55,13 +56,21 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    Bach.ofSystem().with(project).with(IncludeSources::new).buildProject();
+    Bach.ofSystem().with(project).with(CustomBuilder::new).buildProject();
   }
 
-  static class IncludeSources extends Builder {
+  static class CustomBuilder extends Builder {
 
-    IncludeSources(Bach bach) {
+    CustomBuilder(Bach bach) {
       super(bach);
+    }
+
+    @Override
+    public Javadoc computeJavadocForMainSources() {
+      var feature = main().release().feature();
+      return super.computeJavadocForMainSources()
+          .with("-link", "https://docs.oracle.com/en/java/javase/" + feature + "/docs/api")
+          .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
     }
 
     @Override
