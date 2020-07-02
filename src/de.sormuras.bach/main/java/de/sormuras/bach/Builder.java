@@ -24,7 +24,6 @@ import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Project;
-import de.sormuras.bach.project.SourceDirectory;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.SourceUnits;
 import de.sormuras.bach.tool.JUnit;
@@ -166,8 +165,62 @@ public class Builder {
     var units = main().units();
     bach.logbook().log(Level.DEBUG, "Build of %d main module(s) started", units.size());
     bach.executeCall(computeJavacForMainSources());
-    Paths.createDirectories(base().modules(""));
-    units.toUnits().map(this::computeJarForMainModule).forEach(bach::executeCall);
+    var modules = base().modules("");
+    Paths.deleteDirectories(modules);
+    Paths.createDirectories(modules);
+
+    for (var unit : units.units().values()) {
+      if (!unit.sources().isMultiTarget()) {
+        bach.executeCall(computeJarForMainModule(unit));
+        continue;
+      }
+      var module = unit.name();
+      var mainClass = unit.descriptor().mainClass();
+      for (var directory : unit.sources().directories()) {
+        var sourcePaths = List.of(unit.sources().first().path(), directory.path());
+        var baseClasses = base().classes("", main().release().feature());
+        var javac =
+            Call.javac()
+                .with("--release", directory.release())
+                .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
+                .with("--class-path", Paths.join(List.of(baseClasses)))
+                .with("-implicit:none") // generate classes for explicitly referenced source files
+                .with("-d", base().classes("", directory.release(), module))
+                .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
+        bach.executeCall(javac);
+      }
+      var sources = new ArrayDeque<>(unit.sources().directories());
+      var sources0 = sources.removeFirst();
+      var classes0 = base().classes("", sources0.release(), module);
+      var jar =
+          Call.jar()
+              .with("--create")
+              .withArchiveFile(toModuleArchive("", module))
+              .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
+              .with("-C", classes0, ".")
+              .with(isJarWithSources(), "-C", sources0.path(), ".");
+      var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
+      if (Files.notExists(classes0.resolve("module-info.class"))) {
+        for (var source : sources) {
+          var classes = base().classes("", source.release(), module);
+          if (Files.exists(classes.resolve("module-info.class"))) {
+            jar = jar.with("-C", classes, "module-info.class");
+            var size = Paths.list(classes, __ -> true).size();
+            if (size == 1) sourceDirectoryWithSolitaryModuleInfoClass = source;
+            break;
+          }
+        }
+      }
+      for (var source : sources) {
+        if (source == sourceDirectoryWithSolitaryModuleInfoClass) continue;
+        var classes = base().classes("", source.release(), module);
+        jar =
+            jar.with("--release", source.release())
+                .with("-C", classes, ".")
+                .with(isJarWithSources(), "-C", source.path(), ".");
+      }
+      bach.executeCall(jar);
+    }
   }
 
   public void buildApiDocumentation() {
@@ -230,7 +283,7 @@ public class Builder {
     var release = main().release().feature();
     var modulePath = toModulePath(base().libraries());
     return Call.javac()
-        .withModule(main().units().units().keySet())
+        .withModule(main().units().toNames(","))
         .with("--module-version", project().version())
         .with(toModuleSourcePaths(main().units(), false), Javac::withModuleSourcePath)
         .with(modulePath, Javac::withModulePath)
@@ -244,22 +297,23 @@ public class Builder {
 
   public Jar computeJarForMainModule(SourceUnit unit) {
     var module = unit.name();
-    var archive = base().modules("").resolve(module + '@' + project().version() + ".jar");
     var mainClass = unit.descriptor().mainClass();
     var release = main().release().feature();
+    var sources = new ArrayList<>(unit.sources().directories());
+    if (!isJarWithSources()) sources.clear();
     return Call.jar()
         .with("--create")
-        .withArchiveFile(archive)
+        .withArchiveFile(toModuleArchive("", module))
         .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
         .with("-C", base().classes("", release, module), ".")
-        .with(unit.sources().directories(), (jar, src) -> jar.with("-C", src.path(), "."));
+        .with(sources, (jar, src) -> jar.with("-C", src.path(), "."));
   }
 
   public Javadoc computeJavadocForMainSources() {
     var release = main().release().feature();
     var modulePath = toModulePath(base().libraries());
     return Call.javadoc()
-        .withModule(main().units().units().keySet())
+        .withModule(main().units().toNames(","))
         .with(toModuleSourcePaths(main().units(), false), Javadoc::withModuleSourcePath)
         .with(modulePath, Javadoc::withModulePath)
         .with("-d", base().documentation("api"))
@@ -299,7 +353,7 @@ public class Builder {
     var units = sources.test().units();
     var modulePath = toModulePath(base().modules(""), base().libraries());
     return Call.javac()
-        .withModule(units.units().keySet())
+        .withModule(units.toNames(","))
         .with("--module-version", project().version().toString() + "-test")
         .with(toModuleSourcePaths(units, false), Javac::withModuleSourcePath)
         .with(
@@ -329,6 +383,10 @@ public class Builder {
         .with("--reports-dir", base().reports("junit-" + realm, module));
   }
 
+  public boolean isJarWithSources() {
+    return false;
+  }
+
   public Path toModuleArchive(String realm, String module) {
     return toModuleArchive(realm, module, project().version());
   }
@@ -354,7 +412,7 @@ public class Builder {
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
     for (var unit : units.units().values()) {
-      var sourcePaths = toModuleSpecificSourcePaths(unit.sources().directories());
+      var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
       if (forceModuleSpecificForm) {
         specific.put(unit.name(), sourcePaths);
         continue;
@@ -387,26 +445,16 @@ public class Builder {
     return pattern;
   }
 
-  public List<Path> toModuleSpecificSourcePaths(Set<SourceDirectory> sources) {
-    var s0 = sources.iterator().next();
-    if (s0.isModuleInfoJavaPresent()) return List.of(s0.path());
-    for (var source : sources)
-      if (source.isModuleInfoJavaPresent()) return List.of(s0.path(), source.path());
-    throw new IllegalStateException("No module-info.java found in: " + sources);
-  }
-
   public Map<String, String> toModulePatches(SourceUnits units, SourceUnits upstream) {
     if (units.units().isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
     for (var unit : units.units().values()) {
       var module = unit.name();
-      upstream.units().values().stream()
+      upstream
+          .toUnits()
           .filter(up -> up.name().equals(module))
           .findAny()
-          .ifPresent(
-              up ->
-                  patches.put(
-                      module, Paths.join(toModuleSpecificSourcePaths(up.sources().directories()))));
+          .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
     }
     return patches;
   }
