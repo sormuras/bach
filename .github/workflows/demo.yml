@@ -35,7 +35,6 @@ jobs:
         jshell https://sormuras.de/bach/demo-1
         cd bach-demo-1-jigsaw-greetings
         jshell https://sormuras.de/bach/build
-        java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
         ./.bach/workspace/image/bin/java --list-modules
         ./.bach/workspace/image/bin/bach-demo-1-jigsaw-greetings
@@ -45,7 +44,6 @@ jobs:
         jshell https://sormuras.de/bach/demo-2
         cd bach-demo-2-jigsaw-greetings-world
         jshell https://sormuras.de/bach/build
-        java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
         ./.bach/workspace/image/bin/java --list-modules
         ./.bach/workspace/image/bin/bach-demo-2-jigsaw-greetings-world
