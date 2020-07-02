@@ -29,11 +29,11 @@ public interface WithModuleOptionsCall<T> extends Call<T> {
   /**
    * Specify the initial module(s).
    *
-   * @param modules The initial module(s)
+   * @param module The initial module(s)
    * @return A new tool call instance with {@code --module <module>(,<module>)*} appended
    */
-  default T withModule(Iterable<String> modules) {
-    return with("--module", String.join(",", modules));
+  default T withModule(String module) {
+    return with("--module", module);
   }
 
   /**
