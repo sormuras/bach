@@ -18,6 +18,7 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Builder;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.Project;
@@ -54,6 +55,18 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    Bach.ofSystem().with(project).buildProject();
+    Bach.ofSystem().with(project).with(IncludeSources::new).buildProject();
+  }
+
+  static class IncludeSources extends Builder {
+
+    IncludeSources(Bach bach) {
+      super(bach);
+    }
+
+    @Override
+    public boolean isJarWithSources() {
+      return true;
+    }
   }
 }

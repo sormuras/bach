@@ -63,8 +63,8 @@ public final class Bach {
     return new Bach(flags, logbook, project, builder);
   }
 
-  public Bach with(Builder.Factory workflow) {
-    return new Bach(flags, logbook, project, workflow);
+  public Bach with(Builder.Factory builder) {
+    return new Bach(flags, logbook, project, builder);
   }
 
   public Bach with(Flag... flags) {
