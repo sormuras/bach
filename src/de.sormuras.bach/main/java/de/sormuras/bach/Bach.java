@@ -18,6 +18,7 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -31,6 +32,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 
 /** Bach - Java Shell Builder. */
 public final class Bach {
@@ -49,6 +51,12 @@ public final class Bach {
 
   public static Bach ofSystem() {
     return new Bach(Flags.ofSystem(), Logbook.ofSystem(), Project.ofSystem(), Builder::new);
+  }
+
+  public static Bach of(UnaryOperator<Project> projector) {
+    var base = Base.of();
+    var project = Project.of(base);
+    return ofSystem().with(projector.apply(project));
   }
 
   public Bach with(Flags flags) {

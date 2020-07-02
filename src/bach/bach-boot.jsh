@@ -74,8 +74,7 @@ if (Files.notExists(build)) {
       "",
       "class Build {",
       "  public static void main(String... args) {",
-      "    var bach = Bach.of(project -> project.version(\"1-ea\"));",
-      "    bach.build();",
+      "    Bach.of(project -> project.withVersion(\"1-ea\")).buildProject();",
       "  }",
       "}"));
 }
