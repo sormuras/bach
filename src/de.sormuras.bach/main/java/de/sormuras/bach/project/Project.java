@@ -71,7 +71,7 @@ public final class Project {
     return new Project(base, name, version, sources, library);
   }
 
-  public Project with(String name) {
+  public Project withName(String name) {
     return new Project(base, name, version, sources, library);
   }
 
@@ -85,6 +85,10 @@ public final class Project {
 
   public Project with(Library library) {
     return new Project(base, name, version, sources, library);
+  }
+
+  public Project withVersion(String version) {
+    return with(Version.parse(version));
   }
 
   public Project withCompileMainSourcesForJavaRelease(int feature) {
