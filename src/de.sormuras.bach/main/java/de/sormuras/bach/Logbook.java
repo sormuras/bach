@@ -21,6 +21,7 @@ import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -117,9 +118,13 @@ public final class Logbook {
 
   private List<String> projectModules(Path directory) {
     var md = new ArrayList<String>();
-    var files = Paths.list(directory, Paths::isJarFile);
     md.add("");
     md.add("## Modules");
+    if (!Files.isDirectory(directory)) {
+      md.add(String.format("Directory `%s` doesn't exist or isn't a directory.", directory));
+      return md;
+    }
+    var files = Paths.list(directory, Paths::isJarFile);
     md.add("- directory: " + directory.toUri());
     md.add("- files: " + files.size());
     if (files.isEmpty()) return md;
