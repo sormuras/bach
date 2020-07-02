@@ -327,7 +327,7 @@ public class Builder {
   }
 
   public Jar computeJarForApiDocumentation() {
-    var file = project().toNameAndVersion() + "-api.jar";
+    var file = project().name() + '-' + project().version() + "-api.jar";
     return Call.jar()
         .with("--create")
         .withArchiveFile(base().documentation(file))
