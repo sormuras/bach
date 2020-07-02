@@ -117,7 +117,7 @@ public final class Paths {
 
   /** Walk all trees to find matching paths the given filter starting at given root paths. */
   public static List<Path> find(Collection<Path> roots, int maxDepth, Predicate<Path> filter) {
-    var paths = new TreeSet<Path>();
+    var paths = new TreeSet<>(Comparator.comparing(Path::toString));
     for (var root : roots) {
       try (var stream = Files.walk(root, maxDepth)) {
         stream.filter(filter).forEach(paths::add);
