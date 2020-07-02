@@ -9,7 +9,6 @@ defaults:
 jobs:
   build:
     name: 'Generate and build demos'
-    if: false
     runs-on: ubuntu-latest
     steps:
     - name: 'Checkout sources'
@@ -39,7 +38,7 @@ jobs:
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
         ./.bach/workspace/image/bin/java --list-modules
-        ./.bach/workspace/image/bin/greetings
+        ./.bach/workspace/image/bin/bach-demo-1-jigsaw-greetings
 
     - name: 'Bach.java - Demo 2 - Jigsaw Greetings World!'
       run: |
@@ -49,7 +48,7 @@ jobs:
         java --module-path ./.bach/workspace/classes --module com.greetings/com.greetings.Main
         java --module-path ./.bach/workspace/modules --module com.greetings
         ./.bach/workspace/image/bin/java --list-modules
-        ./.bach/workspace/image/bin/greetings
+        ./.bach/workspace/image/bin/bach-demo-2-jigsaw-greetings-world
 
     - name: 'Bach.java - Demo 99 - Luftballons'
       run: |
