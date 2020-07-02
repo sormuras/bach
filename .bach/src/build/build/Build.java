@@ -54,6 +54,6 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    Bach.ofSystem().with(System.Logger.Level.ALL).with(project).buildProject();
+    Bach.ofSystem().with(project).buildProject();
   }
 }

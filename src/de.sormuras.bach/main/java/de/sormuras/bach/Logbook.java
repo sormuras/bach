@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
 public final class Logbook {
 
   public static Logbook ofSystem() {
-    var logbookThreshold = System.getProperty("bach.logbook.threshold", "INFO");
+    var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
+    var logbookThreshold = System.getProperty("bach.logbook.threshold", debug ? "ALL" : "INFO");
     return new Logbook(System.out::println, Level.valueOf(logbookThreshold));
   }
 
