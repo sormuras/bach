@@ -310,7 +310,6 @@ public class Builder {
   }
 
   public Javadoc computeJavadocForMainSources() {
-    var release = main().release().feature();
     var modulePath = toModulePath(base().libraries());
     return Call.javadoc()
         .withModule(main().units().toNames(","))
@@ -321,9 +320,7 @@ public class Builder {
         .with("-locale", "en")
         .with("-quiet")
         .with("-Xdoclint")
-        .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
-        .with("--show-module-contents", "all")
-        .with("-link", "https://docs.oracle.com/en/java/javase/" + release + "/docs/api");
+        .with("--show-module-contents", "all");
   }
 
   public Jar computeJarForApiDocumentation() {
