@@ -33,8 +33,3 @@ jobs:
     - name: 'Build Multi-Release Program (jshell)'
       working-directory: doc/project/MultiRelease
       run: jshell ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
-
-    - name: 'Build sample project with all bells and whistles (jshell)'
-      if: false
-      working-directory: doc/project/SampleWithAllBellsAndWhistles
-      run: jshell ${GITHUB_WORKSPACE}/src/bach/bach-build.jsh
