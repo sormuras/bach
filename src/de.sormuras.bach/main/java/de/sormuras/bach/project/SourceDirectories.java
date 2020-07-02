@@ -20,17 +20,12 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.internal.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** A list of source directory objects. */
+/** A non-empty list of source directory objects. */
 public final class SourceDirectories {
-
-  public static SourceDirectories of() {
-    return new SourceDirectories(List.of());
-  }
 
   public static SourceDirectories of(Path infoDirectory) {
     return new SourceDirectories(list(infoDirectory));
@@ -49,12 +44,6 @@ public final class SourceDirectories {
         .filter(SourceDirectory::isTargeted)
         .sorted(Comparator.comparingInt(SourceDirectory::release))
         .collect(Collectors.toUnmodifiableList());
-  }
-
-  public SourceDirectories with(SourceDirectory directory) {
-    var directories = new ArrayList<>(directories());
-    directories.add(directory);
-    return new SourceDirectories(directories);
   }
 
   private final List<SourceDirectory> directories;
@@ -79,5 +68,17 @@ public final class SourceDirectories {
     if (directories.isEmpty()) return false;
     if (directories.size() == 1) return first().isTargeted();
     return directories.stream().allMatch(SourceDirectory::isTargeted);
+  }
+
+  public String toModuleSpecificSourcePath() {
+    return Paths.join(toModuleSpecificSourcePaths());
+  }
+
+  public List<Path> toModuleSpecificSourcePaths() {
+    var first = first();
+    if (first.isModuleInfoJavaPresent()) return List.of(first.path());
+    for (var directory : directories)
+      if (directory.isModuleInfoJavaPresent()) return List.of(first.path(), directory.path());
+    throw new IllegalStateException("No module-info.java found in: " + directories);
   }
 }

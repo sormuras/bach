@@ -61,10 +61,6 @@ public final class SourceUnit {
     return new SourceUnit(descriptor, sources, resources);
   }
 
-  public SourceUnit with(SourceDirectory directory) {
-    return with(sources.with(directory));
-  }
-
   private final ModuleDescriptor descriptor;
   private final SourceDirectories sources;
   private final List<Path> resources;
