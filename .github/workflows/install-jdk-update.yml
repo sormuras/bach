@@ -6,7 +6,7 @@ on:
       - '.github/workflows/install-jdk-update.yml'
       - 'install-jdk.sh'
   schedule:
-    - cron:  '0 0 * * *'
+    - cron:  '23 */4 * * *'
 
 jobs:
   update:
