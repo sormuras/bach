@@ -120,6 +120,11 @@ public final class Bach {
     } finally {
       writeLogbook();
     }
+    var errors = logbook.errors();
+    if (errors.isEmpty()) return;
+    errors.forEach(error -> error.toStrings().forEach(System.err::println));
+    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
+    if (flags.isFailOnError()) throw new AssertionError(message);
   }
 
   public void executeCall(Call<?> call) {
