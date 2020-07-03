@@ -4,14 +4,22 @@ All notable changes to [Bach.java](https://github.com/sormuras/bach) will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
-## Version [14-ea] unreleased
+## Version [11-ea] unreleased
 
 _In progress..._
+
+## Version [11.3-M1] released 2020-07-03
+
+- https://github.com/sormuras/bach/releases/tag/11.3-M1
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.3-M1
+
+### Breaking Changes
+- API redesign - update all custom build programs
 
 ## Version [11.2] released 2020-06-10
 
 - https://github.com/sormuras/bach/releases/tag/11.2
-- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.2.0.3/
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.2.0.3
 
 ### Breaking Changes
 - Replace generated `Bach.java` with module `de.sormuras.bach` [#126]
@@ -45,7 +53,8 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[14-ea]: https://github.com/sormuras/bach/compare/11.2...master
+[11-ea]: https://github.com/sormuras/bach/compare/11.3-M1...master
+[11.3-M1]: https://github.com/sormuras/bach/compare/11.2...11.3-M1
 [11.2]: https://github.com/sormuras/bach/compare/11.1...11.2
 [11.1]: https://github.com/sormuras/bach/commits/11.1
 [2.1]: https://github.com/sormuras/bach/compare/2.0...2.1
