@@ -1,4 +1,4 @@
-# Bach.java 14-ea - Java Shell Builder
+# Bach.java 11-ea - Java Shell Builder
  
 [![jdk14](https://img.shields.io/badge/JDK-14+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
