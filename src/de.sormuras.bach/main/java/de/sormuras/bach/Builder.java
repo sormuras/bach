@@ -168,8 +168,10 @@ public class Builder {
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
+    Paths.createDirectories(base().sources(""));
 
     for (var unit : units.units().values()) {
+      bach.executeCall(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
         bach.executeCall(computeJarForMainModule(unit));
         continue;
@@ -198,7 +200,7 @@ public class Builder {
               .withArchiveFile(toModuleArchive("", module))
               .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               .with("-C", classes0, ".")
-              .with(isJarWithSources(), "-C", sources0.path(), ".");
+              .with(isJarModuleWithSources(), "-C", sources0.path(), ".");
       var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
       if (Files.notExists(classes0.resolve("module-info.class"))) {
         for (var source : sources) {
@@ -217,7 +219,7 @@ public class Builder {
         jar =
             jar.with("--release", source.release())
                 .with("-C", classes, ".")
-                .with(isJarWithSources(), "-C", source.path(), ".");
+                .with(isJarModuleWithSources(), "-C", source.path(), ".");
       }
       bach.executeCall(jar);
     }
@@ -295,18 +297,43 @@ public class Builder {
         .with("-d", base().classes("", release));
   }
 
+  public Jar computeJarForMainSources(SourceUnit unit) {
+    var module = unit.name();
+    var sources = new ArrayDeque<>(unit.sources().directories());
+    var file = module + '@' + project().version() + "-sources.jar";
+    var jar =
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(base().sources("").resolve(file))
+            .with("--no-manifest")
+            .with("-C", sources.removeFirst().path(), ".");
+    if (isJarSourcesWithResources()) {
+      jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
+    }
+    for (var source : sources) {
+      jar = jar.with("--release", source.release());
+      jar = jar.with("-C", source.path(), ".");
+    }
+    return jar;
+  }
+
   public Jar computeJarForMainModule(SourceUnit unit) {
     var module = unit.name();
-    var mainClass = unit.descriptor().mainClass();
     var release = main().release().feature();
-    var sources = new ArrayList<>(unit.sources().directories());
-    if (!isJarWithSources()) sources.clear();
-    return Call.jar()
-        .with("--create")
-        .withArchiveFile(toModuleArchive("", module))
-        .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
-        .with("-C", base().classes("", release, module), ".")
-        .with(sources, (jar, src) -> jar.with("-C", src.path(), "."));
+    var classes = base().classes("", release, module);
+    var mainClass = unit.descriptor().mainClass();
+    var resources = unit.resources();
+    var jar =
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(toModuleArchive("", module))
+            .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
+            .with("-C", classes, ".")
+            .with(resources, (call, resource) -> call.with("-C", resource, "."));
+    if (isJarModuleWithSources()) {
+      jar = jar.with(unit.sources().directories(), (call, src) -> call.with("-C", src.path(), "."));
+    }
+    return jar;
   }
 
   public Javadoc computeJavadocForMainSources() {
@@ -366,10 +393,13 @@ public class Builder {
   public Jar computeJarForTestModule(SourceUnit unit) {
     var module = unit.name();
     var release = Runtime.version().feature();
+    var classes = base().classes("test", release, module);
+    var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
     return Call.jar()
         .with("--create")
         .withArchiveFile(toModuleArchive("test", module))
-        .with("-C", base().classes("test", release, module), ".");
+        .with("-C", classes, ".")
+        .with(resources, (call, resource) -> call.with("-C", resource, "."));
   }
 
   public JUnit computeJUnitCall(String realm, SourceUnit unit, List<Path> modulePaths) {
@@ -380,7 +410,11 @@ public class Builder {
         .with("--reports-dir", base().reports("junit-" + realm, module));
   }
 
-  public boolean isJarWithSources() {
+  public boolean isJarModuleWithSources() {
+    return false;
+  }
+
+  public boolean isJarSourcesWithResources() {
     return false;
   }
 

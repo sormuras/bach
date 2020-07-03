@@ -74,7 +74,7 @@ class Build {
     }
 
     @Override
-    public boolean isJarWithSources() {
+    public boolean isJarModuleWithSources() {
       return true;
     }
   }
