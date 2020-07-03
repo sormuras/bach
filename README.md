@@ -1,6 +1,6 @@
 # Bach.java 11-ea - Java Shell Builder
  
-[![jdk14](https://img.shields.io/badge/JDK-14+-blue.svg)](https://jdk.java.net)
+[![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
 
@@ -10,8 +10,13 @@ Build modular Java projects with [JDK Foundation Tools].
 
 - ☕ **Java**, pristine Java
 
-    > JDK 14+ required.
-    Write custom build programs in Java (no XML, YML, Z...).
+    > Describe your project in Java's syntax.
+    No XML, YML, Z... nor another programming language required.
+
+- 🧩 **Modules**, modules, everywhere!
+
+    > Java modules as basic building blocks.
+    Write `module-info.java` files to define main, test, and test-preview modules.
 
 - 🚀 **Zero-installation** build mode
 
