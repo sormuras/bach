@@ -80,7 +80,7 @@ jobs:
           POM="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
           JAR="-Dfile=.bach/workspace/modules/main/de.sormuras.bach@${VERSION}.jar"
           SRC="-Dsources=.bach/workspace/sources/main/de.sormuras.bach@${VERSION}-sources.jar"
-          DOC="-Djavadoc=.bach/workspace/documentation/api@${VERSION}-javadoc.jar"
+          DOC="-Djavadoc=.bach/workspace/documentation/bach@${VERSION}-api.jar"
           mvn ${DEPLOY} ${REPOSITORY} ${POM} ${JAR} ${SRC} ${DOC}
 
       - name: 'Restore previous version from environment variable'
