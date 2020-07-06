@@ -17,6 +17,7 @@
 
 package build;
 
+import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,8 +37,7 @@ public class Bootstrap {
         "-d",
         "" + destination,
         "--module=build,de.sormuras.bach",
-        "--module-source-path=.bach/src",
-        "--module-source-path=de.sormuras.bach=src/de.sormuras.bach/main/java",
+        "--module-source-path=.bach/src" + File.pathSeparator + "src/*/main/java",
         "--module-version=" + version + "-BOOTSTRAP",
         "-encoding",
         "UTF-8",
