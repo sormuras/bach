@@ -17,12 +17,11 @@
 
 if (java.lang.module.ModuleFinder.of(Path.of(".bach/lib")).find("de.sormuras.bach").isEmpty()) {
   var version = System.getProperty("version", "master-SNAPSHOT");
-  var jar = Path.of(".bach/lib").resolve("de.sormuras.bach@" + version + ".jar");
   var uri = version.endsWith("SNAPSHOT")
               ? "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar"
               : "https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/" + version + "/de.sormuras.bach-" + version + ".jar";
-  Files.createDirectories(path.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
+  var jar = Files.createDirectories(Path.of(".bach/lib")).resolve("de.sormuras.bach@" + version + ".jar");
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, jar); }
 }
 
 /env --module-path .bach/lib --add-modules de.sormuras.bach
