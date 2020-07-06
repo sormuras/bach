@@ -15,74 +15,30 @@
  * limitations under the License.
  */
 
-var version = System.getProperty("version", "master-SNAPSHOT")
-var lib = Path.of(".bach/lib")
-
-/open PRINTING
-
-println("    ___      ___      ___      ___   ")
-println("   /\\  \\    /\\  \\    /\\  \\    /\\__\\")
-println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
-println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
-println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
-println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
-println("   \\/__/    \\/__/    \\/__/    \\/__/.java " + version)
-println()
-println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
-println()
-
-int java(Object... args) throws Exception {
-  var java = "java"; // TODO find sibling to jshell executable...
-  var processBuilder = new ProcessBuilder(java);
-  Arrays.stream(args).forEach(arg -> processBuilder.command().add(arg.toString()));
-  processBuilder.redirectErrorStream(true);
-  var process = processBuilder.start();
-  process.getInputStream().transferTo(System.out);
-  return process.waitFor();
+var shell = Path.of(".bach/workspace/bach-shell.jsh")
+if (Files.notExists(shell)) {
+  var version = System.getProperty("version", "HEAD");
+  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-shell.jsh";
+  Files.createDirectories(shell.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, shell); }
 }
 
-Path load(String file, String uri) throws Exception {
-  var path = Path.of(file).toAbsolutePath().normalize();
-  Files.createDirectories(path.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
-  return path;
-}
+/open .bach/workspace/bach-shell.jsh
 
-if (java.lang.module.ModuleFinder.of(lib).find("de.sormuras.bach").isEmpty()) {
-  println();
-  println("Load module de.sormuras.bach via JitPack");
-  println("    https://jitpack.io/com/github/sormuras/bach/" + version + "/build.log");
-  load(".bach/lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
-}
-
-if (Files.notExists(Path.of(".bach/.gitignore"))) {
-  println();
-  println("Generate default .gitignore configuration.");
-  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "/lib/"));
-}
-
-var build = Path.of(".bach/src/build/build/Build.java")
-if (Files.notExists(build)) {
-  println();
-  println("Write default build program " + build);
-  Files.createDirectories(build.getParent());
-  Files.write(Path.of(".bach/src/build/module-info.java"), List.of("module build {","  requires de.sormuras.bach;","}"));
-  Files.write(build, List.of(
-      "package build;",
-      "",
-      "import de.sormuras.bach.Bach;",
-      "",
-      "class Build {",
-      "  public static void main(String... args) {",
-      "    Bach.of(project -> project.withVersion(\"1-ea\")).buildProject();",
-      "  }",
-      "}"));
-}
-
-println()
 var code = 0
 try {
-  code = java("--module-path", lib.toString(), "--add-modules", "de.sormuras.bach", build);
+  var build = Path.of(".bach/src/build/build/Build.java");
+  if (Files.exists(build)) {
+    var java = "java"; // TODO find sibling to jshell executable...
+    var processBuilder = new ProcessBuilder(java, "--module-path", ".bach/lib", "--add-modules", "de.sormuras.bach", build.toString());
+    processBuilder.redirectErrorStream(true);
+    var process = processBuilder.start();
+    process.getInputStream().transferTo(System.out);
+    code = process.waitFor();
+  }
+  else {
+    Bach.of(project -> project.withVersion("1-ea")).buildProject();
+  }
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
@@ -91,4 +47,5 @@ try {
 println()
 println("Have fun! https://github.com/sponsors/sormuras (-:")
 println()
+
 /exit code
