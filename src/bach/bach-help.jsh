@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-var shell = Path.of(".bach/workspace/bach-shell.jsh")
-if (Files.notExists(shell)) {
+var boot = Path.of(".bach/workspace/bach-boot.jsh")
+if (Files.notExists(boot)) {
   var version = System.getProperty("version", "HEAD");
-  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-shell.jsh";
-  Files.createDirectories(shell.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, shell); }
+  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-boot.jsh";
+  Files.createDirectories(boot.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, boot); }
 }
 
-/open .bach/workspace/bach-shell.jsh
+/open .bach/workspace/bach-boot.jsh
 
 Bach.main("help")
 

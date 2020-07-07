@@ -15,8 +15,20 @@
  * limitations under the License.
  */
 
-var version = System.getProperty("version", "master-SNAPSHOT")
-var lib = Path.of(".bach/lib")
+if (java.lang.module.ModuleFinder.of(Path.of(".bach/lib")).find("de.sormuras.bach").isEmpty()) {
+  var version = System.getProperty("version", "master-SNAPSHOT");
+  var uri = version.endsWith("SNAPSHOT")
+              ? "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar"
+              : "https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/" + version + "/de.sormuras.bach-" + version + ".jar";
+  var jar = Files.createDirectories(Path.of(".bach/lib")).resolve("de.sormuras.bach@" + version + ".jar");
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, jar); }
+}
+
+/env --module-path .bach/lib --add-modules de.sormuras.bach
+
+import de.sormuras.bach.*
+import de.sormuras.bach.project.*
+import de.sormuras.bach.tool.*
 
 /open PRINTING
 
@@ -26,74 +38,9 @@ println("  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_")
 println(" /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\")
 println(" \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /")
 println("  \\::/  /   /:/  /  \\:\\__\\    /:/  /")
-println("   \\/__/    \\/__/    \\/__/    \\/__/.java " + version)
+println("   \\/__/    \\/__/    \\/__/    \\/__/.java")
 println()
-println(" Java " + Runtime.version() + " on " + System.getProperty("os.name"))
+println("             Bach " + Bach.VERSION)
+println("     Java Runtime " + Runtime.version())
+println(" Operating System " + System.getProperty("os.name"))
 println()
-
-int java(Object... args) throws Exception {
-  var java = "java"; // TODO find sibling to jshell executable...
-  var processBuilder = new ProcessBuilder(java);
-  Arrays.stream(args).forEach(arg -> processBuilder.command().add(arg.toString()));
-  processBuilder.redirectErrorStream(true);
-  var process = processBuilder.start();
-  process.getInputStream().transferTo(System.out);
-  return process.waitFor();
-}
-
-Path load(String file, String uri) throws Exception {
-  var path = Path.of(file).toAbsolutePath().normalize();
-  Files.createDirectories(path.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, path); }
-  return path;
-}
-
-if (java.lang.module.ModuleFinder.of(lib).find("de.sormuras.bach").isEmpty()) {
-  println();
-  println("Load module de.sormuras.bach via JitPack");
-  println("    https://jitpack.io/com/github/sormuras/bach/" + version + "/build.log");
-  load(".bach/lib/de.sormuras.bach@" + version + ".jar", "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar");
-}
-
-if (Files.notExists(Path.of(".bach/.gitignore"))) {
-  println();
-  println("Generate default .gitignore configuration.");
-  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "/lib/"));
-}
-
-var build = Path.of(".bach/src/build/build/Build.java")
-if (Files.notExists(build)) {
-  println();
-  println("Write default build program " + build);
-  Files.createDirectories(build.getParent());
-  Files.write(Path.of(".bach/src/build/module-info.java"), List.of("module build {","  requires de.sormuras.bach;","}"));
-  Files.write(build, List.of(
-      "package build;",
-      "",
-      "import de.sormuras.bach.Bach;",
-      "",
-      "class Build {",
-      "  public static void main(String... args) {",
-      "    Bach.of(project -> project.withVersion(\"1-ea\")).buildProject();",
-      "  }",
-      "}"));
-}
-
-println()
-int code = java("--module-path", lib.toString(), "--module", "de.sormuras.bach", "help")
-
-println()
-println("Bach.java initialized. Use the following commands to build your project:")
-println()
-println("- java --module-path " + lib + " --module de.sormuras.bach <action>")
-println("    Launch Bach.java's main program.")
-println()
-println("- java --module-path " + lib + " --add-modules de.sormuras.bach " + build)
-println("    Launch your custom build program.")
-println("    Edit " + build.toUri())
-println("    to customize your build program.")
-
-println()
-println("Have fun! https://github.com/sponsors/sormuras (-:")
-println()
-/exit code

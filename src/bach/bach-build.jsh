@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-var shell = Path.of(".bach/workspace/bach-shell.jsh")
-if (Files.notExists(shell)) {
+var boot = Path.of(".bach/workspace/bach-boot.jsh")
+if (Files.notExists(boot)) {
   var version = System.getProperty("version", "HEAD");
-  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-shell.jsh";
-  Files.createDirectories(shell.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, shell); }
+  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-boot.jsh";
+  Files.createDirectories(boot.getParent());
+  try (var stream = new URL(uri).openStream()) { Files.copy(stream, boot); }
 }
 
-/open .bach/workspace/bach-shell.jsh
+/open .bach/workspace/bach-boot.jsh
 
 var code = 0
 try {
   var build = Path.of(".bach/src/build/build/Build.java");
   if (Files.exists(build)) {
-    var java = "java"; // TODO find sibling to jshell executable...
+    var java = ProcessHandle.current().info().command().orElse("java");
     var processBuilder = new ProcessBuilder(java, "--module-path", ".bach/lib", "--add-modules", "de.sormuras.bach", build.toString());
     processBuilder.redirectErrorStream(true);
     var process = processBuilder.start();
@@ -37,7 +37,7 @@ try {
     code = process.waitFor();
   }
   else {
-    Bach.of(project -> project.withVersion("1-ea")).buildProject();
+    Bach.of(project -> project).buildProject();
   }
 } catch (Throwable throwable) {
   println(throwable);
