@@ -30,12 +30,16 @@ public final class SourceDirectory {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
     var file = path.normalize().getFileName();
     var name = file != null ? file : path.toAbsolutePath().getFileName();
-    return new SourceDirectory(path, parseRelease(name.toString()));
+    return new SourceDirectory(path, parseReleaseNumber(name.toString()));
   }
 
-  static int parseRelease(String name) {
-    if (name == null || name.isEmpty()) return 0;
-    var matcher = RELEASE_PATTERN.matcher(name);
+  public static SourceDirectory of(String path, int release) {
+    return new SourceDirectory(Path.of(path), release);
+  }
+
+  static int parseReleaseNumber(String string) {
+    if (string == null || string.isEmpty()) return 0;
+    var matcher = RELEASE_PATTERN.matcher(string);
     return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
   }
 
