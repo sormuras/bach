@@ -39,7 +39,7 @@ public final class SourceUnit {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var descriptor = Modules.describe(info);
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var directories = SourceDirectories.of(parent);
+    var directories = SourceDirectoryList.of(parent);
     var resources = resources(parent);
     return new SourceUnit(descriptor, directories, resources);
   }
@@ -50,10 +50,10 @@ public final class SourceUnit {
   }
 
   private final ModuleDescriptor descriptor;
-  private final SourceDirectories sources;
+  private final SourceDirectoryList sources;
   private final List<Path> resources;
 
-  public SourceUnit(ModuleDescriptor descriptor, SourceDirectories sources, List<Path> resources) {
+  public SourceUnit(ModuleDescriptor descriptor, SourceDirectoryList sources, List<Path> resources) {
     this.descriptor = descriptor;
     this.sources = sources;
     this.resources = List.copyOf(resources);
@@ -63,7 +63,7 @@ public final class SourceUnit {
     return descriptor;
   }
 
-  public SourceDirectories sources() {
+  public SourceDirectoryList sources() {
     return sources;
   }
 

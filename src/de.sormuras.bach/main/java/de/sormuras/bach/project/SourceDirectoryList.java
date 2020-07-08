@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** A non-empty list of source directory objects. */
-public final class SourceDirectories {
+public final class SourceDirectoryList {
 
-  public static SourceDirectories of(Path infoDirectory) {
-    return new SourceDirectories(list(infoDirectory));
+  public static SourceDirectoryList of(Path infoDirectory) {
+    return new SourceDirectoryList(list(infoDirectory));
   }
 
   static List<SourceDirectory> list(Path infoDirectory) {
@@ -48,7 +48,7 @@ public final class SourceDirectories {
 
   private final List<SourceDirectory> directories;
 
-  public SourceDirectories(List<SourceDirectory> directories) {
+  public SourceDirectoryList(List<SourceDirectory> directories) {
     this.directories = List.copyOf(directories);
   }
 
