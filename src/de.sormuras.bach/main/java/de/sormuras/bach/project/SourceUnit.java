@@ -49,18 +49,6 @@ public final class SourceUnit {
     return Files.isDirectory(resources) ? List.of(resources) : List.of();
   }
 
-  public SourceUnit with(ModuleDescriptor module) {
-    return new SourceUnit(module, sources, resources);
-  }
-
-  public SourceUnit with(SourceDirectories sources) {
-    return new SourceUnit(descriptor, sources, resources);
-  }
-
-  public SourceUnit with(List<Path> resources) {
-    return new SourceUnit(descriptor, sources, resources);
-  }
-
   private final ModuleDescriptor descriptor;
   private final SourceDirectories sources;
   private final List<Path> resources;
