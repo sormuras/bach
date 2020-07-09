@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,9 +28,19 @@ import java.util.stream.Collectors;
 /** A non-empty list of source directory objects. */
 public final class SourceDirectoryList {
 
-  public static SourceDirectoryList of(Path infoDirectory) {
-    return new SourceDirectoryList(list(infoDirectory));
+  private final List<SourceDirectory> list;
+
+  public SourceDirectoryList(List<SourceDirectory> list) {
+    this.list = List.copyOf(list);
   }
+
+  public List<SourceDirectory> list() {
+    return list;
+  }
+
+  //
+  // Configuration API
+  //
 
   static List<SourceDirectory> list(Path infoDirectory) {
     var source = SourceDirectory.of(infoDirectory); // contains module-info.java file
@@ -39,35 +50,38 @@ public final class SourceDirectoryList {
       if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
       return List.of(new SourceDirectory(java, 0), source);
     }
-    return Paths.list(parent, Files::isDirectory).stream()
+    return listMapFilterSortedCollect(parent);
+  }
+
+  static List<SourceDirectory> listMapFilterSortedCollect(Path path) {
+    return Paths.list(path, Files::isDirectory).stream()
         .map(SourceDirectory::of)
         .filter(SourceDirectory::isTargeted)
         .sorted(Comparator.comparingInt(SourceDirectory::release))
         .collect(Collectors.toUnmodifiableList());
   }
 
-  private final List<SourceDirectory> directories;
-
-  public SourceDirectoryList(List<SourceDirectory> directories) {
-    this.directories = List.copyOf(directories);
+  @Factory
+  public static SourceDirectoryList of(Path infoDirectory) {
+    return new SourceDirectoryList(list(infoDirectory));
   }
 
-  public List<SourceDirectory> directories() {
-    return directories;
-  }
+  //
+  // Normal API
+  //
 
   public SourceDirectory first() {
-    return directories.get(0);
+    return list.get(0);
   }
 
   public SourceDirectory last() {
-    return directories.get(directories.size() - 1);
+    return list.get(list.size() - 1);
   }
 
   public boolean isMultiTarget() {
-    if (directories.isEmpty()) return false;
-    if (directories.size() == 1) return first().isTargeted();
-    return directories.stream().allMatch(SourceDirectory::isTargeted);
+    if (list.isEmpty()) return false;
+    if (list.size() == 1) return first().isTargeted();
+    return list.stream().allMatch(SourceDirectory::isTargeted);
   }
 
   public String toModuleSpecificSourcePath() {
@@ -77,8 +91,8 @@ public final class SourceDirectoryList {
   public List<Path> toModuleSpecificSourcePaths() {
     var first = first();
     if (first.isModuleInfoJavaPresent()) return List.of(first.path());
-    for (var directory : directories)
+    for (var directory : list)
       if (directory.isModuleInfoJavaPresent()) return List.of(first.path(), directory.path());
-    throw new IllegalStateException("No module-info.java found in: " + directories);
+    throw new IllegalStateException("No module-info.java found in: " + list);
   }
 }
