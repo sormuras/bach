@@ -30,14 +30,60 @@ public @interface Factory {
   /** A description of the input sources the factory method. */
   enum Kind {
 
-    /** A static factory method that creates a new instance using any parameters. */
+    /**
+     * A static factory method that creates a new instance using any parameters.
+     *
+     * <pre>{@code
+     * record Foo(Bar bar, String text) {
+     *
+     *   @Factory
+     *   static Foo of() {
+     *     return new Foo(Bar.of(), "Lorem");
+     *   }
+     *
+     *   @Factory(Kind.STATIC)
+     *   static Foo ofSystem() {
+     *     return new Foo(Bar.of(), System.getProperty(...));
+     *   }
+     * }
+     * }</pre>
+     */
     STATIC,
 
-    /** An instance factory method that replaces a single component of the instance. */
-    COMPONENT,
+    /**
+     * An instance factory method that replaces a single component of the instance.
+     *
+     * <pre>{@code
+     * record Foo(Bar bar, String text) {
+     *
+     *   @Factory(Kind.SETTER)
+     *   Foo bar(Bar bar) {
+     *     return new Foo(bar, this.text);
+     *   }
+     *
+     *   @Factory(Kind.SETTER)
+     *   Foo text(String text) {
+     *     return new Foo(this.bar, text);
+     *   }
+     * }
+     * }</pre>
+     */
+    SETTER,
 
-    /** An instance factory method that augments one or more components with the given arguments. */
-    GENERATOR
+    /**
+     * An instance factory method that modifies one or more components with the given arguments.
+     *
+     * <pre>{@code
+     * record Foo(Bar bar, String text) {
+     *
+     *   @Factory(Kind.OPERATOR)
+     *   Foo withSuffix(String suffix) {
+     *     return new Foo(bar, text + suffix);
+     *   }
+     * }
+     * }</pre>
+     */
+    OPERATOR
   }
 
   /**
