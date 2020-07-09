@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor;
@@ -31,29 +32,12 @@ import java.util.List;
  */
 public final class SourceUnit {
 
-  public static SourceUnit of(String path) {
-    return of(Path.of(path));
-  }
-
-  public static SourceUnit of(Path path) {
-    var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
-    var descriptor = Modules.describe(info);
-    var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var directories = SourceDirectoryList.of(parent);
-    var resources = resources(parent);
-    return new SourceUnit(descriptor, directories, resources);
-  }
-
-  static List<Path> resources(Path infoDirectory) {
-    var resources = infoDirectory.resolveSibling("resources");
-    return Files.isDirectory(resources) ? List.of(resources) : List.of();
-  }
-
   private final ModuleDescriptor descriptor;
   private final SourceDirectoryList sources;
   private final List<Path> resources;
 
-  public SourceUnit(ModuleDescriptor descriptor, SourceDirectoryList sources, List<Path> resources) {
+  public SourceUnit(
+      ModuleDescriptor descriptor, SourceDirectoryList sources, List<Path> resources) {
     this.descriptor = descriptor;
     this.sources = sources;
     this.resources = List.copyOf(resources);
@@ -71,7 +55,39 @@ public final class SourceUnit {
     return resources;
   }
 
+  //
+  // Configuration API
+  //
+
+  @Factory
+  public static SourceUnit of(String path) {
+    return of(Path.of(path));
+  }
+
+  @Factory
+  public static SourceUnit of(Path path) {
+    var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
+    var descriptor = Modules.describe(info);
+    var parent = info.getParent() != null ? info.getParent() : Path.of(".");
+    var directories = SourceDirectoryList.of(parent);
+    var resources = resources(parent);
+    return new SourceUnit(descriptor, directories, resources);
+  }
+
+  static List<Path> resources(Path infoDirectory) {
+    var resources = infoDirectory.resolveSibling("resources");
+    return Files.isDirectory(resources) ? List.of(resources) : List.of();
+  }
+
+  //
+  // Normal API
+  //
+
   public String name() {
     return descriptor().name();
+  }
+
+  public List<SourceDirectory> directories() {
+    return sources.list();
   }
 }
