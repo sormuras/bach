@@ -56,35 +56,35 @@ public final class Bach {
   public static Bach of(UnaryOperator<Project> projector) {
     var base = Base.of();
     var project = Project.of(base);
-    return ofSystem().with(projector.apply(project));
+    return ofSystem().project(projector.apply(project));
   }
 
-  public Bach with(Flags flags) {
+  public Bach flags(Flags flags) {
     return new Bach(flags, logbook, project, builder);
   }
 
-  public Bach with(Logbook logbook) {
+  public Bach logbook(Logbook logbook) {
     return new Bach(flags, logbook, project, builder);
   }
 
-  public Bach with(Project project) {
+  public Bach project(Project project) {
     return new Bach(flags, logbook, project, builder);
   }
 
-  public Bach with(Builder.Factory builder) {
+  public Bach builder(Builder.Factory builder) {
     return new Bach(flags, logbook, project, builder);
   }
 
   public Bach with(Flag... flags) {
-    return with(flags().with(flags));
+    return flags(flags().with(flags));
   }
 
   public Bach without(Flag... flags) {
-    return with(flags().without(flags));
+    return flags(flags().without(flags));
   }
 
   public Bach with(Level threshold) {
-    return with(logbook().with(threshold));
+    return logbook(logbook().with(threshold));
   }
 
   private final Flags flags;

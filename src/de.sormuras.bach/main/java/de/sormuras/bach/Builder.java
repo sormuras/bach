@@ -25,7 +25,7 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.SourceUnits;
+import de.sormuras.bach.project.SourceUnitMap;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
@@ -85,7 +85,7 @@ public class Builder {
   }
 
   public final MainSources main() {
-    return bach.project().sources().main();
+    return bach.project().sources().mainSources();
   }
 
   public final HttpClient http() {
@@ -111,7 +111,7 @@ public class Builder {
       }
     }
 
-    if (project().sources().test().units().isPresent()) {
+    if (project().sources().testSources().units().isPresent()) {
       buildTestModules();
       bach.printStatistics(Level.DEBUG, base().modules("test"));
       buildTestReportsByExecutingTestModules();
@@ -170,7 +170,7 @@ public class Builder {
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
-    for (var unit : units.units().values()) {
+    for (var unit : units.map().values()) {
       bach.executeCall(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
         bach.executeCall(computeJarForMainModule(unit));
@@ -178,7 +178,7 @@ public class Builder {
       }
       var module = unit.name();
       var mainClass = unit.descriptor().mainClass();
-      for (var directory : unit.sources().directories()) {
+      for (var directory : unit.directories()) {
         var sourcePaths = List.of(unit.sources().first().path(), directory.path());
         var baseClasses = base().classes("", main().release().feature());
         var javac =
@@ -191,7 +191,7 @@ public class Builder {
                 .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
         bach.executeCall(javac);
       }
-      var sources = new ArrayDeque<>(unit.sources().directories());
+      var sources = new ArrayDeque<>(unit.directories());
       var sources0 = sources.removeFirst();
       var classes0 = base().classes("", sources0.release(), module);
       var jar =
@@ -243,7 +243,7 @@ public class Builder {
   }
 
   public void buildTestModules() {
-    var units = project().sources().test().units();
+    var units = project().sources().testSources().units();
     bach.logbook().log(Level.DEBUG, "Build of %d test module(s) started", units.size());
     bach.executeCall(computeJavacForTestSources());
     Paths.createDirectories(base().modules("test"));
@@ -251,8 +251,8 @@ public class Builder {
   }
 
   public void buildTestReportsByExecutingTestModules() {
-    var test = project().sources().test();
-    for (var unit : test.units().units().values())
+    var test = project().sources().testSources();
+    for (var unit : test.units().map().values())
       buildTestReportsByExecutingTestModule("test", unit);
   }
 
@@ -299,7 +299,7 @@ public class Builder {
 
   public Jar computeJarForMainSources(SourceUnit unit) {
     var module = unit.name();
-    var sources = new ArrayDeque<>(unit.sources().directories());
+    var sources = new ArrayDeque<>(unit.directories());
     var file = module + '@' + project().version() + "-sources.jar";
     var jar =
         Call.jar()
@@ -331,7 +331,7 @@ public class Builder {
             .with("-C", classes, ".")
             .with(resources, (call, resource) -> call.with("-C", resource, "."));
     if (isJarModuleWithSources()) {
-      jar = jar.with(unit.sources().directories(), (call, src) -> call.with("-C", src.path(), "."));
+      jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;
   }
@@ -374,7 +374,7 @@ public class Builder {
   public Javac computeJavacForTestSources() {
     var release = Runtime.version().feature();
     var sources = project().sources();
-    var units = sources.test().units();
+    var units = sources.testSources().units();
     var modulePath = toModulePath(base().modules(""), base().libraries());
     return Call.javac()
         .withModule(units.toNames(","))
@@ -432,17 +432,17 @@ public class Builder {
     return paths.isEmpty() ? List.of() : List.of(Paths.join(paths));
   }
 
-  public List<Path> toModulePaths(Path... elements) {
+  public final List<Path> toModulePaths(Path... elements) {
     var paths = new ArrayList<Path>();
     for (var element : elements) if (Files.exists(element)) paths.add(element);
     return List.copyOf(paths);
   }
 
-  public List<String> toModuleSourcePaths(SourceUnits units, boolean forceModuleSpecificForm) {
+  public List<String> toModuleSourcePaths(SourceUnitMap units, boolean forceModuleSpecificForm) {
     var paths = new ArrayList<String>();
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
-    for (var unit : units.units().values()) {
+    for (var unit : units.map().values()) {
       var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
       if (forceModuleSpecificForm) {
         specific.put(unit.name(), sourcePaths);
@@ -476,15 +476,13 @@ public class Builder {
     return pattern;
   }
 
-  public Map<String, String> toModulePatches(SourceUnits units, SourceUnits upstream) {
-    if (units.units().isEmpty() || upstream.isEmpty()) return Map.of();
+  public Map<String, String> toModulePatches(SourceUnitMap units, SourceUnitMap upstream) {
+    if (units.map().isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
-    for (var unit : units.units().values()) {
+    for (var unit : units.map().values()) {
       var module = unit.name();
       upstream
-          .toUnits()
-          .filter(up -> up.name().equals(module))
-          .findAny()
+          .findUnit(module)
           .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
     }
     return patches;

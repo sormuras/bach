@@ -36,7 +36,7 @@ class Build {
             .withTestSource("src/test.base/test/java")
             .withTestSource("src/test.modules/test/java")
             .withPreview("src/test.preview/test-preview/java")
-            .with(
+            .library(
                 Library.of()
                     .withRequires("org.junit.platform.console")
                     .with(
@@ -56,7 +56,7 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    Bach.ofSystem().with(project).with(CustomBuilder::new).buildProject();
+    Bach.ofSystem().project(project).builder(CustomBuilder::new).buildProject();
   }
 
   static class CustomBuilder extends Builder {
