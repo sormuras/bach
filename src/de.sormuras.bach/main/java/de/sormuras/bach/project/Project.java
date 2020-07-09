@@ -17,6 +17,8 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
@@ -29,84 +31,6 @@ import java.util.stream.Stream;
 
 /** Bach's project model. */
 public final class Project {
-
-  public static Project ofSystem() {
-    var name = System.getProperty("bach.project.name", "unnamed");
-    var version = System.getProperty("bach.project.version", "1-ea");
-    return of(name, version);
-  }
-
-  public static Project of(String name, String version) {
-    return of(name, Version.parse(version));
-  }
-
-  public static Project of(String name, Version version) {
-    return new Project(Base.of(), name, version, Sources.of(), Library.of());
-  }
-
-  public static Project of(Base base) {
-    var mainSources = MainSources.of();
-    var testSources = TestSources.of();
-    var testPreview = TestPreview.of();
-    for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
-      if (info.startsWith(".bach")) continue;
-      var unit = SourceUnit.of(info);
-      if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
-        testSources = testSources.with(unit);
-        continue;
-      }
-      if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) {
-        testPreview = testPreview.with(unit);
-        continue;
-      }
-      mainSources = mainSources.with(unit);
-    }
-    var sources = new Sources(mainSources, testSources, testPreview);
-    var absolute = base.directory().toAbsolutePath();
-    var name = System.getProperty("bach.project.name", Paths.name(absolute).toLowerCase());
-    var version = System.getProperty("bach.project.version", "1-ea");
-    return new Project(base, name, Version.parse(version), sources, Library.of());
-  }
-
-  public Project with(Base base) {
-    return new Project(base, name, version, sources, library);
-  }
-
-  public Project withName(String name) {
-    return new Project(base, name, version, sources, library);
-  }
-
-  public Project with(Version version) {
-    return new Project(base, name, version, sources, library);
-  }
-
-  public Project with(Sources sources) {
-    return new Project(base, name, version, sources, library);
-  }
-
-  public Project with(Library library) {
-    return new Project(base, name, version, sources, library);
-  }
-
-  public Project withVersion(String version) {
-    return with(Version.parse(version));
-  }
-
-  public Project withCompileMainSourcesForJavaRelease(int feature) {
-    return with(sources.with(sources.main().with(JavaRelease.of(feature))));
-  }
-
-  public Project withMainSource(String path) {
-    return with(sources.with(sources.main().with(SourceUnit.of(path))));
-  }
-
-  public Project withTestSource(String path) {
-    return with(sources.with(sources.test().with(SourceUnit.of(path))));
-  }
-
-  public Project withPreview(String path) {
-    return with(sources.with(sources.preview().with(SourceUnit.of(path))));
-  }
 
   private final Base base;
   private final String name;
@@ -142,6 +66,106 @@ public final class Project {
     return library;
   }
 
+  //
+  // Configuration API
+  //
+
+  @Factory
+  public static Project ofSystem() {
+    var name = System.getProperty("bach.project.name", "unnamed");
+    var version = System.getProperty("bach.project.version", "1-ea");
+    return of(name, version);
+  }
+
+  @Factory
+  public static Project of(String name, String version) {
+    return of(name, Version.parse(version));
+  }
+
+  @Factory
+  public static Project of(String name, Version version) {
+    return new Project(Base.of(), name, version, Sources.of(), Library.of());
+  }
+
+  @Factory
+  public static Project of(Base base) {
+    var mainSources = MainSources.of();
+    var testSources = TestSources.of();
+    var testPreview = TestPreview.of();
+    for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
+      if (info.startsWith(".bach")) continue;
+      var unit = SourceUnit.of(info);
+      if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
+        testSources = testSources.with(unit);
+        continue;
+      }
+      if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) {
+        testPreview = testPreview.with(unit);
+        continue;
+      }
+      mainSources = mainSources.with(unit);
+    }
+    var sources = new Sources(mainSources, testSources, testPreview);
+    var absolute = base.directory().toAbsolutePath();
+    var name = System.getProperty("bach.project.name", Paths.name(absolute).toLowerCase());
+    var version = System.getProperty("bach.project.version", "1-ea");
+    return new Project(base, name, Version.parse(version), sources, Library.of());
+  }
+
+  @Factory(Kind.SETTER)
+  public Project base(Base base) {
+    return new Project(base, name, version, sources, library);
+  }
+
+  @Factory(Kind.SETTER)
+  public Project name(String name) {
+    return new Project(base, name, version, sources, library);
+  }
+
+  @Factory(Kind.SETTER)
+  public Project version(Version version) {
+    return new Project(base, name, version, sources, library);
+  }
+
+  @Factory(Kind.SETTER)
+  public Project version(String version) {
+    return version(Version.parse(version));
+  }
+
+  @Factory(Kind.SETTER)
+  public Project sources(Sources sources) {
+    return new Project(base, name, version, sources, library);
+  }
+
+  @Factory(Kind.SETTER)
+  public Project library(Library library) {
+    return new Project(base, name, version, sources, library);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withCompileMainSourcesForJavaRelease(int feature) {
+    return sources(sources.mainSources(sources.mainSources().release(feature)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainSource(String path) {
+    return sources(sources.mainSources(sources.mainSources().with(SourceUnit.of(path))));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withTestSource(String path) {
+    return sources(sources.testSources(sources.testSources().with(SourceUnit.of(path))));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withPreview(String path) {
+    return sources(sources.testPreview(sources.testPreview().with(SourceUnit.of(path))));
+  }
+
+  //
+  // Normal API
+  //
+
   public String toNameAndVersion() {
     return name + ' ' + version;
   }
@@ -160,8 +184,9 @@ public final class Project {
 
   public Stream<SourceUnit> toUnits() {
     return Stream.concat(
-        sources.main().units().toUnits(),
-        Stream.concat(sources.test().units().toUnits(), sources.preview().units().toUnits()));
+        sources.mainSources().units().toUnits(),
+        Stream.concat(
+            sources.testSources().units().toUnits(), sources.testPreview().units().toUnits()));
   }
 
   public List<String> toStrings() {
@@ -174,14 +199,14 @@ public final class Project {
     list.add("  workspace " + Paths.quote(base.workspace()) + ';');
     list.add("");
     list.add("  // main");
-    list.add("  release " + sources.main().release().feature() + ';');
-    toStrings(list, sources.main().units());
+    list.add("  release " + sources.mainSources().release().feature() + ';');
+    toStrings(list, sources.mainSources().units());
     list.add("");
     list.add("  // test");
-    toStrings(list, sources.test().units());
+    toStrings(list, sources.testSources().units());
     list.add("");
     list.add("  // test-preview");
-    toStrings(list, sources.preview().units());
+    toStrings(list, sources.testPreview().units());
     list.add("");
     list.add("  // modules");
     list.add("  //   declared " + toDeclaredModuleNames());
@@ -198,14 +223,14 @@ public final class Project {
     return List.copyOf(list);
   }
 
-  private void toStrings(List<String> list, SourceUnits units) {
-    for (var unit : units.units().values()) {
+  private void toStrings(List<String> list, SourceUnitMap sum) {
+    for (var unit : sum.map().values()) {
       list.add("  " + unit.name());
       list.add("    module");
       list.add("      requires " + Modules.required(unit.descriptor()) + ';');
       unit.descriptor().mainClass().ifPresent(main -> list.add("      main-class " + main + ';'));
       list.add("    sources");
-      for (var directory : unit.sources().directories()) {
+      for (var directory : unit.directories()) {
         if (directory.isTargeted()) list.add("      release " + directory.release() + ';');
         var comment = directory.isModuleInfoJavaPresent() ? " // module-info.java" : "";
         list.add("      path " + Paths.quote(directory.path()) + ';' + comment);
