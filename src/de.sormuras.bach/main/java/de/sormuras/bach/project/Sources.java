@@ -17,48 +17,65 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
+
 /** A set of sources. */
 public final class Sources {
 
+  private final MainSources mainSources;
+  private final TestSources testSources;
+  private final TestPreview testPreview;
+
+  public Sources(MainSources mainSources, TestSources testSources, TestPreview testPreview) {
+    this.mainSources = mainSources;
+    this.testSources = testSources;
+    this.testPreview = testPreview;
+  }
+
+  public MainSources mainSources() {
+    return mainSources;
+  }
+
+  public TestSources testSources() {
+    return testSources;
+  }
+
+  public TestPreview testPreview() {
+    return testPreview;
+  }
+
+  //
+  // Configuration API
+  //
+
+  @Factory
   public static Sources of() {
     return new Sources(MainSources.of(), TestSources.of(), TestPreview.of());
   }
 
-  public Sources with(MainSources main) {
-    return new Sources(main, test, preview);
+  @Factory(Kind.SETTER)
+  public Sources mainSources(MainSources mainSources) {
+    return new Sources(mainSources, testSources, testPreview);
   }
 
-  public Sources with(TestSources test) {
-    return new Sources(main, test, preview);
+  @Factory(Kind.SETTER)
+  public Sources testSources(TestSources testSources) {
+    return new Sources(mainSources, testSources, testPreview);
   }
 
-  public Sources with(TestPreview preview) {
-    return new Sources(main, test, preview);
+  @Factory(Kind.SETTER)
+  public Sources testPreview(TestPreview testPreview) {
+    return new Sources(mainSources, testSources, testPreview);
   }
 
-  private final MainSources main;
-  private final TestSources test;
-  private final TestPreview preview;
-
-  public Sources(MainSources main, TestSources test, TestPreview preview) {
-    this.main = main;
-    this.test = test;
-    this.preview = preview;
-  }
-
-  public MainSources main() {
-    return main;
-  }
-
-  public TestSources test() {
-    return test;
-  }
-
-  public TestPreview preview() {
-    return preview;
-  }
+  //
+  // Normal API
+  //
 
   public boolean isEmpty() {
-    return main().units().isEmpty() && test().units().isEmpty() && preview().units().isEmpty();
+    return mainSources.units().isEmpty()
+        && testSources.units().isEmpty()
+        && testPreview.units().isEmpty();
   }
 }
