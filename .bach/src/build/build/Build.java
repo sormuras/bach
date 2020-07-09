@@ -72,6 +72,8 @@ class Build {
       var feature = main().release().feature();
       return super.computeJavadocForMainSources()
           .with("-link", "https://docs.oracle.com/en/java/javase/" + feature + "/docs/api")
+          .without("-Xdoclint")
+          .with("-Xdoclint:-missing")
           .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
     }
 
