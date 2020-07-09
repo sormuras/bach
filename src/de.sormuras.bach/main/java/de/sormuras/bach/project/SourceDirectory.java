@@ -17,6 +17,8 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -24,34 +26,9 @@ import java.util.regex.Pattern;
 /** A source directory potentially targeting a specific Java SE release. */
 public final class SourceDirectory {
 
-  private static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
-
-  public static SourceDirectory of(Path path) {
-    if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    var file = path.normalize().getFileName();
-    var name = file != null ? file : path.toAbsolutePath().getFileName();
-    return new SourceDirectory(path, parseReleaseNumber(name.toString()));
-  }
-
-  public static SourceDirectory of(String path, int release) {
-    return new SourceDirectory(Path.of(path), release);
-  }
-
-  static int parseReleaseNumber(String string) {
-    if (string == null || string.isEmpty()) return 0;
-    var matcher = RELEASE_PATTERN.matcher(string);
-    return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
-  }
-
   private final Path path;
   private final int release;
 
-  /**
-   * Initialize this source directory instance with the given components.
-   *
-   * @param path The path to this source directory, usually relative to project's base directory
-   * @param release The Java SE release to compile sources for
-   */
   public SourceDirectory(Path path, int release) {
     this.path = path;
     this.release = release;
@@ -64,6 +41,40 @@ public final class SourceDirectory {
   public int release() {
     return release;
   }
+
+  //
+  // Configuration API
+  //
+
+  static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
+
+  static int parseReleaseNumber(String string) {
+    if (string == null || string.isEmpty()) return 0;
+    var matcher = RELEASE_PATTERN.matcher(string);
+    return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+  }
+
+  @Factory
+  public static SourceDirectory of(Path path) {
+    if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
+    var file = path.normalize().getFileName();
+    var name = file != null ? file : path.toAbsolutePath().getFileName();
+    return new SourceDirectory(path, parseReleaseNumber(name.toString()));
+  }
+
+  @Factory
+  public static SourceDirectory of(String path, int release) {
+    return new SourceDirectory(Path.of(path), release);
+  }
+
+  @Factory(Kind.SETTER)
+  public SourceDirectory release(int release) {
+    return new SourceDirectory(path, release);
+  }
+
+  //
+  // Normal API
+  //
 
   public boolean isTargeted() {
     return release != 0;
