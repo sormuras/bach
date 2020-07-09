@@ -17,28 +17,38 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
+
 /** Source set of {@code test} modules. */
 public final class TestSources {
 
-  public static TestSources of() {
-    return new TestSources(SourceUnits.of());
-  }
+  private final SourceUnitMap units;
 
-  public TestSources with(SourceUnits units) {
-    return new TestSources(units);
-  }
-
-  public TestSources with(SourceUnit unit) {
-    return with(units.with(unit));
-  }
-
-  private final SourceUnits units;
-
-  public TestSources(SourceUnits units) {
+  public TestSources(SourceUnitMap units) {
     this.units = units;
   }
 
-  public SourceUnits units() {
+  public SourceUnitMap units() {
     return units;
+  }
+
+  //
+  // Configuration API
+  //
+
+  @Factory
+  public static TestSources of() {
+    return new TestSources(SourceUnitMap.of());
+  }
+
+  @Factory(Kind.SETTER)
+  public TestSources units(SourceUnitMap units) {
+    return new TestSources(units);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public TestSources with(SourceUnit... moreUnits) {
+    return units(units.with(moreUnits));
   }
 }
