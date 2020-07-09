@@ -18,7 +18,7 @@
 package build;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Builder;
+import de.sormuras.bach.Configuration;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.Project;
@@ -56,13 +56,15 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    Bach.ofSystem().project(project).builder(CustomBuilder::new).buildProject();
+    var configuration = Configuration.ofSystem();
+
+    new CustomBach(configuration, project).buildProject();
   }
 
-  static class CustomBuilder extends Builder {
+  static class CustomBach extends Bach {
 
-    CustomBuilder(Bach bach) {
-      super(bach);
+    CustomBach(Configuration configuration, Project project) {
+      super(configuration, project);
     }
 
     @Override

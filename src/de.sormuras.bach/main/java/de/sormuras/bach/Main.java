@@ -99,7 +99,9 @@ public final class Main {
       err.println("TODO: Custom build program execution is not supported, yet.");
       return;
     }
-    Bach.ofSystem().project(Project.of(Base.of())).buildProject();
+    var configuration = Configuration.ofSystem();
+    var project = Project.of(Base.of());
+    new Bach(configuration, project);
   }
 
   private void help() {

@@ -20,8 +20,9 @@ package test.modules;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Builder;
+import de.sormuras.bach.project.Project;
 import java.io.File;
 import java.lang.module.FindException;
 import java.nio.file.Path;
@@ -35,13 +36,13 @@ class BuilderTests {
   @Nested
   class ModuleSourcePathTests {
 
-    private final Builder builder = new Builder(Bach.ofSystem());
+    private final Bach bach = new Bach(Configuration.ofSystem(), Project.ofSystem());
 
     @Test
     void modulePatternFormFromPathWithoutModulesNameFails() {
       var path = Path.of("a/b/c/module-info.java");
       var exception =
-          assertThrows(FindException.class, () -> builder.toModuleSourcePathPatternForm(path, "d"));
+          assertThrows(FindException.class, () -> bach.toModuleSourcePathPatternForm(path, "d"));
       assertEquals("Name 'd' not found: " + path, exception.getMessage());
     }
 
@@ -53,7 +54,7 @@ class BuilderTests {
       "src/*/main/java , src/foo/main/java/module-info.java"
     })
     void modulePatternFormForModuleFoo(String expected, Path path) {
-      var actual = builder.toModuleSourcePathPatternForm(path, "foo");
+      var actual = bach.toModuleSourcePathPatternForm(path, "foo");
       assertEquals(expected.replace('/', File.separatorChar), actual);
     }
   }

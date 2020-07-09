@@ -17,25 +17,53 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.Link;
+import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Project;
+import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.SourceUnitMap;
+import de.sormuras.bach.tool.JUnit;
+import de.sormuras.bach.tool.Jar;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.TestModule;
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
+import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.EnumSet;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-/** Bach - Java Shell Builder. */
-public final class Bach {
+/** Bach - Java Shell Builder - An extensible build workflow. */
+public class Bach {
 
   /** Version of the Java Shell Builder. */
   public static final Version VERSION = Version.parse("11-ea");
@@ -49,93 +77,53 @@ public final class Bach {
     Main.main(args);
   }
 
-  public static Bach ofSystem() {
-    return new Bach(Flags.ofSystem(), Logbook.ofSystem(), Project.ofSystem(), Builder::new);
-  }
-
+  @Factory
   public static Bach of(UnaryOperator<Project> projector) {
-    var base = Base.of();
-    var project = Project.of(base);
-    return ofSystem().project(projector.apply(project));
+    var configuration = Configuration.ofSystem();
+    var project = Project.of(Base.of());
+    return new Bach(configuration, projector.apply(project));
   }
 
-  public Bach flags(Flags flags) {
-    return new Bach(flags, logbook, project, builder);
-  }
-
-  public Bach logbook(Logbook logbook) {
-    return new Bach(flags, logbook, project, builder);
-  }
-
-  public Bach project(Project project) {
-    return new Bach(flags, logbook, project, builder);
-  }
-
-  public Bach builder(Builder.Factory builder) {
-    return new Bach(flags, logbook, project, builder);
-  }
-
-  public Bach with(Flag... flags) {
-    return flags(flags().with(flags));
-  }
-
-  public Bach without(Flag... flags) {
-    return flags(flags().without(flags));
-  }
-
-  public Bach with(Level threshold) {
-    return logbook(logbook().with(threshold));
-  }
-
-  private final Flags flags;
-  private final Logbook logbook;
+  private final Configuration configuration;
   private final Project project;
-  private final Builder.Factory builder;
+  private HttpClient http;
+  private final SormurasModulesProperties sormurasModulesProperties;
 
-  public Bach(Flags flags, Logbook logbook, Project project, Builder.Factory builder) {
-    this.flags = flags;
-    this.logbook = logbook;
+  public Bach(Configuration configuration, Project project) {
+    this.configuration = configuration;
     this.project = project;
-    this.builder = builder;
+    this.sormurasModulesProperties = computeSormurasModulesProperties();
   }
 
-  public Flags flags() {
-    return flags;
+  public final Configuration configuration() {
+    return configuration;
   }
 
-  public Logbook logbook() {
-    return logbook;
-  }
-
-  public Project project() {
+  public final Project project() {
     return project;
   }
 
-  public void buildProject() {
-    logbook.log(Level.TRACE, toString());
-    logbook.log(Level.TRACE, "\tflags.set=%s", flags.set());
-    logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
-    logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
-    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project.toStrings()));
-    try {
-      var start = Instant.now();
-      builder.create(this).build();
-      var duration = Duration.between(start, Instant.now()).toMillis();
-      logbook.log(Level.INFO, "Build of %s took %d ms", project.toNameAndVersion(), duration);
-    } catch (Exception exception) {
-      var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
-      if (flags.isFailOnError()) throw new AssertionError(message, exception);
-    } finally {
-      writeLogbook();
-    }
-    var errors = logbook.errors();
-    if (errors.isEmpty()) return;
-    errors.forEach(error -> error.toStrings().forEach(System.err::println));
-    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    if (flags.isFailOnError()) throw new AssertionError(message);
+  public final Base base() {
+    return project.base();
   }
 
-  public void executeCall(Call<?> call) {
+  public final MainSources main() {
+    return project.sources().mainSources();
+  }
+
+  public final HttpClient http() {
+    if (http == null) http = computeHttpClient();
+    return http;
+  }
+
+  //
+  // ===
+  //
+
+  void executeCall(Call<?> call) {
+    var logbook = configuration.logbook();
+    var flags = configuration.flags();
+
     logbook.log(Level.INFO, call.toCommandLine());
 
     var provider = call.findProvider();
@@ -180,7 +168,9 @@ public final class Bach {
     }
   }
 
-  public void printStatistics(Level level, Path directory) {
+  void printStatistics(Level level, Path directory) {
+    var logbook = configuration.logbook();
+
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Paths::isJarFile);
     logbook.log(level, "Directory %s contains", uri);
@@ -188,7 +178,10 @@ public final class Bach {
     for (var file : files) logbook.log(level, "%,12d %s", Paths.size(file), file.getFileName());
   }
 
-  public void writeLogbook() {
+  void writeLogbook() {
+    var logbook = configuration.logbook();
+    var flags = configuration.flags();
+
     try {
       Paths.createDirectories(project.base().workspace());
       var path = project.base().workspace("logbook.md");
@@ -200,77 +193,554 @@ public final class Bach {
     }
   }
 
+  //
+  // ===
+  //
+
+  public void buildProject() {
+    var logbook = configuration.logbook();
+    var flags = configuration.flags();
+
+    logbook.log(Level.TRACE, toString());
+    logbook.log(Level.TRACE, "\tflags.set=%s", flags.set());
+    logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
+    logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
+    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project.toStrings()));
+    try {
+      var start = Instant.now();
+      buildProjectModules();
+      var duration = Duration.between(start, Instant.now()).toMillis();
+      if (main().units().isPresent()) {
+        printStatistics(Level.INFO, base().modules(""));
+      }
+      logbook.log(Level.INFO, "Build of %s took %d ms", project.toNameAndVersion(), duration);
+    } catch (Exception exception) {
+      var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
+      if (flags.isFailOnError()) throw new AssertionError(message, exception);
+    } finally {
+      writeLogbook();
+    }
+    var errors = logbook.errors();
+    if (errors.isEmpty()) return;
+    errors.forEach(error -> error.toStrings().forEach(System.err::println));
+    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
+    if (flags.isFailOnError()) throw new AssertionError(message);
+  }
+
+  void buildProjectModules() {
+    buildLibrariesDirectoryByResolvingMissingExternalModules();
+    if (main().units().isPresent()) {
+      buildMainModules();
+      var service = Executors.newWorkStealingPool();
+      service.execute(this::buildApiDocumentation);
+      service.execute(this::buildCustomRuntimeImage);
+      service.shutdown();
+      try {
+        service.awaitTermination(1, TimeUnit.DAYS);
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        return;
+      }
+    }
+
+    if (project().sources().testSources().units().isPresent()) {
+      buildTestModules();
+      printStatistics(Level.DEBUG, base().modules("test"));
+      buildTestReportsByExecutingTestModules();
+    }
+  }
+
+  public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
+    // get external requires from all module-info.java files
+    // get external modules from project descriptor
+    // download them
+    // get missing external modules from libraries directory
+    // download them recursively
+
+    var libraries = base().libraries();
+    var declared = project().toDeclaredModuleNames();
+    var resolver =
+        new Resolver(List.of(libraries), declared, this::buildLibrariesDirectoryByResolvingModules);
+    resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
+    resolver.resolve(project().library().requires()); // from project descriptor
+  }
+
+  public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
+    configuration.logbook().log(Level.DEBUG, "Resolve missing external modules: " + modules);
+    var resources = new Resources(http());
+    for (var module : modules) {
+      var optionalLink =
+          project().library().findLink(module).or(() -> computeLinkForExternalModule(module));
+      if (optionalLink.isEmpty()) {
+        configuration.logbook().log(Level.WARNING, "Module %s not locatable", module);
+        continue;
+      }
+      var link = optionalLink.orElseThrow();
+      var uri = link.toURI();
+      var name = module + ".jar";
+      try {
+        var lib = Paths.createDirectories(base().libraries());
+        var file = resources.copy(uri, lib.resolve(name));
+        var size = Paths.size(file);
+        configuration.logbook().log(Level.INFO, "%,12d %-42s << %s", size, file, uri);
+      } catch (Exception e) {
+        throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
+      }
+    }
+  }
+
+  public void buildMainModules() {
+    var units = main().units();
+    configuration.logbook().log(Level.DEBUG, "Build of %d main module(s) started", units.size());
+    executeCall(computeJavacForMainSources());
+    var modules = base().modules("");
+    Paths.deleteDirectories(modules);
+    Paths.createDirectories(modules);
+    Paths.createDirectories(base().sources(""));
+
+    for (var unit : units.map().values()) {
+      executeCall(computeJarForMainSources(unit));
+      if (!unit.sources().isMultiTarget()) {
+        executeCall(computeJarForMainModule(unit));
+        continue;
+      }
+      var module = unit.name();
+      var mainClass = unit.descriptor().mainClass();
+      for (var directory : unit.directories()) {
+        var sourcePaths = List.of(unit.sources().first().path(), directory.path());
+        var baseClasses = base().classes("", main().release().feature());
+        var javac =
+            Call.javac()
+                .with("--release", directory.release())
+                .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
+                .with("--class-path", Paths.join(List.of(baseClasses)))
+                .with("-implicit:none") // generate classes for explicitly referenced source files
+                .with("-d", base().classes("", directory.release(), module))
+                .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
+        executeCall(javac);
+      }
+      var sources = new ArrayDeque<>(unit.directories());
+      var sources0 = sources.removeFirst();
+      var classes0 = base().classes("", sources0.release(), module);
+      var jar =
+          Call.jar()
+              .with("--create")
+              .withArchiveFile(toModuleArchive("", module))
+              .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
+              .with("-C", classes0, ".")
+              .with(isJarModuleWithSources(), "-C", sources0.path(), ".");
+      var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
+      if (Files.notExists(classes0.resolve("module-info.class"))) {
+        for (var source : sources) {
+          var classes = base().classes("", source.release(), module);
+          if (Files.exists(classes.resolve("module-info.class"))) {
+            jar = jar.with("-C", classes, "module-info.class");
+            var size = Paths.list(classes, __ -> true).size();
+            if (size == 1) sourceDirectoryWithSolitaryModuleInfoClass = source;
+            break;
+          }
+        }
+      }
+      for (var source : sources) {
+        if (source == sourceDirectoryWithSolitaryModuleInfoClass) continue;
+        var classes = base().classes("", source.release(), module);
+        jar =
+            jar.with("--release", source.release())
+                .with("-C", classes, ".")
+                .with(isJarModuleWithSources(), "-C", source.path(), ".");
+      }
+      executeCall(jar);
+    }
+  }
+
+  public void buildApiDocumentation() {
+    executeCall(computeJavadocForMainSources());
+    executeCall(computeJarForApiDocumentation());
+  }
+
+  public void buildCustomRuntimeImage() {
+    var modulePaths = toModulePaths(base().modules(""), base().libraries());
+    var autos = Modules.findAutomaticModules(modulePaths);
+    if (autos.size() > 0) {
+      configuration.logbook().log(Level.WARNING, "Automatic module(s) detected: %s", autos);
+      return;
+    }
+    Paths.deleteDirectories(base().workspace("image"));
+    var jlink = computeJLinkForCustomRuntimeImage();
+    executeCall(jlink);
+  }
+
+  public void buildTestModules() {
+    var units = project().sources().testSources().units();
+    configuration.logbook().log(Level.DEBUG, "Build of %d test module(s) started", units.size());
+    executeCall(computeJavacForTestSources());
+    Paths.createDirectories(base().modules("test"));
+    units.toUnits().map(this::computeJarForTestModule).forEach(this::executeCall);
+  }
+
+  public void buildTestReportsByExecutingTestModules() {
+    var test = project().sources().testSources();
+    for (var unit : test.units().map().values())
+      buildTestReportsByExecutingTestModule("test", unit);
+  }
+
+  public void buildTestReportsByExecutingTestModule(String realm, SourceUnit unit) {
+    var module = unit.name();
+    var modulePaths =
+        toModulePaths(
+            toModuleArchive(realm, module), // test module
+            base().modules(""), // main modules
+            base().modules(realm), // other test modules
+            base().libraries()); // external modules
+    configuration
+        .logbook()
+        .log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
+
+    var testModule = new TestModule(module, modulePaths);
+    if (testModule.findProvider().isPresent()) executeCall(testModule);
+
+    var junit = computeJUnitCall(realm, unit, modulePaths);
+    if (junit.findProvider().isPresent()) executeCall(junit);
+  }
+
+  public HttpClient computeHttpClient() {
+    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+  }
+
+  public SormurasModulesProperties computeSormurasModulesProperties() {
+    return new SormurasModulesProperties(Map.of());
+  }
+
+  public Optional<Link> computeLinkForExternalModule(String module) {
+    return sormurasModulesProperties.lookup(module);
+  }
+
+  public Javac computeJavacForMainSources() {
+    var release = main().release().feature();
+    var modulePath = toModulePath(base().libraries());
+    return Call.javac()
+        .withModule(main().units().toNames(","))
+        .with("--module-version", project().version())
+        .with(toModuleSourcePaths(main().units(), false), Javac::withModuleSourcePath)
+        .with(modulePath, Javac::withModulePath)
+        .withEncoding("UTF-8")
+        .with("-parameters")
+        .withRecommendedWarnings()
+        .with("-Werror")
+        .with("--release", release)
+        .with("-d", base().classes("", release));
+  }
+
+  public Jar computeJarForMainSources(SourceUnit unit) {
+    var module = unit.name();
+    var sources = new ArrayDeque<>(unit.directories());
+    var file = module + '@' + project().version() + "-sources.jar";
+    var jar =
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(base().sources("").resolve(file))
+            .with("--no-manifest")
+            .with("-C", sources.removeFirst().path(), ".");
+    if (isJarSourcesWithResources()) {
+      jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
+    }
+    for (var source : sources) {
+      jar = jar.with("--release", source.release());
+      jar = jar.with("-C", source.path(), ".");
+    }
+    return jar;
+  }
+
+  public Jar computeJarForMainModule(SourceUnit unit) {
+    var module = unit.name();
+    var release = main().release().feature();
+    var classes = base().classes("", release, module);
+    var mainClass = unit.descriptor().mainClass();
+    var resources = unit.resources();
+    var jar =
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(toModuleArchive("", module))
+            .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
+            .with("-C", classes, ".")
+            .with(resources, (call, resource) -> call.with("-C", resource, "."));
+    if (isJarModuleWithSources()) {
+      jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
+    }
+    return jar;
+  }
+
+  public Javadoc computeJavadocForMainSources() {
+    var modulePath = toModulePath(base().libraries());
+    return Call.javadoc()
+        .withModule(main().units().toNames(","))
+        .with(toModuleSourcePaths(main().units(), false), Javadoc::withModuleSourcePath)
+        .with(modulePath, Javadoc::withModulePath)
+        .with("-d", base().documentation("api"))
+        .withEncoding("UTF-8")
+        .with("-locale", "en")
+        .with("-quiet")
+        .with("-Xdoclint")
+        .with("--show-module-contents", "all");
+  }
+
+  public Jar computeJarForApiDocumentation() {
+    var file = project().name() + '@' + project().version() + "-api.jar";
+    return Call.jar()
+        .with("--create")
+        .withArchiveFile(base().documentation(file))
+        .with("--no-manifest")
+        .with("-C", base().documentation("api"), ".");
+  }
+
+  public Call<?> computeJLinkForCustomRuntimeImage() {
+    var mainModule = Modules.findMainModule(main().units().toUnits().map(SourceUnit::descriptor));
+    return Call.tool("jlink")
+        .with("--add-modules", main().units().toNames(","))
+        .with("--module-path", toModulePath(base().modules(""), base().libraries()).get(0))
+        .with(mainModule.isPresent(), "--launcher", project().name() + '=' + mainModule.orElse("?"))
+        .with("--compress", "2")
+        .with("--no-header-files")
+        .with("--no-man-pages")
+        .with("--output", base().workspace("image"));
+  }
+
+  public Javac computeJavacForTestSources() {
+    var release = Runtime.version().feature();
+    var sources = project().sources();
+    var units = sources.testSources().units();
+    var modulePath = toModulePath(base().modules(""), base().libraries());
+    return Call.javac()
+        .withModule(units.toNames(","))
+        .with("--module-version", project().version().toString() + "-test")
+        .with(toModuleSourcePaths(units, false), Javac::withModuleSourcePath)
+        .with(
+            toModulePatches(units, main().units()).entrySet(),
+            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
+        .with(modulePath, Javac::withModulePath)
+        .withEncoding("UTF-8")
+        .with("-parameters")
+        .withRecommendedWarnings()
+        .with("-d", base().classes("test", release));
+  }
+
+  public Jar computeJarForTestModule(SourceUnit unit) {
+    var module = unit.name();
+    var release = Runtime.version().feature();
+    var classes = base().classes("test", release, module);
+    var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
+    return Call.jar()
+        .with("--create")
+        .withArchiveFile(toModuleArchive("test", module))
+        .with("-C", classes, ".")
+        .with(resources, (call, resource) -> call.with("-C", resource, "."));
+  }
+
+  public JUnit computeJUnitCall(String realm, SourceUnit unit, List<Path> modulePaths) {
+    var module = unit.name();
+    return new JUnit(module, modulePaths, List.of())
+        .with("--select-module", module)
+        .with("--disable-ansi-colors")
+        .with("--reports-dir", base().reports("junit-" + realm, module));
+  }
+
+  public boolean isJarModuleWithSources() {
+    return false;
+  }
+
+  public boolean isJarSourcesWithResources() {
+    return false;
+  }
+
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
   }
 
-  /** A flag represents a feature toggle. */
-  public enum Flag {
-    DRY_RUN(false),
-    FAIL_FAST(true),
-    FAIL_ON_ERROR(true);
+  public Path toModuleArchive(String realm, String module) {
+    return toModuleArchive(realm, module, project().version());
+  }
 
-    private final boolean enabledByDefault;
+  public Path toModuleArchive(String realm, String module, Version version) {
+    var suffix = realm.isEmpty() ? "" : '-' + realm;
+    return base().modules(realm).resolve(module + '@' + version + suffix + ".jar");
+  }
 
-    Flag(boolean enabledByDefault) {
-      this.enabledByDefault = enabledByDefault;
+  public List<String> toModulePath(Path... elements) {
+    var paths = toModulePaths(elements);
+    return paths.isEmpty() ? List.of() : List.of(Paths.join(paths));
+  }
+
+  public final List<Path> toModulePaths(Path... elements) {
+    var paths = new ArrayList<Path>();
+    for (var element : elements) if (Files.exists(element)) paths.add(element);
+    return List.copyOf(paths);
+  }
+
+  public List<String> toModuleSourcePaths(SourceUnitMap units, boolean forceModuleSpecificForm) {
+    var paths = new ArrayList<String>();
+    var patterns = new TreeSet<String>(); // "src:etc/*/java"
+    var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
+    for (var unit : units.map().values()) {
+      var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
+      if (forceModuleSpecificForm) {
+        specific.put(unit.name(), sourcePaths);
+        continue;
+      }
+      try {
+        for (var path : sourcePaths) patterns.add(toModuleSourcePathPatternForm(path, unit.name()));
+      } catch (FindException e) {
+        specific.put(unit.name(), sourcePaths);
+      }
+    }
+    if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("No forms?!");
+    if (!patterns.isEmpty()) paths.add(String.join(File.pathSeparator, patterns));
+    var entries = specific.entrySet();
+    for (var entry : entries) paths.add(entry.getKey() + "=" + Paths.join(entry.getValue()));
+    return List.copyOf(paths);
+  }
+
+  public String toModuleSourcePathPatternForm(Path info, String module) {
+    var deque = new ArrayDeque<String>();
+    for (var element : info.normalize()) {
+      var name = element.toString();
+      if (name.equals("module-info.java")) continue;
+      deque.addLast(name.equals(module) ? "*" : name);
+    }
+    var pattern = String.join(File.separator, deque);
+    if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
+    if (pattern.equals("*")) return ".";
+    if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+    if (pattern.startsWith("*")) return "." + File.separator + pattern;
+    return pattern;
+  }
+
+  public Map<String, String> toModulePatches(SourceUnitMap units, SourceUnitMap upstream) {
+    if (units.map().isEmpty() || upstream.isEmpty()) return Map.of();
+    var patches = new TreeMap<String, String>();
+    for (var unit : units.map().values()) {
+      var module = unit.name();
+      upstream
+          .findUnit(module)
+          .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
+    }
+    return patches;
+  }
+
+  /** Resolve missing external modules. */
+  public static class Resolver {
+
+    private final Path[] paths;
+    private final Set<String> declared;
+    private final Consumer<Set<String>> transporter;
+    private final Set<String> system;
+
+    public Resolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
+      this.paths = Objects.requireNonNull(paths, "paths").toArray(Path[]::new);
+      this.declared = new TreeSet<>(Objects.requireNonNull(declared, "declared"));
+      this.transporter = Objects.requireNonNull(transporter, "transporter");
+      this.system = Modules.declared(ModuleFinder.ofSystem());
+      if (paths.isEmpty()) throw new IllegalArgumentException("At least one path expected");
     }
 
-    public boolean isEnabledByDefault() {
-      return enabledByDefault;
+    public void resolve(Set<String> required) {
+      resolveModules(required);
+      resolveLibraryModules();
+    }
+
+    public void resolveModules(Set<String> required) {
+      var missing = missing(required);
+      if (missing.isEmpty()) return;
+      transporter.accept(missing);
+      var unresolved = missing(required);
+      if (unresolved.isEmpty()) return;
+      throw new IllegalStateException("Unresolved modules: " + unresolved);
+    }
+
+    public void resolveLibraryModules() {
+      do {
+        var missing = missing(Modules.required(ModuleFinder.of(paths)));
+        if (missing.isEmpty()) return;
+        resolveModules(missing);
+      } while (true);
+    }
+
+    Set<String> missing(Set<String> required) {
+      var missing = new TreeSet<>(required);
+      missing.removeAll(declared);
+      if (required.isEmpty()) return Set.of();
+      missing.removeAll(system);
+      if (required.isEmpty()) return Set.of();
+      var library = Modules.declared(ModuleFinder.of(paths));
+      missing.removeAll(library);
+      return missing;
     }
   }
 
-  /** A set of modifiers and feature toggles. */
-  public static class Flags {
+  /** https://github.com/sormuras/modules */
+  public class SormurasModulesProperties {
 
-    public static Flags ofSystem() {
-      var flags = new TreeSet<Flag>();
-      for (var flag : Flag.values()) {
-        var key = "bach." + flag.name().toLowerCase().replace('_', '-');
-        var property = System.getProperty(key, flag.isEnabledByDefault() ? "true" : "false");
-        if (Boolean.parseBoolean(property)) flags.add(flag);
+    private Map<String, String> moduleMaven;
+    private Map<String, String> moduleVersion;
+    private final Map<String, String> variants;
+
+    public SormurasModulesProperties(Map<String, String> variants) {
+      this.variants = variants;
+    }
+
+    public Optional<Link> lookup(String module) {
+      if (moduleMaven == null && moduleVersion == null)
+        try {
+          var resources = new Resources(http());
+          moduleMaven = load(resources, "module-maven.properties");
+          moduleVersion = load(resources, "module-version.properties");
+        } catch (Exception e) {
+          throw new RuntimeException("Load module properties failed", e);
+        }
+      if (moduleMaven == null) throw new IllegalStateException("module-maven map is null");
+      if (moduleVersion == null) throw new IllegalStateException("module-version map is null");
+
+      var maven = moduleMaven.get(module);
+      if (maven == null) return Optional.empty();
+      var indexOfColon = maven.indexOf(':');
+      if (indexOfColon < 0) throw new AssertionError("Expected group:artifact, but got: " + maven);
+      var version = variants.getOrDefault(module, moduleVersion.get(module));
+      if (version == null) return Optional.empty();
+      var group = maven.substring(0, indexOfColon);
+      var artifact = maven.substring(indexOfColon + 1);
+      return Optional.of(Link.ofCentral(module, group, artifact, version));
+    }
+
+    private static final String ROOT = "https://github.com/sormuras/modules";
+
+    private Map<String, String> load(Resources resources, String properties) throws Exception {
+      var root = Path.of(System.getProperty("user.home", ""));
+      var cache = Files.createDirectories(root.resolve(".bach/modules"));
+      var source = URI.create(String.join("/", ROOT, "raw/master", properties));
+      var target = cache.resolve(properties);
+      var path = resources.copy(source, target, StandardCopyOption.COPY_ATTRIBUTES);
+      return map(load(new Properties(), path));
+    }
+
+    /** Load all strings from the specified file into the passed properties instance. */
+    private Properties load(Properties properties, Path path) {
+      if (Files.isRegularFile(path)) {
+        try (var reader = Files.newBufferedReader(path)) {
+          properties.load(reader);
+        } catch (Exception e) {
+          throw new RuntimeException("Load properties failed: " + path, e);
+        }
       }
-      return new Flags(flags);
+      return properties;
     }
 
-    private final Set<Flag> set;
-
-    public Flags(Set<Flag> set) {
-      this.set = set.isEmpty() ? Set.of() : EnumSet.copyOf(set);
-    }
-
-    public Set<Flag> set() {
-      return set;
-    }
-
-    public boolean isDryRun() {
-      return set.contains(Flag.DRY_RUN);
-    }
-
-    public boolean isFailFast() {
-      return set.contains(Flag.FAIL_FAST);
-    }
-
-    public boolean isFailOnError() {
-      return set.contains(Flag.FAIL_ON_ERROR);
-    }
-
-    public Flags with(Set<Flag> set) {
-      return new Flags(set);
-    }
-
-    public Flags with(Flag... additionalFlags) {
-      var flags = new TreeSet<>(set);
-      flags.addAll(Set.of(additionalFlags));
-      return with(flags);
-    }
-
-    public Flags without(Flag... redundantFlags) {
-      var flags = new TreeSet<>(set());
-      flags.removeAll(Set.of(redundantFlags));
-      return with(flags);
+    /** Convert all {@link String}-based properties into a {@code Map<String, String>}. */
+    private Map<String, String> map(Properties properties) {
+      var map = new TreeMap<String, String>();
+      for (var name : properties.stringPropertyNames()) {
+        map.put(name, properties.getProperty(name));
+      }
+      return map;
     }
   }
 }
