@@ -17,6 +17,8 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -26,22 +28,6 @@ import java.util.TreeSet;
 
 /** An external modules manager backed by the {@link Base#libraries() lib} directory. */
 public final class Library {
-
-  public static Library of() {
-    return new Library(Set.of(), Map.of());
-  }
-
-  public Library withRequires(String... moreRequires) {
-    var requires = new TreeSet<>(requires());
-    Collections.addAll(requires, moreRequires);
-    return new Library(requires, links);
-  }
-
-  public Library with(Link... moreLinks) {
-    var links = new TreeMap<>(links());
-    for (var link : moreLinks) links.put(link.module(), link);
-    return new Library(requires, links);
-  }
 
   private final Set<String> requires;
   private final Map<String, Link> links;
@@ -58,6 +44,43 @@ public final class Library {
   public Map<String, Link> links() {
     return links;
   }
+
+  //
+  // Configuration API
+  //
+
+  @Factory
+  public static Library of() {
+    return new Library(Set.of(), Map.of());
+  }
+
+  @Factory(Kind.SETTER)
+  public Library requires(Set<String> requires) {
+    return new Library(requires, links);
+  }
+
+  @Factory(Kind.SETTER)
+  public Library links(Map<String, Link> links) {
+    return new Library(requires, links);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Library withRequires(String... moreRequires) {
+    var merged = new TreeSet<>(requires);
+    Collections.addAll(merged, moreRequires);
+    return requires(merged);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Library with(Link... moreLinks) {
+    var merged = new TreeMap<>(links);
+    for (var link : moreLinks) merged.put(link.module(), link);
+    return links(merged);
+  }
+
+  //
+  // Normal API
+  //
 
   public Optional<Link> findLink(String module) {
     return Optional.ofNullable(links.get(module));
