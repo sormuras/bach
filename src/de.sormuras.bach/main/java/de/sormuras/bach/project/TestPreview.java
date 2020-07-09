@@ -17,28 +17,38 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
+
 /** Source set of {@code test-preview} modules. */
 public final class TestPreview {
 
-  public static TestPreview of() {
-    return new TestPreview(SourceUnits.of());
-  }
+  private final SourceUnitMap units;
 
-  public TestPreview with(SourceUnits units) {
-    return new TestPreview(units);
-  }
-
-  public TestPreview with(SourceUnit unit) {
-    return with(units.with(unit));
-  }
-
-  private final SourceUnits units;
-
-  public TestPreview(SourceUnits units) {
+  public TestPreview(SourceUnitMap units) {
     this.units = units;
   }
 
-  public SourceUnits units() {
+  public SourceUnitMap units() {
     return units;
+  }
+
+  //
+  // Configuration API
+  //
+
+  @Factory
+  public static TestPreview of() {
+    return new TestPreview(SourceUnitMap.of());
+  }
+
+  @Factory(Kind.SETTER)
+  public TestPreview units(SourceUnitMap units) {
+    return new TestPreview(units);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public TestPreview with(SourceUnit... moreUnits) {
+    return units(units.with(moreUnits));
   }
 }
