@@ -39,23 +39,28 @@ public class Version {
       System.out.println(current);
       return;
     }
+
     // Set new version
     var version = args[0];
-    var snapshotOrVersion = version.endsWith("-ea") ? "master-SNAPSHOT" : version;
-
     System.out.println("Set version of Bach.java to: " + version + " (was: " + current + ")");
-
     sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
 
     var readmeMd = Path.of("README.md");
     var pomXml = Path.of("src/de.sormuras.bach/main/maven/pom.xml");
-    var bachBootJsh = Path.of("src/bach/bach-boot.jsh");
-    var bachBuildJsh = Path.of("src/bach/bach-build.jsh");
-
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
     sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
-    sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + snapshotOrVersion + '"');
-    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + snapshotOrVersion + '"');
+
+    var versionOrSNAPSHOT = version.endsWith("-ea") ? "master-SNAPSHOT" : version;
+    var bachBootJsh = Path.of("src/bach/bach-boot.jsh");
+    sed(bachBootJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrSNAPSHOT + '"');
+
+    var versionOrHEAD = version.endsWith("-ea") ? "HEAD" : version;
+    var bachBuildJsh = Path.of("src/bach/bach-build.jsh");
+    var bachHelpJsh = Path.of("src/bach/bach-help.jsh");
+    var bachInitJsh = Path.of("src/bach/bach-init.jsh");
+    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
+    sed(bachHelpJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
+    sed(bachInitJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
