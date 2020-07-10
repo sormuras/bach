@@ -81,7 +81,9 @@ public final class Configuration {
   public enum Flag {
     DRY_RUN(false),
     FAIL_FAST(true),
-    FAIL_ON_ERROR(true);
+    FAIL_ON_ERROR(true),
+    INCLUDE_SOURCES_IN_MODULE(false),
+    INCLUDE_RESOURCES_IN_SOURCES(false);
 
     private final boolean enabledByDefault;
 
@@ -127,6 +129,14 @@ public final class Configuration {
 
     public boolean isFailOnError() {
       return set.contains(Flag.FAIL_ON_ERROR);
+    }
+
+    public boolean isIncludeSourcesInModularJar() {
+      return set.contains(Flag.INCLUDE_SOURCES_IN_MODULE);
+    }
+
+    public boolean isIncludeResourcesInSourcesJar() {
+      return set.contains(Flag.INCLUDE_RESOURCES_IN_SOURCES);
     }
 
     public Flags with(Set<Flag> set) {

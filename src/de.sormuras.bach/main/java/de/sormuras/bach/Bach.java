@@ -298,6 +298,7 @@ public class Bach {
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
+    var includeSources = configuration.flags().isIncludeSourcesInModularJar();
     for (var unit : units.map().values()) {
       executeCall(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
@@ -328,7 +329,7 @@ public class Bach {
               .withArchiveFile(toModuleArchive("", module))
               .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               .with("-C", classes0, ".")
-              .with(isJarModuleWithSources(), "-C", sources0.path(), ".");
+              .with(includeSources, "-C", sources0.path(), ".");
       var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
       if (Files.notExists(classes0.resolve("module-info.class"))) {
         for (var source : sources) {
@@ -347,7 +348,7 @@ public class Bach {
         jar =
             jar.with("--release", source.release())
                 .with("-C", classes, ".")
-                .with(isJarModuleWithSources(), "-C", source.path(), ".");
+                .with(includeSources, "-C", source.path(), ".");
       }
       executeCall(jar);
     }
@@ -441,7 +442,7 @@ public class Bach {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (isJarSourcesWithResources()) {
+    if (configuration.flags().isIncludeResourcesInSourcesJar()) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -464,7 +465,7 @@ public class Bach {
             .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
             .with("-C", classes, ".")
             .with(resources, (call, resource) -> call.with("-C", resource, "."));
-    if (isJarModuleWithSources()) {
+    if (configuration.flags().isIncludeSourcesInModularJar()) {
       jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;
@@ -542,14 +543,6 @@ public class Bach {
         .with("--select-module", module)
         .with("--disable-ansi-colors")
         .with("--reports-dir", base().reports("junit-" + realm, module));
-  }
-
-  public boolean isJarModuleWithSources() {
-    return false;
-  }
-
-  public boolean isJarSourcesWithResources() {
-    return false;
   }
 
   @Override

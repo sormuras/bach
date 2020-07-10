@@ -56,7 +56,7 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    var configuration = Configuration.ofSystem();
+    var configuration = Configuration.ofSystem().with(Configuration.Flag.INCLUDE_SOURCES_IN_MODULE);
 
     new CustomBach(configuration, project).buildProject();
   }
@@ -75,11 +75,6 @@ class Build {
           .without("-Xdoclint")
           .with("-Xdoclint:-missing")
           .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
-    }
-
-    @Override
-    public boolean isJarModuleWithSources() {
-      return true;
     }
   }
 }
