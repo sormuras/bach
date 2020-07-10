@@ -99,6 +99,10 @@ public class Bach {
     return configuration;
   }
 
+  public final Configuration.Flags flags() {
+    return configuration.flags();
+  }
+
   public final Project project() {
     return project;
   }
@@ -122,18 +126,18 @@ public class Bach {
 
   void executeCall(Call<?> call) {
     var logbook = configuration.logbook();
-    var flags = configuration.flags();
+    var failFast = flags().isFailFast();
 
     logbook.log(Level.INFO, call.toCommandLine());
 
     var provider = call.findProvider();
     if (provider.isEmpty()) {
       var message = logbook.log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
-      if (flags.isFailFast()) throw new AssertionError(message);
+      if (failFast) throw new AssertionError(message);
       return;
     }
 
-    if (flags.isDryRun()) return;
+    if (flags().isDryRun()) return;
 
     var tool = provider.get();
     var currentThread = Thread.currentThread();
@@ -159,10 +163,10 @@ public class Bach {
       var message = new StringJoiner(System.lineSeparator());
       message.add(caption);
       result.toStrings().forEach(message::add);
-      if (flags.isFailFast()) throw new AssertionError(message);
+      if (failFast) throw new AssertionError(message);
     } catch (RuntimeException exception) {
       logbook.log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
-      if (flags.isFailFast()) throw exception;
+      if (failFast) throw exception;
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
     }
@@ -180,7 +184,6 @@ public class Bach {
 
   void writeLogbook() {
     var logbook = configuration.logbook();
-    var flags = configuration.flags();
 
     try {
       Paths.createDirectories(project.base().workspace());
@@ -189,7 +192,7 @@ public class Bach {
       logbook.log(Level.INFO, "Wrote logbook to %s", path.toUri());
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "write logbook failed: %s", exception);
-      if (flags.isFailOnError()) throw new AssertionError(message, exception);
+      if (flags().isFailOnError()) throw new AssertionError(message, exception);
     }
   }
 
@@ -199,10 +202,10 @@ public class Bach {
 
   public void buildProject() {
     var logbook = configuration.logbook();
-    var flags = configuration.flags();
+    var failOnError = flags().isFailOnError();
 
     logbook.log(Level.TRACE, toString());
-    logbook.log(Level.TRACE, "\tflags.set=%s", flags.set());
+    logbook.log(Level.TRACE, "\tflags.set=%s", flags().set());
     logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
     logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
     logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project.toStrings()));
@@ -216,7 +219,7 @@ public class Bach {
       logbook.log(Level.INFO, "Build of %s took %d ms", project.toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
-      if (flags.isFailOnError()) throw new AssertionError(message, exception);
+      if (failOnError) throw new AssertionError(message, exception);
     } finally {
       writeLogbook();
     }
@@ -224,7 +227,7 @@ public class Bach {
     if (errors.isEmpty()) return;
     errors.forEach(error -> error.toStrings().forEach(System.err::println));
     var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    if (flags.isFailOnError()) throw new AssertionError(message);
+    if (failOnError) throw new AssertionError(message);
   }
 
   void buildProjectModules() {
@@ -298,7 +301,7 @@ public class Bach {
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
-    var includeSources = configuration.flags().isIncludeSourcesInModularJar();
+    var includeSources = flags().isIncludeSourcesInModularJar();
     for (var unit : units.map().values()) {
       executeCall(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
@@ -442,7 +445,7 @@ public class Bach {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (configuration.flags().isIncludeResourcesInSourcesJar()) {
+    if (flags().isIncludeResourcesInSourcesJar()) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -465,7 +468,7 @@ public class Bach {
             .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
             .with("-C", classes, ".")
             .with(resources, (call, resource) -> call.with("-C", resource, "."));
-    if (configuration.flags().isIncludeSourcesInModularJar()) {
+    if (flags().isIncludeSourcesInModularJar()) {
       jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;

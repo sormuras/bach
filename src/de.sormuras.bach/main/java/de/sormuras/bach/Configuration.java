@@ -63,13 +63,13 @@ public final class Configuration {
   }
 
   @Factory(Kind.OPERATOR)
-  public Configuration with(Flag... flags) {
-    return flags(flags().with(flags));
+  public Configuration with(Flag... moreFlags) {
+    return flags(flags.with(moreFlags));
   }
 
   @Factory(Kind.OPERATOR)
-  public Configuration without(Flag... flags) {
-    return flags(flags().without(flags));
+  public Configuration without(Flag... redundantFlags) {
+    return flags(flags.without(redundantFlags));
   }
 
   @Factory(Kind.OPERATOR)
