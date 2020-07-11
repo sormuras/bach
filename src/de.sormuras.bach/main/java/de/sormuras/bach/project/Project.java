@@ -22,6 +22,7 @@ import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -187,6 +188,15 @@ public final class Project {
         sources.mainSources().units().toUnits(),
         Stream.concat(
             sources.testSources().units().toUnits(), sources.testPreview().units().toUnits()));
+  }
+
+  public Path toModuleArchive(String realm, String module) {
+    return toModuleArchive(realm, module, version);
+  }
+
+  public Path toModuleArchive(String realm, String module, Version version) {
+    var suffix = realm.isEmpty() ? "" : '-' + realm;
+    return base.modules(realm).resolve(module + '@' + version + suffix + ".jar");
   }
 
   public List<String> toStrings() {

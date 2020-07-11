@@ -326,7 +326,7 @@ public class Bach {
       var jar =
           Call.jar()
               .with("--create")
-              .withArchiveFile(toModuleArchive("", module))
+              .withArchiveFile(project().toModuleArchive("", module))
               .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               .with("-C", classes0, ".")
               .with(includeSources, "-C", sources0.path(), ".");
@@ -389,7 +389,7 @@ public class Bach {
     var module = unit.name();
     var modulePaths =
         toModulePaths(
-            toModuleArchive(realm, module), // test module
+            project().toModuleArchive(realm, module), // test module
             base().modules(""), // main modules
             base().modules(realm), // other test modules
             base().libraries()); // external modules
@@ -461,7 +461,7 @@ public class Bach {
     var jar =
         Call.jar()
             .with("--create")
-            .withArchiveFile(toModuleArchive("", module))
+            .withArchiveFile(project().toModuleArchive("", module))
             .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
             .with("-C", classes, ".")
             .with(resources, (call, resource) -> call.with("-C", resource, "."));
@@ -532,7 +532,7 @@ public class Bach {
     var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
     return Call.jar()
         .with("--create")
-        .withArchiveFile(toModuleArchive("test", module))
+        .withArchiveFile(project().toModuleArchive("test", module))
         .with("-C", classes, ".")
         .with(resources, (call, resource) -> call.with("-C", resource, "."));
   }
@@ -548,15 +548,6 @@ public class Bach {
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
-  }
-
-  public Path toModuleArchive(String realm, String module) {
-    return toModuleArchive(realm, module, project().version());
-  }
-
-  public Path toModuleArchive(String realm, String module, Version version) {
-    var suffix = realm.isEmpty() ? "" : '-' + realm;
-    return base().modules(realm).resolve(module + '@' + version + suffix + ".jar");
   }
 
   public List<String> toModulePath(Path... elements) {
