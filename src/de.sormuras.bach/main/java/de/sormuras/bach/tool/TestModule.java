@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 
-/** A test module, literally named {@code test("${MODULE}")}, call configuration. */
+/** A test module, named {@code test("${MODULE}")}, call configuration. */
 public final class TestModule implements Call<TestModule> {
 
   private final String module;
@@ -50,6 +50,11 @@ public final class TestModule implements Call<TestModule> {
     return Modules.findTools(module, modulePaths).stream()
         .filter(provider -> provider.name().equals(name()))
         .findAny();
+  }
+
+  @Override
+  public String toDescriptiveLine() {
+    return "Launch tests provided via " + name();
   }
 
   @Override

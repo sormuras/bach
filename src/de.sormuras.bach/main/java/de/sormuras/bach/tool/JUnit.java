@@ -47,12 +47,18 @@ public final class JUnit implements Call<JUnit> {
     return arguments;
   }
 
-
   @Override
   public Optional<ToolProvider> findProvider() {
     return Modules.findTools(module, modulePaths).stream()
         .filter(provider -> provider.name().equals(name()))
         .findAny();
+  }
+
+  @Override
+  public String toDescriptiveLine() {
+    var value = findValue("--select-module");
+    if (value.isEmpty()) return Call.super.toDescriptiveLine();
+    return "Launch JUnit Platform for module " + value.get();
   }
 
   @Override

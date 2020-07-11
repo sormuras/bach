@@ -21,7 +21,7 @@ import de.sormuras.bach.Call;
 import java.nio.file.Path;
 import java.util.List;
 
-/** A {@code javac} call configuration. */
+/** A {@code jar} call configuration. */
 public final class Jar implements Call<Jar> {
 
   private final List<Argument> arguments;
@@ -38,6 +38,13 @@ public final class Jar implements Call<Jar> {
   @Override
   public List<Argument> arguments() {
     return arguments;
+  }
+
+  @Override
+  public String toDescriptiveLine() {
+    var value = findValue("--file");
+    if (value.isEmpty()) return Call.super.toDescriptiveLine();
+    return "Create archive " + Path.of(value.get()).getFileName();
   }
 
   @Override

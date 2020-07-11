@@ -39,6 +39,17 @@ public final class Javadoc implements WithModuleSourceOptionsCall<Javadoc> {
   }
 
   @Override
+  public String toDescriptiveLine() {
+    var value = findValue("--module");
+    if (value.isEmpty()) return WithModuleSourceOptionsCall.super.toDescriptiveLine();
+    var modules = value.get().split(",");
+    if (modules.length == 1) return "Generate API documentation for module " + modules[0];
+    return String.format(
+        "Generate API documentation for %d modules: %s",
+        modules.length, String.join(", ", modules));
+  }
+
+  @Override
   public Javadoc with(List<Argument> arguments) {
     if (arguments == arguments()) return this;
     return new Javadoc(arguments);

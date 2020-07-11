@@ -39,6 +39,15 @@ public final class Javac implements WithModuleSourceOptionsCall<Javac> {
   }
 
   @Override
+  public String toDescriptiveLine() {
+    var value = findValue("--module");
+    if (value.isEmpty()) return WithModuleSourceOptionsCall.super.toDescriptiveLine();
+    var modules = value.get().split(",");
+    if (modules.length == 1) return "Compile module " + modules[0];
+    return String.format("Compile %d modules: %s", modules.length, String.join(", ", modules));
+  }
+
+  @Override
   public Javac with(List<Argument> arguments) {
     if (arguments == arguments()) return this;
     return new Javac(arguments);
