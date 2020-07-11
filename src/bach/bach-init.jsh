@@ -47,8 +47,8 @@ if (Files.notExists(build)) {
       "",
       "class Build {",
       "  public static void main(String... args) {",
-      "    var project = Project.of(\"unnamed\", \"1-ea\");",
       "    var configuration = Configuration.ofSystem();",
+      "    var project = Project.ofCurrentDirectory();",
       "    new Bach(configuration, project).build();",
       "  }",
       "}"));
