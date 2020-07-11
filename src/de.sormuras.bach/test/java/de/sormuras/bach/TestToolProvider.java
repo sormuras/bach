@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-open /*test*/ module de.sormuras.bach {
-  exports de.sormuras.bach;
-  // hide de.sormuras.bach.internal;
-  exports de.sormuras.bach.project;
-  exports de.sormuras.bach.tool;
+package de.sormuras.bach;
 
-  requires transitive java.net.http;
-  requires jdk.compiler;
-  requires jdk.jartool;
-  requires jdk.jdeps;
-  requires jdk.jlink;
-  requires org.junit.jupiter;
-  requires test.base;
+import java.io.PrintWriter;
+import java.util.spi.ToolProvider;
 
-  uses java.util.spi.ToolProvider;
+public class TestToolProvider implements ToolProvider {
+  @Override
+  public String name() {
+    return "test(de.sormuras.bach)";
+  }
 
-  provides java.util.spi.ToolProvider with
-      de.sormuras.bach.TestToolProvider,
-      de.sormuras.bach.Main.BachToolProvider;
+  @Override
+  public int run(PrintWriter out, PrintWriter err, String... args) {
+    return 0;
+  }
 }
