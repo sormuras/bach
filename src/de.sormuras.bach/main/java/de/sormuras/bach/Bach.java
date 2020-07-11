@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Resolver;
 import de.sormuras.bach.internal.Resources;
 import de.sormuras.bach.internal.SormurasModulesProperties;
 import de.sormuras.bach.project.Base;
@@ -36,7 +37,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
-import java.lang.module.ModuleFinder;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,14 +46,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /** Bach - Java Shell Builder - An extensible build workflow. */
@@ -549,55 +547,5 @@ public class Bach {
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
-  }
-
-  /** Resolve missing external modules. */
-  public static class Resolver {
-
-    private final Path[] paths;
-    private final Set<String> declared;
-    private final Consumer<Set<String>> transporter;
-    private final Set<String> system;
-
-    public Resolver(List<Path> paths, Set<String> declared, Consumer<Set<String>> transporter) {
-      this.paths = Objects.requireNonNull(paths, "paths").toArray(Path[]::new);
-      this.declared = new TreeSet<>(Objects.requireNonNull(declared, "declared"));
-      this.transporter = Objects.requireNonNull(transporter, "transporter");
-      this.system = Modules.declared(ModuleFinder.ofSystem());
-      if (paths.isEmpty()) throw new IllegalArgumentException("At least one path expected");
-    }
-
-    public void resolve(Set<String> required) {
-      resolveModules(required);
-      resolveLibraryModules();
-    }
-
-    public void resolveModules(Set<String> required) {
-      var missing = missing(required);
-      if (missing.isEmpty()) return;
-      transporter.accept(missing);
-      var unresolved = missing(required);
-      if (unresolved.isEmpty()) return;
-      throw new IllegalStateException("Unresolved modules: " + unresolved);
-    }
-
-    public void resolveLibraryModules() {
-      do {
-        var missing = missing(Modules.required(ModuleFinder.of(paths)));
-        if (missing.isEmpty()) return;
-        resolveModules(missing);
-      } while (true);
-    }
-
-    Set<String> missing(Set<String> required) {
-      var missing = new TreeSet<>(required);
-      missing.removeAll(declared);
-      if (required.isEmpty()) return Set.of();
-      missing.removeAll(system);
-      if (required.isEmpty()) return Set.of();
-      var library = Modules.declared(ModuleFinder.of(paths));
-      missing.removeAll(library);
-      return missing;
-    }
   }
 }
