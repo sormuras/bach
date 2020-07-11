@@ -183,9 +183,9 @@ public class Bach {
     var logbook = configuration.logbook();
 
     try {
-      Paths.createDirectories(project.base().workspace());
-      var path = project.base().workspace("logbook.md");
-      Files.write(path, logbook.toMarkdown(project));
+      Paths.createDirectories(base().workspace());
+      var path = base().workspace("logbook.md");
+      Files.write(path, logbook.toMarkdown(project()));
       logbook.log(Level.INFO, "Wrote logbook to %s", path.toUri());
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "write logbook failed: %s", exception);
@@ -204,8 +204,8 @@ public class Bach {
     logbook.log(Level.TRACE, toString());
     logbook.log(Level.TRACE, "\tflags.set=%s", flags().set());
     logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
-    logbook.log(Level.DEBUG, "Build of %s started", project.toNameAndVersion());
-    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project.toStrings()));
+    logbook.log(Level.DEBUG, "Build of %s started", project().toNameAndVersion());
+    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
     try {
       var start = Instant.now();
       buildProjectModules();
@@ -213,7 +213,7 @@ public class Bach {
       if (main().units().isPresent()) {
         printStatistics(Level.INFO, base().modules(""));
       }
-      logbook.log(Level.INFO, "Build of %s took %d ms", project.toNameAndVersion(), duration);
+      logbook.log(Level.INFO, "Build of %s took %d ms", project().toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
       if (failOnError) throw new AssertionError(message, exception);
