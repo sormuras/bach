@@ -131,6 +131,14 @@ public interface Call<T> {
     return ToolProvider.findFirst(name());
   }
 
+  default Optional<Argument> findArgument(String option) {
+    return arguments().stream().filter(it -> it.option().equals(option)).findFirst();
+  }
+
+  default Optional<String> findValue(String option) {
+    return findArgument(option).map(Argument::value);
+  }
+
   default int run() {
     System.out.println("> " + toCommandLine());
     return findProvider().orElseThrow().run(System.out, System.err, toStringArray());
