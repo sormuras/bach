@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -48,6 +49,10 @@ public interface Call<T> {
 
   static Jar jar() {
     return new Jar(List.of());
+  }
+
+  static Jlink jlink() {
+    return new Jlink(List.of());
   }
 
   String name();

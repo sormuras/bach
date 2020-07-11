@@ -32,6 +32,7 @@ import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import de.sormuras.bach.tool.TestModule;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -492,10 +493,10 @@ public class Bach {
         .with("-C", base().documentation("api"), ".");
   }
 
-  public Call<?> computeJLinkForCustomRuntimeImage() {
+  public Jlink computeJLinkForCustomRuntimeImage() {
     var modulePath = Paths.joinExisting(base().modules(""), base().libraries()).orElseThrow();
     var mainModule = Modules.findMainModule(main().units().toUnits().map(SourceUnit::descriptor));
-    return Call.tool("jlink")
+    return Call.jlink()
         .with("--add-modules", main().units().toNames(","))
         .with("--module-path", modulePath)
         .with(mainModule.isPresent(), "--launcher", project().name() + '=' + mainModule.orElse("?"))
