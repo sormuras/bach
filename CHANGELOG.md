@@ -8,13 +8,18 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 _In progress..._
 
+### Breaking Changes
+- Purify `Bach` API [#138]
+### Bug Fixes
+- Prevent NPE when parsing URI's fragment in class `Link`
+
 ## Version [11.3] released 2020-07-10
 
 - https://github.com/sormuras/bach/releases/tag/11.3
 - https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.3
 
 ### Breaking Changes
-- More API changes - Bach is the central builder workflow class
+- More API changes - `Bach` is the central builder workflow class
 
 ## Version [11.3-M1] released 2020-07-03
 
@@ -69,3 +74,4 @@ https://github.com/sormuras/bach/releases/tag/11.1
 [2.1]: https://github.com/sormuras/bach/compare/2.0...2.1
 [1.9.10]: https://github.com/sormuras/bach/compare/1.9.1...1.9.10
 [#126]: https://github.com/sormuras/bach/issues/126
+[#138]: https://github.com/sormuras/bach/issues/138
