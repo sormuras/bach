@@ -86,6 +86,10 @@ public final class Logbook {
     return text;
   }
 
+  void print(String text) {
+    printer.accept(text);
+  }
+
   Result print(Call<?> call, String out, String err, Duration duration, int code) {
     var thread = Thread.currentThread().getId();
     var tool = call.name();
@@ -95,6 +99,10 @@ public final class Logbook {
     print(Level.TRACE, out, false);
     print(Level.TRACE, err, false);
     return result;
+  }
+
+  List<Result> results() {
+    return List.copyOf(results);
   }
 
   List<Result> errors() {
@@ -254,6 +262,26 @@ public final class Logbook {
       this.err = err;
       this.duration = duration;
       this.code = code;
+    }
+
+    long thread() {
+      return thread;
+    }
+
+    String tool() {
+      return tool;
+    }
+
+    String[] args() {
+      return args;
+    }
+
+    Duration duration() {
+      return duration;
+    }
+
+    int code() {
+      return code;
     }
 
     public boolean isError() {
