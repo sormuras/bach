@@ -58,7 +58,7 @@ class Build {
 
     var configuration = Configuration.ofSystem().with(Configuration.Flag.INCLUDE_SOURCES_IN_MODULE);
 
-    new CustomBach(configuration, project).buildProject();
+    new CustomBach(configuration, project).build();
   }
 
   static class CustomBach extends Bach {

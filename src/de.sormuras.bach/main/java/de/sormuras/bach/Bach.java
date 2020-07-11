@@ -130,7 +130,8 @@ public class Bach {
   void executeCall(Call<?> call) {
     var failFast = flags().isFailFast();
 
-    log(Level.INFO, call.toCommandLine());
+    log(Level.INFO, call.toDescriptiveLine());
+    log(Level.DEBUG, call.toCommandLine());
 
     var provider = call.findProvider();
     if (provider.isEmpty()) {
@@ -198,25 +199,28 @@ public class Bach {
   // ===
   //
 
-  public void buildProject() {
-    var failOnError = flags().isFailOnError();
-
+  public void build() {
     log(Level.TRACE, toString());
     log(Level.TRACE, "\tflags.set=%s", flags().set());
     log(Level.TRACE, "\tlogbook.threshold=%s", logbook().threshold());
-    log(Level.DEBUG, "Build of %s started", project().toNameAndVersion());
+    buildProject();
+  }
+
+  public void buildProject() {
+    log(Level.INFO, "Build of project %s started", project().toNameAndVersion());
     log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
     try {
       var start = Instant.now();
+      buildLibrariesDirectoryByResolvingMissingExternalModules();
       buildProjectModules();
       var duration = Duration.between(start, Instant.now()).toMillis();
       if (main().units().isPresent()) {
         printStatistics(Level.INFO, base().modules(""));
       }
-      log(Level.INFO, "Build of %s took %d ms", project().toNameAndVersion(), duration);
+      log(Level.INFO, "Build of project %s took %d ms", project().toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "build failed throwing %s", exception);
-      if (failOnError) throw new AssertionError(message, exception);
+      if (flags().isFailOnError()) throw new AssertionError(message, exception);
     } finally {
       writeLogbook();
     }
@@ -224,11 +228,10 @@ public class Bach {
     if (errors.isEmpty()) return;
     errors.forEach(error -> error.toStrings().forEach(System.err::println));
     var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    if (failOnError) throw new AssertionError(message);
+    if (flags().isFailOnError()) throw new AssertionError(message);
   }
 
   void buildProjectModules() {
-    buildLibrariesDirectoryByResolvingMissingExternalModules();
     if (main().units().isPresent()) {
       buildMainModules();
       var service = Executors.newWorkStealingPool();
@@ -257,16 +260,17 @@ public class Bach {
     // get missing external modules from libraries directory
     // download them recursively
 
-    var libraries = base().libraries();
-    var declared = project().toDeclaredModuleNames();
     var resolver =
-        new Resolver(List.of(libraries), declared, this::buildLibrariesDirectoryByResolvingModules);
+        new Resolver(
+            List.of(base().libraries()),
+            project().toDeclaredModuleNames(),
+            this::buildLibrariesDirectoryByResolvingModules);
     resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
     resolver.resolve(project().library().requires()); // from project descriptor
   }
 
   public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
-    log(Level.DEBUG, "Resolve missing external modules: " + modules);
+    log(Level.INFO, "Resolve %d missing external module(s) << %s", modules.size(), modules);
     var resources = new Resources(http());
     for (var module : modules) {
       var optionalLink =
