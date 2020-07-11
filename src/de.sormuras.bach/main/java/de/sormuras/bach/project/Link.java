@@ -138,7 +138,9 @@ public final class Link implements Comparable<Link> {
 
   public List<String> findFragments(String key) {
     var list = new ArrayList<String>();
-    var entries = URI.create(uri).getFragment().split("&");
+    var fragment = URI.create(uri).getFragment();
+    if (fragment == null) return List.of();
+    var entries = fragment.split("&");
     for (var entry : entries) if (entry.startsWith(key)) list.add(entry.substring(key.length()));
     return list;
   }
