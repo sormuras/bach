@@ -107,6 +107,13 @@ public interface Call<T> {
     return String.join(" ", command);
   }
 
+  default String toDescriptiveLine() {
+    int max = 123;
+    var line = toCommandLine();
+    if (line.length() > max) line = line.substring(0, max - 5) + "[...]";
+    return "Call " + line;
+  }
+
   default List<String> toStrings() {
     var strings = new ArrayList<String>();
     for (var argument : arguments()) {
@@ -160,6 +167,12 @@ public interface Call<T> {
 
     public List<String> values() {
       return values;
+    }
+
+    public String value() {
+      if (values.size() != 1)
+        throw new IllegalStateException("Expected one value, but got: " + values);
+      return values.get(0);
     }
   }
 
