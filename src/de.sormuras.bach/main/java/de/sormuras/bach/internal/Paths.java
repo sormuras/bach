@@ -23,11 +23,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -138,6 +140,17 @@ public final class Paths {
   /** Join a collection of path objects to a string using the system-dependent separator. */
   public static String join(Collection<Path> paths) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+  }
+
+  public static Optional<String> joinExisting(Path... elements) {
+    var paths = retainExisting(elements);
+    return paths.isEmpty() ? Optional.empty() : Optional.of(join(paths));
+  }
+
+  public static List<Path> retainExisting(Path... elements) {
+    var paths = new ArrayList<Path>();
+    for (var element : elements) if (Files.exists(element)) paths.add(element);
+    return List.copyOf(paths);
   }
 
   /** Return path's file name as a {@link String}. */

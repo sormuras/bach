@@ -366,7 +366,7 @@ public class Bach {
   }
 
   public void buildCustomRuntimeImage() {
-    var modulePaths = toModulePaths(base().modules(""), base().libraries());
+    var modulePaths = Paths.retainExisting(base().modules(""), base().libraries());
     var autos = Modules.findAutomaticModules(modulePaths);
     if (autos.size() > 0) {
       log(Level.WARNING, "Automatic module(s) detected: %s", autos);
@@ -394,7 +394,7 @@ public class Bach {
   public void buildTestReportsByExecutingTestModule(String realm, SourceUnit unit) {
     var module = unit.name();
     var modulePaths =
-        toModulePaths(
+        Paths.retainExisting(
             project().toModuleArchive(realm, module), // test module
             base().modules(""), // main modules
             base().modules(realm), // other test modules
@@ -422,7 +422,7 @@ public class Bach {
 
   public Javac computeJavacForMainSources() {
     var release = main().release().feature();
-    var modulePath = toModulePath(base().libraries());
+    var modulePath = Paths.joinExisting(base().libraries());
     return Call.javac()
         .withModule(main().units().toNames(","))
         .with("--module-version", project().version())
@@ -476,7 +476,7 @@ public class Bach {
   }
 
   public Javadoc computeJavadocForMainSources() {
-    var modulePath = toModulePath(base().libraries());
+    var modulePath = Paths.joinExisting(base().libraries());
     return Call.javadoc()
         .withModule(main().units().toNames(","))
         .with(main().units().toModuleSourcePaths(false), Javadoc::withModuleSourcePath)
@@ -499,10 +499,11 @@ public class Bach {
   }
 
   public Call<?> computeJLinkForCustomRuntimeImage() {
+    var modulePath = Paths.joinExisting(base().modules(""), base().libraries()).orElseThrow();
     var mainModule = Modules.findMainModule(main().units().toUnits().map(SourceUnit::descriptor));
     return Call.tool("jlink")
         .with("--add-modules", main().units().toNames(","))
-        .with("--module-path", toModulePath(base().modules(""), base().libraries()).get(0))
+        .with("--module-path", modulePath)
         .with(mainModule.isPresent(), "--launcher", project().name() + '=' + mainModule.orElse("?"))
         .with("--compress", "2")
         .with("--no-header-files")
@@ -514,7 +515,7 @@ public class Bach {
     var release = Runtime.version().feature();
     var sources = project().sources();
     var units = sources.testSources().units();
-    var modulePath = toModulePath(base().modules(""), base().libraries());
+    var modulePath = Paths.joinExisting(base().modules(""), base().libraries());
     return Call.javac()
         .withModule(units.toNames(","))
         .with("--module-version", project().version().toString() + "-test")
@@ -552,17 +553,6 @@ public class Bach {
   @Override
   public String toString() {
     return "Bach.java " + VERSION;
-  }
-
-  public List<String> toModulePath(Path... elements) {
-    var paths = toModulePaths(elements);
-    return paths.isEmpty() ? List.of() : List.of(Paths.join(paths));
-  }
-
-  public final List<Path> toModulePaths(Path... elements) {
-    var paths = new ArrayList<Path>();
-    for (var element : elements) if (Files.exists(element)) paths.add(element);
-    return List.copyOf(paths);
   }
 
   /** Resolve missing external modules. */

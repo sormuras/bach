@@ -75,6 +75,13 @@ public interface Call<T> {
     return with(option, values);
   }
 
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  default <E> T with(Optional<E> elements, BiFunction<T, E, T> function) {
+    var that = with(arguments());
+    if (elements.isEmpty()) return that;
+    return function.apply(that, elements.get());
+  }
+
   default T with(Iterable<?> elements) {
     var list = new ArrayList<>(arguments());
     for (var element : elements) list.add(Argument.of(element.toString()));
