@@ -221,14 +221,6 @@ public class Bach {
     }
   }
 
-  void printStatistics(Level level, Path directory) {
-    var uri = directory.toUri().toString();
-    var files = Paths.list(directory, Paths::isJarFile);
-    log(level, "Directory %s contains", uri);
-    if (files.isEmpty()) log(Level.WARNING, "Not a single JAR file?!");
-    for (var file : files) log(level, "%,12d %s", Paths.size(file), file.getFileName());
-  }
-
   void writeLogbook() {
     try {
       Paths.createDirectories(base().workspace());
@@ -258,11 +250,10 @@ public class Bach {
     try {
       var start = Instant.now();
       buildLibrariesDirectoryByResolvingMissingExternalModules();
+      logbook().print("");
       buildProjectModules();
       var duration = Duration.between(start, Instant.now()).toMillis();
-      if (main().units().isPresent()) {
-        printStatistics(Level.INFO, base().modules(""));
-      }
+      logbook().print("");
       log(Level.INFO, "Build of project %s took %d ms", project().toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "build failed throwing %s", exception);
@@ -270,6 +261,23 @@ public class Bach {
     } finally {
       writeLogbook();
     }
+
+    {
+      var format = "%-6s %10s %10s %s";
+      logbook().print("");
+      logbook().print(String.format(format, "Thread", "Duration", "Tool", "Arguments"));
+      for (var call : logbook().results()) {
+        var thread = call.thread() == 1 ? "main" : Long.toHexString(call.thread());
+        var millis = call.duration().toMillis();
+        var tool = call.tool();
+        var arguments = String.join(" ", call.args());
+        var row = String.format(format, thread, millis, tool, arguments);
+        logbook().print(row);
+      }
+    }
+
+    // TODO print main module(s) overview
+
     var errors = logbook().errors();
     if (errors.isEmpty()) return;
     errors.forEach(error -> error.toStrings().forEach(System.err::println));
@@ -294,7 +302,6 @@ public class Bach {
 
     if (project().sources().testSources().units().isPresent()) {
       buildTestModules();
-      printStatistics(Level.DEBUG, base().modules("test"));
       buildTestReportsByExecutingTestModules();
     }
   }
