@@ -42,10 +42,14 @@ if (Files.notExists(build)) {
       "package build;",
       "",
       "import de.sormuras.bach.Bach;",
+      "import de.sormuras.bach.Configuration;",
+      "import de.sormuras.bach.Project;",
       "",
       "class Build {",
       "  public static void main(String... args) {",
-      "    Bach.of(project -> project).buildProject();",
+      "    var project = Project.of(\"unnamed\", \"1-ea\");",
+      "    var configuration = Configuration.ofSystem();",
+      "    new Bach(configuration, project).build();",
       "  }",
       "}"));
 }

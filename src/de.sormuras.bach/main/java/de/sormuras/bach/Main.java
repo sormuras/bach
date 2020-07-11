@@ -101,7 +101,7 @@ public final class Main {
     }
     var configuration = Configuration.ofSystem();
     var project = Project.of(Base.of());
-    new Bach(configuration, project);
+    new Bach(configuration, project).build();
   }
 
   private void help() {

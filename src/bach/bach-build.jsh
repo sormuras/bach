@@ -37,7 +37,7 @@ try {
     code = process.waitFor();
   }
   else {
-    Bach.of(project -> project).buildProject();
+    Bach.of(project -> project).build();
   }
 } catch (Throwable throwable) {
   println(throwable);

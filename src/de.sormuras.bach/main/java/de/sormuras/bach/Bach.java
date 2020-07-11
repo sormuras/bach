@@ -71,10 +71,15 @@ public class Bach {
   }
 
   @Factory
-  public static Bach of(UnaryOperator<Project> projector) {
+  public static Bach of(Project project) {
     var configuration = Configuration.ofSystem();
+    return new Bach(configuration, project);
+  }
+
+  @Factory
+  public static Bach of(UnaryOperator<Project> operator) {
     var project = Project.of(Base.of());
-    return new Bach(configuration, projector.apply(project));
+    return of(operator.apply(project));
   }
 
   private final Configuration configuration;
