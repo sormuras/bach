@@ -19,9 +19,17 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
+import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.internal.Paths;
+import java.io.File;
+import java.lang.module.FindException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,5 +97,42 @@ public final class SourceUnitMap {
 
   public Stream<SourceUnit> toUnits() {
     return map.values().stream();
+  }
+
+  public List<String> toModuleSourcePaths(boolean forceModuleSpecificForm) {
+    var paths = new ArrayList<String>();
+    var patterns = new TreeSet<String>(); // "src:etc/*/java"
+    var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
+    for (var unit : map.values()) {
+      var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
+      if (forceModuleSpecificForm) {
+        specific.put(unit.name(), sourcePaths);
+        continue;
+      }
+      try {
+        for (var path : sourcePaths) {
+          patterns.add(Modules.toModuleSourcePathPatternForm(path, unit.name()));
+        }
+      } catch (FindException e) {
+        specific.put(unit.name(), sourcePaths);
+      }
+    }
+    if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("No forms?!");
+    if (!patterns.isEmpty()) paths.add(String.join(File.pathSeparator, patterns));
+    var entries = specific.entrySet();
+    for (var entry : entries) paths.add(entry.getKey() + "=" + Paths.join(entry.getValue()));
+    return List.copyOf(paths);
+  }
+
+  public Map<String, String> toModulePatches(SourceUnitMap upstream) {
+    if (map.isEmpty() || upstream.isEmpty()) return Map.of();
+    var patches = new TreeMap<String, String>();
+    for (var unit : map.values()) {
+      var module = unit.name();
+      upstream
+          .findUnit(module)
+          .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
+    }
+    return patches;
   }
 }

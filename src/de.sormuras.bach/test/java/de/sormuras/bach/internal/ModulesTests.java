@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.UncheckedIOException;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Builder;
 import java.lang.module.ModuleDescriptor.Version;
@@ -35,6 +37,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ModulesTests {
 
@@ -170,6 +174,29 @@ class ModulesTests {
       var b = ModuleDescriptor.newModule("b").mainClass("b.B").build();
       var c = ModuleDescriptor.newModule("c").mainClass("c.C").build();
       assertTrue(Modules.findMainModule(Stream.of(a, b, c)).isEmpty());
+    }
+  }
+
+  @Nested
+  class ModuleSourcePath {
+    @Test
+    void modulePatternFormFromPathWithoutModulesNameFails() {
+      var path = Path.of("a/b/c/module-info.java");
+      var exception =
+          assertThrows(FindException.class, () -> Modules.toModuleSourcePathPatternForm(path, "d"));
+      assertEquals("Name 'd' not found: " + path, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      ".               , foo/module-info.java",
+      "src             , src/foo/module-info.java",
+      "./*/src         , foo/src/module-info.java",
+      "src/*/main/java , src/foo/main/java/module-info.java"
+    })
+    void modulePatternFormForModuleFoo(String expected, Path path) {
+      var actual = Modules.toModuleSourcePathPatternForm(path, "foo");
+      assertEquals(expected.replace('/', File.separatorChar), actual);
     }
   }
 

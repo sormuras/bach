@@ -26,17 +26,14 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.SourceUnitMap;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import de.sormuras.bach.tool.TestModule;
-import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
-import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -425,7 +422,7 @@ public class Bach {
     return Call.javac()
         .withModule(main().units().toNames(","))
         .with("--module-version", project().version())
-        .with(toModuleSourcePaths(main().units(), false), Javac::withModuleSourcePath)
+        .with(main().units().toModuleSourcePaths(false), Javac::withModuleSourcePath)
         .with(modulePath, Javac::withModulePath)
         .withEncoding("UTF-8")
         .with("-parameters")
@@ -478,7 +475,7 @@ public class Bach {
     var modulePath = toModulePath(base().libraries());
     return Call.javadoc()
         .withModule(main().units().toNames(","))
-        .with(toModuleSourcePaths(main().units(), false), Javadoc::withModuleSourcePath)
+        .with(main().units().toModuleSourcePaths(false), Javadoc::withModuleSourcePath)
         .with(modulePath, Javadoc::withModulePath)
         .with("-d", base().documentation("api"))
         .withEncoding("UTF-8")
@@ -517,9 +514,9 @@ public class Bach {
     return Call.javac()
         .withModule(units.toNames(","))
         .with("--module-version", project().version().toString() + "-test")
-        .with(toModuleSourcePaths(units, false), Javac::withModuleSourcePath)
+        .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
         .with(
-            toModulePatches(units, main().units()).entrySet(),
+            units.toModulePatches(main().units()).entrySet(),
             (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
         .with(modulePath, Javac::withModulePath)
         .withEncoding("UTF-8")
@@ -571,56 +568,6 @@ public class Bach {
     var paths = new ArrayList<Path>();
     for (var element : elements) if (Files.exists(element)) paths.add(element);
     return List.copyOf(paths);
-  }
-
-  public List<String> toModuleSourcePaths(SourceUnitMap units, boolean forceModuleSpecificForm) {
-    var paths = new ArrayList<String>();
-    var patterns = new TreeSet<String>(); // "src:etc/*/java"
-    var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
-    for (var unit : units.map().values()) {
-      var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
-      if (forceModuleSpecificForm) {
-        specific.put(unit.name(), sourcePaths);
-        continue;
-      }
-      try {
-        for (var path : sourcePaths) patterns.add(toModuleSourcePathPatternForm(path, unit.name()));
-      } catch (FindException e) {
-        specific.put(unit.name(), sourcePaths);
-      }
-    }
-    if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("No forms?!");
-    if (!patterns.isEmpty()) paths.add(String.join(File.pathSeparator, patterns));
-    var entries = specific.entrySet();
-    for (var entry : entries) paths.add(entry.getKey() + "=" + Paths.join(entry.getValue()));
-    return List.copyOf(paths);
-  }
-
-  public String toModuleSourcePathPatternForm(Path info, String module) {
-    var deque = new ArrayDeque<String>();
-    for (var element : info.normalize()) {
-      var name = element.toString();
-      if (name.equals("module-info.java")) continue;
-      deque.addLast(name.equals(module) ? "*" : name);
-    }
-    var pattern = String.join(File.separator, deque);
-    if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
-    if (pattern.equals("*")) return ".";
-    if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
-    if (pattern.startsWith("*")) return "." + File.separator + pattern;
-    return pattern;
-  }
-
-  public Map<String, String> toModulePatches(SourceUnitMap units, SourceUnitMap upstream) {
-    if (units.map().isEmpty() || upstream.isEmpty()) return Map.of();
-    var patches = new TreeMap<String, String>();
-    for (var unit : units.map().values()) {
-      var module = unit.name();
-      upstream
-          .findUnit(module)
-          .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
-    }
-    return patches;
   }
 
   /** Resolve missing external modules. */

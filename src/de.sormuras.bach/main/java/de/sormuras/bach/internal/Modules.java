@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.internal;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.FindException;
@@ -28,6 +29,7 @@ import java.lang.module.ModuleReference;
 import java.lang.module.ResolutionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -187,6 +189,22 @@ public final class Modules {
     externalModuleNames.removeAll(declared);
     externalModuleNames.removeAll(declared(ModuleFinder.ofSystem()));
     return externalModuleNames;
+  }
+
+  /** Return a string in pattern form usable as a {@code --module-source-path} value. */
+  public static String toModuleSourcePathPatternForm(Path info, String module) {
+    var deque = new ArrayDeque<String>();
+    for (var element : info.normalize()) {
+      var name = element.toString();
+      if (name.equals("module-info.java")) continue;
+      deque.addLast(name.equals(module) ? "*" : name);
+    }
+    var pattern = String.join(File.separator, deque);
+    if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
+    if (pattern.equals("*")) return ".";
+    if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+    if (pattern.startsWith("*")) return "." + File.separator + pattern;
+    return pattern;
   }
 
   private Modules() {}
