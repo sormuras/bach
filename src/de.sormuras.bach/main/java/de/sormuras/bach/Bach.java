@@ -83,7 +83,7 @@ public class Bach {
 
   private final Configuration configuration;
   private final Project project;
-  private HttpClient http;
+  private /*lazy*/ HttpClient http;
   private final SormurasModulesProperties sormurasModulesProperties;
 
   public Bach(Configuration configuration, Project project) {
@@ -98,6 +98,18 @@ public class Bach {
 
   public final Configuration.Flags flags() {
     return configuration.flags();
+  }
+
+  public final Logbook logbook() {
+    return configuration.logbook();
+  }
+
+  public final String log(Level level, String text) {
+    return logbook().log(level, text);
+  }
+
+  public final String log(Level level, String format, Object... args) {
+    return logbook().log(level, format, args);
   }
 
   public final Project project() {
@@ -122,14 +134,13 @@ public class Bach {
   //
 
   void executeCall(Call<?> call) {
-    var logbook = configuration.logbook();
     var failFast = flags().isFailFast();
 
-    logbook.log(Level.INFO, call.toCommandLine());
+    log(Level.INFO, call.toCommandLine());
 
     var provider = call.findProvider();
     if (provider.isEmpty()) {
-      var message = logbook.log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
+      var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
       if (failFast) throw new AssertionError(message);
       return;
     }
@@ -151,18 +162,18 @@ public class Bach {
       var duration = Duration.between(start, Instant.now());
       var normal = out.toString().strip();
       var errors = err.toString().strip();
-      var result = logbook.print(call, normal, errors, duration, code);
-      logbook.log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
+      var result = logbook().print(call, normal, errors, duration, code);
+      log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
 
       if (code == 0) return;
 
-      var caption = logbook.log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
+      var caption = log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
       var message = new StringJoiner(System.lineSeparator());
       message.add(caption);
       result.toStrings().forEach(message::add);
       if (failFast) throw new AssertionError(message);
     } catch (RuntimeException exception) {
-      logbook.log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
+      log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
       if (failFast) throw exception;
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
@@ -170,25 +181,21 @@ public class Bach {
   }
 
   void printStatistics(Level level, Path directory) {
-    var logbook = configuration.logbook();
-
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Paths::isJarFile);
-    logbook.log(level, "Directory %s contains", uri);
-    if (files.isEmpty()) logbook.log(Level.WARNING, "Not a single JAR file?!");
-    for (var file : files) logbook.log(level, "%,12d %s", Paths.size(file), file.getFileName());
+    log(level, "Directory %s contains", uri);
+    if (files.isEmpty()) log(Level.WARNING, "Not a single JAR file?!");
+    for (var file : files) log(level, "%,12d %s", Paths.size(file), file.getFileName());
   }
 
   void writeLogbook() {
-    var logbook = configuration.logbook();
-
     try {
       Paths.createDirectories(base().workspace());
       var path = base().workspace("logbook.md");
-      Files.write(path, logbook.toMarkdown(project()));
-      logbook.log(Level.INFO, "Wrote logbook to %s", path.toUri());
+      Files.write(path, logbook().toMarkdown(project()));
+      log(Level.INFO, "Wrote logbook to %s", path.toUri());
     } catch (Exception exception) {
-      var message = logbook.log(Level.ERROR, "write logbook failed: %s", exception);
+      var message = log(Level.ERROR, "write logbook failed: %s", exception);
       if (flags().isFailOnError()) throw new AssertionError(message, exception);
     }
   }
@@ -198,14 +205,13 @@ public class Bach {
   //
 
   public void buildProject() {
-    var logbook = configuration.logbook();
     var failOnError = flags().isFailOnError();
 
-    logbook.log(Level.TRACE, toString());
-    logbook.log(Level.TRACE, "\tflags.set=%s", flags().set());
-    logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
-    logbook.log(Level.DEBUG, "Build of %s started", project().toNameAndVersion());
-    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
+    log(Level.TRACE, toString());
+    log(Level.TRACE, "\tflags.set=%s", flags().set());
+    log(Level.TRACE, "\tlogbook.threshold=%s", logbook().threshold());
+    log(Level.DEBUG, "Build of %s started", project().toNameAndVersion());
+    log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
     try {
       var start = Instant.now();
       buildProjectModules();
@@ -213,14 +219,14 @@ public class Bach {
       if (main().units().isPresent()) {
         printStatistics(Level.INFO, base().modules(""));
       }
-      logbook.log(Level.INFO, "Build of %s took %d ms", project().toNameAndVersion(), duration);
+      log(Level.INFO, "Build of %s took %d ms", project().toNameAndVersion(), duration);
     } catch (Exception exception) {
-      var message = logbook.log(Level.ERROR, "build failed throwing %s", exception);
+      var message = log(Level.ERROR, "build failed throwing %s", exception);
       if (failOnError) throw new AssertionError(message, exception);
     } finally {
       writeLogbook();
     }
-    var errors = logbook.errors();
+    var errors = logbook().errors();
     if (errors.isEmpty()) return;
     errors.forEach(error -> error.toStrings().forEach(System.err::println));
     var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
@@ -266,13 +272,13 @@ public class Bach {
   }
 
   public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
-    configuration.logbook().log(Level.DEBUG, "Resolve missing external modules: " + modules);
+    log(Level.DEBUG, "Resolve missing external modules: " + modules);
     var resources = new Resources(http());
     for (var module : modules) {
       var optionalLink =
           project().library().findLink(module).or(() -> computeLinkForExternalModule(module));
       if (optionalLink.isEmpty()) {
-        configuration.logbook().log(Level.WARNING, "Module %s not locatable", module);
+        log(Level.WARNING, "Module %s not locatable", module);
         continue;
       }
       var link = optionalLink.orElseThrow();
@@ -282,7 +288,7 @@ public class Bach {
         var lib = Paths.createDirectories(base().libraries());
         var file = resources.copy(uri, lib.resolve(name));
         var size = Paths.size(file);
-        configuration.logbook().log(Level.INFO, "%,12d %-42s << %s", size, file, uri);
+        log(Level.INFO, "%,12d %-42s << %s", size, file, uri);
       } catch (Exception e) {
         throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
       }
@@ -291,7 +297,7 @@ public class Bach {
 
   public void buildMainModules() {
     var units = main().units();
-    configuration.logbook().log(Level.DEBUG, "Build of %d main module(s) started", units.size());
+    log(Level.DEBUG, "Build of %d main module(s) started", units.size());
     executeCall(computeJavacForMainSources());
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
@@ -363,7 +369,7 @@ public class Bach {
     var modulePaths = toModulePaths(base().modules(""), base().libraries());
     var autos = Modules.findAutomaticModules(modulePaths);
     if (autos.size() > 0) {
-      configuration.logbook().log(Level.WARNING, "Automatic module(s) detected: %s", autos);
+      log(Level.WARNING, "Automatic module(s) detected: %s", autos);
       return;
     }
     Paths.deleteDirectories(base().workspace("image"));
@@ -373,7 +379,7 @@ public class Bach {
 
   public void buildTestModules() {
     var units = project().sources().testSources().units();
-    configuration.logbook().log(Level.DEBUG, "Build of %d test module(s) started", units.size());
+    log(Level.DEBUG, "Build of %d test module(s) started", units.size());
     executeCall(computeJavacForTestSources());
     Paths.createDirectories(base().modules("test"));
     units.toUnits().map(this::computeJarForTestModule).forEach(this::executeCall);
@@ -393,9 +399,7 @@ public class Bach {
             base().modules(""), // main modules
             base().modules(realm), // other test modules
             base().libraries()); // external modules
-    configuration
-        .logbook()
-        .log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
+    log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
 
     var testModule = new TestModule(module, modulePaths);
     if (testModule.findProvider().isPresent()) executeCall(testModule);

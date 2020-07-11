@@ -18,17 +18,21 @@
 package test.modules;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
 import de.sormuras.bach.project.Project;
+import java.lang.System.Logger.Level;
 import org.junit.jupiter.api.Test;
 
 class BachApiTests {
 
   @Test
   void defaults() {
-    var bach = new Bach(Configuration.ofSystem(), Project.ofSystem());
+    var bach = new Bach(Configuration.ofSystem().with(Level.OFF), Project.ofSystem());
     assertEquals("Bach.java " + Bach.VERSION, bach.toString());
+    var text = "text";
+    assertSame(text, bach.log(Level.INFO, text));
   }
 }
