@@ -37,24 +37,25 @@ public final class TestModule implements Call<TestModule> {
 
   @Override
   public String name() {
-    return "test(" + module + ")";
+    return "test";
   }
 
   @Override
   public List<Argument> arguments() {
-    return List.of();
+    return List.of(Argument.of(module));
   }
 
   @Override
   public Optional<ToolProvider> findProvider() {
+    var requiredProviderName = "test(" + module + ")";
     return Modules.findTools(module, modulePaths).stream()
-        .filter(provider -> provider.name().equals(name()))
+        .filter(provider -> provider.name().equals(requiredProviderName))
         .findAny();
   }
 
   @Override
   public String toDescriptiveLine() {
-    return "Launch tests provided via " + name();
+    return "Launch tests provided via test(" + module + ")";
   }
 
   @Override
