@@ -15,12 +15,20 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.project;
+package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.SourceUnitMap;
+import de.sormuras.bach.project.Sources;
+import de.sormuras.bach.project.TestPreview;
+import de.sormuras.bach.project.TestSources;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,24 +80,24 @@ public final class Project {
   //
 
   @Factory
+  public static Project of() {
+    return new Project(Base.of(), "unnamed", Version.parse("1-ea"), Sources.of(), Library.of());
+  }
+
+  @Factory
   public static Project ofSystem() {
     var name = System.getProperty("bach.project.name", "unnamed");
     var version = System.getProperty("bach.project.version", "1-ea");
-    return of(name, version);
+    return of().name(name).version(version);
   }
 
   @Factory
-  public static Project of(String name, String version) {
-    return of(name, Version.parse(version));
+  public static Project ofCurrentDirectory() {
+    return ofDirectory(Base.of());
   }
 
   @Factory
-  public static Project of(String name, Version version) {
-    return new Project(Base.of(), name, version, Sources.of(), Library.of());
-  }
-
-  @Factory
-  public static Project of(Base base) {
+  public static Project ofDirectory(Base base) {
     var mainSources = MainSources.of();
     var testSources = TestSources.of();
     var testPreview = TestPreview.of();

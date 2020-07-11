@@ -19,9 +19,9 @@ package build;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
+import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.Project;
 import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
@@ -29,7 +29,9 @@ class Build {
 
   public static void main(String... args) {
     var project =
-        Project.of("bach", Bach.VERSION)
+        Project.of()
+            .name("bach")
+            .version(Bach.VERSION)
             .withCompileMainSourcesForJavaRelease(11)
             .withMainSource("src/de.sormuras.bach/main/java")
             .withTestSource("src/de.sormuras.bach/test/java-module")

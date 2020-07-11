@@ -26,7 +26,6 @@ import de.sormuras.bach.internal.SormurasModulesProperties;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.Project;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
@@ -120,7 +119,7 @@ public class Bach {
    */
   @Factory
   public static Bach of(UnaryOperator<Project> operator) {
-    var project = Project.of(Base.of());
+    var project = Project.ofCurrentDirectory();
     return of(operator.apply(project));
   }
 

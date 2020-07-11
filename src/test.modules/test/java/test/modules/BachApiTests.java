@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
-import de.sormuras.bach.project.Project;
+import de.sormuras.bach.Project;
 import java.lang.System.Logger.Level;
 import org.junit.jupiter.api.Test;
 

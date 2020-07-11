@@ -18,7 +18,6 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;

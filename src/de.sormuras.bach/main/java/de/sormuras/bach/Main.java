@@ -19,7 +19,6 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Base;
-import de.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
@@ -82,7 +81,7 @@ public final class Main {
           help();
           break;
         case "info":
-          Project.of(Base.of()).toStrings().forEach(out::println);
+          Project.ofCurrentDirectory().toStrings().forEach(out::println);
           break;
         case "version":
           out.println("bach " + Bach.VERSION);
@@ -100,7 +99,7 @@ public final class Main {
       return;
     }
     var configuration = Configuration.ofSystem();
-    var project = Project.of(Base.of());
+    var project = Project.ofCurrentDirectory();
     new Bach(configuration, project).build();
   }
 
