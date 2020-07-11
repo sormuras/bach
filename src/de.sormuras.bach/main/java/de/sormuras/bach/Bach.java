@@ -55,7 +55,36 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
-/** Bach - Java Shell Builder - An extensible build workflow. */
+/**
+ * Java Shell Builder - build modular projects with JDK tools.
+ *
+ * <p>As an example, a project named {@code demo} and with version {@code 47.11} can be built with
+ * the following code:
+ *
+ * <pre>{@code
+ * var configuration = Configuration.ofSystem();
+ * var project = Project.of("demo", "47.11");
+ * new Bach(configuration, project).build();
+ * }</pre>
+ *
+ * <p>The Java® Development Kit provides at least the following tools via the {@link
+ * java.util.spi.ToolProvider ToolProvider} interface.
+ *
+ * <ul>
+ *   <li>{@code jar} - create an archive for classes and resources, and manipulate or restore
+ *       individual classes or resources from an archive
+ *   <li>{@code javac} - read Java class and interface definitions and compile them into bytecode
+ *       and class files
+ *   <li>{@code javadoc} - generate HTML pages of API documentation from Java source files
+ *   <li>{@code javap} - disassemble one or more class files
+ *   <li>{@code jdeps} - launch the Java class dependency analyzer
+ *   <li>{@code jlink} - assemble and optimize a set of modules and their dependencies into a custom
+ *       runtime image
+ *   <li>{@code jmod} - create JMOD files and list the content of existing JMOD files
+ * </ul>
+ *
+ * @see <a href="https://docs.oracle.com/en/java/javase/14/docs/specs/man">JDK Tools</a>
+ */
 public class Bach {
 
   /** Version of the Java Shell Builder. */
@@ -70,12 +99,25 @@ public class Bach {
     Main.main(args);
   }
 
+  /**
+   * Create new Bach instance for the given project.
+   *
+   * @param project The project instance to use
+   * @return A new {@link Bach} instance
+   */
   @Factory
   public static Bach of(Project project) {
     var configuration = Configuration.ofSystem();
     return new Bach(configuration, project);
   }
 
+  /**
+   * Create new Bach instance with a project parsed from current user directory.
+   *
+   * @param operator The operator may return a modified project based on the parsed one
+   * @see UnaryOperator#identity()
+   * @return A new {@link Bach} instance
+   */
   @Factory
   public static Bach of(UnaryOperator<Project> operator) {
     var project = Project.of(Base.of());
