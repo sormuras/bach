@@ -39,7 +39,7 @@ public final class Link implements Comparable<Link> {
    * @see <a href="https://search.maven.org">search.maven.org</a>
    */
   public static Link ofCentral(String module, String group, String artifact, String version) {
-    return new Link(module, Maven.central(group, artifact, version));
+    return new Link(module, Maven.central(group, artifact, version)).withVersion(version);
   }
 
   /**
@@ -53,9 +53,10 @@ public final class Link implements Comparable<Link> {
   public static Link ofCentral(String module, String gav) {
     var split = gav.split(":");
     if (split.length < 3) throw new IllegalArgumentException();
-    var joiner = new Maven.Joiner().group(split[0]).artifact(split[1]).version(split[2]);
+    var version = split[2];
+    var joiner = new Maven.Joiner().group(split[0]).artifact(split[1]).version(version);
     joiner.classifier(split.length < 4 ? "" : split[3]);
-    return new Link(module, joiner.toString());
+    return new Link(module, joiner.toString()).withVersion(version);
   }
 
   /**
@@ -72,7 +73,7 @@ public final class Link implements Comparable<Link> {
   public static Link ofJitPack(String module, String user, String repository, String version) {
     var group = user.indexOf('.') == -1 ? "com.github." + user : user;
     var joiner = Maven.Joiner.of(group, repository, version);
-    return new Link(module, joiner.repository("https://jitpack.io").toString());
+    return new Link(module, joiner.repository("https://jitpack.io").toString()).withVersion(version);
   }
 
   /**
