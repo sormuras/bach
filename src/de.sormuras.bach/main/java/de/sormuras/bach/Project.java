@@ -85,13 +85,6 @@ public final class Project {
   }
 
   @Factory
-  public static Project ofSystem() {
-    var name = System.getProperty("bach.project.name", "unnamed");
-    var version = System.getProperty("bach.project.version", "1-ea");
-    return of().name(name).version(version);
-  }
-
-  @Factory
   public static Project ofCurrentDirectory() {
     return ofDirectory(Base.of());
   }
