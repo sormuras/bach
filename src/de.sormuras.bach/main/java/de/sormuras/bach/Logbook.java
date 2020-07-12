@@ -18,6 +18,8 @@
 package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -30,7 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 
 /** A logbook records textual log entries of all levels and also records tool call results. */
@@ -90,7 +94,7 @@ public final class Logbook {
     printer.accept(text);
   }
 
-  Result print(Call<?> call, String out, String err, Duration duration, int code) {
+  Result add(Call<?> call, String out, String err, Duration duration, int code) {
     var thread = Thread.currentThread().getId();
     var tool = call.name();
     var args = call.toStringArray();
@@ -99,14 +103,6 @@ public final class Logbook {
     print(Level.TRACE, out, false);
     print(Level.TRACE, err, false);
     return result;
-  }
-
-  List<Result> results() {
-    return List.copyOf(results);
-  }
-
-  List<Result> errors() {
-    return results.stream().filter(Result::isError).collect(Collectors.toList());
   }
 
   public List<String> toMarkdown(Project project) {
@@ -172,15 +168,15 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Call Overview");
-    md.add("|    |Thread|Duration|Tool|Arguments");
-    md.add("|----|-----:|-------:|----|---------");
+    md.add("|    |Thread| Duration |Tool|Arguments");
+    md.add("|----|-----:|---------:|----|---------");
     for (var call : results) {
       var kind = ' ';
       var thread = call.thread;
-      var millis = call.duration.toMillis();
+      var millis = toString(call.duration);
       var tool = "[" + call.tool + "](#" + call.toDetailedCaption() + ")";
       var arguments = String.join(" ", call.args);
-      var row = String.format("|%4c|%6X|%8d|%s|%s", kind, thread, millis, tool, arguments);
+      var row = String.format("|%4c|%6X|%10s|%s|%s", kind, thread, millis, tool, arguments);
       md.add(row);
     }
     return md;
@@ -217,6 +213,74 @@ public final class Logbook {
     for (var entry : entries) md.add(entry.toString());
     md.add("```");
     return md;
+  }
+
+  void write(Bach bach) {
+    try {
+      Paths.createDirectories(bach.base().workspace());
+      var path = bach.base().workspace("logbook.md");
+      Files.write(path, toMarkdown(bach.project()));
+      log(Level.INFO, "Wrote logbook to %s", path.toUri());
+    } catch (Exception exception) {
+      var message = log(Level.ERROR, "write logbook failed: %s", exception);
+      if (bach.flags().isFailOnError()) throw new AssertionError(message, exception);
+    }
+  }
+
+  void printSummaryAndCheckErrors(Bach bach, Consumer<String> errorPrinter) {
+    printSummaryOfToolCallResults(135);
+    print("");
+    printSummaryOfModules(bach.project().base().modules(""));
+
+    var errors = results.stream().filter(Result::isError).collect(Collectors.toList());
+    if (errors.isEmpty()) return;
+    errors.forEach(error -> error.toStrings().forEach(errorPrinter));
+    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
+    if (bach.flags().isFailOnError()) throw new AssertionError(message);
+  }
+
+  void printSummaryOfToolCallResults(int maxLineLength) {
+    var format = "%6s %10s %10s %s";
+    print("");
+    print(String.format(format, "Thread", "Duration", "Tool", "Arguments"));
+    for (var call : results) {
+      var thread = call.thread == 1 ? "main" : Long.toHexString(call.thread).toUpperCase();
+      var millis = toString(call.duration);
+      var tool = call.tool;
+      var args = String.join(" ", call.args);
+      var line = String.format(format, thread, millis, tool, args);
+      print(line.length() <= maxLineLength ? line : line.substring(0, maxLineLength - 3) + "...");
+    }
+  }
+
+  void printSummaryOfModules(Path directory) {
+    var uri = directory.toUri().toString();
+    var files = Paths.list(directory, Files::isRegularFile);
+    printer.accept(String.format("Directory %s contains", uri));
+    try {
+      for (var file : files) {
+        printer.accept(String.format("- %s with %,d bytes", file.getFileName(), Files.size(file)));
+        if (Level.DEBUG.getSeverity() <= threshold.getSeverity()) continue;
+        if (!Paths.isJarFile(file)) continue;
+        var string = new StringWriter();
+        var writer = new PrintWriter(string);
+        var jar = ToolProvider.findFirst("jar").orElseThrow();
+        jar.run(writer, writer, "--describe-module", "--file", file.toString());
+        var trim = string.toString().trim().replace(uri, "${DIRECTORY}");
+        printer.accept(trim.replaceAll("(?m)^", "\t"));
+      }
+    } catch (Exception e) {
+      throw new AssertionError("Analyzing JAR files failed", e);
+    }
+  }
+
+  public static String toString(Duration duration) {
+    return duration
+        .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
+        .toString()
+        .substring(2)
+        .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+        .toLowerCase();
   }
 
   /** A textual log entry. */
@@ -262,26 +326,6 @@ public final class Logbook {
       this.err = err;
       this.duration = duration;
       this.code = code;
-    }
-
-    long thread() {
-      return thread;
-    }
-
-    String tool() {
-      return tool;
-    }
-
-    String[] args() {
-      return args;
-    }
-
-    Duration duration() {
-      return duration;
-    }
-
-    int code() {
-      return code;
     }
 
     public boolean isError() {

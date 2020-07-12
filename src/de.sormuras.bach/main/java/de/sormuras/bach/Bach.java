@@ -125,7 +125,8 @@ public class Bach {
 
   private final Configuration configuration;
   private final Project project;
-  private /*lazy*/ HttpClient http;
+  private /*lazy*/ HttpClient http = null;
+  private /*lazy*/ SormurasModulesProperties sormurasModulesProperties = null;
 
   public Bach(Configuration configuration, Project project) {
     this.configuration = configuration;
@@ -169,74 +170,6 @@ public class Bach {
     return http;
   }
 
-  //
-  // ===
-  //
-
-  void executeCall(Call<?> call) {
-    var failFast = flags().isFailFast();
-
-    log(Level.INFO, call.toDescriptiveLine());
-    log(Level.DEBUG, call.toCommandLine());
-
-    var provider = call.findProvider();
-    if (provider.isEmpty()) {
-      var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
-      if (failFast) throw new AssertionError(message);
-      return;
-    }
-
-    if (flags().isDryRun()) return;
-
-    var tool = provider.get();
-    var currentThread = Thread.currentThread();
-    var currentContextLoader = currentThread.getContextClassLoader();
-    currentThread.setContextClassLoader(tool.getClass().getClassLoader());
-    var out = new StringWriter();
-    var err = new StringWriter();
-    var args = call.toStringArray();
-    var start = Instant.now();
-
-    try {
-      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-
-      var duration = Duration.between(start, Instant.now());
-      var normal = out.toString().strip();
-      var errors = err.toString().strip();
-      var result = logbook().print(call, normal, errors, duration, code);
-      log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
-
-      if (code == 0) return;
-
-      var caption = log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
-      var message = new StringJoiner(System.lineSeparator());
-      message.add(caption);
-      result.toStrings().forEach(message::add);
-      if (failFast) throw new AssertionError(message);
-    } catch (RuntimeException exception) {
-      log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
-      if (failFast) throw exception;
-    } finally {
-      currentThread.setContextClassLoader(currentContextLoader);
-    }
-  }
-
-  void writeLogbook() {
-    try {
-      Paths.createDirectories(base().workspace());
-      var path = base().workspace("logbook.md");
-      Files.write(path, logbook().toMarkdown(project()));
-      log(Level.INFO, "Wrote logbook to %s", path.toUri());
-    } catch (Exception exception) {
-      var message = log(Level.ERROR, "write logbook failed: %s", exception);
-      if (flags().isFailOnError()) throw new AssertionError(message, exception);
-    }
-  }
-
-  //
-  // ===
-  //
-
   public void build() {
     log(Level.TRACE, toString());
     log(Level.TRACE, "\tflags.set=%s", flags().set());
@@ -245,7 +178,7 @@ public class Bach {
   }
 
   public void buildProject() {
-    log(Level.INFO, "Build of project %s started", project().toNameAndVersion());
+    log(Level.INFO, "Build of project %s started by %s", project().toNameAndVersion(), this);
     log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
     try {
       var start = Instant.now();
@@ -259,33 +192,13 @@ public class Bach {
       var message = log(Level.ERROR, "build failed throwing %s", exception);
       if (flags().isFailOnError()) throw new AssertionError(message, exception);
     } finally {
-      writeLogbook();
+      logbook().write(this);
     }
 
-    {
-      var format = "%-6s %10s %10s %s";
-      logbook().print("");
-      logbook().print(String.format(format, "Thread", "Duration", "Tool", "Arguments"));
-      for (var call : logbook().results()) {
-        var thread = call.thread() == 1 ? "main" : Long.toHexString(call.thread());
-        var millis = call.duration().toMillis();
-        var tool = call.tool();
-        var arguments = String.join(" ", call.args());
-        var row = String.format(format, thread, millis, tool, arguments);
-        logbook().print(row);
-      }
-    }
-
-    // TODO print main module(s) overview
-
-    var errors = logbook().errors();
-    if (errors.isEmpty()) return;
-    errors.forEach(error -> error.toStrings().forEach(System.err::println));
-    var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    if (flags().isFailOnError()) throw new AssertionError(message);
+    logbook().printSummaryAndCheckErrors(this, System.err::println);
   }
 
-  void buildProjectModules() {
+  public void buildProjectModules() {
     if (main().units().isPresent()) {
       buildMainModules();
       var service = Executors.newWorkStealingPool();
@@ -349,7 +262,7 @@ public class Bach {
   public void buildMainModules() {
     var units = main().units();
     log(Level.DEBUG, "Build of %d main module(s) started", units.size());
-    executeCall(computeJavacForMainSources());
+    call(computeJavacForMainSources());
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
@@ -357,9 +270,9 @@ public class Bach {
 
     var includeSources = flags().isIncludeSourcesInModularJar();
     for (var unit : units.map().values()) {
-      executeCall(computeJarForMainSources(unit));
+      call(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
-        executeCall(computeJarForMainModule(unit));
+        call(computeJarForMainModule(unit));
         continue;
       }
       var module = unit.name();
@@ -375,7 +288,7 @@ public class Bach {
                 .with("-implicit:none") // generate classes for explicitly referenced source files
                 .with("-d", base().classes("", directory.release(), module))
                 .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
-        executeCall(javac);
+        call(javac);
       }
       var sources = new ArrayDeque<>(unit.directories());
       var sources0 = sources.removeFirst();
@@ -407,13 +320,13 @@ public class Bach {
                 .with("-C", classes, ".")
                 .with(includeSources, "-C", source.path(), ".");
       }
-      executeCall(jar);
+      call(jar);
     }
   }
 
   public void buildApiDocumentation() {
-    executeCall(computeJavadocForMainSources());
-    executeCall(computeJarForApiDocumentation());
+    call(computeJavadocForMainSources());
+    call(computeJarForApiDocumentation());
   }
 
   public void buildCustomRuntimeImage() {
@@ -425,15 +338,15 @@ public class Bach {
     }
     Paths.deleteDirectories(base().workspace("image"));
     var jlink = computeJLinkForCustomRuntimeImage();
-    executeCall(jlink);
+    call(jlink);
   }
 
   public void buildTestModules() {
     var units = project().sources().testSources().units();
     log(Level.DEBUG, "Build of %d test module(s) started", units.size());
-    executeCall(computeJavacForTestSources());
+    call(computeJavacForTestSources());
     Paths.createDirectories(base().modules("test"));
-    units.toUnits().map(this::computeJarForTestModule).forEach(this::executeCall);
+    units.toUnits().map(this::computeJarForTestModule).forEach(this::call);
   }
 
   public void buildTestReportsByExecutingTestModules() {
@@ -453,17 +366,61 @@ public class Bach {
     log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
 
     var testModule = new TestModule(module, modulePaths);
-    if (testModule.findProvider().isPresent()) executeCall(testModule);
+    if (testModule.findProvider().isPresent()) call(testModule);
 
     var junit = computeJUnitCall(realm, unit, modulePaths);
-    if (junit.findProvider().isPresent()) executeCall(junit);
+    if (junit.findProvider().isPresent()) call(junit);
+  }
+
+  void call(Call<?> call) {
+    log(Level.INFO, call.toDescriptiveLine());
+    log(Level.DEBUG, call.toCommandLine());
+
+    var provider = call.findProvider();
+    if (provider.isEmpty()) {
+      var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
+      if (flags().isFailFast()) throw new AssertionError(message);
+      return;
+    }
+
+    if (flags().isDryRun()) return;
+
+    var tool = provider.get();
+    var currentThread = Thread.currentThread();
+    var currentContextLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(tool.getClass().getClassLoader());
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = call.toStringArray();
+    var start = Instant.now();
+
+    try {
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+
+      var duration = Duration.between(start, Instant.now());
+      var normal = out.toString().strip();
+      var errors = err.toString().strip();
+      var result = logbook().add(call, normal, errors, duration, code);
+      log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
+
+      if (code == 0) return;
+
+      var caption = log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
+      var message = new StringJoiner(System.lineSeparator());
+      message.add(caption);
+      result.toStrings().forEach(message::add);
+      if (flags().isFailFast()) throw new AssertionError(message);
+    } catch (RuntimeException exception) {
+      log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
+      if (flags().isFailFast()) throw exception;
+    } finally {
+      currentThread.setContextClassLoader(currentContextLoader);
+    }
   }
 
   public HttpClient computeHttpClient() {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
-
-  private SormurasModulesProperties sormurasModulesProperties = null;
 
   public Optional<Link> computeLinkForUnlinkedModule(String module) {
     if (sormurasModulesProperties == null) {
