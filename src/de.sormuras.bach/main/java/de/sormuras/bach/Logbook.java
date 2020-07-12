@@ -228,7 +228,7 @@ public final class Logbook {
   }
 
   void printSummaryAndCheckErrors(Bach bach, Consumer<String> errorPrinter) {
-    printSummaryOfToolCallResults(135);
+    printSummaryOfToolCallResults(120);
     print("");
     printSummaryOfModules(bach.project().base().modules(""));
 
