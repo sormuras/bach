@@ -176,6 +176,10 @@ public final class Link implements Comparable<Link> {
     return URI.create(uri);
   }
 
+  public String toModularJarFileName() {
+    return module + findVersion().map(v -> '@' + v).orElse("") + ".jar";
+  }
+
   public Link withDigest(String algorithm, String digest) {
     var separator = uri.indexOf('#') == -1 ? '#' : '&';
     return new Link(module, uri + separator + "digest-" + algorithm + '=' + digest);

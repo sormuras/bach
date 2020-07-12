@@ -236,23 +236,32 @@ public class Bach {
   }
 
   public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
-    log(Level.INFO, "Resolve %d missing external module(s) << %s", modules.size(), modules);
+    var listing = String.join(", ", modules);
+    if (modules.size() == 1) log(Level.INFO, "Resolve missing external module %s", listing);
+    else log(Level.INFO, "Resolve %d missing external modules: %s", modules.size(), listing);
+
     var resources = new Resources(http());
     for (var module : modules) {
-      var optionalLink =
-          project().library().findLink(module).or(() -> computeLinkForUnlinkedModule(module));
+      var details = "";
+      var optionalLink = project().library().findLink(module);
       if (optionalLink.isEmpty()) {
-        log(Level.WARNING, "Module %s not locatable", module);
+        log(Level.WARNING, "Module %s not linked in project's library", module);
+        details = " // computed link - consider creating a link in project's library";
+        optionalLink = computeLinkForUnlinkedModule(module);
+      }
+      if (optionalLink.isEmpty()) {
+        log(Level.ERROR, "Module %s not resolvable", module);
         continue;
       }
       var link = optionalLink.orElseThrow();
       var uri = link.toURI();
-      var name = module + ".jar";
+      log(Level.INFO, "- %s%s", module, details);
+      log(Level.INFO, "\t<< %s", uri);
       try {
         var lib = Paths.createDirectories(base().libraries());
-        var file = resources.copy(uri, lib.resolve(name));
+        var file = resources.copy(uri, lib.resolve(link.toModularJarFileName()));
         var size = Paths.size(file);
-        log(Level.INFO, "%,12d %-42s << %s", size, file, uri);
+        log(Level.INFO, "\t>> %s with %,d bytes", file, size);
       } catch (Exception e) {
         throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
       }
