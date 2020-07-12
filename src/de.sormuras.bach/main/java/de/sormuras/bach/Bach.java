@@ -217,6 +217,11 @@ public class Bach {
       buildTestModules();
       buildTestReportsByExecutingTestModules();
     }
+
+    if (project().sources().testPreview().units().isPresent()) {
+      buildTestPreviewModules();
+      buildTestReportsByExecutingTestPreviewModules();
+    }
   }
 
   public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
@@ -358,10 +363,24 @@ public class Bach {
     units.toUnits().map(this::computeJarForTestModule).forEach(this::call);
   }
 
+  public void buildTestPreviewModules() {
+    var units = project().sources().testPreview().units();
+    log(Level.DEBUG, "Build of %d test-preview module(s) started", units.size());
+    call(computeJavacForTestPreview());
+    Paths.createDirectories(base().modules("test-preview"));
+    units.toUnits().map(this::computeJarForTestPreviewModule).forEach(this::call);
+  }
+
   public void buildTestReportsByExecutingTestModules() {
     var test = project().sources().testSources();
     for (var unit : test.units().map().values())
       buildTestReportsByExecutingTestModule("test", unit);
+  }
+
+  public void buildTestReportsByExecutingTestPreviewModules() {
+    var preview = project().sources().testPreview();
+    for (var unit : preview.units().map().values())
+      buildTestReportsByExecutingTestPreviewModule("test-preview", unit);
   }
 
   public void buildTestReportsByExecutingTestModule(String realm, SourceUnit unit) {
@@ -371,6 +390,24 @@ public class Bach {
             project().toModuleArchive(realm, module), // test module
             base().modules(""), // main modules
             base().modules(realm), // other test modules
+            base().libraries()); // external modules
+    log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
+
+    var testModule = new TestModule(module, modulePaths);
+    if (testModule.findProvider().isPresent()) call(testModule);
+
+    var junit = computeJUnitCall(realm, unit, modulePaths);
+    if (junit.findProvider().isPresent()) call(junit);
+  }
+
+  public void buildTestReportsByExecutingTestPreviewModule(String realm, SourceUnit unit) {
+    var module = unit.name();
+    var modulePaths =
+        Paths.retainExisting(
+            project().toModuleArchive(realm, module), // test module
+            base().modules(""), // main modules
+            base().modules("test"), // test modules
+            base().modules(realm), // other test-preview modules
             base().libraries()); // external modules
     log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
 
@@ -548,6 +585,29 @@ public class Bach {
         .with("-d", base().classes("test", release));
   }
 
+  public Javac computeJavacForTestPreview() {
+    var release = Runtime.version().feature();
+    var sources = project().sources();
+    var units = sources.testPreview().units();
+    var modulePath =
+        Paths.joinExisting(base().modules(""), base().modules("test"), base().libraries());
+    return Call.javac()
+        .withModule(units.toNames(","))
+        .with("--enable-preview")
+        .with("--release", release)
+        .with("-Xlint:-preview")
+        .with("--module-version", project().version().toString() + "-test-preview")
+        .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
+        .with(
+            units.toModulePatches(main().units()).entrySet(),
+            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
+        .with(modulePath, Javac::withModulePath)
+        .withEncoding("UTF-8")
+        .with("-parameters")
+        .withRecommendedWarnings()
+        .with("-d", base().classes("test-preview", release));
+  }
+
   public Jar computeJarForTestModule(SourceUnit unit) {
     var module = unit.name();
     var release = Runtime.version().feature();
@@ -556,6 +616,18 @@ public class Bach {
     return Call.jar()
         .with("--create")
         .withArchiveFile(project().toModuleArchive("test", module))
+        .with("-C", classes, ".")
+        .with(resources, (call, resource) -> call.with("-C", resource, "."));
+  }
+
+  public Jar computeJarForTestPreviewModule(SourceUnit unit) {
+    var module = unit.name();
+    var release = Runtime.version().feature();
+    var classes = base().classes("test-preview", release, module);
+    var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
+    return Call.jar()
+        .with("--create")
+        .withArchiveFile(project().toModuleArchive("test-preview", module))
         .with("-C", classes, ".")
         .with(resources, (call, resource) -> call.with("-C", resource, "."));
   }
