@@ -26,6 +26,7 @@ import de.sormuras.bach.internal.SormurasModulesProperties;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
@@ -512,18 +513,7 @@ public class Bach {
   }
 
   public Jar computeJarForMainModule(SourceUnit unit) {
-    var module = unit.name();
-    var release = main().release().feature();
-    var classes = base().classes("", release, module);
-    var mainClass = unit.descriptor().mainClass();
-    var resources = unit.resources();
-    var jar =
-        Call.jar()
-            .with("--create")
-            .withArchiveFile(project().toModuleArchive("", module))
-            .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
-            .with("-C", classes, ".")
-            .with(resources, (call, resource) -> call.with("-C", resource, "."));
+    var jar =  computeJarCall(main(), unit);
     if (flags().isIncludeSourcesInModularJar()) {
       jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
@@ -609,25 +599,22 @@ public class Bach {
   }
 
   public Jar computeJarForTestModule(SourceUnit unit) {
-    var module = unit.name();
-    var release = Runtime.version().feature();
-    var classes = base().classes("test", release, module);
-    var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
-    return Call.jar()
-        .with("--create")
-        .withArchiveFile(project().toModuleArchive("test", module))
-        .with("-C", classes, ".")
-        .with(resources, (call, resource) -> call.with("-C", resource, "."));
+    return computeJarCall(project().sources().testSources(), unit);
   }
 
   public Jar computeJarForTestPreviewModule(SourceUnit unit) {
+    return computeJarCall(project().sources().testPreview(), unit);
+  }
+
+  public Jar computeJarCall(Realm<?> realm, SourceUnit unit) {
     var module = unit.name();
-    var release = Runtime.version().feature();
-    var classes = base().classes("test-preview", release, module);
+    var archive = project().toModuleArchive(realm.name(), module);
+    var classes = base().classes(realm.name(), realm.release().feature(), module);
     var resources = new ArrayList<>(unit.resources()); // TODO Include main resources if patched
     return Call.jar()
         .with("--create")
-        .withArchiveFile(project().toModuleArchive("test-preview", module))
+        .withArchiveFile(archive)
+        .with(unit.descriptor().mainClass(), Jar::withMainClass)
         .with("-C", classes, ".")
         .with(resources, (call, resource) -> call.with("-C", resource, "."));
   }
