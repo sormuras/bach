@@ -56,4 +56,8 @@ public final class Jar implements Call<Jar> {
   public Jar withArchiveFile(Path path) {
     return with("--file", path);
   }
+
+  public Jar withMainClass(String mainClass) {
+    return with("--main-class", mainClass);
+  }
 }

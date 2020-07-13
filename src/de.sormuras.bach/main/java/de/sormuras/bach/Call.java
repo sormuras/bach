@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.spi.ToolProvider;
 
 /**
@@ -81,10 +82,17 @@ public interface Call<T> {
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  default <E> T with(Optional<E> elements, BiFunction<T, E, T> function) {
+  default <E> T with(Optional<E> optional, Function<E, T> function) {
     var that = with(arguments());
-    if (elements.isEmpty()) return that;
-    return function.apply(that, elements.get());
+    if (optional.isEmpty()) return that;
+    return function.apply(optional.get());
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  default <E> T with(Optional<E> optional, BiFunction<T, E, T> function) {
+    var that = with(arguments());
+    if (optional.isEmpty()) return that;
+    return function.apply(that, optional.get());
   }
 
   default T with(Iterable<?> elements) {
