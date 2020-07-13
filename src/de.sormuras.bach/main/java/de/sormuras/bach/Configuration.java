@@ -74,40 +74,11 @@ public final class Configuration {
 
   @Factory(Kind.OPERATOR)
   public Configuration with(Level threshold) {
-    return logbook(logbook().with(threshold));
-  }
-
-  /** A flag represents a feature toggle. */
-  public enum Flag {
-    DRY_RUN(false),
-    FAIL_FAST(true),
-    FAIL_ON_ERROR(true),
-    INCLUDE_SOURCES_IN_MODULE(false),
-    INCLUDE_RESOURCES_IN_SOURCES(false);
-
-    private final boolean enabledByDefault;
-
-    Flag(boolean enabledByDefault) {
-      this.enabledByDefault = enabledByDefault;
-    }
-
-    public boolean isEnabledByDefault() {
-      return enabledByDefault;
-    }
+    return logbook(logbook().threshold(threshold));
   }
 
   /** A set of modifiers and feature toggles. */
   public static class Flags {
-
-    public static Flags ofSystem() {
-      var flags = new TreeSet<Flag>();
-      for (var flag : Flag.values()) {
-        var key = "bach." + flag.name().toLowerCase().replace('_', '-');
-        var property = System.getProperty(key, flag.isEnabledByDefault() ? "true" : "false");
-        if (Boolean.parseBoolean(property)) flags.add(flag);
-      }
-      return new Flags(flags);
-    }
 
     private final Set<Flag> set;
 
@@ -119,40 +90,34 @@ public final class Configuration {
       return set;
     }
 
-    public boolean isDryRun() {
-      return set.contains(Flag.DRY_RUN);
+    @Factory
+    public static Flags ofSystem() {
+      var flags = new TreeSet<Flag>();
+      for (var flag : Flag.values()) {
+        var key = "bach." + flag.name().toLowerCase().replace('_', '-');
+        var property = System.getProperty(key, flag.isInitiallyTrue() ? "true" : "false");
+        if (Boolean.parseBoolean(property)) flags.add(flag);
+      }
+      return new Flags(flags);
     }
 
-    public boolean isFailFast() {
-      return set.contains(Flag.FAIL_FAST);
-    }
-
-    public boolean isFailOnError() {
-      return set.contains(Flag.FAIL_ON_ERROR);
-    }
-
-    public boolean isIncludeSourcesInModularJar() {
-      return set.contains(Flag.INCLUDE_SOURCES_IN_MODULE);
-    }
-
-    public boolean isIncludeResourcesInSourcesJar() {
-      return set.contains(Flag.INCLUDE_RESOURCES_IN_SOURCES);
-    }
-
-    public Flags with(Set<Flag> set) {
+    @Factory(Kind.SETTER)
+    public Flags set(Set<Flag> set) {
       return new Flags(set);
     }
 
-    public Flags with(Flag... additionalFlags) {
+    @Factory(Kind.OPERATOR)
+    public Flags with(Flag... moreFlags) {
       var flags = new TreeSet<>(set);
-      flags.addAll(Set.of(additionalFlags));
-      return with(flags);
+      flags.addAll(Set.of(moreFlags));
+      return set(flags);
     }
 
+    @Factory(Kind.OPERATOR)
     public Flags without(Flag... redundantFlags) {
       var flags = new TreeSet<>(set());
       flags.removeAll(Set.of(redundantFlags));
-      return with(flags);
+      return set(flags);
     }
   }
 }

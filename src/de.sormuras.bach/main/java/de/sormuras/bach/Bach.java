@@ -142,6 +142,14 @@ public class Bach {
     return configuration.flags();
   }
 
+  public final boolean is(Flag flag) {
+    return flags().set().contains(flag);
+  }
+
+  public final boolean not(Flag flag) {
+    return !is(flag);
+  }
+
   public final Logbook logbook() {
     return configuration.logbook();
   }
@@ -184,14 +192,13 @@ public class Bach {
     try {
       var start = Instant.now();
       buildLibrariesDirectoryByResolvingMissingExternalModules();
-      logbook().print("");
       buildProjectModules();
       var duration = Duration.between(start, Instant.now()).toMillis();
       logbook().print("");
       log(Level.INFO, "Build of project %s took %d ms", project().toNameAndVersion(), duration);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "build failed throwing %s", exception);
-      if (flags().isFailOnError()) throw new AssertionError(message, exception);
+      if (is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message, exception);
     } finally {
       logbook().write(this);
     }
@@ -201,6 +208,7 @@ public class Bach {
 
   public void buildProjectModules() {
     if (main().units().isPresent()) {
+      logbook().print("// <main>");
       buildMainModules();
       var service = Executors.newWorkStealingPool();
       service.execute(this::buildApiDocumentation);
@@ -215,11 +223,13 @@ public class Bach {
     }
 
     if (project().sources().testSources().units().isPresent()) {
+      logbook().print("// test");
       buildTestModules();
       buildTestReportsByExecutingTestModules();
     }
 
     if (project().sources().testPreview().units().isPresent()) {
+      logbook().print("// test-preview");
       buildTestPreviewModules();
       buildTestReportsByExecutingTestPreviewModules();
     }
@@ -231,7 +241,7 @@ public class Bach {
     // download them
     // get missing external modules from libraries directory
     // download them recursively
-
+    logbook().print("// resolve missing external modules");
     var resolver =
         new Resolver(
             List.of(base().libraries()),
@@ -283,7 +293,6 @@ public class Bach {
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
-    var includeSources = flags().isIncludeSourcesInModularJar();
     for (var unit : units.map().values()) {
       call(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
@@ -314,7 +323,7 @@ public class Bach {
               .withArchiveFile(project().toModuleArchive("", module))
               .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               .with("-C", classes0, ".")
-              .with(includeSources, "-C", sources0.path(), ".");
+              .with(is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR), "-C", sources0.path(), ".");
       var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
       if (Files.notExists(classes0.resolve("module-info.class"))) {
         for (var source : sources) {
@@ -333,7 +342,7 @@ public class Bach {
         jar =
             jar.with("--release", source.release())
                 .with("-C", classes, ".")
-                .with(includeSources, "-C", source.path(), ".");
+                .with(is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR), "-C", source.path(), ".");
       }
       call(jar);
     }
@@ -426,11 +435,11 @@ public class Bach {
     var provider = call.findProvider();
     if (provider.isEmpty()) {
       var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
-      if (flags().isFailFast()) throw new AssertionError(message);
+      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
       return;
     }
 
-    if (flags().isDryRun()) return;
+    if (is(Flag.DRY_RUN)) return;
 
     var tool = provider.get();
     var currentThread = Thread.currentThread();
@@ -456,10 +465,10 @@ public class Bach {
       var message = new StringJoiner(System.lineSeparator());
       message.add(caption);
       result.toStrings().forEach(message::add);
-      if (flags().isFailFast()) throw new AssertionError(message);
+      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
     } catch (RuntimeException exception) {
       log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
-      if (flags().isFailFast()) throw exception;
+      if (is(Flag.FAIL_FAST)) throw exception;
     } finally {
       currentThread.setContextClassLoader(currentContextLoader);
     }
@@ -502,7 +511,7 @@ public class Bach {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (flags().isIncludeResourcesInSourcesJar()) {
+    if (is(Flag.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -513,8 +522,8 @@ public class Bach {
   }
 
   public Jar computeJarForMainModule(SourceUnit unit) {
-    var jar =  computeJarCall(main(), unit);
-    if (flags().isIncludeSourcesInModularJar()) {
+    var jar = computeJarCall(main(), unit);
+    if (is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
       jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;

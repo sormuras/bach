@@ -17,6 +17,8 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Paths;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 /** A logbook records textual log entries of all levels and also records tool call results. */
 public final class Logbook {
 
+  @Factory
   public static Logbook ofSystem() {
     var debug = Boolean.getBoolean("ebug") || "".equals(System.getProperty("ebug"));
     var logbookThreshold = System.getProperty("bach.logbook.threshold", debug ? "ALL" : "INFO");
@@ -61,11 +64,13 @@ public final class Logbook {
     return threshold;
   }
 
-  public Logbook with(Consumer<String> consumer) {
+  @Factory(Kind.SETTER)
+  public Logbook consumer(Consumer<String> consumer) {
     return new Logbook(consumer, threshold);
   }
 
-  public Logbook with(Level threshold) {
+  @Factory(Kind.SETTER)
+  public Logbook threshold(Level threshold) {
     return new Logbook(printer, threshold);
   }
 
@@ -222,21 +227,27 @@ public final class Logbook {
       Files.write(path, toMarkdown(bach.project()));
       log(Level.INFO, "Wrote logbook to %s", path.toUri());
     } catch (Exception exception) {
-      var message = log(Level.ERROR, "write logbook failed: %s", exception);
-      if (bach.flags().isFailOnError()) throw new AssertionError(message, exception);
+      var message = log(Level.ERROR, "Write logbook failed: %s", exception);
+      if (bach.is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message, exception);
     }
   }
 
   void printSummaryAndCheckErrors(Bach bach, Consumer<String> errorPrinter) {
-    printSummaryOfToolCallResults(120);
-    print("");
-    printSummaryOfModules(bach.project().base().modules(""));
+    if (bach.is(Flag.SUMMARY_WITH_TOOL_CALL_OVERVIEW)) {
+      var lineLength = bach.is(Flag.SUMMARY_LINES_UNCUT) ? 0xFFFF : 120;
+      printSummaryOfToolCallResults(lineLength);
+    }
+    if (bach.is(Flag.SUMMARY_WITH_MAIN_MODULE_OVERVIEW)) {
+      print("");
+      printSummaryOfModules(bach.project().base().modules(""));
+    }
 
     var errors = results.stream().filter(Result::isError).collect(Collectors.toList());
     if (errors.isEmpty()) return;
+
     errors.forEach(error -> error.toStrings().forEach(errorPrinter));
     var message = "Detected " + errors.size() + " error" + (errors.size() != 1 ? "s" : "");
-    if (bach.flags().isFailOnError()) throw new AssertionError(message);
+    if (bach.is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message);
   }
 
   void printSummaryOfToolCallResults(int maxLineLength) {
