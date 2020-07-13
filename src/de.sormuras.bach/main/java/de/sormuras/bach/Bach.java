@@ -67,7 +67,7 @@ import java.util.function.UnaryOperator;
  * new Bach(configuration, project).build();
  * }</pre>
  *
- * <p>The Java® Development Kit provides at least the following tools via the {@link
+ * <p>The Java Development Kit provides at least the following tools via the {@link
  * java.util.spi.ToolProvider ToolProvider} interface.
  *
  * <ul>
@@ -206,52 +206,29 @@ public class Bach {
     logbook().printSummaryAndCheckErrors(this, System.err::println);
   }
 
-  public void buildProjectModules() {
-    if (main().units().isPresent()) {
-      logbook().print("// <main>");
-      buildMainModules();
-      var service = Executors.newWorkStealingPool();
-      service.execute(this::buildApiDocumentation);
-      service.execute(this::buildCustomRuntimeImage);
-      service.shutdown();
-      try {
-        service.awaitTermination(1, TimeUnit.DAYS);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        return;
-      }
-    }
-
-    if (project().sources().testSources().units().isPresent()) {
-      logbook().print("// test");
-      buildTestModules();
-      buildTestReportsByExecutingTestModules();
-    }
-
-    if (project().sources().testPreview().units().isPresent()) {
-      logbook().print("// test-preview");
-      buildTestPreviewModules();
-      buildTestReportsByExecutingTestPreviewModules();
-    }
-  }
-
   public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
     // get external requires from all module-info.java files
     // get external modules from project descriptor
     // download them
     // get missing external modules from libraries directory
     // download them recursively
-    logbook().print("// resolve missing external modules");
+    var libraries = base().libraries();
     var resolver =
         new Resolver(
-            List.of(base().libraries()),
+            List.of(libraries),
             project().toDeclaredModuleNames(),
             this::buildLibrariesDirectoryByResolvingModules);
     resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
     resolver.resolve(project().library().requires()); // from project descriptor
+
+    if (Files.isDirectory(libraries)) {
+      logbook().print("");
+      logbook().printSummaryOfModules(libraries);
+    }
   }
 
   public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
+    logbook().print("");
     var listing = String.join(", ", modules);
     if (modules.size() == 1) log(Level.INFO, "Resolve missing external module %s", listing);
     else log(Level.INFO, "Resolve %d missing external modules: %s", modules.size(), listing);
@@ -271,16 +248,42 @@ public class Bach {
       }
       var link = optionalLink.orElseThrow();
       var uri = link.toURI();
-      log(Level.INFO, "- %s%s", module, details);
-      log(Level.INFO, "\t<< %s", uri);
+      log(Level.INFO, "- %s%s << %s", module, details, uri);
       try {
         var lib = Paths.createDirectories(base().libraries());
-        var file = resources.copy(uri, lib.resolve(link.toModularJarFileName()));
-        var size = Paths.size(file);
-        log(Level.INFO, "\t>> %s with %,d bytes", file, size);
+        resources.copy(uri, lib.resolve(link.toModularJarFileName()));
       } catch (Exception e) {
         throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
       }
+    }
+  }
+
+  public void buildProjectModules() {
+    if (main().units().isPresent()) {
+      logbook().print("");
+      buildMainModules();
+      var service = Executors.newWorkStealingPool();
+      service.execute(this::buildApiDocumentation);
+      service.execute(this::buildCustomRuntimeImage);
+      service.shutdown();
+      try {
+        service.awaitTermination(1, TimeUnit.DAYS);
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        return;
+      }
+    }
+
+    if (project().sources().testSources().units().isPresent()) {
+      logbook().print("");
+      buildTestModules();
+      buildTestReportsByExecutingTestModules();
+    }
+
+    if (project().sources().testPreview().units().isPresent()) {
+      logbook().print("");
+      buildTestPreviewModules();
+      buildTestReportsByExecutingTestPreviewModules();
     }
   }
 
