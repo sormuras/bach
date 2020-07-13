@@ -32,6 +32,8 @@ public class Bootstrap {
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmm").withZone(ZoneId.of("UTC"));
     var version = ModuleDescriptor.Version.parse(pattern.format(Instant.now()));
 
+    step("Bootstrap");
+
     run(
         "javac",
         "-d",
@@ -43,6 +45,8 @@ public class Bootstrap {
         "UTF-8",
         "-W" + "error",
         "-X" + "lint");
+
+    step("Build");
 
     var java = ProcessHandle.current().info().command().orElse("java");
     start(
@@ -61,13 +65,19 @@ public class Bootstrap {
       return;
     }
 
-    start(
-        java,
-        "--module-path",
-        modules.toString(),
-        "--module",
-        "de.sormuras.bach",
-        "help");
+    step("Smoke-test module de.sormuras.bach");
+
+    start(java, "--module-path", modules.toString(), "--module", "de.sormuras.bach", "help");
+
+    step("Boostrap finished.");
+  }
+
+  static void step(String caption) {
+    System.out.println();
+    System.out.println("#");
+    System.out.println("# " + caption);
+    System.out.println("#");
+    System.out.println();
   }
 
   static void run(String name, String... args) {
