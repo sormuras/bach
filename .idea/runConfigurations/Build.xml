@@ -2,13 +2,16 @@
   <configuration default="false" name="Build" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="build.Build" />
     <module name="build" />
-    <option name="VM_PARAMETERS" value="-ea --enable-preview -Djava.util.logging.config.file=src/logging.properties -Dlogbook.threshold=ALL" />
-    <extension name="coverage">
-      <pattern>
-        <option name="PATTERN" value="build.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
+    <selectedOptions>
+      <option name="before.launch.openToolWindow" />
+      <option name="commandLineParameters" />
+      <option name="environmentVariables" />
+      <option name="jrePath" />
+      <option name="mainClass" />
+      <option name="vmParameters" />
+      <option name="workingDirectory" />
+    </selectedOptions>
+    <option name="VM_PARAMETERS" value="-ea --enable-preview -Djava.util.logging.config.file=src/logging.properties" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
