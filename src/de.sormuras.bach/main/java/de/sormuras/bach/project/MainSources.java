@@ -21,7 +21,7 @@ import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** Source set of {@code main} modules. */
-public final class MainSources {
+public final class MainSources implements Realm<MainSources> {
 
   private final JavaRelease release;
   private final SourceUnitMap units;
@@ -37,6 +37,11 @@ public final class MainSources {
 
   public SourceUnitMap units() {
     return units;
+  }
+
+  @Override
+  public String name() {
+    return "";
   }
 
   //
@@ -61,10 +66,5 @@ public final class MainSources {
   @Factory(Kind.SETTER)
   public MainSources units(SourceUnitMap units) {
     return new MainSources(release, units);
-  }
-
-  @Factory(Kind.OPERATOR)
-  public MainSources with(SourceUnit... moreUnits) {
-    return units(units.with(moreUnits));
   }
 }

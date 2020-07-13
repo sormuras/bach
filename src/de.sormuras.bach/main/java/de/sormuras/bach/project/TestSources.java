@@ -21,7 +21,7 @@ import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** Source set of {@code test} modules. */
-public final class TestSources {
+public final class TestSources implements Realm<TestSources> {
 
   private final SourceUnitMap units;
 
@@ -31,6 +31,11 @@ public final class TestSources {
 
   public SourceUnitMap units() {
     return units;
+  }
+
+  @Override
+  public String name() {
+    return "test";
   }
 
   //
@@ -45,10 +50,5 @@ public final class TestSources {
   @Factory(Kind.SETTER)
   public TestSources units(SourceUnitMap units) {
     return new TestSources(units);
-  }
-
-  @Factory(Kind.OPERATOR)
-  public TestSources with(SourceUnit... moreUnits) {
-    return units(units.with(moreUnits));
   }
 }

@@ -21,7 +21,7 @@ import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** Source set of {@code test-preview} modules. */
-public final class TestPreview {
+public final class TestPreview implements Realm<TestPreview> {
 
   private final SourceUnitMap units;
 
@@ -31,6 +31,11 @@ public final class TestPreview {
 
   public SourceUnitMap units() {
     return units;
+  }
+
+  @Override
+  public String name() {
+    return "test-preview";
   }
 
   //
@@ -45,10 +50,5 @@ public final class TestPreview {
   @Factory(Kind.SETTER)
   public TestPreview units(SourceUnitMap units) {
     return new TestPreview(units);
-  }
-
-  @Factory(Kind.OPERATOR)
-  public TestPreview with(SourceUnit... moreUnits) {
-    return units(units.with(moreUnits));
   }
 }
