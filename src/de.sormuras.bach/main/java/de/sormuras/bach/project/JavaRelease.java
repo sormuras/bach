@@ -24,12 +24,14 @@ package de.sormuras.bach.project;
  */
 public final class JavaRelease {
 
+  private static final JavaRelease RUNTIME = of(Runtime.version().feature());
+
   public static JavaRelease of(int feature) {
     return new JavaRelease(feature);
   }
 
   public static JavaRelease ofRuntime() {
-    return of(Runtime.version().feature());
+    return RUNTIME;
   }
 
   private final int feature;
