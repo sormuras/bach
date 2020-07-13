@@ -80,8 +80,8 @@ public class RecordBasedApiTests {
   static class Workflow {
 
     void build(Bach bach, Project project) {
-      if (bach.log(Level.DEBUG)) System.out.println("\n" + getClass());
-      System.out.println(computeMainJavac(project));
+      // if (bach.log(Level.DEBUG)) System.out.println("\n" + getClass());
+      // System.out.println(computeMainJavac(project));
     }
 
     public String computeMainJavac(Project project) {
