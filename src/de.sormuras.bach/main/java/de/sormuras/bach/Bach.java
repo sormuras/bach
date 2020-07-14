@@ -223,7 +223,7 @@ public class Bach {
 
     if (Files.isDirectory(libraries)) {
       logbook().print("");
-      logbook().printSummaryOfModules(libraries);
+      logbook().printSummaryOfModules(libraries, false);
     }
   }
 

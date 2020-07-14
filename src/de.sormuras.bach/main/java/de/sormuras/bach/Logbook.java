@@ -90,7 +90,7 @@ public final class Logbook {
     if (level.getSeverity() < threshold.getSeverity()) return text;
     synchronized (entries) {
       var all = threshold == Level.ALL;
-      printer.accept(all ? entry.toString() : text);
+      print(all ? entry.toString() : text);
     }
     return text;
   }
@@ -265,20 +265,24 @@ public final class Logbook {
   }
 
   void printSummaryOfModules(Path directory) {
+    printSummaryOfModules(directory, threshold == Level.ALL);
+  }
+
+  void printSummaryOfModules(Path directory, boolean describeModule) {
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Files::isRegularFile);
-    printer.accept(String.format("Directory %s contains", uri));
+    print(String.format("Directory %s contains", uri));
     try {
       for (var file : files) {
-        printer.accept(String.format("- %s with %,d bytes", file.getFileName(), Files.size(file)));
-        if (Level.DEBUG.getSeverity() <= threshold.getSeverity()) continue;
+        print(String.format("- %s with %,d bytes", file.getFileName(), Files.size(file)));
+        if (!describeModule) continue;
         if (!Paths.isJarFile(file)) continue;
         var string = new StringWriter();
         var writer = new PrintWriter(string);
         var jar = ToolProvider.findFirst("jar").orElseThrow();
         jar.run(writer, writer, "--describe-module", "--file", file.toString());
         var trim = string.toString().trim().replace(uri, "${DIRECTORY}");
-        printer.accept(trim.replaceAll("(?m)^", "\t"));
+        print(trim.replaceAll("(?m)^", "\t"));
       }
     } catch (Exception e) {
       throw new AssertionError("Analyzing JAR files failed", e);
