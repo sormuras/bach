@@ -19,16 +19,31 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.TreeSet;
 
-/** Source set of {@code main} modules. */
+/** A source set of {@code main} modules. */
 public final class MainSources implements Realm<MainSources> {
 
+  /** A modifier on a main source set. */
+  public enum Modifier {
+    INCLUDE_SOURCES_IN_MODULAR_JAR,
+    INCLUDE_RESOURCES_IN_SOURCES_JAR;
+  }
+
+  private final Set<Modifier> modifiers;
   private final JavaRelease release;
   private final SourceUnitMap units;
 
-  public MainSources(JavaRelease release, SourceUnitMap units) {
+  public MainSources(Set<Modifier> modifiers, JavaRelease release, SourceUnitMap units) {
+    this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.release = release;
     this.units = units;
+  }
+
+  public Set<Modifier> modifiers() {
+    return modifiers;
   }
 
   public JavaRelease release() {
@@ -39,23 +54,23 @@ public final class MainSources implements Realm<MainSources> {
     return units;
   }
 
-  @Override
-  public String name() {
-    return "";
-  }
-
   //
   // Configuration API
   //
 
   @Factory
   public static MainSources of() {
-    return new MainSources(JavaRelease.ofRuntime(), SourceUnitMap.of());
+    return new MainSources(Set.of(), JavaRelease.ofRuntime(), SourceUnitMap.of());
+  }
+
+  @Factory(Kind.SETTER)
+  public MainSources modifiers(Set<Modifier> modifiers) {
+    return new MainSources(modifiers, release, units);
   }
 
   @Factory(Kind.SETTER)
   public MainSources release(JavaRelease release) {
-    return new MainSources(release, units);
+    return new MainSources(modifiers, release, units);
   }
 
   @Factory(Kind.SETTER)
@@ -65,6 +80,33 @@ public final class MainSources implements Realm<MainSources> {
 
   @Factory(Kind.SETTER)
   public MainSources units(SourceUnitMap units) {
-    return new MainSources(release, units);
+    return new MainSources(modifiers, release, units);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public MainSources with(Modifier... moreModifiers) {
+    var mergedModifiers = new TreeSet<>(modifiers);
+    mergedModifiers.addAll(Set.of(moreModifiers));
+    return modifiers(mergedModifiers);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public MainSources without(Modifier... redundantModifiers) {
+    var mergedModifiers = new TreeSet<>(modifiers);
+    mergedModifiers.removeAll(Set.of(redundantModifiers));
+    return modifiers(mergedModifiers);
+  }
+
+  //
+  // Normal API
+  //
+
+  @Override
+  public String name() {
+    return "";
+  }
+
+  public boolean is(Modifier modifier) {
+    return modifiers.contains(modifier);
   }
 }

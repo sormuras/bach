@@ -320,13 +320,14 @@ public class Bach {
       var sources = new ArrayDeque<>(unit.directories());
       var sources0 = sources.removeFirst();
       var classes0 = base().classes("", sources0.release(), module);
+      var includeSources = main().is(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR);
       var jar =
           Call.jar()
               .with("--create")
               .withArchiveFile(project().toModuleArchive("", module))
               .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
               .with("-C", classes0, ".")
-              .with(is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR), "-C", sources0.path(), ".");
+              .with(includeSources, "-C", sources0.path(), ".");
       var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
       if (Files.notExists(classes0.resolve("module-info.class"))) {
         for (var source : sources) {
@@ -345,7 +346,7 @@ public class Bach {
         jar =
             jar.with("--release", source.release())
                 .with("-C", classes, ".")
-                .with(is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR), "-C", source.path(), ".");
+                .with(includeSources, "-C", source.path(), ".");
       }
       call(jar);
     }
@@ -514,7 +515,7 @@ public class Bach {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (is(Flag.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
+    if (main().is(MainSources.Modifier.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -526,7 +527,7 @@ public class Bach {
 
   public Jar computeJarForMainModule(SourceUnit unit) {
     var jar = computeJarCall(main(), unit);
-    if (is(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
+    if (main().is(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
       jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;

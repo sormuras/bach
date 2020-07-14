@@ -145,7 +145,12 @@ public final class Project {
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withCompileMainSourcesForJavaRelease(int feature) {
+  public Project with(MainSources.Modifier... modifiers) {
+    return sources(sources.mainSources(sources.mainSources().with(modifiers)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainSourcesCompiledForJavaRelease(int feature) {
     return sources(sources.mainSources(sources.mainSources().release(feature)));
   }
 

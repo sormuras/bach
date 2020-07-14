@@ -25,10 +25,7 @@ public enum Flag {
 
   SUMMARY_WITH_TOOL_CALL_OVERVIEW(true),
   SUMMARY_WITH_MAIN_MODULE_OVERVIEW(true),
-  SUMMARY_LINES_UNCUT(true),
-
-  INCLUDE_SOURCES_IN_MODULAR_JAR(false),
-  INCLUDE_RESOURCES_IN_SOURCES_JAR(false);
+  SUMMARY_LINES_UNCUT(true);
 
   private final boolean initially;
 

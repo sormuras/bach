@@ -19,10 +19,10 @@ package build;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
-import de.sormuras.bach.Flag;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
+import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
@@ -31,14 +31,20 @@ class Build {
   public static void main(String... args) {
     var project =
         Project.of()
+            // <basics>
             .name("bach")
             .version(Bach.VERSION)
-            .withCompileMainSourcesForJavaRelease(11)
+            // <main>
             .withMainSource("src/de.sormuras.bach/main/java")
+            .withMainSourcesCompiledForJavaRelease(11)
+            .with(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
+            // test
             .withTestSource("src/de.sormuras.bach/test/java-module")
             .withTestSource("src/test.base/test/java")
             .withTestSource("src/test.modules/test/java")
+            // test-preview
             .withPreview("src/test.preview/test-preview/java")
+            // lib/
             .library(
                 Library.of()
                     .withRequires("org.junit.platform.console")
@@ -59,7 +65,7 @@ class Build {
                             "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                         Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
 
-    var configuration = Configuration.ofSystem().with(Flag.INCLUDE_SOURCES_IN_MODULAR_JAR);
+    var configuration = Configuration.ofSystem();
 
     new CustomBach(configuration, project).build();
   }
