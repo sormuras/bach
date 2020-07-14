@@ -19,7 +19,9 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
+import de.sormuras.bach.internal.Modules;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -29,7 +31,9 @@ public final class MainSources implements Realm<MainSources> {
   /** A modifier on a main source set. */
   public enum Modifier {
     INCLUDE_SOURCES_IN_MODULAR_JAR,
-    INCLUDE_RESOURCES_IN_SOURCES_JAR;
+    INCLUDE_RESOURCES_IN_SOURCES_JAR,
+    NO_API_DOCUMENTATION,
+    NO_CUSTOM_RUNTIME_IMAGE
   }
 
   private final Set<Modifier> modifiers;
@@ -108,5 +112,9 @@ public final class MainSources implements Realm<MainSources> {
 
   public boolean is(Modifier modifier) {
     return modifiers.contains(modifier);
+  }
+
+  public Optional<String> findMainModule() {
+    return Modules.findMainModule(units.toUnits().map(SourceUnit::descriptor));
   }
 }

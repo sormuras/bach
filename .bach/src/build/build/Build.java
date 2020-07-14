@@ -37,6 +37,7 @@ class Build {
             .withMainSource("src/de.sormuras.bach/main/java")
             .withMainSourcesCompiledForJavaRelease(11)
             .with(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
+            .with(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)
             // test
             .withTestSource("src/de.sormuras.bach/test/java-module")
             .withTestSource("src/test.base/test/java")
@@ -61,15 +62,13 @@ class Build {
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withLibraryRequires("org.junit.platform.console");
 
-    var configuration = Configuration.ofSystem();
-
-    new CustomBach(configuration, project).build();
+    new CustomBach(project).build();
   }
 
   static class CustomBach extends Bach {
 
-    CustomBach(Configuration configuration, Project project) {
-      super(configuration, project);
+    CustomBach(Project project) {
+      super(Configuration.ofSystem(), project);
     }
 
     @Override

@@ -353,20 +353,26 @@ public class Bach {
   }
 
   public void buildApiDocumentation() {
+    if (main().is(MainSources.Modifier.NO_API_DOCUMENTATION)) return;
+    if (!checkConditionForBuildApiDocumentation()) return;
+
     call(computeJavadocForMainSources());
     call(computeJarForApiDocumentation());
   }
 
   public void buildCustomRuntimeImage() {
+    if (main().is(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)) return;
+    if (!checkConditionForBuildCustomRuntimeImage()) return;
+
     var modulePaths = Paths.retainExisting(base().modules(""), base().libraries());
     var autos = Modules.findAutomaticModules(modulePaths);
     if (autos.size() > 0) {
       log(Level.WARNING, "Automatic module(s) detected: %s", autos);
       return;
     }
+
     Paths.deleteDirectories(base().workspace("image"));
-    var jlink = computeJLinkForCustomRuntimeImage();
-    call(jlink);
+    call(computeJLinkForCustomRuntimeImage());
   }
 
   public void buildTestModules() {
@@ -478,6 +484,14 @@ public class Bach {
     }
   }
 
+  public boolean checkConditionForBuildApiDocumentation() {
+    return true; // TODO Parse `module-info.java` files for Javadoc comments...
+  }
+
+  public boolean checkConditionForBuildCustomRuntimeImage() {
+    return main().findMainModule().isPresent();
+  }
+
   public HttpClient computeHttpClient() {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
@@ -558,7 +572,7 @@ public class Bach {
 
   public Jlink computeJLinkForCustomRuntimeImage() {
     var modulePath = Paths.joinExisting(base().modules(""), base().libraries()).orElseThrow();
-    var mainModule = Modules.findMainModule(main().units().toUnits().map(SourceUnit::descriptor));
+    var mainModule = main().findMainModule();
     return Call.jlink()
         .with("--add-modules", main().units().toNames(","))
         .with("--module-path", modulePath)
