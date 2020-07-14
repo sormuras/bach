@@ -22,6 +22,10 @@ Build modular Java projects with [JDK Foundation Tools].
 
     > `jshell https://sormuras.de/bach/build` - redirects to [bach-build.jsh](src/bach/bach-build.jsh)
 
+## Build Bach.java with Bach.java
+
+- Install JDK 14 or newer
+- Call `java .bach/src/build/build/Bootstrap.java`
 
 # install-jdk.sh
 

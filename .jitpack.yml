@@ -1,8 +1,8 @@
-jdk:
-  - openjdk11
+#jdk:
+#  - openjdk11
 
 before_install:
-#  - source install-jdk.sh --feature 14
+  - source install-jdk.sh --feature 14
   - jshell --version
 
 install:
