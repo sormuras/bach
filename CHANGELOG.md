@@ -8,8 +8,17 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 _In progress..._
 
+## Version [11.4] released 2020-07-14
+
+- https://github.com/sormuras/bach/releases/tag/11.4
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.4
+
 ### Breaking Changes
 - Purify `Bach` API [#138]
+- Move `Project` to package `de.sormuras.bach`
+### New Features And Enhancements
+- Normal output is now separated into steps
+- Compile `test-preview` modules and run 'em 
 ### Bug Fixes
 - Prevent NPE when parsing URI's fragment in class `Link`
 
