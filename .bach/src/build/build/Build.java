@@ -20,7 +20,6 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Project;
-import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.tool.Javadoc;
@@ -45,25 +44,22 @@ class Build {
             // test-preview
             .withPreview("src/test.preview/test-preview/java")
             // lib/
-            .library(
-                Library.of()
-                    .withRequires("org.junit.platform.console")
-                    .with(
-                        Link.ofJUnitPlatform("commons", "1.7.0-M1"),
-                        Link.ofJUnitPlatform("console", "1.7.0-M1"),
-                        Link.ofJUnitPlatform("engine", "1.7.0-M1"),
-                        Link.ofJUnitPlatform("launcher", "1.7.0-M1"),
-                        Link.ofJUnitPlatform("reporting", "1.7.0-M1"),
-                        Link.ofJUnitPlatform("testkit", "1.7.0-M1"))
-                    .with(
-                        Link.ofJUnitJupiter("", "5.7.0-M1"),
-                        Link.ofJUnitJupiter("api", "5.7.0-M1"),
-                        Link.ofJUnitJupiter("engine", "5.7.0-M1"),
-                        Link.ofJUnitJupiter("params", "5.7.0-M1"))
-                    .with(
-                        Link.ofCentral(
-                            "org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
-                        Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0")));
+            .with(
+                Link.ofJUnitPlatform("commons", "1.7.0-M1"),
+                Link.ofJUnitPlatform("console", "1.7.0-M1"),
+                Link.ofJUnitPlatform("engine", "1.7.0-M1"),
+                Link.ofJUnitPlatform("launcher", "1.7.0-M1"),
+                Link.ofJUnitPlatform("reporting", "1.7.0-M1"),
+                Link.ofJUnitPlatform("testkit", "1.7.0-M1"))
+            .with(
+                Link.ofJUnitJupiter("", "5.7.0-M1"),
+                Link.ofJUnitJupiter("api", "5.7.0-M1"),
+                Link.ofJUnitJupiter("engine", "5.7.0-M1"),
+                Link.ofJUnitJupiter("params", "5.7.0-M1"))
+            .with(
+                Link.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
+                Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
+            .withLibraryRequires("org.junit.platform.console");
 
     var configuration = Configuration.ofSystem();
 

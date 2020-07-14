@@ -23,6 +23,7 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Library;
+import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.SourceUnitMap;
@@ -167,6 +168,16 @@ public final class Project {
   @Factory(Kind.OPERATOR)
   public Project withPreview(String path) {
     return sources(sources.testPreview(sources.testPreview().with(SourceUnit.of(path))));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project with(Link... moreLinks) {
+    return library(library.with(moreLinks));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withLibraryRequires(String... moreRequires) {
+    return library(library.withRequires(moreRequires));
   }
 
   //
