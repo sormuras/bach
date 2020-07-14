@@ -40,11 +40,20 @@ public final class Javac implements WithModuleSourceOptionsCall<Javac> {
 
   @Override
   public String toDescriptiveLine() {
-    var value = findValue("--module");
-    if (value.isEmpty()) return WithModuleSourceOptionsCall.super.toDescriptiveLine();
-    var modules = value.get().split(",");
-    if (modules.length == 1) return "Compile module " + modules[0];
-    return String.format("Compile %d modules: %s", modules.length, String.join(", ", modules));
+    var moduleValue = findValue("--module");
+    if (moduleValue.isPresent()) {
+      var modules = moduleValue.get().split(",");
+      if (modules.length == 1) return "Compile module " + modules[0];
+      return String.format("Compile %d modules: %s", modules.length, String.join(", ", modules));
+    }
+    var destinationDirectory = findValue("-d");
+    if (destinationDirectory.isPresent()) {
+      var options = arguments.stream().map(Argument::option);
+      var files = options.filter(option -> option.endsWith(".java")).toArray(String[]::new);
+      if (files.length == 1) return "Compile " + files[0] + " to " + destinationDirectory.get();
+      return "Compile " + files.length + " source files to " + destinationDirectory.get();
+    }
+    return WithModuleSourceOptionsCall.super.toDescriptiveLine();
   }
 
   @Override
