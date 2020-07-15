@@ -235,11 +235,8 @@ public class Bach {
 
     var resources = new Resources(http());
     for (var module : modules) {
-      var details = "";
       var optionalLink = project().library().findLink(module);
       if (optionalLink.isEmpty()) {
-        log(Level.WARNING, "Module %s not linked in project's library", module);
-        details = " // computed link - consider creating a link in project's library";
         optionalLink = computeLinkForUnlinkedModule(module);
       }
       if (optionalLink.isEmpty()) {
@@ -248,7 +245,7 @@ public class Bach {
       }
       var link = optionalLink.orElseThrow();
       var uri = link.toURI();
-      log(Level.INFO, "- %s%s << %s", module, details, uri);
+      log(Level.INFO, "- %s << %s", module, uri);
       try {
         var lib = Paths.createDirectories(base().libraries());
         resources.copy(uri, lib.resolve(link.toModularJarFileName()));
@@ -497,6 +494,8 @@ public class Bach {
   }
 
   public Optional<Link> computeLinkForUnlinkedModule(String module) {
+    var message = "Computing %s's link - create an explicit link via Project::with(Link.of...)";
+    log(Level.WARNING, message, module);
     if (sormurasModulesProperties == null) {
       sormurasModulesProperties = new SormurasModulesProperties(this::http, Map.of());
     }
