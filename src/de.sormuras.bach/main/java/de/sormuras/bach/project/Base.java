@@ -61,7 +61,14 @@ import java.nio.file.Path;
 public final class Base {
 
   /**
-   * Return a new base instance for the current user directory.
+   * Default (empty) base instance point to the current user directory.
+   *
+   * @see #of()
+   */
+  public static Base DEFAULT = new Base(Path.of(""), Path.of("lib"), Path.of(".bach/workspace"));
+
+  /**
+   * Return a base instance for the current user directory.
    *
    * <ul>
    *   <li>{@code directory} = {@code Path.of("")}
@@ -69,14 +76,15 @@ public final class Base {
    *   <li>{@code workspace} = {@code Path.of(".bach", "workspace")}
    * </ul>
    *
-   * @return A new default base object
+   * @return The default base object
+   * @see #DEFAULT
    */
   public static Base of() {
-    return of("");
+    return DEFAULT;
   }
 
   /**
-   * Return a new base instance for the given directory.
+   * Return a base instance for the given directory.
    *
    * <ul>
    *   <li>{@code directory} = {@code Path.of(first, more)}
@@ -86,14 +94,14 @@ public final class Base {
    *
    * @param first The first path element to use as the base directory
    * @param more The array of path elements to complete the base directory
-   * @return A new base object initialized for the given directory
+   * @return A base object initialized for the given directory
    */
   public static Base of(String first, String... more) {
     return of(Path.of(first, more));
   }
 
   /**
-   * Return a new base instance for the given directory.
+   * Return a base instance for the given directory.
    *
    * <ul>
    *   <li>{@code directory} = {@code directory}
@@ -102,10 +110,11 @@ public final class Base {
    * </ul>
    *
    * @param directory The path to use as the base directory
-   * @return A new base object initialized for the given directory
+   * @return A base object initialized for the given directory
    */
   public static Base of(Path directory) {
     var base = directory.normalize();
+    if (base.toString().equals("")) return DEFAULT;
     return new Base(base, base.resolve("lib"), base.resolve(".bach/workspace"));
   }
 
