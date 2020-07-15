@@ -90,7 +90,8 @@ public final class Logbook {
     if (level.getSeverity() < threshold.getSeverity()) return text;
     synchronized (entries) {
       var all = threshold == Level.ALL;
-      print(all ? entry.toString() : text);
+      var warning = level.getSeverity() >= Level.WARNING.getSeverity();
+      print(all ? entry.toString() : warning ? level.getName() + ' ' + text : text);
     }
     return text;
   }
