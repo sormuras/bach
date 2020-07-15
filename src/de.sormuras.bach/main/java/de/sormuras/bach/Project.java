@@ -157,17 +157,26 @@ public final class Project {
 
   @Factory(Kind.OPERATOR)
   public Project withMainSource(String path) {
-    return sources(sources.mainSources(sources.mainSources().with(SourceUnit.of(path))));
+    var unit = SourceUnit.of(Path.of(path));
+    return sources(sources.mainSources(sources.mainSources().with(unit)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainSource(String path, int defaultJavaRelease) {
+    var unit = SourceUnit.of(Path.of(path), defaultJavaRelease);
+    return sources(sources.mainSources(sources.mainSources().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
   public Project withTestSource(String path) {
-    return sources(sources.testSources(sources.testSources().with(SourceUnit.of(path))));
+    var unit = SourceUnit.of(Path.of(path));
+    return sources(sources.testSources(sources.testSources().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
   public Project withPreview(String path) {
-    return sources(sources.testPreview(sources.testPreview().with(SourceUnit.of(path))));
+    var unit = SourceUnit.of(Path.of(path));
+    return sources(sources.testPreview(sources.testPreview().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)

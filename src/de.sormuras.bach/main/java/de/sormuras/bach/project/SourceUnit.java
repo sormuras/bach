@@ -60,16 +60,16 @@ public final class SourceUnit {
   //
 
   @Factory
-  public static SourceUnit of(String path) {
-    return of(Path.of(path));
+  public static SourceUnit of(Path path) {
+    return of(path, 0);
   }
 
   @Factory
-  public static SourceUnit of(Path path) {
+  public static SourceUnit of(Path path, int defaultJavaRelease) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var descriptor = Modules.describe(info);
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var directories = SourceDirectoryList.of(parent);
+    var directories = SourceDirectoryList.of(parent, defaultJavaRelease);
     var resources = resources(parent);
     return new SourceUnit(descriptor, directories, resources);
   }

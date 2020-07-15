@@ -42,13 +42,13 @@ public final class SourceDirectoryList {
   // Configuration API
   //
 
-  static List<SourceDirectory> list(Path infoDirectory) {
+  static List<SourceDirectory> list(Path infoDirectory, int javaRelease) {
     var source = SourceDirectory.of(infoDirectory); // contains module-info.java file
     var parent = infoDirectory.getParent();
-    if (source.release() == 0 || parent == null) {
+    if (javaRelease != 0 || source.release() == 0 || parent == null) {
       var java = infoDirectory.resolveSibling("java");
       if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
-      return List.of(new SourceDirectory(java, 0), source);
+      return List.of(new SourceDirectory(java, javaRelease), source);
     }
     return listMapFilterSortedCollect(parent);
   }
@@ -63,7 +63,12 @@ public final class SourceDirectoryList {
 
   @Factory
   public static SourceDirectoryList of(Path infoDirectory) {
-    return new SourceDirectoryList(list(infoDirectory));
+    return of(infoDirectory, 0);
+  }
+
+  @Factory
+  public static SourceDirectoryList of(Path infoDirectory, int javaRelease) {
+    return new SourceDirectoryList(list(infoDirectory, javaRelease));
   }
 
   //

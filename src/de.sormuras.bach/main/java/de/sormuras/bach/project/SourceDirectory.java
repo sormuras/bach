@@ -18,7 +18,6 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
-import de.sormuras.bach.internal.Factory.Kind;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -60,16 +59,6 @@ public final class SourceDirectory {
     var file = path.normalize().getFileName();
     var name = file != null ? file : path.toAbsolutePath().getFileName();
     return new SourceDirectory(path, parseReleaseNumber(name.toString()));
-  }
-
-  @Factory
-  public static SourceDirectory of(String path, int release) {
-    return new SourceDirectory(Path.of(path), release);
-  }
-
-  @Factory(Kind.SETTER)
-  public SourceDirectory release(int release) {
-    return new SourceDirectory(path, release);
   }
 
   //
