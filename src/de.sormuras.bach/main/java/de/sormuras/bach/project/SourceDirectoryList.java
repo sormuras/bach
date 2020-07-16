@@ -18,9 +18,11 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,6 +64,11 @@ public final class SourceDirectoryList {
   }
 
   @Factory
+  public static SourceDirectoryList of() {
+    return new SourceDirectoryList(List.of());
+  }
+
+  @Factory
   public static SourceDirectoryList of(Path infoDirectory) {
     return of(infoDirectory, 0);
   }
@@ -69,6 +76,13 @@ public final class SourceDirectoryList {
   @Factory
   public static SourceDirectoryList of(Path infoDirectory, int javaRelease) {
     return new SourceDirectoryList(list(infoDirectory, javaRelease));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public SourceDirectoryList with(SourceDirectory... additionalDirectories) {
+    var directories = new ArrayList<>(list);
+    directories.addAll(List.of(additionalDirectories));
+    return new SourceDirectoryList(directories);
   }
 
   //
