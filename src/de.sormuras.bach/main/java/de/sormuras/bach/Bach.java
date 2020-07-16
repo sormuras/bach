@@ -361,13 +361,6 @@ public class Bach {
     if (main().is(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)) return;
     if (!checkConditionForBuildCustomRuntimeImage()) return;
 
-    var modulePaths = Paths.retainExisting(base().modules(""), base().libraries());
-    var autos = Modules.findAutomaticModules(modulePaths);
-    if (autos.size() > 0) {
-      log(Level.WARNING, "Automatic module(s) detected: %s", autos);
-      return;
-    }
-
     Paths.deleteDirectories(base().workspace("image"));
     call(computeJLinkForCustomRuntimeImage());
   }
@@ -486,6 +479,13 @@ public class Bach {
   }
 
   public boolean checkConditionForBuildCustomRuntimeImage() {
+    var modulePaths = Paths.retainExisting(base().modules(""), base().libraries());
+    var autos = Modules.findAutomaticModules(modulePaths);
+    if (autos.size() > 0) {
+      var message = "Creation of custom runtime image may fail -- automatic modules detected: %s";
+      log(Level.WARNING, message, autos);
+    }
+
     return main().findMainModule().isPresent();
   }
 
