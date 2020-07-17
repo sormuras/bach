@@ -26,13 +26,11 @@ import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.SourceUnitMap;
 import de.sormuras.bach.project.Sources;
 import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.TestSources;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Bach's project model. */
-public final class Project {
+public final class Project implements Scribe {
 
   private final Base base;
   private final String name;
@@ -193,6 +191,16 @@ public final class Project {
   // Normal API
   //
 
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append("Project.of()");
+    if (base != Base.DEFAULT) scroll.addNewLine().add(".base", base);
+    scroll.addNewLine().add(".name", name);
+    scroll.addNewLine().add(".version", version.toString());
+    scroll.addNewLine().add(".sources", sources);
+    scroll.addNewLine().add(".library", library);
+  }
+
   public String toNameAndVersion() {
     return name + ' ' + version;
   }
@@ -226,55 +234,6 @@ public final class Project {
   }
 
   public List<String> toStrings() {
-    var list = new ArrayList<String>();
-    list.add("project " + name + '@' + version + " {");
-    list.add("");
-    list.add("  // base");
-    list.add("  directory " + Paths.quote(base.directory()) + "; // " + base.directory().toUri());
-    list.add("  libraries " + Paths.quote(base.libraries()) + ';');
-    list.add("  workspace " + Paths.quote(base.workspace()) + ';');
-    list.add("");
-    list.add("  // main");
-    list.add("  release " + sources.mainSources().release().feature() + ';');
-    toStrings(list, sources.mainSources().units());
-    list.add("");
-    list.add("  // test");
-    toStrings(list, sources.testSources().units());
-    list.add("");
-    list.add("  // test-preview");
-    toStrings(list, sources.testPreview().units());
-    list.add("");
-    list.add("  // modules");
-    list.add("  //   declared " + toDeclaredModuleNames());
-    list.add("  //   required " + toRequiredModuleNames());
-    list.add("  //   external " + toExternalModuleNames());
-    list.add("");
-    list.add("  // library");
-    list.add("  requires " + library.requires() + ';');
-    for (var link : library.links().values()) {
-      list.add("  links " + link.module() + " to");
-      list.add("    " + link.uri() + ';');
-    }
-    list.add("}");
-    return List.copyOf(list);
-  }
-
-  private void toStrings(List<String> list, SourceUnitMap sum) {
-    for (var unit : sum.map().values()) {
-      list.add("  " + unit.name());
-      list.add("    module");
-      list.add("      requires " + Modules.required(unit.descriptor()) + ';');
-      unit.descriptor().mainClass().ifPresent(main -> list.add("      main-class " + main + ';'));
-      list.add("    sources");
-      for (var directory : unit.directories()) {
-        if (directory.isTargeted()) list.add("      release " + directory.release() + ';');
-        var comment = directory.isModuleInfoJavaPresent() ? " // module-info.java" : "";
-        list.add("      path " + Paths.quote(directory.path()) + ';' + comment);
-      }
-      if (!unit.resources().isEmpty()) {
-        var quoted = unit.resources().stream().map(Paths::quote).sorted();
-        list.add("    resources " + quoted.collect(Collectors.joining(", ")));
-      }
-    }
+    return Scribe.Scroll.of().add(this).toString().lines().collect(Collectors.toUnmodifiableList());
   }
 }
