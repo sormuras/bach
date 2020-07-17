@@ -8,6 +8,16 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 _In progress..._
 
+## Version [11.5] released 2020-07-17
+
+- https://github.com/sormuras/bach/releases/tag/11.5
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.5
+
+### Breaking Changes
+- API changes, some here, some there
+### New Features And Enhancements
+- Project::toStrings() now emits Java source code
+
 ## Version [11.4] released 2020-07-14
 
 - https://github.com/sormuras/bach/releases/tag/11.4
@@ -75,7 +85,9 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[11-ea]: https://github.com/sormuras/bach/compare/11.3...master
+[11-ea]: https://github.com/sormuras/bach/compare/11.5...master
+[11.5]: https://github.com/sormuras/bach/compare/11.4...11.5
+[11.4]: https://github.com/sormuras/bach/compare/11.3...11.4
 [11.3]: https://github.com/sormuras/bach/compare/11.3-M1...11.3
 [11.3-M1]: https://github.com/sormuras/bach/compare/11.2...11.3-M1
 [11.2]: https://github.com/sormuras/bach/compare/11.1...11.2
