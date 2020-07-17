@@ -219,7 +219,7 @@ public class Bach {
             project().toDeclaredModuleNames(),
             this::buildLibrariesDirectoryByResolvingModules);
     resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
-    resolver.resolve(project().library().requires()); // from project descriptor
+    resolver.resolve(project().library().toRequiredModuleNames()); // from project descriptor
 
     if (Files.isDirectory(libraries)) {
       logbook().print("");

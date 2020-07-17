@@ -17,31 +17,32 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** An external modules manager backed by the {@link Base#libraries() lib} directory. */
-public final class Library {
+public final class Library implements Scribe {
 
-  private final Set<String> requires;
-  private final Map<String, Link> links;
+  private final Set<ModuleName> requires;
+  private final Map<ModuleName, Link> links;
 
-  public Library(Set<String> requires, Map<String, Link> links) {
+  public Library(Set<ModuleName> requires, Map<ModuleName, Link> links) {
     this.requires = requires;
     this.links = links;
   }
 
-  public Set<String> requires() {
+  public Set<ModuleName> requires() {
     return requires;
   }
 
-  public Map<String, Link> links() {
+  public Map<ModuleName, Link> links() {
     return links;
   }
 
@@ -55,20 +56,25 @@ public final class Library {
   }
 
   @Factory(Kind.SETTER)
-  public Library requires(Set<String> requires) {
+  public Library requires(Set<ModuleName> requires) {
     return new Library(requires, links);
   }
 
   @Factory(Kind.SETTER)
-  public Library links(Map<String, Link> links) {
+  public Library links(Map<ModuleName, Link> links) {
     return new Library(requires, links);
   }
 
   @Factory(Kind.OPERATOR)
-  public Library withRequires(String... moreRequires) {
-    var merged = new TreeSet<>(requires);
-    Collections.addAll(merged, moreRequires);
-    return requires(merged);
+  public Library withRequires(String... moreModuleNames) {
+    var set = new TreeSet<>(requires);
+    for (var module : moreModuleNames) set.add(ModuleName.of(module));
+    return requires(set);
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Library withLink(String module, String uri) {
+    return with(Link.of(module, uri));
   }
 
   @Factory(Kind.OPERATOR)
@@ -83,6 +89,17 @@ public final class Library {
   //
 
   public Optional<Link> findLink(String module) {
-    return Optional.ofNullable(links.get(module));
+    return Optional.ofNullable(links.get(ModuleName.of(module)));
+  }
+
+  public Set<String> toRequiredModuleNames() {
+    return requires.stream().map(ModuleName::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append("Library.of()");
+    for (var name : toRequiredModuleNames()) scroll.addNewLine().add(".withRequires", name);
+    for (var link : links.values()) scroll.addNewLine().add(".with", link);
   }
 }

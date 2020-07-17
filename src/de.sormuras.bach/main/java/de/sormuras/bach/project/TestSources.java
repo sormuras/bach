@@ -17,11 +17,12 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** Source set of {@code test} modules. */
-public final class TestSources implements Realm<TestSources> {
+public final class TestSources implements Realm<TestSources>, Scribe {
 
   private final SourceUnitMap units;
 
@@ -50,5 +51,11 @@ public final class TestSources implements Realm<TestSources> {
   @Factory(Kind.SETTER)
   public TestSources units(SourceUnitMap units) {
     return new TestSources(units);
+  }
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append("TestSources.of()");
+    scroll.addNewLine().add(".units", units);
   }
 }

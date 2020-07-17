@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @see ModuleDescriptor
  */
-public final class SourceUnit {
+public final class SourceUnit implements Comparable<SourceUnit>, Scribe {
 
   private final ModuleDescriptor descriptor;
   private final SourceDirectoryList sources;
@@ -82,6 +83,20 @@ public final class SourceUnit {
   //
   // Normal API
   //
+
+  @Override
+  public int compareTo(SourceUnit other) {
+    return name().compareTo(other.name());
+  }
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append("new SourceUnit(");
+    scroll.addNewLineAndContinue().add(descriptor).append(",");
+    scroll.addNewLineAndContinue().add(sources).append(",");
+    scroll.addNewLineAndContinue().add(resources);
+    scroll.append(")");
+  }
 
   public String name() {
     return descriptor().name();

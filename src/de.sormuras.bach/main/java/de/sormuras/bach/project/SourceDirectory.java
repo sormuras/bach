@@ -17,13 +17,14 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /** A source directory potentially targeting a specific Java SE release. */
-public final class SourceDirectory {
+public final class SourceDirectory implements Scribe {
 
   private final Path path;
   private final int release;
@@ -64,6 +65,11 @@ public final class SourceDirectory {
   //
   // Normal API
   //
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.add("new SourceDirectory", path, release);
+  }
 
   public boolean isTargeted() {
     return release != 0;

@@ -17,6 +17,9 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
+import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Maven;
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,7 +29,39 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /** A link is module-uri pair used to resolve external modules. */
-public final class Link implements Comparable<Link> {
+public final class Link implements Scribe {
+
+  private final ModuleName module;
+  private final String uri;
+
+  public Link(ModuleName module, String uri) {
+    this.module = module;
+    this.uri = uri;
+  }
+
+  public ModuleName module() {
+    return module;
+  }
+
+  public String uri() {
+    return uri;
+  }
+
+  //
+  // Factory API
+  //
+
+  /**
+   * Create a new module link pointing to an artifact hosted at the given location.
+   *
+   * @param module The module to used as the nominal part of the pair
+   * @param uri The string representation of the URI
+   * @return A new {@code Link} instance
+   */
+  @Factory
+  public static Link of(String module, String uri) {
+    return new Link(ModuleName.of(module), uri);
+  }
 
   /**
    * Create a new module link pointing to an artifact hosted at Maven Central.
@@ -38,8 +73,9 @@ public final class Link implements Comparable<Link> {
    * @return A new Maven Central-based {@code Link} instance
    * @see <a href="https://search.maven.org">search.maven.org</a>
    */
+  @Factory
   public static Link ofCentral(String module, String group, String artifact, String version) {
-    return new Link(module, Maven.central(group, artifact, version)).withVersion(version);
+    return of(module, Maven.central(group, artifact, version)).withVersion(version);
   }
 
   /**
@@ -50,13 +86,14 @@ public final class Link implements Comparable<Link> {
    * @return A new Maven Central-based {@code Link} instance
    * @see <a href="https://search.maven.org">search.maven.org</a>
    */
+  @Factory
   public static Link ofCentral(String module, String gav) {
     var split = gav.split(":");
     if (split.length < 3) throw new IllegalArgumentException();
     var version = split[2];
     var joiner = new Maven.Joiner().group(split[0]).artifact(split[1]).version(version);
     joiner.classifier(split.length < 4 ? "" : split[3]);
-    return new Link(module, joiner.toString()).withVersion(version);
+    return of(module, joiner.toString()).withVersion(version);
   }
 
   /**
@@ -70,10 +107,11 @@ public final class Link implements Comparable<Link> {
    * @return A new JitPack-based {@code Link} instance
    * @see <a href="https://jitpack.io/docs">jitpack.io</a>
    */
+  @Factory
   public static Link ofJitPack(String module, String user, String repository, String version) {
     var group = user.indexOf('.') == -1 ? "com.github." + user : user;
     var joiner = Maven.Joiner.of(group, repository, version);
-    return new Link(module, joiner.repository("https://jitpack.io").toString()).withVersion(version);
+    return of(module, joiner.repository("https://jitpack.io").toString()).withVersion(version);
   }
 
   /**
@@ -85,6 +123,7 @@ public final class Link implements Comparable<Link> {
    * @see <a
    *     href="https://search.maven.org/search?q=g:org.junit.jupiter">org.junit.platform[.]$suffix</a>
    */
+  @Factory
   public static Link ofJUnitJupiter(String suffix, String version) {
     var module = "org.junit.jupiter" + (suffix.isEmpty() ? "" : '.' + suffix);
     var artifact = "junit-jupiter" + (suffix.isEmpty() ? "" : '-' + suffix);
@@ -100,41 +139,41 @@ public final class Link implements Comparable<Link> {
    * @see <a
    *     href="https://search.maven.org/search?q=g:org.junit.platform">org.junit.platform.$suffix</a>
    */
+  @Factory
   public static Link ofJUnitPlatform(String suffix, String version) {
     var module = "org.junit.platform." + suffix;
     var artifact = "junit-platform-" + suffix;
     return Link.ofCentral(module, "org.junit.platform", artifact, version);
   }
 
-  private final String module;
-  private final String uri;
-
-  public Link(String module, String uri) {
-    this.module = module;
-    this.uri = uri;
+  @Factory(Kind.OPERATOR)
+  public Link withDigest(String algorithm, String digest) {
+    var separator = uri.indexOf('#') == -1 ? '#' : '&';
+    return new Link(module, uri + separator + "digest-" + algorithm + '=' + digest);
   }
 
-  public String module() {
-    return module;
+  @Factory(Kind.OPERATOR)
+  public Link withSize(long size) {
+    var separator = uri.indexOf('#') == -1 ? '#' : '&';
+    return new Link(module, uri + separator + "size=" + size);
   }
 
-  public String uri() {
-    return uri;
+  @Factory(Kind.OPERATOR)
+  public Link withVersion(String version) {
+    var separator = uri.indexOf('#') == -1 ? '#' : '&';
+    return new Link(module, uri + separator + "version=" + version);
   }
+
+  //
+  // Normal API
+  //
 
   @Override
-  public int compareTo(Link other) {
-    return module.compareTo(other.module);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    return object instanceof Link && module.equals(((Link) object).module);
-  }
-
-  @Override
-  public int hashCode() {
-    return module.hashCode();
+  public void scribe(Scroll scroll) {
+    scroll.append("Link.of(");
+    scroll.addNewLineAndContinue().add(module.name()).append(",");
+    scroll.addNewLineAndContinue().add(uri);
+    scroll.append(")");
   }
 
   public List<String> findFragments(String key) {
@@ -177,21 +216,6 @@ public final class Link implements Comparable<Link> {
   }
 
   public String toModularJarFileName() {
-    return module + findVersion().map(v -> '@' + v).orElse("") + ".jar";
-  }
-
-  public Link withDigest(String algorithm, String digest) {
-    var separator = uri.indexOf('#') == -1 ? '#' : '&';
-    return new Link(module, uri + separator + "digest-" + algorithm + '=' + digest);
-  }
-
-  public Link withSize(long size) {
-    var separator = uri.indexOf('#') == -1 ? '#' : '&';
-    return new Link(module, uri + separator + "size=" + size);
-  }
-
-  public Link withVersion(String version) {
-    var separator = uri.indexOf('#') == -1 ? '#' : '&';
-    return new Link(module, uri + separator + "version=" + version);
+    return module.name() + findVersion().map(v -> '@' + v).orElse("") + ".jar";
   }
 }

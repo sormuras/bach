@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import java.nio.file.Path;
 
 /**
@@ -58,7 +59,7 @@ import java.nio.file.Path;
  *                                   Main.java
  * }</pre>
  */
-public final class Base {
+public final class Base implements Scribe {
 
   /**
    * Default (empty) base instance point to the current user directory.
@@ -185,5 +186,20 @@ public final class Base {
 
   public Path reports(String entry, String... more) {
     return workspace("reports").resolve(Path.of(entry, more));
+  }
+
+  @Override
+  public void scribe(Scroll scroll) {
+    if (this == DEFAULT) {
+      scroll.append("Base.of()");
+      return;
+    }
+    var lib = directory.resolve("lib");
+    var dotBachWorkspace = directory.resolve(".bach/workspace");
+    if (libraries.equals(lib) && workspace.equals(dotBachWorkspace)) {
+      scroll.add("Base.of", directory.toString().replace('\\', '/'));
+      return;
+    }
+    scroll.add("new Base", directory, libraries, workspace);
   }
 }

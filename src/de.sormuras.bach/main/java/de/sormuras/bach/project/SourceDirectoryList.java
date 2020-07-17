@@ -17,6 +17,7 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Paths;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** A non-empty list of source directory objects. */
-public final class SourceDirectoryList {
+public final class SourceDirectoryList implements Scribe {
 
   private final List<SourceDirectory> list;
 
@@ -88,6 +89,19 @@ public final class SourceDirectoryList {
   //
   // Normal API
   //
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append(getClass().getSimpleName());
+    if (list.size() == 1) {
+      var directory = first();
+      if (directory.release() == 0) scroll.add(".of", directory.path());
+      else scroll.add(".of", directory.path(), directory.release());
+      return;
+    }
+    scroll.append(".of()");
+    list.forEach(directory -> scroll.addNewLineAndContinue().add(".with", directory));
+  }
 
   public SourceDirectory first() {
     return list.get(0);

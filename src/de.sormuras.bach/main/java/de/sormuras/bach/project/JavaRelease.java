@@ -17,22 +17,17 @@
 
 package de.sormuras.bach.project;
 
+import de.sormuras.bach.Scribe;
+import de.sormuras.bach.internal.Factory;
+import java.util.Objects;
+import java.util.StringJoiner;
+
 /**
  * A specific Java SE release feature number.
  *
  * @see Runtime.Version#feature()
  */
-public final class JavaRelease {
-
-  private static final JavaRelease RUNTIME = of(Runtime.version().feature());
-
-  public static JavaRelease of(int feature) {
-    return new JavaRelease(feature);
-  }
-
-  public static JavaRelease ofRuntime() {
-    return RUNTIME;
-  }
+public final class JavaRelease implements Scribe {
 
   private final int feature;
 
@@ -42,5 +37,50 @@ public final class JavaRelease {
 
   public int feature() {
     return feature;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    JavaRelease that = (JavaRelease) o;
+    return feature == that.feature;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(feature);
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", JavaRelease.class.getSimpleName() + "[", "]")
+        .add("feature=" + feature)
+        .toString();
+  }
+
+  //
+  // Factory API
+  //
+
+  private static final JavaRelease RUNTIME = of(Runtime.version().feature());
+
+  @Factory
+  public static JavaRelease ofRuntime() {
+    return RUNTIME;
+  }
+
+  @Factory
+  public static JavaRelease of(int feature) {
+    return new JavaRelease(feature);
+  }
+
+  //
+  // Normal API
+  //
+
+  @Override
+  public void scribe(Scroll scroll) {
+    scroll.append("JavaRelease.of").append(this == RUNTIME ? "Runtime()" : "(" + feature + ")");
   }
 }
