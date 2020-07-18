@@ -3,6 +3,8 @@
 [![jdk11](https://img.shields.io/badge/JDK-11+-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://jitpack.io/com/github/sormuras/bach/master-SNAPSHOT/javadoc/)
 [![github actions](https://github.com/sormuras/bach/workflows/Bach.java/badge.svg)](https://github.com/sormuras/bach/actions)
+[![central](https://img.shields.io/maven-central/v/de.sormuras.bach/de.sormuras.bach.svg)](https://search.maven.org/artifact/de.sormuras.bach/de.sormuras.bach)
+
 
 Build modular Java projects with [JDK Foundation Tools].
 
@@ -11,7 +13,7 @@ Build modular Java projects with [JDK Foundation Tools].
 - ☕ **Java**, pristine Java
 
     > Describe your project in Java's syntax.
-    No XML, YML, Z... nor another programming language required.
+    No XML, no YML, no Z... nor any another programming language required.
 
 - 🧩 **Modules**, modules, everywhere!
 
