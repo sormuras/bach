@@ -17,12 +17,11 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** Source set of {@code test-preview} modules. */
-public final class TestPreview implements Realm<TestPreview>, Scribe {
+public final class TestPreview implements Realm<TestPreview> {
 
   private final SourceUnitMap units;
 
@@ -51,11 +50,5 @@ public final class TestPreview implements Realm<TestPreview>, Scribe {
   @Factory(Kind.SETTER)
   public TestPreview units(SourceUnitMap units) {
     return new TestPreview(units);
-  }
-
-  @Override
-  public void scribe(Scribe.Scroll scroll) {
-    scroll.append("TestPreview.of()");
-    scroll.addNewLine().add(".units", units);
   }
 }

@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -27,7 +26,7 @@ import java.util.StringJoiner;
  *
  * @see Module#getName()
  */
-public final class ModuleName implements Comparable<ModuleName>, Scribe {
+public final class ModuleName implements Comparable<ModuleName> {
 
   private final String name;
 
@@ -75,10 +74,5 @@ public final class ModuleName implements Comparable<ModuleName>, Scribe {
   @Override
   public int compareTo(ModuleName other) {
     return name.compareTo(other.name);
-  }
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.add("ModuleName.of", name);
   }
 }

@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -27,7 +26,7 @@ import java.util.StringJoiner;
  *
  * @see Runtime.Version#feature()
  */
-public final class JavaRelease implements Scribe {
+public final class JavaRelease {
 
   private final int feature;
 
@@ -73,14 +72,5 @@ public final class JavaRelease implements Scribe {
   @Factory
   public static JavaRelease of(int feature) {
     return new JavaRelease(feature);
-  }
-
-  //
-  // Normal API
-  //
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("JavaRelease.of").append(this == RUNTIME ? "Runtime()" : "(" + feature + ")");
   }
 }

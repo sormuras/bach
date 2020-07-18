@@ -17,12 +17,11 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** A set of sources. */
-public final class Sources implements Scribe {
+public final class Sources {
 
   private final MainSources mainSources;
   private final TestSources testSources;
@@ -73,15 +72,6 @@ public final class Sources implements Scribe {
   //
   // Normal API
   //
-
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("Sources.of()");
-    scroll.addNewLine().add(".mainSources", mainSources);
-    scroll.addNewLine().add(".testSources", testSources);
-    scroll.addNewLine().add(".testPreview", testPreview);
-  }
 
   public boolean isEmpty() {
     return mainSources.units().isEmpty()

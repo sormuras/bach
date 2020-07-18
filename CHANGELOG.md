@@ -6,7 +6,10 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
-_In progress..._
+### Breaking Changes
+- Interface `Scribe` moved to hidden `de.sormuras.bach.internal` package
+### New Features And Enhancements
+- New `Base.isDefault()` and `Base.isDefaultIgnoreBaseDirectory()` methods
 
 ## Version [11.5] released 2020-07-17
 
@@ -16,7 +19,7 @@ _In progress..._
 ### Breaking Changes
 - API changes, some here, some there
 ### New Features And Enhancements
-- Project::toStrings() now emits Java source code
+- `Project::toStrings()` now emits Java source code
 
 ## Version [11.4] released 2020-07-14
 

@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Maven;
@@ -29,7 +28,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /** A link is module-uri pair used to resolve external modules. */
-public final class Link implements Scribe {
+public final class Link {
 
   private final ModuleName module;
   private final String uri;
@@ -167,14 +166,6 @@ public final class Link implements Scribe {
   //
   // Normal API
   //
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("Link.of(");
-    scroll.addNewLineAndContinue().add(module.name()).append(",");
-    scroll.addNewLineAndContinue().add(uri);
-    scroll.append(")");
-  }
 
   public List<String> findFragments(String key) {
     var list = new ArrayList<String>();

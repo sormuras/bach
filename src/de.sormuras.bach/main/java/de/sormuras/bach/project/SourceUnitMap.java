@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
@@ -35,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** A map of module source units. */
-public final class SourceUnitMap implements Scribe {
+public final class SourceUnitMap {
 
   private final Map<String, SourceUnit> map;
 
@@ -71,12 +70,6 @@ public final class SourceUnitMap implements Scribe {
   //
   // Normal API
   //
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("SourceUnitMap.of()");
-    map.values().stream().sorted().forEach(unit -> scroll.addNewLine().add(".with", unit));
-  }
 
   public Optional<SourceUnit> findUnit(String name) {
     return Optional.ofNullable(map.get(name));

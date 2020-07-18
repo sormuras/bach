@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
@@ -27,7 +26,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /** A source set of {@code main} modules. */
-public final class MainSources implements Realm<MainSources>, Scribe {
+public final class MainSources implements Realm<MainSources> {
 
   /** A modifier on a main source set. */
   public enum Modifier {
@@ -105,14 +104,6 @@ public final class MainSources implements Realm<MainSources>, Scribe {
   //
   // Normal API
   //
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("MainSources.of()");
-    for (var modifier : modifiers) scroll.addNewLine().add(".with", modifier);
-    scroll.addNewLine().add(".release", release);
-    scroll.addNewLine().add(".units", units);
-  }
 
   @Override
   public String name() {

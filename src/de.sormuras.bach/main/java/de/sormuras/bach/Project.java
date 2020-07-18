@@ -21,6 +21,7 @@ import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Scribe;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Bach's project model. */
-public final class Project implements Scribe {
+public final class Project {
 
   private final Base base;
   private final String name;
@@ -191,16 +192,6 @@ public final class Project implements Scribe {
   // Normal API
   //
 
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("Project.of()");
-    if (base != Base.DEFAULT) scroll.addNewLine().add(".base", base);
-    scroll.addNewLine().add(".name", name);
-    scroll.addNewLine().add(".version", version.toString());
-    scroll.addNewLine().add(".sources", sources);
-    scroll.addNewLine().add(".library", library);
-  }
-
   public String toNameAndVersion() {
     return name + ' ' + version;
   }
@@ -234,6 +225,6 @@ public final class Project implements Scribe {
   }
 
   public List<String> toStrings() {
-    return Scribe.Scroll.of().add(this).toString().lines().collect(Collectors.toUnmodifiableList());
+    return new Scribe.Scroll("  ").add(this).toString().lines().collect(Collectors.toList());
   }
 }

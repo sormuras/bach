@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import java.util.Map;
@@ -28,7 +27,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /** An external modules manager backed by the {@link Base#libraries() lib} directory. */
-public final class Library implements Scribe {
+public final class Library {
 
   private final Set<ModuleName> requires;
   private final Map<ModuleName, Link> links;
@@ -94,12 +93,5 @@ public final class Library implements Scribe {
 
   public Set<String> toRequiredModuleNames() {
     return requires.stream().map(ModuleName::name).collect(Collectors.toCollection(TreeSet::new));
-  }
-
-  @Override
-  public void scribe(Scroll scroll) {
-    scroll.append("Library.of()");
-    for (var name : toRequiredModuleNames()) scroll.addNewLine().add(".withRequires", name);
-    for (var link : links.values()) scroll.addNewLine().add(".with", link);
   }
 }

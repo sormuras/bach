@@ -17,7 +17,6 @@
 
 package de.sormuras.bach.project;
 
-import de.sormuras.bach.Scribe;
 import java.nio.file.Path;
 
 /**
@@ -59,14 +58,51 @@ import java.nio.file.Path;
  *                                   Main.java
  * }</pre>
  */
-public final class Base implements Scribe {
+public final class Base {
+
+  private final Path directory;
+  private final Path libraries;
+  private final Path workspace;
+
+  /**
+   * Initializes a new base instance with the given component values.
+   *
+   * @param directory The path to the base directory of the project
+   * @param libraries The directory that contains 3rd-party modules
+   * @param workspace The directory that collects all generated assets
+   */
+  public Base(Path directory, Path libraries, Path workspace) {
+    this.directory = directory;
+    this.libraries = libraries;
+    this.workspace = workspace;
+  }
+
+  public Path directory() {
+    return directory;
+  }
+
+  public Path libraries() {
+    return libraries;
+  }
+
+  public Path workspace() {
+    return workspace;
+  }
+
+  //
+  // Factory API
+  //
+
+  private static final Path EMPTY_PATH = Path.of("");
+  private static final Path DEFAULT_LIBRARIES = Path.of("lib");
+  private static final Path DEFAULT_WORKSPACE = Path.of(".bach/workspace");
 
   /**
    * Default (empty) base instance point to the current user directory.
    *
    * @see #of()
    */
-  public static Base DEFAULT = new Base(Path.of(""), Path.of("lib"), Path.of(".bach/workspace"));
+  public static final Base DEFAULT = new Base(EMPTY_PATH, DEFAULT_LIBRARIES, DEFAULT_WORKSPACE);
 
   /**
    * Return a base instance for the current user directory.
@@ -119,41 +155,25 @@ public final class Base implements Scribe {
     return new Base(base, base.resolve("lib"), base.resolve(".bach/workspace"));
   }
 
-  private final Path directory;
-  private final Path libraries;
-  private final Path workspace;
+  //
+  // Normal API
+  //
 
-  /**
-   * Initializes a new base instance with the given component values.
-   *
-   * @param directory The path to the base directory of the project
-   * @param libraries The directory that contains 3rd-party modules
-   * @param workspace The directory that collects all generated assets
-   */
-  public Base(Path directory, Path libraries, Path workspace) {
-    this.directory = directory;
-    this.libraries = libraries;
-    this.workspace = workspace;
+  public boolean isDefault() {
+    return this == DEFAULT || directory.equals(EMPTY_PATH) && isDefaultIgnoreBaseDirectory();
   }
 
-  public Path directory() {
-    return directory;
-  }
-
-  public Path libraries() {
-    return libraries;
-  }
-
-  public Path workspace() {
-    return workspace;
+  public boolean isDefaultIgnoreBaseDirectory() {
+    return libraries.equals(directory.resolve(DEFAULT_LIBRARIES))
+        && workspace.equals(directory.resolve(DEFAULT_WORKSPACE));
   }
 
   public Path directory(String entry, String... more) {
     return directory.resolve(Path.of(entry, more));
   }
 
-  public Path libraries(String entry) {
-    return libraries.resolve(entry);
+  public Path libraries(String entry, String... more) {
+    return libraries.resolve(Path.of(entry, more));
   }
 
   public Path workspace(String entry, String... more) {
@@ -180,26 +200,11 @@ public final class Base implements Scribe {
     return workspace("sources", realm);
   }
 
-  static String realm(String name) {
-    return name.isEmpty() ? "" : "-" + name;
-  }
-
   public Path reports(String entry, String... more) {
     return workspace("reports").resolve(Path.of(entry, more));
   }
 
-  @Override
-  public void scribe(Scroll scroll) {
-    if (this == DEFAULT) {
-      scroll.append("Base.of()");
-      return;
-    }
-    var lib = directory.resolve("lib");
-    var dotBachWorkspace = directory.resolve(".bach/workspace");
-    if (libraries.equals(lib) && workspace.equals(dotBachWorkspace)) {
-      scroll.add("Base.of", directory.toString().replace('\\', '/'));
-      return;
-    }
-    scroll.add("new Base", directory, libraries, workspace);
+  private static String realm(String name) {
+    return name.isEmpty() ? "" : "-" + name;
   }
 }
