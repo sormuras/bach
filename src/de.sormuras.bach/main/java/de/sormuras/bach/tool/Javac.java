@@ -44,14 +44,16 @@ public final class Javac implements WithModuleSourceOptionsCall<Javac> {
     if (moduleValue.isPresent()) {
       var modules = moduleValue.get().split(",");
       if (modules.length == 1) return "Compile module " + modules[0];
-      return String.format("Compile %d modules: %s", modules.length, String.join(", ", modules));
+      var list = String.join(", ", modules);
+      return String.format("Compile multiple modules: %s", list);
     }
     var destinationDirectory = findValue("-d");
     if (destinationDirectory.isPresent()) {
+      var directory = destinationDirectory.get();
       var options = arguments.stream().map(Argument::option);
       var files = options.filter(option -> option.endsWith(".java")).toArray(String[]::new);
-      if (files.length == 1) return "Compile " + files[0] + " to " + destinationDirectory.get();
-      return "Compile " + files.length + " source files to " + destinationDirectory.get();
+      if (files.length == 1) return "Compile " + files[0] + " to " + directory;
+      return "Compile " + files.length + " source files to " + directory;
     }
     return WithModuleSourceOptionsCall.super.toDescriptiveLine();
   }

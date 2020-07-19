@@ -33,6 +33,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -66,8 +67,8 @@ public final class Logbook {
   }
 
   @Factory(Kind.SETTER)
-  public Logbook consumer(Consumer<String> consumer) {
-    return new Logbook(consumer, threshold);
+  public Logbook printer(Consumer<String> printer) {
+    return new Logbook(printer, threshold);
   }
 
   @Factory(Kind.SETTER)
@@ -75,20 +76,28 @@ public final class Logbook {
     return new Logbook(printer, threshold);
   }
 
+  public boolean isOn(Level level) {
+    return level.getSeverity() >= threshold.getSeverity();
+  }
+
+  public boolean isOff(Level level) {
+    return level.getSeverity() < threshold.getSeverity();
+  }
+
   public String log(Level level, String format, Object... arguments) {
     return log(level, String.format(format, arguments));
   }
 
   public String log(Level level, String text) {
-    return print(level, text, true);
+    return log(level, text, true);
   }
 
-  private String print(Level level, String text, boolean add) {
+  private String log(Level level, String text, boolean add) {
     if (text.isEmpty()) return text;
     var thread = Thread.currentThread().getId();
     var entry = new Entry(thread, level, text);
     if (add) entries.add(entry);
-    if (level.getSeverity() < threshold.getSeverity()) return text;
+    if (isOff(level)) return text;
     synchronized (entries) {
       var all = threshold == Level.ALL;
       var warning = level.getSeverity() >= Level.WARNING.getSeverity();
@@ -101,14 +110,18 @@ public final class Logbook {
     printer.accept(text);
   }
 
+  void print(String format, Object... args) {
+    print(String.format(format, args));
+  }
+
   Result add(Call<?> call, String out, String err, Duration duration, int code) {
     var thread = Thread.currentThread().getId();
     var tool = call.name();
     var args = call.toStringArray();
     var result = new Result(thread, tool, args, out, err, duration, code);
     results.add(result);
-    print(Level.TRACE, out, false);
-    print(Level.TRACE, err, false);
+    log(Level.TRACE, out, false);
+    log(Level.TRACE, err, false);
     return result;
   }
 
@@ -245,32 +258,32 @@ public final class Logbook {
     return md;
   }
 
-  void write(Bach bach) {
-    var markdown = toMarkdown(bach.project());
+  Path write(Bach bach) {
+    var markdownFile = bach.base().workspace("logbook.md");
+    var markdownLines = toMarkdown(bach.project());
     try {
       Paths.createDirectories(bach.base().workspace());
-      var path = bach.base().workspace("logbook.md");
-      Files.write(path, markdown);
-      log(Level.INFO, "Wrote logbook to %s", path.toUri());
+      Files.write(markdownFile, markdownLines);
 
       var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
       var timestamp = formatter.format(created);
       var logbooks = Paths.createDirectories(bach.base().workspace("logbooks"));
-      Files.write(logbooks.resolve("logbook-" + timestamp + ".md"), markdown);
+      Files.write(logbooks.resolve("logbook-" + timestamp + ".md"), markdownLines);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "Write logbook failed: %s", exception);
-      if (bach.is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message, exception);
+      if (bach.is(Flag.FAIL_FAST)) throw new AssertionError(message, exception);
     }
+    return markdownFile;
   }
 
   void printSummaryAndCheckErrors(Bach bach, Consumer<String> errorPrinter) {
     if (bach.is(Flag.SUMMARY_WITH_TOOL_CALL_OVERVIEW)) {
-      var lineLength = bach.is(Flag.SUMMARY_LINES_UNCUT) ? 0xFFFF : 120;
+      var lineLength = bach.is(Flag.SUMMARY_LINES_UNCUT) || isOn(Level.ALL) ? 0xFFFF : 120;
       printSummaryOfToolCallResults(lineLength);
     }
     if (bach.is(Flag.SUMMARY_WITH_MAIN_MODULE_OVERVIEW)) {
-      print("");
-      printSummaryOfModules(bach.project().base().modules(""));
+      var modules = bach.project().base().modules("");
+      printSummaryOfModules(modules, isOn(Level.INFO), isOn(Level.DEBUG));
     }
 
     var errors = results.stream().filter(Result::isError).collect(Collectors.toList());
@@ -282,27 +295,38 @@ public final class Logbook {
   }
 
   void printSummaryOfToolCallResults(int maxLineLength) {
-    var format = "%6s %10s %10s %s";
+    var format = "%10s %10s %s";
     print("");
-    print(String.format(format, "Thread", "Duration", "Tool", "Arguments"));
+    print(String.format(format, "Duration", "Tool", "Arguments"));
+    var total = Duration.ZERO;
     for (var call : results) {
-      var thread = call.thread == 1 ? "main" : Long.toHexString(call.thread).toUpperCase();
       var millis = toString(call.duration);
       var tool = call.tool;
       var args = String.join(" ", call.args);
-      var line = String.format(format, thread, millis, tool, args);
+      var line = String.format(format, millis, tool, args);
       print(line.length() <= maxLineLength ? line : line.substring(0, maxLineLength - 3) + "...");
+      total = total.plus(call.duration);
     }
+    print(String.format("%10s", "  --------"));
+    print(String.format("%10s", toString(total)));
   }
 
   void printSummaryOfModules(Path directory) {
-    printSummaryOfModules(directory, threshold == Level.ALL);
+    printSummaryOfModules(directory, isOn(Level.DEBUG), isOn(Level.TRACE));
   }
 
-  void printSummaryOfModules(Path directory, boolean describeModule) {
+  void printSummaryOfModules(Path directory, boolean listFiles, boolean describeModule) {
+    if (!Files.isDirectory(directory)) {
+      log(Level.WARNING, "Can not print modules summary -- not a directory: %s", directory);
+      return;
+    }
+    var name = Optional.ofNullable(directory.getFileName()).map(Path::toString).orElse("");
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Files::isRegularFile);
-    print(String.format("Directory %s contains", uri));
+    var s = files.size() == 1 ? "" : "s";
+    print("");
+    print(String.format("Directory %s (%s) contains %d file%s", name, uri, files.size(), s));
+    if (!listFiles) return;
     try {
       for (var file : files) {
         print(String.format("- %s with %,d bytes", file.getFileName(), Files.size(file)));

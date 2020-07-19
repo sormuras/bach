@@ -25,7 +25,7 @@ public enum Flag {
 
   SUMMARY_WITH_TOOL_CALL_OVERVIEW(true),
   SUMMARY_WITH_MAIN_MODULE_OVERVIEW(true),
-  SUMMARY_LINES_UNCUT(true);
+  SUMMARY_LINES_UNCUT(false);
 
   private final boolean initially;
 

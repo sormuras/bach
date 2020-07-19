@@ -189,21 +189,21 @@ public class Bach {
   public void buildProject() {
     log(Level.INFO, "Build of project %s started by %s", project().toNameAndVersion(), this);
     log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
+    var start = Instant.now();
     try {
-      var start = Instant.now();
       buildLibrariesDirectoryByResolvingMissingExternalModules();
       buildProjectModules();
-      var duration = Duration.between(start, Instant.now()).toMillis();
-      logbook().print("");
-      log(Level.INFO, "Build of project %s took %d ms", project().toNameAndVersion(), duration);
+      logbook().printSummaryAndCheckErrors(this, System.err::println);
     } catch (Exception exception) {
-      var message = log(Level.ERROR, "build failed throwing %s", exception);
+      var message = log(Level.ERROR, "Build failed with throwing %s", exception);
       if (is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message, exception);
     } finally {
-      logbook().write(this);
+      var file = logbook().write(this);
+      var duration = Duration.between(start, Instant.now()).toMillis();
+      logbook().print("");
+      logbook().print("Logbook written to %s", file.toUri());
+      logbook().print("Build of project %s took %d ms", project().toNameAndVersion(), duration);
     }
-
-    logbook().printSummaryAndCheckErrors(this, System.err::println);
   }
 
   public void buildLibrariesDirectoryByResolvingMissingExternalModules() {
@@ -221,10 +221,7 @@ public class Bach {
     resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
     resolver.resolve(project().library().toRequiredModuleNames()); // from project descriptor
 
-    if (Files.isDirectory(libraries)) {
-      logbook().print("");
-      logbook().printSummaryOfModules(libraries, false);
-    }
+    if (Files.isDirectory(libraries)) logbook().printSummaryOfModules(libraries);
   }
 
   public void buildLibrariesDirectoryByResolvingModules(Set<String> modules) {
@@ -286,7 +283,7 @@ public class Bach {
 
   public void buildMainModules() {
     var units = main().units();
-    log(Level.DEBUG, "Build of %d main module(s) started", units.size());
+    log(Level.INFO, computeBuildModulesMessage(main()));
     call(computeJavacForMainSources());
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
@@ -366,18 +363,20 @@ public class Bach {
   }
 
   public void buildTestModules() {
-    var units = project().sources().testSources().units();
-    log(Level.DEBUG, "Build of %d test module(s) started", units.size());
+    var realm = project().sources().testSources();
+    var units = realm.units();
+    log(Level.INFO, computeBuildModulesMessage(realm));
     call(computeJavacForTestSources());
-    Paths.createDirectories(base().modules("test"));
+    Paths.createDirectories(base().modules(realm.name()));
     units.toUnits().map(this::computeJarForTestModule).forEach(this::call);
   }
 
   public void buildTestPreviewModules() {
-    var units = project().sources().testPreview().units();
-    log(Level.DEBUG, "Build of %d test-preview module(s) started", units.size());
+    var realm = project().sources().testPreview();
+    var units = realm.units();
+    log(Level.INFO, computeBuildModulesMessage(realm));
     call(computeJavacForTestPreview());
-    Paths.createDirectories(base().modules("test-preview"));
+    Paths.createDirectories(base().modules(realm.name()));
     units.toUnits().map(this::computeJarForTestPreviewModule).forEach(this::call);
   }
 
@@ -500,6 +499,13 @@ public class Bach {
       sormurasModulesProperties = new SormurasModulesProperties(this::http, Map.of());
     }
     return sormurasModulesProperties.lookup(module);
+  }
+
+  public String computeBuildModulesMessage(Realm<?> realm) {
+    var name = realm.name().isEmpty() ? "main" : "'" + realm.name() + "'";
+    var size = realm.units().size();
+    if (size == 1) return "Build " + name + " realm";
+    return "Build " + size + " " + name + " realm";
   }
 
   public Javac computeJavacForMainSources() {
