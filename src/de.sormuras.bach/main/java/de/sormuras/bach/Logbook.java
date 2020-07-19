@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
+import de.sormuras.bach.internal.Markdown;
 import de.sormuras.bach.internal.Paths;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -115,6 +116,7 @@ public final class Logbook {
     var md = new ArrayList<String>();
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     md.add("# Logbook of " + project.toNameAndVersion());
+    md.add("");
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
     md.addAll(projectModules(project.base().modules("")));
@@ -122,6 +124,10 @@ public final class Logbook {
     md.addAll(toToolCallOverview());
     md.addAll(toToolCallDetails());
     md.addAll(toLogbookEntries());
+    md.add("");
+    md.add("## Thanks for using Bach.java " + Bach.VERSION);
+    md.add("");
+    md.add("Support its development at <https://github.com/sponsors/sormuras>");
     return md;
   }
 
@@ -129,6 +135,7 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Modules");
+    md.add("");
     if (!Files.isDirectory(directory)) {
       md.add(String.format("Directory `%s` doesn't exist or isn't a directory.", directory));
       return md;
@@ -138,20 +145,28 @@ public final class Logbook {
     md.add("- files: " + files.size());
     if (files.isEmpty()) return md;
     md.add("");
-    md.add("| Bytes|Modular JAR|Name|Version|Exports");
-    md.add("|-----:|:----------|----|-------|-------");
+    md.add("### Module API");
+    md.add("");
+    md.add("| Name | Version | Exports | Provides | Main Class |");
+    md.add("|------|---------|---------|----------|------------|");
     for (var file : files) {
-      var size = Paths.size(file);
-      var name = file.getFileName();
       var descriptor = ModuleFinder.of(file).findAll().iterator().next().descriptor();
       var module = descriptor.name();
       var version = descriptor.version().map(Object::toString).orElse("-");
-      var exports =
-          descriptor.exports().stream()
-              .map(Object::toString)
-              .sorted()
-              .collect(Collectors.joining("<br>"));
-      md.add(String.format("|%,d|%s|%s|%s|%s", size, name, module, version, exports));
+      var exports = Markdown.join(descriptor.exports());
+      var provides = Markdown.join(descriptor.provides());
+      var main = descriptor.mainClass().map(Object::toString).orElse("-");
+      md.add(String.format("|`%s`|%s|%s|%s|`%s`|", module, version, exports, provides, main));
+    }
+    md.add("");
+    md.add("### Modular JAR");
+    md.add("");
+    md.add("| Size [Bytes] | File Name |");
+    md.add("|-------------:|:----------|");
+    for (var file : files) {
+      var size = Paths.size(file);
+      var name = file.getFileName();
+      md.add(String.format("|%,d|%s", size, name));
     }
     return md;
   }
@@ -160,10 +175,12 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Project");
+    md.add("");
     md.add("- name: " + project.name());
     md.add("- version: " + project.version());
     md.add("");
     md.add("### Project Descriptor");
+    md.add("");
     md.add("```text");
     md.addAll(project.toStrings());
     md.add("```");
@@ -174,6 +191,7 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Call Overview");
+    md.add("");
     md.add("|    |Thread| Duration |Tool|Arguments");
     md.add("|----|-----:|---------:|----|---------");
     for (var call : results) {
@@ -181,7 +199,7 @@ public final class Logbook {
       var thread = call.thread;
       var millis = toString(call.duration);
       var tool = "[" + call.tool + "](#" + call.toDetailedCaption() + ")";
-      var arguments = String.join(" ", call.args);
+      var arguments = "`" + String.join(" ", call.args) + "`";
       var row = String.format("|%4c|%6X|%10s|%s|%s", kind, thread, millis, tool, arguments);
       md.add(row);
     }
@@ -192,17 +210,22 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Call Details");
+    md.add("");
+    md.add(String.format("Recorded %d tool call results.", results.size()));
     for (var call : results) {
       md.add("");
       md.add("### " + call.toDetailedCaption());
+      md.add("");
       md.add("- tool = `" + call.tool + '`');
       md.add("- args = `" + String.join(" ", call.args) + '`');
       if (!call.out.isEmpty()) {
+        md.add("");
         md.add("```text");
         md.add(call.out);
         md.add("```");
       }
       if (!call.err.isEmpty()) {
+        md.add("");
         md.add("```text");
         md.add(call.err);
         md.add("```");
@@ -215,8 +238,9 @@ public final class Logbook {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## All Entries");
-    md.add("```");
-    for (var entry : entries) md.add(entry.toString());
+    md.add("");
+    md.add("```text");
+    for (var entry : entries) md.add(entry.toString().replace('\t', ' '));
     md.add("```");
     return md;
   }
