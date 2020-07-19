@@ -10,6 +10,8 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 - Interface `Scribe` moved to hidden `de.sormuras.bach.internal` package
 ### New Features And Enhancements
 - New `Base.isDefault()` and `Base.isDefaultIgnoreBaseDirectory()` methods
+- Logbook's layout of improved and syntax warnings removed
+- A copy of `logbook.md` is stored in `.bach/workspace/logbooks` using a file name with a timestamp
 
 ## Version [11.5] released 2020-07-17
 

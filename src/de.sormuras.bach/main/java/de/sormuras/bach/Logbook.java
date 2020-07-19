@@ -246,11 +246,17 @@ public final class Logbook {
   }
 
   void write(Bach bach) {
+    var markdown = toMarkdown(bach.project());
     try {
       Paths.createDirectories(bach.base().workspace());
       var path = bach.base().workspace("logbook.md");
-      Files.write(path, toMarkdown(bach.project()));
+      Files.write(path, markdown);
       log(Level.INFO, "Wrote logbook to %s", path.toUri());
+
+      var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+      var timestamp = formatter.format(created);
+      var logbooks = Paths.createDirectories(bach.base().workspace("logbooks"));
+      Files.write(logbooks.resolve("logbook-" + timestamp + ".md"), markdown);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "Write logbook failed: %s", exception);
       if (bach.is(Flag.FAIL_ON_ERROR)) throw new AssertionError(message, exception);
