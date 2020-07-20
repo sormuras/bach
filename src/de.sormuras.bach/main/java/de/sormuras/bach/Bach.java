@@ -28,6 +28,8 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.TestPreview;
+import de.sormuras.bach.project.TestSources;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
@@ -175,6 +177,14 @@ public class Bach {
     return project.sources().mainSources();
   }
 
+  public final TestSources test() {
+    return project.sources().testSources();
+  }
+
+  public final TestPreview preview() {
+    return project.sources().testPreview();
+  }
+
   public final HttpClient http() {
     if (http == null) http = computeHttpClient();
     return http;
@@ -266,13 +276,13 @@ public class Bach {
       parallel(this::buildApiDocumentation, this::buildCustomRuntimeImage);
     }
 
-    if (project().sources().testSources().units().isPresent()) {
+    if (test().units().isPresent()) {
       logbook().print("");
       buildTestModules();
       buildTestReportsByExecutingTestModules();
     }
 
-    if (project().sources().testPreview().units().isPresent()) {
+    if (preview().units().isPresent()) {
       logbook().print("");
       buildTestPreviewModules();
       buildTestReportsByExecutingTestPreviewModules();
@@ -363,32 +373,28 @@ public class Bach {
   }
 
   public void buildTestModules() {
-    var realm = project().sources().testSources();
-    var units = realm.units();
-    log(Level.INFO, computeBuildModulesMessage(realm));
+    var units = test().units();
+    log(Level.INFO, computeBuildModulesMessage(test()));
     call(computeJavacForTestSources());
-    Paths.createDirectories(base().modules(realm.name()));
+    Paths.createDirectories(base().modules(test().name()));
     parallel(this::call, this::computeJarForTestModule, units.map().values());
   }
 
   public void buildTestPreviewModules() {
-    var realm = project().sources().testPreview();
-    var units = realm.units();
-    log(Level.INFO, computeBuildModulesMessage(realm));
+    var units = preview().units();
+    log(Level.INFO, computeBuildModulesMessage(preview()));
     call(computeJavacForTestPreview());
-    Paths.createDirectories(base().modules(realm.name()));
+    Paths.createDirectories(base().modules(preview().name()));
     parallel(this::call, this::computeJarForTestPreviewModule, units.map().values());
   }
 
   public void buildTestReportsByExecutingTestModules() {
-    var test = project().sources().testSources();
-    for (var unit : test.units().map().values())
+    for (var unit : test().units().map().values())
       buildTestReportsByExecutingTestModule("test", unit);
   }
 
   public void buildTestReportsByExecutingTestPreviewModules() {
-    var preview = project().sources().testPreview();
-    for (var unit : preview.units().map().values())
+    for (var unit : preview().units().map().values())
       buildTestReportsByExecutingTestPreviewModule("test-preview", unit);
   }
 
@@ -590,15 +596,14 @@ public class Bach {
 
   public Javac computeJavacForTestSources() {
     var release = Runtime.version().feature();
-    var sources = project().sources();
-    var units = sources.testSources().units();
+    var testUnits = test().units();
     var modulePath = Paths.joinExisting(base().modules(""), base().libraries());
     return Call.javac()
-        .withModule(units.toNames(","))
+        .withModule(testUnits.toNames(","))
         .with("--module-version", project().version().toString() + "-test")
-        .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
+        .with(testUnits.toModuleSourcePaths(false), Javac::withModuleSourcePath)
         .with(
-            units.toModulePatches(main().units()).entrySet(),
+            testUnits.toModulePatches(main().units()).entrySet(),
             (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
         .with(modulePath, Javac::withModulePath)
         .withEncoding("UTF-8")
@@ -609,19 +614,18 @@ public class Bach {
 
   public Javac computeJavacForTestPreview() {
     var release = Runtime.version().feature();
-    var sources = project().sources();
-    var units = sources.testPreview().units();
+    var previewUnits = preview().units();
     var modulePath =
         Paths.joinExisting(base().modules(""), base().modules("test"), base().libraries());
     return Call.javac()
-        .withModule(units.toNames(","))
+        .withModule(previewUnits.toNames(","))
         .with("--enable-preview")
         .with("--release", release)
         .with("-Xlint:-preview")
         .with("--module-version", project().version().toString() + "-test-preview")
-        .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
+        .with(previewUnits.toModuleSourcePaths(false), Javac::withModuleSourcePath)
         .with(
-            units.toModulePatches(main().units()).entrySet(),
+            previewUnits.toModulePatches(main().units()).entrySet(),
             (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
         .with(modulePath, Javac::withModulePath)
         .withEncoding("UTF-8")
@@ -631,11 +635,11 @@ public class Bach {
   }
 
   public Jar computeJarForTestModule(SourceUnit unit) {
-    return computeJarCall(project().sources().testSources(), unit);
+    return computeJarCall(test(), unit);
   }
 
   public Jar computeJarForTestPreviewModule(SourceUnit unit) {
-    return computeJarCall(project().sources().testPreview(), unit);
+    return computeJarCall(preview(), unit);
   }
 
   public Jar computeJarCall(Realm<?> realm, SourceUnit unit) {
