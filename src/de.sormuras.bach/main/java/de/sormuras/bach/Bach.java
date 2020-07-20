@@ -141,8 +141,12 @@ public class Bach {
     return configuration;
   }
 
+  public final Project project() {
+    return project;
+  }
+
   public final Configuration.Flags flags() {
-    return configuration.flags();
+    return configuration().flags();
   }
 
   public final boolean is(Flag flag) {
@@ -154,7 +158,7 @@ public class Bach {
   }
 
   public final Logbook logbook() {
-    return configuration.logbook();
+    return configuration().logbook();
   }
 
   public final String log(Level level, String text) {
@@ -165,24 +169,20 @@ public class Bach {
     return logbook().log(level, format, args);
   }
 
-  public final Project project() {
-    return project;
-  }
-
   public final Base base() {
-    return project.base();
+    return project().base();
   }
 
   public final MainSources main() {
-    return project.sources().mainSources();
+    return project().sources().mainSources();
   }
 
   public final TestSources test() {
-    return project.sources().testSources();
+    return project().sources().testSources();
   }
 
   public final TestPreview preview() {
-    return project.sources().testPreview();
+    return project().sources().testPreview();
   }
 
   public final HttpClient http() {
