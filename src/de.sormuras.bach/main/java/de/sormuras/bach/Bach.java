@@ -272,18 +272,21 @@ public class Bach {
   public void buildProjectModules() {
     if (main().units().isPresent()) {
       logbook().print("");
+      log(Level.INFO, "Build main realm");
       buildMainModules();
       run(this::buildApiDocumentation, this::buildCustomRuntimeImage);
     }
 
     if (test().units().isPresent()) {
       logbook().print("");
+      log(Level.INFO, "Build 'test' realm");
       buildTestModules();
       buildTestReportsByExecutingTestModules();
     }
 
     if (preview().units().isPresent()) {
       logbook().print("");
+      log(Level.INFO, "Build 'test-preview' realm");
       buildTestPreviewModules();
       buildTestReportsByExecutingTestPreviewModules();
     }
@@ -291,7 +294,6 @@ public class Bach {
 
   public void buildMainModules() {
     var units = main().units();
-    log(Level.INFO, computeBuildModulesMessage(main()));
     run(computeJavacForMainSources());
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
@@ -373,19 +375,15 @@ public class Bach {
   }
 
   public void buildTestModules() {
-    var units = test().units();
-    log(Level.INFO, computeBuildModulesMessage(test()));
     run(computeJavacForTestSources());
     Paths.createDirectories(base().modules(test().name()));
-    run(this::run, this::computeJarForTestModule, units.map().values());
+    run(this::run, this::computeJarForTestModule, test().units().map().values());
   }
 
   public void buildTestPreviewModules() {
-    var units = preview().units();
-    log(Level.INFO, computeBuildModulesMessage(preview()));
     run(computeJavacForTestPreview());
     Paths.createDirectories(base().modules(preview().name()));
-    run(this::run, this::computeJarForTestPreviewModule, units.map().values());
+    run(this::run, this::computeJarForTestPreviewModule, preview().units().map().values());
   }
 
   public void buildTestReportsByExecutingTestModules() {
@@ -459,13 +457,6 @@ public class Bach {
       sormurasModulesProperties = new SormurasModulesProperties(this::http, Map.of());
     }
     return sormurasModulesProperties.lookup(module);
-  }
-
-  public String computeBuildModulesMessage(Realm<?> realm) {
-    var name = realm.name().isEmpty() ? "main" : "'" + realm.name() + "'";
-    var size = realm.units().size();
-    if (size == 1) return "Build " + name + " realm";
-    return "Build " + size + " " + name + " realm";
   }
 
   public Javac computeJavacForMainSources() {
