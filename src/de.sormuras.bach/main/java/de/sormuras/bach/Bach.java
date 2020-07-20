@@ -254,7 +254,7 @@ public class Bach {
       links.add(optionalLink.orElseThrow());
     }
 
-    parallel(this::buildLibrariesDirectoryByResolvingLink, links);
+    run(this::buildLibrariesDirectoryByResolvingLink, links);
   }
 
   public void buildLibrariesDirectoryByResolvingLink(Link link) {
@@ -273,7 +273,7 @@ public class Bach {
     if (main().units().isPresent()) {
       logbook().print("");
       buildMainModules();
-      parallel(this::buildApiDocumentation, this::buildCustomRuntimeImage);
+      run(this::buildApiDocumentation, this::buildCustomRuntimeImage);
     }
 
     if (test().units().isPresent()) {
@@ -292,7 +292,7 @@ public class Bach {
   public void buildMainModules() {
     var units = main().units();
     log(Level.INFO, computeBuildModulesMessage(main()));
-    call(computeJavacForMainSources());
+    run(computeJavacForMainSources());
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
@@ -318,7 +318,7 @@ public class Bach {
                 .with("-implicit:none") // generate classes for explicitly referenced source files
                 .with("-d", base().classes("", directory.release(), module))
                 .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
-        call(javac);
+        run(javac);
       }
       var sources = new ArrayDeque<>(unit.directories());
       var sources0 = sources.removeFirst();
@@ -353,15 +353,15 @@ public class Bach {
       }
       jars.add(jar);
     }
-    parallel(this::call, jars);
+    run(this::run, jars);
   }
 
   public void buildApiDocumentation() {
     if (main().is(MainSources.Modifier.NO_API_DOCUMENTATION)) return;
     if (!checkConditionForBuildApiDocumentation()) return;
 
-    call(computeJavadocForMainSources());
-    call(computeJarForApiDocumentation());
+    run(computeJavadocForMainSources());
+    run(computeJarForApiDocumentation());
   }
 
   public void buildCustomRuntimeImage() {
@@ -369,23 +369,23 @@ public class Bach {
     if (!checkConditionForBuildCustomRuntimeImage()) return;
 
     Paths.deleteDirectories(base().workspace("image"));
-    call(computeJLinkForCustomRuntimeImage());
+    run(computeJLinkForCustomRuntimeImage());
   }
 
   public void buildTestModules() {
     var units = test().units();
     log(Level.INFO, computeBuildModulesMessage(test()));
-    call(computeJavacForTestSources());
+    run(computeJavacForTestSources());
     Paths.createDirectories(base().modules(test().name()));
-    parallel(this::call, this::computeJarForTestModule, units.map().values());
+    run(this::run, this::computeJarForTestModule, units.map().values());
   }
 
   public void buildTestPreviewModules() {
     var units = preview().units();
     log(Level.INFO, computeBuildModulesMessage(preview()));
-    call(computeJavacForTestPreview());
+    run(computeJavacForTestPreview());
     Paths.createDirectories(base().modules(preview().name()));
-    parallel(this::call, this::computeJarForTestPreviewModule, units.map().values());
+    run(this::run, this::computeJarForTestPreviewModule, units.map().values());
   }
 
   public void buildTestReportsByExecutingTestModules() {
@@ -409,10 +409,10 @@ public class Bach {
     log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
 
     var testModule = new TestModule(module, modulePaths);
-    if (testModule.findProvider().isPresent()) call(testModule);
+    if (testModule.findProvider().isPresent()) run(testModule);
 
     var junit = computeJUnitCall(realm, unit, modulePaths);
-    if (junit.findProvider().isPresent()) call(junit);
+    if (junit.findProvider().isPresent()) run(junit);
   }
 
   public void buildTestReportsByExecutingTestPreviewModule(String realm, SourceUnit unit) {
@@ -427,56 +427,10 @@ public class Bach {
     log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
 
     var testModule = new TestModule(module, modulePaths);
-    if (testModule.findProvider().isPresent()) call(testModule);
+    if (testModule.findProvider().isPresent()) run(testModule);
 
     var junit = computeJUnitCall(realm, unit, modulePaths);
-    if (junit.findProvider().isPresent()) call(junit);
-  }
-
-  void call(Call<?> call) {
-    log(Level.INFO, call.toDescriptiveLine());
-    log(Level.DEBUG, call.toCommandLine());
-
-    var provider = call.findProvider();
-    if (provider.isEmpty()) {
-      var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
-      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
-      return;
-    }
-
-    if (is(Flag.DRY_RUN)) return;
-
-    var tool = provider.get();
-    var currentThread = Thread.currentThread();
-    var currentContextLoader = currentThread.getContextClassLoader();
-    currentThread.setContextClassLoader(tool.getClass().getClassLoader());
-    var out = new StringWriter();
-    var err = new StringWriter();
-    var args = call.toStringArray();
-    var start = Instant.now();
-
-    try {
-      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-
-      var duration = Duration.between(start, Instant.now());
-      var normal = out.toString().strip();
-      var errors = err.toString().strip();
-      var result = logbook().add(call, normal, errors, duration, code);
-      log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
-
-      if (code == 0) return;
-
-      var caption = log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
-      var message = new StringJoiner(System.lineSeparator());
-      message.add(caption);
-      result.toStrings().forEach(message::add);
-      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
-    } catch (RuntimeException exception) {
-      log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
-      if (is(Flag.FAIL_FAST)) throw exception;
-    } finally {
-      currentThread.setContextClassLoader(currentContextLoader);
-    }
+    if (junit.findProvider().isPresent()) run(junit);
   }
 
   public boolean checkConditionForBuildApiDocumentation() {
@@ -663,15 +617,61 @@ public class Bach {
         .with("--reports-dir", base().reports("junit-" + realm, module));
   }
 
-  void parallel(Runnable... runnables) {
-    parallel(Runnable::run, List.of(runnables));
+  void run(Call<?> call) {
+    log(Level.INFO, call.toDescriptiveLine());
+    log(Level.DEBUG, call.toCommandLine());
+
+    var provider = call.findProvider();
+    if (provider.isEmpty()) {
+      var message = log(Level.ERROR, "Tool provider with name '%s' not found", call.name());
+      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
+      return;
+    }
+
+    if (is(Flag.DRY_RUN)) return;
+
+    var tool = provider.get();
+    var currentThread = Thread.currentThread();
+    var currentContextLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(tool.getClass().getClassLoader());
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = call.toStringArray();
+    var start = Instant.now();
+
+    try {
+      var code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+
+      var duration = Duration.between(start, Instant.now());
+      var normal = out.toString().strip();
+      var errors = err.toString().strip();
+      var result = logbook().add(call, normal, errors, duration, code);
+      log(Level.DEBUG, "%s finished after %d ms", tool.name(), duration.toMillis());
+
+      if (code == 0) return;
+
+      var caption = log(Level.ERROR, "%s failed with exit code %d", tool.name(), code);
+      var message = new StringJoiner(System.lineSeparator());
+      message.add(caption);
+      result.toStrings().forEach(message::add);
+      if (is(Flag.FAIL_FAST)) throw new AssertionError(message);
+    } catch (RuntimeException exception) {
+      log(Level.ERROR, "%s failed throwing %s", tool.name(), exception);
+      if (is(Flag.FAIL_FAST)) throw exception;
+    } finally {
+      currentThread.setContextClassLoader(currentContextLoader);
+    }
   }
 
-  <E> void parallel(Consumer<E> consumer, Collection<E> collection) {
-    parallel(consumer, Function.identity(), collection);
+  void run(Runnable... runnables) {
+    run(Runnable::run, List.of(runnables));
   }
 
-  <E, T> void parallel(Consumer<T> consumer, Function<E, T> mapper, Collection<E> collection) {
+  <E> void run(Consumer<E> consumer, Collection<E> collection) {
+    run(consumer, Function.identity(), collection);
+  }
+
+  <E, T> void run(Consumer<T> consumer, Function<E, T> mapper, Collection<E> collection) {
     collection.stream().parallel().map(mapper).forEach(consumer);
   }
 
