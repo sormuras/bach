@@ -23,11 +23,22 @@ import de.sormuras.bach.internal.Factory;
 public interface Realm<T> {
 
   /**
-   * Return the name of the realm.
+   * Return the possibly empty name of the realm.
    *
    * @return An empty string for the main realm, else a non-empty name string
+   * @see #title()
    */
   String name();
+
+  /**
+   * Return the title of the realm.
+   *
+   * @return The string {@code "main"} for the main realm, else the non-empty name string
+   * @see #name()
+   */
+  default String title() {
+    return name().isEmpty() ? "main" : name();
+  }
 
   /**
    * Return the desired Java release of the realm.
