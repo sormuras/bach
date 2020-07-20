@@ -45,14 +45,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -230,7 +231,7 @@ public class Bach {
     if (modules.size() == 1) log(Level.INFO, "Resolve missing external module %s", listing);
     else log(Level.INFO, "Resolve %d missing external modules: %s", modules.size(), listing);
 
-    var resources = new Resources(http());
+    var links = new ArrayList<Link>();
     for (var module : modules) {
       var optionalLink = project().library().findLink(module);
       if (optionalLink.isEmpty()) {
@@ -240,15 +241,21 @@ public class Bach {
         log(Level.ERROR, "Module %s not resolvable", module);
         continue;
       }
-      var link = optionalLink.orElseThrow();
-      var uri = link.toURI();
-      log(Level.INFO, "- %s << %s", module, uri);
-      try {
-        var lib = Paths.createDirectories(base().libraries());
-        resources.copy(uri, lib.resolve(link.toModularJarFileName()));
-      } catch (Exception e) {
-        throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
-      }
+      links.add(optionalLink.orElseThrow());
+    }
+
+    parallel(this::buildLibrariesDirectoryByResolvingLink, links);
+  }
+
+  public void buildLibrariesDirectoryByResolvingLink(Link link) {
+    var module = link.module().name();
+    var uri = link.toURI();
+    log(Level.INFO, "- %s << %s", module, uri);
+    try {
+      var lib = Paths.createDirectories(base().libraries());
+      new Resources(http()).copy(uri, lib.resolve(link.toModularJarFileName()));
+    } catch (Exception e) {
+      throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
     }
   }
 
@@ -256,16 +263,7 @@ public class Bach {
     if (main().units().isPresent()) {
       logbook().print("");
       buildMainModules();
-      var service = Executors.newWorkStealingPool();
-      service.execute(this::buildApiDocumentation);
-      service.execute(this::buildCustomRuntimeImage);
-      service.shutdown();
-      try {
-        service.awaitTermination(1, TimeUnit.DAYS);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        return;
-      }
+      parallel(this::buildApiDocumentation, this::buildCustomRuntimeImage);
     }
 
     if (project().sources().testSources().units().isPresent()) {
@@ -290,10 +288,11 @@ public class Bach {
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
+    var jars = new ArrayList<Jar>();
     for (var unit : units.map().values()) {
-      call(computeJarForMainSources(unit));
+      jars.add(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
-        call(computeJarForMainModule(unit));
+        jars.add(computeJarForMainModule(unit));
         continue;
       }
       var module = unit.name();
@@ -342,8 +341,9 @@ public class Bach {
                 .with("-C", classes, ".")
                 .with(includeSources, "-C", source.path(), ".");
       }
-      call(jar);
+      jars.add(jar);
     }
+    parallel(this::call, jars);
   }
 
   public void buildApiDocumentation() {
@@ -368,7 +368,7 @@ public class Bach {
     log(Level.INFO, computeBuildModulesMessage(realm));
     call(computeJavacForTestSources());
     Paths.createDirectories(base().modules(realm.name()));
-    units.toUnits().map(this::computeJarForTestModule).forEach(this::call);
+    parallel(this::call, this::computeJarForTestModule, units.map().values());
   }
 
   public void buildTestPreviewModules() {
@@ -377,7 +377,7 @@ public class Bach {
     log(Level.INFO, computeBuildModulesMessage(realm));
     call(computeJavacForTestPreview());
     Paths.createDirectories(base().modules(realm.name()));
-    units.toUnits().map(this::computeJarForTestPreviewModule).forEach(this::call);
+    parallel(this::call, this::computeJarForTestPreviewModule, units.map().values());
   }
 
   public void buildTestReportsByExecutingTestModules() {
@@ -657,6 +657,18 @@ public class Bach {
         .with("--select-module", module)
         .with("--disable-ansi-colors")
         .with("--reports-dir", base().reports("junit-" + realm, module));
+  }
+
+  void parallel(Runnable... runnables) {
+    parallel(Runnable::run, List.of(runnables));
+  }
+
+  <E> void parallel(Consumer<E> consumer, Collection<E> collection) {
+    parallel(consumer, Function.identity(), collection);
+  }
+
+  <E, T> void parallel(Consumer<T> consumer, Function<E, T> mapper, Collection<E> collection) {
+    collection.stream().parallel().map(mapper).forEach(consumer);
   }
 
   @Override
