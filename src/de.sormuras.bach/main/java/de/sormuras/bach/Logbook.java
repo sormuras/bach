@@ -94,6 +94,10 @@ public final class Logbook {
 
   private String log(Level level, String text, boolean add) {
     if (text.isEmpty()) return text;
+    if (text.equals("\n")) {
+      if (isOn(level)) print();
+      return text;
+    }
     var thread = Thread.currentThread().getId();
     var entry = new Entry(thread, level, text);
     if (add) entries.add(entry);
@@ -104,6 +108,10 @@ public final class Logbook {
       print(all ? entry.toString() : warning ? level.getName() + ' ' + text : text);
     }
     return text;
+  }
+
+  void print() {
+    printer.accept("");
   }
 
   void print(String text) {
@@ -259,15 +267,16 @@ public final class Logbook {
   }
 
   Path write(Bach bach) {
-    var markdownFile = bach.base().workspace("logbook.md");
+    var base = bach.project().base();
+    var markdownFile = base.workspace("logbook.md");
     var markdownLines = toMarkdown(bach.project());
     try {
-      Paths.createDirectories(bach.base().workspace());
+      Paths.createDirectories(base.workspace());
       Files.write(markdownFile, markdownLines);
 
       var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
       var timestamp = formatter.format(created);
-      var logbooks = Paths.createDirectories(bach.base().workspace("logbooks"));
+      var logbooks = Paths.createDirectories(base.workspace("logbooks"));
       Files.write(logbooks.resolve("logbook-" + timestamp + ".md"), markdownLines);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "Write logbook failed: %s", exception);
@@ -296,8 +305,9 @@ public final class Logbook {
 
   void printSummaryOfToolCallResults(int maxLineLength) {
     var format = "%10s %10s %s";
-    print("");
-    print(String.format(format, "Duration", "Tool", "Arguments"));
+    print();
+    print(String.format("Tool Call Overview contains %s distinct calls", results.size()));
+    print(String.format(format, "Duration", "Name", "Arguments"));
     var total = Duration.ZERO;
     for (var call : results) {
       var millis = toString(call.duration);
@@ -307,11 +317,11 @@ public final class Logbook {
       print(line.length() <= maxLineLength ? line : line.substring(0, maxLineLength - 3) + "...");
       total = total.plus(call.duration);
     }
-    print(String.format("%10s", "  --------"));
-    print(String.format("%10s", toString(total)));
+    print(String.format("%10s %10s", "  --------", "----------"));
+    print(String.format("%10s %10s", toString(total), results.size() + " calls"));
   }
 
-  void printSummaryOfModules(Path directory) {
+  public void printSummaryOfModules(Path directory) {
     printSummaryOfModules(directory, isOn(Level.DEBUG), isOn(Level.TRACE));
   }
 
@@ -324,7 +334,7 @@ public final class Logbook {
     var uri = directory.toUri().toString();
     var files = Paths.list(directory, Files::isRegularFile);
     var s = files.size() == 1 ? "" : "s";
-    print("");
+    print();
     print(String.format("Directory %s (%s) contains %d file%s", name, uri, files.size(), s));
     if (!listFiles) return;
     try {
