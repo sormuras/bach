@@ -17,15 +17,10 @@
 
 package de.sormuras.bach.builder;
 
-import static java.lang.System.Logger.Level.*;
-
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Call;
-import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.TestSources;
-import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.TestModule;
+import java.nio.file.Path;
 
 public class TestBuilder extends AbstractTestBuilder<TestSources> {
 
@@ -34,54 +29,20 @@ public class TestBuilder extends AbstractTestBuilder<TestSources> {
   }
 
   @Override
-  public void buildModules() {
-    buildTestModules();
-    buildTestReportsByExecutingTestModules();
+  public Path[] computeModulePathsForCompile() {
+    return new Path[] {
+        base().modules(""), // main modules
+        base().libraries() // external modules
+    };
   }
 
-  public void buildTestModules() {
-    bach().run(computeJavacForTestSources());
-    Paths.createDirectories(base().modules(test().name()));
-    bach().run(bach()::run, this::computeJarCall, test().units().map().values());
-  }
-
-  public void buildTestReportsByExecutingTestModules() {
-    for (var unit : test().units().map().values())
-      buildTestReportsByExecutingTestModule("test", unit);
-  }
-
-  public void buildTestReportsByExecutingTestModule(String realm, SourceUnit unit) {
-    var module = unit.name();
-    var modulePaths =
-        Paths.retainExisting(
-            project().toModuleArchive(realm, module), // test module
-            base().modules(""), // main modules
-            base().modules(realm), // other test modules
-            base().libraries()); // external modules
-    log(DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
-
-    var testModule = new TestModule(module, modulePaths);
-    if (testModule.findProvider().isPresent()) bach().run(testModule);
-
-    var junit = computeJUnitCall(unit, modulePaths);
-    if (junit.findProvider().isPresent()) bach().run(junit);
-  }
-
-  public Javac computeJavacForTestSources() {
-    var release = Runtime.version().feature();
-    var testUnits = test().units();
-    var modulePath = Paths.joinExisting(base().modules(""), base().libraries());
-    return Call.javac()
-        .withModule(testUnits.toNames(","))
-        .with("--module-version", project().version().toString() + "-test")
-        .with(testUnits.toModuleSourcePaths(false), Javac::withModuleSourcePath)
-        .with(
-            testUnits.toModulePatches(main().units()).entrySet(),
-            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
-        .with(modulePath, Javac::withModulePath)
-        .withEncoding("UTF-8")
-        .with("-parameters")
-        .withRecommendedWarnings()
-        .with("-d", base().classes("test", release));
+  @Override
+  public Path[] computeModulePathsForRuntime(SourceUnit unit) {
+    return new Path[] {
+      project().toModuleArchive(realm().name(), unit.name()), // module under test
+      base().modules(""), // main modules
+      base().modules(realm().name()), // other modules from same realm
+      base().libraries() // external modules
+    };
   }
 }

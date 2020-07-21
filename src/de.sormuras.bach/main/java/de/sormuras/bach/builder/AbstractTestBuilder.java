@@ -18,10 +18,13 @@
 package de.sormuras.bach.builder;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Call;
+import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Realm;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.tool.JUnit;
-import de.sormuras.bach.tool.Jar;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.TestModule;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,9 +41,51 @@ abstract class AbstractTestBuilder<R> extends AbstractRealmBuilder<R> {
     buildReportsByExecutingModules();
   }
 
-  public void buildReportsByExecutingModules() {
-    // TODO...
+  @Override
+  void buildModules() {
+    bach().run(computeJavacCall());
+    Paths.createDirectories(base().modules(realm().name()));
+    bach().run(bach()::run, this::computeJarCall, realm().units().map().values());
   }
+
+  public void buildReportsByExecutingModules() {
+    realm().units().toUnits().forEach(this::buildReportsByExecutingModule);
+  }
+
+  public void buildReportsByExecutingModule(SourceUnit unit) {
+    var module = unit.name();
+    var modulePaths = Paths.retainExisting(computeModulePathsForRuntime(unit));
+
+    log(Level.DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
+
+    var testModule = new TestModule(module, modulePaths);
+    if (testModule.findProvider().isPresent()) bach().run(testModule);
+
+    var junit = computeJUnitCall(unit, modulePaths);
+    if (junit.findProvider().isPresent()) bach().run(junit);
+  }
+
+  public Javac computeJavacCall() {
+    var classes = base().classes(realm().name(), realm().release().feature());
+    var units = realm().units();
+    var modulePath = Paths.joinExisting(computeModulePathsForCompile());
+    return Call.javac()
+        .withModule(units.toNames(","))
+        .with("--module-version", project().version().toString() + "-" + realm().name())
+        .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
+        .with(
+            units.toModulePatches(main().units()).entrySet(),
+            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
+        .with(modulePath, Javac::withModulePath)
+        .withEncoding("UTF-8")
+        .with("-parameters")
+        .withRecommendedWarnings()
+        .with("-d", classes);
+  }
+
+  public abstract Path[] computeModulePathsForCompile();
+
+  public abstract Path[] computeModulePathsForRuntime(SourceUnit unit);
 
   public JUnit computeJUnitCall(SourceUnit unit, List<Path> modulePaths) {
     var module = unit.name();

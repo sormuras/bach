@@ -17,16 +17,11 @@
 
 package de.sormuras.bach.builder;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.INFO;
-
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Call;
-import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.TestModule;
+import java.nio.file.Path;
 
 public class TestPreviewBuilder extends AbstractTestBuilder<TestPreview> {
 
@@ -35,59 +30,30 @@ public class TestPreviewBuilder extends AbstractTestBuilder<TestPreview> {
   }
 
   @Override
-  public void buildModules() {
-    buildTestPreviewModules();
-    buildTestReportsByExecutingTestPreviewModules();
-  }
-
-  public void buildTestPreviewModules() {
-    bach().run(computeJavacForTestPreview());
-    Paths.createDirectories(base().modules(preview().name()));
-    bach().run(bach()::run, this::computeJarCall, preview().units().map().values());
-  }
-
-  public void buildTestReportsByExecutingTestPreviewModules() {
-    for (var unit : preview().units().map().values())
-      buildTestReportsByExecutingTestPreviewModule("test-preview", unit);
-  }
-
-  public void buildTestReportsByExecutingTestPreviewModule(String realm, SourceUnit unit) {
-    var module = unit.name();
-    var modulePaths =
-        Paths.retainExisting(
-            project().toModuleArchive(realm, module), // test module
-            base().modules(""), // main modules
-            base().modules("test"), // test modules
-            base().modules(realm), // other test-preview modules
-            base().libraries()); // external modules
-    log(DEBUG, "Run tests in '%s' with module-path: %s", module, modulePaths);
-
-    var testModule = new TestModule(module, modulePaths);
-    if (testModule.findProvider().isPresent()) bach().run(testModule);
-
-    var junit = computeJUnitCall(unit, modulePaths);
-    if (junit.findProvider().isPresent()) bach().run(junit);
-  }
-
-  public Javac computeJavacForTestPreview() {
-    var release = Runtime.version().feature();
-    var previewUnits = preview().units();
-    var modulePath =
-        Paths.joinExisting(base().modules(""), base().modules("test"), base().libraries());
-    return Call.javac()
-        .withModule(previewUnits.toNames(","))
+  public Javac computeJavacCall() {
+    return super.computeJavacCall()
         .with("--enable-preview")
-        .with("--release", release)
-        .with("-Xlint:-preview")
-        .with("--module-version", project().version().toString() + "-test-preview")
-        .with(previewUnits.toModuleSourcePaths(false), Javac::withModuleSourcePath)
-        .with(
-            previewUnits.toModulePatches(main().units()).entrySet(),
-            (javac, patch) -> javac.withPatchModule(patch.getKey(), patch.getValue()))
-        .with(modulePath, Javac::withModulePath)
-        .withEncoding("UTF-8")
-        .with("-parameters")
-        .withRecommendedWarnings()
-        .with("-d", base().classes("test-preview", release));
+        .with("--release", Runtime.version().feature())
+        .with("-Xlint:-preview");
+  }
+
+  @Override
+  public Path[] computeModulePathsForCompile() {
+    return new Path[] {
+      base().modules(""), // main modules
+      base().modules("test"), // test modules
+      base().libraries() // external modules
+    };
+  }
+
+  @Override
+  public Path[] computeModulePathsForRuntime(SourceUnit unit) {
+    return new Path[] {
+      project().toModuleArchive(realm().name(), unit.name()), // module under test
+      base().modules(""), // main modules
+      base().modules("test"), // test modules
+      base().modules(realm().name()), // other test-preview modules
+      base().libraries() // external modules
+    };
   }
 }
