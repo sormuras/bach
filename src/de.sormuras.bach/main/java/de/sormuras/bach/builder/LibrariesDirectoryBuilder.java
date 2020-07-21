@@ -33,21 +33,35 @@ import java.util.Set;
 
 public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
 
+  private final List<Link> computedLinks;
+  private final List<Link> resolvedLinks;
   private /*lazy*/ SormurasModulesProperties sormurasModulesProperties;
 
   public LibrariesDirectoryBuilder(Bach bach) {
     super(bach);
+    this.computedLinks = new ArrayList<>();
+    this.resolvedLinks = new ArrayList<>();
     this.sormurasModulesProperties = null;
   }
 
   @Override
   public void build() {
+    var libraries = base().libraries();
     resolveMissingExternalModules();
+
+    if (!resolvedLinks.isEmpty()) {
+      var s = resolvedLinks.size() == 1 ? "" : "s";
+      log(Level.INFO, "\n");
+      log(Level.INFO, "Resolved %d external module%s", resolvedLinks.size(), s);
+    }
+    for (var link : computedLinks) {
+      log(Level.WARNING, "Computed URI for module %s: %s", link.module().name(), link.uri());
+    }
+
+    if (Files.isDirectory(libraries)) logbook().printSummaryOfModules(libraries);
   }
 
   public Optional<Link> computeLink(String module) {
-    var message = "Computing %s's link - create an explicit link via Project::with(Link.of...)";
-    log(Level.WARNING, message, module);
     if (sormurasModulesProperties == null) {
       sormurasModulesProperties = new SormurasModulesProperties(bach()::http, Map.of());
     }
@@ -60,8 +74,6 @@ public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
         new Resolver(List.of(libraries), project().toDeclaredModuleNames(), this::resolveModules);
     resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
     resolver.resolve(project().library().toRequiredModuleNames()); // from project descriptor
-
-    if (Files.isDirectory(libraries)) logbook().printSummaryOfModules(libraries);
   }
 
   public void resolveModules(Set<String> modules) {
@@ -75,10 +87,11 @@ public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
       var optionalLink = project().library().findLink(module);
       if (optionalLink.isEmpty()) {
         optionalLink = computeLink(module);
-      }
-      if (optionalLink.isEmpty()) {
-        log(Level.ERROR, "Module %s not resolvable", module);
-        continue;
+        if (optionalLink.isEmpty()) {
+          log(Level.ERROR, "Module %s not resolvable", module);
+          continue;
+        }
+        computedLinks.add(optionalLink.orElseThrow());
       }
       links.add(optionalLink.orElseThrow());
     }
@@ -93,6 +106,7 @@ public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
     try {
       var lib = Paths.createDirectories(base().libraries());
       new Resources(bach().http()).copy(uri, lib.resolve(link.toModularJarFileName()));
+      resolvedLinks.add(link);
     } catch (Exception e) {
       throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
     }
