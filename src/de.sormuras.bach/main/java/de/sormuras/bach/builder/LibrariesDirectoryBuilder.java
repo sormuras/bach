@@ -1,0 +1,100 @@
+/*
+ * Bach - Java Shell Builder
+ * Copyright (C) 2020 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package de.sormuras.bach.builder;
+
+import de.sormuras.bach.Bach;
+import de.sormuras.bach.internal.Paths;
+import de.sormuras.bach.internal.Resolver;
+import de.sormuras.bach.internal.Resources;
+import de.sormuras.bach.internal.SormurasModulesProperties;
+import de.sormuras.bach.project.Link;
+import java.lang.System.Logger.Level;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
+
+  private /*lazy*/ SormurasModulesProperties sormurasModulesProperties;
+
+  public LibrariesDirectoryBuilder(Bach bach) {
+    super(bach);
+    this.sormurasModulesProperties = null;
+  }
+
+  @Override
+  public void build() {
+    resolveMissingExternalModules();
+  }
+
+  public Optional<Link> computeLink(String module) {
+    var message = "Computing %s's link - create an explicit link via Project::with(Link.of...)";
+    log(Level.WARNING, message, module);
+    if (sormurasModulesProperties == null) {
+      sormurasModulesProperties = new SormurasModulesProperties(bach()::http, Map.of());
+    }
+    return sormurasModulesProperties.lookup(module);
+  }
+
+  public void resolveMissingExternalModules() {
+    var libraries = base().libraries();
+    var resolver =
+        new Resolver(List.of(libraries), project().toDeclaredModuleNames(), this::resolveModules);
+    resolver.resolve(project().toRequiredModuleNames()); // from all module-info.java files
+    resolver.resolve(project().library().toRequiredModuleNames()); // from project descriptor
+
+    if (Files.isDirectory(libraries)) logbook().printSummaryOfModules(libraries);
+  }
+
+  public void resolveModules(Set<String> modules) {
+    log(Level.INFO, "\n");
+    var listing = String.join(", ", modules);
+    if (modules.size() == 1) log(Level.INFO, "Resolve missing external module %s", listing);
+    else log(Level.INFO, "Resolve %d missing external modules: %s", modules.size(), listing);
+
+    var links = new ArrayList<Link>();
+    for (var module : modules) {
+      var optionalLink = project().library().findLink(module);
+      if (optionalLink.isEmpty()) {
+        optionalLink = computeLink(module);
+      }
+      if (optionalLink.isEmpty()) {
+        log(Level.ERROR, "Module %s not resolvable", module);
+        continue;
+      }
+      links.add(optionalLink.orElseThrow());
+    }
+
+    bach().run(this::resolveLink, links);
+  }
+
+  public void resolveLink(Link link) {
+    var module = link.module().name();
+    var uri = link.toURI();
+    log(Level.INFO, "- %s << %s", module, uri);
+    try {
+      var lib = Paths.createDirectories(base().libraries());
+      new Resources(bach().http()).copy(uri, lib.resolve(link.toModularJarFileName()));
+    } catch (Exception e) {
+      throw new Error("Resolve module '" + module + "' failed: " + uri + "\n\t" + e, e);
+    }
+  }
+}

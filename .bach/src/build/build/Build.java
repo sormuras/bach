@@ -20,6 +20,7 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Project;
+import de.sormuras.bach.builder.MainBuilder;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.tool.Javadoc;
@@ -72,13 +73,18 @@ class Build {
     }
 
     @Override
-    public Javadoc computeJavadocForMainSources() {
-      var feature = main().release().feature();
-      return super.computeJavadocForMainSources()
-          .with("-link", "https://docs.oracle.com/en/java/javase/" + feature + "/docs/api")
-          .without("-Xdoclint")
-          .with("-Xdoclint:-missing")
-          .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
+    public MainBuilder newMainBuilder() {
+      return new MainBuilder(this) {
+        @Override
+        public Javadoc computeJavadocCall() {
+          var feature = main().release().feature();
+          return super.computeJavadocCall()
+              .with("-link", "https://docs.oracle.com/en/java/javase/" + feature + "/docs/api")
+              .without("-Xdoclint")
+              .with("-Xdoclint:-missing")
+              .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
+        }
+      };
     }
   }
 }

@@ -33,6 +33,6 @@ class BachApiTests {
     var bach = new Bach(Configuration.ofSystem().with(Level.OFF), Project.of());
     assertEquals("Bach.java " + Bach.VERSION, bach.toString());
     var text = "text";
-    assertSame(text, bach.log(Level.INFO, text));
+    assertSame(text, bach.configuration().logbook().log(Level.INFO, text));
   }
 }
