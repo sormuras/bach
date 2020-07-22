@@ -24,10 +24,10 @@ import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
 import de.sormuras.bach.project.ModuleName;
+import de.sormuras.bach.project.SourceDirectories;
 import de.sormuras.bach.project.SourceDirectory;
-import de.sormuras.bach.project.SourceDirectoryList;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.SourceUnitMap;
+import de.sormuras.bach.project.SourceUnits;
 import de.sormuras.bach.project.Sources;
 import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.TestSources;
@@ -101,15 +101,31 @@ public interface Scribe {
       return append("new " + object.getClass().getCanonicalName() + "()");
     }
 
-    public Scroll add(String factory, Object first, Object... more) {
-      append(factory).append("(").add(first);
-      for (var next : more) append(", ").add(next);
+    public Scroll addNew(Class<?> type, Object... arguments) {
+      return addCall("new " + type.getSimpleName(), arguments);
+    }
+
+    public Scroll addOf(Class<?> type, Object... arguments) {
+      return addCall(type.getSimpleName() + ".of", arguments);
+    }
+
+    public Scroll addCall(String factory, Object... arguments) {
+      append(factory).append("(");
+      if (arguments.length > 0) {
+        add(arguments[0]);
+        for (int i = 1; i < arguments.length; i++) append(", ").add(arguments[i]);
+      }
       return append(")");
     }
 
     //
     // Java
     //
+
+    public Scroll add(Class<?> type) {
+      text.append(type.getSimpleName());
+      return this;
+    }
 
     public Scroll add(Enum<?> constant) {
       Class<?> declaringClass = constant.getDeclaringClass();
@@ -142,15 +158,15 @@ public interface Scribe {
 
     public Scroll add(Path path, boolean withPathOf) {
       var forward = path.toString().replace('\\', '/');
-      return withPathOf ? append("Path.of(").add(forward).append(")") : add(forward);
+      return withPathOf ? addOf(Path.class, forward) : add(forward);
     }
 
     public Scroll add(ModuleDescriptor module) {
-      add("ModuleDescriptor.newModule", module.name());
+      addCall("ModuleDescriptor.newModule", module.name());
       depth++;
-      module.version().ifPresent(v -> addNewLineAndContinue().add(".version", v));
-      module.mainClass().ifPresent(c -> addNewLineAndContinue().add(".mainClass", c));
-      module.requires().forEach(r -> addNewLineAndContinue().add(".requires", r.name()));
+      module.version().ifPresent(v -> addNewLineAndContinue().addCall(".version", v));
+      module.mainClass().ifPresent(c -> addNewLineAndContinue().addCall(".mainClass", c));
+      module.requires().forEach(r -> addNewLineAndContinue().addCall(".requires", r.name()));
       addNewLineAndContinue().append(".build()");
       depth--;
       return this;
@@ -168,7 +184,7 @@ public interface Scribe {
       append(factory);
       var size = collection.size();
       if (size == 0) return append("()");
-      if (size == 1) return add("", collection.stream().findFirst().get());
+      if (size == 1) return addCall("", collection.stream().findFirst().get());
       append("(");
       collection.forEach(element -> addNewLineAndContinue().add(element).append(","));
       text.setLength(text.length() - 1); // remove last comma
@@ -188,44 +204,44 @@ public interface Scribe {
 
     public Scroll add(Project project) {
       depth++;
-      append("Project.of()");
-      if (!project.base().isDefault()) addNewLine().add(".base", project.base());
-      addNewLine().add(".name", project.name());
-      addNewLine().add(".version", project.version().toString());
-      addNewLine().add(".sources", project.sources());
-      addNewLine().add(".library", project.library());
+      addOf(Project.class);
+      if (!project.base().isDefault()) addNewLine().addCall(".base", project.base());
+      addNewLine().addCall(".name", project.name());
+      addNewLine().addCall(".version", project.version().toString());
+      addNewLine().addCall(".sources", project.sources());
+      addNewLine().addCall(".library", project.library());
       depth--;
       return this;
     }
 
     public Scroll add(Base base) {
-      if (base.isDefault()) return append("Base.of()");
+      if (base.isDefault()) return addOf(Base.class);
       return base.isDefaultIgnoreBaseDirectory()
-          ? add("Base.of", base.directory().toString().replace('\\', '/'))
-          : add("new Base", base.directory(), base.libraries(), base.workspace());
+          ? addOf(Base.class, base.directory().toString().replace('\\', '/'))
+          : addNew(Base.class, base.directory(), base.libraries(), base.workspace());
     }
 
     public Scroll add(JavaRelease release) {
-      var runtime = release == JavaRelease.ofRuntime();
-      return append("JavaRelease.of").append(runtime ? "Runtime()" : "(" + release.feature() + ")");
+      if (release == JavaRelease.ofRuntime()) return add(JavaRelease.class).append(".ofRuntime()");
+      return addOf(JavaRelease.class, release.feature());
     }
 
     public Scroll add(ModuleName module) {
-      return add("ModuleName.of", module.name());
+      return addOf(ModuleName.class, module.name());
     }
 
     public Scroll add(Library library) {
       depth++;
-      append("Library.of()");
-      for (var name : library.toRequiredModuleNames()) addNewLine().add(".withRequires", name);
-      for (var link : library.links().values()) addNewLine().add(".with", link);
+      addOf(Library.class);
+      for (var name : library.toRequiredModuleNames()) addNewLine().addCall(".withRequires", name);
+      for (var link : library.links().values()) addNewLine().addCall(".with", link);
       depth--;
       return this;
     }
 
     public Scroll add(Link link) {
       depth++;
-      append("Link.of(");
+      addOf(Link.class);
       addNewLineAndContinue().add(link.module().name()).append(",");
       addNewLineAndContinue().add(link.uri());
       append(")");
@@ -235,51 +251,51 @@ public interface Scribe {
 
     public Scroll add(Sources sources) {
       depth++;
-      append("Sources.of()");
-      addNewLine().add(".mainSources", sources.mainSources());
-      addNewLine().add(".testSources", sources.testSources());
-      addNewLine().add(".testPreview", sources.testPreview());
+      addOf(Sources.class);
+      addNewLine().addCall(".mainSources", sources.mainSources());
+      addNewLine().addCall(".testSources", sources.testSources());
+      addNewLine().addCall(".testPreview", sources.testPreview());
       depth--;
       return this;
     }
 
     public Scroll add(MainSources main) {
       depth++;
-      append("MainSources.of()");
-      for (var modifier : main.modifiers()) addNewLine().add(".with", modifier);
-      addNewLine().add(".release", main.release());
-      addNewLine().add(".units", main.units());
+      addOf(MainSources.class);
+      for (var modifier : main.modifiers()) addNewLine().addCall(".with", modifier);
+      addNewLine().addCall(".release", main.release());
+      addNewLine().addCall(".units", main.units());
       depth--;
       return this;
     }
 
     public Scroll add(TestSources test) {
       depth++;
-      append("TestSources.of()");
-      addNewLine().add(".units", test.units());
+      addOf(TestSources.class);
+      addNewLine().addCall(".units", test.units());
       depth--;
       return this;
     }
 
     public Scroll add(TestPreview preview) {
       depth++;
-      append("TestPreview.of()");
-      addNewLine().add(".units", preview.units());
+      addOf(TestPreview.class);
+      addNewLine().addCall(".units", preview.units());
       depth--;
       return this;
     }
 
-    public Scroll add(SourceUnitMap units) {
+    public Scroll add(SourceUnits units) {
       depth++;
-      append("SourceUnitMap.of()");
-      units.map().values().stream().sorted().forEach(unit -> addNewLine().add(".with", unit));
+      addOf(SourceUnits.class);
+      units.map().values().stream().sorted().forEach(unit -> addNewLine().addCall(".with", unit));
       depth--;
       return this;
     }
 
     public Scroll add(SourceUnit unit) {
       depth++;
-      append("new SourceUnit(");
+      append("new ").add(SourceUnit.class).append("(");
       addNewLineAndContinue().add(unit.descriptor()).append(",");
       addNewLineAndContinue().add(unit.sources()).append(",");
       addNewLineAndContinue().add(unit.resources());
@@ -288,24 +304,23 @@ public interface Scribe {
       return this;
     }
 
-    public Scroll add(SourceDirectoryList directories) {
+    public Scroll add(SourceDirectories directories) {
       depth++;
-      append(directories.getClass().getSimpleName());
       var list = directories.list();
       if (list.size() == 1) {
         var directory = directories.first();
-        if (directory.release() == 0) add(".of", directory.path());
-        else add(".of", directory.path(), directory.release());
+        if (directory.release() == 0) addOf(SourceDirectories.class, directory.path());
+        else addOf(SourceDirectories.class, directory.path(), directory.release());
       } else {
-        append(".of()");
-        list.forEach(directory -> addNewLineAndContinue().add(".with", directory));
+        addOf(SourceDirectories.class);
+        list.forEach(directory -> addNewLineAndContinue().addCall(".with", directory));
       }
       depth--;
       return this;
     }
 
     public Scroll add(SourceDirectory directory) {
-      return add("new SourceDirectory", directory.path(), directory.release());
+      return addNew(SourceDirectory.class, directory.path(), directory.release());
     }
 
     @Override
