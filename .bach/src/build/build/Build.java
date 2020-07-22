@@ -18,12 +18,9 @@
 package build;
 
 import de.sormuras.bach.Bach;
-import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Project;
-import de.sormuras.bach.builder.MainBuilder;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
 class Build {
@@ -39,6 +36,13 @@ class Build {
             .withMainSourcesCompiledForJavaRelease(11)
             .with(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
             .with(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)
+            .withMainJavacOperator(javac -> javac)
+            .withMainJavadocOperator(javadoc -> javadoc
+                .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")
+                .without("-Xdoclint")
+                .with("-Xdoclint:-missing")
+                .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
+            )
             // test
             .withTestSource("src/de.sormuras.bach/test/java-module")
             .withTestSource("src/test.base/test/java")
@@ -63,28 +67,6 @@ class Build {
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withLibraryRequires("org.junit.platform.console");
 
-    new CustomBach(project).build();
-  }
-
-  static class CustomBach extends Bach {
-
-    CustomBach(Project project) {
-      super(Configuration.ofSystem(), project);
-    }
-
-    @Override
-    public MainBuilder newMainBuilder() {
-      return new MainBuilder(this) {
-        @Override
-        public Javadoc computeJavadocCall() {
-          var feature = main().release().feature();
-          return super.computeJavadocCall()
-              .with("-link", "https://docs.oracle.com/en/java/javase/" + feature + "/docs/api")
-              .without("-Xdoclint")
-              .with("-Xdoclint:-missing")
-              .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
-        }
-      };
-    }
+    Bach.of(project).build();
   }
 }

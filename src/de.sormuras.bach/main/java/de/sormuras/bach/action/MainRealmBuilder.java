@@ -49,15 +49,17 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
   }
 
   public void buildMainModules() {
-    var units = main().units();
-    bach().run(computeJavacForMainSources());
+    var javacCall = computeJavacCall();
+    var javacOperator = main().operators().javacOperator();
+    bach().run(javacOperator.apply(javacCall));
+
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
     Paths.createDirectories(modules);
     Paths.createDirectories(base().sources(""));
 
     var jars = new ArrayList<Jar>();
-    for (var unit : units.map().values()) {
+    for (var unit : main().units().map().values()) {
       jars.add(computeJarForMainSources(unit));
       if (!unit.sources().isMultiTarget()) {
         jars.add(computeJarForMainModule(unit));
@@ -118,7 +120,9 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     if (main().is(MainSources.Modifier.NO_API_DOCUMENTATION)) return;
     if (!checkConditionForBuildApiDocumentation()) return;
 
-    bach().run(computeJavadocCall());
+    var javadocCall = computeJavadocCall();
+    var javadocOperator = main().operators().javadocOperator();
+    bach().run(javadocOperator.apply(javadocCall));
     bach().run(computeJarForApiDocumentation());
   }
 
@@ -145,7 +149,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     return main().findMainModule().isPresent();
   }
 
-  public Javac computeJavacForMainSources() {
+  public Javac computeJavacCall() {
     var release = main().release().feature();
     var modulePath = Paths.joinExisting(base().libraries());
     return Call.javac()

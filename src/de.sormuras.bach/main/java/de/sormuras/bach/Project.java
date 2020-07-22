@@ -30,6 +30,8 @@ import de.sormuras.bach.project.SourceUnit;
 import de.sormuras.bach.project.Sources;
 import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.TestSources;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -164,6 +166,21 @@ public final class Project {
   public Project withMainSource(String path, int defaultJavaRelease) {
     var unit = SourceUnit.of(Path.of(path), defaultJavaRelease);
     return sources(sources.mainSources(sources.mainSources().with(unit)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project with(MainSources.Operators operators) {
+    return sources(sources.mainSources(sources.mainSources().operators(operators)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainJavacOperator(Javac.Operator operator) {
+    return with(sources.mainSources().operators().javacOperator(operator));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainJavadocOperator(Javadoc.Operator operator) {
+    return with(sources.mainSources().operators().javadocOperator(operator));
   }
 
   @Factory(Kind.OPERATOR)

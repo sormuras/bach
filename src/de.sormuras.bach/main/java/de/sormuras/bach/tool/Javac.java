@@ -18,9 +18,13 @@
 package de.sormuras.bach.tool;
 
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /** A {@code javac} call configuration. */
 public final class Javac implements WithModuleSourceOptionsCall<Javac> {
+
+  @FunctionalInterface
+  public interface Operator extends UnaryOperator<Javac> {}
 
   private final List<Argument> arguments;
 

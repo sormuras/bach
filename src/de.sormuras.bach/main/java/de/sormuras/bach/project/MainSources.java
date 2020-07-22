@@ -20,6 +20,8 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.tool.Javadoc;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
@@ -36,14 +38,52 @@ public final class MainSources implements Realm<MainSources> {
     NO_CUSTOM_RUNTIME_IMAGE
   }
 
+  /** A set of tool call operators. */
+  public static final class Operators {
+
+    private final Javac.Operator javacOperator;
+    private final Javadoc.Operator javadocOperator;
+
+    public Operators(Javac.Operator javacOperator, Javadoc.Operator javadocOperator) {
+      this.javacOperator = javacOperator;
+      this.javadocOperator = javadocOperator;
+    }
+
+    public Javac.Operator javacOperator() {
+      return javacOperator;
+    }
+
+    public Javadoc.Operator javadocOperator() {
+      return javadocOperator;
+    }
+
+    @Factory
+    public static Operators of() {
+      return new Operators(javac -> javac, javadoc -> javadoc);
+    }
+
+    @Factory(Kind.SETTER)
+    public Operators javacOperator(Javac.Operator javacOperator) {
+      return new Operators(javacOperator, javadocOperator);
+    }
+
+    @Factory(Kind.SETTER)
+    public Operators javadocOperator(Javadoc.Operator javadocOperator) {
+      return new Operators(javacOperator, javadocOperator);
+    }
+  }
+
   private final Set<Modifier> modifiers;
   private final JavaRelease release;
   private final SourceUnitMap units;
+  private final Operators operators;
 
-  public MainSources(Set<Modifier> modifiers, JavaRelease release, SourceUnitMap units) {
+  public MainSources(
+      Set<Modifier> modifiers, JavaRelease release, SourceUnitMap units, Operators operators) {
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.release = release;
     this.units = units;
+    this.operators = operators;
   }
 
   public Set<Modifier> modifiers() {
@@ -58,23 +98,27 @@ public final class MainSources implements Realm<MainSources> {
     return units;
   }
 
+  public Operators operators() {
+    return operators;
+  }
+
   //
   // Configuration API
   //
 
   @Factory
   public static MainSources of() {
-    return new MainSources(Set.of(), JavaRelease.ofRuntime(), SourceUnitMap.of());
+    return new MainSources(Set.of(), JavaRelease.ofRuntime(), SourceUnitMap.of(), Operators.of());
   }
 
   @Factory(Kind.SETTER)
   public MainSources modifiers(Set<Modifier> modifiers) {
-    return new MainSources(modifiers, release, units);
+    return new MainSources(modifiers, release, units, operators);
   }
 
   @Factory(Kind.SETTER)
   public MainSources release(JavaRelease release) {
-    return new MainSources(modifiers, release, units);
+    return new MainSources(modifiers, release, units, operators);
   }
 
   @Factory(Kind.SETTER)
@@ -84,7 +128,12 @@ public final class MainSources implements Realm<MainSources> {
 
   @Factory(Kind.SETTER)
   public MainSources units(SourceUnitMap units) {
-    return new MainSources(modifiers, release, units);
+    return new MainSources(modifiers, release, units, operators);
+  }
+
+  @Factory(Kind.SETTER)
+  public MainSources operators(Operators operators) {
+    return new MainSources(modifiers, release, units, operators);
   }
 
   @Factory(Kind.OPERATOR)
