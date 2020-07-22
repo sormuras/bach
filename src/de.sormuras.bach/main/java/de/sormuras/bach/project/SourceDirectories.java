@@ -27,12 +27,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** A non-empty list of source directory objects. */
-public final class SourceDirectoryList {
+/** A list of source directory objects. */
+public final class SourceDirectories {
 
   private final List<SourceDirectory> list;
 
-  public SourceDirectoryList(List<SourceDirectory> list) {
+  public SourceDirectories(List<SourceDirectory> list) {
     this.list = List.copyOf(list);
   }
 
@@ -64,25 +64,25 @@ public final class SourceDirectoryList {
   }
 
   @Factory
-  public static SourceDirectoryList of() {
-    return new SourceDirectoryList(List.of());
+  public static SourceDirectories of() {
+    return new SourceDirectories(List.of());
   }
 
   @Factory
-  public static SourceDirectoryList of(Path infoDirectory) {
+  public static SourceDirectories of(Path infoDirectory) {
     return of(infoDirectory, 0);
   }
 
   @Factory
-  public static SourceDirectoryList of(Path infoDirectory, int javaRelease) {
-    return new SourceDirectoryList(list(infoDirectory, javaRelease));
+  public static SourceDirectories of(Path infoDirectory, int javaRelease) {
+    return new SourceDirectories(list(infoDirectory, javaRelease));
   }
 
   @Factory(Kind.OPERATOR)
-  public SourceDirectoryList with(SourceDirectory... additionalDirectories) {
+  public SourceDirectories with(SourceDirectory... additionalDirectories) {
     var directories = new ArrayList<>(list);
     directories.addAll(List.of(additionalDirectories));
-    return new SourceDirectoryList(directories);
+    return new SourceDirectories(directories);
   }
 
   //

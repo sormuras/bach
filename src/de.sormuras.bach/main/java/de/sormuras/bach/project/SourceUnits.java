@@ -33,12 +33,12 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** A map of module source units. */
-public final class SourceUnitMap {
+/** A map of source units. */
+public final class SourceUnits {
 
   private final Map<String, SourceUnit> map;
 
-  public SourceUnitMap(Map<String, SourceUnit> map) {
+  public SourceUnits(Map<String, SourceUnit> map) {
     this.map = Map.copyOf(map);
   }
 
@@ -51,17 +51,17 @@ public final class SourceUnitMap {
   //
 
   @Factory
-  public static SourceUnitMap of() {
-    return new SourceUnitMap(Map.of());
+  public static SourceUnits of() {
+    return new SourceUnits(Map.of());
   }
 
   @Factory(Kind.SETTER)
-  public SourceUnitMap map(Map<String, SourceUnit> map) {
-    return new SourceUnitMap(map);
+  public SourceUnits map(Map<String, SourceUnit> map) {
+    return new SourceUnits(map);
   }
 
   @Factory(Kind.OPERATOR)
-  public SourceUnitMap with(SourceUnit... moreUnits) {
+  public SourceUnits with(SourceUnit... moreUnits) {
     var merged = new TreeMap<>(map);
     for (var unit : moreUnits) merged.put(unit.name(), unit);
     return map(merged);
@@ -124,7 +124,7 @@ public final class SourceUnitMap {
     return List.copyOf(paths);
   }
 
-  public Map<String, String> toModulePatches(SourceUnitMap upstream) {
+  public Map<String, String> toModulePatches(SourceUnits upstream) {
     if (map.isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
     for (var unit : map.values()) {
