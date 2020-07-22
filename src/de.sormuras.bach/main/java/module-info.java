@@ -38,7 +38,7 @@
  */
 module de.sormuras.bach {
   exports de.sormuras.bach;
-  exports de.sormuras.bach.builder;
+  // hide de.sormuras.bach.action;
   // hide de.sormuras.bach.internal;
   exports de.sormuras.bach.project;
   exports de.sormuras.bach.tool;

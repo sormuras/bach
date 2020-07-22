@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
@@ -25,13 +25,20 @@ import de.sormuras.bach.tool.Jar;
 import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 
-abstract class AbstractRealmBuilder<R> extends AbstractBachBuilder {
+/** An abstract action with basic build support. */
+abstract class BuildRealmAction<R> implements Action {
 
+  private final Bach bach;
   private final Realm<R> realm;
 
-  AbstractRealmBuilder(Bach bach, Realm<R> realm) {
-    super(bach);
+  BuildRealmAction(Bach bach, Realm<R> realm) {
+    this.bach = bach;
     this.realm = realm;
+  }
+
+  @Override
+  public Bach bach() {
+    return bach;
   }
 
   public final Realm<R> realm() {
@@ -39,7 +46,7 @@ abstract class AbstractRealmBuilder<R> extends AbstractBachBuilder {
   }
 
   @Override
-  public void build() {
+  public void execute() {
     if (realm.units().isEmpty()) {
       log(Level.DEBUG, "No units in %s - nothing to build", realm.name());
       return;

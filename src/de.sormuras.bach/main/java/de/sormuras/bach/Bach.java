@@ -17,10 +17,10 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.builder.LibrariesDirectoryBuilder;
-import de.sormuras.bach.builder.MainBuilder;
-import de.sormuras.bach.builder.TestPreviewBuilder;
-import de.sormuras.bach.builder.TestBuilder;
+import de.sormuras.bach.action.ExternalModulesResolver;
+import de.sormuras.bach.action.MainRealmBuilder;
+import de.sormuras.bach.action.TestPreviewRealmBuilder;
+import de.sormuras.bach.action.TestRealmBuilder;
 import de.sormuras.bach.internal.Factory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -145,10 +145,10 @@ public class Bach {
     logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
     var start = Instant.now();
     try {
-      newLibrariesDirectoryBuilder().build();
-      newMainBuilder().build();
-      newTestBuilder().build();
-      newTestPreviewBuilder().build();
+      resolveExternalModules();
+      buildMainRealm();
+      buildTestRealm();
+      buildTestPreviewRealm();
       logbook.printSummaryAndCheckErrors(this, System.err::println);
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "Build failed with throwing %s", exception);
@@ -162,24 +162,24 @@ public class Bach {
     }
   }
 
+  public void resolveExternalModules() {
+    new ExternalModulesResolver(this).execute();
+  }
+
+  public void buildMainRealm() {
+    new MainRealmBuilder(this).execute();
+  }
+
+  public void buildTestRealm() {
+    new TestRealmBuilder(this).execute();
+  }
+
+  public void buildTestPreviewRealm() {
+    new TestPreviewRealmBuilder(this).execute();
+  }
+
   public HttpClient newHttpClient() {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-  }
-
-  public LibrariesDirectoryBuilder newLibrariesDirectoryBuilder() {
-    return new LibrariesDirectoryBuilder(this);
-  }
-
-  public MainBuilder newMainBuilder() {
-    return new MainBuilder(this);
-  }
-
-  public TestBuilder newTestBuilder() {
-    return new TestBuilder(this);
-  }
-
-  public TestPreviewBuilder newTestPreviewBuilder() {
-    return new TestPreviewBuilder(this);
   }
 
   public void run(Call<?> call) {

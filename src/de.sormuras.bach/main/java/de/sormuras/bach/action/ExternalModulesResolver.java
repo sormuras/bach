@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.internal.Paths;
@@ -31,22 +31,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
+/** An action that resolves missing external modules. */
+public class ExternalModulesResolver implements Action {
 
+  private final Bach bach;
   private final List<Link> computedLinks;
   private final List<Link> resolvedLinks;
   private /*lazy*/ SormurasModulesProperties sormurasModulesProperties;
 
-  public LibrariesDirectoryBuilder(Bach bach) {
-    super(bach);
+  public ExternalModulesResolver(Bach bach) {
+    this.bach = bach;
     this.computedLinks = new ArrayList<>();
     this.resolvedLinks = new ArrayList<>();
     this.sormurasModulesProperties = null;
   }
 
   @Override
-  public void build() {
-    var libraries = base().libraries();
+  public Bach bach() {
+    return bach;
+  }
+
+  @Override
+  public void execute() {
     resolveMissingExternalModules();
 
     if (!resolvedLinks.isEmpty()) {
@@ -58,7 +64,7 @@ public class LibrariesDirectoryBuilder extends AbstractBachBuilder {
       log(Level.WARNING, "Computed URI for module %s: %s", link.module().name(), link.uri());
     }
 
-    if (Files.isDirectory(libraries)) logbook().printSummaryOfModules(libraries);
+    if (Files.isDirectory(base().libraries())) logbook().printSummaryOfModules(base().libraries());
   }
 
   public Optional<Link> computeLink(String module) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
@@ -33,9 +33,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-public class MainBuilder extends AbstractRealmBuilder<MainSources> {
+/**
+ * An action that compiles main sources to modules, API documentation, and a custom runtime image.
+ */
+public class MainRealmBuilder extends BuildRealmAction<MainSources> {
 
-  public MainBuilder(Bach bach) {
+  public MainRealmBuilder(Bach bach) {
     super(bach, bach.project().sources().mainSources());
   }
 

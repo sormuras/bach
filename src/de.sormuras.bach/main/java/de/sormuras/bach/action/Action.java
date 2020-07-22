@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
@@ -27,57 +27,50 @@ import de.sormuras.bach.project.TestPreview;
 import de.sormuras.bach.project.TestSources;
 import java.lang.System.Logger.Level;
 
-public abstract class AbstractBachBuilder {
+/** An operation that is expected to work via side-effects. */
+public interface Action {
 
-  private final Bach bach;
+  Bach bach();
 
-  AbstractBachBuilder(Bach bach) {
-    this.bach = bach;
-  }
+  void execute();
 
-  public final Bach bach() {
-    return bach;
-  }
-
-  public final Configuration configuration() {
+  default Configuration configuration() {
     return bach().configuration();
   }
 
-  public final Project project() {
+  default Project project() {
     return bach().project();
   }
 
-  public final Configuration.Flags flags() {
+  default Configuration.Flags flags() {
     return configuration().flags();
   }
 
-  public final Logbook logbook() {
+  default Logbook logbook() {
     return configuration().logbook();
   }
 
-  public final String log(Level level, String text) {
+  default String log(Level level, String text) {
     return logbook().log(level, text);
   }
 
-  public final String log(Level level, String format, Object... args) {
+  default String log(Level level, String format, Object... args) {
     return logbook().log(level, format, args);
   }
 
-  public final Base base() {
+  default Base base() {
     return project().base();
   }
 
-  public final MainSources main() {
+  default MainSources main() {
     return project().sources().mainSources();
   }
 
-  public final TestSources test() {
+  default TestSources test() {
     return project().sources().testSources();
   }
 
-  public final TestPreview preview() {
+  default TestPreview preview() {
     return project().sources().testPreview();
   }
-
-  public abstract void build();
 }

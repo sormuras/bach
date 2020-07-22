@@ -15,33 +15,24 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.TestPreview;
-import de.sormuras.bach.tool.Javac;
+import de.sormuras.bach.project.TestSources;
 import java.nio.file.Path;
 
-public class TestPreviewBuilder extends AbstractTestBuilder<TestPreview> {
+/** An action that compiles test sources to modules. */
+public class TestRealmBuilder extends BuildTestRealmAction<TestSources> {
 
-  public TestPreviewBuilder(Bach bach) {
-    super(bach, bach.project().sources().testPreview());
+  public TestRealmBuilder(Bach bach) {
+    super(bach, bach.project().sources().testSources());
   }
 
   @Override
-  public Javac computeJavacCall() {
-    return super.computeJavacCall()
-        .with("--enable-preview")
-        .with("--release", Runtime.version().feature())
-        .with("-Xlint:-preview");
-  }
-
-  @Override
-  public Path[] computeModulePathsForCompile() {
+  public Path[] computeModulePathsForCompileTime() {
     return new Path[] {
       base().modules(""), // main modules
-      base().modules("test"), // test modules
       base().libraries() // external modules
     };
   }
@@ -51,8 +42,7 @@ public class TestPreviewBuilder extends AbstractTestBuilder<TestPreview> {
     return new Path[] {
       project().toModuleArchive(realm().name(), unit.name()), // module under test
       base().modules(""), // main modules
-      base().modules("test"), // test modules
-      base().modules(realm().name()), // other test-preview modules
+      base().modules(realm().name()), // other modules from same realm
       base().libraries() // external modules
     };
   }

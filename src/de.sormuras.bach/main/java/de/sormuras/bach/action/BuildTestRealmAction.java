@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package de.sormuras.bach.builder;
+package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
@@ -29,9 +29,10 @@ import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.List;
 
-abstract class AbstractTestBuilder<R> extends AbstractRealmBuilder<R> {
+/** An abstract action with test-realm specific build support. */
+abstract class BuildTestRealmAction<R> extends BuildRealmAction<R> {
 
-  AbstractTestBuilder(Bach bach, Realm<R> realm) {
+  BuildTestRealmAction(Bach bach, Realm<R> realm) {
     super(bach, realm);
   }
 
@@ -68,7 +69,7 @@ abstract class AbstractTestBuilder<R> extends AbstractRealmBuilder<R> {
   public Javac computeJavacCall() {
     var classes = base().classes(realm().name(), realm().release().feature());
     var units = realm().units();
-    var modulePath = Paths.joinExisting(computeModulePathsForCompile());
+    var modulePath = Paths.joinExisting(computeModulePathsForCompileTime());
     return Call.javac()
         .withModule(units.toNames(","))
         .with("--module-version", project().version().toString() + "-" + realm().name())
@@ -83,7 +84,7 @@ abstract class AbstractTestBuilder<R> extends AbstractRealmBuilder<R> {
         .with("-d", classes);
   }
 
-  public abstract Path[] computeModulePathsForCompile();
+  public abstract Path[] computeModulePathsForCompileTime();
 
   public abstract Path[] computeModulePathsForRuntime(SourceUnit unit);
 
