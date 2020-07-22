@@ -32,10 +32,17 @@ public final class MainSources implements Realm<MainSources> {
 
   /** A modifier on a main source set. */
   public enum Modifier {
+    /** Include {@code *.java} files alongside with {@code *.class} files into each modular JAR. */
     INCLUDE_SOURCES_IN_MODULAR_JAR,
+
+    /** Include all resource files alongside with {@code *.java} files into each sources JAR. */
     INCLUDE_RESOURCES_IN_SOURCES_JAR,
-    NO_API_DOCUMENTATION,
-    NO_CUSTOM_RUNTIME_IMAGE
+
+    /** Generate HTML pages of API documentation from main source files. */
+    API_DOCUMENTATION,
+
+    /** Assemble and optimize main modules and their dependencies into a custom runtime image. */
+    CUSTOM_RUNTIME_IMAGE
   }
 
   /** A set of tool call operators. */
@@ -108,7 +115,11 @@ public final class MainSources implements Realm<MainSources> {
 
   @Factory
   public static MainSources of() {
-    return new MainSources(Set.of(), JavaRelease.ofRuntime(), SourceUnitMap.of(), Operators.of());
+    return new MainSources(
+        Set.of(Modifier.API_DOCUMENTATION, Modifier.CUSTOM_RUNTIME_IMAGE),
+        JavaRelease.ofRuntime(),
+        SourceUnitMap.of(),
+        Operators.of());
   }
 
   @Factory(Kind.SETTER)

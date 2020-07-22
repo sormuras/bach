@@ -35,7 +35,7 @@ class Build {
             .withMainSource("src/de.sormuras.bach/main/java")
             .withMainSourcesCompiledForJavaRelease(11)
             .with(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
-            .with(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)
+            .without(MainSources.Modifier.CUSTOM_RUNTIME_IMAGE)
             .withMainJavacOperator(javac -> javac)
             .withMainJavadocOperator(javadoc -> javadoc
                 .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")

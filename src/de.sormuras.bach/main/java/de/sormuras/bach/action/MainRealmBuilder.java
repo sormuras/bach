@@ -45,7 +45,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
   @Override
   public void buildModules() {
     buildMainModules();
-    bach().run(this::buildMainApiDocumentation, this::buildMainCustomRuntimeImage);
+    bach().run(this::buildApiDocumentation, this::buildMainCustomRuntimeImage);
   }
 
   public void buildMainModules() {
@@ -116,8 +116,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     bach().run(bach()::run, jars);
   }
 
-  public void buildMainApiDocumentation() {
-    if (main().is(MainSources.Modifier.NO_API_DOCUMENTATION)) return;
+  public void buildApiDocumentation() {
     if (!checkConditionForBuildApiDocumentation()) return;
 
     var javadocCall = computeJavadocCall();
@@ -127,7 +126,6 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
   }
 
   public void buildMainCustomRuntimeImage() {
-    if (main().is(MainSources.Modifier.NO_CUSTOM_RUNTIME_IMAGE)) return;
     if (!checkConditionForBuildCustomRuntimeImage()) return;
 
     Paths.deleteDirectories(base().workspace("image"));
@@ -135,7 +133,8 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
   }
 
   public boolean checkConditionForBuildApiDocumentation() {
-    return true; // TODO Parse `module-info.java` files for Javadoc comments...
+    // TODO Parse `module-info.java` files for Javadoc comments...
+    return main().is(MainSources.Modifier.API_DOCUMENTATION);
   }
 
   public boolean checkConditionForBuildCustomRuntimeImage() {
@@ -145,8 +144,8 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
       var message = "Creation of custom runtime image may fail -- automatic modules detected: %s";
       log(System.Logger.Level.WARNING, message, autos);
     }
-
-    return main().findMainModule().isPresent();
+    return main().is(MainSources.Modifier.CUSTOM_RUNTIME_IMAGE)
+        && main().findMainModule().isPresent();
   }
 
   public Javac computeJavacCall() {

@@ -148,7 +148,12 @@ public final class Project {
 
   @Factory(Kind.OPERATOR)
   public Project with(MainSources.Modifier... modifiers) {
-    return sources(sources.mainSources(sources.mainSources().with(modifiers)));
+    return sources(
+        sources.mainSources(sources.mainSources().with(modifiers)));
+  }
+  @Factory(Kind.OPERATOR)
+  public Project without(MainSources.Modifier... modifiers) {
+    return sources(sources.mainSources(sources.mainSources().without(modifiers)));
   }
 
   @Factory(Kind.OPERATOR)
