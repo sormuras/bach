@@ -24,7 +24,7 @@ import java.util.function.UnaryOperator;
 public final class Javac implements WithModuleSourceOptionsCall<Javac> {
 
   @FunctionalInterface
-  public interface Operator extends UnaryOperator<Javac> {}
+  public interface Tweak extends UnaryOperator<Javac> {}
 
   private final List<Argument> arguments;
 

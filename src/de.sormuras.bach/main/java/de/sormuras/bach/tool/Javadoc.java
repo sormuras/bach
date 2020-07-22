@@ -24,7 +24,7 @@ import java.util.function.UnaryOperator;
 public final class Javadoc implements WithModuleSourceOptionsCall<Javadoc> {
 
   @FunctionalInterface
-  public interface Operator extends UnaryOperator<Javadoc> {}
+  public interface Tweak extends UnaryOperator<Javadoc> {}
 
   private final List<Argument> arguments;
 
