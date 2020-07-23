@@ -18,18 +18,49 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
+import de.sormuras.bach.tool.JUnit;
 
 /** A code space for {@code test} modules. */
 public final class TestSpace implements CodeSpace<TestSpace> {
 
-  private final CodeUnits units;
+  /** Tool call tweaks. */
+  public static final class Tweaks {
 
-  public TestSpace(CodeUnits units) {
+    private final JUnit.Tweak junitTweak;
+
+    public Tweaks(JUnit.Tweak junitTweak) {
+      this.junitTweak = junitTweak;
+    }
+
+    public JUnit.Tweak junitTweak() {
+      return junitTweak;
+    }
+
+    @Factory
+    public static Tweaks of() {
+      return new Tweaks(junit -> junit);
+    }
+
+    @Factory(Factory.Kind.SETTER)
+    public Tweaks junitTweak(JUnit.Tweak tweak) {
+      return new Tweaks(tweak);
+    }
+  }
+
+  private final CodeUnits units;
+  private final Tweaks tweaks;
+
+  public TestSpace(CodeUnits units, Tweaks tweaks) {
     this.units = units;
+    this.tweaks = tweaks;
   }
 
   public CodeUnits units() {
     return units;
+  }
+
+  public Tweaks tweaks() {
+    return tweaks;
   }
 
   @Override
@@ -39,11 +70,16 @@ public final class TestSpace implements CodeSpace<TestSpace> {
 
   @Factory
   public static TestSpace of() {
-    return new TestSpace(CodeUnits.of());
+    return new TestSpace(CodeUnits.of(), Tweaks.of());
   }
 
   @Factory(Factory.Kind.SETTER)
   public TestSpace units(CodeUnits units) {
-    return new TestSpace(units);
+    return new TestSpace(units, tweaks);
+  }
+
+  @Factory(Factory.Kind.SETTER)
+  public TestSpace tweaks(Tweaks tweaks) {
+    return new TestSpace(units, tweaks);
   }
 }

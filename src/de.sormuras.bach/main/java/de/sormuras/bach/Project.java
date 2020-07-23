@@ -31,6 +31,7 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
 import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -140,8 +141,8 @@ public final class Project {
   }
 
   @Factory(Kind.SETTER)
-  public Project spaces(CodeSpaces sources) {
-    return new Project(base, name, version, sources, library);
+  public Project spaces(CodeSpaces spaces) {
+    return new Project(base, name, version, spaces, library);
   }
 
   @Factory(Kind.SETTER)
@@ -205,6 +206,17 @@ public final class Project {
   public Project withTestSpaceUnit(String path) {
     var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.test(spaces.test().with(unit)));
+  }
+
+
+  @Factory(Kind.OPERATOR)
+  public Project with(TestSpace.Tweaks tweaks) {
+    return spaces(spaces.test(spaces.test().tweaks(tweaks)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withTestSpaceJUnitTweak(JUnit.Tweak tweak) {
+    return with(spaces.test().tweaks().junitTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)

@@ -40,7 +40,7 @@ class Build {
             .withMainSpaceCompiledForJavaRelease(11)
             .with(MainSpace.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
             .with(MainSpace.Modifier.API_DOCUMENTATION)
-            // .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
+            .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
             // .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
             // .withMainSpaceJarTweak(jar -> jar.with(0, "--verbose"))
             // .withMainSpaceJlinkTweak(jlink -> jlink.with("--verbose"))
@@ -63,6 +63,7 @@ class Build {
             .withTestSpaceUnit("src/de.sormuras.bach/test/java-module/module-info.java")
             .withTestSpaceUnit("src/test.base/test/java/module-info.java")
             .withTestSpaceUnit("src/test.modules/test/java/module-info.java")
+            // .withTestSpaceJUnitTweak(junit -> junit.with("--fail-if-no-tests"))
             /*
              * Configure test-preview code space.
              */
