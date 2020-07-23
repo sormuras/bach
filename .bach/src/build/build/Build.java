@@ -20,7 +20,7 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.MainSources;
+import de.sormuras.bach.project.MainSpace;
 
 /** Bach's own build program. */
 class Build {
@@ -28,28 +28,45 @@ class Build {
   public static void main(String... args) {
     var project =
         Project.of()
-            // <basics>
+            /*
+             * Configure basic component values.
+             */
             .name("bach")
             .version(Bach.VERSION)
-            // <main>
-            .withMainSource("src/de.sormuras.bach/main/java")
-            .withMainSourcesCompiledForJavaRelease(11)
-            .with(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
-            .without(MainSources.Modifier.CUSTOM_RUNTIME_IMAGE)
-            .withMainJavacOperator(javac -> javac)
-            .withMainJavadocOperator(javadoc -> javadoc
-                .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")
-                .without("-Xdoclint")
-                .with("-Xdoclint:-missing")
-                .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
-            )
-            // test
-            .withTestSource("src/de.sormuras.bach/test/java-module")
-            .withTestSource("src/test.base/test/java")
-            .withTestSource("src/test.modules/test/java")
-            // test-preview
-            .withPreview("src/test.preview/test-preview/java")
-            // lib/
+            /*
+             * Configure main code space.
+             */
+            .withMainSpaceUnit("src/de.sormuras.bach/main/java/module-info.java")
+            .withMainSpaceCompiledForJavaRelease(11)
+            .with(MainSpace.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
+            // .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
+            .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
+            .withMainSpaceJavadocTweak(
+                javadoc ->
+                    javadoc
+                        .with("-windowtitle", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+                        .with("-header", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+                        .with("-footer", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+                        .with("-use")
+                        .with("-linksource")
+                        .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")
+                        .without("-Xdoclint")
+                        .with("-Xdoclint:-missing")
+                        .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
+                )
+            /*
+             * Configure test code space.
+             */
+            .withTestSpaceUnit("src/de.sormuras.bach/test/java-module/module-info.java")
+            .withTestSpaceUnit("src/test.base/test/java/module-info.java")
+            .withTestSpaceUnit("src/test.modules/test/java/module-info.java")
+            /*
+             * Configure test-preview code space.
+             */
+            .withTestSpacePreviewUnit("src/test.preview/test-preview/java/module-info.java")
+            /*
+             * Configure external library resolution.
+             */
             .with(
                 Link.ofJUnitPlatform("commons", "1.7.0-M1"),
                 Link.ofJUnitPlatform("console", "1.7.0-M1"),

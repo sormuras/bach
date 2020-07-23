@@ -26,18 +26,17 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * A source unit connects a module compilation unit with source directories and resource paths.
+ * A code unit connects a module compilation unit with source directories and resource paths.
  *
  * @see ModuleDescriptor
  */
-public final class SourceUnit implements Comparable<SourceUnit> {
+public final class Unit implements Comparable<Unit> {
 
   private final ModuleDescriptor descriptor;
-  private final SourceDirectoryList sources;
+  private final Folders sources;
   private final List<Path> resources;
 
-  public SourceUnit(
-      ModuleDescriptor descriptor, SourceDirectoryList sources, List<Path> resources) {
+  public Unit(ModuleDescriptor descriptor, Folders sources, List<Path> resources) {
     this.descriptor = descriptor;
     this.sources = sources;
     this.resources = List.copyOf(resources);
@@ -47,7 +46,7 @@ public final class SourceUnit implements Comparable<SourceUnit> {
     return descriptor;
   }
 
-  public SourceDirectoryList sources() {
+  public Folders sources() {
     return sources;
   }
 
@@ -60,18 +59,18 @@ public final class SourceUnit implements Comparable<SourceUnit> {
   //
 
   @Factory
-  public static SourceUnit of(Path path) {
+  public static Unit of(Path path) {
     return of(path, 0);
   }
 
   @Factory
-  public static SourceUnit of(Path path, int defaultJavaRelease) {
+  public static Unit of(Path path, int defaultJavaRelease) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var descriptor = Modules.describe(info);
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var directories = SourceDirectoryList.of(parent, defaultJavaRelease);
+    var directories = Folders.of(parent, defaultJavaRelease);
     var resources = resources(parent);
-    return new SourceUnit(descriptor, directories, resources);
+    return new Unit(descriptor, directories, resources);
   }
 
   static List<Path> resources(Path infoDirectory) {
@@ -84,15 +83,11 @@ public final class SourceUnit implements Comparable<SourceUnit> {
   //
 
   @Override
-  public int compareTo(SourceUnit other) {
+  public int compareTo(Unit other) {
     return name().compareTo(other.name());
   }
 
   public String name() {
     return descriptor().name();
-  }
-
-  public List<SourceDirectory> directories() {
-    return sources.list();
   }
 }

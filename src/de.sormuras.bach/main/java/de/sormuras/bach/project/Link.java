@@ -30,15 +30,19 @@ import java.util.TreeMap;
 /** A link is module-uri pair used to resolve external modules. */
 public final class Link {
 
-  private final ModuleName module;
+  //
+  // Record API
+  //
+
+  private final String module;
   private final String uri;
 
-  public Link(ModuleName module, String uri) {
+  public Link(String module, String uri) {
     this.module = module;
     this.uri = uri;
   }
 
-  public ModuleName module() {
+  public String module() {
     return module;
   }
 
@@ -47,7 +51,7 @@ public final class Link {
   }
 
   //
-  // Factory API
+  // Configuration API
   //
 
   /**
@@ -59,7 +63,7 @@ public final class Link {
    */
   @Factory
   public static Link of(String module, String uri) {
-    return new Link(ModuleName.of(module), uri);
+    return new Link(module, uri);
   }
 
   /**
@@ -207,6 +211,6 @@ public final class Link {
   }
 
   public String toModularJarFileName() {
-    return module.name() + findVersion().map(v -> '@' + v).orElse("") + ".jar";
+    return module + findVersion().map(v -> '@' + v).orElse("") + ".jar";
   }
 }

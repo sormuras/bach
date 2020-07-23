@@ -33,16 +33,16 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** A map of source units. */
-public final class SourceUnits {
+/** A map of code units. */
+public final class Units {
 
-  private final Map<String, SourceUnit> map;
+  private final Map<String, Unit> map;
 
-  public SourceUnits(Map<String, SourceUnit> map) {
+  public Units(Map<String, Unit> map) {
     this.map = Map.copyOf(map);
   }
 
-  public Map<String, SourceUnit> map() {
+  public Map<String, Unit> map() {
     return map;
   }
 
@@ -51,17 +51,17 @@ public final class SourceUnits {
   //
 
   @Factory
-  public static SourceUnits of() {
-    return new SourceUnits(Map.of());
+  public static Units of() {
+    return new Units(Map.of());
   }
 
   @Factory(Kind.SETTER)
-  public SourceUnits map(Map<String, SourceUnit> map) {
-    return new SourceUnits(map);
+  public Units map(Map<String, Unit> map) {
+    return new Units(map);
   }
 
   @Factory(Kind.OPERATOR)
-  public SourceUnits with(SourceUnit... moreUnits) {
+  public Units with(Unit... moreUnits) {
     var merged = new TreeMap<>(map);
     for (var unit : moreUnits) merged.put(unit.name(), unit);
     return map(merged);
@@ -71,7 +71,7 @@ public final class SourceUnits {
   // Normal API
   //
 
-  public Optional<SourceUnit> findUnit(String name) {
+  public Optional<Unit> findUnit(String name) {
     return Optional.ofNullable(map.get(name));
   }
 
@@ -95,7 +95,7 @@ public final class SourceUnits {
     return toNames().collect(Collectors.joining(delimiter));
   }
 
-  public Stream<SourceUnit> toUnits() {
+  public Stream<Unit> toUnits() {
     return map.values().stream();
   }
 
@@ -124,7 +124,7 @@ public final class SourceUnits {
     return List.copyOf(paths);
   }
 
-  public Map<String, String> toModulePatches(SourceUnits upstream) {
+  public Map<String, String> toModulePatches(Units upstream) {
     if (map.isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
     for (var unit : map.values()) {

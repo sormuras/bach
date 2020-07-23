@@ -23,13 +23,14 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Scribe;
 import de.sormuras.bach.project.Base;
+import de.sormuras.bach.project.MainSpace;
+import de.sormuras.bach.project.Spaces;
+import de.sormuras.bach.project.Release;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.SourceUnit;
-import de.sormuras.bach.project.Sources;
-import de.sormuras.bach.project.TestPreview;
-import de.sormuras.bach.project.TestSources;
+import de.sormuras.bach.project.TestSpace;
+import de.sormuras.bach.project.TestSpacePreview;
+import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
@@ -46,14 +47,14 @@ public final class Project {
   private final Base base;
   private final String name;
   private final Version version;
-  private final Sources sources;
+  private final Spaces spaces;
   private final Library library;
 
-  public Project(Base base, String name, Version version, Sources sources, Library library) {
+  public Project(Base base, String name, Version version, Spaces spaces, Library library) {
     this.base = base;
     this.name = name;
     this.version = version;
-    this.sources = sources;
+    this.spaces = spaces;
     this.library = library;
   }
 
@@ -69,8 +70,8 @@ public final class Project {
     return version;
   }
 
-  public Sources sources() {
-    return sources;
+  public Spaces spaces() {
+    return spaces;
   }
 
   public Library library() {
@@ -83,7 +84,7 @@ public final class Project {
 
   @Factory
   public static Project of() {
-    return new Project(Base.of(), "unnamed", Version.parse("1-ea"), Sources.of(), Library.of());
+    return new Project(Base.of(), "unnamed", Version.parse("1-ea"), Spaces.of(), Library.of());
   }
 
   @Factory
@@ -93,23 +94,23 @@ public final class Project {
 
   @Factory
   public static Project ofDirectory(Base base) {
-    var mainSources = MainSources.of();
-    var testSources = TestSources.of();
-    var testPreview = TestPreview.of();
+    var main = MainSpace.of();
+    var test = TestSpace.of();
+    var preview = TestSpacePreview.of();
     for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
       if (info.startsWith(".bach")) continue;
-      var unit = SourceUnit.of(info);
+      var unit = Unit.of(info);
       if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
-        testSources = testSources.with(unit);
+        test = test.with(unit);
         continue;
       }
       if (Paths.isModuleInfoJavaFileForRealm(info, "test-preview")) {
-        testPreview = testPreview.with(unit);
+        preview = preview.with(unit);
         continue;
       }
-      mainSources = mainSources.with(unit);
+      main = main.with(unit);
     }
-    var sources = new Sources(mainSources, testSources, testPreview);
+    var sources = new Spaces(main, test, preview);
     var absolute = base.directory().toAbsolutePath();
     var name = System.getProperty("bach.project.name", Paths.name(absolute).toLowerCase());
     var version = System.getProperty("bach.project.version", "1-ea");
@@ -118,17 +119,17 @@ public final class Project {
 
   @Factory(Kind.SETTER)
   public Project base(Base base) {
-    return new Project(base, name, version, sources, library);
+    return new Project(base, name, version, spaces, library);
   }
 
   @Factory(Kind.SETTER)
   public Project name(String name) {
-    return new Project(base, name, version, sources, library);
+    return new Project(base, name, version, spaces, library);
   }
 
   @Factory(Kind.SETTER)
   public Project version(Version version) {
-    return new Project(base, name, version, sources, library);
+    return new Project(base, name, version, spaces, library);
   }
 
   @Factory(Kind.SETTER)
@@ -137,67 +138,67 @@ public final class Project {
   }
 
   @Factory(Kind.SETTER)
-  public Project sources(Sources sources) {
+  public Project spaces(Spaces sources) {
     return new Project(base, name, version, sources, library);
   }
 
   @Factory(Kind.SETTER)
   public Project library(Library library) {
-    return new Project(base, name, version, sources, library);
+    return new Project(base, name, version, spaces, library);
   }
 
   @Factory(Kind.OPERATOR)
-  public Project with(MainSources.Modifier... modifiers) {
-    return sources(
-        sources.mainSources(sources.mainSources().with(modifiers)));
-  }
-  @Factory(Kind.OPERATOR)
-  public Project without(MainSources.Modifier... modifiers) {
-    return sources(sources.mainSources(sources.mainSources().without(modifiers)));
+  public Project with(MainSpace.Modifier... modifiers) {
+    return spaces(spaces.main(spaces.main().with(modifiers)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSourcesCompiledForJavaRelease(int feature) {
-    return sources(sources.mainSources(sources.mainSources().release(feature)));
+  public Project without(MainSpace.Modifier... modifiers) {
+    return spaces(spaces.main(spaces.main().without(modifiers)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSource(String path) {
-    var unit = SourceUnit.of(Path.of(path));
-    return sources(sources.mainSources(sources.mainSources().with(unit)));
+  public Project withMainSpaceCompiledForJavaRelease(int feature) {
+    return spaces(spaces.main(spaces.main().release(Release.of(feature))));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSource(String path, int defaultJavaRelease) {
-    var unit = SourceUnit.of(Path.of(path), defaultJavaRelease);
-    return sources(sources.mainSources(sources.mainSources().with(unit)));
+  public Project withMainSpaceUnit(String path) {
+    var unit = Unit.of(Path.of(path));
+    return spaces(spaces.main(spaces.main().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project with(MainSources.Operators operators) {
-    return sources(sources.mainSources(sources.mainSources().operators(operators)));
+  public Project withMainSpaceUnit(String path, int defaultJavaRelease) {
+    var unit = Unit.of(Path.of(path), defaultJavaRelease);
+    return spaces(spaces.main(spaces.main().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainJavacOperator(Javac.Operator operator) {
-    return with(sources.mainSources().operators().javacOperator(operator));
+  public Project with(MainSpace.Tweaks tweaks) {
+    return spaces(spaces.main(spaces.main().tweaks(tweaks)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainJavadocOperator(Javadoc.Operator operator) {
-    return with(sources.mainSources().operators().javadocOperator(operator));
+  public Project withMainSpaceJavacTweak(Javac.Tweak tweak) {
+    return with(spaces.main().tweaks().javacTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withTestSource(String path) {
-    var unit = SourceUnit.of(Path.of(path));
-    return sources(sources.testSources(sources.testSources().with(unit)));
+  public Project withMainSpaceJavadocTweak(Javadoc.Tweak tweak) {
+    return with(spaces.main().tweaks().javadocTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withPreview(String path) {
-    var unit = SourceUnit.of(Path.of(path));
-    return sources(sources.testPreview(sources.testPreview().with(unit)));
+  public Project withTestSpaceUnit(String path) {
+    var unit = Unit.of(Path.of(path));
+    return spaces(spaces.test(spaces.test().with(unit)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withTestSpacePreviewUnit(String path) {
+    var unit = Unit.of(Path.of(path));
+    return spaces(spaces.preview(spaces.preview().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
@@ -219,7 +220,7 @@ public final class Project {
   }
 
   public Set<String> toDeclaredModuleNames() {
-    return toUnits().map(SourceUnit::name).collect(Collectors.toCollection(TreeSet::new));
+    return toUnits().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
   }
 
   public Set<String> toExternalModuleNames() {
@@ -227,14 +228,13 @@ public final class Project {
   }
 
   public Set<String> toRequiredModuleNames() {
-    return Modules.required(toUnits().map(SourceUnit::descriptor));
+    return Modules.required(toUnits().map(Unit::descriptor));
   }
 
-  public Stream<SourceUnit> toUnits() {
+  public Stream<Unit> toUnits() {
     return Stream.concat(
-        sources.mainSources().units().toUnits(),
-        Stream.concat(
-            sources.testSources().units().toUnits(), sources.testPreview().units().toUnits()));
+        spaces.main().units().toUnits(),
+        Stream.concat(spaces.test().units().toUnits(), spaces.preview().units().toUnits()));
   }
 
   public Path toModuleArchive(String realm, String module) {

@@ -20,8 +20,8 @@ package de.sormuras.bach.action;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.Realm;
-import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.Space;
+import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.TestModule;
@@ -30,30 +30,30 @@ import java.nio.file.Path;
 import java.util.List;
 
 /** An abstract action with test-realm specific build support. */
-abstract class BuildTestRealmAction<R> extends BuildRealmAction<R> {
+abstract class BuildTestCodeSpace<R> extends BuildCodeSpace<R> {
 
-  BuildTestRealmAction(Bach bach, Realm<R> realm) {
+  BuildTestCodeSpace(Bach bach, Space<R> realm) {
     super(bach, realm);
   }
 
   @Override
-  public void buildRealm() {
-    super.buildRealm();
+  public void buildSpace() {
+    super.buildSpace();
     buildReportsByExecutingModules();
   }
 
   @Override
   void buildModules() {
     bach().run(computeJavacCall());
-    Paths.createDirectories(base().modules(realm().name()));
-    bach().run(bach()::run, this::computeJarCall, realm().units().map().values());
+    Paths.createDirectories(base().modules(space().name()));
+    bach().run(bach()::run, this::computeJarCall, space().units().map().values());
   }
 
   public void buildReportsByExecutingModules() {
-    realm().units().toUnits().forEach(this::buildReportsByExecutingModule);
+    space().units().toUnits().forEach(this::buildReportsByExecutingModule);
   }
 
-  public void buildReportsByExecutingModule(SourceUnit unit) {
+  public void buildReportsByExecutingModule(Unit unit) {
     var module = unit.name();
     var modulePaths = Paths.retainExisting(computeModulePathsForRuntime(unit));
 
@@ -67,12 +67,12 @@ abstract class BuildTestRealmAction<R> extends BuildRealmAction<R> {
   }
 
   public Javac computeJavacCall() {
-    var classes = base().classes(realm().name(), realm().release().feature());
-    var units = realm().units();
+    var classes = base().classes(space().name(), space().release().feature());
+    var units = space().units();
     var modulePath = Paths.joinExisting(computeModulePathsForCompileTime());
     return Call.javac()
         .withModule(units.toNames(","))
-        .with("--module-version", project().version().toString() + "-" + realm().name())
+        .with("--module-version", project().version().toString() + "-" + space().name())
         .with(units.toModuleSourcePaths(false), Javac::withModuleSourcePath)
         .with(
             units.toModulePatches(main().units()).entrySet(),
@@ -86,13 +86,13 @@ abstract class BuildTestRealmAction<R> extends BuildRealmAction<R> {
 
   public abstract Path[] computeModulePathsForCompileTime();
 
-  public abstract Path[] computeModulePathsForRuntime(SourceUnit unit);
+  public abstract Path[] computeModulePathsForRuntime(Unit unit);
 
-  public JUnit computeJUnitCall(SourceUnit unit, List<Path> modulePaths) {
+  public JUnit computeJUnitCall(Unit unit, List<Path> modulePaths) {
     var module = unit.name();
     return new JUnit(module, modulePaths, List.of())
         .with("--select-module", module)
         .with("--disable-ansi-colors")
-        .with("--reports-dir", base().reports("junit-" + realm().name(), module));
+        .with("--reports-dir", base().reports("junit-" + space().name(), module));
   }
 }

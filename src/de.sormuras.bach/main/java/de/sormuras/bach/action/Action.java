@@ -22,12 +22,12 @@ import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Logbook;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Base;
-import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.TestPreview;
-import de.sormuras.bach.project.TestSources;
+import de.sormuras.bach.project.MainSpace;
+import de.sormuras.bach.project.TestSpace;
+import de.sormuras.bach.project.TestSpacePreview;
 import java.lang.System.Logger.Level;
 
-/** An operation that is expected to work via side-effects. */
+/** An action that is expected to work via side-effects. */
 public interface Action {
 
   Bach bach();
@@ -62,15 +62,15 @@ public interface Action {
     return project().base();
   }
 
-  default MainSources main() {
-    return project().sources().mainSources();
+  default MainSpace main() {
+    return project().spaces().main();
   }
 
-  default TestSources test() {
-    return project().sources().testSources();
+  default TestSpace test() {
+    return project().spaces().test();
   }
 
-  default TestPreview preview() {
-    return project().sources().testPreview();
+  default TestSpacePreview preview() {
+    return project().spaces().preview();
   }
 }

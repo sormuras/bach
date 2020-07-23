@@ -21,8 +21,9 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.MainSources;
-import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.MainSpace;
+import de.sormuras.bach.project.MainSpace.Modifier;
+import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -36,10 +37,10 @@ import java.util.TreeSet;
 /**
  * An action that compiles main sources to modules, API documentation, and a custom runtime image.
  */
-public class MainRealmBuilder extends BuildRealmAction<MainSources> {
+public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
-  public MainRealmBuilder(Bach bach) {
-    super(bach, bach.project().sources().mainSources());
+  public CompileMainSpace(Bach bach) {
+    super(bach, bach.project().spaces().main());
   }
 
   @Override
@@ -50,7 +51,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
 
   public void buildMainModules() {
     var javacCall = computeJavacCall();
-    var javacOperator = main().operators().javacOperator();
+    var javacOperator = main().tweaks().javacTweak();
     bach().run(javacOperator.apply(javacCall));
 
     var modules = base().modules("");
@@ -61,29 +62,30 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     var jars = new ArrayList<Jar>();
     for (var unit : main().units().map().values()) {
       jars.add(computeJarForMainSources(unit));
-      if (!unit.sources().isMultiTarget()) {
+      var folders = unit.sources();
+      if (!folders.isMultiTarget()) {
         jars.add(computeJarForMainModule(unit));
         continue;
       }
       var module = unit.name();
       var mainClass = unit.descriptor().mainClass();
-      for (var directory : unit.directories()) {
-        var sourcePaths = List.of(unit.sources().first().path(), directory.path());
+      for (var source : folders.list()) {
+        var sourcePaths = List.of(folders.first().path(), source.path());
         var baseClasses = base().classes("", main().release().feature());
         var javac =
             Call.javac()
-                .with("--release", directory.release())
+                .with("--release", source.release())
                 .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
                 .with("--class-path", Paths.join(List.of(baseClasses)))
                 .with("-implicit:none") // generate classes for explicitly referenced source files
-                .with("-d", base().classes("", directory.release(), module))
-                .with(Paths.find(List.of(directory.path()), 99, Paths::isJavaFile));
+                .with("-d", base().classes("", source.release(), module))
+                .with(Paths.find(List.of(source.path()), 99, Paths::isJavaFile));
         bach().run(javac);
       }
-      var sources = new ArrayDeque<>(unit.directories());
+      var sources = new ArrayDeque<>(folders.list());
       var sources0 = sources.removeFirst();
       var classes0 = base().classes("", sources0.release(), module);
-      var includeSources = main().is(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR);
+      var includeSources = main().is(Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR);
       var jar =
           Call.jar()
               .with("--create")
@@ -120,7 +122,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     if (!checkConditionForBuildApiDocumentation()) return;
 
     var javadocCall = computeJavadocCall();
-    var javadocOperator = main().operators().javadocOperator();
+    var javadocOperator = main().tweaks().javadocTweak();
     bach().run(javadocOperator.apply(javadocCall));
     bach().run(computeJarForApiDocumentation());
   }
@@ -134,7 +136,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
 
   public boolean checkConditionForBuildApiDocumentation() {
     // TODO Parse `module-info.java` files for Javadoc comments...
-    return main().is(MainSources.Modifier.API_DOCUMENTATION);
+    return main().is(Modifier.API_DOCUMENTATION);
   }
 
   public boolean checkConditionForBuildCustomRuntimeImage() {
@@ -144,8 +146,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
       var message = "Creation of custom runtime image may fail -- automatic modules detected: %s";
       log(System.Logger.Level.WARNING, message, autos);
     }
-    return main().is(MainSources.Modifier.CUSTOM_RUNTIME_IMAGE)
-        && main().findMainModule().isPresent();
+    return main().is(Modifier.CUSTOM_RUNTIME_IMAGE) && main().findMainModule().isPresent();
   }
 
   public Javac computeJavacCall() {
@@ -164,9 +165,9 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
         .with("-d", base().classes("", release));
   }
 
-  public Jar computeJarForMainSources(SourceUnit unit) {
+  public Jar computeJarForMainSources(Unit unit) {
     var module = unit.name();
-    var sources = new ArrayDeque<>(unit.directories());
+    var sources = new ArrayDeque<>(unit.sources().list());
     var file = module + '@' + project().version() + "-sources.jar";
     var jar =
         Call.jar()
@@ -174,7 +175,7 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (main().is(MainSources.Modifier.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
+    if (main().is(Modifier.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -184,10 +185,10 @@ public class MainRealmBuilder extends BuildRealmAction<MainSources> {
     return jar;
   }
 
-  public Jar computeJarForMainModule(SourceUnit unit) {
+  public Jar computeJarForMainModule(Unit unit) {
     var jar = computeJarCall(unit);
-    if (main().is(MainSources.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
-      jar = jar.with(unit.directories(), (call, src) -> call.with("-C", src.path(), "."));
+    if (main().is(Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
+      jar = jar.with(unit.sources().list(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;
   }

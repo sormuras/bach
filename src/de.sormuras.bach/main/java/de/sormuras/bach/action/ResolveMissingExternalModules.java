@@ -32,14 +32,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /** An action that resolves missing external modules. */
-public class ExternalModulesResolver implements Action {
+public class ResolveMissingExternalModules implements Action {
 
   private final Bach bach;
   private final List<Link> computedLinks;
   private final List<Link> resolvedLinks;
   private /*lazy*/ SormurasModulesProperties sormurasModulesProperties;
 
-  public ExternalModulesResolver(Bach bach) {
+  public ResolveMissingExternalModules(Bach bach) {
     this.bach = bach;
     this.computedLinks = new ArrayList<>();
     this.resolvedLinks = new ArrayList<>();
@@ -61,7 +61,9 @@ public class ExternalModulesResolver implements Action {
       log(Level.INFO, "Resolved %d external module%s", resolvedLinks.size(), s);
     }
     for (var link : computedLinks) {
-      log(Level.WARNING, "Computed URI for module %s: %s", link.module().name(), link.uri());
+      var module = link.module();
+      var uri = link.toURI();
+      log(Level.WARNING, "Computed URI for module %s: %s", module, uri);
     }
 
     if (Files.isDirectory(base().libraries())) logbook().printSummaryOfModules(base().libraries());
@@ -106,7 +108,7 @@ public class ExternalModulesResolver implements Action {
   }
 
   public void resolveLink(Link link) {
-    var module = link.module().name();
+    var module = link.module();
     var uri = link.toURI();
     log(Level.INFO, "- %s << %s", module, uri);
     try {

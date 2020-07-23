@@ -19,21 +19,21 @@ package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
-import de.sormuras.bach.project.Realm;
-import de.sormuras.bach.project.SourceUnit;
+import de.sormuras.bach.project.Space;
+import de.sormuras.bach.project.Unit;
 import de.sormuras.bach.tool.Jar;
 import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 
 /** An abstract action with basic build support. */
-abstract class BuildRealmAction<R> implements Action {
+abstract class BuildCodeSpace<T> implements Action {
 
   private final Bach bach;
-  private final Realm<R> realm;
+  private final Space<T> space;
 
-  BuildRealmAction(Bach bach, Realm<R> realm) {
+  BuildCodeSpace(Bach bach, Space<T> space) {
     this.bach = bach;
-    this.realm = realm;
+    this.space = space;
   }
 
   @Override
@@ -41,32 +41,32 @@ abstract class BuildRealmAction<R> implements Action {
     return bach;
   }
 
-  public final Realm<R> realm() {
-    return realm;
+  public final Space<T> space() {
+    return space;
   }
 
   @Override
   public void execute() {
-    if (realm.units().isEmpty()) {
-      log(Level.DEBUG, "No units in %s - nothing to build", realm.name());
+    if (space.units().isEmpty()) {
+      log(Level.DEBUG, "No units in %s space - nothing to build", space.title());
       return;
     }
 
     log(Level.INFO, "\n");
-    log(Level.INFO, "Build " + realm.title() + " realm");
-    buildRealm();
+    log(Level.INFO, "Build " + space.title() + " space");
+    buildSpace();
   }
 
-  public void buildRealm() {
+  public void buildSpace() {
     buildModules();
   }
 
   abstract void buildModules();
 
-  public Jar computeJarCall(SourceUnit unit) {
+  public Jar computeJarCall(Unit unit) {
     var module = unit.name();
-    var archive = project().toModuleArchive(realm.name(), module);
-    var classes = base().classes(realm.name(), realm.release().feature(), module);
+    var archive = project().toModuleArchive(space.name(), module);
+    var classes = base().classes(space.name(), space.release().feature(), module);
     var resources = new ArrayList<>(unit.resources()); // TODO Include upstream resources if patched
     return Call.jar()
         .with("--create")

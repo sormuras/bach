@@ -17,10 +17,10 @@
 
 package de.sormuras.bach;
 
-import de.sormuras.bach.action.ExternalModulesResolver;
-import de.sormuras.bach.action.MainRealmBuilder;
-import de.sormuras.bach.action.TestPreviewRealmBuilder;
-import de.sormuras.bach.action.TestRealmBuilder;
+import de.sormuras.bach.action.CompileMainSpace;
+import de.sormuras.bach.action.CompileTestSpace;
+import de.sormuras.bach.action.CompileTestSpacePreview;
+import de.sormuras.bach.action.ResolveMissingExternalModules;
 import de.sormuras.bach.internal.Factory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -137,19 +137,20 @@ public class Bach {
 
   public void build() {
     var logbook = configuration().logbook();
+    var nameAndVersion = project().toNameAndVersion();
     logbook.log(Level.TRACE, toString());
+    logbook.log(Level.INFO, "Build of project %s started by %s", nameAndVersion, this);
     logbook.log(Level.TRACE, "\tflags.set=%s", configuration().flags().set());
     logbook.log(Level.TRACE, "\tlogbook.threshold=%s", logbook.threshold());
-    var nameAndVersion = project().toNameAndVersion();
-    logbook.log(Level.INFO, "Build of project %s started by %s", nameAndVersion, this);
-    logbook.log(Level.TRACE, "project-info.java\n" + String.join("\n", project().toStrings()));
+    if (logbook.isOn(Level.DEBUG)) {
+      logbook.print();
+      logbook.print("Project Descriptor");
+      project().toStrings().forEach(logbook::print);
+    }
     var start = Instant.now();
     try {
-      resolveExternalModules();
-      buildMainRealm();
-      buildTestRealm();
-      buildTestPreviewRealm();
-      logbook.printSummaryAndCheckErrors(this, System.err::println);
+      // TODO configuration().strategy().accept(this);
+      buildDefaultSequence();
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "Build failed with throwing %s", exception);
       throw new AssertionError(message, exception);
@@ -162,20 +163,28 @@ public class Bach {
     }
   }
 
-  public void resolveExternalModules() {
-    new ExternalModulesResolver(this).execute();
+  public void buildDefaultSequence() {
+    resolveMissingExternalModules();
+    compileMainSpace();
+    compileTestSpace();
+    compileTestSpaceWithPreviewLanguageFeatures();
+    configuration().logbook().printSummaryAndCheckErrors(this, System.err::println);
   }
 
-  public void buildMainRealm() {
-    new MainRealmBuilder(this).execute();
+  public void resolveMissingExternalModules() {
+    new ResolveMissingExternalModules(this).execute();
   }
 
-  public void buildTestRealm() {
-    new TestRealmBuilder(this).execute();
+  public void compileMainSpace() {
+    new CompileMainSpace(this).execute();
   }
 
-  public void buildTestPreviewRealm() {
-    new TestPreviewRealmBuilder(this).execute();
+  public void compileTestSpace() {
+    new CompileTestSpace(this).execute();
+  }
+
+  public void compileTestSpaceWithPreviewLanguageFeatures() {
+    new CompileTestSpacePreview(this).execute();
   }
 
   public HttpClient newHttpClient() {

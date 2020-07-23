@@ -7,14 +7,14 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 ## Version [11-ea] unreleased
 
 ### Breaking Changes
-- Split `Bach` API into dedicated builder classes in package `de.sormuras.bach.builder`
+- Revise `Bach` API [#151]
 - Interface `Scribe` moved to hidden `de.sormuras.bach.internal` package
 ### New Features And Enhancements
 - New `Base.isDefault()` and `Base.isDefaultIgnoreBaseDirectory()` methods
-- New `Realm.title()` method that always returns a non-empty string added
 - Warnings for computed links, module-uri pairs, are now emitted en bloc
-- Logbook's layout of improved and syntax warnings removed
+- Logbook's layout improved and markdown syntax warnings removed
 - A copy of `logbook.md` is stored in `.bach/workspace/logbooks` using a file name with a timestamp
+- Bach's API documentation now contains sources and use index
 
 ## Version [11.5] released 2020-07-17
 
@@ -104,3 +104,4 @@ https://github.com/sormuras/bach/releases/tag/11.1
 [1.9.10]: https://github.com/sormuras/bach/compare/1.9.1...1.9.10
 [#126]: https://github.com/sormuras/bach/issues/126
 [#138]: https://github.com/sormuras/bach/issues/138
+[#151]: https://github.com/sormuras/bach/issues/151

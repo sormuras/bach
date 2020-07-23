@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,19 +30,19 @@ import java.util.stream.Collectors;
 /** An external modules manager backed by the {@link Base#libraries() lib} directory. */
 public final class Library {
 
-  private final Set<ModuleName> requires;
-  private final Map<ModuleName, Link> links;
+  private final Set<String> requires;
+  private final Map<String, Link> links;
 
-  public Library(Set<ModuleName> requires, Map<ModuleName, Link> links) {
+  public Library(Set<String> requires, Map<String, Link> links) {
     this.requires = requires;
     this.links = links;
   }
 
-  public Set<ModuleName> requires() {
+  public Set<String> requires() {
     return requires;
   }
 
-  public Map<ModuleName, Link> links() {
+  public Map<String, Link> links() {
     return links;
   }
 
@@ -55,19 +56,19 @@ public final class Library {
   }
 
   @Factory(Kind.SETTER)
-  public Library requires(Set<ModuleName> requires) {
+  public Library requires(Set<String> requires) {
     return new Library(requires, links);
   }
 
   @Factory(Kind.SETTER)
-  public Library links(Map<ModuleName, Link> links) {
+  public Library links(Map<String, Link> links) {
     return new Library(requires, links);
   }
 
   @Factory(Kind.OPERATOR)
   public Library withRequires(String... moreModuleNames) {
     var set = new TreeSet<>(requires);
-    for (var module : moreModuleNames) set.add(ModuleName.of(module));
+    set.addAll(Arrays.asList(moreModuleNames));
     return requires(set);
   }
 
@@ -88,10 +89,10 @@ public final class Library {
   //
 
   public Optional<Link> findLink(String module) {
-    return Optional.ofNullable(links.get(ModuleName.of(module)));
+    return Optional.ofNullable(links.get(module));
   }
 
   public Set<String> toRequiredModuleNames() {
-    return requires.stream().map(ModuleName::name).collect(Collectors.toCollection(TreeSet::new));
+    return new TreeSet<>(requires);
   }
 }

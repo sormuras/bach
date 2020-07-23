@@ -19,8 +19,8 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 
-/** A collection of modular source units. */
-public interface Realm<T> {
+/** A named code space for modular source code units. */
+public interface Space<T> {
 
   /**
    * Return the possibly empty name of the realm.
@@ -45,20 +45,16 @@ public interface Realm<T> {
    *
    * @return A {@code JavaRelease} instance
    */
-  default JavaRelease release() {
-    return JavaRelease.ofRuntime();
+  default Release release() {
+    return Release.ofRuntime();
   }
 
   /**
    * Return the underlying map of modular source units.
    *
-   * @return A {@code SourceUnitMap} instance
+   * @return A {@code SourceUnits} instance
    */
-  SourceUnitMap units();
-
-  //
-  // Configuration API
-  //
+  Units units();
 
   /**
    * Create a new copy instance with setting the given modular source units map.
@@ -67,7 +63,7 @@ public interface Realm<T> {
    * @return A new copy instance
    */
   @Factory(Factory.Kind.SETTER)
-  T units(SourceUnitMap units);
+  T units(Units units);
 
   /**
    * Create a new copy instance with the given modular source units added.
@@ -76,7 +72,7 @@ public interface Realm<T> {
    * @return A new copy instance
    */
   @Factory(Factory.Kind.OPERATOR)
-  default T with(SourceUnit... moreUnits) {
+  default T with(Unit... moreUnits) {
     return units(units().with(moreUnits));
   }
 }

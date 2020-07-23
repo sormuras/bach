@@ -18,37 +18,32 @@
 package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
-import de.sormuras.bach.internal.Factory.Kind;
 
-/** Source set of {@code test-preview} modules. */
-public final class TestPreview implements Realm<TestPreview> {
+/** A code space for {@code test} modules. */
+public final class TestSpace implements Space<TestSpace> {
 
-  private final SourceUnitMap units;
+  private final Units units;
 
-  public TestPreview(SourceUnitMap units) {
+  public TestSpace(Units units) {
     this.units = units;
   }
 
-  public SourceUnitMap units() {
+  public Units units() {
     return units;
   }
 
   @Override
   public String name() {
-    return "test-preview";
+    return "test";
   }
-
-  //
-  // Configuration API
-  //
 
   @Factory
-  public static TestPreview of() {
-    return new TestPreview(SourceUnitMap.of());
+  public static TestSpace of() {
+    return new TestSpace(Units.of());
   }
 
-  @Factory(Kind.SETTER)
-  public TestPreview units(SourceUnitMap units) {
-    return new TestPreview(units);
+  @Factory(Factory.Kind.SETTER)
+  public TestSpace units(Units units) {
+    return new TestSpace(units);
   }
 }
