@@ -51,8 +51,8 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
   public void buildMainModules() {
     var javacCall = computeJavacCall();
-    var javacOperator = main().tweaks().javacTweak();
-    bach().run(javacOperator.apply(javacCall));
+    var javacTweak = main().tweaks().javacTweak();
+    bach().run(javacTweak.apply(javacCall));
 
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
@@ -122,8 +122,8 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     if (!checkConditionForBuildApiDocumentation()) return;
 
     var javadocCall = computeJavadocCall();
-    var javadocOperator = main().tweaks().javadocTweak();
-    bach().run(javadocOperator.apply(javadocCall));
+    var javadocTweak = main().tweaks().javadocTweak();
+    bach().run(javadocTweak.apply(javadocCall));
     bach().run(computeJarForApiDocumentation());
   }
 
