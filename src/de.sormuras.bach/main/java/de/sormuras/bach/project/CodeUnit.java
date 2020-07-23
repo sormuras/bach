@@ -30,13 +30,13 @@ import java.util.List;
  *
  * @see ModuleDescriptor
  */
-public final class Unit implements Comparable<Unit> {
+public final class CodeUnit implements Comparable<CodeUnit> {
 
   private final ModuleDescriptor descriptor;
-  private final Folders sources;
+  private final SourceFolders sources;
   private final List<Path> resources;
 
-  public Unit(ModuleDescriptor descriptor, Folders sources, List<Path> resources) {
+  public CodeUnit(ModuleDescriptor descriptor, SourceFolders sources, List<Path> resources) {
     this.descriptor = descriptor;
     this.sources = sources;
     this.resources = List.copyOf(resources);
@@ -46,7 +46,7 @@ public final class Unit implements Comparable<Unit> {
     return descriptor;
   }
 
-  public Folders sources() {
+  public SourceFolders sources() {
     return sources;
   }
 
@@ -59,18 +59,18 @@ public final class Unit implements Comparable<Unit> {
   //
 
   @Factory
-  public static Unit of(Path path) {
+  public static CodeUnit of(Path path) {
     return of(path, 0);
   }
 
   @Factory
-  public static Unit of(Path path, int defaultJavaRelease) {
+  public static CodeUnit of(Path path, int defaultJavaRelease) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var descriptor = Modules.describe(info);
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
-    var directories = Folders.of(parent, defaultJavaRelease);
+    var directories = SourceFolders.of(parent, defaultJavaRelease);
     var resources = resources(parent);
-    return new Unit(descriptor, directories, resources);
+    return new CodeUnit(descriptor, directories, resources);
   }
 
   static List<Path> resources(Path infoDirectory) {
@@ -83,7 +83,7 @@ public final class Unit implements Comparable<Unit> {
   //
 
   @Override
-  public int compareTo(Unit other) {
+  public int compareTo(CodeUnit other) {
     return name().compareTo(other.name());
   }
 

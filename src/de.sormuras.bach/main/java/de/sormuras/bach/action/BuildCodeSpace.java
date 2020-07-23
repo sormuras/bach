@@ -19,8 +19,8 @@ package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
-import de.sormuras.bach.project.Space;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeSpace;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.Jar;
 import java.lang.System.Logger.Level;
 import java.util.ArrayList;
@@ -29,9 +29,9 @@ import java.util.ArrayList;
 abstract class BuildCodeSpace<T> implements Action {
 
   private final Bach bach;
-  private final Space<T> space;
+  private final CodeSpace<T> space;
 
-  BuildCodeSpace(Bach bach, Space<T> space) {
+  BuildCodeSpace(Bach bach, CodeSpace<T> space) {
     this.bach = bach;
     this.space = space;
   }
@@ -41,7 +41,7 @@ abstract class BuildCodeSpace<T> implements Action {
     return bach;
   }
 
-  public final Space<T> space() {
+  public final CodeSpace<T> space() {
     return space;
   }
 
@@ -63,7 +63,7 @@ abstract class BuildCodeSpace<T> implements Action {
 
   abstract void buildModules();
 
-  public Jar computeJarCall(Unit unit) {
+  public Jar computeJarCall(CodeUnit unit) {
     var module = unit.name();
     var archive = project().toModuleArchive(space.name(), module);
     var classes = base().classes(space.name(), space.release().feature(), module);

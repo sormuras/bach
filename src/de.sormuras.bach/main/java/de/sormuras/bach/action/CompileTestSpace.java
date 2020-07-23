@@ -19,7 +19,7 @@ package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.TestSpace;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeUnit;
 import java.nio.file.Path;
 
 /** An action that compiles test sources to modules. */
@@ -38,7 +38,7 @@ public class CompileTestSpace extends BuildTestCodeSpace<TestSpace> {
   }
 
   @Override
-  public Path[] computeModulePathsForRuntime(Unit unit) {
+  public Path[] computeModulePathsForRuntime(CodeUnit unit) {
     return new Path[] {
       project().toModuleArchive(space().name(), unit.name()), // module under test
       base().modules(""), // main modules

@@ -24,13 +24,13 @@ import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Scribe;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.MainSpace;
-import de.sormuras.bach.project.Spaces;
-import de.sormuras.bach.project.Release;
+import de.sormuras.bach.project.CodeSpaces;
+import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
@@ -47,10 +47,10 @@ public final class Project {
   private final Base base;
   private final String name;
   private final Version version;
-  private final Spaces spaces;
+  private final CodeSpaces spaces;
   private final Library library;
 
-  public Project(Base base, String name, Version version, Spaces spaces, Library library) {
+  public Project(Base base, String name, Version version, CodeSpaces spaces, Library library) {
     this.base = base;
     this.name = name;
     this.version = version;
@@ -70,7 +70,7 @@ public final class Project {
     return version;
   }
 
-  public Spaces spaces() {
+  public CodeSpaces spaces() {
     return spaces;
   }
 
@@ -84,7 +84,7 @@ public final class Project {
 
   @Factory
   public static Project of() {
-    return new Project(Base.of(), "unnamed", Version.parse("1-ea"), Spaces.of(), Library.of());
+    return new Project(Base.of(), "unnamed", Version.parse("1-ea"), CodeSpaces.of(), Library.of());
   }
 
   @Factory
@@ -99,7 +99,7 @@ public final class Project {
     var preview = TestSpacePreview.of();
     for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
       if (info.startsWith(".bach")) continue;
-      var unit = Unit.of(info);
+      var unit = CodeUnit.of(info);
       if (Paths.isModuleInfoJavaFileForRealm(info, "test")) {
         test = test.with(unit);
         continue;
@@ -110,7 +110,7 @@ public final class Project {
       }
       main = main.with(unit);
     }
-    var sources = new Spaces(main, test, preview);
+    var sources = new CodeSpaces(main, test, preview);
     var absolute = base.directory().toAbsolutePath();
     var name = System.getProperty("bach.project.name", Paths.name(absolute).toLowerCase());
     var version = System.getProperty("bach.project.version", "1-ea");
@@ -138,7 +138,7 @@ public final class Project {
   }
 
   @Factory(Kind.SETTER)
-  public Project spaces(Spaces sources) {
+  public Project spaces(CodeSpaces sources) {
     return new Project(base, name, version, sources, library);
   }
 
@@ -159,18 +159,18 @@ public final class Project {
 
   @Factory(Kind.OPERATOR)
   public Project withMainSpaceCompiledForJavaRelease(int feature) {
-    return spaces(spaces.main(spaces.main().release(Release.of(feature))));
+    return spaces(spaces.main(spaces.main().release(JavaRelease.of(feature))));
   }
 
   @Factory(Kind.OPERATOR)
   public Project withMainSpaceUnit(String path) {
-    var unit = Unit.of(Path.of(path));
+    var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.main(spaces.main().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
   public Project withMainSpaceUnit(String path, int defaultJavaRelease) {
-    var unit = Unit.of(Path.of(path), defaultJavaRelease);
+    var unit = CodeUnit.of(Path.of(path), defaultJavaRelease);
     return spaces(spaces.main(spaces.main().with(unit)));
   }
 
@@ -191,13 +191,13 @@ public final class Project {
 
   @Factory(Kind.OPERATOR)
   public Project withTestSpaceUnit(String path) {
-    var unit = Unit.of(Path.of(path));
+    var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.test(spaces.test().with(unit)));
   }
 
   @Factory(Kind.OPERATOR)
   public Project withTestSpacePreviewUnit(String path) {
-    var unit = Unit.of(Path.of(path));
+    var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.preview(spaces.preview().with(unit)));
   }
 
@@ -220,7 +220,7 @@ public final class Project {
   }
 
   public Set<String> toDeclaredModuleNames() {
-    return toUnits().map(Unit::name).collect(Collectors.toCollection(TreeSet::new));
+    return toUnits().map(CodeUnit::name).collect(Collectors.toCollection(TreeSet::new));
   }
 
   public Set<String> toExternalModuleNames() {
@@ -228,10 +228,10 @@ public final class Project {
   }
 
   public Set<String> toRequiredModuleNames() {
-    return Modules.required(toUnits().map(Unit::descriptor));
+    return Modules.required(toUnits().map(CodeUnit::descriptor));
   }
 
-  public Stream<Unit> toUnits() {
+  public Stream<CodeUnit> toUnits() {
     return Stream.concat(
         spaces.main().units().toUnits(),
         Stream.concat(spaces.test().units().toUnits(), spaces.preview().units().toUnits()));

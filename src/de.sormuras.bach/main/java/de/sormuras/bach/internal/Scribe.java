@@ -20,16 +20,16 @@ package de.sormuras.bach.internal;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Base;
 import de.sormuras.bach.project.MainSpace;
-import de.sormuras.bach.project.Spaces;
-import de.sormuras.bach.project.Release;
+import de.sormuras.bach.project.CodeSpaces;
+import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.Folders;
-import de.sormuras.bach.project.Folder;
+import de.sormuras.bach.project.SourceFolders;
+import de.sormuras.bach.project.SourceFolder;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.project.Unit;
-import de.sormuras.bach.project.Units;
+import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.project.CodeUnits;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -220,9 +220,9 @@ public interface Scribe {
           : addNew(Base.class, base.directory(), base.libraries(), base.workspace());
     }
 
-    public Scroll add(Release release) {
-      if (release == Release.ofRuntime()) return add(Release.class).append(".ofRuntime()");
-      return addOf(Release.class, release.feature());
+    public Scroll add(JavaRelease release) {
+      if (release == JavaRelease.ofRuntime()) return add(JavaRelease.class).append(".ofRuntime()");
+      return addOf(JavaRelease.class, release.feature());
     }
 
     public Scroll add(Library library) {
@@ -244,9 +244,9 @@ public interface Scribe {
       return this;
     }
 
-    public Scroll add(Spaces sources) {
+    public Scroll add(CodeSpaces sources) {
       depth++;
-      addOf(Spaces.class);
+      addOf(CodeSpaces.class);
       addNewLine().addCall(".mainSources", sources.main());
       addNewLine().addCall(".testSources", sources.test());
       addNewLine().addCall(".testPreview", sources.preview());
@@ -280,17 +280,17 @@ public interface Scribe {
       return this;
     }
 
-    public Scroll add(Units units) {
+    public Scroll add(CodeUnits units) {
       depth++;
-      addOf(Units.class);
+      addOf(CodeUnits.class);
       units.map().values().stream().sorted().forEach(unit -> addNewLine().addCall(".with", unit));
       depth--;
       return this;
     }
 
-    public Scroll add(Unit unit) {
+    public Scroll add(CodeUnit unit) {
       depth++;
-      append("new ").add(Unit.class).append("(");
+      append("new ").add(CodeUnit.class).append("(");
       addNewLineAndContinue().add(unit.descriptor()).append(",");
       addNewLineAndContinue().add(unit.sources()).append(",");
       addNewLineAndContinue().add(unit.resources());
@@ -299,23 +299,23 @@ public interface Scribe {
       return this;
     }
 
-    public Scroll add(Folders directories) {
+    public Scroll add(SourceFolders directories) {
       depth++;
       var list = directories.list();
       if (list.size() == 1) {
         var directory = directories.first();
-        if (directory.release() == 0) addOf(Folders.class, directory.path());
-        else addOf(Folders.class, directory.path(), directory.release());
+        if (directory.release() == 0) addOf(SourceFolders.class, directory.path());
+        else addOf(SourceFolders.class, directory.path(), directory.release());
       } else {
-        addOf(Folders.class);
+        addOf(SourceFolders.class);
         list.forEach(directory -> addNewLineAndContinue().addCall(".with", directory));
       }
       depth--;
       return this;
     }
 
-    public Scroll add(Folder directory) {
-      return addNew(Folder.class, directory.path(), directory.release());
+    public Scroll add(SourceFolder directory) {
+      return addNew(SourceFolder.class, directory.path(), directory.release());
     }
 
     @Override

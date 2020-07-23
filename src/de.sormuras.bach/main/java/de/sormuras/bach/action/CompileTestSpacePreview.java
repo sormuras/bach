@@ -19,7 +19,7 @@ package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.Javac;
 import java.nio.file.Path;
 
@@ -48,7 +48,7 @@ public class CompileTestSpacePreview extends BuildTestCodeSpace<TestSpacePreview
   }
 
   @Override
-  public Path[] computeModulePathsForRuntime(Unit unit) {
+  public Path[] computeModulePathsForRuntime(CodeUnit unit) {
     return new Path[] {
       project().toModuleArchive(space().name(), unit.name()), // module under test
       base().modules(""), // main modules

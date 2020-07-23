@@ -20,15 +20,15 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.internal.Factory;
 
 /** A code space for {@code test} modules. */
-public final class TestSpace implements Space<TestSpace> {
+public final class TestSpace implements CodeSpace<TestSpace> {
 
-  private final Units units;
+  private final CodeUnits units;
 
-  public TestSpace(Units units) {
+  public TestSpace(CodeUnits units) {
     this.units = units;
   }
 
-  public Units units() {
+  public CodeUnits units() {
     return units;
   }
 
@@ -39,11 +39,11 @@ public final class TestSpace implements Space<TestSpace> {
 
   @Factory
   public static TestSpace of() {
-    return new TestSpace(Units.of());
+    return new TestSpace(CodeUnits.of());
   }
 
   @Factory(Factory.Kind.SETTER)
-  public TestSpace units(Units units) {
+  public TestSpace units(CodeUnits units) {
     return new TestSpace(units);
   }
 }

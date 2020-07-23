@@ -23,7 +23,7 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.MainSpace.Modifier;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -165,7 +165,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
         .with("-d", base().classes("", release));
   }
 
-  public Jar computeJarForMainSources(Unit unit) {
+  public Jar computeJarForMainSources(CodeUnit unit) {
     var module = unit.name();
     var sources = new ArrayDeque<>(unit.sources().list());
     var file = module + '@' + project().version() + "-sources.jar";
@@ -185,7 +185,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     return jar;
   }
 
-  public Jar computeJarForMainModule(Unit unit) {
+  public Jar computeJarForMainModule(CodeUnit unit) {
     var jar = computeJarCall(unit);
     if (main().is(Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
       jar = jar.with(unit.sources().list(), (call, src) -> call.with("-C", src.path(), "."));

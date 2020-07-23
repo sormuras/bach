@@ -34,15 +34,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** A map of code units. */
-public final class Units {
+public final class CodeUnits {
 
-  private final Map<String, Unit> map;
+  private final Map<String, CodeUnit> map;
 
-  public Units(Map<String, Unit> map) {
+  public CodeUnits(Map<String, CodeUnit> map) {
     this.map = Map.copyOf(map);
   }
 
-  public Map<String, Unit> map() {
+  public Map<String, CodeUnit> map() {
     return map;
   }
 
@@ -51,17 +51,17 @@ public final class Units {
   //
 
   @Factory
-  public static Units of() {
-    return new Units(Map.of());
+  public static CodeUnits of() {
+    return new CodeUnits(Map.of());
   }
 
   @Factory(Kind.SETTER)
-  public Units map(Map<String, Unit> map) {
-    return new Units(map);
+  public CodeUnits map(Map<String, CodeUnit> map) {
+    return new CodeUnits(map);
   }
 
   @Factory(Kind.OPERATOR)
-  public Units with(Unit... moreUnits) {
+  public CodeUnits with(CodeUnit... moreUnits) {
     var merged = new TreeMap<>(map);
     for (var unit : moreUnits) merged.put(unit.name(), unit);
     return map(merged);
@@ -71,7 +71,7 @@ public final class Units {
   // Normal API
   //
 
-  public Optional<Unit> findUnit(String name) {
+  public Optional<CodeUnit> findUnit(String name) {
     return Optional.ofNullable(map.get(name));
   }
 
@@ -95,7 +95,7 @@ public final class Units {
     return toNames().collect(Collectors.joining(delimiter));
   }
 
-  public Stream<Unit> toUnits() {
+  public Stream<CodeUnit> toUnits() {
     return map.values().stream();
   }
 
@@ -124,7 +124,7 @@ public final class Units {
     return List.copyOf(paths);
   }
 
-  public Map<String, String> toModulePatches(Units upstream) {
+  public Map<String, String> toModulePatches(CodeUnits upstream) {
     if (map.isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
     for (var unit : map.values()) {

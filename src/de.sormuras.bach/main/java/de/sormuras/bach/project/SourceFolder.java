@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /** A source directory record potentially targeting a specific Java SE release. */
-public final class Folder {
+public final class SourceFolder {
 
   //
   // Record API
@@ -32,7 +32,7 @@ public final class Folder {
   private final Path path;
   private final int release;
 
-  public Folder(Path path, int release) {
+  public SourceFolder(Path path, int release) {
     this.path = path;
     this.release = release;
   }
@@ -58,11 +58,11 @@ public final class Folder {
   }
 
   @Factory
-  public static Folder of(Path path) {
+  public static SourceFolder of(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
     var file = path.normalize().getFileName();
     var name = file != null ? file : path.toAbsolutePath().getFileName();
-    return new Folder(path, parseReleaseNumber(name.toString()));
+    return new SourceFolder(path, parseReleaseNumber(name.toString()));
   }
 
   //

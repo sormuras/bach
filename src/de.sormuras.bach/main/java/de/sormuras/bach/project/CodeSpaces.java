@@ -21,13 +21,13 @@ import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Factory.Kind;
 
 /** A record of well-known code spaces. */
-public final class Spaces {
+public final class CodeSpaces {
 
   private final MainSpace main;
   private final TestSpace test;
   private final TestSpacePreview preview;
 
-  public Spaces(MainSpace main, TestSpace test, TestSpacePreview preview) {
+  public CodeSpaces(MainSpace main, TestSpace test, TestSpacePreview preview) {
     this.main = main;
     this.test = test;
     this.preview = preview;
@@ -50,23 +50,23 @@ public final class Spaces {
   //
 
   @Factory
-  public static Spaces of() {
-    return new Spaces(MainSpace.of(), TestSpace.of(), TestSpacePreview.of());
+  public static CodeSpaces of() {
+    return new CodeSpaces(MainSpace.of(), TestSpace.of(), TestSpacePreview.of());
   }
 
   @Factory(Kind.SETTER)
-  public Spaces main(MainSpace main) {
-    return new Spaces(main, test, preview);
+  public CodeSpaces main(MainSpace main) {
+    return new CodeSpaces(main, test, preview);
   }
 
   @Factory(Kind.SETTER)
-  public Spaces test(TestSpace test) {
-    return new Spaces(main, test, preview);
+  public CodeSpaces test(TestSpace test) {
+    return new CodeSpaces(main, test, preview);
   }
 
   @Factory(Kind.SETTER)
-  public Spaces preview(TestSpacePreview preview) {
-    return new Spaces(main, test, preview);
+  public CodeSpaces preview(TestSpacePreview preview) {
+    return new CodeSpaces(main, test, preview);
   }
 
   //

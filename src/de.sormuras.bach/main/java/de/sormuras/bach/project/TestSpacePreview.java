@@ -3,15 +3,15 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.internal.Factory;
 
 /** A code space for {@code test-preview} modules. */
-public final class TestSpacePreview implements Space<TestSpacePreview> {
+public final class TestSpacePreview implements CodeSpace<TestSpacePreview> {
 
-  private final Units units;
+  private final CodeUnits units;
 
-  public TestSpacePreview(Units units) {
+  public TestSpacePreview(CodeUnits units) {
     this.units = units;
   }
 
-  public Units units() {
+  public CodeUnits units() {
     return units;
   }
 
@@ -22,11 +22,11 @@ public final class TestSpacePreview implements Space<TestSpacePreview> {
 
   @Factory
   public static TestSpacePreview of() {
-    return new TestSpacePreview(Units.of());
+    return new TestSpacePreview(CodeUnits.of());
   }
 
   @Factory(Factory.Kind.SETTER)
-  public TestSpacePreview units(Units units) {
+  public TestSpacePreview units(CodeUnits units) {
     return new TestSpacePreview(units);
   }
 }

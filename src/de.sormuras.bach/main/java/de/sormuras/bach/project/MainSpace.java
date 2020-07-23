@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /** A code space for {@code main} modules. */
-public final class MainSpace implements Space<MainSpace> {
+public final class MainSpace implements CodeSpace<MainSpace> {
 
   /** A modifier on a main code space. */
   public enum Modifier {
@@ -80,11 +80,11 @@ public final class MainSpace implements Space<MainSpace> {
   }
 
   private final Set<Modifier> modifiers;
-  private final Release release;
-  private final Units units;
+  private final JavaRelease release;
+  private final CodeUnits units;
   private final Tweaks tweaks;
 
-  public MainSpace(Set<Modifier> modifiers, Release release, Units units, Tweaks tweaks) {
+  public MainSpace(Set<Modifier> modifiers, JavaRelease release, CodeUnits units, Tweaks tweaks) {
     this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
     this.release = release;
     this.units = units;
@@ -95,11 +95,11 @@ public final class MainSpace implements Space<MainSpace> {
     return modifiers;
   }
 
-  public Release release() {
+  public JavaRelease release() {
     return release;
   }
 
-  public Units units() {
+  public CodeUnits units() {
     return units;
   }
 
@@ -111,8 +111,8 @@ public final class MainSpace implements Space<MainSpace> {
   public static MainSpace of() {
     return new MainSpace(
         Set.of(Modifier.API_DOCUMENTATION, Modifier.CUSTOM_RUNTIME_IMAGE),
-        Release.ofRuntime(),
-        Units.of(),
+        JavaRelease.ofRuntime(),
+        CodeUnits.of(),
         Tweaks.of());
   }
 
@@ -122,12 +122,12 @@ public final class MainSpace implements Space<MainSpace> {
   }
 
   @Factory(Factory.Kind.SETTER)
-  public MainSpace release(Release release) {
+  public MainSpace release(JavaRelease release) {
     return new MainSpace(modifiers, release, units, tweaks);
   }
 
   @Factory(Factory.Kind.SETTER)
-  public MainSpace units(Units units) {
+  public MainSpace units(CodeUnits units) {
     return new MainSpace(modifiers, release, units, tweaks);
   }
 
@@ -160,6 +160,6 @@ public final class MainSpace implements Space<MainSpace> {
   }
 
   public Optional<String> findMainModule() {
-    return Modules.findMainModule(units.toUnits().map(Unit::descriptor));
+    return Modules.findMainModule(units.toUnits().map(CodeUnit::descriptor));
   }
 }

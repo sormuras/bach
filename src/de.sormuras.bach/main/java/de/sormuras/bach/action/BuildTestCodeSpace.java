@@ -20,8 +20,8 @@ package de.sormuras.bach.action;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.Space;
-import de.sormuras.bach.project.Unit;
+import de.sormuras.bach.project.CodeSpace;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.TestModule;
@@ -32,7 +32,7 @@ import java.util.List;
 /** An abstract action with test-realm specific build support. */
 abstract class BuildTestCodeSpace<R> extends BuildCodeSpace<R> {
 
-  BuildTestCodeSpace(Bach bach, Space<R> realm) {
+  BuildTestCodeSpace(Bach bach, CodeSpace<R> realm) {
     super(bach, realm);
   }
 
@@ -53,7 +53,7 @@ abstract class BuildTestCodeSpace<R> extends BuildCodeSpace<R> {
     space().units().toUnits().forEach(this::buildReportsByExecutingModule);
   }
 
-  public void buildReportsByExecutingModule(Unit unit) {
+  public void buildReportsByExecutingModule(CodeUnit unit) {
     var module = unit.name();
     var modulePaths = Paths.retainExisting(computeModulePathsForRuntime(unit));
 
@@ -86,9 +86,9 @@ abstract class BuildTestCodeSpace<R> extends BuildCodeSpace<R> {
 
   public abstract Path[] computeModulePathsForCompileTime();
 
-  public abstract Path[] computeModulePathsForRuntime(Unit unit);
+  public abstract Path[] computeModulePathsForRuntime(CodeUnit unit);
 
-  public JUnit computeJUnitCall(Unit unit, List<Path> modulePaths) {
+  public JUnit computeJUnitCall(CodeUnit unit, List<Path> modulePaths) {
     var module = unit.name();
     return new JUnit(module, modulePaths, List.of())
         .with("--select-module", module)

@@ -26,11 +26,11 @@ import java.util.StringJoiner;
  *
  * @see Runtime.Version#feature()
  */
-public final class Release {
+public final class JavaRelease {
 
   private final int feature;
 
-  public Release(int feature) {
+  public JavaRelease(int feature) {
     this.feature = feature;
   }
 
@@ -42,7 +42,7 @@ public final class Release {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    Release that = (Release) o;
+    JavaRelease that = (JavaRelease) o;
     return feature == that.feature;
   }
 
@@ -53,7 +53,7 @@ public final class Release {
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", Release.class.getSimpleName() + "[", "]")
+    return new StringJoiner(", ", JavaRelease.class.getSimpleName() + "[", "]")
         .add("feature=" + feature)
         .toString();
   }
@@ -62,15 +62,15 @@ public final class Release {
   // Factory API
   //
 
-  private static final Release RUNTIME = of(Runtime.version().feature());
+  private static final JavaRelease RUNTIME = of(Runtime.version().feature());
 
   @Factory
-  public static Release ofRuntime() {
+  public static JavaRelease ofRuntime() {
     return RUNTIME;
   }
 
   @Factory
-  public static Release of(int feature) {
-    return new Release(feature);
+  public static JavaRelease of(int feature) {
+    return new JavaRelease(feature);
   }
 }

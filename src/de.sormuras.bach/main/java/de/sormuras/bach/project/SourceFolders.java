@@ -28,15 +28,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** A list of source folder objects. */
-public final class Folders {
+public final class SourceFolders {
 
-  private final List<Folder> list;
+  private final List<SourceFolder> list;
 
-  public Folders(List<Folder> list) {
+  public SourceFolders(List<SourceFolder> list) {
     this.list = List.copyOf(list);
   }
 
-  public List<Folder> list() {
+  public List<SourceFolder> list() {
     return list;
   }
 
@@ -44,63 +44,63 @@ public final class Folders {
   // Configuration API
   //
 
-  static List<Folder> list(Path infoDirectory, int javaRelease) {
-    var source = Folder.of(infoDirectory); // contains module-info.java file
+  static List<SourceFolder> list(Path infoDirectory, int javaRelease) {
+    var source = SourceFolder.of(infoDirectory); // contains module-info.java file
     var parent = infoDirectory.getParent();
     if (javaRelease != 0 || source.release() == 0 || parent == null) {
       var java = infoDirectory.resolveSibling("java");
       if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
-      return List.of(new Folder(java, javaRelease), source);
+      return List.of(new SourceFolder(java, javaRelease), source);
     }
     return listMapFilterSortedCollect(parent);
   }
 
-  static List<Folder> listMapFilterSortedCollect(Path path) {
+  static List<SourceFolder> listMapFilterSortedCollect(Path path) {
     return Paths.list(path, Files::isDirectory).stream()
-        .map(Folder::of)
-        .filter(Folder::isTargeted)
-        .sorted(Comparator.comparingInt(Folder::release))
+        .map(SourceFolder::of)
+        .filter(SourceFolder::isTargeted)
+        .sorted(Comparator.comparingInt(SourceFolder::release))
         .collect(Collectors.toUnmodifiableList());
   }
 
   @Factory
-  public static Folders of() {
-    return new Folders(List.of());
+  public static SourceFolders of() {
+    return new SourceFolders(List.of());
   }
 
   @Factory
-  public static Folders of(Path infoDirectory) {
+  public static SourceFolders of(Path infoDirectory) {
     return of(infoDirectory, 0);
   }
 
   @Factory
-  public static Folders of(Path infoDirectory, int javaRelease) {
-    return new Folders(list(infoDirectory, javaRelease));
+  public static SourceFolders of(Path infoDirectory, int javaRelease) {
+    return new SourceFolders(list(infoDirectory, javaRelease));
   }
 
   @Factory(Kind.OPERATOR)
-  public Folders with(Folder... additionalDirectories) {
+  public SourceFolders with(SourceFolder... additionalDirectories) {
     var directories = new ArrayList<>(list);
     directories.addAll(List.of(additionalDirectories));
-    return new Folders(directories);
+    return new SourceFolders(directories);
   }
 
   //
   // Normal API
   //
 
-  public Folder first() {
+  public SourceFolder first() {
     return list.get(0);
   }
 
-  public Folder last() {
+  public SourceFolder last() {
     return list.get(list.size() - 1);
   }
 
   public boolean isMultiTarget() {
     if (list.isEmpty()) return false;
     if (list.size() == 1) return first().isTargeted();
-    return list.stream().allMatch(Folder::isTargeted);
+    return list.stream().allMatch(SourceFolder::isTargeted);
   }
 
   public String toModuleSpecificSourcePath() {

@@ -20,7 +20,7 @@ package de.sormuras.bach.project;
 import de.sormuras.bach.internal.Factory;
 
 /** A named code space for modular source code units. */
-public interface Space<T> {
+public interface CodeSpace<T> {
 
   /**
    * Return the possibly empty name of the realm.
@@ -45,8 +45,8 @@ public interface Space<T> {
    *
    * @return A {@code JavaRelease} instance
    */
-  default Release release() {
-    return Release.ofRuntime();
+  default JavaRelease release() {
+    return JavaRelease.ofRuntime();
   }
 
   /**
@@ -54,7 +54,7 @@ public interface Space<T> {
    *
    * @return A {@code SourceUnits} instance
    */
-  Units units();
+  CodeUnits units();
 
   /**
    * Create a new copy instance with setting the given modular source units map.
@@ -63,7 +63,7 @@ public interface Space<T> {
    * @return A new copy instance
    */
   @Factory(Factory.Kind.SETTER)
-  T units(Units units);
+  T units(CodeUnits units);
 
   /**
    * Create a new copy instance with the given modular source units added.
@@ -72,7 +72,7 @@ public interface Space<T> {
    * @return A new copy instance
    */
   @Factory(Factory.Kind.OPERATOR)
-  default T with(Unit... moreUnits) {
+  default T with(CodeUnit... moreUnits) {
     return units(units().with(moreUnits));
   }
 }
