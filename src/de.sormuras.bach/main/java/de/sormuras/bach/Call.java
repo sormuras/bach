@@ -72,6 +72,12 @@ public interface Call<T> {
     return with(Argument.of(option));
   }
 
+  default T with(int index, String option) {
+    var list = new ArrayList<>(arguments());
+    list.add(index, Argument.of(option));
+    return with(list);
+  }
+
   default T with(String option, Object... values) {
     return with(Argument.of(option, values));
   }

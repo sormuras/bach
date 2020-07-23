@@ -19,6 +19,7 @@ package de.sormuras.bach.project;
 
 import de.sormuras.bach.internal.Factory;
 import de.sormuras.bach.internal.Modules;
+import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.util.EnumSet;
@@ -47,12 +48,18 @@ public final class MainSpace implements CodeSpace<MainSpace> {
   /** Tool call tweaks. */
   public static final class Tweaks {
 
+    private final Jar.Tweak jarTweak;
     private final Javac.Tweak javacTweak;
     private final Javadoc.Tweak javadocTweak;
 
-    public Tweaks(Javac.Tweak javacTweak, Javadoc.Tweak javadocTweak) {
+    public Tweaks(Jar.Tweak jarTweak, Javac.Tweak javacTweak, Javadoc.Tweak javadocTweak) {
+      this.jarTweak = jarTweak;
       this.javacTweak = javacTweak;
       this.javadocTweak = javadocTweak;
+    }
+
+    public Jar.Tweak jarTweak() {
+      return jarTweak;
     }
 
     public Javac.Tweak javacTweak() {
@@ -65,17 +72,22 @@ public final class MainSpace implements CodeSpace<MainSpace> {
 
     @Factory
     public static Tweaks of() {
-      return new Tweaks(javac -> javac, javadoc -> javadoc);
+      return new Tweaks(jar -> jar, javac -> javac, javadoc -> javadoc);
+    }
+
+    @Factory(Factory.Kind.SETTER)
+    public Tweaks jarTweak(Jar.Tweak tweak) {
+      return new Tweaks(tweak, javacTweak, javadocTweak);
     }
 
     @Factory(Factory.Kind.SETTER)
     public Tweaks javacTweak(Javac.Tweak tweak) {
-      return new Tweaks(tweak, javadocTweak);
+      return new Tweaks(jarTweak, tweak, javadocTweak);
     }
 
     @Factory(Factory.Kind.SETTER)
     public Tweaks javadocTweak(Javadoc.Tweak tweak) {
-      return new Tweaks(javacTweak, tweak);
+      return new Tweaks(jarTweak, javacTweak, tweak);
     }
   }
 

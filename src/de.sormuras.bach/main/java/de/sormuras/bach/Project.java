@@ -31,6 +31,7 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
 import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 import java.lang.module.ModuleDescriptor.Version;
@@ -177,6 +178,11 @@ public final class Project {
   @Factory(Kind.OPERATOR)
   public Project with(MainSpace.Tweaks tweaks) {
     return spaces(spaces.main(spaces.main().tweaks(tweaks)));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainSpaceJarTweak(Jar.Tweak tweak) {
+    return with(spaces.main().tweaks().jarTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)

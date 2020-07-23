@@ -20,9 +20,13 @@ package de.sormuras.bach.tool;
 import de.sormuras.bach.Call;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /** A {@code jar} call configuration. */
 public final class Jar implements Call<Jar> {
+
+  @FunctionalInterface
+  public interface Tweak extends UnaryOperator<Jar> {}
 
   private final List<Argument> arguments;
 

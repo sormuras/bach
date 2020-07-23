@@ -39,8 +39,10 @@ class Build {
             .withMainSpaceUnit("src/de.sormuras.bach/main/java/module-info.java")
             .withMainSpaceCompiledForJavaRelease(11)
             .with(MainSpace.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
+            .with(MainSpace.Modifier.API_DOCUMENTATION)
             // .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
-            .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
+            // .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
+            // .withMainSpaceJarTweak(jar -> jar)
             .withMainSpaceJavadocTweak(
                 javadoc ->
                     javadoc
