@@ -42,7 +42,8 @@ class Build {
             .with(MainSpace.Modifier.API_DOCUMENTATION)
             // .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
             // .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
-            // .withMainSpaceJarTweak(jar -> jar)
+            // .withMainSpaceJarTweak(jar -> jar.with(0, "--verbose"))
+            // .withMainSpaceJlinkTweak(jlink -> jlink.with("--verbose"))
             .withMainSpaceJavadocTweak(
                 javadoc ->
                     javadoc

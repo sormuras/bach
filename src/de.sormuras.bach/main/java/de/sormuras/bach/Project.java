@@ -34,6 +34,7 @@ import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -193,6 +194,11 @@ public final class Project {
   @Factory(Kind.OPERATOR)
   public Project withMainSpaceJavadocTweak(Javadoc.Tweak tweak) {
     return with(spaces.main().tweaks().javadocTweak(tweak));
+  }
+
+  @Factory(Kind.OPERATOR)
+  public Project withMainSpaceJlinkTweak(Jlink.Tweak tweak) {
+    return with(spaces.main().tweaks().jlinkTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)

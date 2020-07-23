@@ -46,7 +46,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
   @Override
   public void buildModules() {
     buildMainModules();
-    bach().run(this::buildApiDocumentation, this::buildMainCustomRuntimeImage);
+    bach().run(this::buildApiDocumentation, this::buildCustomRuntimeImage);
   }
 
   public void buildMainModules() {
@@ -127,11 +127,13 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     bach().run(computeJarForApiDocumentation());
   }
 
-  public void buildMainCustomRuntimeImage() {
+  public void buildCustomRuntimeImage() {
     if (!checkConditionForBuildCustomRuntimeImage()) return;
 
     Paths.deleteDirectories(base().workspace("image"));
-    bach().run(computeJLinkForCustomRuntimeImage());
+    var jlinkCall = computeJLinkForCustomRuntimeImage();
+    var jlinkTweak = main().tweaks().jlinkTweak();
+    bach().run(jlinkTweak.apply(jlinkCall));
   }
 
   public boolean checkConditionForBuildApiDocumentation() {

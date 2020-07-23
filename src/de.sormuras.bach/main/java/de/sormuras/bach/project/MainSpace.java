@@ -22,6 +22,7 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
+import de.sormuras.bach.tool.Jlink;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
@@ -51,11 +52,17 @@ public final class MainSpace implements CodeSpace<MainSpace> {
     private final Jar.Tweak jarTweak;
     private final Javac.Tweak javacTweak;
     private final Javadoc.Tweak javadocTweak;
+    private final Jlink.Tweak jlinkTweak;
 
-    public Tweaks(Jar.Tweak jarTweak, Javac.Tweak javacTweak, Javadoc.Tweak javadocTweak) {
+    public Tweaks(
+        Jar.Tweak jarTweak,
+        Javac.Tweak javacTweak,
+        Javadoc.Tweak javadocTweak,
+        Jlink.Tweak jlinkTweak) {
       this.jarTweak = jarTweak;
       this.javacTweak = javacTweak;
       this.javadocTweak = javadocTweak;
+      this.jlinkTweak = jlinkTweak;
     }
 
     public Jar.Tweak jarTweak() {
@@ -70,24 +77,33 @@ public final class MainSpace implements CodeSpace<MainSpace> {
       return javadocTweak;
     }
 
+    public Jlink.Tweak jlinkTweak() {
+      return jlinkTweak;
+    }
+
     @Factory
     public static Tweaks of() {
-      return new Tweaks(jar -> jar, javac -> javac, javadoc -> javadoc);
+      return new Tweaks(jar -> jar, javac -> javac, javadoc -> javadoc, jlink -> jlink);
     }
 
     @Factory(Factory.Kind.SETTER)
     public Tweaks jarTweak(Jar.Tweak tweak) {
-      return new Tweaks(tweak, javacTweak, javadocTweak);
+      return new Tweaks(tweak, javacTweak, javadocTweak, jlinkTweak);
     }
 
     @Factory(Factory.Kind.SETTER)
     public Tweaks javacTweak(Javac.Tweak tweak) {
-      return new Tweaks(jarTweak, tweak, javadocTweak);
+      return new Tweaks(jarTweak, tweak, javadocTweak, jlinkTweak);
     }
 
     @Factory(Factory.Kind.SETTER)
     public Tweaks javadocTweak(Javadoc.Tweak tweak) {
-      return new Tweaks(jarTweak, javacTweak, tweak);
+      return new Tweaks(jarTweak, javacTweak, tweak, jlinkTweak);
+    }
+
+    @Factory(Factory.Kind.SETTER)
+    public Tweaks jlinkTweak(Jlink.Tweak tweak) {
+      return new Tweaks(jarTweak, javacTweak, javadocTweak, tweak);
     }
   }
 
