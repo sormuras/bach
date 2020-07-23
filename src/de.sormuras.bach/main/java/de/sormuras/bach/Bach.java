@@ -69,7 +69,7 @@ import java.util.function.UnaryOperator;
 public class Bach {
 
   /** Version of the Java Shell Builder. */
-  public static final Version VERSION = Version.parse("11.6");
+  public static final Version VERSION = Version.parse("11-ea");
 
   /**
    * Main entry-point.
