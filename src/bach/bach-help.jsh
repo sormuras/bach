@@ -17,7 +17,7 @@
 
 var boot = Path.of(".bach/lib/bach-boot.jsh")
 if (Files.notExists(boot)) {
-  var version = System.getProperty("version", "HEAD");
+  var version = System.getProperty("version", "11.6");
   var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-boot.jsh";
   Files.createDirectories(boot.getParent());
   try (var stream = new URL(uri).openStream()) { Files.copy(stream, boot); }
