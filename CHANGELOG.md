@@ -6,6 +6,11 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
+## Version [11.6] released 2020-07-23
+
+- https://github.com/sormuras/bach/releases/tag/11.6
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.6
+
 ### Breaking Changes
 - Revise `Bach` API [#151]
 - Interface `Scribe` moved to hidden `de.sormuras.bach.internal` package
@@ -93,7 +98,8 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[11-ea]: https://github.com/sormuras/bach/compare/11.5...master
+[11-ea]: https://github.com/sormuras/bach/compare/11.6...master
+[11.6]: https://github.com/sormuras/bach/compare/11.5...11.6
 [11.5]: https://github.com/sormuras/bach/compare/11.4...11.5
 [11.4]: https://github.com/sormuras/bach/compare/11.3...11.4
 [11.3]: https://github.com/sormuras/bach/compare/11.3-M1...11.3
