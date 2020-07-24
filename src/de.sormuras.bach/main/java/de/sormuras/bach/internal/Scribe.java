@@ -19,17 +19,17 @@ package de.sormuras.bach.internal;
 
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Base;
-import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.CodeSpaces;
+import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.project.CodeUnits;
 import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.SourceFolders;
+import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.SourceFolder;
+import de.sormuras.bach.project.SourceFolders;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.project.CodeUnit;
-import de.sormuras.bach.project.CodeUnits;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -207,7 +207,7 @@ public interface Scribe {
       if (!project.base().isDefault()) addNewLine().addCall(".base", project.base());
       addNewLine().addCall(".name", project.name());
       addNewLine().addCall(".version", project.version().toString());
-      addNewLine().addCall(".sources", project.spaces());
+      addNewLine().addCall(".spaces", project.spaces());
       addNewLine().addCall(".library", project.library());
       depth--;
       return this;
@@ -236,8 +236,8 @@ public interface Scribe {
 
     public Scroll add(Link link) {
       depth++;
-      addOf(Link.class);
-      addNewLineAndContinue().add(link.module()).append(",");
+      add(Link.class).append(".of(");
+      /*addNewLineAndContinue().*/ add(link.module()).append(",");
       addNewLineAndContinue().add(link.uri());
       append(")");
       depth--;
@@ -247,9 +247,9 @@ public interface Scribe {
     public Scroll add(CodeSpaces sources) {
       depth++;
       addOf(CodeSpaces.class);
-      addNewLine().addCall(".mainSources", sources.main());
-      addNewLine().addCall(".testSources", sources.test());
-      addNewLine().addCall(".testPreview", sources.preview());
+      addNewLine().addCall(".main", sources.main());
+      addNewLine().addCall(".test", sources.test());
+      addNewLine().addCall(".preview", sources.preview());
       depth--;
       return this;
     }
