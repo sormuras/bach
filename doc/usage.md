@@ -1,11 +1,31 @@
 ## Usage
 
+This document describes usage of Bach.java in two parts.
+First, the JShell-based on-the-fly usage modes "boot" and "build" are described.
+Bridged via the "init" script, the second part introduces the basic usage of module `de.sormuras.bach` API.
+
+### Boot into JShell with Bach
+
+Launch `jshell` with Bach.java loaded and mounted in interactive mode.
+
+  - `load-file` = `https://sormuras.de/bach/boot`
+  - `load-file` = `https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh`
+
+A specific version, here 11.6, of Bach.java is loaded via the to following load files.
+
+  - `load-file` = `https://sormuras.de/bach@11.6/boot`
+  - `load-file` = `https://github.com/sormuras/bach/raw/11.6/src/bach/bach-boot.jsh`
+
+This version pattern is applicable to all JShell scripts.
+
+  - `https://sormuras.de/bach[@${VERSION}]/${NAME}` expands to
+  - `load-file` = `https://github.com/sormuras/bach/raw/${VERSION}/src/bach/bach-${NAME}.jsh`
 
 ### Zero-installation build via `jshell <load-file>`.
 
-Let `jshell` load, compile, and run it.
+Let `jshell` load and run Bach.java to build your project.
 
-  - `load-file` = `https://github.com/sormuras/bach/raw/master/src/bach/bach-build.jsh`
+  - `load-file` = `https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-build.jsh`
   - `load-file` = `https://sormuras.de/bach/build`
 
 ### Module `de.sormuras.bach` API
@@ -56,7 +76,7 @@ var project = new Project(
         // here be more immutable component values...
     );
 
-Bach.of(project).build().assertSuccessful();
+Bach.of(project).build();
 ```
 
 ##### Project Builder
