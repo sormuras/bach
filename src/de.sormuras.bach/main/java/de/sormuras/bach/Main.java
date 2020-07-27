@@ -97,8 +97,20 @@ public final class Main {
   }
 
   private void build() {
-    if (Files.exists(Path.of(".bach/src/build/build/Build.java"))) {
-      err.println("TODO: Custom build program execution is not supported, yet.");
+    var program = Path.of(".bach/src/build/build/Build.java");
+    if (Files.exists(program)) {
+      var java =
+          Call.tool(ProcessHandle.current().info().command().orElse("java"))
+              .with("--module-path", Path.of(".bach/lib"))
+              .with("--add-modules", "de.sormuras.bach")
+              .with(program);
+      try {
+        var process = new ProcessBuilder(java.toCommandLine()).inheritIO().start();
+        int code = process.waitFor();
+        if (code != 0) throw new AssertionError("Non-zero exit code: " + code);
+      } catch (Exception e) {
+        throw new RuntimeException("Running custom build program failed: " + e, e);
+      }
       return;
     }
     var configuration = Configuration.ofSystem();
