@@ -34,6 +34,9 @@ public final class Main {
 
   private static final Path WORKSPACE = Base.of().workspace();
 
+  /**
+   * An implementation of the {@link ToolProvider} SPI, providing access to Java Shell Builder tool.
+   */
   public static final class BachToolProvider implements ToolProvider {
 
     @Override
