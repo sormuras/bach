@@ -90,8 +90,11 @@ With internal packages hidden.
 
 #### Bach API
 
+1. Create an instance of `Bach` passing a configuration and a project.
+1. Invoke "action" methods on that newly created `Bach` instance.
+
 ```java
-var bach = new Bach(/*project, http client supplier, ...*/);
+var bach = new Bach(/*configuration, project, ...*/);
 
 bach.build();
 // TODO bach.clean();
@@ -100,51 +103,49 @@ bach.build();
 // TODO bach.info();
 ```
 
-#### Creating a new Project instance
+There are public static factory methods declared in class `Bach`.
+They all start with the prefix `of` and offer automatic configuration support.
 
-##### Project
+#### Project API
+
+A project descriptor describes the assets of a modular Java project.
+Once created and initialized, a descriptor instance is immutable.
+
+##### Canonical Project Constructor
 
 ```java
 var project = new Project(
         new Base(/*folders, files, ...*/),
-        new Info(/*title, version, ...*/)
+        "name",
+        Version.parse("47.11"),
         // here be more immutable component values...
     );
 
 Bach.of(project).build();
 ```
 
-##### Project Builder
+##### Project Copy Factories
 
-A `Builder` collects custom components and creates a `Project` instance.
-A `Builder` provides convenient setters accepting basic types: e.g. `String` instead of `Path`.
+The no-arg `Project.of()` factory creates an empty project descriptor with default values.
+You may derive a customized descriptor by copying an existing one.
 
 ```java
-var builder = new Project.Builder()
-    .title("Here be dragons...")
-    .version("47.11");
+var project = Project.of()
+        .name("demo"),
+        .version("47.11")
+        // here be more configurations...
 
-var project = builder.newProject();
-
-Bach.of(project).build().assertSuccessful();
+Bach.of(project).build();
 ```
 
-##### Project Builder Builder
+##### Project of the Current Working Directory
 
-A `Scanner` parses a directory and creates a `Builder` instance -- a builder builder.
-A `Scanner` is customizable like a builder.
+Scan the current working directory for project assets.
 
 ```java
-var scanner = new Scanner()
-    .base(Path.of(""))
-    .layout(...)
-    .limit(5);
+var project = Project.ofCurrentDirectory(/*base,offset,layout,limit,...?*/)
+        .name("demo")
+        .version("47.11");
 
-var builder = scanner.newBuilder()
-    .title("Here be dragons...")
-    .version("47.11");
-
-var project = builder.newProject();
-
-Bach.of(project).build().assertSuccessful();
+Bach.of(project).build();
 ```
