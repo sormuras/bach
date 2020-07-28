@@ -118,10 +118,10 @@ Listing the directory tree of `.bach` in `doc/project/JigsawQuickStart` yields:
 doc/project/JigsawQuickStart/.bach
 .
 ├───src                               | Contains the custom build program
-│       Build.java                    | Bach.of(project -> project).build().assertSuccessful();
+│       Build.java                    | Bach.of(project -> project).build();
 │
 └───workspace                         | Root of generated assets
-    │   summary.md                    | Last build plan, list of executed tasks, tool output, and more.
+    │   logbook.md                    | Last build summary, list of executed tasks, tool output, and more.
     │
     ├───classes
     │   └───com.greetings
@@ -135,15 +135,13 @@ doc/project/JigsawQuickStart/.bach
     ├───modules
     │       com.greetings.jar
     │
-    └───summaries                     | Collects all build summaries
-            summary-20200510_120040.md
-            summary-20200510_122708.md
+    :
 ```
 
 ### Quick-Start Guide "Greetings World"
 
 Three distinct module names.
-Two modules in main realm, two modules in test realm.
+Two modules in main code space, two modules in test code space.
 
 ```text
 ├───com.greetings
