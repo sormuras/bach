@@ -43,6 +43,50 @@ class JavacTests {
   }
 
   @Test
+  void testTimestampsOfRemovedClasses(@TempDir Path temp) {
+    var javac = ToolProvider.findFirst("javac").orElseThrow();
+    // var javap = ToolProvider.findFirst("javap").orElseThrow();
+
+    try {
+      Files.createDirectories(temp.resolve("src/a/a"));
+      Files.writeString(temp.resolve("src/a/module-info.java"), "module a {}");
+      Files.writeString(temp.resolve("src/a/a/A.java"), "package a; class A {}");
+      // Tree.walk(temp.resolve("src"), __ -> true, System.out::println);
+      javac.run(
+          System.out,
+          System.err,
+          // "-verbose",
+          "-d",
+          temp.resolve("bin").toString(),
+          "-g",
+          "--module",
+          "a",
+          "--module-source-path",
+          temp.resolve("src").toString());
+      // Tree.walk(temp.resolve("bin"), __ -> true, System.out::println);
+      // javap.run(System.out, System.err, temp.resolve("bin/a/a/A.class").toString());
+
+      Files.delete(temp.resolve("src/a/a/A.java"));
+      // Files.writeString(temp.resolve("src/a/a/D.java"), "package a; class D {}");
+      // Tree.walk(temp.resolve("src"), __ -> true, System.out::println);
+      javac.run(
+          System.out,
+          System.err,
+          "-verbose",
+          "-d",
+          temp.resolve("bin").toString(),
+          "--module",
+          "a",
+          "--module-source-path",
+          temp.resolve("src").toString());
+      // Tree.walk(temp.resolve("bin"), __ -> true, System.out::println);
+    } catch (Throwable throwable) {
+      Tree.walk(temp, __ -> true, System.err::println);
+      throw new AssertionError(throwable);
+    }
+  }
+
+  @Test
   void testSeparateJavaAndModuleDirectories(@TempDir Path temp) {
     var root = Path.of("src", "test.base", "test", "resources", "jdk");
     var base = root.resolve("SeparateJavaAndModuleDirectories");
