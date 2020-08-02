@@ -257,7 +257,7 @@ public interface Scribe {
     public Scroll add(MainSpace main) {
       depth++;
       addOf(MainSpace.class);
-      for (var modifier : main.modifiers()) addNewLine().addCall(".with", modifier);
+      for (var feature : main.features()) addNewLine().addCall(".with", feature);
       addNewLine().addCall(".release", main.release());
       addNewLine().addCall(".units", main.units());
       depth--;

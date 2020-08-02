@@ -23,14 +23,15 @@ import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Scribe;
 import de.sormuras.bach.project.Base;
-import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.CodeSpaces;
+import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.project.Feature;
 import de.sormuras.bach.project.JavaRelease;
 import de.sormuras.bach.project.Library;
 import de.sormuras.bach.project.Link;
+import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.tool.JUnit;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
@@ -151,28 +152,59 @@ public final class Project {
   }
 
   @Factory(Kind.OPERATOR)
-  public Project with(MainSpace.Modifier... modifiers) {
+  public Project with(Feature... modifiers) {
     return spaces(spaces.main(spaces.main().with(modifiers)));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project without(MainSpace.Modifier... modifiers) {
+  public Project without(Feature... modifiers) {
     return spaces(spaces.main(spaces.main().without(modifiers)));
   }
 
+  /**
+   * Compile main code space for the given Java SE release.
+   *
+   * <p>Compiles source code according to the rules of the Java programming language for the
+   * specified Java SE release, generating class files which target that release. Source code is
+   * compiled against the combined Java SE and JDK API for the specified release.
+   *
+   * <p>The supported values of release are the current Java SE release and a limited number of
+   * previous releases, detailed in the command-line help.
+   *
+   * @param release the feature number of the Java release to compile for
+   * @return new {@code Project} instance whose main code space is compiled the given Java release
+   */
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceCompiledForJavaRelease(int feature) {
-    return spaces(spaces.main(spaces.main().release(JavaRelease.of(feature))));
+  public Project targetJavaRelease(int release) {
+    return spaces(spaces.main(spaces.main().release(JavaRelease.of(release))));
   }
 
+  /**
+   * Add a code unit to the main space by parsing the given path for a {@code module-info.java}.
+   *
+   * @param path to a {@code module-info.java} file or its parent directory
+   * @return new {@code Project} instance with the code unit added to its main code space
+   * @see CodeUnit
+   * @see MainSpace
+   */
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceUnit(String path) {
+  public Project module(String path) {
     var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.main(spaces.main().with(unit)));
   }
 
+  /**
+   * Add a code unit to the main space by parsing the given path for a {@code module-info.java}.
+   *
+   * @param path to a {@code module-info.java} file or its parent directory
+   * @param defaultJavaRelease to use if the directory doesn't contain a parsable release number
+   * @return new {@code Project} instance with the code unit added to its main code space
+   * @see CodeUnit
+   * @see MainSpace
+   * @see de.sormuras.bach.project.SourceFolders#of(Path, int)
+   */
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceUnit(String path, int defaultJavaRelease) {
+  public Project module(String path, int defaultJavaRelease) {
     var unit = CodeUnit.of(Path.of(path), defaultJavaRelease);
     return spaces(spaces.main(spaces.main().with(unit)));
   }
@@ -183,31 +215,30 @@ public final class Project {
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceJarTweak(Jar.Tweak tweak) {
+  public Project tweakJarCall(Jar.Tweak tweak) {
     return with(spaces.main().tweaks().jarTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceJavacTweak(Javac.Tweak tweak) {
+  public Project tweakJavacCall(Javac.Tweak tweak) {
     return with(spaces.main().tweaks().javacTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceJavadocTweak(Javadoc.Tweak tweak) {
+  public Project tweakJavadocCall(Javadoc.Tweak tweak) {
     return with(spaces.main().tweaks().javadocTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withMainSpaceJlinkTweak(Jlink.Tweak tweak) {
+  public Project tweakJlinkCall(Jlink.Tweak tweak) {
     return with(spaces.main().tweaks().jlinkTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withTestSpaceUnit(String path) {
+  public Project withTestModule(String path) {
     var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.test(spaces.test().with(unit)));
   }
-
 
   @Factory(Kind.OPERATOR)
   public Project with(TestSpace.Tweaks tweaks) {
@@ -215,12 +246,12 @@ public final class Project {
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withTestSpaceJUnitTweak(JUnit.Tweak tweak) {
+  public Project tweakJUnitCall(JUnit.Tweak tweak) {
     return with(spaces.test().tweaks().junitTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)
-  public Project withTestSpacePreviewUnit(String path) {
+  public Project withTestPreviewModule(String path) {
     var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.preview(spaces.preview().with(unit)));
   }

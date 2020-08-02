@@ -21,9 +21,9 @@ import de.sormuras.bach.Bach;
 import de.sormuras.bach.Call;
 import de.sormuras.bach.internal.Modules;
 import de.sormuras.bach.internal.Paths;
-import de.sormuras.bach.project.MainSpace;
-import de.sormuras.bach.project.MainSpace.Modifier;
 import de.sormuras.bach.project.CodeUnit;
+import de.sormuras.bach.project.Feature;
+import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.tool.Jar;
 import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
@@ -85,7 +85,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
       var sources = new ArrayDeque<>(folders.list());
       var sources0 = sources.removeFirst();
       var classes0 = base().classes("", sources0.release(), module);
-      var includeSources = main().is(Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR);
+      var includeSources = main().is(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
       var jar =
           Call.jar()
               .with("--create")
@@ -138,7 +138,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
   public boolean checkConditionForBuildApiDocumentation() {
     // TODO Parse `module-info.java` files for Javadoc comments...
-    return main().is(Modifier.API_DOCUMENTATION);
+    return main().is(Feature.CREATE_API_DOCUMENTATION);
   }
 
   public boolean checkConditionForBuildCustomRuntimeImage() {
@@ -148,7 +148,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
       var message = "Creation of custom runtime image may fail -- automatic modules detected: %s";
       log(System.Logger.Level.WARNING, message, autos);
     }
-    return main().is(Modifier.CUSTOM_RUNTIME_IMAGE) && main().findMainModule().isPresent();
+    return main().is(Feature.CREATE_CUSTOM_RUNTIME_IMAGE) && main().findMainModule().isPresent();
   }
 
   public Javac computeJavacCall() {
@@ -177,7 +177,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
             .withArchiveFile(base().sources("").resolve(file))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
-    if (main().is(Modifier.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
+    if (main().is(Feature.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
       jar = jar.with(unit.resources(), (call, resource) -> call.with("-C", resource, "."));
     }
     for (var source : sources) {
@@ -189,7 +189,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
   public Jar computeJarForMainModule(CodeUnit unit) {
     var jar = computeJarCall(unit);
-    if (main().is(Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
+    if (main().is(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR)) {
       jar = jar.with(unit.sources().list(), (call, src) -> call.with("-C", src.path(), "."));
     }
     return jar;

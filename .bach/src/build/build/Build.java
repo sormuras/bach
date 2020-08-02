@@ -19,8 +19,8 @@ package build;
 
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Project;
+import de.sormuras.bach.project.Feature;
 import de.sormuras.bach.project.Link;
-import de.sormuras.bach.project.MainSpace;
 
 /** Bach's own build program. */
 class Build {
@@ -36,15 +36,15 @@ class Build {
             /*
              * Configure main code space.
              */
-            .withMainSpaceUnit("src/de.sormuras.bach/main/java/module-info.java")
-            .withMainSpaceCompiledForJavaRelease(11)
-            .with(MainSpace.Modifier.INCLUDE_SOURCES_IN_MODULAR_JAR)
-            .with(MainSpace.Modifier.API_DOCUMENTATION)
-            .without(MainSpace.Modifier.CUSTOM_RUNTIME_IMAGE)
-            // .withMainSpaceJavacTweak(javac -> javac.with("-verbose"))
-            // .withMainSpaceJarTweak(jar -> jar.with(0, "--verbose"))
-            // .withMainSpaceJlinkTweak(jlink -> jlink.with("--verbose"))
-            .withMainSpaceJavadocTweak(
+            .module("src/de.sormuras.bach/main/java/module-info.java")
+            .targetJavaRelease(11)
+            .with(Feature.CREATE_API_DOCUMENTATION)
+            .with(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR)
+            .without(Feature.CREATE_CUSTOM_RUNTIME_IMAGE)
+            // .tweakJavacCall(javac -> javac.with("-verbose"))
+            // .tweakJarCall(jar -> jar.with(0, "--verbose"))
+            .tweakJlinkCall(jlink -> jlink.with("--verbose"))
+            .tweakJavadocCall(
                 javadoc ->
                     javadoc
                         .with("-windowtitle", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
@@ -60,14 +60,14 @@ class Build {
             /*
              * Configure test code space.
              */
-            .withTestSpaceUnit("src/de.sormuras.bach/test/java-module/module-info.java")
-            .withTestSpaceUnit("src/test.base/test/java/module-info.java")
-            .withTestSpaceUnit("src/test.modules/test/java/module-info.java")
-            // .withTestSpaceJUnitTweak(junit -> junit.with("--fail-if-no-tests"))
+            .withTestModule("src/de.sormuras.bach/test/java-module/module-info.java")
+            .withTestModule("src/test.base/test/java/module-info.java")
+            .withTestModule("src/test.modules/test/java/module-info.java")
+            // .tweakJUnitCall(junit -> junit.with("--fail-if-no-tests"))
             /*
              * Configure test-preview code space.
              */
-            .withTestSpacePreviewUnit("src/test.preview/test-preview/java/module-info.java")
+            .withTestPreviewModule("src/test.preview/test-preview/java/module-info.java")
             /*
              * Configure external library resolution.
              */

@@ -31,21 +31,6 @@ import java.util.TreeSet;
 /** A code space for {@code main} modules. */
 public final class MainSpace implements CodeSpace<MainSpace> {
 
-  /** A modifier on a main code space. */
-  public enum Modifier {
-    /** Include {@code *.java} files alongside with {@code *.class} files into each modular JAR. */
-    INCLUDE_SOURCES_IN_MODULAR_JAR,
-
-    /** Include all resource files alongside with {@code *.java} files into each sources JAR. */
-    INCLUDE_RESOURCES_IN_SOURCES_JAR,
-
-    /** Generate HTML pages of API documentation from main source files. */
-    API_DOCUMENTATION,
-
-    /** Assemble and optimize main modules and their dependencies into a custom runtime image. */
-    CUSTOM_RUNTIME_IMAGE
-  }
-
   /** Tool call tweaks. */
   public static final class Tweaks {
 
@@ -107,20 +92,20 @@ public final class MainSpace implements CodeSpace<MainSpace> {
     }
   }
 
-  private final Set<Modifier> modifiers;
+  private final Set<Feature> features;
   private final JavaRelease release;
   private final CodeUnits units;
   private final Tweaks tweaks;
 
-  public MainSpace(Set<Modifier> modifiers, JavaRelease release, CodeUnits units, Tweaks tweaks) {
-    this.modifiers = modifiers.isEmpty() ? Set.of() : EnumSet.copyOf(modifiers);
+  public MainSpace(Set<Feature> features, JavaRelease release, CodeUnits units, Tweaks tweaks) {
+    this.features = features.isEmpty() ? Set.of() : EnumSet.copyOf(features);
     this.release = release;
     this.units = units;
     this.tweaks = tweaks;
   }
 
-  public Set<Modifier> modifiers() {
-    return modifiers;
+  public Set<Feature> features() {
+    return features;
   }
 
   public JavaRelease release() {
@@ -137,45 +122,41 @@ public final class MainSpace implements CodeSpace<MainSpace> {
 
   @Factory
   public static MainSpace of() {
-    return new MainSpace(
-        Set.of(Modifier.API_DOCUMENTATION, Modifier.CUSTOM_RUNTIME_IMAGE),
-        JavaRelease.ofRuntime(),
-        CodeUnits.of(),
-        Tweaks.of());
+    return new MainSpace(Feature.DEFAULTS, JavaRelease.ofRuntime(), CodeUnits.of(), Tweaks.of());
   }
 
   @Factory(Factory.Kind.SETTER)
-  public MainSpace modifiers(Set<Modifier> modifiers) {
-    return new MainSpace(modifiers, release, units, tweaks);
+  public MainSpace features(Set<Feature> features) {
+    return new MainSpace(features, release, units, tweaks);
   }
 
   @Factory(Factory.Kind.SETTER)
   public MainSpace release(JavaRelease release) {
-    return new MainSpace(modifiers, release, units, tweaks);
+    return new MainSpace(features, release, units, tweaks);
   }
 
   @Factory(Factory.Kind.SETTER)
   public MainSpace units(CodeUnits units) {
-    return new MainSpace(modifiers, release, units, tweaks);
+    return new MainSpace(features, release, units, tweaks);
   }
 
   @Factory(Factory.Kind.SETTER)
   public MainSpace tweaks(Tweaks tweaks) {
-    return new MainSpace(modifiers, release, units, tweaks);
+    return new MainSpace(features, release, units, tweaks);
   }
 
   @Factory(Factory.Kind.OPERATOR)
-  public MainSpace with(Modifier... moreModifiers) {
-    var mergedModifiers = new TreeSet<>(modifiers);
-    mergedModifiers.addAll(Set.of(moreModifiers));
-    return modifiers(mergedModifiers);
+  public MainSpace with(Feature... moreFeatures) {
+    var mergedFeatures = new TreeSet<>(features);
+    mergedFeatures.addAll(Set.of(moreFeatures));
+    return features(mergedFeatures);
   }
 
   @Factory(Factory.Kind.OPERATOR)
-  public MainSpace without(Modifier... redundantModifiers) {
-    var mergedModifiers = new TreeSet<>(modifiers);
-    mergedModifiers.removeAll(Set.of(redundantModifiers));
-    return modifiers(mergedModifiers);
+  public MainSpace without(Feature... redundantFeatures) {
+    var mergedFeatures = new TreeSet<>(features);
+    mergedFeatures.removeAll(Set.of(redundantFeatures));
+    return features(mergedFeatures);
   }
 
   @Override
@@ -183,8 +164,8 @@ public final class MainSpace implements CodeSpace<MainSpace> {
     return "";
   }
 
-  public boolean is(Modifier modifier) {
-    return modifiers.contains(modifier);
+  public boolean is(Feature feature) {
+    return features.contains(feature);
   }
 
   public Optional<String> findMainModule() {

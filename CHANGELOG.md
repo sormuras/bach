@@ -6,6 +6,14 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
+### Breaking Changes
+- Drop "code space" from `Project`'s API [#156]
+- Promote `MainSpace.Modifier` enumeration to top-level type named `Feature`
+### New Features And Enhancements
+- Compile and run custom build program
+### Bug Fixes
+- Prevent NPE in class `Scribe` when adding an enumeration constant
+
 ## Version [11.6] released 2020-07-23
 
 - https://github.com/sormuras/bach/releases/tag/11.6
@@ -111,3 +119,4 @@ https://github.com/sormuras/bach/releases/tag/11.1
 [#126]: https://github.com/sormuras/bach/issues/126
 [#138]: https://github.com/sormuras/bach/issues/138
 [#151]: https://github.com/sormuras/bach/issues/151
+[#156]: https://github.com/sormuras/bach/issues/156
