@@ -30,6 +30,7 @@ import de.sormuras.bach.project.SourceFolder;
 import de.sormuras.bach.project.SourceFolders;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -95,6 +96,7 @@ public interface Scribe {
         if (object instanceof Path) return add((Path) object);
       } catch (ReflectiveOperationException e) {
         // fall-through
+        System.getLogger(getClass().getName()).log(Level.WARNING, "add failed: " + object, e);
       }
 
       return append("new " + object.getClass().getCanonicalName() + "()");
@@ -127,12 +129,10 @@ public interface Scribe {
     }
 
     public Scroll add(Enum<?> constant) {
-      Class<?> declaringClass = constant.getDeclaringClass();
-      text.append(declaringClass.getEnclosingClass().getSimpleName())
-          .append('.')
-          .append(declaringClass.getSimpleName())
-          .append('.')
-          .append(constant.name());
+      var declaringClass = constant.getDeclaringClass();
+      var enclosingClass = declaringClass.getEnclosingClass();
+      if (enclosingClass != null) text.append(enclosingClass.getSimpleName()).append('.');
+      text.append(declaringClass.getSimpleName()).append('.').append(constant.name());
       return this;
     }
 
