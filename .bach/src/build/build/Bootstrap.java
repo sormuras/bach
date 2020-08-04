@@ -28,7 +28,7 @@ import java.util.spi.ToolProvider;
 
 public class Bootstrap {
   public static void main(String... args) throws Exception {
-    var destination = Path.of(".bach/workspace/classes/bootstrap");
+    var destination = Path.of(".bach/workspace/bootstrap/classes");
     var pattern = DateTimeFormatter.ofPattern("yyyy.MM.dd.HHmm").withZone(ZoneId.of("UTC"));
     var version = ModuleDescriptor.Version.parse(pattern.format(Instant.now()));
 
