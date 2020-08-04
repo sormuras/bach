@@ -88,6 +88,11 @@ class Build {
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withLibraryRequires("org.junit.platform.console");
 
-    Bach.of(project).build();
+    Bach.of(project)
+        .build(
+            bach -> {
+              bach.deleteClassesDirectories();
+              bach.executeDefaultBuildActions();
+            });
   }
 }

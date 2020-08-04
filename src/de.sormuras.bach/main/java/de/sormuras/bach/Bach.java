@@ -20,6 +20,7 @@ package de.sormuras.bach;
 import de.sormuras.bach.action.CompileMainSpace;
 import de.sormuras.bach.action.CompileTestSpace;
 import de.sormuras.bach.action.CompileTestSpacePreview;
+import de.sormuras.bach.action.DeleteClassesDirectories;
 import de.sormuras.bach.action.ResolveMissingExternalModules;
 import de.sormuras.bach.internal.Factory;
 import java.io.PrintWriter;
@@ -136,6 +137,10 @@ public class Bach {
   }
 
   public void build() {
+    build(Bach::executeDefaultBuildActions);
+  }
+
+  public void build(Consumer<Bach> strategy) {
     var logbook = configuration().logbook();
     var nameAndVersion = project().toNameAndVersion();
     logbook.log(Level.TRACE, toString());
@@ -149,8 +154,8 @@ public class Bach {
     }
     var start = Instant.now();
     try {
-      // TODO configuration().strategy().accept(this);
-      buildDefaultSequence();
+      strategy.accept(this);
+      logbook.printSummaryAndCheckErrors(this, System.err::println);
     } catch (Exception exception) {
       var message = logbook.log(Level.ERROR, "Build failed with throwing %s", exception);
       throw new AssertionError(message, exception);
@@ -163,12 +168,15 @@ public class Bach {
     }
   }
 
-  public void buildDefaultSequence() {
+  public void executeDefaultBuildActions() {
     resolveMissingExternalModules();
     compileMainSpace();
     compileTestSpace();
     compileTestSpaceWithPreviewLanguageFeatures();
-    configuration().logbook().printSummaryAndCheckErrors(this, System.err::println);
+  }
+
+  public void deleteClassesDirectories() {
+    new DeleteClassesDirectories(this).execute();
   }
 
   public void resolveMissingExternalModules() {
