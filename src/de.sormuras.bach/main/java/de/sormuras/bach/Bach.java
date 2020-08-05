@@ -199,7 +199,9 @@ public class Bach {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
 
-  public void run(Call<?> call) {
+  public void run(Call<?> toolCall) {
+    var call = configuration().tweak().apply(toolCall);
+
     var logbook = configuration().logbook();
     logbook.log(Level.INFO, call.toDescriptiveLine());
     logbook.log(Level.DEBUG, call.toCommandLine());

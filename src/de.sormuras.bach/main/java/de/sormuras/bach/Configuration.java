@@ -29,10 +29,12 @@ public final class Configuration {
 
   private final Flags flags;
   private final Logbook logbook;
+  private final Tweak tweak;
 
-  public Configuration(Flags flags, Logbook logbook) {
+  public Configuration(Flags flags, Logbook logbook, Tweak tweak) {
     this.flags = flags;
     this.logbook = logbook;
+    this.tweak = tweak;
   }
 
   public Flags flags() {
@@ -43,23 +45,32 @@ public final class Configuration {
     return logbook;
   }
 
+  public Tweak tweak() {
+    return tweak;
+  }
+
   //
   // Configuration API
   //
 
   @Factory
   public static Configuration ofSystem() {
-    return new Configuration(Flags.ofSystem(), Logbook.ofSystem());
+    return new Configuration(Flags.ofSystem(), Logbook.ofSystem(), Tweak.identity());
   }
 
   @Factory(Kind.SETTER)
   public Configuration flags(Flags flags) {
-    return new Configuration(flags, logbook);
+    return new Configuration(flags, logbook, tweak);
   }
 
   @Factory(Kind.SETTER)
   public Configuration logbook(Logbook logbook) {
-    return new Configuration(flags, logbook);
+    return new Configuration(flags, logbook, tweak);
+  }
+
+  @Factory(Kind.SETTER)
+  public Configuration tweak(Tweak tweak) {
+    return new Configuration(flags, logbook, tweak);
   }
 
   @Factory(Kind.OPERATOR)
