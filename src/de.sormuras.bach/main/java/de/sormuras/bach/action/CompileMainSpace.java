@@ -33,6 +33,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * An action that compiles main sources to modules, API documentation, and a custom runtime image.
@@ -61,61 +62,65 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
     var jars = new ArrayList<Jar>();
     for (var unit : main().units().map().values()) {
+      var single = !unit.sources().isMultiTarget();
       jars.add(computeJarForMainSources(unit));
-      var folders = unit.sources();
-      if (!folders.isMultiTarget()) {
-        jars.add(computeJarForMainModule(unit));
-        continue;
-      }
-      var module = unit.name();
-      var mainClass = unit.descriptor().mainClass();
-      for (var source : folders.list()) {
-        var sourcePaths = List.of(folders.first().path(), source.path());
-        var baseClasses = base().classes("", main().release().feature());
-        var javac =
-            Call.javac()
-                .with("--release", source.release())
-                .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
-                .with("--class-path", Paths.join(List.of(baseClasses)))
-                .with("-implicit:none") // generate classes for explicitly referenced source files
-                .with("-d", base().classes("", source.release(), module))
-                .with(Paths.find(List.of(source.path()), 99, Paths::isJavaFile));
-        bach().run(javac);
-      }
-      var sources = new ArrayDeque<>(folders.list());
-      var sources0 = sources.removeFirst();
-      var classes0 = base().classes("", sources0.release(), module);
-      var includeSources = main().is(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
-      var jar =
-          Call.jar()
-              .with("--create")
-              .withArchiveFile(project().toModuleArchive("", module))
-              .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
-              .with("-C", classes0, ".")
-              .with(includeSources, "-C", sources0.path(), ".");
-      var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
-      if (Files.notExists(classes0.resolve("module-info.class"))) {
-        for (var source : sources) {
-          var classes = base().classes("", source.release(), module);
-          if (Files.exists(classes.resolve("module-info.class"))) {
-            jar = jar.with("-C", classes, "module-info.class");
-            var size = Paths.list(classes, __ -> true).size();
-            if (size == 1) sourceDirectoryWithSolitaryModuleInfoClass = source;
-            break;
-          }
-        }
-      }
-      for (var source : sources) {
-        if (source == sourceDirectoryWithSolitaryModuleInfoClass) continue;
-        var classes = base().classes("", source.release(), module);
-        jar =
-            jar.with("--release", source.release())
-                .with("-C", classes, ".")
-                .with(includeSources, "-C", source.path(), ".");
-      }
-      jars.add(jar);
+      jars.add(single ? computeJarForMainModule(unit) : buildMultiReleaseModule(unit));
     }
     bach().run(bach()::run, jars);
+  }
+
+  public Jar buildMultiReleaseModule(CodeUnit unit) {
+    var folders = unit.sources();
+    var module = unit.name();
+    var mainClass = unit.descriptor().mainClass();
+    var release = main().release().feature();
+    var names = main().units().toNames();
+    var paths = names.map(name -> base().classes("", release, name)).collect(Collectors.toList());
+    for (var source : folders.list()) {
+      var sourcePaths = List.of(folders.first().path(), source.path());
+      var javac =
+          Call.javac()
+              .with("--release", source.release())
+              .with("--source-path", Paths.join(new TreeSet<>(sourcePaths)))
+              .with("--class-path", Paths.join(paths))
+              .with(source.release() >= 9, "--module-path", base().classes("", release))
+              .with("-implicit:none") // generate classes for explicitly referenced source files
+              .with("-d", base().classes("", source.release(), module))
+              .with(Paths.find(List.of(source.path()), 99, Paths::isJavaFile));
+      bach().run(javac);
+    }
+    var sources = new ArrayDeque<>(folders.list());
+    var sources0 = sources.removeFirst();
+    var classes0 = base().classes("", sources0.release(), module);
+    var includeSources = main().is(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
+    var jar =
+        Call.jar()
+            .with("--create")
+            .withArchiveFile(project().toModuleArchive("", module))
+            .with(mainClass.isPresent(), "--main-class", mainClass.orElse("?"))
+            .with("-C", classes0, ".")
+            .with(includeSources, "-C", sources0.path(), ".");
+    var sourceDirectoryWithSolitaryModuleInfoClass = sources0;
+    if (Files.notExists(classes0.resolve("module-info.class"))) {
+      for (var source : sources) {
+        var classes = base().classes("", source.release(), module);
+        if (Files.exists(classes.resolve("module-info.class"))) {
+          jar = jar.with("-C", classes, "module-info.class");
+          var size = Paths.list(classes, __ -> true).size();
+          if (size == 1) sourceDirectoryWithSolitaryModuleInfoClass = source;
+          break;
+        }
+      }
+    }
+    for (var source : sources) {
+      if (source == sourceDirectoryWithSolitaryModuleInfoClass) continue;
+      var classes = base().classes("", source.release(), module);
+      jar =
+          jar.with("--release", source.release())
+              .with("-C", classes, ".")
+              .with(includeSources, "-C", source.path(), ".");
+    }
+    return jar;
   }
 
   public void buildApiDocumentation() {
