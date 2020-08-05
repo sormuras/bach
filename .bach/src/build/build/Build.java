@@ -18,9 +18,13 @@
 package build;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Project;
 import de.sormuras.bach.project.Feature;
 import de.sormuras.bach.project.Link;
+import de.sormuras.bach.tool.DefaultTweak;
+import de.sormuras.bach.tool.JUnit;
+import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
 class Build {
@@ -29,7 +33,7 @@ class Build {
     var project =
         Project.of()
             /*
-             * Configure basic component values.
+             * Configure basic information.
              */
             .name("bach")
             .version(Bach.VERSION)
@@ -41,29 +45,12 @@ class Build {
             .with(Feature.CREATE_API_DOCUMENTATION)
             .with(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR)
             .without(Feature.CREATE_CUSTOM_RUNTIME_IMAGE)
-            // .tweakJavacCall(javac -> javac.with("-verbose"))
-            // .tweakJarCall(jar -> jar.with(0, "--verbose"))
-            .tweakJlinkCall(jlink -> jlink.with("--verbose"))
-            .tweakJavadocCall(
-                javadoc ->
-                    javadoc
-                        .with("-windowtitle", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
-                        .with("-header", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
-                        .with("-footer", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
-                        .with("-use")
-                        .with("-linksource")
-                        .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")
-                        .without("-Xdoclint")
-                        .with("-Xdoclint:-missing")
-                        .with("-Xwerror") // https://bugs.openjdk.java.net/browse/JDK-8237391
-                )
             /*
              * Configure test code space.
              */
             .withTestModule("src/de.sormuras.bach/test/java-module/module-info.java")
             .withTestModule("src/test.base/test/java/module-info.java")
             .withTestModule("src/test.modules/test/java/module-info.java")
-            // .tweakJUnitCall(junit -> junit.with("--fail-if-no-tests"))
             /*
              * Configure test-preview code space.
              */
@@ -88,11 +75,33 @@ class Build {
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
             .withLibraryRequires("org.junit.platform.console");
 
-    Bach.of(project)
-        .build(
-            bach -> {
-              bach.deleteClassesDirectories();
-              bach.executeDefaultBuildActions();
-            });
+    var configuration = Configuration.ofSystem().tweak(new Tweak());
+    new Bach(configuration, project).build(Build::sequence);
+  }
+
+  static void sequence(Bach bach) {
+    bach.deleteClassesDirectories();
+    bach.executeDefaultBuildActions();
+  }
+
+  static class Tweak extends DefaultTweak {
+    @Override
+    public JUnit tweakJUnit(JUnit junit) {
+      return junit.with("--fail-if-no-tests");
+    }
+
+    @Override
+    public Javadoc tweakJavadoc(Javadoc javadoc) {
+      return javadoc
+          .with("-windowtitle", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+          .with("-header", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+          .with("-footer", "\uD83C\uDFBC Bach.java " + Bach.VERSION)
+          .with("-use")
+          .with("-linksource")
+          .with("-link", "https://docs.oracle.com/en/java/javase/11/docs/api")
+          .without("-Xdoclint")
+          .with("-Xdoclint:-missing")
+          .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
+    }
   }
 }
