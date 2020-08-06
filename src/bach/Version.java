@@ -56,11 +56,13 @@ public class Version {
 
     var versionOrHEAD = version.endsWith("-ea") ? "HEAD" : version;
     var bachBuildJsh = Path.of("src/bach/bach-build.jsh");
+    var bachFetchJsh = Path.of("src/bach/bach-fetch.jsh");
     var bachHelpJsh = Path.of("src/bach/bach-help.jsh");
     var bachInitJsh = Path.of("src/bach/bach-init.jsh");
     sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
     sed(bachHelpJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
     sed(bachInitJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
+    sed(bachFetchJsh, "raw/.+/src", "raw/" + versionOrHEAD + "/src");
   }
 
   private static void sed(Path path, String regex, String replacement) throws Exception {
