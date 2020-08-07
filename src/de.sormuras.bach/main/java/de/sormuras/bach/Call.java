@@ -119,11 +119,15 @@ public interface Call<T> {
     return with(list);
   }
 
-  default String toCommandLine() {
+  default List<String> toCommand() {
     var command = new ArrayList<String>();
     command.add(name());
     command.addAll(toStrings());
-    return String.join(" ", command);
+    return command;
+  }
+
+  default String toCommandLine() {
+    return String.join(" ", toCommand());
   }
 
   default String toDescriptiveLine() {

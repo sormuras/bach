@@ -105,7 +105,7 @@ public final class Main {
               .with("--add-modules", "de.sormuras.bach")
               .with(program.toString());
       try {
-        var process = new ProcessBuilder(java.toCommandLine()).inheritIO().start();
+        var process = new ProcessBuilder(java.toCommand()).inheritIO().start();
         int code = process.waitFor();
         if (code != 0) throw new AssertionError("Non-zero exit code: " + code);
       } catch (Exception e) {
