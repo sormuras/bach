@@ -19,6 +19,7 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Base;
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
@@ -34,38 +35,24 @@ public final class Main {
 
   private static final Path WORKSPACE = Base.of().workspace();
 
-  /**
-   * An implementation of the {@link ToolProvider} SPI, providing access to Java Shell Builder tool.
-   */
-  public static final class BachToolProvider implements ToolProvider {
-
-    @Override
-    public String name() {
-      return "bach";
-    }
-
-    @Override
-    public int run(PrintWriter out, PrintWriter err, String... args) {
-      return new Main(out, err, args).run();
-    }
+  public static Main ofSystem() {
+    return new Main(new PrintWriter(System.out, true), new PrintWriter(System.err, true));
   }
 
   public static void main(String... args) {
-    var main = new Main(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
-    var code = main.run();
+    var main = ofSystem();
+    var code = main.run(args);
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 
   private final PrintWriter out, err;
-  private final String[] args;
 
-  private Main(PrintWriter out, PrintWriter err, String... args) {
+  private Main(PrintWriter out, PrintWriter err) {
     this.out = out;
     this.err = err;
-    this.args = args;
   }
 
-  private int run() {
+  public int run(String... args) {
     if (args.length == 0) {
       build();
       return 0;
@@ -96,29 +83,45 @@ public final class Main {
     return 0;
   }
 
-  private void build() {
+  public void build() {
+    var logbook = Logbook.ofSystem().printer(out::println);
+    var configuration = Configuration.ofSystem().logbook(logbook);
+    build(configuration);
+  }
+
+  public void build(Configuration configuration) {
     var program = Path.of(".bach/src/build/build/Build.java");
     if (Files.exists(program)) {
+      var flags = configuration.flags().set();
       var java =
           Call.tool(ProcessHandle.current().info().command().orElse("java"))
               .with("--module-path", Path.of(".bach/lib"))
               .with("--add-modules", "de.sormuras.bach")
               .with(program.toString());
       try {
-        var process = new ProcessBuilder(java.toCommand()).inheritIO().start();
+        var processBuilder = new ProcessBuilder(java.toCommand());
+        if (flags.contains(Flag.PROCESS_INHERIT_IO)) processBuilder.inheritIO();
+        var process = processBuilder.start();
         int code = process.waitFor();
+        if (flags.contains(Flag.PROCESS_TRANSFER_STREAMS)) {
+          var buffer = new ByteArrayOutputStream();
+          process.getInputStream().transferTo(buffer);
+          out.print(buffer.toString());
+          buffer.reset();
+          process.getErrorStream().transferTo(buffer);
+          err.print(buffer.toString());
+        }
         if (code != 0) throw new AssertionError("Non-zero exit code: " + code);
       } catch (Exception e) {
         throw new RuntimeException("Running custom build program failed: " + e, e);
       }
       return;
     }
-    var configuration = Configuration.ofSystem();
     var project = Project.ofCurrentDirectory();
     new Bach(configuration, project).build();
   }
 
-  private void help() {
+  public void help() {
     out.println("Usage: bach [actions...]");
 
     out.println();
@@ -141,5 +144,21 @@ public final class Main {
     var homepage = "https://github.com/sormuras/bach";
     out.println();
     out.printf("Find more documentation about module %s at: %s%n", nameAndVersion, homepage);
+  }
+
+  /**
+   * An implementation of the {@link ToolProvider} SPI, providing access to Java Shell Builder tool.
+   */
+  public static final class BachToolProvider implements ToolProvider {
+
+    @Override
+    public String name() {
+      return "bach";
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      return new Main(out, err).run(args);
+    }
   }
 }
