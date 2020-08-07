@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-if (!Files.deleteIfExists(Path.of(".bach/lib/fetch"))) {
+if (!Files.deleteIfExists(Path.of(".bach/lib/.fetch"))) {
   var found = java.lang.module.ModuleFinder.of(Path.of(".bach/lib")).find("de.sormuras.bach");
   if (found.isPresent()) {
     var module = found.get();
     System.out.println("Delete module " + module.descriptor().toNameAndVersion());
     Files.delete(Path.of(module.location().orElseThrow()));
   }
-  Files.createFile(Path.of(".bach/lib/fetch"));
+  Files.createDirectories(Path.of(".bach/lib/.fetch"));
 }
 
 /open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
