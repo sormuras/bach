@@ -15,15 +15,7 @@
  * limitations under the License.
  */
 
-var boot = Path.of(".bach/lib/bach-boot.jsh")
-if (Files.notExists(boot)) {
-  var version = System.getProperty("version", "HEAD");
-  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-boot.jsh";
-  Files.createDirectories(boot.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, boot); }
-}
-
-/open .bach/lib/bach-boot.jsh
+/open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
 
 Bach.main("help")
 

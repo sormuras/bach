@@ -59,9 +59,9 @@ public class Version {
     var bachHelpJsh = Path.of("src/bach/bach-help.jsh");
     var bachInitJsh = Path.of("src/bach/bach-init.jsh");
     var bachPullJsh = Path.of("src/bach/bach-pull.jsh");
-    sed(bachBuildJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
-    sed(bachHelpJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
-    sed(bachInitJsh, "\"version\", \".+\"", "\"version\", \"" + versionOrHEAD + '"');
+    sed(bachBuildJsh, "raw/.+/src", "raw/" + versionOrHEAD + "/src");
+    sed(bachHelpJsh, "raw/.+/src", "raw/" + versionOrHEAD + "/src");
+    sed(bachInitJsh, "raw/.+/src", "raw/" + versionOrHEAD + "/src");
     sed(bachPullJsh, "raw/.+/src", "raw/" + versionOrHEAD + "/src");
   }
 

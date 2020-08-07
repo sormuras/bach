@@ -15,30 +15,11 @@
  * limitations under the License.
  */
 
-var boot = Path.of(".bach/lib/bach-boot.jsh")
-if (Files.notExists(boot)) {
-  var version = System.getProperty("version", "HEAD");
-  var uri = "https://github.com/sormuras/bach/raw/" + version + "/src/bach/bach-boot.jsh";
-  Files.createDirectories(boot.getParent());
-  try (var stream = new URL(uri).openStream()) { Files.copy(stream, boot); }
-}
-
-/open .bach/lib/bach-boot.jsh
+/open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
 
 var code = 0
 try {
-  var build = Path.of(".bach/src/build/build/Build.java");
-  if (Files.exists(build)) {
-    var java = ProcessHandle.current().info().command().orElse("java");
-    var processBuilder = new ProcessBuilder(java, "--module-path", ".bach/lib", "--add-modules", "de.sormuras.bach", build.toString());
-    processBuilder.redirectErrorStream(true);
-    var process = processBuilder.start();
-    process.getInputStream().transferTo(System.out);
-    code = process.waitFor();
-  }
-  else {
-    Bach.of(project -> project).build();
-  }
+  Bach.main("build");
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
