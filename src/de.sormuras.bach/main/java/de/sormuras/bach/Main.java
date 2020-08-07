@@ -103,7 +103,7 @@ public final class Main {
           Call.tool(ProcessHandle.current().info().command().orElse("java"))
               .with("--module-path", Path.of(".bach/lib"))
               .with("--add-modules", "de.sormuras.bach")
-              .with(program);
+              .with(program.toString());
       try {
         var process = new ProcessBuilder(java.toCommandLine()).inheritIO().start();
         int code = process.waitFor();
