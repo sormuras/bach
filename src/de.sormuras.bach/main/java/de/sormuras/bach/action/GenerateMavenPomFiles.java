@@ -69,10 +69,10 @@ public abstract class GenerateMavenPomFiles implements Action {
         // deploy/maven/${MODULE}@${VERSION}.files
         var files =
             Call.tool("mvn")
-                .with(String.format("-DpomFile=\"%s\"", pomFile))
-                .with(String.format("-Dfile=\"%s\"", project().toMainModuleArchive(module)))
-                .with(String.format("-Dsources=\"%s\"", project().toMainSourceArchive(module)))
-                .with(String.format("-Djavadoc=\"%s\"", project().toMainApiDocumentationArchive()));
+                .with(String.format("-DpomFile=%s", pomFile))
+                .with(String.format("-Dfile=%s", project().toMainModuleArchive(module)))
+                .with(String.format("-Dsources=%s", project().toMainSourceArchive(module)))
+                .with(String.format("-Djavadoc=%s", project().toMainApiDocumentationArchive()));
         var cliFile = maven.resolve(nameAndVersion + ".files");
         Files.writeString(cliFile, String.join(" ", files.toStrings()));
       } catch (Exception e) {
