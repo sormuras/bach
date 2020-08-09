@@ -46,9 +46,7 @@ public class Version {
     sed(bach, pattern.pattern(), "Version VERSION = Version.parse(\"" + version + "\");");
 
     var readmeMd = Path.of("README.md");
-    var pomXml = Path.of("src/de.sormuras.bach/main/maven/pom.xml");
     sed(readmeMd, "# Bach.java .+ -", "# Bach.java " + version + " -");
-    sed(pomXml, "<version>.+</version>", "<version>" + version + "</version>");
 
     var versionOrSNAPSHOT = version.endsWith("-ea") ? "master-SNAPSHOT" : version;
     var bachBootJsh = Path.of("src/bach/bach-boot.jsh");
