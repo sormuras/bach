@@ -20,6 +20,8 @@ package build;
 import de.sormuras.bach.Bach;
 import de.sormuras.bach.Configuration;
 import de.sormuras.bach.Project;
+import de.sormuras.bach.action.GenerateMavenPomFiles;
+import de.sormuras.bach.project.CodeUnit;
 import de.sormuras.bach.project.Feature;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.tool.DefaultTweak;
@@ -82,6 +84,7 @@ class Build {
   static void sequence(Bach bach) {
     bach.deleteClassesDirectories();
     bach.executeDefaultBuildActions();
+    new GeneratePoms(bach).execute();
   }
 
   static class Tweak extends DefaultTweak {
@@ -102,6 +105,59 @@ class Build {
           .without("-Xdoclint")
           .with("-Xdoclint:-missing")
           .with("-Xwerror"); // https://bugs.openjdk.java.net/browse/JDK-8237391
+    }
+  }
+
+  static class GeneratePoms extends GenerateMavenPomFiles {
+
+    GeneratePoms(Bach bach) {
+      super(bach, "    ");
+    }
+
+    @Override
+    public String computeMavenGroupId(CodeUnit unit) {
+      return "de.sormuras.bach";
+    }
+
+    @Override
+    public void generateCoordinates(Pom pom, CodeUnit unit) {
+      super.generateCoordinates(pom, unit);
+
+      if (unit.name().equals("de.sormuras.bach")) {
+        var title = "\uD83C\uDFBC Java Shell Builder - Build modular Java projects with JDK tools";
+        pom.append("\n");
+        pom.addNewLine().add("name", "Bach.java");
+        pom.addNewLine().add("description", title);
+      }
+    }
+
+    @Override
+    public void generateFooter(GenerateMavenPomFiles.Pom pom) {
+      pom.append("\n");
+      pom.addNewLine().add("url", "https://github.com/sormuras/bach");
+      pom.addNewLine().depth(+1).append("<scm>");
+      pom.addNewLine().add("url", "https://github.com/sormuras/bach.git");
+      pom.depth(-1).addNewLine().append("</scm>");
+
+      pom.append("\n");
+      pom.addNewLine().depth(+1).append("<developers>");
+      pom.addNewLine().depth(+1).append("<developer>");
+      pom.addNewLine().add("name", "Christian Stein");
+      pom.addNewLine().add("id", "sormuras");
+      pom.depth(-1).addNewLine().append("</developer>");
+      pom.depth(-1).addNewLine().append("</developers>");
+
+      pom.append("\n");
+      pom.addNewLine().depth(+1).append("<licenses>");
+      pom.addNewLine().depth(+1).append("<license>");
+      pom.addNewLine().add("name", "Apache License, Version 2.0");
+      pom.addNewLine().add("url", "https://www.apache.org/licenses/LICENSE-2.0.txt");
+      pom.addNewLine().add("distribution", "repo");
+      pom.depth(-1).addNewLine().append("</license>");
+      pom.depth(-1).addNewLine().append("</licenses>");
+
+      pom.append("\n");
+      super.generateFooter(pom);
     }
   }
 }
