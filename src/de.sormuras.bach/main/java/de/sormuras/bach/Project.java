@@ -292,6 +292,22 @@ public final class Project {
         Stream.concat(spaces.test().units().toUnits(), spaces.preview().units().toUnits()));
   }
 
+  public Path toMainModuleArchive(String module) {
+    return toModuleArchive("", module);
+  }
+
+  public Path toMainSourceArchive(String module) {
+    return base.sources("").resolve(module + '@' + version + "-sources.jar");
+  }
+
+  public Path toMainApiDocumentationArchive() {
+    return toMainApiDocumentationArchive(name);
+  }
+
+  public Path toMainApiDocumentationArchive(String module) {
+    return base.documentation(module + '@' + version + "-api.jar");
+  }
+
   public Path toModuleArchive(String realm, String module) {
     return toModuleArchive(realm, module, version);
   }

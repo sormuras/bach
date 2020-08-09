@@ -63,7 +63,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     var jars = new ArrayList<Jar>();
     for (var unit : main().units().map().values()) {
       var single = !unit.sources().isMultiTarget();
-      jars.add(computeJarForMainSources(unit));
+      jars.add(computeJarCallForMainSources(unit));
       jars.add(single ? computeJarForMainModule(unit) : buildMultiReleaseModule(unit));
     }
     bach().run(bach()::run, jars);
@@ -129,7 +129,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     var javadocCall = computeJavadocCall();
     var javadocTweak = main().tweaks().javadocTweak();
     bach().run(javadocTweak.apply(javadocCall));
-    bach().run(computeJarForApiDocumentation());
+    bach().run(computeJarCallForApiDocumentation());
   }
 
   public void buildCustomRuntimeImage() {
@@ -172,14 +172,12 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
         .with("-d", base().classes("", release));
   }
 
-  public Jar computeJarForMainSources(CodeUnit unit) {
-    var module = unit.name();
+  public Jar computeJarCallForMainSources(CodeUnit unit) {
     var sources = new ArrayDeque<>(unit.sources().list());
-    var file = module + '@' + project().version() + "-sources.jar";
     var jar =
         Call.jar()
             .with("--create")
-            .withArchiveFile(base().sources("").resolve(file))
+            .withArchiveFile(project().toMainSourceArchive(unit.name()))
             .with("--no-manifest")
             .with("-C", sources.removeFirst().path(), ".");
     if (main().is(Feature.INCLUDE_RESOURCES_IN_SOURCES_JAR)) {
@@ -214,11 +212,10 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
         .with("--show-module-contents", "all");
   }
 
-  public Jar computeJarForApiDocumentation() {
-    var file = project().name() + '@' + project().version() + "-api.jar";
+  public Jar computeJarCallForApiDocumentation() {
     return Call.jar()
         .with("--create")
-        .withArchiveFile(base().documentation(file))
+        .withArchiveFile(project().toMainApiDocumentationArchive())
         .with("--no-manifest")
         .with("-C", base().documentation("api"), ".");
   }
