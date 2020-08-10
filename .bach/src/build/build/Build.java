@@ -26,6 +26,7 @@ import de.sormuras.bach.project.Feature;
 import de.sormuras.bach.project.Link;
 import de.sormuras.bach.tool.DefaultTweak;
 import de.sormuras.bach.tool.JUnit;
+import de.sormuras.bach.tool.Javac;
 import de.sormuras.bach.tool.Javadoc;
 
 /** Bach's own build program. */
@@ -88,6 +89,11 @@ class Build {
   }
 
   static class Tweak extends DefaultTweak {
+    @Override
+    public Javac tweakJavac(Javac javac) {
+      return javac.without("-Werror");
+    }
+
     @Override
     public JUnit tweakJUnit(JUnit junit) {
       return junit.with("--fail-if-no-tests");

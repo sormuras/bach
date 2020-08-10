@@ -24,6 +24,7 @@ import de.sormuras.bach.tool.JUnit;
 public final class TestSpace implements CodeSpace<TestSpace> {
 
   /** Tool call tweaks. */
+  @Deprecated(forRemoval = true)
   public static final class Tweaks {
 
     private final JUnit.Tweak junitTweak;

@@ -32,6 +32,7 @@ import java.util.TreeSet;
 public final class MainSpace implements CodeSpace<MainSpace> {
 
   /** Tool call tweaks. */
+  @Deprecated(forRemoval = true)
   public static final class Tweaks {
 
     private final Jar.Tweak jarTweak;
