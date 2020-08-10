@@ -10,8 +10,7 @@ install:
   - VERSION=$(java src/bach/Version.java)
   - if [[ $VERSION =~ ^.*-ea$ ]]; then java src/bach/Version.java ${VERSION}+${GIT_COMMIT:0:7}; fi
   - VERSION=$(java src/bach/Version.java)
-  - MODULE_AND_VERSION="de.sormuras.bach@${VERSION}"
-  - echo "MODULE_AND_VERSION=${MODULE_AND_VERSION}"
+  - echo "VERSION=${VERSION}"
   - java --show-version .bach/src/build/build/Bootstrap.java
-  - FILES=$(cat .bach/workspace/deploy/maven/${MODULE_AND_VERSION}.files)
-  - mvn --batch-mode --no-transfer-progress install:install-file ${FILES}
+  - MVN_INSTALL=mvn --batch-mode --no-transfer-progress install:install-file
+  - for files in .bach/workspace/deploy/maven/*.files ; do ${MVN_INSTALL} $(cat ${files}) ; done
