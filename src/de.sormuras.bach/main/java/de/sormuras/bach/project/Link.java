@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 
 /** A link is module-uri pair used to resolve external modules. */
@@ -100,9 +101,9 @@ public final class Link {
   }
 
   /**
-   * Create a new module link pointing to an artifact built by JitPack.
+   * Create a new module link pointing to an artifact of a single-module project built by JitPack.
    *
-   * @param module The module to used as the nominal part of the pair
+   * @param module The module to be used as the nominal part of the pair
    * @param user GitHub username or the complete group like {@code "com.azure.${USER}"}
    * @param repository Name of the repository or project
    * @param version The version string of the repository or project, which is either a release tag,
@@ -112,9 +113,35 @@ public final class Link {
    */
   @Factory
   public static Link ofJitPack(String module, String user, String repository, String version) {
+    return ofJitPack(module, user, repository, version, false);
+  }
+
+  /**
+   * Create a new module link pointing to an artifact built by JitPack.
+   *
+   * @param module The module to be used as the nominal part of the pair
+   * @param user GitHub username or the complete group like {@code "com.azure.${USER}"}
+   * @param repository Name of the repository or project
+   * @param version The version string of the repository or project, which is either a release tag,
+   *     a commit hash, or {@code "${BRANCH}-SNAPSHOT"} for a version that has not been released.
+   * @param multiModuleProject Pass {@code true} for a multi-module project or {@code false} for a
+   *     project that declares a single module.
+   * @return A new JitPack-based {@code Link} instance
+   * @see <a href="https://jitpack.io/docs">JitPack Documentation</a>
+   * @see <a href="https://jitpack.io/docs/BUILDING/#multi-module-projects">JitPack Multi-Module
+   *     Projects</a>
+   */
+  @Factory
+  public static Link ofJitPack(
+      String module, String user, String repository, String version, boolean multiModuleProject) {
     var group = user.indexOf('.') == -1 ? "com.github." + user : user;
-    var joiner = Maven.Joiner.of(group, repository, version);
-    return of(module, joiner.repository("https://jitpack.io").toString()).withVersion(version);
+    var uri = new StringJoiner("/")
+        .add("https://jitpack.io")
+        .add(group.replace('.', '/'))
+        .add(repository);
+    if (multiModuleProject) uri.add(module);
+    uri.add(version).add(module + "-" + version + ".jar");
+    return of(module, uri.toString()).withVersion(version);
   }
 
   /**
