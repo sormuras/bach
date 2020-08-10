@@ -24,6 +24,48 @@ Build modular Java projects with [JDK Foundation Tools].
 
     > `jshell https://sormuras.de/bach/build` - redirects to [bach-build.jsh](src/bach/bach-build.jsh)
 
+## JShell Scripts
+
+Bach provides a set of JShell-based script files in the [src/bach](https://github.com/sormuras/bach/tree/HEAD/src/bach) folder.
+
+All script files start with the `bach-` prefix, continue with the actual `${NAME}` of script and end with the `.jsh` file extension.
+To execute one of these scripts use it as a `load-file` argument for `jshell`.
+
+In order to save some type work, `https://sormuras.de/bach` provides a convenient redirection service.
+For example, to execute the `build` script from the command line, you would call:
+
+> `jshell https://sormuras.de/bach/build`
+
+The redirect expands the URI to the long form: 
+
+> `https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-build.jsh`
+
+You may refer to a specific version by adding a `@${VERSION}` tag to the short URI:
+
+> `jshell https://sormuras.de/bach@11.7/build`
+
+The targeted redirect expands the URI to the long form with the version tag replacing the `HEAD` path element: 
+
+> `https://github.com/sormuras/bach/raw/11.7/src/bach/bach-build.jsh`
+
+### JShell Action Scripts
+
+- `bach-boot.jsh` - Launch a JShell session with module `de.sormuras.bach` loaded and ready to use.
+- `bach-build.jsh` - Build a modular Java project with out installing Bach.
+- `bach-help.jsh` - Print Bach's CLI help screen.
+- `bach-init.jsh` - Install module `de.sormuras.bach` in the current working directory.
+- `bach-pull.jsh` - Replace module `de.sormuras.bach` in the `.bach/lib` directory.
+
+Find more details at [JShell Action Scripts](doc/jshell-action.md).
+
+### JShell Demo Project Generator Scripts
+
+- `bach-demo-0.jsh` - Simplicissimus, simply a single `module-info.java` file.
+- `bach-demo-1.jsh` - Greetings! Inspired by Project Jigsaw: Module System Quick-Start Guide
+- `bach-demo-2.jsh` - Greetings World! Inspired by Project Jigsaw: Module System Quick-Start Guide
+- `bach-demo-5.jsh` - Multi-module project with modular tests driven by JUnit 5.
+- `bach-demo-99.jsh` - 99 Luftballons, or a hundred module descriptors, each reading all previously defined
+
 ## Build Bach.java with Bach.java
 
 - Install JDK 14 or newer
