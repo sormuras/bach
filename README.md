@@ -22,11 +22,12 @@ Build modular Java projects with [JDK Foundation Tools].
 
 - 🚀 **Zero-installation** build mode
 
-    > `jshell https://sormuras.de/bach/build` - redirects to [bach-build.jsh](src/bach/bach-build.jsh)
+    > Invoke `jshell https://sormuras.de/bach/build` from the command line.
+    To find out what other scripts are available, refer to [JShell Scripts](#jshell-scripts).
 
 ## JShell Scripts
 
-Bach provides a set of JShell-based script files in the [src/bach](https://github.com/sormuras/bach/tree/HEAD/src/bach) folder.
+Bach provides a set of JShell-based script files in the [src/bach](src/bach) folder.
 
 All script files start with the `bach-` prefix, continue with the actual `${NAME}` of script and end with the `.jsh` file extension.
 To execute one of these scripts use it as a `load-file` argument for `jshell`.
