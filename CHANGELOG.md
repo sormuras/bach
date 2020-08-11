@@ -6,6 +6,8 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
+### Breaking Changes
+- Remove tool call tweaks from code spaces - use `Tweak` instead [#162]
 ### New Features And Enhancements
 - Generate Maven Consumer POM files into `.bach/workspace/deploy/maven` folder
 - New JitPack-based factory in `Link` that supports multi-module projects
@@ -13,6 +15,9 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 - Fix running custom build program
 
 ## Version [11.7] released 2020-08-05
+
+- https://github.com/sormuras/bach/releases/tag/11.7
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.7
 
 ### Breaking Changes
 - Drop "code space" from `Project`'s API [#156]
@@ -131,3 +136,4 @@ https://github.com/sormuras/bach/releases/tag/11.1
 [#138]: https://github.com/sormuras/bach/issues/138
 [#151]: https://github.com/sormuras/bach/issues/151
 [#156]: https://github.com/sormuras/bach/issues/156
+[#162]: https://github.com/sormuras/bach/issues/162

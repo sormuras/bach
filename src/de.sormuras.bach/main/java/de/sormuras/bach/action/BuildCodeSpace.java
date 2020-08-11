@@ -68,13 +68,11 @@ abstract class BuildCodeSpace<T> implements Action {
     var archive = project().toModuleArchive(space.name(), module);
     var classes = base().classes(space.name(), space.release().feature(), module);
     var resources = new ArrayList<>(unit.resources()); // TODO Include upstream resources if patched
-    var jarCall = Call.jar()
+    return Call.jar()
         .with("--create")
         .withArchiveFile(archive)
         .with(unit.descriptor().mainClass(), Jar::withMainClass)
         .with("-C", classes, ".")
         .with(resources, (call, resource) -> call.with("-C", resource, "."));
-    var jarTweak = main().tweaks().jarTweak();
-    return jarTweak.apply(jarCall);
   }
 }

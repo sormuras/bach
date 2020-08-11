@@ -64,8 +64,7 @@ abstract class BuildTestCodeSpace<R> extends BuildCodeSpace<R> {
 
     var junitCall = computeJUnitCall(unit, modulePaths);
     if (junitCall.findProvider().isPresent()) {
-      var junitTweak = test().tweaks().junitTweak();
-      bach().run(junitTweak.apply(junitCall));
+      bach().run(junitCall);
     }
   }
 

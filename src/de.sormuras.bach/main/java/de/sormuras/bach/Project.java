@@ -32,11 +32,6 @@ import de.sormuras.bach.project.Link;
 import de.sormuras.bach.project.MainSpace;
 import de.sormuras.bach.project.TestSpace;
 import de.sormuras.bach.project.TestSpacePreview;
-import de.sormuras.bach.tool.JUnit;
-import de.sormuras.bach.tool.Jar;
-import de.sormuras.bach.tool.Javac;
-import de.sormuras.bach.tool.Javadoc;
-import de.sormuras.bach.tool.Jlink;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.List;
@@ -210,44 +205,9 @@ public final class Project {
   }
 
   @Factory(Kind.OPERATOR)
-  public Project with(MainSpace.Tweaks tweaks) {
-    return spaces(spaces.main(spaces.main().tweaks(tweaks)));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project tweakJarCall(Jar.Tweak tweak) {
-    return with(spaces.main().tweaks().jarTweak(tweak));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project tweakJavacCall(Javac.Tweak tweak) {
-    return with(spaces.main().tweaks().javacTweak(tweak));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project tweakJavadocCall(Javadoc.Tweak tweak) {
-    return with(spaces.main().tweaks().javadocTweak(tweak));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project tweakJlinkCall(Jlink.Tweak tweak) {
-    return with(spaces.main().tweaks().jlinkTweak(tweak));
-  }
-
-  @Factory(Kind.OPERATOR)
   public Project withTestModule(String path) {
     var unit = CodeUnit.of(Path.of(path));
     return spaces(spaces.test(spaces.test().with(unit)));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project with(TestSpace.Tweaks tweaks) {
-    return spaces(spaces.test(spaces.test().tweaks(tweaks)));
-  }
-
-  @Factory(Kind.OPERATOR)
-  public Project tweakJUnitCall(JUnit.Tweak tweak) {
-    return with(spaces.test().tweaks().junitTweak(tweak));
   }
 
   @Factory(Kind.OPERATOR)

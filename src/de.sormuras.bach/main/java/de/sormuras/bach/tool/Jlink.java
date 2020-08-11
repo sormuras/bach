@@ -19,13 +19,9 @@ package de.sormuras.bach.tool;
 
 import de.sormuras.bach.Call;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 /** A {@code jlink} call configuration. */
 public final class Jlink implements Call<Jlink> {
-
-  @FunctionalInterface
-  public interface Tweak extends UnaryOperator<Jlink> {}
 
   private final List<Argument> arguments;
 

@@ -43,7 +43,7 @@ public class Bootstrap {
         "--module-version=" + version + "-BOOTSTRAP",
         "-encoding",
         "UTF-8",
-        // "-W" + "error",
+        "-W" + "error",
         "-X" + "lint");
 
     step("Build");

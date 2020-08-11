@@ -52,8 +52,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
 
   public void buildMainModules() {
     var javacCall = computeJavacCall();
-    var javacTweak = main().tweaks().javacTweak();
-    bach().run(javacTweak.apply(javacCall));
+    bach().run(javacCall);
 
     var modules = base().modules("");
     Paths.deleteDirectories(modules);
@@ -126,9 +125,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
   public void buildApiDocumentation() {
     if (!checkConditionForBuildApiDocumentation()) return;
 
-    var javadocCall = computeJavadocCall();
-    var javadocTweak = main().tweaks().javadocTweak();
-    bach().run(javadocTweak.apply(javadocCall));
+    bach().run(computeJavadocCall());
     bach().run(computeJarCallForApiDocumentation());
   }
 
@@ -136,9 +133,7 @@ public class CompileMainSpace extends BuildCodeSpace<MainSpace> {
     if (!checkConditionForBuildCustomRuntimeImage()) return;
 
     Paths.deleteDirectories(base().workspace("image"));
-    var jlinkCall = computeJLinkForCustomRuntimeImage();
-    var jlinkTweak = main().tweaks().jlinkTweak();
-    bach().run(jlinkTweak.apply(jlinkCall));
+    bach().run(computeJLinkForCustomRuntimeImage());
   }
 
   public boolean checkConditionForBuildApiDocumentation() {

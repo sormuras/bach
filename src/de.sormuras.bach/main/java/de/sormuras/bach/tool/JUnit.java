@@ -22,14 +22,10 @@ import de.sormuras.bach.internal.Modules;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 /** A JUnit Platform launcher configuration. */
 public final class JUnit implements Call<JUnit> {
-
-  @FunctionalInterface
-  public interface Tweak extends UnaryOperator<JUnit> {}
 
   private final String module;
   private final List<Path> modulePaths;
