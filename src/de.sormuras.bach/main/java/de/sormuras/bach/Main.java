@@ -19,15 +19,16 @@ package de.sormuras.bach;
 
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.project.Base;
-import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 
 /** Bach's main program. */
@@ -92,26 +93,29 @@ public final class Main {
   public void build(Configuration configuration) {
     var program = Path.of(".bach/src/build/build/Build.java");
     if (Files.exists(program)) {
-      var flags = configuration.flags().set();
-      var java =
-          Call.tool(ProcessHandle.current().info().command().orElse("java"))
-              .with("--module-path", Path.of(".bach/lib"))
-              .with("--add-modules", "de.sormuras.bach")
-              .with(program.toString());
+      var classes = Path.of(".bach/workspace/bootstrap/classes");
+      var javac =
+          Call.javac()
+              .withModule("build")
+              .withModuleSourcePath(".bach/src")
+              .withModulePath(System.getProperty("jdk.module.path"))
+              .with("-d", classes);
       try {
-        var processBuilder = new ProcessBuilder(java.toCommand());
-        if (flags.contains(Flag.PROCESS_INHERIT_IO)) processBuilder.inheritIO();
-        var process = processBuilder.start();
-        int code = process.waitFor();
-        if (flags.contains(Flag.PROCESS_TRANSFER_STREAMS)) {
-          var buffer = new ByteArrayOutputStream();
-          process.getInputStream().transferTo(buffer);
-          out.print(buffer.toString());
-          buffer.reset();
-          process.getErrorStream().transferTo(buffer);
-          err.print(buffer.toString());
-        }
+        int code = javac.run();
         if (code != 0) throw new AssertionError("Non-zero exit code: " + code);
+        var roots = Set.of("build");
+        var finder = ModuleFinder.of(classes);
+        var parent = ClassLoader.getPlatformClassLoader();
+        var boot = ModuleLayer.boot();
+        var config = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
+        var controller = ModuleLayer.defineModulesWithOneLoader(config, List.of(boot), parent);
+        var layer = controller.layer();
+        var buildModule = layer.findModule("build").orElseThrow();
+        controller.addExports(buildModule, "build", Bach.class.getModule());
+        var loader = layer.findLoader("build");
+        var buildClass = loader.loadClass("build.Build");
+        var buildMainMethod = buildClass.getMethod("main", String[].class);
+        buildMainMethod.invoke(null, new Object[] {new String[] {}});
       } catch (Exception e) {
         throw new RuntimeException("Running custom build program failed: " + e, e);
       }

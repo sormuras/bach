@@ -19,10 +19,7 @@
 
 var code = 0
 try {
-  var configuration = Configuration.ofSystem()
-                        .without(Flag.PROCESS_INHERIT_IO)
-                        .with(Flag.PROCESS_TRANSFER_STREAMS);
-  Main.ofSystem().build(configuration);
+  Bach.main("build");
 } catch (Throwable throwable) {
   println(throwable);
   code = 1;
