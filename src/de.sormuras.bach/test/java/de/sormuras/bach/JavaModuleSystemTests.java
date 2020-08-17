@@ -34,7 +34,7 @@ class JavaModuleSystemTests {
 
   @Test
   void checkJUnitJupiterVersion() throws Exception {
-    var expected = "5.7.0-M1";
+    var expected = "5.7.0-RC1";
     // Java Class API
     if (Test.class.getPackage() != null) {
       var actual = Test.class.getPackage().getImplementationVersion();

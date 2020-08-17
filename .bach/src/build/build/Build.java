@@ -61,21 +61,22 @@ class Build {
              * Configure external library resolution.
              */
             .with(
-                Link.ofJUnitPlatform("commons", "1.7.0-M1"),
-                Link.ofJUnitPlatform("console", "1.7.0-M1"),
-                Link.ofJUnitPlatform("engine", "1.7.0-M1"),
-                Link.ofJUnitPlatform("launcher", "1.7.0-M1"),
-                Link.ofJUnitPlatform("reporting", "1.7.0-M1"),
-                Link.ofJUnitPlatform("testkit", "1.7.0-M1"))
+                Link.ofJUnitPlatform("commons", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("console", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("engine", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("jfr", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("launcher", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("reporting", "1.7.0-RC1"),
+                Link.ofJUnitPlatform("testkit", "1.7.0-RC1"))
             .with(
-                Link.ofJUnitJupiter("", "5.7.0-M1"),
-                Link.ofJUnitJupiter("api", "5.7.0-M1"),
-                Link.ofJUnitJupiter("engine", "5.7.0-M1"),
-                Link.ofJUnitJupiter("params", "5.7.0-M1"))
+                Link.ofJUnitJupiter("", "5.7.0-RC1"),
+                Link.ofJUnitJupiter("api", "5.7.0-RC1"),
+                Link.ofJUnitJupiter("engine", "5.7.0-RC1"),
+                Link.ofJUnitJupiter("params", "5.7.0-RC1"))
             .with(
                 Link.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
-            .withLibraryRequires("org.junit.platform.console");
+            .withLibraryRequires("org.junit.platform.console", "org.junit.platform.jfr");
 
     var configuration = Configuration.ofSystem().tweak(new Tweak());
     new Bach(configuration, project).build(Build::sequence);
@@ -132,7 +133,7 @@ class Build {
     }
 
     @Override
-    public void generateFooter(GenerateMavenPomFiles.Pom pom) {
+    public void generateFooter(Pom pom) {
       pom.append("\n");
       pom.addNewLine().add("url", "https://github.com/sormuras/bach");
       pom.addNewLine().depth(+1).append("<scm>");
