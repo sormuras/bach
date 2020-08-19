@@ -11,7 +11,7 @@
       <option name="vmParameters" />
       <option name="workingDirectory" />
     </selectedOptions>
-    <option name="VM_PARAMETERS" value="-ea --enable-preview -Djava.util.logging.config.file=src/logging.properties" />
+    <option name="VM_PARAMETERS" value="-ea --enable-preview -Djava.util.logging.config.file=src/logging.properties -XX:StartFlightRecording:filename=.bach/workspace/reports/bach-build.jfr" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
