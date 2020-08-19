@@ -44,7 +44,7 @@ public class GenerateMavenPomFiles implements Action {
     var env = System.getenv();
     // https://docs.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables#default-environment-variables
     if ("true".equals(env.get("GITHUB_ACTIONS")))
-      return env.get("GITHUB_REPOSITORY").replace('/', '.');
+      return "com.github." + env.get("GITHUB_REPOSITORY").replace('/', '.');
 
     // https://jitpack.io/docs/BUILDING/#build-environment
     if ("true".equals(env.get("JITPACK"))) return env.get("GROUP") + '.' + env.get("ARTIFACT");
