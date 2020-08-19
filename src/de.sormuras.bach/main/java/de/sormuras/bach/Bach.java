@@ -21,6 +21,7 @@ import de.sormuras.bach.action.CompileMainSpace;
 import de.sormuras.bach.action.CompileTestSpace;
 import de.sormuras.bach.action.CompileTestSpacePreview;
 import de.sormuras.bach.action.DeleteClassesDirectories;
+import de.sormuras.bach.action.GenerateMavenPomFiles;
 import de.sormuras.bach.action.ResolveMissingExternalModules;
 import de.sormuras.bach.internal.Factory;
 import java.io.PrintWriter;
@@ -173,6 +174,7 @@ public class Bach {
     compileMainSpace();
     compileTestSpace();
     compileTestSpaceWithPreviewLanguageFeatures();
+    if (is(Flag.GENERATE_MAVEN_POM_FILES)) new GenerateMavenPomFiles(this, "    ").execute();
   }
 
   public void deleteClassesDirectories() {

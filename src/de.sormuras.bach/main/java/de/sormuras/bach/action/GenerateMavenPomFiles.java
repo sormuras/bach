@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.util.TreeSet;
 
 /** An action that generates a {@code pom.xml} file for each main code unit. */
-public abstract class GenerateMavenPomFiles implements Action {
+public class GenerateMavenPomFiles implements Action {
 
   private final Bach bach;
   private final String indent;
@@ -40,7 +40,17 @@ public abstract class GenerateMavenPomFiles implements Action {
     return bach;
   }
 
-  public abstract String computeMavenGroupId(CodeUnit unit);
+  public String computeMavenGroupId(CodeUnit unit) {
+    var env = System.getenv();
+    // https://docs.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables#default-environment-variables
+    if ("true".equals(env.get("GITHUB_ACTIONS")))
+      return env.get("GITHUB_REPOSITORY").replace('/', '.');
+
+    // https://jitpack.io/docs/BUILDING/#build-environment
+    if ("true".equals(env.get("JITPACK"))) return env.get("GROUP") + '.' + env.get("ARTIFACT");
+
+    return unit.name();
+  }
 
   public String computeMavenArtifactId(CodeUnit unit) {
     return unit.name();
