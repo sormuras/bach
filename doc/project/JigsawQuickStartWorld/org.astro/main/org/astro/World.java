@@ -5,6 +5,8 @@ public class World {
 
   final String world = "World";
 
+  public World() {}
+
   /**
    * Return the name of the world.
    *

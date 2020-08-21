@@ -39,6 +39,7 @@ if (Files.notExists(base)) {
   Files.write(world, List.of(
       "package org.astro;",
       "public class World {",
+      "    public World() {}",
       "    public static String name() {",
       "        return \"world\";",
       "    }",
