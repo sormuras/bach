@@ -13,6 +13,7 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 - New JitPack-based factory in `Link` that supports multi-module projects
 ### Bug Fixes
 - Fix running custom build program
+- Fix JitPack URI for single module projects
 
 ## Version [11.7] released 2020-08-05
 

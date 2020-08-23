@@ -135,12 +135,14 @@ public final class Link {
   public static Link ofJitPack(
       String module, String user, String repository, String version, boolean multiModuleProject) {
     var group = user.indexOf('.') == -1 ? "com.github." + user : user;
-    var uri = new StringJoiner("/")
-        .add("https://jitpack.io")
-        .add(group.replace('.', '/'))
-        .add(repository);
+    var jar = (multiModuleProject ? module : repository) + "-" + version + ".jar";
+    var uri = new StringJoiner("/");
+    uri.add("https://jitpack.io");
+    uri.add(group.replace('.', '/'));
+    uri.add(repository);
     if (multiModuleProject) uri.add(module);
-    uri.add(version).add(module + "-" + version + ".jar");
+    uri.add(version);
+    uri.add(jar);
     return of(module, uri.toString()).withVersion(version);
   }
 

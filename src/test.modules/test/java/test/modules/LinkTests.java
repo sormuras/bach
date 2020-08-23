@@ -27,7 +27,7 @@ class LinkTests {
   @Test
   void moduleOfJitPackSingleModuleProject() {
     assertEquals(
-        "https://jitpack.io/com/github/user/project/0/foo-0.jar#version=0",
+        "https://jitpack.io/com/github/user/project/0/project-0.jar#version=0",
         Link.ofJitPack("foo", "user", "project", "0").uri());
   }
 
