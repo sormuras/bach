@@ -49,7 +49,7 @@ Create a build tool that...
 - can be invoked directly from the command line, or programmatically, either
   via the `ToolProvider` SPI or via its modular API (in a JShell session).
 - infers basic project information from `module-info.java` files.
-- uses standard Java syntax for configuration purposes: .properties and .java
+- uses standard Java syntax for configuration purposes
 - supports creation of MR-JAR modules.
 - helps resolving missing external dependencies by downloading required modules
   into a single project-local directory.
