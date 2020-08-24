@@ -59,7 +59,7 @@ jbuild targets modular Java projects that follow common practices and patterns
 in structure and build steps; as defined and supported by the underlying
 foundation tools.
 
-Create a build tool that...
+The goal is to create a build tool that...
 
 - is a lightweight wrapper for existing and future foundation tools of the JDK.
 - can be invoked directly from the command line, or programmatically, either
@@ -95,11 +95,8 @@ Comments?
 Cheers,
 Christian
 
-PS: There [6] seems to be a certain demand for alternative build tool.
-
 [1]: https://docs.oracle.com/en/java/javase/14/docs/specs/man/index.html
 [2]: https://mail.openjdk.java.net/pipermail/discuss/2020-April/005429.html
 [3]: https://openjdk.java.net/projects/jigsaw/quick-start#greetingsworld
 [4]: https://github.com/sormuras/bach/blob/11.7/doc/motivation.md
 [5]: https://junit.org/junit5
-[6]: https://twitter.com/rafaelcodes/status/1297260788365905924
