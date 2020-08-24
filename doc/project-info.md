@@ -2,6 +2,20 @@
 
 _The right tools with the right arguments at the right time._
 
+```java
+project greet {
+  version 1-ea;
+  modules com.greetings,org.astro;
+  module-source-path "src/*/main/java"; 
+  main-module com.greetings;
+  target-jvm-release 8;
+  resolve-external-module ${module} via "https....jar";
+
+  test-modules test.base,test.integration;
+  test-module-source-path "src/*/test/java";
+}
+```
+
 A project descriptor declares properties used for building a modular Java project.
 
 - `project-info.java`
