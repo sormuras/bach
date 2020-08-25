@@ -6,6 +6,11 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
+## Version [11.8] released 2020-08-25
+
+- https://github.com/sormuras/bach/releases/tag/11.8
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.8
+
 ### Breaking Changes
 - Remove tool call tweaks from code spaces - use `Tweak` instead [#162]
 ### New Features And Enhancements
@@ -123,7 +128,8 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[11-ea]: https://github.com/sormuras/bach/compare/11.7...master
+[11-ea]: https://github.com/sormuras/bach/compare/11.8...master
+[11.8]: https://github.com/sormuras/bach/compare/11.7...11.8
 [11.7]: https://github.com/sormuras/bach/compare/11.6...11.7
 [11.6]: https://github.com/sormuras/bach/compare/11.5...11.6
 [11.5]: https://github.com/sormuras/bach/compare/11.4...11.5
