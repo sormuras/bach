@@ -76,12 +76,7 @@ jobs:
           BINTRAY_PASSWORD: ${{ secrets.BINTRAY_KEY }}
           DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
           REPOSITORY: '-DrepositoryId=bintray-sormuras-maven -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=1'
-        run: |
-          POM="-DpomFile=src/de.sormuras.bach/main/maven/pom.xml"
-          JAR="-Dfile=.bach/workspace/modules/de.sormuras.bach@${VERSION}.jar"
-          SRC="-Dsources=.bach/workspace/sources/de.sormuras.bach@${VERSION}-sources.jar"
-          DOC="-Djavadoc=.bach/workspace/documentation/bach@${VERSION}-api.jar"
-          mvn ${DEPLOY} ${REPOSITORY} ${POM} ${JAR} ${SRC} ${DOC}
+        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
 
       - name: 'Restore previous version from environment variable'
         run: |
