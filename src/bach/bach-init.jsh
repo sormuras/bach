@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
+/open https://github.com/sormuras/bach/raw/11.8/src/bach/bach-boot.jsh
 
 var gitignore = Path.of(".bach/.gitignore")
 if (Files.notExists(gitignore)) {
