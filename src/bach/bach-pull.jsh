@@ -25,6 +25,6 @@ if (!Files.deleteIfExists(Path.of(".bach/lib/.pull-in-progress"))) {
   Files.createDirectories(Path.of(".bach/lib/.pull-in-progress"));
 }
 
-/open https://github.com/sormuras/bach/raw/11.8/src/bach/bach-boot.jsh
+/open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
 
 /exit

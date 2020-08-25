@@ -16,7 +16,7 @@
  */
 
 if (java.lang.module.ModuleFinder.of(Path.of(".bach/lib")).find("de.sormuras.bach").isEmpty()) {
-  var version = System.getProperty("version", "11.8");
+  var version = System.getProperty("version", "master-SNAPSHOT");
   var uri = version.endsWith("SNAPSHOT")
               ? "https://jitpack.io/com/github/sormuras/bach/" + version + "/bach-" + version + ".jar"
               : "https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/" + version + "/de.sormuras.bach-" + version + ".jar";
