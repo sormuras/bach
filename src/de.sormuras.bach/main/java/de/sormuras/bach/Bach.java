@@ -171,6 +171,7 @@ public class Bach {
 
   public void executeDefaultBuildActions() {
     resolveMissingExternalModules();
+    if (is(Flag.DELETE_CLASSES_DIRECTORIES)) deleteClassesDirectories();
     compileMainSpace();
     compileTestSpace();
     compileTestSpaceWithPreviewLanguageFeatures();

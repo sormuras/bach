@@ -11,6 +11,7 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 ### New Features And Enhancements
 - Generate Maven Consumer POM files into `.bach/workspace/deploy/maven` folder
 - New JitPack-based factory in `Link` that supports multi-module projects
+- New feature flag `bach.clean-classes-directories` (defaults to `false`) added
 ### Bug Fixes
 - Fix running custom build program
 - Fix JitPack URI for single module projects

@@ -23,6 +23,7 @@ public enum Flag {
   FAIL_FAST(true),
   FAIL_ON_ERROR(true),
 
+  DELETE_CLASSES_DIRECTORIES(false),
   GENERATE_MAVEN_POM_FILES(false),
 
   SUMMARY_WITH_TOOL_CALL_OVERVIEW(true),
