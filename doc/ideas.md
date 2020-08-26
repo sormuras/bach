@@ -67,7 +67,7 @@ try (builder) {
   builder.compileModules();
   builder.compileTestModules();
   builder.executeTestModules();
-  bach.run(
+  builder.run(
     builder::generateApiDocumenation,
     builder::generateCustomRuntimeImage,
     builder::generateMavenPomFiles,
