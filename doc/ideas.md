@@ -46,9 +46,22 @@ new ProjectDescriptor()
 An extensible framework building projects.
 
 ```java
-var bach = new Bach();
+var bach = new Bach().printer(System.out::println);
+
 var project = new ProjectDescriptor().name("greet").version("2");
-var builder = new ProjectBuilder(bach, project);
+
+var builder = new ProjectBuilder(bach, project) {
+  @Override
+  public Javac computeJavacCallForCompileModules() {
+    return super.computeJavacCall().printMessagesAboutTheCompilerIsDoing();
+  }
+
+  @Override
+  public Javac computeJavacCallForCompileTestModules() {
+    return super.computeJavacCall().generateAllDebuggingInfo();
+  }
+};
+
 try (builder) {
   builder.deleteClassesDirectories();
   builder.compileModules();
