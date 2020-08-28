@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -36,11 +35,11 @@ class ToolCallTests {
   void echo12345() {
     var shell = new ToolShell();
     assertEquals(0, shell.getHistory().size());
-    shell.call(echo("1"));
-    shell.call(echo("2"));
-    shell.call(echo("3"));
+    shell.call(Echo.of("1"));
+    shell.call(Echo.of("2"));
+    shell.call(Echo.of("3"));
     assertEquals(3, shell.getHistory().size());
-    shell.call(echo("4"), echo("5"));
+    shell.call(Echo.of("4"), Echo.of("5"));
     assertEquals(5, shell.getHistory().size());
   }
 
@@ -61,11 +60,11 @@ class ToolCallTests {
     assertTrue(response.toString().contains("" + Runtime.version().feature()));
   }
 
-  public static Echo echo(String message) {
-    return new Echo(true, message, 0);
-  }
-
   public static final class Echo implements ToolCall, ToolProvider {
+
+    public static Echo of(String message) {
+      return new Echo(true, message, 0);
+    }
 
     private final boolean normal;
     private final String message;
