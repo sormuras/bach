@@ -66,7 +66,7 @@ public class ToolShell {
     return ToolProvider.findFirst(name).orElseThrow();
   }
 
-  private String computeMessageText(StringWriter writer) {
+  private static String computeMessageText(StringWriter writer) {
     if (writer.getBuffer().length() == 0) return "";
     return writer.toString().strip();
   }
