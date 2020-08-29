@@ -49,9 +49,17 @@ public final class ToolResponse {
     this.err = err;
   }
 
-  public static void requireSuccessful(ToolResponse response) {
-    if (response.code == 0) return;
-    throw new RuntimeException(response.toString());
+  public boolean isError() {
+    return code != 0;
+  }
+
+  public boolean isSuccessful() {
+    return code == 0;
+  }
+
+  public void checkSuccessful() {
+    if (isSuccessful()) return;
+    throw new RuntimeException(name + " returned error code " + code);
   }
 
   @Override

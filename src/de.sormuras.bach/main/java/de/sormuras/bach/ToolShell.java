@@ -17,34 +17,88 @@
 
 package de.sormuras.bach;
 
+import de.sormuras.bach.internal.Factory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-/** A tool shell runs tool calls. */
+/** A tool shell executes tool calls. */
 public class ToolShell {
 
-  private final Map<String, ToolProvider> providers;
-  private final Consumer<ToolResponse> listener;
-  private final Deque<ToolResponse> history;
+  /** A feature flag of the tool shell implementation. */
+  public enum Flag {
+    /** Store all tool call response objects. */
+    RECORD_HISTORY,
 
-  public ToolShell() {
-    this(Map.of(), ToolResponse::requireSuccessful);
+    /** Verify that the last tool call returned {@code 0} as its exit code. */
+    FAIL_FAST,
+
+    /** Set current thread's context class loader to the one that loaded the tool provider class. */
+    SWITCH_THREAD_CONTEXT_CLASS_LOADER;
+
+    /** The default set of feature flag that contains all feature flag constants. */
+    public static final Set<Flag> DEFAULTS = EnumSet.allOf(Flag.class);
   }
 
-  public ToolShell(Map<String, ToolProvider> providers, Consumer<ToolResponse> listener) {
-    this.providers = providers;
-    this.listener = listener;
+  private final Logger logger;
+  private final Set<Flag> flags;
+  private final Map<String, ToolProvider> providers;
+  private final Deque<ToolResponse> history;
+
+  /** Initializes a default tool shell instance. */
+  public ToolShell() {
+    this(System.getLogger(ToolShell.class.getName()), Flag.DEFAULTS, Map.of());
+  }
+
+  /** Initializes a tool shell instance with the given components. */
+  public ToolShell(Logger logger, Set<Flag> flags, Map<String, ToolProvider> providers) {
+    this.logger = logger;
+    this.flags = flags.isEmpty() ? Set.of() : EnumSet.copyOf(flags);
+    this.providers = Map.copyOf(providers);
     this.history = new ConcurrentLinkedDeque<>();
+  }
+
+  @Factory(Factory.Kind.SETTER)
+  public ToolShell logger(Logger logger) {
+    return new ToolShell(logger, flags, providers);
+  }
+
+  @Factory(Factory.Kind.SETTER)
+  public ToolShell flags(Set<Flag> flags) {
+    return new ToolShell(logger, flags, providers);
+  }
+
+  /**
+   * Return the feature flag set.
+   *
+   * @return a set of feature flag constants
+   */
+  public Set<Flag> getFlags() {
+    return new TreeSet<>(flags);
+  }
+
+  /**
+   * Return the map of registered custom tool providers.
+   *
+   * @return a map of tool providers
+   */
+  public Map<String, ToolProvider> getProviders() {
+    return new TreeMap<>(providers);
   }
 
   /**
@@ -56,17 +110,17 @@ public class ToolShell {
     return new ArrayDeque<>(history);
   }
 
-  private ToolProvider computeToolProvider(ToolCall call) {
+  protected ToolProvider computeToolProvider(ToolCall call) {
     if (call instanceof ToolProvider) return (ToolProvider) call;
     return computeToolProvider(call.name());
   }
 
-  private ToolProvider computeToolProvider(String name) {
+  protected ToolProvider computeToolProvider(String name) {
     if (providers.containsKey(name)) return providers.get(name);
     return ToolProvider.findFirst(name).orElseThrow();
   }
 
-  private static String computeMessageText(StringWriter writer) {
+  protected String computeMessageText(StringWriter writer) {
     if (writer.getBuffer().length() == 0) return "";
     return writer.toString().strip();
   }
@@ -78,7 +132,7 @@ public class ToolShell {
    * @param args the arguments of this call
    */
   public void call(String name, String... args) {
-    run(computeToolProvider(name), args);
+    call(computeToolProvider(name), args);
   }
 
   /**
@@ -87,7 +141,8 @@ public class ToolShell {
    * @param call the tool call to run
    */
   public void call(ToolCall call) {
-    run(computeToolProvider(call), call.args());
+    logger.log(Level.INFO, call.toDescriptiveLine(Integer.MAX_VALUE));
+    call(computeToolProvider(call), call.args());
   }
 
   /**
@@ -109,25 +164,55 @@ public class ToolShell {
     StreamSupport.stream(calls.spliterator(), true).forEach(this::call);
   }
 
-  private void run(ToolProvider provider, String... args) {
-    var name = provider.name();
+  /**
+   * Run the given tool provider with the given arguments.
+   *
+   * @param provider the tool provider to run
+   * @param args the arguments of this call
+   */
+  public ToolResponse call(ToolProvider provider, String... args) {
     var currentThread = Thread.currentThread();
+
+    var keepCurrentTCCL = !flags.contains(Flag.SWITCH_THREAD_CONTEXT_CLASS_LOADER);
+    if (keepCurrentTCCL) return call(currentThread, provider, args);
+
     var currentLoader = currentThread.getContextClassLoader();
-    var output = new StringWriter();
-    var errors = new StringWriter();
+    currentThread.setContextClassLoader(provider.getClass().getClassLoader());
     try {
-      currentThread.setContextClassLoader(provider.getClass().getClassLoader());
-      var start = Instant.now();
-      var code = provider.run(new PrintWriter(output), new PrintWriter(errors), args);
-      var duration = Duration.between(start, Instant.now());
-      var thread = currentThread.getId();
-      var out = computeMessageText(output);
-      var err = computeMessageText(errors);
-      var response = new ToolResponse(name, args, thread, duration, code, out, err);
-      history.add(response);
-      listener.accept(response);
+      return call(currentThread, provider, args);
     } finally {
       currentThread.setContextClassLoader(currentLoader);
     }
+  }
+
+  private ToolResponse call(Thread thread, ToolProvider provider, String... args) {
+    var name = provider.name();
+    logger.log(Level.DEBUG, "call {0}", name);
+
+    var output = new StringWriter();
+    var outputPrintWriter = new PrintWriter(output);
+    var errors = new StringWriter();
+    var errorsPrintWriter = new PrintWriter(errors);
+
+    var start = Instant.now();
+    var code = provider.run(outputPrintWriter, errorsPrintWriter, args);
+    var duration = Duration.between(start, Instant.now());
+
+    var out = computeMessageText(output);
+    var err = computeMessageText(errors);
+    var response = new ToolResponse(name, args, thread.getId(), duration, code, out, err);
+
+    var discardHistory = !flags.contains(Flag.RECORD_HISTORY);
+    if (discardHistory) history.clear();
+    history.add(response); // always store the "last" response
+
+    if (flags.contains(Flag.FAIL_FAST)) response.checkSuccessful();
+    return response;
+  }
+
+  public void checkHistoryForErrors() {
+    var errors = history.stream().filter(ToolResponse::isError).collect(Collectors.toList());
+    if (errors.isEmpty()) return;
+    throw new RuntimeException("Response history contains at least one error: " + errors);
   }
 }

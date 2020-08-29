@@ -17,23 +17,49 @@
 
 package test.modules;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.sormuras.bach.ToolCall;
 import de.sormuras.bach.ToolShell;
 import java.io.PrintWriter;
+import java.lang.System.Logger.Level;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import test.base.CollectingLogger;
 
 class ToolCallTests {
 
   @Test
-  void echo12345() {
-    var shell = new ToolShell();
+  void toCommand() {
+    assertEquals(List.of("echo", "1"), Echo.of("1").toCommand());
+    assertEquals(List.of("sleep", "1"), new Sleep(1).toCommand());
+  }
+
+  @Test
+  void toCommandLine() {
+    assertEquals("echo 1", Echo.of("1").toCommandLine());
+    assertEquals("sleep 1", new Sleep(1).toCommandLine());
+  }
+
+  @Test
+  void toDescriptiveLine() {
+    assertEquals("Call echo 1", Echo.of("1").toDescriptiveLine(99));
+    assertEquals("Sleeping for 1 millisecond", new Sleep(1).toDescriptiveLine(99));
+  }
+
+  @Test
+  void echo12345(TestInfo info) {
+    var logger = new CollectingLogger(info.getDisplayName());
+    var shell = new ToolShell().logger(logger);
     assertEquals(0, shell.getHistory().size());
     shell.call(Echo.of("1"));
     shell.call(Echo.of("2"));
@@ -41,6 +67,27 @@ class ToolCallTests {
     assertEquals(3, shell.getHistory().size());
     shell.call(Echo.of("4"), Echo.of("5"));
     assertEquals(5, shell.getHistory().size());
+    assertEquals(5, logger.getEntries(Level.INFO).size());
+    assertDoesNotThrow(shell::checkHistoryForErrors);
+  }
+
+  @Test
+  void echoWithErrorAndFailFast() {
+    var shell = new ToolShell();
+    shell.call(Echo.of("1"));
+    assertThrows(RuntimeException.class, () -> shell.call(new Echo(false, "ERROR", -1)));
+    assertThrows(RuntimeException.class, shell::checkHistoryForErrors);
+    assertEquals(2, shell.getHistory().size());
+  }
+
+  @Test
+  void echoWithErrorContinue() {
+    var flags = EnumSet.complementOf(EnumSet.of(ToolShell.Flag.FAIL_FAST));
+    var shell = new ToolShell().flags(flags);
+    shell.call(Echo.of("1"));
+    assertDoesNotThrow(() -> shell.call(new Echo(false, "ERROR", -1)));
+    assertThrows(RuntimeException.class, shell::checkHistoryForErrors);
+    assertEquals(2, shell.getHistory().size());
   }
 
   @Test
@@ -120,6 +167,11 @@ class ToolCallTests {
         Thread.interrupted();
         return 1;
       }
+    }
+
+    @Override
+    public String toDescriptiveLine(int maximumLineLength) {
+      return String.format("Sleeping for %d millisecond%s", millis, millis == 1 ? "" : "s");
     }
   }
 }
