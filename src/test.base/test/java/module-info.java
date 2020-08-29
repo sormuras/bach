@@ -21,4 +21,7 @@ open /*test*/ module test.base {
 
   requires transitive java.compiler;
   requires transitive org.junit.jupiter;
+
+  provides java.lang.System.LoggerFinder with
+      test.base.CollectingLoggerFinder;
 }
