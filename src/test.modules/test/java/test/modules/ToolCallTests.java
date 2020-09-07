@@ -59,7 +59,7 @@ class ToolCallTests {
   @Test
   void echo12345(TestInfo info) {
     var logger = new CollectingLogger(info.getDisplayName());
-    var shell = new ToolShell().logger(logger);
+    var shell = new ToolShell(logger, ToolShell.Flag.DEFAULTS);
     assertEquals(0, shell.getHistory().size());
     shell.call(Echo.of("1"));
     shell.call(Echo.of("2"));
@@ -67,7 +67,18 @@ class ToolCallTests {
     assertEquals(3, shell.getHistory().size());
     shell.call(Echo.of("4"), Echo.of("5"));
     assertEquals(5, shell.getHistory().size());
-    assertEquals(5, logger.getEntries(Level.INFO).size());
+    assertEquals(5, logger.getEntries(Level.TRACE).size());
+    assertDoesNotThrow(shell::checkHistoryForErrors);
+  }
+
+  @Test
+  void print67890(TestInfo info) {
+    var logger = new CollectingLogger(info.getDisplayName());
+    var shell = new ToolShell(logger, ToolShell.Flag.DEFAULTS);
+    shell.call("print", "6");
+    shell.call("print", "7", "8");
+    shell.call(new Print("9"));
+    shell.call(new Print(true, "0", 0));
     assertDoesNotThrow(shell::checkHistoryForErrors);
   }
 
@@ -83,7 +94,7 @@ class ToolCallTests {
   @Test
   void echoWithErrorContinue() {
     var flags = EnumSet.complementOf(EnumSet.of(ToolShell.Flag.FAIL_FAST));
-    var shell = new ToolShell().flags(flags);
+    var shell = new ToolShell(new CollectingLogger("discard"), flags);
     shell.call(Echo.of("1"));
     assertDoesNotThrow(() -> shell.call(new Echo(false, "ERROR", -1)));
     assertThrows(RuntimeException.class, shell::checkHistoryForErrors);
@@ -96,6 +107,7 @@ class ToolCallTests {
     assertEquals(0, shell.getHistory().size());
     shell.call(Set.of(new Sleep(10), new Sleep(20), new Sleep(30)));
     assertEquals(3, shell.getHistory().size());
+    assertDoesNotThrow(shell::checkHistoryForErrors);
   }
 
   @ParameterizedTest
@@ -105,6 +117,7 @@ class ToolCallTests {
     shell.call(tool, "--version");
     var response = shell.getHistory().getLast();
     assertTrue(response.toString().contains("" + Runtime.version().feature()));
+    assertDoesNotThrow(shell::checkHistoryForErrors);
   }
 
   public static final class Echo implements ToolCall, ToolProvider {
