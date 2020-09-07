@@ -99,7 +99,7 @@ public final class Modules {
   public static List<ToolProvider> findTools(String module, List<Path> modulePaths) {
     var roots = Set.of(module);
     var finder = ModuleFinder.of(modulePaths.toArray(Path[]::new));
-    var parent = ClassLoader.getPlatformClassLoader();
+    var parent = ClassLoader.getSystemClassLoader();
     try {
       var boot = ModuleLayer.boot();
       var configuration = boot.configuration().resolveAndBind(finder, ModuleFinder.of(), roots);
