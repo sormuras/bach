@@ -23,6 +23,8 @@ import de.sormuras.bach.Tweak;
 /** An extensible tweak implementation. */
 public class DefaultTweak implements Tweak {
 
+  public DefaultTweak() {}
+
   @Override
   public final Call<?> apply(Call<?> call) {
     if (call instanceof Jar) return tweakJar((Jar) call);

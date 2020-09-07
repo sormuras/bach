@@ -155,6 +155,8 @@ public final class Main {
    */
   public static final class BachToolProvider implements ToolProvider {
 
+    public BachToolProvider() {}
+
     @Override
     public String name() {
       return "bach";
