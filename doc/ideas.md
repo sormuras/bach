@@ -53,12 +53,12 @@ var project = new ProjectDescriptor().name("greet").version("2");
 var builder = new ProjectBuilder(bach, project) {
   @Override
   public Javac computeJavacCallForCompileModules() {
-    return super.computeJavacCall().printMessagesAboutTheCompilerIsDoing();
+    return super.computeJavacCallForCompileModules().printMessagesAboutWhatTheCompilerIsDoing();
   }
 
   @Override
   public Javac computeJavacCallForCompileTestModules() {
-    return super.computeJavacCall().generateAllDebuggingInfo();
+    return super.computeJavacCallForCompileTestModules().generateAllDebuggingInfo();
   }
 };
 
