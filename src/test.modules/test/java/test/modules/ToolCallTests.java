@@ -27,7 +27,6 @@ import de.sormuras.bach.ToolShell;
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
@@ -37,24 +36,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import test.base.CollectingLogger;
 
 class ToolCallTests {
-
-  @Test
-  void toCommand() {
-    assertEquals(List.of("echo", "1"), Echo.of("1").toCommand());
-    assertEquals(List.of("sleep", "1"), new Sleep(1).toCommand());
-  }
-
-  @Test
-  void toCommandLine() {
-    assertEquals("echo 1", Echo.of("1").toCommandLine());
-    assertEquals("sleep 1", new Sleep(1).toCommandLine());
-  }
-
-  @Test
-  void toDescriptiveLine() {
-    assertEquals("Call echo 1", Echo.of("1").toDescriptiveLine(99));
-    assertEquals("Sleeping for 1 millisecond", new Sleep(1).toDescriptiveLine(99));
-  }
 
   @Test
   void echo12345(TestInfo info) {
@@ -180,11 +161,6 @@ class ToolCallTests {
         Thread.interrupted();
         return 1;
       }
-    }
-
-    @Override
-    public String toDescriptiveLine(int maximumLineLength) {
-      return String.format("Sleeping for %d millisecond%s", millis, millis == 1 ? "" : "s");
     }
   }
 }

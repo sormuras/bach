@@ -120,7 +120,6 @@ public class ToolShell {
    * @param call the tool call to run
    */
   public void call(ToolCall call) {
-    logger.log(Level.DEBUG, call.toDescriptiveLine(Integer.MAX_VALUE));
     call(computeToolProvider(call), call.args());
   }
 
