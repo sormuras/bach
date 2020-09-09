@@ -31,7 +31,7 @@ class ToolShellTests {
 
   @Test
   void providers() {
-    var expectedToolNames = List.of("bach", "jar", "javac", ">>>>", "junit", "print");
+    var expectedToolNames = List.of("bach", "jar", "javac", ">>>>");
     var shell =
         new ToolShell() {
           ToolProvider javac() {
@@ -45,7 +45,7 @@ class ToolShellTests {
     assertEquals("javac", shell.javac().name());
     assertEquals("jdk.compiler", shell.javac().getClass().getModule().getName());
 
-    var module = "test.modules"; // getClass().getModule().getName();
+    var module = "java.base";
     var actualToolNames = shell.providers(module).map(ToolProvider::name).sorted();
     assertLinesMatch(expectedToolNames, actualToolNames.collect(Collectors.toList()));
   }
