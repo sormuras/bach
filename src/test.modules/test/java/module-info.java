@@ -20,6 +20,8 @@ open /*test*/ module test.modules {
   requires org.junit.jupiter;
   requires test.base;
 
+  uses java.util.spi.ToolProvider;
+
   provides java.util.spi.ToolProvider with
       test.modules.Print;
 }

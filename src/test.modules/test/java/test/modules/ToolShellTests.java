@@ -20,8 +20,6 @@ package test.modules;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import de.sormuras.bach.ToolShell;
-import java.util.List;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -29,18 +27,9 @@ import org.junit.jupiter.api.Test;
 class ToolShellTests {
 
   @Test
-  void providers() {
+  void checkTestShell() {
     var expectedToolNames = Stream.of("bach", "jar", "javac", ">>>>");
-    var shell =
-        new ToolShell() {
-          ToolProvider javac() {
-            return computeToolProvider("javac", "java.base", List.of());
-          }
-
-          Stream<ToolProvider> providers() {
-            return computeToolProviders("java.base", List.of());
-          }
-        };
+    var shell = new TestShell();
     assertEquals("javac", shell.javac().name());
     assertEquals("jdk.compiler", shell.javac().getClass().getModule().getName());
 
