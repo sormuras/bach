@@ -61,18 +61,18 @@ class Build {
              * Configure external library resolution.
              */
             .with(
-                Link.ofJUnitPlatform("commons", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("console", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("engine", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("jfr", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("launcher", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("reporting", "1.7.0-RC1"),
-                Link.ofJUnitPlatform("testkit", "1.7.0-RC1"))
+                Link.ofJUnitPlatform("commons", "1.7.0"),
+                Link.ofJUnitPlatform("console", "1.7.0"),
+                Link.ofJUnitPlatform("engine", "1.7.0"),
+                Link.ofJUnitPlatform("jfr", "1.7.0"),
+                Link.ofJUnitPlatform("launcher", "1.7.0"),
+                Link.ofJUnitPlatform("reporting", "1.7.0"),
+                Link.ofJUnitPlatform("testkit", "1.7.0"))
             .with(
-                Link.ofJUnitJupiter("", "5.7.0-RC1"),
-                Link.ofJUnitJupiter("api", "5.7.0-RC1"),
-                Link.ofJUnitJupiter("engine", "5.7.0-RC1"),
-                Link.ofJUnitJupiter("params", "5.7.0-RC1"))
+                Link.ofJUnitJupiter("", "5.7.0"),
+                Link.ofJUnitJupiter("api", "5.7.0"),
+                Link.ofJUnitJupiter("engine", "5.7.0"),
+                Link.ofJUnitJupiter("params", "5.7.0"))
             .with(
                 Link.ofCentral("org.apiguardian.api", "org.apiguardian:apiguardian-api:1.1.0"),
                 Link.ofCentral("org.opentest4j", "org.opentest4j:opentest4j:1.2.0"))
