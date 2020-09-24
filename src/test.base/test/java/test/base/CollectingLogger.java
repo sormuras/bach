@@ -43,7 +43,8 @@ public class CollectingLogger implements System.Logger {
 
   @Override
   public void log(Level level, ResourceBundle bundle, String format, Object... params) {
-    entries.add(new Entry(level, MessageFormat.format(format, params), null));
+    var message = params != null ? MessageFormat.format(format, params) : format;
+    entries.add(new Entry(level, message, null));
   }
 
   public static final class Entry {
