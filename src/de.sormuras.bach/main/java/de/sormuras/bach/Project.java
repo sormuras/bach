@@ -94,6 +94,14 @@ public final class Project {
   @Factory
   public static Project ofDirectory(Base base) {
     var main = MainSpace.of();
+
+    try {
+      var release = Integer.parseInt(System.getProperty("bach.javac.release"));
+      main = main.release(JavaRelease.of(release));
+    } catch (NumberFormatException e) {
+      // ignore
+    }
+
     var test = TestSpace.of();
     var preview = TestSpacePreview.of();
     for (var info : Paths.findModuleInfoJavaFiles(base.directory(), 9)) {
