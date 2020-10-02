@@ -18,6 +18,7 @@
 package de.sormuras.bach.action;
 
 import de.sormuras.bach.Bach;
+import de.sormuras.bach.internal.GitHub;
 import de.sormuras.bach.internal.Paths;
 import de.sormuras.bach.internal.Resolver;
 import de.sormuras.bach.internal.Resources;
@@ -70,6 +71,23 @@ public class ResolveMissingExternalModules implements Action {
   }
 
   public Optional<Link> computeLink(String module) {
+    // https://github.com/USER/REPO/releases/download/VERSION/MODULE@VERSION.jar
+    if (module.startsWith("com.github.")) {
+      var split = module.split("\\.");
+      if (split.length >= 4) {
+        assert "com".equals(split[0]);
+        assert "github".equals(split[1]);
+        var user = split[2];
+        var repo = split[3];
+        var github = new GitHub(user, repo);
+        var latest = github.findLatestReleaseTag();
+        if (latest.isPresent()) {
+          var version = latest.orElseThrow();
+          var uri = github.findReleasedModule(module, version);
+          if (uri.isPresent()) return Optional.of(Link.of(module, uri.orElseThrow()));
+        }
+      }
+    }
     if (sormurasModulesProperties == null) {
       sormurasModulesProperties = new SormurasModulesProperties(bach()::http, Map.of());
     }
