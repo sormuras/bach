@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/open https://github.com/sormuras/bach/raw/11.9/src/bach/bach-boot.jsh
+/open https://github.com/sormuras/bach/raw/HEAD/src/bach/bach-boot.jsh
 
 var code = 0
 try {
