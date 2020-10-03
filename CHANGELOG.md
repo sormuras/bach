@@ -6,6 +6,22 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 ## Version [11-ea] unreleased
 
+_nothing, yet_
+
+## Bach.java [11.9] released 2020-10-03
+
+- https://github.com/sormuras/bach/releases/tag/11.9
+- https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.9
+
+### New Features And Enhancements
+- Support `bach.javac.release` system property
+- Support GitHub release-based Java module link computation
+- Find system tool providers per default using system's class loader
+
+### Bug Fixes
+- Add missing explicit constructors
+- Prevent NPE in `CollectingLogger`
+
 ## Version [11.8] released 2020-08-25
 
 - https://github.com/sormuras/bach/releases/tag/11.8
@@ -128,7 +144,8 @@ https://github.com/sormuras/bach/releases/tag/11.1
 
 - https://github.com/sormuras/bach/releases/tag/1.9.10
 
-[11-ea]: https://github.com/sormuras/bach/compare/11.8...master
+[11-ea]: https://github.com/sormuras/bach/compare/11.9...master
+[11.9]: https://github.com/sormuras/bach/compare/11.8...11.9
 [11.8]: https://github.com/sormuras/bach/compare/11.7...11.8
 [11.7]: https://github.com/sormuras/bach/compare/11.6...11.7
 [11.6]: https://github.com/sormuras/bach/compare/11.5...11.6
