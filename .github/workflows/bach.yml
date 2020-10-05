@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        java: [14, 15-ea, 16-ea]
+        java: [15, 16-ea]
     runs-on: ${{ matrix.os }}
     steps:
     - name: 'Checkout sources'
@@ -44,7 +44,7 @@ jobs:
     - name: 'Setup JDK'
       uses: actions/setup-java@v1
       with:
-        java-version: 14
+        java-version: 15
 
     - name: 'Set snapshot version'
       run: |
