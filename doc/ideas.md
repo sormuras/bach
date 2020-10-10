@@ -30,16 +30,10 @@ Describes modular Java projects.
 
 ```java
 var main = new MainCodespace()
-    .moduleSourcePath("src/*/main/java")   // -|
-    .modules("com.greetings", "org.astro") //  |- javac + jar *.jar
-    .compileForJavaRelease(8)              //  |
-    .includeSourceFilesInModules(true)     // -|
-    // "Modular World"
-    .createApiDocumentation(true)          // javadoc api.jar
-    .createCustomRuntimeImage(false)       // jlink image.zip
-    // "Maven World"
-    .createSeparateSourcesJars(true)       // jar *-sources.jar
-    .createSeparateApiDocumentation(true)  // javadoc * + jar *-api.jar
+    .moduleSourcePath("src/*/main/java")
+    .modules("com.greetings", "org.astro")
+    .compileForJavaRelease(8)
+    .includeSourceFilesInModules(true)
     ...;
 ```
 
@@ -60,11 +54,9 @@ var preview = new TestCodespace("test-preview", main, test)
 ```
 
 ```java
-var project = new ProjectDescriptor()
-    .name("greet")
-    .version("2")
+var project = new ProjectDescriptor("greet", 2)
     .codespaces(main, test, preview)
-    .buildWithJavaRelease(15, /* allowHigherJavaVersions */ true)
+    .requiresJavaDevelopmentKit(15, /* allowHigherJavaVersions */ true)
     ...;
 ```
 
