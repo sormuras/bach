@@ -5,8 +5,6 @@ public interface ToolCall {
   /**
    * Return the name of the tool to be called.
    *
-   * @apiNote It is recommended that the name be the same as would be used on the command line: for
-   *     example, {@code "javac"}, {@code "jar"}, {@code "jlink"}.
    * @return a non-empty string representing the name of the tool to be called
    */
   String name();
