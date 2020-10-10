@@ -4,11 +4,11 @@ All notable changes to [Bach.java](https://github.com/sormuras/bach) will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
-## Version [11-ea] unreleased
+## Next Versions
 
-_nothing, yet_
+The next major versions of Bach are developed on [main](https://github.com/sormuras/bach/tree/main) branch.
 
-## Bach.java [11.9] released 2020-10-03
+## Version [11.9] released 2020-10-03
 
 - https://github.com/sormuras/bach/releases/tag/11.9
 - https://repo.maven.apache.org/maven2/de/sormuras/bach/de.sormuras.bach/11.9
