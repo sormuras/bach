@@ -30,6 +30,10 @@ public final class ToolResponse {
     this.err = err;
   }
 
+  public String out() {
+    return out;
+  }
+
   public boolean isError() {
     return code != 0;
   }
