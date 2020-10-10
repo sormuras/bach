@@ -7,7 +7,6 @@
       <sourceFolder url="file://$MODULE_DIR$/doc/src" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="de.sormuras.bach" />
     <orderEntry type="inheritedJdk" />
   </component>
 </module>
