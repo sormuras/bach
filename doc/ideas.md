@@ -24,21 +24,48 @@ var javadoc = new Javadoc().printVersion();
 bach.run(javac, javadoc, ...); // Structured Concurrency
 ```
 
-### Project Descriptor
+### Project API
 
 Describes modular Java projects.
 
 ```java
-new ProjectDescriptor()
-  .name("greet")
-  .version("2")
-  .compileForJavaRelease(8)
-  .moduleSourcePath("src", "*", "main", "java");
-  .module("com.greetings")
-  .module("org.astro")
-  .testModuleSourcePath("src", "*", "test", "java")
-  .testModule("test.base")
-  ...;
+var main = new MainCodespace()
+    .moduleSourcePath("src/*/main/java")   // -|
+    .modules("com.greetings", "org.astro") //  |- javac + jar *.jar
+    .compileForJavaRelease(8)              //  |
+    .includeSourceFilesInModules(true)     // -|
+    // "Modular World"
+    .createApiDocumentation(true)          // javadoc api.jar
+    .createCustomRuntimeImage(false)       // jlink image.zip
+    // "Maven World"
+    .createSeparateSourcesJars(true)       // jar *-sources.jar
+    .createSeparateApiDocumentation(true)  // javadoc * + jar *-api.jar
+    ...;
+```
+
+```java
+var test = new TestCodespace("test", main)
+    .moduleSourcePath("src/*/test/java")
+    .modules("test.base", "org.astro")
+    .allowClassesToDependOnPreviewFeatures(false)
+    ...;
+```
+
+```java
+var preview = new TestCodespace("test-preview", main, test)
+    .moduleSourcePath("src/*/test-preview/java")
+    .modules("test.preview")
+    .allowClassesToDependOnPreviewFeatures(true)
+    ...;
+```
+
+```java
+var project = new ProjectDescriptor()
+    .name("greet")
+    .version("2")
+    .codespaces(main, test, preview)
+    .buildWithJavaRelease(15, /* allowHigherJavaVersions */ true)
+    ...;
 ```
 
 ### Project Builder API
