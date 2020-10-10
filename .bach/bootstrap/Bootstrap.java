@@ -21,7 +21,7 @@ class Bootstrap {
     var version = ModuleDescriptor.Version.parse(pattern.format(Instant.now()));
 
     run(
-        "javac",
+        ToolProvider.findFirst("javac").orElseThrow(),
         "--module=build,com.github.sormuras.bach",
         "--module-source-path=.bach" + File.pathSeparator + "./*/main/java",
         "--module-version=" + version + "-BOOTSTRAP",
@@ -33,10 +33,6 @@ class Bootstrap {
         bootstrap.toString());
 
     run(tool(ModuleFinder.of(bootstrap), "build"));
-  }
-
-  static void run(String name, String... args) {
-    run(ToolProvider.findFirst(name).orElseThrow(), args);
   }
 
   static ToolProvider tool(ModuleFinder finder, String name) {
