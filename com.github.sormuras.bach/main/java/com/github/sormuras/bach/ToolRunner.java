@@ -30,10 +30,17 @@ public class ToolRunner {
   /**
    * Return the history of tool calls as recorded in response objects.
    *
-   * @return an unmodifiable collection of tool response objects
+   * @return a double ended queue of tool response objects
    */
   public Deque<ToolResponse> history() {
     return new ArrayDeque<>(history);
+  }
+
+  public ToolResponse run(ToolCall call) {
+    if (call instanceof ToolProvider) {
+      return run((ToolProvider) call, call.args());
+    }
+    return run(call.name(), call.args());
   }
 
   public ToolResponse run(String name, String... args) {
@@ -46,7 +53,7 @@ public class ToolRunner {
     var errors = new StringWriter();
     var errorsPrintWriter = new PrintWriter(errors);
     var name = provider.name();
-    logger.log(Level.TRACE, "Calling " + name + " with " + args.length + " argument(s)");
+    logger.log(Level.TRACE, "Run " + name + " with " + args.length + " argument(s)");
 
     var start = Instant.now();
     var code = provider.run(outputPrintWriter, errorsPrintWriter, args);
@@ -59,8 +66,6 @@ public class ToolRunner {
     logger.log(Level.DEBUG, response.toString());
 
     history.add(response);
-
-    response.checkSuccessful();
     return response;
   }
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolResponse;
 import com.github.sormuras.bach.ToolRunner;
 import java.util.stream.Collectors;
@@ -17,13 +18,14 @@ class ToolRunnerTests {
 
   @ParameterizedTest
   @ValueSource(strings = {"jar", "javac", "javadoc", "jlink"})
-  void versionOfFoundationTool(String tool) {
+  void versionOfFoundationTool(String name) {
     var runner = new ToolRunner();
-    var response = runner.run(tool, "--version");
+    var response = runner.run(Command.of(name, "--version"));
     assertSame(response, runner.history().getLast());
     assertTrue(response.isSuccessful());
     assertFalse(response.isError());
-    assertTrue(response.toString().contains("" + Runtime.version().feature()), response.toString());
+    assertTrue(response.err().isEmpty());
+    assertTrue(response.toString().contains("" + Runtime.version().feature()), response.out());
   }
 
   @Test

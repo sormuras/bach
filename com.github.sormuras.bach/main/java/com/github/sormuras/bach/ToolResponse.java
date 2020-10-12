@@ -45,10 +45,19 @@ public final class ToolResponse {
   /**
    * Return the normal and expected output of the tool call run.
    *
-   * @return a non-empty string representing the normal and expected output of the tool call run
+   * @return a string representing of the normal and expected output printed by the tool call run
    */
   public String out() {
     return out;
+  }
+
+  /**
+   * Return the error message of the tool call run.
+   *
+   * @return a string representing of the error message printed by the tool call run
+   */
+  public String err() {
+    return err;
   }
 
   /**
@@ -76,7 +85,7 @@ public final class ToolResponse {
    */
   public void checkSuccessful() {
     if (isSuccessful()) return;
-    throw new RuntimeException(name + " returned error code " + code);
+    throw new RuntimeException(name + " returned error code " + code + "\n" + toString().indent(4));
   }
 
   @Override

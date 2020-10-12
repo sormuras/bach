@@ -15,4 +15,13 @@ public interface ToolCall {
    * @return an array of strings
    */
   String[] args();
+
+  /**
+   * Return an immutable tool call instance representing this tool call.
+   *
+   * @return an instance of command representing this tool call
+   */
+  default Command toCommand() {
+    return (this instanceof Command) ? (Command) this : new Command(name(), args());
+  }
 }
