@@ -2,6 +2,7 @@ package build;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.ToolResponse;
 import com.github.sormuras.bach.ToolRunner;
 import java.io.File;
 import java.io.PrintWriter;
@@ -37,7 +38,7 @@ public class Build implements ToolProvider {
     final PrintWriter out;
     final PrintWriter err;
 
-    final String version = System.getProperty("bach.project.version", "0-ea");
+    final String version = System.getProperty("bach.project.version", "15-ea");
     final Path workspace = Path.of(".bach/workspace");
     final ToolRunner runner = new ToolRunner();
 
@@ -71,17 +72,25 @@ public class Build implements ToolProvider {
               .with("--create")
               .with("--file=" + file)
               .with("-C", classes.resolve(module), ".")
+              .with("-C", Path.of(module, "main", "java"), ".")
               .build());
 
-      run(Command.of("jar", "--describe-module", "--file", file));
+      var description = run(Command.of("jar", "--describe-module", "--file", file)).out();
+      if (!description.startsWith(module + '@' + version))
+        throw new AssertionError("Module name and version not found at the start!");
+
+      var list = run(Command.of("jar", "--list", "--file", file)).out();
+      if (list.lines().noneMatch(line -> line.endsWith(".java")))
+        throw new AssertionError("No Java source file found in JAR file: " + file);
     }
 
-    void run(Command command) {
+    ToolResponse run(Command command) {
       out.printf("<< %s%n", command);
       var response = runner.run(command);
-      if (!response.out().isBlank()) out.println(response.out());
+      if (!response.out().isBlank()) out.println(response.out().indent(3).stripTrailing());
       if (!response.err().isBlank()) err.println(response.err());
       response.checkSuccessful();
+      return response;
     }
   }
 }
