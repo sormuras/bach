@@ -37,7 +37,7 @@ public class Build implements ToolProvider {
     final PrintWriter out;
     final PrintWriter err;
 
-    final String version = "15-ea";
+    final String version = System.getProperty("bach.project.version", "0-ea");
     final Path workspace = Path.of(".bach/workspace");
     final ToolRunner runner = new ToolRunner();
 
