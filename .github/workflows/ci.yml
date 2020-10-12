@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 env:
   JDK_VERSION: '15'
-  VERSION: "${JDK_VERSION}-ea+${{ github.sha }}"
+  VERSION: "${{ env.JDK_VERSION }}-ea+${{ github.sha }}"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: ${{ env.JDK_VERSION }}
       - name: 'Bootstrap Bach'
-        run: java -Dbach.project.version=${VERSION} .bach/bootstrap/Bootstrap.java
+        run: java --show-version -Dbach.project.version=${VERSION} .bach/bootstrap/Bootstrap.java
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
