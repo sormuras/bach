@@ -5,8 +5,7 @@ on:
   pull_request:
     branches: [ main ]
 env:
-  JDK_VERSION: '15'
-  VERSION: "${{ env.JDK_VERSION }}-ea+${{ github.sha }}"
+  VERSION: "15-ea+${{ github.sha }}"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +15,7 @@ jobs:
       - name: 'Set up JDK'
         uses: actions/setup-java@v1
         with:
-          java-version: ${{ env.JDK_VERSION }}
+          java-version: 15
       - name: 'Bootstrap Bach'
         run: java --show-version -Dbach.project.version=${VERSION} .bach/bootstrap/Bootstrap.java
       - name: 'Upload build artifacts'
