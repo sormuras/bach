@@ -27,8 +27,10 @@ class Bootstrap {
     run(
         ToolProvider.findFirst("javac").orElseThrow(),
         "--module=build,com.github.sormuras.bach",
-        "--module-source-path=.bach" + File.pathSeparator + "./*/main/java",
         "--module-version=" + version + "-BOOTSTRAP",
+        "--module-source-path=.bach" + File.pathSeparator + "./*/main/java",
+        "-g",
+        "-parameters",
         "-Werror",
         "-Xlint",
         "-encoding",

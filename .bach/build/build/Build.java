@@ -58,8 +58,11 @@ public class Build implements ToolProvider {
       run(
           Command.builder("javac")
               .with("--module=" + module)
-              .with("--module-source-path=.bach" + File.pathSeparator + "./*/main/java")
               .with("--module-version=" + version)
+              .with("--module-source-path=.bach" + File.pathSeparator + "./*/main/java")
+              .with("--release=15")
+              .with("-g")
+              .with("-parameters")
               .with("-Werror")
               .with("-Xlint")
               .with("-Xdoclint:-missing")
