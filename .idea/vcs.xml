@@ -9,6 +9,7 @@
     <option name="branchProtectionPatterns">
       <list>
         <option value="master" />
+        <option value="main" />
       </list>
     </option>
   </component>
