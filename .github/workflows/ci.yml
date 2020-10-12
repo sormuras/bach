@@ -19,7 +19,10 @@ jobs:
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "VERSION=15-ea+${SHA7}" >> ${GITHUB_ENV}
       - name: 'Bootstrap Bach'
-        run: java --show-version -Dbach.project.version=${VERSION} .bach/bootstrap/Bootstrap.java
+        run: |
+          java --show-version \
+            -Dbach.project.version=${VERSION} \
+            .bach/bootstrap/Bootstrap.java
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
