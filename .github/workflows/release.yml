@@ -1,7 +1,7 @@
 name: Release
 on:
   release:
-    types: [ released ]
+    types: [ prereleased, released ]
 env:
   GITHUB_TOKEN: ${{ github.token }}
   VERSION: ${{ github.event.release.tag_name }}
