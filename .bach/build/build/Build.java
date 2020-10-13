@@ -106,7 +106,7 @@ public class Build implements ToolProvider {
       run(
           Command.builder("jar")
               .with("--create")
-              .with("--file=" + api.getParent().resolve("bach-api-" + version + ".jar"))
+              .with("--file=" + api.getParent().resolve("bach-" + version + "-api.zip"))
               .with("--no-manifest")
               .with("-C", api, ".")
               .build());
