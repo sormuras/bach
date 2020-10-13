@@ -65,7 +65,6 @@ public class Build implements ToolProvider {
               .with("-parameters")
               .with("-Werror")
               .with("-Xlint")
-              .with("-Xdoclint:-missing")
               .with("-encoding", "UTF-8")
               .with("-d", classes)
               .build());
@@ -82,16 +81,48 @@ public class Build implements ToolProvider {
       if (!description.startsWith(module + '@' + version))
         throw new AssertionError("Module name and version not found at the start!");
 
-      var list = run(Command.of("jar", "--list", "--file", file)).out();
+      var list = run(Command.of("jar", "--list", "--file", file), false).out();
       if (list.lines().noneMatch(line -> line.endsWith(".java")))
         throw new AssertionError("No Java source file found in JAR file: " + file);
+
+      var api = workspace.resolve("documentation/api");
+      run(
+          Command.builder("javadoc")
+              .with("--module=" + module)
+              .with("--module-source-path=.bach" + File.pathSeparator + "./*/main/java")
+              .with("-windowtitle", "\uD83C\uDFBC Bach " + version)
+              .with("-header", "\uD83C\uDFBC Bach " + version)
+              .with("-footer", "\uD83C\uDFBC Bach " + version)
+              .with("-use")
+              .with("-linksource")
+              .with("-notimestamp")
+              .with("-Werror")
+              .with("-Xdoclint")
+              .with("-encoding", "UTF-8")
+              .with("-d", api)
+              .build(),
+          false);
+
+      run(
+          Command.builder("jar")
+              .with("--create")
+              .with("--file=" + api.getParent().resolve("bach-api-" + version + ".jar"))
+              .with("--no-manifest")
+              .with("-C", api, ".")
+              .build());
     }
 
     ToolResponse run(Command command) {
+      return run(command, true);
+    }
+
+    ToolResponse run(Command command, boolean verbose) {
       out.printf("<< %s%n", command);
       var response = runner.run(command);
-      if (!response.out().isBlank()) out.println(response.out().indent(3).stripTrailing());
-      if (!response.err().isBlank()) err.println(response.err());
+      var normal = response.out();
+      var errors = response.err();
+      if (!normal.isBlank() && verbose) out.println(normal.indent(3).stripTrailing());
+      if (!errors.isBlank()) err.println(errors);
       response.checkSuccessful();
       return response;
     }
