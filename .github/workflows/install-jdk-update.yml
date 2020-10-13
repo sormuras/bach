@@ -7,6 +7,7 @@ on:
       - 'install-jdk.sh'
   schedule:
     - cron:  '23 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   update:
@@ -16,20 +17,10 @@ jobs:
       - name: 'Checkout sources'
         uses: actions/checkout@v2
 
-      - name: 'Configure git user'
-        run: |
-          git config --local user.email 'action@github.com'
-          git config --local user.name 'GitHub Action'
-
-      - name: 'Set up Java'
-        uses: actions/setup-java@v1
-        with:
-          java-version: 11
-
       - name: 'Show JDK builds published at https://jdk.java.net'
         id: update
         run: |
-          java src/bach/ShowJdkBuilds.java > install-jdk.properties
+          "${JAVA_HOME_11_X64}/bin/java" src/bach/ShowJdkBuilds.java > install-jdk.properties
           cat install-jdk.properties
 
       - name: 'Check for modifications'
@@ -41,5 +32,7 @@ jobs:
       - name: 'Commit and push changed install-jdk.properties'
         if: steps.diff.outputs.modified == 'true'
         run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git commit --message 'Update install-jdk.properties' install-jdk.properties
           git push
