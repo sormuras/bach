@@ -1,5 +1,8 @@
 name: 'Update install-jdk.properties'
 on:
+  push:
+    paths:
+      - .github/workflows/update-install-jdk-properties.yml
   workflow_dispatch:
     inputs:
       name:
