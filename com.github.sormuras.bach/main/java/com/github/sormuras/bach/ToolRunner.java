@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.spi.ToolProvider;
 
+/** An object that runs {@link ToolCall} instances. */
 public class ToolRunner {
 
   private final Logger logger;
@@ -22,13 +23,19 @@ public class ToolRunner {
     this.history = new ConcurrentLinkedDeque<>();
   }
 
+  /**
+   * Computes a string from the characters buffered in the given writer.
+   *
+   * @param writer the character stream
+   * @return a message text
+   */
   protected String computeMessageText(StringWriter writer) {
     if (writer.getBuffer().length() == 0) return "";
     return writer.toString().strip();
   }
 
   /**
-   * Return the history of tool calls as recorded in response objects.
+   * Returns the history of tool calls as recorded in response objects.
    *
    * @return a double ended queue of tool response objects
    */
@@ -36,6 +43,12 @@ public class ToolRunner {
     return new ArrayDeque<>(history);
   }
 
+  /**
+   * Runs a tool call.
+   *
+   * @param call the call to run
+   * @return a tool call response object
+   */
   public ToolResponse run(ToolCall call) {
     if (call instanceof ToolProvider) {
       return run((ToolProvider) call, call.args());
@@ -43,11 +56,18 @@ public class ToolRunner {
     return run(call.name(), call.args());
   }
 
+  /**
+   * Runs a tool call.
+   *
+   * @param name the name of the tool to run
+   * @param args the arguments
+   * @return a tool call response object
+   */
   public ToolResponse run(String name, String... args) {
     return run(ToolProvider.findFirst(name).orElseThrow(), args);
   }
 
-  public ToolResponse run(ToolProvider provider, String... args) {
+  ToolResponse run(ToolProvider provider, String... args) {
     var output = new StringWriter();
     var outputPrintWriter = new PrintWriter(output);
     var errors = new StringWriter();
