@@ -23,7 +23,7 @@ class CommandTests {
     var command = Command.builder("name").with(1).with("2", 3, 4).build();
     assertEquals("name", command.name());
     assertEquals("name 1 2 3 4", command.toString());
-    assertEquals(Command.of("name", 1, 2, 3, 4).toString(), command.toString());
+    assertEquals(Command.of("name", 1, 2, 3, 4).hashCode(), command.hashCode());
   }
 
   @Test
