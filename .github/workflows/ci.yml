@@ -29,4 +29,4 @@ jobs:
           name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
           path: |
             .bach/workspace/modules
-            .bach/workspace/documentation/bach-${{ env.VERSION }}-api.zip
+            .bach/workspace/documentation/api
