@@ -54,7 +54,7 @@ Options:
      --emit-url             Print value of "url" to stdout (ignores silent mode)
   -v|--verbose              Displays verbose output
 
-  -f|--feature 11|12|...|ea JDK feature release number, defaults to "ea"
+  -f|--feature ea|16|...|9  JDK feature release number, defaults to "ea"
   -o|--os linux-x64|osx-x64 Operating system identifier
   -u|--url "https://..."    Use custom JDK archive (provided as .tar.gz file)
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
