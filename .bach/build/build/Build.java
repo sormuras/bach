@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.spi.ToolProvider;
 
 public class Build implements ToolProvider {
@@ -25,11 +27,16 @@ public class Build implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
+    out.println(getClass().getSimpleName() + " in " + getClass().getModule());
+    var start = Instant.now();
     try {
       new Simple(out, err).run();
       return 0;
-    } catch (Exception e) {
+    } catch (Exception exception) {
+      err.println(exception);
       return 1;
+    } finally {
+      out.printf("Build took %d milliseconds%n", Duration.between(start, Instant.now()).toMillis());
     }
   }
 
@@ -48,7 +55,7 @@ public class Build implements ToolProvider {
     }
 
     void run() throws Exception {
-      out.println("Build " + Bach.class.getModule() + "@" + version);
+      out.println("Compile " + Bach.class.getModule() + "@" + version);
 
       var module = "com.github.sormuras.bach";
       var classes = workspace.resolve("classes/" + Runtime.version().feature());

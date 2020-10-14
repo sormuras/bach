@@ -25,7 +25,7 @@ class Bootstrap {
     var version = ModuleDescriptor.Version.parse(pattern.format(Instant.now()));
 
     run(
-        ToolProvider.findFirst("javac").orElseThrow(),
+        tool("javac"),
         "--module=build,com.github.sormuras.bach",
         "--module-version=" + version + "-BOOTSTRAP",
         "--module-source-path=.bach" + File.pathSeparator + "./*/main/java",
@@ -38,7 +38,7 @@ class Bootstrap {
         "-d",
         bootstrap.toString());
 
-    run(tool(ModuleFinder.of(bootstrap), "build"));
+    run(tool("build", ModuleFinder.of(bootstrap)));
 
     System.out.println("END.");
   }
@@ -49,7 +49,11 @@ class Bootstrap {
     if (code != 0) throw new Error("Non-zero exit code: " + code);
   }
 
-  static ToolProvider tool(ModuleFinder finder, String name) {
+  static ToolProvider tool(String name) {
+    return ToolProvider.findFirst(name).orElseThrow();
+  }
+
+  static ToolProvider tool(String name, ModuleFinder finder) {
     var parent = Bootstrap.class.getClassLoader();
     try {
       var boot = ModuleLayer.boot();
