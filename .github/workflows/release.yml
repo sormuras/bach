@@ -3,8 +3,8 @@ on:
   release:
     types: [ prereleased, released ]
 env:
-  GITHUB_TOKEN: ${{ github.token }}
   VERSION: ${{ github.event.release.tag_name }}
+  GITHUB_TOKEN: ${{ github.token }}
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -15,11 +15,13 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 15
+      - name: 'Bootstrap Bach'
+        run: java .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: |
-          java --show-version \
-            -Dbach.project.version=${VERSION} \
-            .bach/bootstrap/Bootstrap.java
+        run: java \
+          -Dbach.project.version=${VERSION} \
+          --module-path .bach/cache \
+          --module com.github.sormuras.bach
       - name: 'Upload module com.github.sormuras.bach@${{ env.VERSION }}'
         uses: actions/upload-release-asset@v1
         with:

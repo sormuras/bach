@@ -4,7 +4,6 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolResponse;
 import com.github.sormuras.bach.ToolRunner;
-import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,10 +63,10 @@ public class Build implements ToolProvider {
 
       run(
           Command.builder("javac")
-              .with("--module=" + module)
-              .with("--module-version=" + version)
-              .with("--module-source-path=.bach" + File.pathSeparator + "./*/main/java")
-              .with("--release=15")
+              .with("--module", module)
+              .with("--module-version", version)
+              .with("--module-source-path", "./*/main/java")
+              .with("--release", 15)
               .with("-g")
               .with("-parameters")
               .with("-Werror")
@@ -79,7 +78,8 @@ public class Build implements ToolProvider {
       run(
           Command.builder("jar")
               .with("--create")
-              .with("--file=" + file)
+              .with("--file", file)
+              .with("--main-class", module + ".Main")
               .with("-C", classes.resolve(module), ".")
               .with("-C", Path.of(module, "main", "java"), ".")
               .build());
@@ -95,8 +95,8 @@ public class Build implements ToolProvider {
       var api = workspace.resolve("documentation/api");
       run(
           Command.builder("javadoc")
-              .with("--module=" + module)
-              .with("--module-source-path=.bach" + File.pathSeparator + "./*/main/java")
+              .with("--module", module)
+              .with("--module-source-path", "./*/main/java")
               .with("-windowtitle", "\uD83C\uDFBC Bach " + version)
               .with("-header", "\uD83C\uDFBC Bach " + version)
               .with("-footer", "\uD83C\uDFBC Bach " + version)
@@ -113,7 +113,7 @@ public class Build implements ToolProvider {
       run(
           Command.builder("jar")
               .with("--create")
-              .with("--file=" + api.getParent().resolve("bach-api-" + version + ".zip"))
+              .with("--file", api.getParent().resolve("bach-api-" + version + ".zip"))
               .with("--no-manifest")
               .with("-C", api, ".")
               .build());
