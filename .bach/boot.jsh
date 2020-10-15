@@ -1,6 +1,6 @@
 interface Boot {
   Path CACHE = Path.of(".bach/cache");
-  String VERSION = System.getProperty("version", "15-ea+1");
+  String VERSION = System.getProperty("version", "15-ea+2");
 }
 
 if (java.lang.module.ModuleFinder.of(Boot.CACHE).find("com.github.sormuras.bach").isEmpty()) {
