@@ -1,5 +1,5 @@
 /**
- * Defines the API of the 🎼 Java Shell Builder - {@code Bach}.
+ * Defines the API of 🎼 Bach, the Java Shell Builder.
  *
  * <h2>Links</h2>
  *
@@ -22,4 +22,7 @@ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      com.github.sormuras.bach.internal.BachToolProvider; // "bach"
 }
