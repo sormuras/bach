@@ -21,10 +21,11 @@ jobs:
       - name: 'Bootstrap Bach'
         run: java .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java \
-          -Dbach.project.version=${VERSION} \
-          --module-path .bach/cache \
-          --module com.github.sormuras.bach
+        run: |
+          java \
+            -Dbach.project.version=${VERSION} \
+            --module-path .bach/cache \
+            --module com.github.sormuras.bach
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
