@@ -4,21 +4,39 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.lang.module.FindException;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ResolutionException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.spi.ToolProvider;
 
 /** An object that runs {@link ToolCall} instances. */
 public class ToolRunner {
 
+  private final ModuleFinder finder;
   private final Logger logger;
   private final Deque<ToolResponse> history;
 
-  /** Initializes a tool shell instance with the given components. */
+  /** Initializes a tool shell instance with the default components. */
   public ToolRunner() {
+    this(ModuleFinder.of());
+  }
+
+  /**
+   * Initializes a tool shell instance with the given components.
+   *
+   * @param finder the module finder used to load additional tools from
+   */
+  public ToolRunner(ModuleFinder finder) {
+    this.finder = finder;
     this.logger = System.getLogger(ToolRunner.class.getName());
     this.history = new ConcurrentLinkedDeque<>();
   }
@@ -32,6 +50,32 @@ public class ToolRunner {
   protected String computeMessageText(StringWriter writer) {
     if (writer.getBuffer().length() == 0) return "";
     return writer.toString().strip();
+  }
+
+  /**
+   * Computes an instance of {@code ToolProvider} for the given name.
+   *
+   * @param name the name of the tool
+   * @return a tool provider
+   */
+  protected ToolProvider computeToolProvider(String name) {
+    var systemToolProvider = ToolProvider.findFirst(name);
+    if (systemToolProvider.isPresent()) return systemToolProvider.get();
+    try {
+      var boot = ModuleLayer.boot();
+      var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of());
+      var parent = getClass().getClassLoader();
+      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
+      var layer = controller.layer();
+      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
+      return serviceLoader.stream()
+          .map(ServiceLoader.Provider::get)
+          .filter(tool -> tool.name().equals(name))
+          .findFirst()
+          .orElseThrow(() -> new NoSuchElementException("Tool with name '" + name + "' not found"));
+    } catch (FindException | ResolutionException exception) {
+      throw new RuntimeException("Compute tool provider failed for name: " + name, exception);
+    }
   }
 
   /**
@@ -64,7 +108,7 @@ public class ToolRunner {
    * @return a tool call response object
    */
   public ToolResponse run(String name, String... args) {
-    return run(ToolProvider.findFirst(name).orElseThrow(), args);
+    return run(computeToolProvider(name), args);
   }
 
   ToolResponse run(ToolProvider provider, String... args) {
