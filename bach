@@ -1,0 +1,8 @@
+#!/usr/bin/env java --source 15
+
+public class bach {
+  public static void main(String... args) {
+    System.out.println("Bach Launcher");
+    System.out.println("  args: [" + String.join(", ", args) + "]");
+  }
+}
