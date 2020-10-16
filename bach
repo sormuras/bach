@@ -1,4 +1,4 @@
-#!/usr/bin/env sh ${JAVA_HOME}/bin/java --source 15
+#!/usr/bin/env java
 
 public class bach {
   public static void main(String... args) {
