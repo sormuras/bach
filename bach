@@ -41,8 +41,11 @@ public class bach {
   public static void version(Version version) {
     var cache = Path.of(".bach/cache");
     var module = "com.github.sormuras.bach";
-    try (var stream = Files.newDirectoryStream(cache, module + '*')) { stream.forEach(bach::delete); }
-    catch (Exception exception) { throw new Error("version() failed", exception); }
+    if (Files.isDirectory(cache))
+      try (var stream = Files.newDirectoryStream(cache, module + '*')) {
+        stream.forEach(bach::delete);
+      }
+      catch (Exception exception) { throw new Error("version() failed", exception); }
     var jar = module + '@' + version + ".jar";
     var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
     load(source, cache.resolve(jar));
