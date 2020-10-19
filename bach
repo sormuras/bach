@@ -1,8 +1,61 @@
 #!/usr/bin/env java
 
+import java.lang.module.ModuleDescriptor.Version;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class bach {
   public static void main(String... args) {
-    System.out.println("Bach Launcher");
-    System.out.println("  args: [" + String.join(", ", args) + "]");
+    if (args.length == 0) {
+      System.out.println("Bach Launcher");
+      System.out.println("Usage ...");
+      return;
+    }
+    if (args.length == 1) {
+      if ("version".equals(args[0])) {
+        version();
+        return;
+      }
+    }
+    if (args.length == 2) {
+      if ("version".equals(args[0])) {
+        version(Version.parse(args[1]));
+        return;
+      }
+    }
+    System.err.println("Unsupported argument(s): '" + String.join("', '", args) + '\'');
+  }
+
+  public static void version() {
+    var cache = Path.of(".bach/cache");
+    var module = "com.github.sormuras.bach";
+    var found = java.lang.module.ModuleFinder.of(cache).find(module);
+    if (found.isPresent()) {
+      System.out.println(found.get().descriptor().version().map(Version::toString).orElse("?"));
+      return;
+    }
+    System.err.println("Module " + module + " not found in " + cache);
+  }
+
+  public static void version(Version version) {
+    var cache = Path.of(".bach/cache");
+    var module = "com.github.sormuras.bach";
+    try (var stream = Files.newDirectoryStream(cache, module + '*')) { stream.forEach(bach::delete); }
+    catch (Exception exeption) { throw new Error("", exeption); }
+    var jar = module + '@' + version + ".jar";
+    var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
+    load(source, cache.resolve(jar));
+  }
+
+  private static void delete(Path path) {
+    try { Files.deleteIfExists(path); }
+    catch (Exception exeption) { throw new Error("", exeption); }
+  }
+
+  private static void load(String source, Path target) {
+    System.out.println("Download " + source + " to " + target.toAbsolutePath().getParent().toUri());
+    try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
+    catch (Exception exeption) { throw new Error("", exeption); }
   }
 }
