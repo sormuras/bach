@@ -42,7 +42,7 @@ public class bach {
     var cache = Path.of(".bach/cache");
     var module = "com.github.sormuras.bach";
     try (var stream = Files.newDirectoryStream(cache, module + '*')) { stream.forEach(bach::delete); }
-    catch (Exception exeption) { throw new Error("", exeption); }
+    catch (Exception exception) { throw new Error("version() failed", exception); }
     var jar = module + '@' + version + ".jar";
     var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
     load(source, cache.resolve(jar));
@@ -50,12 +50,15 @@ public class bach {
 
   private static void delete(Path path) {
     try { Files.deleteIfExists(path); }
-    catch (Exception exeption) { throw new Error("", exeption); }
+    catch (Exception exception) { throw new Error("delete() failed", exception); }
   }
 
   private static void load(String source, Path target) {
     System.out.println("Download " + source + " to " + target.toAbsolutePath().getParent().toUri());
-    try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
-    catch (Exception exeption) { throw new Error("", exeption); }
+    try (var stream = new URL(source).openStream()) {
+      Files.createDirectories(target.getParent());
+      Files.copy(stream, target);
+    }
+    catch (Exception exception) { throw new Error("load() failed", exception); }
   }
 }
