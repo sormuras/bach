@@ -8,6 +8,10 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 Nothing notable, yet.
 
+### Changed
+
+- `boot` now also downloads an initial version of module `com.github.sormuras.bach`
+
 ## Version [15-ea+3] - 2020-10-20
 
 Launch programs modified.
@@ -31,7 +35,7 @@ Build and launch custom build program.
 
 ### Added
 
-- Bach's main program - only delegating to custom build programs for the time being.
+- Bach's main program - only delegating to custom build programs for the time being
 - JShell-based scripts `boot.jsh` and `pull.jsh`
 
 ### Changed

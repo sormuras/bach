@@ -1,11 +1,14 @@
 // Bach's Boot Script
 
+var version = System.getProperty("version", "15-ea+3")
+
 void main() throws Exception {
   System.out.print(
     """
-    Booting Bach in directory %s
+    Booting Bach %s in directory %s
     """
     .formatted(
+      version,
       Path.of("").toAbsolutePath()
     )
   );
@@ -13,6 +16,7 @@ void main() throws Exception {
   load("bach").toFile().setExecutable(true);
   load("bach.bat");
   load("bach.java");
+  load(".gitignore");
 }
 
 Path load(String file) throws Exception {
@@ -25,5 +29,10 @@ Path load(String file) throws Exception {
 }
 
 main()
+
+/open bach.java
+
+bach.main("version", version)
+bach.main("version")
 
 /exit

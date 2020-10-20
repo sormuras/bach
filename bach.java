@@ -47,9 +47,9 @@ interface bach {
   }
 
   private static void load(String source, Path target) {
-    System.out.println("Download " + source + " to " + target.toAbsolutePath().getParent().toUri());
+    System.out.println("  " + target.getFileName() + " << " + source);
     try (var stream = new URL(source).openStream()) {
-      Files.createDirectories(target.getParent());
+      if (target.getParent() != null) Files.createDirectories(target.getParent());
       Files.copy(stream, target);
     }
     catch (Exception exception) { throw new Error("load() failed", exception); }
