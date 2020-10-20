@@ -12,6 +12,7 @@ void main() throws Exception {
 
   load("bach").toFile().setExecutable(true);
   load("bach.bat");
+  load("bach.java");
 }
 
 Path load(String file) throws Exception {
