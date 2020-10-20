@@ -21,7 +21,7 @@ jobs:
       - name: 'Bootstrap Bach'
         run: java .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --source 15 bach build ${VERSION}
+        run: ./bach build ${VERSION}
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
