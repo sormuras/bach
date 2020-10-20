@@ -27,6 +27,7 @@ public class Build implements ToolProvider {
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     out.println(getClass().getSimpleName() + " in " + getClass().getModule());
+    out.println("With args = [" + String.join(", ", args) + "]");
     var start = Instant.now();
     try {
       new Simple(out, err).run();
