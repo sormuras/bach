@@ -1,8 +1,10 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.MainArguments;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.function.Consumer;
 
 /** Bach's main program. */
@@ -42,9 +44,29 @@ public class Main {
    * @param args the command line arguments
    */
   public void run(String... args) {
-    out.accept("Bach in module " + getClass().getModule().getDescriptor().toNameAndVersion());
-    out.accept("  - base directory: " + Path.of("").toAbsolutePath());
+    var arguments = MainArguments.of(args);
+    if (arguments.verbose()) {
+      out.accept("Bach " + Bach.version());
+      out.accept("  - arguments: [" + String.join(", ", args) + "]");
+      out.accept("  - base directory: " + Path.of("").toAbsolutePath());
+    }
 
+    var actions = new ArrayDeque<>(arguments.actions());
+    while (!actions.isEmpty()) {
+      var action = actions.removeFirst();
+      if (arguments.verbose()) out.accept("action: " + action);
+      switch (action) {
+        case "build" -> {
+          build(actions.toArray(String[]::new));
+          actions.clear();
+        }
+        case "version" -> out.accept(Bach.version());
+        default -> throw new IllegalArgumentException("Unsupported action: " + action);
+      }
+    }
+  }
+
+  void build(String... args) {
     var base = Path.of("");
     var workspace = base.resolve(".bach/workspace");
     var build = base.resolve(".bach/build");
