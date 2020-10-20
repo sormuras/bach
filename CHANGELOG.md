@@ -8,6 +8,23 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 Nothing notable, yet.
 
+## Version [15-ea+3] - 2020-10-20
+
+Launch programs modified.
+
+### Added
+
+- Java-based launch script `bach.java`
+
+### Changed
+
+- Bash-based launch script `bach`
+- DOS-based launch script `bach.bat`
+
+### Removed
+
+- JShell-based scripts `boot.jsh` and `pull.jsh`
+
 ## Version [15-ea+2] - 2020-10-15
 
 Build and launch custom build program.
@@ -31,6 +48,7 @@ Initial pre-release of Bach 15.
 - Module `com.github.sormuras.bach` exporting its only package with the same name
 - Package `com.github.sormuras.bach` with generic tool-related classes
 
-[Unreleased]: https://github.com/sormuras/bach/compare/15-ea+2...HEAD
+[Unreleased]: https://github.com/sormuras/bach/compare/15-ea+3...HEAD
+[15-ea+3]: https://github.com/sormuras/bach/releases/tag/15-ea+3
 [15-ea+2]: https://github.com/sormuras/bach/releases/tag/15-ea+2
 [15-ea+1]: https://github.com/sormuras/bach/releases/tag/15-ea+1
