@@ -47,7 +47,7 @@ interface bach {
   }
 
   private static void load(String source, Path target) {
-    System.out.println("  " + target.getFileName() + " << " + source);
+    System.out.println("  " + target + " << " + source);
     try (var stream = new URL(source).openStream()) {
       if (target.getParent() != null) Files.createDirectories(target.getParent());
       Files.copy(stream, target);
