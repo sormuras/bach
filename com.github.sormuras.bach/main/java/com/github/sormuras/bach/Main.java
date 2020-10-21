@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.MainArguments;
+import com.github.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +52,11 @@ public class Main {
       out.accept("  - base directory: " + Path.of("").toAbsolutePath());
     }
 
+    if (arguments.actions().isEmpty()) {
+      out.accept(help());
+      return;
+    }
+
     var actions = new ArrayDeque<>(arguments.actions());
     while (!actions.isEmpty()) {
       var action = actions.removeFirst();
@@ -60,6 +66,8 @@ public class Main {
           build(actions.toArray(String[]::new));
           actions.clear();
         }
+        case "clean" -> clean();
+        case "help", "/?" -> out.accept(help());
         case "version" -> out.accept(Bach.version());
         default -> throw new IllegalArgumentException("Unsupported action: " + action);
       }
@@ -91,5 +99,31 @@ public class Main {
 
     err.accept("Zero-configuration build operation not implemented, yet");
     throw new UnsupportedOperationException();
+  }
+
+  void clean() {
+    var base = Path.of("");
+    var workspace = base.resolve(".bach/workspace");
+    Paths.deleteDirectories(workspace);
+  }
+
+  String help() {
+    return """
+        Usage: bach [options] action [actions/args...]
+        
+        Options:
+          --verbose
+                Output messages about what Bach and other tools are doing.
+        
+        Actions:
+          build [args...]
+                Build the modular Java project. Consumes all following arguments.
+          clean
+                Delete workspace directory.
+          help, /?
+                Print this help message.
+          version
+                Print Bach's version: %s
+        """.formatted(Bach.version());
   }
 }

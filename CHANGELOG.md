@@ -8,9 +8,14 @@ and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk
 
 Nothing notable, yet.
 
+### Added
+
+- Main action `help` printing a help screen.
+- Main action `clean` deleting `.bach/workspace` directory.
+
 ### Changed
 
-- `boot` now also downloads an initial version of module `com.github.sormuras.bach`
+- JShell-based `boot` script now also downloads an initial version of module `com.github.sormuras.bach`
 
 ## Version [15-ea+3] - 2020-10-20
 
