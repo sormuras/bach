@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -227,7 +226,7 @@ class PathsTests {
 
   static void assertTreeWalkMatches(Path root, String... expected) {
     var actualLines = new ArrayList<String>();
-    walk(root, actualLines::add);
+    Paths.walk(root, actualLines::add);
     assertLinesMatch(List.of(expected), actualLines);
   }
 
@@ -337,21 +336,6 @@ class PathsTests {
     if (Files.notExists(directory)) return directory;
     return Paths.deleteDirectories(directory, __ -> true);
   }
-
-  /** Walk directory tree structure. */
-  static void walk(Path root, Consumer<String> out) {
-    try (var stream = Files.walk(root)) {
-      stream
-          .map(root::relativize)
-          .map(path -> path.toString().replace('\\', '/'))
-          .sorted()
-          .filter(Predicate.not(String::isEmpty))
-          .forEach(out);
-    } catch (Exception e) {
-      throw new RuntimeException("Walking tree failed: " + root, e);
-    }
-  }
-
 
   /** Convert path element names of the given unit into a reversed deque. */
   public static Deque<String> deque(Path path) {
