@@ -1,38 +1,40 @@
 // Bach's Boot Script
 
-var version = System.getProperty("version", "15-ea+3")
+void ßoot() throws Exception {
+  var version = System.getProperty("version", "15-ea+3");
+  var module = "com.github.sormuras.bach";
+  var jar = module + '@' + version + ".jar";
+  var cache = Path.of(".bach/cache");
+  if (java.lang.module.ModuleFinder.of(cache).find(module).isPresent()) return;
 
-void main() throws Exception {
-  System.out.print(
-    """
-    Booting Bach %s in directory %s
-    """
-    .formatted(
-      version,
-      Path.of("").toAbsolutePath()
-    )
-  );
-
-  load("bach").toFile().setExecutable(true);
-  load("bach.bat");
-  load("bach.java");
-  load(".gitignore");
-}
-
-Path load(String file) throws Exception {
-  var source = "https://github.com/sormuras/bach/raw/main/" + file;
-  var target = Path.of(file);
-  System.out.println("  " + file + " << " + source);
-  Files.deleteIfExists(target);
+  Files.createDirectories(cache);
+  var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
+  var target = cache.resolve(jar);
   try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
-  return target;
 }
 
-main()
+ßoot()
 
-/open bach.java
+/env --module-path .bach/cache --add-modules com.github.sormuras.bach
 
-bach.main("version", version)
-bach.main("version")
+import com.github.sormuras.bach.*
 
-/exit
+System.out.println(
+"""
+    ___      ___      ___      ___
+   /\\  \\    /\\  \\    /\\  \\    /\\__\\
+  /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_
+ /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\
+ \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /
+  \\::/  /   /:/  /  \\:\\__\\    /:/  /
+   \\/__/    \\/__/    \\/__/    \\/__/.java
+
+             Bach %s
+     Java Runtime %s
+ Operating System %s
+"""
+.formatted(
+  Bach.version(),
+  Runtime.version(),
+  System.getProperty("os.name")
+))
