@@ -1,20 +1,16 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.Tools;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
-import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;
-import java.lang.module.ResolutionException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.spi.ToolProvider;
 
@@ -59,23 +55,9 @@ public class ToolRunner {
    * @return a tool provider
    */
   protected ToolProvider computeToolProvider(String name) {
-    var systemToolProvider = ToolProvider.findFirst(name);
-    if (systemToolProvider.isPresent()) return systemToolProvider.get();
-    try {
-      var boot = ModuleLayer.boot();
-      var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of());
-      var parent = getClass().getClassLoader();
-      var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
-      var layer = controller.layer();
-      var serviceLoader = ServiceLoader.load(layer, ToolProvider.class);
-      return serviceLoader.stream()
-          .map(ServiceLoader.Provider::get)
-          .filter(tool -> tool.name().equals(name))
-          .findFirst()
-          .orElseThrow(() -> new NoSuchElementException("Tool with name '" + name + "' not found"));
-    } catch (FindException | ResolutionException exception) {
-      throw new RuntimeException("Compute tool provider failed for name: " + name, exception);
-    }
+    return ToolProvider.findFirst(name)
+        .or(() -> Tools.find(finder).stream().filter(tool -> tool.name().equals(name)).findFirst())
+        .orElseThrow(() -> new NoSuchElementException("Tool with name '" + name + "' not found"));
   }
 
   /**

@@ -1,12 +1,14 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.MainArguments;
+import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
-import java.lang.module.ModuleFinder;
+import com.github.sormuras.bach.internal.Tools;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /** Bach's main program. */
 public class Main {
@@ -68,6 +70,13 @@ public class Main {
         }
         case "clean" -> clean();
         case "help", "/?" -> out.accept(help());
+        case "run" -> {
+          if (actions.isEmpty())
+            throw new IllegalArgumentException("Name of tool to run is missing!");
+          run(actions.removeFirst(), actions.toArray(String[]::new));
+          actions.clear();
+        }
+        case "tools" -> out.accept(tools());
         case "version" -> out.accept(Bach.version());
         default -> throw new IllegalArgumentException("Unsupported action: " + action);
       }
@@ -75,30 +84,27 @@ public class Main {
   }
 
   void build(String... args) {
-    var base = Path.of("");
-    var workspace = base.resolve(".bach/workspace");
-    var build = base.resolve(".bach/build");
-    var cache = base.resolve(".bach/cache");
-
-    if (Files.exists(build.resolve("module-info.java"))) {
-      var classes = workspace.resolve("classes/.build");
-      var runner = new ToolRunner(ModuleFinder.of(classes, cache));
-      var compile =
-          Command.of(
-              "javac",
-              "--module=build",
-              "--module-source-path", base.resolve(".bach"),
-              "--module-path", cache,
-              "-d",
-              classes);
-      runner.run(compile).checkSuccessful();
-      runner.run("build", args).checkSuccessful();
-      runner.history().stream().map(ToolResponse::out).forEach(out);
+    if (Files.exists(Path.of(".bach/build/module-info.java"))) {
+      build("build", "build", args);
       return;
     }
 
     err.accept("Zero-configuration build operation not implemented, yet");
     throw new UnsupportedOperationException();
+  }
+
+  void build(String module, String tool, String... args) {
+    var compile =
+        Command.builder("javac")
+            .with("--module", module)
+            .with("--module-source-path", Path.of(".bach"))
+            .with("--module-path", Path.of(".bach/cache"))
+            .with("-d", Path.of(".bach/workspace/classes/.build"))
+            .build();
+    var runner = new ToolRunner(Modules.finder());
+    runner.run(compile).checkSuccessful();
+    runner.run(tool, args).checkSuccessful();
+    runner.history().stream().map(ToolResponse::out).forEach(out);
   }
 
   void clean() {
@@ -110,11 +116,11 @@ public class Main {
   String help() {
     return """
         Usage: bach [options] action [actions/args...]
-        
+
         Options:
           --verbose
                 Output messages about what Bach and other tools are doing.
-        
+
         Actions:
           build [args...]
                 Build the modular Java project. Consumes all following arguments.
@@ -122,8 +128,26 @@ public class Main {
                 Delete workspace directory.
           help, /?
                 Print this help message.
+          run TOOL [args...]
+                Run the named tool with all following arguments being passed to it.
+          tools
+                Print a sorted list of all available tools.
           version
                 Print Bach's version: %s
-        """.formatted(Bach.version());
+        """
+        .formatted(Bach.version());
+  }
+
+  void run(String tool, String... args) {
+    var runner = new ToolRunner(Modules.finder());
+    runner.run(tool, args).checkSuccessful();
+    out.accept(runner.history().getLast().out());
+  }
+
+  String tools() {
+    return Tools.find(Modules.finder()).stream()
+        .map(tool -> String.format("%-12s %s", tool.name(), Tools.describe(tool)))
+        .sorted()
+        .collect(Collectors.joining(System.lineSeparator()));
   }
 }

@@ -10,8 +10,10 @@ Nothing notable, yet.
 
 ### Added
 
-- Main action `help` printing a help screen.
-- Main action `clean` deleting `.bach/workspace` directory.
+- Main action `clean` deleting `.bach/workspace` directory
+- Main action `help` printing a help screen
+- Main action `run TOOL [args...]` running a tool by its name
+- Main action `tools` listing all available tools
 
 ### Changed
 

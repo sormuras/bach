@@ -27,4 +27,9 @@ public class BachToolProvider implements ToolProvider {
       return -1;
     }
   }
+
+  @Override
+  public String toString() {
+    return "Build modular Java projects";
+  }
 }
