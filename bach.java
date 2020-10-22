@@ -13,14 +13,15 @@ import java.util.spi.ToolProvider;
 
 interface bach {
   static void main(String... args) {
+    var cache = Path.of(".bach/cache");
+
     if (args.length == 2) {
       if ("version".equals(args[0])) {
-        version(Version.parse(args[1]));
+        version(cache, Version.parse(args[1]));
         return;
       }
     }
 
-    var cache = Path.of(".bach/cache");
     find("bach", ModuleFinder.of(cache))
         .ifPresentOrElse(
             bach -> bach.run(System.out, System.err, args),
@@ -28,8 +29,7 @@ interface bach {
         );
   }
 
-  static void version(Version version) {
-    var cache = Path.of(".bach/cache");
+  static void version(Path cache, Version version) {
     var module = "com.github.sormuras.bach";
     if (Files.isDirectory(cache))
       try (var stream = Files.newDirectoryStream(cache, module + '*')) {
