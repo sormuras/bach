@@ -1,8 +1,10 @@
 # Changelog
+
 All notable changes to [Bach](https://github.com/sormuras/bach) will be documented in this `CHANGELOG.md` file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com),
-and this project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
+The format is based on [Keep a Changelog](https://keepachangelog.com).
+
+This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
 ## Version [Unreleased]
 
@@ -10,14 +12,16 @@ Nothing notable, yet.
 
 ### Added
 
-- Main action `clean` deleting `.bach/workspace` directory
-- Main action `help` printing a help screen
-- Main action `run TOOL [args...]` running a tool by its name
-- Main action `tools` listing all available tools
+- JShell-friendly commands to `Bach` class: `tree()`
 
 ### Changed
 
-- JShell-based `boot` script now also downloads an initial version of module `com.github.sormuras.bach`
+- JShell-based `boot` script only downloads module `com.github.sormuras.bach`
+- JShell-based `boot` script no longer exits the current JShell session
+
+### Removed
+
+- Bach's main program.
 
 ## Version [15-ea+3] - 2020-10-20
 
@@ -60,6 +64,9 @@ Initial pre-release of Bach 15.
 - Package `com.github.sormuras.bach` with generic tool-related classes
 
 [Unreleased]: https://github.com/sormuras/bach/compare/15-ea+3...HEAD
+
 [15-ea+3]: https://github.com/sormuras/bach/releases/tag/15-ea+3
+
 [15-ea+2]: https://github.com/sormuras/bach/releases/tag/15-ea+2
+
 [15-ea+1]: https://github.com/sormuras/bach/releases/tag/15-ea+1
