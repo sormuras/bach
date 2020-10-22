@@ -17,6 +17,7 @@ void ßoot() throws Exception {
 
 /env --module-path .bach/cache --add-modules com.github.sormuras.bach
 
+import static com.github.sormuras.bach.Bach.*
 import com.github.sormuras.bach.*
 
 System.out.println(
