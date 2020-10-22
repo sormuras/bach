@@ -12,4 +12,7 @@ public class Bach {
     if (descriptor == null) return "?";
     return descriptor.version().map(Object::toString).orElse("?");
   }
+
+  /** Hidden default constructor. */
+  private Bach() {}
 }
