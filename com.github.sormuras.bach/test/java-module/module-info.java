@@ -9,7 +9,4 @@ open /*test*/ module com.github.sormuras.bach {
   requires org.junit.jupiter;
 
   uses java.util.spi.ToolProvider;
-
-  provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.internal.BachToolProvider; // "bach"
 }
