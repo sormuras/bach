@@ -26,9 +26,8 @@ public class Build implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    out.println(getClass().getSimpleName() + " in " + getClass().getModule());
-    out.println("With args = [" + String.join(", ", args) + "]");
     var version = args.length == 0 ? "15-ea" : args[0];
+    out.println("Build Bach " + version + " using Bach " + Bach.version());
     var start = Instant.now();
     try {
       new Simple(out, err, version).run();
@@ -62,8 +61,6 @@ public class Build implements ToolProvider {
     }
 
     void run() throws Exception {
-      out.println("Compile " + Bach.class.getModule() + "@" + version);
-
       var module = "com.github.sormuras.bach";
       var classes = workspace.resolve("classes/" + Runtime.version().feature());
       var modules = Files.createDirectories(workspace.resolve("modules"));

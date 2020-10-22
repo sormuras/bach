@@ -1,5 +1,6 @@
 package build;
 
+import java.io.File;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,9 +15,9 @@ class Bootstrap {
     var classes = deleteDirectories(Path.of(".bach/workspace")).resolve("classes/.bootstrap");
     run(
         "javac",
-        "--module=" + module,
+        "--module=" + module + ",build",
         "--module-version=" + version + "-" + Instant.now(),
-        "--module-source-path=./*/main/java",
+        "--module-source-path=./*/main/java" + File.pathSeparator + ".bach",
         "-g",
         "-parameters",
         "-Werror",
@@ -32,7 +33,6 @@ class Bootstrap {
         "jar",
         "--create",
         "--file=" + jar,
-        "--main-class=" + module + ".Main",
         "-C",
         classes.resolve(module).toString(),
         ".");
