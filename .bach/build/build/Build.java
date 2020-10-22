@@ -41,6 +41,11 @@ public class Build implements ToolProvider {
     }
   }
 
+  @Override
+  public String toString() {
+    return "Bach's Build Program";
+  }
+
   static class Simple {
 
     final PrintWriter out;
@@ -67,7 +72,6 @@ public class Build implements ToolProvider {
       run(
           Command.builder("javac")
               .with("--module", module)
-              .with("--module-version", version)
               .with("--module-source-path", "./*/main/java")
               .with("--release", 15)
               .with("-g")
@@ -83,13 +87,17 @@ public class Build implements ToolProvider {
               .with("--create")
               .with("--file", file)
               .with("--main-class", module + ".Main")
+              .with("--module-version", version)
               .with("-C", classes.resolve(module), ".")
               .with("-C", Path.of(module, "main", "java"), ".")
               .build());
 
       var description = run(Command.of("jar", "--describe-module", "--file", file)).out();
       if (!description.startsWith(module + '@' + version))
-        throw new AssertionError("Module name and version not found at the start!");
+        throw new AssertionError(
+            "Module name and version not found at the start!\n"
+                + ("Expected: " + module + '@' + version + '\n')
+                + ("But got:\n" + description));
 
       var list = run(Command.of("jar", "--list", "--file", file), false).out();
       if (list.lines().noneMatch(line -> line.endsWith(".java")))
