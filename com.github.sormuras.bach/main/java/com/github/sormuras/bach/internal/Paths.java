@@ -38,8 +38,8 @@ public final class Paths {
       stream
           .map(root::relativize)
           .map(path -> path.toString().replace('\\', '/'))
-          .sorted()
           .filter(Predicate.not(String::isEmpty))
+          .sorted(String.CASE_INSENSITIVE_ORDER)
           .forEach(out);
     } catch (Exception e) {
       throw new RuntimeException("Walking tree failed: " + root, e);
