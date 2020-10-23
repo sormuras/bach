@@ -1,6 +1,6 @@
 # Bach - Java Shell Builder
  
-[![jdk15](https://img.shields.io/badge/JDK-15-blue.svg)](https://jdk.java.net)
+[![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://github.com/sormuras/bach)
 
 Build modular Java projects with [JDK Foundation Tools].

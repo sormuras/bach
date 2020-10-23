@@ -1,15 +1,14 @@
 // Bach's Boot Script
 
 void ßoot() throws Exception {
-  var version = System.getProperty("version", "15-ea+3");
   var module = "com.github.sormuras.bach";
-  var jar = module + '@' + version + ".jar";
   var cache = Path.of(".bach/cache");
   if (java.lang.module.ModuleFinder.of(cache).find(module).isPresent()) return;
 
-  Files.createDirectories(cache);
+  var version = System.getProperty("version", "early-access");
+  var jar = module + '@' + version + ".jar";
   var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
-  var target = cache.resolve(jar);
+  var target = Files.createDirectories(cache).resolve(jar);
   try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
 }
 
@@ -17,7 +16,6 @@ void ßoot() throws Exception {
 
 /env --module-path .bach/cache --add-modules com.github.sormuras.bach
 
-import static com.github.sormuras.bach.Bach.*
 import com.github.sormuras.bach.*
 
 System.out.println(

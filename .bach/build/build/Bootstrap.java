@@ -10,9 +10,9 @@ import java.util.spi.ToolProvider;
 class Bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
-    var version = "15-ea+BOOTSTRAP";
+    var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
 
-    var classes = deleteDirectories(Path.of(".bach/workspace")).resolve("classes/.bootstrap");
+    var classes = deleteDirectories(Path.of(".bach/workspace")).resolve(".bootstrap");
     run(
         "javac",
         "--module=" + module + ",build",

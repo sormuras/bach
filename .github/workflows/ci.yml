@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
-      - name: 'Download JDK with Records'
+      - name: 'Download JDK'
         uses: sormuras/download-jdk@v1
         id: jdk
         with:
@@ -20,14 +20,15 @@ jobs:
         with:
           java-version: ${{ steps.jdk.outputs.version }}
           jdkFile: ${{ steps.jdk.outputs.file }}
-      - name: 'Set up constants'
+      - name: 'Set up version'
         run: |
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "VERSION=15-ea+${SHA7}" >> ${GITHUB_ENV}
+          VERSION=$(<VERSION)+${SHA7}
+          echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --module-path .bach/workspace/classes/.bootstrap --module build/build.Build ${VERSION}
+        run: java --module-path .bach/workspace/.bootstrap --module build/build.Build ${VERSION} early-access
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
@@ -35,3 +36,14 @@ jobs:
           path: |
             .bach/workspace/modules
             .bach/workspace/documentation/api
+      - name: 'Release early-access build'
+        if: github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          automatic_release_tag: 'early-access'
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          title: "Bach ${{ env.VERSION }}"
+          files: |
+            .bach/workspace/modules/*.jar
+            .bach/workspace/documentation/bach-api-${{ env.VERSION }}.zip
