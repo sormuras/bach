@@ -46,4 +46,3 @@ jobs:
           title: "Bach ${{ env.VERSION }}"
           files: |
             .bach/workspace/modules/*.jar
-            .bach/workspace/documentation/bach-api-${{ env.VERSION }}.zip
