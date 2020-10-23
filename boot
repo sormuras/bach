@@ -1,6 +1,6 @@
 // Bach's Boot Script
 
-void ßoot() throws Exception {
+void boot() throws Exception {
   var module = "com.github.sormuras.bach";
   var cache = Path.of(".bach/cache");
   if (java.lang.module.ModuleFinder.of(cache).find(module).isPresent()) return;
@@ -12,11 +12,9 @@ void ßoot() throws Exception {
   try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
 }
 
-ßoot()
+boot()
 
 /env --module-path .bach/cache --add-modules com.github.sormuras.bach
-
-import com.github.sormuras.bach.*
 
 System.out.println(
 """
@@ -33,7 +31,11 @@ System.out.println(
  Operating System %s
 """
 .formatted(
-  Bach.version(),
+  com.github.sormuras.bach.Bach.version(),
   Runtime.version(),
   System.getProperty("os.name")
 ))
+
+/reset
+
+import com.github.sormuras.bach.*
