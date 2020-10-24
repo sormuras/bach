@@ -50,3 +50,7 @@ System.out.println(
 /reset
 
 import com.github.sormuras.bach.*
+
+var BACH = Bach.ofSystem();
+
+void find(String glob) { BACH.printFind(glob); }
