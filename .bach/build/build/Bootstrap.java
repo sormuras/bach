@@ -1,7 +1,6 @@
 package build;
 
 import java.io.File;
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -12,7 +11,7 @@ class Bootstrap {
     var module = "com.github.sormuras.bach";
     var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
 
-    var classes = deleteDirectories(Path.of(".bach/workspace")).resolve(".bootstrap");
+    var classes = Path.of(".bach/workspace/.bootstrap");
     run(
         "javac",
         "--module=" + module + ",build",
@@ -43,23 +42,5 @@ class Bootstrap {
     var tool = ToolProvider.findFirst(name).orElseThrow();
     var code = tool.run(System.out, System.err, args);
     if (code != 0) throw new Error("Non-zero exit code: " + code);
-  }
-
-  static Path deleteDirectories(Path directory) {
-    try { // trivial case: delete existing empty directory or single file
-      Files.deleteIfExists(directory);
-      return directory;
-    } catch (DirectoryNotEmptyException ignored) {
-      // fall-through
-    } catch (Exception exception) {
-      throw new Error("Delete directories failed: " + directory, exception);
-    }
-    try (var stream = Files.walk(directory)) { // default case: walk the tree...
-      var selected = stream.sorted((p, q) -> -p.compareTo(q));
-      for (var path : selected.toArray(Path[]::new)) Files.deleteIfExists(path);
-    } catch (Exception exception) {
-      throw new Error("Delete directories failed: " + directory, exception);
-    }
-    return directory;
   }
 }
