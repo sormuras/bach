@@ -15,7 +15,7 @@ void boot(String version, boolean reboot) throws Exception {
   if (reference.isPresent()) {
     var cached = Path.of(reference.get().location().orElseThrow());
     var cachedIsEarlyAccess = cached.getFileName().toString().contains("early-access");
-    if (cachedIsEarlyAccess || reboot) Files.delete(cached);
+    if (cachedIsEarlyAccess || reboot) Files.delete(cached); else return;
   }
 
   try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
