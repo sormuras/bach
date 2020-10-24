@@ -35,14 +35,16 @@ System.out.println(
   \\::/  /   /:/  /  \\:\\__\\    /:/  /
    \\/__/    \\/__/    \\/__/    \\/__/.java
 
-             Bach %s
-     Java Runtime %s
- Operating System %s
+                Bach %s
+        Java Runtime %s
+    Operating System %s
+   Working Directory %s
 """
 .formatted(
   com.github.sormuras.bach.Bach.version(),
   Runtime.version(),
-  System.getProperty("os.name")
+  System.getProperty("os.name"),
+  Path.of("").toAbsolutePath()
 ))
 
 /reset
