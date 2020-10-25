@@ -38,6 +38,7 @@ public final class Bach implements Http, Print {
    * Initialize default constructor.
    *
    * @param printer the print stream for normal messages
+   * @param httpClientSupplier the supplier of an http client
    */
   public Bach(PrintStream printer, Supplier<HttpClient> httpClientSupplier) {
     this.printer = printer;

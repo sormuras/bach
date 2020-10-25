@@ -22,6 +22,11 @@ import java.util.Set;
 /** Http-related API. */
 public /*sealed*/ interface Http extends Print /*permits Bach*/ {
 
+  /**
+   * Returns a new HttpClient following {@linkplain HttpClient.Redirect#NORMAL normal} redirects.
+   *
+   * @return a new HttpClient
+   */
   static HttpClient newClient() {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
@@ -33,21 +38,40 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
    */
   HttpClient http();
 
-  /** Request head-only from the specified uri. */
-  default HttpResponse<Void> httpHead(URI uri, int timeout) throws Exception {
+  /**
+   * Request head-only from the specified uri.
+   *
+   * @param uri the request URI
+   * @param timeout the timeout for this request in seconds
+   * @return a response that discarded the response body
+   */
+  default HttpResponse<Void> httpHead(URI uri, int timeout) {
     var nobody = HttpRequest.BodyPublishers.noBody();
     var duration = Duration.ofSeconds(timeout);
     var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
     return http().send(request, BodyHandlers.discarding());
   }
 
-  /** Copy all content and attributes from a uri to a target file. */
-  default Path httpCopy(URI uri, Path file) throws Exception {
+  /**
+   * Copy all content and attributes from a uri to a target file.
+   *
+   * @param uri the request URI of the remote source file
+   * @param file the path to the local target file
+   * @return the local target file
+   */
+  default Path httpCopy(URI uri, Path file) {
     return httpCopy(uri, file, StandardCopyOption.COPY_ATTRIBUTES);
   }
 
-  /** Copy all content from a uri to a target file. */
-  default Path httpCopy(URI uri, Path file, CopyOption... options) throws Exception {
+  /**
+   * Copy all content from a uri to a target file.
+   *
+   * @param uri the request URI of the remote source file
+   * @param file the path to the local target file
+   * @param options options specifying how the copy should be done
+   * @return the local target file
+   */
+  default Path httpCopy(URI uri, Path file, CopyOption... options) {
     var request = HttpRequest.newBuilder(uri).GET();
     if (Files.exists(file) && Paths.isViewSupported(file, "user")) {
       var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
@@ -80,9 +104,14 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
     throw new IllegalStateException("Copy " + uri + " failed: response=" + response);
   }
 
-  /** Read all content from a uri into a string. */
-  default String httpRead(URI uri) throws Exception {
+  /**
+   * Read all content from a uri into a string.
+   *
+   * @param uri the uri to read
+   * @return a UTF-8 encoded string of the requested URI
+   */
+  default String httpRead(URI uri) {
     var request = HttpRequest.newBuilder(uri).GET();
-    return http().send(request.build(), BodyHandlers.ofString()).body();
+    return send(request.build(), BodyHandlers.ofString()).body();
   }
 }
