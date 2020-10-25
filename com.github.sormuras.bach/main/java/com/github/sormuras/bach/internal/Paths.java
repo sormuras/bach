@@ -6,6 +6,22 @@ import java.nio.file.Path;
 /** Internal {@link Path}-related utilities. */
 public class Paths {
 
+  public static Path createDirectories(Path directory) {
+    try {
+      return Files.createDirectories(directory);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static boolean deleteIfExists(Path path) {
+    try {
+      return Files.deleteIfExists(path);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public static boolean isViewSupported(Path file, String view) {
     return file.getFileSystem().supportedFileAttributeViews().contains(view);
   }

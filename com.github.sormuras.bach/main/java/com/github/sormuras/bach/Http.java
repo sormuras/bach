@@ -49,7 +49,7 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
     var nobody = HttpRequest.BodyPublishers.noBody();
     var duration = Duration.ofSeconds(timeout);
     var request = HttpRequest.newBuilder(uri).method("HEAD", nobody).timeout(duration).build();
-    return http().send(request, BodyHandlers.discarding());
+    return send(request, BodyHandlers.discarding());
   }
 
   /**
@@ -73,34 +73,40 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
    */
   default Path httpCopy(URI uri, Path file, CopyOption... options) {
     var request = HttpRequest.newBuilder(uri).GET();
-    if (Files.exists(file) && Paths.isViewSupported(file, "user")) {
-      var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
-      var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
-      request.setHeader("If-None-Match", etag);
-    }
-    var directory = file.getParent();
-    if (directory != null) Files.createDirectories(directory);
-    var handler = BodyHandlers.ofFile(file);
-    var response = http().send(request.build(), handler);
-    if (response.statusCode() == 200) {
-      if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES)) {
-        var etagHeader = response.headers().firstValue("etag");
-        if (etagHeader.isPresent() && Paths.isViewSupported(file, "user")) {
-          var etag = StandardCharsets.UTF_8.encode(etagHeader.get());
-          Files.setAttribute(file, "user:etag", etag);
-        }
-        var lastModifiedHeader = response.headers().firstValue("last-modified");
-        if (lastModifiedHeader.isPresent()) {
-          var text = lastModifiedHeader.get(); // force " GMT" suffix
-          if (!text.endsWith(" GMT")) text = text.substring(0, text.lastIndexOf(' ')) + " GMT";
-          var time = ZonedDateTime.parse(text, DateTimeFormatter.RFC_1123_DATE_TIME);
-          Files.setLastModifiedTime(file, FileTime.from(Instant.from(time)));
-        }
+    if (Files.exists(file) && Paths.isViewSupported(file, "user"))
+      try {
+        var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
+        var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
+        request.setHeader("If-None-Match", etag);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
+    var directory = file.getParent();
+    if (directory != null) Paths.createDirectories(directory);
+    var handler = BodyHandlers.ofFile(file);
+    var response = send(request.build(), handler);
+    if (response.statusCode() == 200 /* Ok */) {
+      if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
+        try {
+          var etagHeader = response.headers().firstValue("etag");
+          if (etagHeader.isPresent() && Paths.isViewSupported(file, "user")) {
+            var etag = StandardCharsets.UTF_8.encode(etagHeader.get());
+            Files.setAttribute(file, "user:etag", etag);
+          }
+          var lastModifiedHeader = response.headers().firstValue("last-modified");
+          if (lastModifiedHeader.isPresent()) {
+            var text = lastModifiedHeader.get(); // force " GMT" suffix
+            if (!text.endsWith(" GMT")) text = text.substring(0, text.lastIndexOf(' ')) + " GMT";
+            var time = ZonedDateTime.parse(text, DateTimeFormatter.RFC_1123_DATE_TIME);
+            Files.setLastModifiedTime(file, FileTime.from(Instant.from(time)));
+          }
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
       return file;
     }
     if (response.statusCode() == 304 /*Not Modified*/) return file;
-    Files.deleteIfExists(file);
+    Paths.deleteIfExists(file);
     throw new IllegalStateException("Copy " + uri + " failed: response=" + response);
   }
 
@@ -113,5 +119,13 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
   default String httpRead(URI uri) {
     var request = HttpRequest.newBuilder(uri).GET();
     return send(request.build(), BodyHandlers.ofString()).body();
+  }
+
+  private <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
+    try {
+      return http().send(request, handler);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }
