@@ -1,9 +1,12 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.Functions;
 import java.io.PrintStream;
+import java.net.http.HttpClient;
+import java.util.function.Supplier;
 
 /** Java Shell Builder. */
-public final class Bach implements Print {
+public final class Bach implements Http, Print {
 
   /**
    * Returns a shell builder initialized with default components.
@@ -11,7 +14,7 @@ public final class Bach implements Print {
    * @return a new instance of {@code Bach} initialized with default components
    */
   public static Bach ofSystem() {
-    return new Bach(System.out);
+    return new Bach(System.out, Functions.memoize(Http::newClient));
   }
 
   /**
@@ -28,20 +31,25 @@ public final class Bach implements Print {
   /** A print stream for normal messages. */
   private final PrintStream printer;
 
+  /** A supplier of a http client. */
+  private final Supplier<HttpClient> httpClientSupplier;
+
   /**
    * Initialize default constructor.
    *
    * @param printer the print stream for normal messages
    */
-  public Bach(PrintStream printer) {
+  public Bach(PrintStream printer, Supplier<HttpClient> httpClientSupplier) {
     this.printer = printer;
+    this.httpClientSupplier = httpClientSupplier;
   }
 
-  /**
-   * Returns the print stream for normal messages.
-   *
-   * @return the print stream for normal messages
-   */
+  @Override
+  public HttpClient http() {
+    return httpClientSupplier.get();
+  }
+
+  @Override
   public PrintStream printer() {
     return printer;
   }
