@@ -5,6 +5,15 @@
 
 Build modular Java projects with [JDK Foundation Tools].
 
+## Boot Bach into a JShell Session
+
+- Install JDK 16 from https://jdk.java.net
+- Open a command shell in an empty directory
+- `jshell https://github.com/sormuras/bach/raw/main/boot`
+- Type `/list` to display the set of prefined methods
+- Try `find(GLOB)`, `read(URI)`, `copy(URI, FILE)`, and other methods
+- Exit JShell via `/exit`
+
 # be free - have fun
 
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
