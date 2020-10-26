@@ -1,8 +1,10 @@
 package build;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Link;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -126,6 +128,30 @@ public class Build implements ToolProvider {
               .with("--no-manifest")
               .with("-C", api, ".")
               .build());
+
+      var links =
+          List.of(
+              // JUnit Platform
+              Link.ofJUnitPlatform("commons", "1.7.0"),
+              Link.ofJUnitPlatform("console", "1.7.0"),
+              Link.ofJUnitPlatform("engine", "1.7.0"),
+              Link.ofJUnitPlatform("jfr", "1.7.0"),
+              Link.ofJUnitPlatform("launcher", "1.7.0"),
+              Link.ofJUnitPlatform("reporting", "1.7.0"),
+              Link.ofJUnitPlatform("testkit", "1.7.0"),
+              // JUnit Jupiter
+              Link.ofJUnitJupiter("", "5.7.0"),
+              Link.ofJUnitJupiter("api", "5.7.0"),
+              Link.ofJUnitJupiter("engine", "5.7.0"),
+              Link.ofJUnitJupiter("params", "5.7.0"),
+              // More Modules...
+              Link.module("org.apiguardian.api")
+                  .toMavenCentral("org.apiguardian:apiguardian-api:1.1.0"),
+              Link.module("org.opentest4j").toMavenCentral("org.opentest4j:opentest4j:1.2.0"));
+      var bach = Bach.ofSystem();
+      for (var link : links) {
+        bach.httpCopy(URI.create(link.uri()), Path.of("lib", link.module() + ".jar"));
+      }
     }
 
     void run(Command command) {
