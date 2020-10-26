@@ -1,4 +1,4 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.module;
 
 import com.github.sormuras.bach.internal.Maven;
 import java.net.URI;
