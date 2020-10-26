@@ -51,8 +51,8 @@ System.out.println(
 
 import com.github.sormuras.bach.*
 
-var BACH = Bach.ofSystem();
+var BACH = Bach.ofSystem()
 
-Path hcopy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
-String hread(String source) { return BACH.httpRead(URI.create(source)); }
+Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 void find(String glob) { BACH.printFind(glob); }
+String read(String source) { return BACH.httpRead(URI.create(source)); }
