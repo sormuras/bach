@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -43,6 +44,29 @@ public final class ModuleDirectory {
   /** @return the registered module-uri pairs */
   public Map<String, ModuleLink> links() {
     return links;
+  }
+
+  /**
+   * @param module to module to scan for link annotations
+   * @return a new module directory with all module links associated with the given module
+   */
+  public ModuleDirectory withLinks(Module module) {
+    var copy = new HashMap<>(links);
+    for (var link : module.getAnnotationsByType(Link.class))
+      copy.put(link.module(), ModuleLink.of(link));
+    return new ModuleDirectory(path, Map.copyOf(copy));
+  }
+
+  /**
+   * @param link the new module link to register
+   * @param more more module links to register
+   * @return a new module directory
+   */
+  public ModuleDirectory withLinks(ModuleLink link, ModuleLink... more) {
+    var copy = new HashMap<>(links);
+    copy.put(link.module(), link);
+    Arrays.stream(more).forEach(next -> copy.put(next.module(), next));
+    return new ModuleDirectory(path, Map.copyOf(copy));
   }
 
   /** @return a new stream of module-uri pairs */
