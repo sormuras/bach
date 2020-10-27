@@ -1,7 +1,9 @@
 package build;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Link;
+import com.github.sormuras.bach.module.Link;
+import com.github.sormuras.bach.module.ModuleDirectory;
+import com.github.sormuras.bach.module.ModuleLink;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
@@ -14,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 
 public class Build implements ToolProvider {
 
@@ -129,29 +132,36 @@ public class Build implements ToolProvider {
               .with("-C", api, ".")
               .build());
 
-      var links =
-          List.of(
+      var directory =
+          ModuleDirectory.of(
+              Path.of("lib"),
               // JUnit Platform
-              Link.ofJUnitPlatform("commons", "1.7.0"),
-              Link.ofJUnitPlatform("console", "1.7.0"),
-              Link.ofJUnitPlatform("engine", "1.7.0"),
-              Link.ofJUnitPlatform("jfr", "1.7.0"),
-              Link.ofJUnitPlatform("launcher", "1.7.0"),
-              Link.ofJUnitPlatform("reporting", "1.7.0"),
-              Link.ofJUnitPlatform("testkit", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("commons", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("console", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("engine", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("jfr", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("launcher", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("reporting", "1.7.0"),
+              ModuleLink.ofJUnitPlatform("testkit", "1.7.0"),
               // JUnit Jupiter
-              Link.ofJUnitJupiter("", "5.7.0"),
-              Link.ofJUnitJupiter("api", "5.7.0"),
-              Link.ofJUnitJupiter("engine", "5.7.0"),
-              Link.ofJUnitJupiter("params", "5.7.0"),
+              ModuleLink.ofJUnitJupiter("", "5.7.0"),
+              ModuleLink.ofJUnitJupiter("api", "5.7.0"),
+              ModuleLink.ofJUnitJupiter("engine", "5.7.0"),
+              ModuleLink.ofJUnitJupiter("params", "5.7.0"),
               // More Modules...
-              Link.module("org.apiguardian.api")
+              ModuleLink.module("org.apiguardian.api")
                   .toMavenCentral("org.apiguardian:apiguardian-api:1.1.0"),
-              Link.module("org.opentest4j").toMavenCentral("org.opentest4j:opentest4j:1.2.0"));
+              ModuleLink.module("org.opentest4j")
+                  .toMavenCentral("org.opentest4j:opentest4j:1.2.0"));
+      var linksFromAnnotations =
+          Arrays.stream(Build.class.getModule().getAnnotationsByType(Link.class))
+              .map(ModuleLink::of);
       var bach = Bach.ofSystem();
-      for (var link : links) {
-        bach.httpCopy(URI.create(link.uri()), Path.of("lib", link.module() + ".jar"));
-      }
+      Stream.concat(directory.stream(), linksFromAnnotations)
+          .forEach(
+              link ->
+                  bach.httpCopy(
+                      URI.create(link.uri()), directory.path().resolve(link.module() + ".jar")));
     }
 
     void run(Command command) {
