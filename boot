@@ -50,9 +50,16 @@ System.out.println(
 /reset
 
 import com.github.sormuras.bach.*
+import com.github.sormuras.bach.module.*
 
 var BACH = Bach.ofSystem()
+var MODULES = ModuleDirectory.of(Path.of("lib"))
 
 Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 void find(String glob) { BACH.printFind(glob); }
 String read(String source) { return BACH.httpRead(URI.create(source)); }
+void listModules() { BACH.printModules(MODULES.finder()); }
+void listModulesOfSystem() { BACH.printModules(java.lang.module.ModuleFinder.ofSystem()); }
+void listTools() { BACH.printToolProviders(MODULES.finder()); }
+// TODO void loadModule(String module) { BACH.loadModule(MODULES, module); }
+// TODO void loadMissingModules() { BACH.loadMissingModules(MODULES); }

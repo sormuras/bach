@@ -3,6 +3,7 @@ package com.github.sormuras.bach.module;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
+import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,5 +73,10 @@ public final class ModuleDirectory {
   /** @return a new stream of module-uri pairs */
   public Stream<ModuleLink> stream() {
     return links().values().stream();
+  }
+
+  /** @return a new module finder using the path of this module directory */
+  public ModuleFinder finder() {
+    return ModuleFinder.of(path);
   }
 }
