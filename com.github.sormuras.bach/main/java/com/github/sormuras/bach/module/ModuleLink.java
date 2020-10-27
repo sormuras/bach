@@ -52,6 +52,11 @@ public final class ModuleLink implements Comparator<ModuleLink> {
   }
 
   @Override
+  public String toString() {
+    return module + " -> " + uri;
+  }
+
+  @Override
   public int compare(ModuleLink o1, ModuleLink o2) {
     return o1.module.compareTo(o2.module);
   }
