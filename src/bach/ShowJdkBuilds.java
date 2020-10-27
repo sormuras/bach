@@ -34,8 +34,7 @@ public class ShowJdkBuilds {
 
   public static void main(String... args) {
     var builds = new TreeMap<>(parseArchive());
-    builds.put(14, parse(14)); // GA
-    builds.put(15, parse(15)); // EA
+    builds.put(15, parse(15)); // GA
     builds.put(16, parse(16)); // EA
 
     var features = new ArrayList<>(builds.keySet());
