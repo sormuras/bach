@@ -10,8 +10,8 @@ Build modular Java projects with [JDK Foundation Tools].
 - Install JDK 16 from https://jdk.java.net
 - Open a command shell in an empty directory
 - `jshell https://github.com/sormuras/bach/raw/main/boot`
-- Type `/list` to display the set of prefined methods
-- Try `find(GLOB)`, `read(URI)`, `copy(URI, FILE)`, and other methods
+- Type `/list` to display the set of pre-defined methods
+- Try `find("**.jar")`, `read("https://jdk.java.net")`, `copy(URI, FILE)`, and other methods
 - Exit JShell via `/exit`
 
 # be free - have fun
