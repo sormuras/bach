@@ -4,10 +4,12 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.lang.module.ModuleFinder;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /** A collection of module-uri links and local asset management. */
@@ -78,5 +80,14 @@ public final class ModuleDirectory {
   /** @return a new module finder using the path of this module directory */
   public ModuleFinder finder() {
     return ModuleFinder.of(path);
+  }
+
+  /**
+   * @param module the name of the module
+   * @return an optional with URI created from the registered module links or an empty optional
+   * @see ModuleLookup
+   */
+  public Optional<URI> lookup(String module) {
+    return Optional.ofNullable(links.get(module)).map(ModuleLink::uri).map(URI::create);
   }
 }
