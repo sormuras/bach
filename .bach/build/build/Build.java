@@ -1,11 +1,8 @@
 package build;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.module.ModuleDirectory;
-import com.github.sormuras.bach.module.ModuleLink;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -129,35 +126,6 @@ public class Build implements ToolProvider {
               .with("--no-manifest")
               .with("-C", api, ".")
               .build());
-
-      var directory =
-          ModuleDirectory.of(Path.of("lib"))
-              .withLinks(Build.class.getModule())
-              .withLinks(
-                  ModuleLink.ofJUnitPlatform("commons", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("console", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("engine", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("jfr", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("launcher", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("reporting", "1.7.0"),
-                  ModuleLink.ofJUnitPlatform("testkit", "1.7.0"))
-              .withLinks(
-                  ModuleLink.ofJUnitJupiter("", "5.7.0"),
-                  ModuleLink.ofJUnitJupiter("api", "5.7.0"),
-                  ModuleLink.ofJUnitJupiter("engine", "5.7.0"),
-                  ModuleLink.ofJUnitJupiter("params", "5.7.0"))
-              .withLinks(
-                  ModuleLink.module("org.apiguardian.api")
-                      .toMavenCentral("org.apiguardian:apiguardian-api:1.1.0"),
-                  ModuleLink.module("org.opentest4j")
-                      .toMavenCentral("org.opentest4j:opentest4j:1.2.0"));
-
-      var bach = Bach.ofSystem();
-      directory.stream()
-          .forEach(
-              link ->
-                  bach.httpCopy(
-                      URI.create(link.uri()), directory.path().resolve(link.module() + ".jar")));
     }
 
     void run(Command command) {
