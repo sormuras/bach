@@ -6,7 +6,7 @@ import java.net.http.HttpClient;
 import java.util.function.Supplier;
 
 /** Java Shell Builder. */
-public final class Bach implements Http, Print {
+public final class Bach implements Http, Load, Print {
 
   /**
    * Returns a shell builder initialized with default components.

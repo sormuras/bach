@@ -63,9 +63,9 @@ void listTools() { BACH.printToolProviders(MODULES.finder()); }
 // Browser
 Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 String read(String source) { return BACH.httpRead(URI.create(source)); }
-// Modules
+// Link and Load
 void listModuleLinks() { MODULES.stream().sorted().forEach(System.out::println); }
 void linkModule(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
 void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.module(module).toMavenCentral(gav)); }
-// TODO void loadModule(String module) { BACH.loadModule(MODULES, module); }
-// TODO void loadMissingModules() { BACH.loadMissingModules(MODULES); }
+void loadModule(String module) { BACH.loadModule(MODULES, MODULES::lookup, module); }
+void loadMissingModules() { System.out.println("TODO BACH.loadMissingModules(MODULES);"); }
