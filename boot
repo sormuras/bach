@@ -54,18 +54,22 @@ import com.github.sormuras.bach.module.*
 
 var BACH = Bach.ofSystem()
 var MODULES = ModuleDirectory.of(Path.of("lib"))
+var SEARCHER = ModuleSearcher.compose(MODULES::lookup, ModuleSearcher.dynamic())
 
-// Listing
-void find(String glob) { BACH.printFind(glob); }
-void listModules() { BACH.printModules(MODULES.finder()); }
-void listModulesOfSystem() { BACH.printModules(java.lang.module.ModuleFinder.ofSystem()); }
-void listTools() { BACH.printToolProviders(MODULES.finder()); }
-// Browser
 Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
-String read(String source) { return BACH.httpRead(URI.create(source)); }
-// Link and Load
-void listModuleLinks() { MODULES.stream().sorted().forEach(System.out::println); }
-void linkModule(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
+void find(String glob) { BACH.printFind(glob); }
+
+void linkModule(String module, String target) { MODULES = MODULES.withLinks(ModuleLink.module(module).to(target)); }
+void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
 void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.module(module).toMavenCentral(gav)); }
-void loadModule(String module) { BACH.loadModule(MODULES, MODULES::lookup, module); }
-void loadMissingModules() { System.out.println("TODO BACH.loadMissingModules(MODULES);"); }
+
+void listLoadedModules() { BACH.printModules(MODULES.finder()); }
+void listMissingModules() { MODULES.missing().stream().sorted().forEach(System.out::println); }
+void listModuleLinks() { MODULES.stream().sorted().forEach(System.out::println); }
+void listSystemModules() { BACH.printModules(java.lang.module.ModuleFinder.ofSystem()); }
+void listTools() { BACH.printToolProviders(MODULES.finder()); }
+
+void loadModule(String module) { BACH.loadModule(MODULES, SEARCHER::search, module); }
+void loadMissingModules() { BACH.loadMissingModules(MODULES, SEARCHER::search); }
+
+String read(String source) { return BACH.httpRead(URI.create(source)); }
