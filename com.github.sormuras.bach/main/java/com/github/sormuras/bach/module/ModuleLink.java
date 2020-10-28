@@ -78,7 +78,14 @@ public final class ModuleLink implements Comparator<ModuleLink> {
    * @return a module link based on the given annotation
    */
   public static ModuleLink of(Link link) {
-    return module(link.module()).toUri(link.uri());
+    var module = link.module();
+    var target = link.target();
+
+    return switch (link.type()) {
+      case AUTO -> module(module).to(target);
+      case URI -> module(module).toUri(target);
+      case MAVEN -> module(module).toMaven(link.mavenRepository(), target);
+    };
   }
 
   /**
@@ -122,6 +129,34 @@ public final class ModuleLink implements Comparator<ModuleLink> {
     }
 
     /**
+     * Returns a module link whose uri is determined by the given target string.
+     * @param target the target to parse into a uri
+     * @return a module link
+     */
+    public ModuleLink to(String target) {
+      var maven = target.indexOf('/') == -1 && target.chars().filter(ch -> ch == ':').count() >= 2;
+      if (maven) return toMavenCentral(target);
+      return toUri(target);
+    }
+
+    /**
+     * Returns a module link pointing to an artifact hosted at the given Maven repository.
+     *
+     * @param repository Maven repository
+     * @param coordinates Maven groupId + ':' + artifactId + ':' version [+ ':' + classifier]
+     * @return a Maven-based {@code Link} instance
+     */
+    public ModuleLink toMaven(String repository, String coordinates) {
+      var split = coordinates.split(":");
+      if (split.length < 3) throw new IllegalArgumentException();
+      var version = split[2];
+      var joiner = new Maven.Joiner().repository(repository);
+      joiner.group(split[0]).artifact(split[1]).version(version);
+      joiner.classifier(split.length < 4 ? "" : split[3]);
+      return toUri(joiner.toString());
+    }
+
+    /**
      * Returns a module link pointing to an artifact hosted at Maven Central.
      *
      * @param coordinates Maven groupId + ':' + artifactId + ':' version [+ ':' + classifier]
@@ -129,12 +164,7 @@ public final class ModuleLink implements Comparator<ModuleLink> {
      * @see <a href="https://search.maven.org">search.maven.org</a>
      */
     public ModuleLink toMavenCentral(String coordinates) {
-      var split = coordinates.split(":");
-      if (split.length < 3) throw new IllegalArgumentException();
-      var version = split[2];
-      var joiner = new Maven.Joiner().group(split[0]).artifact(split[1]).version(version);
-      joiner.classifier(split.length < 4 ? "" : split[3]);
-      return toUri(joiner.toString());
+      return toMaven(Maven.CENTRAL_REPOSITORY, coordinates);
     }
 
     /**
