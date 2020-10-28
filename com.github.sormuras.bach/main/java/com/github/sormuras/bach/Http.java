@@ -86,6 +86,7 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
     var handler = BodyHandlers.ofFile(file);
     var response = send(request.build(), handler);
     if (response.statusCode() == 200 /* Ok */) {
+      printer().println(file + " << " + uri);
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
         try {
           var etagHeader = response.headers().firstValue("etag");
