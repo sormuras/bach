@@ -33,6 +33,9 @@ public interface ModuleSearcher {
     };
   }
 
+  /**
+   * @return a best-effort module searcher
+   */
   static ModuleSearcher dynamic() {
     return compose(
         ModuleSearcher::searchGitHubReleases
