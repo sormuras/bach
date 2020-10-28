@@ -3,13 +3,16 @@ package com.github.sormuras.bach.module;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
+import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /** A collection of module-uri links and local asset management. */
@@ -85,9 +88,20 @@ public final class ModuleDirectory {
   /**
    * @param module the name of the module
    * @return an optional with URI created from the registered module links or an empty optional
-   * @see ModuleLookup
+   * @see ModuleSearcher
    */
   public Optional<URI> lookup(String module) {
     return Optional.ofNullable(links.get(module)).map(ModuleLink::uri).map(URI::create);
+  }
+
+  /** @return the names of all modules that are required but not locatable by this instance */
+  public Set<String> missing() {
+    var finder = finder();
+    var missing = new HashSet<>(Modules.required(finder));
+    if (missing.isEmpty()) return Set.of();
+    missing.removeAll(Modules.declared(finder));
+    missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    if (missing.isEmpty()) return Set.of();
+    return missing;
   }
 }
