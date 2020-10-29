@@ -1,6 +1,8 @@
 package com.github.sormuras.bach.module;
 
-import com.github.sormuras.bach.internal.GitHub;
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.internal.GitHubReleasesSearcher;
+import com.github.sormuras.bach.internal.MavenCentralSearcher;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +25,7 @@ public interface ModuleSearcher {
    * @return a module searcher that composes a sequence of module searchers
    */
   static ModuleSearcher compose(ModuleSearcher... searchers) {
-    var searcherList = List.of(searchers);
+    var searcherList = List.of(searchers); // defensive copy and require non-null entries
     return module -> {
       for (var searcher : searcherList) {
         var result = searcher.search(module);
@@ -34,38 +36,12 @@ public interface ModuleSearcher {
   }
 
   /**
-   * @return a best-effort module searcher
-   */
-  static ModuleSearcher dynamic() {
-    return compose(
-        ModuleSearcher::searchGitHubReleases
-        // searchGitHubPackages
-        // searchMavenCentralViaSormurasModules
-    );
-  }
-
-  /**
-   * Search for a module JAR file attached to a GitHub release.
+   * Returns a best-effort module searcher.
    *
-   * @param module the name of the module to find
-   * @return a URI wrapped in an optional object
+   * @param bach the Java Shell Builder instance
+   * @return a module searcher that tries to find a module in various locations
    */
-  static Optional<URI> searchGitHubReleases(String module) {
-    if (!module.startsWith("com.github.")) return Optional.empty();
-    var split = module.split("\\.");
-    if (split.length < 4) return Optional.empty();
-    assert "com".equals(split[0]);
-    assert "github".equals(split[1]);
-    var github = new GitHub(split[2], split[3]);
-    var latest = github.findLatestReleaseTag();
-    if (latest.isPresent()) {
-      var version = latest.orElseThrow();
-      return github.findReleasedModule(module, version).map(URI::create);
-    }
-    for (var tag : List.of("early-access", "ea", "latest", "snapshot")) {
-      var candidate = github.findReleasedModule(module, tag);
-      if (candidate.isPresent()) return candidate.map(URI::create);
-    }
-    return Optional.empty();
+  static ModuleSearcher ofBestEffort(Bach bach) {
+    return compose(new GitHubReleasesSearcher(bach), new MavenCentralSearcher(bach));
   }
 }

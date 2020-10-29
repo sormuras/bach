@@ -54,7 +54,7 @@ import com.github.sormuras.bach.module.*
 
 var BACH = Bach.ofSystem()
 var MODULES = ModuleDirectory.of(Path.of("lib"))
-var SEARCHER = ModuleSearcher.compose(MODULES::lookup, ModuleSearcher.dynamic())
+var SEARCHER = ModuleSearcher.compose(MODULES::lookup, ModuleSearcher.ofBestEffort(BACH))
 
 Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 void find(String glob) { BACH.printFind(glob); }

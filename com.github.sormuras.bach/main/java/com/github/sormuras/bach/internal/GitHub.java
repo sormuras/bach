@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.internal;
 
+import com.github.sormuras.bach.Bach;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -9,11 +10,13 @@ import java.util.regex.Pattern;
 /** GitHub-related helper. */
 public class GitHub {
 
+  private final Bach bach;
   private final String base;
   private final Pattern latestCommitHashPattern;
   private final Pattern latestReleaseTagPattern;
 
-  public GitHub(String user, String repo) {
+  public GitHub(Bach bach, String user, String repo) {
+    this.bach = bach;
     this.base = "https://github.com/" + user + "/" + repo;
     this.latestCommitHashPattern = Pattern.compile("\"" + base + "/tree/(.{7}).*\"");
     this.latestReleaseTagPattern = Pattern.compile("\"/" + user + "/" + repo + "/tree/(.+?)\"");
@@ -24,7 +27,8 @@ public class GitHub {
   }
 
   public Optional<String> findLatestReleaseTag() {
-    return find(browse(base + "/releases/latest"), latestReleaseTagPattern);
+    var page = browse(base + "/releases/latest");
+    return find(page, latestReleaseTagPattern);
   }
 
   public Optional<String> findReleasedModule(String module, String version) {
@@ -34,12 +38,8 @@ public class GitHub {
     return page.contains(file) ? Optional.of(base + '/' + path) : Optional.empty();
   }
 
-  private static String browse(String uri) {
-    try (var stream = URI.create(uri).toURL().openStream()) {
-      return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-    } catch (Exception e) {
-      return e.toString();
-    }
+  private String browse(String uri) {
+    return bach.httpRead(URI.create(uri));
   }
 
   private static Optional<String> find(String string, Pattern pattern) {
