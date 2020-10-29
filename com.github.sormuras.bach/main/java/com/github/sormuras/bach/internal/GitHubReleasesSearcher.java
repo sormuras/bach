@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.internal.GitHub;
 import com.github.sormuras.bach.module.ModuleSearcher;
 import java.net.URI;
 import java.util.List;
