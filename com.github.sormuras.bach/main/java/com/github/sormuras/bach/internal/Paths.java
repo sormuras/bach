@@ -30,7 +30,9 @@ public class Paths {
     try {
       for (int endIndex = 1; endIndex <= path.getNameCount(); endIndex++) {
         var subpath = path.subpath(0, endIndex);
-        if (Files.isHidden(subpath)) return false;
+        // work around https://bugs.openjdk.java.net/browse/JDK-8255576
+        var probe = subpath.toString().isEmpty() ? path.toAbsolutePath() : subpath;
+        if (Files.isHidden(probe)) return false;
       }
       return true;
     } catch (Exception e) {
