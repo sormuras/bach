@@ -27,8 +27,8 @@ public class GitHubReleasesSearcher implements ModuleSearcher {
     var github = new GitHub(bach, split[2], split[3]);
     var latest = github.findLatestReleaseTag();
     if (latest.isPresent()) {
-      var version = latest.orElseThrow();
-      return github.findReleasedModule(module, version).map(URI::create);
+      var releasedModule = github.findReleasedModule(module, latest.get());
+      if (releasedModule.isPresent()) return releasedModule.map(URI::create);
     }
     for (var tag : List.of("early-access", "ea", "latest", "snapshot")) {
       var candidate = github.findReleasedModule(module, tag);
