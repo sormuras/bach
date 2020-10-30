@@ -51,13 +51,15 @@ System.out.println(
 
 import com.github.sormuras.bach.*
 import com.github.sormuras.bach.module.*
+import com.github.sormuras.bach.tool.*
 
 var BACH = Bach.ofSystem()
 var MODULES = ModuleDirectory.of(Path.of("lib"))
 var SEARCHER = ModuleSearcher.compose(MODULES::lookup, ModuleSearcher.ofBestEffort(BACH))
 
-Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 void find(String glob) { BACH.printFind(glob); }
+Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
+String read(String source) { return BACH.httpRead(URI.create(source)); }
 
 void linkModule(String module, String target) { MODULES = MODULES.withLinks(ModuleLink.module(module).to(target)); }
 void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
@@ -72,4 +74,5 @@ void listTools() { BACH.printToolProviders(MODULES.finder()); }
 void loadModule(String module) { BACH.loadModule(MODULES, SEARCHER::search, module); }
 void loadMissingModules() { BACH.loadMissingModules(MODULES, SEARCHER::search); }
 
-String read(String source) { return BACH.httpRead(URI.create(source)); }
+ToolResponse run(ToolCall tool) { return BACH.toolCall(MODULES, tool); }
+void run(String tool, Object... args) { BACH.toolRun(MODULES, tool, args); }
