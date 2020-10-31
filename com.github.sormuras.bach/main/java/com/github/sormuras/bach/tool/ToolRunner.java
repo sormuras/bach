@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.tool;
 
+import com.github.sormuras.bach.internal.Modules;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger;
@@ -16,7 +17,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.spi.ToolProvider;
@@ -134,17 +134,9 @@ public class ToolRunner {
     return response;
   }
 
-  static ModuleLayer layer(ModuleFinder finder) {
-    var boot = ModuleLayer.boot();
-    var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of());
-    var parent = ToolRunner.class.getClassLoader();
-    var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
-    return controller.layer();
-  }
-
   static List<ToolProvider> find(ModuleFinder finder) {
     try {
-      var layer = layer(finder);
+      var layer = Modules.layer(finder);
       var services = ServiceLoader.load(layer, ToolProvider.class);
       return services.stream()
           .map(ServiceLoader.Provider::get)
