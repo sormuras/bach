@@ -16,8 +16,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/** A collection of module-uri links and local asset management. */
-public final class ModuleDirectory {
+/** A collection of module-uri links and local asset management.
+ *
+ * @param path the directory module are stored in
+ * @param links the module-uri pairs
+ */
+public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
 
   /**
    * @param path the directory module are stored in
@@ -27,30 +31,6 @@ public final class ModuleDirectory {
   public static ModuleDirectory of(Path path, ModuleLink... links) {
     var map = Arrays.stream(links).collect(toUnmodifiableMap(ModuleLink::module, identity()));
     return new ModuleDirectory(path, map);
-  }
-
-  private final Path path;
-  private final Map<String, ModuleLink> links;
-
-  /**
-   * Initialize a library with the given components.
-   *
-   * @param path the directory module are stored in
-   * @param links the module-uri pairs
-   */
-  public ModuleDirectory(Path path, Map<String, ModuleLink> links) {
-    this.path = path;
-    this.links = links;
-  }
-
-  /** @return the directory module are stored in */
-  public Path path() {
-    return path;
-  }
-
-  /** @return the registered module-uri pairs */
-  public Map<String, ModuleLink> links() {
-    return links;
   }
 
   /**

@@ -14,43 +14,11 @@ import java.util.Comparator;
  * ModuleLink.module("junit").toUri("https://repo.maven.apache.org/maven2/junit/junit/4.13.1/junit-4.13.1.jar")
  * ModuleLink.module("junit").toMavenCentral("junit:junit:4.13.1")
  * }</pre>
+ *
+ * @param module the name of the module
+ * @param uri the uniform resource identifier of the module
  */
-public final class ModuleLink implements Comparator<ModuleLink> {
-
-  /** The name of the module. */
-  private final String module;
-
-  /** The uniform resource identifier of the module. */
-  private final String uri;
-
-  /**
-   * Initialize a link with the given components.
-   *
-   * @param module the name of the module
-   * @param uri the URI of the modular JAR file
-   */
-  public ModuleLink(String module, String uri) {
-    this.module = module;
-    this.uri = uri;
-  }
-
-  /**
-   * Returns the name of the module.
-   *
-   * @return the name of the module
-   */
-  public String module() {
-    return module;
-  }
-
-  /**
-   * Returns the URI of the module.
-   *
-   * @return the URI of the module
-   */
-  public String uri() {
-    return uri;
-  }
+public record ModuleLink(String module, String uri) implements Comparable<ModuleLink> {
 
   @Override
   public String toString() {
@@ -58,8 +26,8 @@ public final class ModuleLink implements Comparator<ModuleLink> {
   }
 
   @Override
-  public int compare(ModuleLink o1, ModuleLink o2) {
-    return o1.module.compareTo(o2.module);
+  public int compareTo(ModuleLink o) {
+    return Comparator.comparing(ModuleLink::module).thenComparing(ModuleLink::uri).compare(this, o);
   }
 
   /**
@@ -68,7 +36,7 @@ public final class ModuleLink implements Comparator<ModuleLink> {
    * @param module the name of the module to link
    * @return a new module link factory
    */
-  public static Factory module(String module) {
+  public static Factory link(String module) {
     return new Factory(module);
   }
 
@@ -83,9 +51,9 @@ public final class ModuleLink implements Comparator<ModuleLink> {
     var target = link.target();
 
     return switch (link.type()) {
-      case AUTO -> module(module).to(target);
-      case URI -> module(module).toUri(target);
-      case MAVEN -> module(module).toMaven(link.mavenRepository(), target);
+      case AUTO -> link(module).to(target);
+      case URI -> link(module).toUri(target);
+      case MAVEN -> link(module).toMaven(link.mavenRepository(), target);
     };
   }
 
@@ -101,7 +69,7 @@ public final class ModuleLink implements Comparator<ModuleLink> {
   public static ModuleLink ofJUnitJupiter(String suffix, String version) {
     var module = "org.junit.jupiter" + (suffix.isEmpty() ? "" : '.' + suffix);
     var artifact = "junit-jupiter" + (suffix.isEmpty() ? "" : '-' + suffix);
-    return module(module).toMavenCentral("org.junit.jupiter:" + artifact + ':' + version);
+    return link(module).toMavenCentral("org.junit.jupiter:" + artifact + ':' + version);
   }
 
   /**
@@ -116,7 +84,7 @@ public final class ModuleLink implements Comparator<ModuleLink> {
   public static ModuleLink ofJUnitPlatform(String suffix, String version) {
     var module = "org.junit.platform." + suffix;
     var artifact = "junit-platform-" + suffix;
-    return module(module).toMavenCentral("org.junit.platform:" + artifact + ':' + version);
+    return link(module).toMavenCentral("org.junit.platform:" + artifact + ':' + version);
   }
 
   /** A builder of links. */
