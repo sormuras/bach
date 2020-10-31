@@ -54,6 +54,20 @@ public /*sealed*/ interface Print /*permits Bach*/ {
   }
 
   /**
+   * Print a description of the given module locatable by the given module finder.
+   *
+   * @param finder the module finder to query for modules
+   * @param module the name of the module to describe
+   */
+  default void printModuleDescription(ModuleFinder finder, String module) {
+    finder
+        .find(module)
+        .ifPresentOrElse(
+            reference -> Modules.describeModule(printer(), reference),
+            () -> printer().println("No such module found: " + module));
+  }
+
+  /**
    * Print a sorted list of all provided tools locatable by the given module finder.
    *
    * @param finder the module finder to query for tool providers
@@ -69,7 +83,9 @@ public /*sealed*/ interface Print /*permits Bach*/ {
   private static String describe(ToolProvider tool) {
     var name = tool.name();
     var module = tool.getClass().getModule();
-    var by = Optional.ofNullable(module.getDescriptor()).map(ModuleDescriptor::toNameAndVersion).orElse(module.toString());
+    var by = Optional.ofNullable(module.getDescriptor())
+        .map(ModuleDescriptor::toNameAndVersion)
+        .orElse(module.toString());
     var info = switch (name) {
       case "jar" -> "Create an archive for classes and resources, and update or restore resources";
       case "javac" -> "Read Java class and interface definitions and compile them into class files";

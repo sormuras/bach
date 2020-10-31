@@ -52,6 +52,7 @@ System.out.println(
 import com.github.sormuras.bach.*
 import com.github.sormuras.bach.module.*
 import com.github.sormuras.bach.tool.*
+import java.lang.module.ModuleFinder
 
 var BACH = Bach.ofSystem()
 var MODULES = ModuleDirectory.of(Path.of("lib"))
@@ -65,11 +66,13 @@ void linkModule(String module, String target) { MODULES = MODULES.withLinks(Modu
 void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
 void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.module(module).toMavenCentral(gav)); }
 
+void listDeclaredModules() { find("**/module-info.java"); }
 void listLoadedModules() { BACH.printModules(MODULES.finder()); }
 void listMissingModules() { MODULES.missing().stream().sorted().forEach(System.out::println); }
 void listModuleLinks() { MODULES.stream().sorted().forEach(System.out::println); }
-void listSystemModules() { BACH.printModules(java.lang.module.ModuleFinder.ofSystem()); }
+void listSystemModules() { BACH.printModules(ModuleFinder.ofSystem()); }
 void listTools() { BACH.printToolProviders(MODULES.finder()); }
+void describeModule(String module) { BACH.printModuleDescription(ModuleFinder.compose(ModuleFinder.ofSystem(), MODULES.finder()), module); }
 
 void loadModule(String module) { BACH.loadModule(MODULES, SEARCHER::search, module); }
 void loadMissingModules() { BACH.loadMissingModules(MODULES, SEARCHER::search); }
