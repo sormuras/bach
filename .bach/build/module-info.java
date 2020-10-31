@@ -1,6 +1,10 @@
-import com.github.sormuras.bach.module.Link;
+import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.Project.Link;
 
-@Link(module = "junit", target = "junit:junit:4.13.1")
+@Project(
+    name = "bach",
+    java = 16,
+    links = {@Link(module = "junit", target = "junit:junit:4.13.1")})
 module build {
   requires com.github.sormuras.bach;
 
