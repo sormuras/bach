@@ -29,7 +29,7 @@ public /*sealed*/ interface Tool extends Print /*permits Bach*/ {
    */
   default void toolRun(ModuleDirectory directory, String name, Object... args) {
     var response = toolCall(directory, Command.of(name, args));
-    if (!response.out().isEmpty()) printer().println(response.out());
-    printer().println(response.err());
+    if (!response.out().isEmpty()) printStream().println(response.out());
+    printStream().println(response.err());
   }
 }

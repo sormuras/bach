@@ -22,7 +22,7 @@ public /*sealed*/ interface Print /*permits Bach*/ {
    *
    * @return the print stream for printing messages
    */
-  PrintStream printer();
+  PrintStream printStream();
 
   /**
    * Print a listing of all files matching the given glob pattern.
@@ -34,7 +34,7 @@ public /*sealed*/ interface Print /*permits Bach*/ {
     var start = Path.of("");
     try (var stream =
         Files.find(start, 99, (path, bfa) -> Paths.isVisible(path) && matcher.matches(path))) {
-      stream.map(Paths::slashed).filter(Predicate.not(String::isEmpty)).forEach(printer()::println);
+      stream.map(Paths::slashed).filter(Predicate.not(String::isEmpty)).forEach(printStream()::println);
     } catch (Exception exception) {
       throw new RuntimeException("find failed: " + glob, exception);
     }
@@ -50,7 +50,7 @@ public /*sealed*/ interface Print /*permits Bach*/ {
         .map(ModuleReference::descriptor)
         .map(ModuleDescriptor::toNameAndVersion)
         .sorted()
-        .forEach(printer()::println);
+        .forEach(printStream()::println);
   }
 
   /**
@@ -63,8 +63,8 @@ public /*sealed*/ interface Print /*permits Bach*/ {
     finder
         .find(module)
         .ifPresentOrElse(
-            reference -> Modules.describeModule(printer(), reference),
-            () -> printer().println("No such module found: " + module));
+            reference -> Modules.describeModule(printStream(), reference),
+            () -> printStream().println("No such module found: " + module));
   }
 
   /**
@@ -77,7 +77,7 @@ public /*sealed*/ interface Print /*permits Bach*/ {
         .map(ServiceLoader.Provider::get)
         .map(Print::describe)
         .sorted()
-        .forEach(printer()::println);
+        .forEach(printStream()::println);
   }
 
   private static String describe(ToolProvider tool) {

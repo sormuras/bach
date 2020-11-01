@@ -46,12 +46,12 @@ public final class Bach implements Http, Load, Print, Tool {
   }
 
   @Override
-  public HttpClient http() {
+  public HttpClient httpClient() {
     return httpClientSupplier.get();
   }
 
   @Override
-  public PrintStream printer() {
+  public PrintStream printStream() {
     return printer;
   }
 }

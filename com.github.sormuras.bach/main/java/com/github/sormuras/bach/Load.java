@@ -23,14 +23,15 @@ public /*sealed*/ interface Load extends Http /*permits Bach*/ {
    * Load all missing modules of the given module directory.
    *
    * @param directory the module finder to query for already loaded modules
-   * @param lookup the function that maps a module name to its uri
+   * @param searcher the searcher to query for linked module-
    */
-  default void loadMissingModules(ModuleDirectory directory, ModuleSearcher lookup) {
+  default void loadMissingModules(ModuleDirectory directory, ModuleSearcher searcher) {
     while (true) {
       var missing = directory.missing();
       if (missing.isEmpty()) return;
       for (var module : missing) {
-        var uri = lookup.search(module).orElseThrow(() -> new Error("Lookup failed: " + module));
+        var optionalURI = searcher.search(module);
+        var uri = optionalURI.orElseThrow(() -> new Error("Search failed for: " + module));
         httpCopy(uri, directory.path().resolve(module + ".jar"));
       }
     }

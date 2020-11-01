@@ -36,7 +36,7 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
    *
    * @return the http client for downloading files
    */
-  HttpClient http();
+  HttpClient httpClient();
 
   /**
    * Request head-only from the specified uri.
@@ -86,7 +86,7 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
     var handler = BodyHandlers.ofFile(file);
     var response = send(request.build(), handler);
     if (response.statusCode() == 200 /* Ok */) {
-      printer().println(file + " << " + uri);
+      printStream().println(file + " << " + uri);
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
         try {
           var etagHeader = response.headers().firstValue("etag");
@@ -124,7 +124,7 @@ public /*sealed*/ interface Http extends Print /*permits Bach*/ {
 
   private <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
     try {
-      return http().send(request, handler);
+      return httpClient().send(request, handler);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
