@@ -62,9 +62,9 @@ void find(String glob) { BACH.printFind(glob); }
 Path copy(String source, String file) { return BACH.httpCopy(URI.create(source), Path.of(file)); }
 String read(String source) { return BACH.httpRead(URI.create(source)); }
 
-void linkModule(String module, String target) { MODULES = MODULES.withLinks(ModuleLink.module(module).to(target)); }
-void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.module(module).toUri(uri)); }
-void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.module(module).toMavenCentral(gav)); }
+void linkModule(String module, String target) { MODULES = MODULES.withLinks(ModuleLink.link(module).to(target)); }
+void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.link(module).toUri(uri)); }
+void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.link(module).toMavenCentral(gav)); }
 
 void listDeclaredModules() { find("**/module-info.java"); }
 void listLoadedModules() { BACH.printModules(MODULES.finder()); }
