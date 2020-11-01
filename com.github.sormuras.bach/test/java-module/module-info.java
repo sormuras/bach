@@ -10,6 +10,7 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
   requires org.junit.jupiter;
+  requires test.base;
 
   uses java.util.spi.ToolProvider;
 }
