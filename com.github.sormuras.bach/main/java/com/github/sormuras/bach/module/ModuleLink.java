@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.module;
 
-import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Maven;
 import java.net.URI;
 import java.util.Comparator;
@@ -46,7 +46,7 @@ public record ModuleLink(String module, String uri) implements Comparable<Module
    * @param link the annotation to parse
    * @return a module link based on the given annotation
    */
-  public static ModuleLink of(Project.Link link) {
+  public static ModuleLink of(ProjectInfo.Link link) {
     var module = link.module();
     var target = link.target();
 

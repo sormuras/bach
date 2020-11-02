@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /** Indicates that the annotated module is a project descriptor. */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.MODULE)
-public @interface Project {
+public @interface ProjectInfo {
 
   /** @return the name of the project */
   String name();

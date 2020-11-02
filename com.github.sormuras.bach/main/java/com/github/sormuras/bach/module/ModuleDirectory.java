@@ -3,7 +3,7 @@ package com.github.sormuras.bach.module;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
-import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -38,7 +38,7 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    * @return a new module directory with all module links associated with the given module
    */
   public ModuleDirectory withLinks(Module module) {
-    var project = module.getAnnotation(Project.class);
+    var project = module.getAnnotation(ProjectInfo.class);
     if (project == null) return this;
     var links = Set.of(project.links());
     if (links.isEmpty()) return this;

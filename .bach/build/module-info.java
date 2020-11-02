@@ -1,7 +1,7 @@
-import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.Project.Link;
+import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.ProjectInfo.Link;
 
-@Project(
+@ProjectInfo(
     name = "bach",
     java = 16,
     links = {
