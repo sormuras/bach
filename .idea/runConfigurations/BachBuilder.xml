@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build" type="Application" factoryName="Application" nameIsGenerated="true">
-    <option name="MAIN_CLASS_NAME" value="build.Build" />
+  <configuration default="false" name="BachBuilder" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="build.BachBuilder" />
     <module name="build" />
     <selectedOptions>
       <option name="before.launch.openToolWindow" />

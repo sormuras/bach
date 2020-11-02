@@ -14,6 +14,5 @@ import com.github.sormuras.bach.ProjectInfo.Link;
 module build {
   requires com.github.sormuras.bach;
 
-  provides java.util.spi.ToolProvider with
-      build.Build;
+  provides com.github.sormuras.bach.ProjectBuilder with build.BachBuilder;
 }

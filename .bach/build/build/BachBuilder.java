@@ -1,7 +1,10 @@
 package build;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.ProjectBuilder;
+import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.tool.Command;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -10,10 +13,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.spi.ToolProvider;
 
-public class Build implements ToolProvider {
+public class BachBuilder implements ProjectBuilder {
 
   public static void main(String... args) {
-    new Build().run(System.out, System.err, args);
+    new BachBuilder().build(Bach.ofSystem(), args);
   }
 
   private static String version() {
@@ -24,25 +27,22 @@ public class Build implements ToolProvider {
     }
   }
 
-  public Build() {}
+  public BachBuilder() {}
 
   @Override
-  public String name() {
-    return "build";
-  }
-
-  @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
+  public void build(Bach bach, String... args) {
+    var out = bach.printStream();
+    var err = System.err;
     var version = args.length == 0 ? version() : args[0];
     var jarslug = args.length < 2 ? version : args[1];
     out.println("Build Bach " + version + " using Bach " + Bach.version());
+    var info = getClass().getModule().getAnnotation(ProjectInfo.class);
+    System.out.println(info);
     var start = Instant.now();
     try {
       new Simple(out, err, version, jarslug).run();
-      return 0;
     } catch (Exception exception) {
       err.println(exception);
-      return 1;
     } finally {
       out.printf("Build took %d milliseconds%n", Duration.between(start, Instant.now()).toMillis());
     }
@@ -55,14 +55,14 @@ public class Build implements ToolProvider {
 
   static class Simple {
 
-    final PrintWriter out;
-    final PrintWriter err;
+    final PrintStream out;
+    final PrintStream err;
     final String version;
     final String jarslug;
 
     final Path workspace = Path.of(".bach/workspace");
 
-    Simple(PrintWriter out, PrintWriter err, String version, String jarslug) {
+    Simple(PrintStream out, PrintStream err, String version, String jarslug) {
       this.out = out;
       this.err = err;
       this.version = version;
