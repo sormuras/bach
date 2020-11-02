@@ -24,5 +24,6 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
+  uses com.github.sormuras.bach.ProjectBuilder;
   uses java.util.spi.ToolProvider;
 }

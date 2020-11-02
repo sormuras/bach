@@ -79,3 +79,5 @@ void loadMissingModules() { BACH.loadMissingModules(MODULES, SEARCHER::search); 
 
 ToolResponse run(ToolCall tool) { return BACH.toolCall(MODULES, tool); }
 void run(String tool, Object... args) { BACH.toolRun(MODULES, tool, args); }
+
+void build(String... args) { new ProjectBuildProgram(BACH).build(args); }
