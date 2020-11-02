@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.ServiceLoader;
 
 /** An extensible build program. */
@@ -42,21 +43,21 @@ public class ProjectBuildProgram {
     else buildWithSystemDefaults();
   }
 
-  private void buildWithBuildModule(String module, String... args) {
-    var classes = Path.of(".bach/workspace/classes/." + module);
+  private void buildWithBuildModule(String name, String... args) {
+    var classes = Path.of(".bach/workspace/classes/." + name);
     var compile =
         Command.builder("javac")
-            .with("--module", module)
+            .with("--module", name)
             .with("--module-source-path", Path.of(".bach"))
             .with("--module-path", Path.of(".bach/cache"))
             .with("-d", classes)
             .build();
-    var finder = ModuleFinder.of(classes);
+    var finder = ModuleFinder.of(classes, Path.of(".bach/cache"));
     var runner = new ToolRunner(finder);
     runner.run(compile).checkSuccessful();
 
-    var loader = ServiceLoader.load(Modules.layer(finder), ProjectBuilder.class);
-    var builder = loader.findFirst();
+    var layer = Modules.layer(finder, name);
+    var builder = ServiceLoader.load(layer, ProjectBuilder.class).findFirst();
     if (builder.isPresent()) {
       var customProjectBuilder = builder.get();
       out.println("Delegating thread of control to: " + customProjectBuilder);
@@ -64,9 +65,9 @@ public class ProjectBuildProgram {
       return;
     }
 
-    var info = builder.getClass().getModule().getAnnotation(ProjectInfo.class);
-    if (info != null) buildWithProjectInfo(info);
-    else buildWithSystemDefaults();
+    var module = layer.findModule(name).orElseThrow();
+    var projectInfo = Optional.ofNullable(module.getAnnotation(ProjectInfo.class));
+    projectInfo.ifPresentOrElse(this::buildWithProjectInfo, this::buildWithSystemDefaults);
   }
 
   private void buildWithProjectInfo(ProjectInfo info) {

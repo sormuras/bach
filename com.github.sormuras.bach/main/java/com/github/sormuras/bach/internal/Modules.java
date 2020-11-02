@@ -42,9 +42,9 @@ public class Modules {
         .collect(Collectors.toCollection(TreeSet::new));
   }
 
-  public static ModuleLayer layer(ModuleFinder finder) {
+  public static ModuleLayer layer(ModuleFinder finder, String... roots) {
     var boot = ModuleLayer.boot();
-    var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of());
+    var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of(roots));
     var parent = Modules.class.getClassLoader();
     var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
     return controller.layer();
