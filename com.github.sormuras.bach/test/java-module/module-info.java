@@ -12,5 +12,6 @@ open /*test*/ module com.github.sormuras.bach {
   requires org.junit.jupiter;
   requires test.base;
 
+  uses com.github.sormuras.bach.ProjectBuilder;
   uses java.util.spi.ToolProvider;
 }
