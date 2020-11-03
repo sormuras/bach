@@ -36,7 +36,7 @@ public final class Bach implements Http, Load, Print, Tool {
   }
 
   /** A print stream for normal messages. */
-  private final PrintStream printer;
+  private final PrintStream printStream;
 
   /** A supplier of a http client. */
   private final Supplier<HttpClient> httpClientSupplier;
@@ -44,11 +44,11 @@ public final class Bach implements Http, Load, Print, Tool {
   /**
    * Initialize default constructor.
    *
-   * @param printer the print stream for normal messages
+   * @param printStream the print stream for normal messages
    * @param httpClientSupplier the supplier of an http client
    */
-  public Bach(PrintStream printer, Supplier<HttpClient> httpClientSupplier) {
-    this.printer = printer;
+  public Bach(PrintStream printStream, Supplier<HttpClient> httpClientSupplier) {
+    this.printStream = printStream;
     this.httpClientSupplier = httpClientSupplier;
   }
 
@@ -59,6 +59,6 @@ public final class Bach implements Http, Load, Print, Tool {
 
   @Override
   public PrintStream printStream() {
-    return printer;
+    return printStream;
   }
 }
