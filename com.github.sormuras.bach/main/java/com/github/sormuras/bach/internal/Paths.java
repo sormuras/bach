@@ -3,6 +3,7 @@ package com.github.sormuras.bach.internal;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /** Internal {@link Path}-related utilities. */
@@ -67,6 +68,14 @@ public class Paths {
       return true;
     } catch (Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static Optional<String> readString(Path path) {
+    try{
+      return Optional.of(Files.readString(path));
+    } catch (Exception exception) {
+      return Optional.empty();
     }
   }
 

@@ -1,8 +1,10 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Functions;
+import com.github.sormuras.bach.internal.Paths;
 import java.io.PrintStream;
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /** Java Shell Builder. */
@@ -20,12 +22,17 @@ public final class Bach implements Http, Load, Print, Tool {
   /**
    * Returns the version of Bach.
    *
-   * @return the version as a string or {@code "?"} if the version is unknown at runtime
+   * @return the version as a string
+   * @throws IllegalStateException if not running on the module path
    */
   public static String version() {
-    var descriptor = Bach.class.getModule().getDescriptor();
-    if (descriptor == null) return "?";
-    return descriptor.version().map(Object::toString).orElse("?");
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    return module
+        .getDescriptor()
+        .version()
+        .map(Object::toString)
+        .orElseGet(() -> Paths.readString(Path.of("VERSION")).orElseThrow());
   }
 
   /** A print stream for normal messages. */
