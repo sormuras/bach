@@ -1,7 +1,7 @@
 package build;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.ProjectBuilder;
+import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.tool.Command;
 import java.io.PrintStream;
@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.spi.ToolProvider;
 
-public class BachBuilder implements ProjectBuilder {
+public class BachBuilder implements BuildProgram {
 
   public static void main(String... args) {
     new BachBuilder().build(Bach.ofSystem(), args);

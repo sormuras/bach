@@ -14,5 +14,5 @@ import com.github.sormuras.bach.ProjectInfo.Link;
 module build {
   requires com.github.sormuras.bach;
 
-  provides com.github.sormuras.bach.ProjectBuilder with build.BachBuilder;
+  provides com.github.sormuras.bach.BuildProgram with build.BachBuilder;
 }
