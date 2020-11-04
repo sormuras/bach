@@ -15,6 +15,7 @@
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.module;
+  exports com.github.sormuras.bach.project;
   exports com.github.sormuras.bach.tool;
 
   requires transitive java.net.http;
@@ -24,6 +25,6 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.ProjectBuilder;
+  uses com.github.sormuras.bach.BuildProgram;
   uses java.util.spi.ToolProvider;
 }

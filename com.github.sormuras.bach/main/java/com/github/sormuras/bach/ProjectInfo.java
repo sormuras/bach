@@ -10,11 +10,14 @@ import java.lang.annotation.Target;
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
 
+  /** The default version {@code 0-ea} as a string. */
+  String VERSION_ZERO_EA = "0-ea";
+
   /** @return the name of the project */
   String name();
 
   /** @return the version of the project */
-  String version() default "0-ea";
+  String version() default VERSION_ZERO_EA;
 
   /** @return the feature number of the Java SE release to compile this project for */
   int java() default 0;
