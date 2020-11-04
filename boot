@@ -51,6 +51,7 @@ System.out.println(
 
 import com.github.sormuras.bach.*
 import com.github.sormuras.bach.module.*
+import com.github.sormuras.bach.project.*
 import com.github.sormuras.bach.tool.*
 import java.lang.module.ModuleFinder
 
@@ -80,4 +81,4 @@ void loadMissingModules() { BACH.loadMissingModules(MODULES, SEARCHER::search); 
 ToolResponse run(ToolCall tool) { return BACH.toolCall(MODULES, tool); }
 void run(String tool, Object... args) { BACH.toolRun(MODULES, tool, args); }
 
-void build(String... args) { new ProjectBuildProgram(BACH).build(args); }
+void build(String... args) { BuildProgram.build(BACH, Base.ofCurrentDirectory(), args); }

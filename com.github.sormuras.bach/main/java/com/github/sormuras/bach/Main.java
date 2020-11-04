@@ -15,7 +15,7 @@ public class Main {
       return;
     }
     switch (args[0]) {
-      case "build" -> ProjectBuilder.build(copyOfRange(args, 1, args.length));
+      case "build" -> BuildProgram.build(copyOfRange(args, 1, args.length));
       case "help", "usage" -> System.out.println("Usage: bach ACTION [ARGS...]");
       default -> System.out.println("Unsupported action: " + args[0]);
     }
