@@ -1,24 +1,31 @@
 package com.github.sormuras.bach;
 
-/** The {@code ProjectBuilder} interface should be implemented by a custom build program. */
-@FunctionalInterface
-public interface ProjectBuilder {
+/** Builds a modular Java project. */
+public class ProjectBuilder {
+
+  private final Bach bach;
+  private final Project project;
 
   /**
-   * Builds a modular Java project.
+   * Initialize this project builder with the given components.
    *
-   * @param bach the calling Bach instance
-   * @param args the command line arguments
+   * @param bach the {@code Bach} instance
+   * @param project the project to build
    */
-  void build(Bach bach, String... args);
+  public ProjectBuilder(Bach bach, Project project) {
+    this.bach = bach;
+    this.project = project;
+  }
 
-  /**
-   * Builds a modular Java project using the default build program with an Bach instance that is
-   * using components configured from system properties.
-   *
-   * @param args the command line arguments
-   */
-  static void build(String... args) {
-    new ProjectBuildProgram(Bach.ofSystem()).build(args);
+  /** Builds a modular Java project. */
+  public void build() {
+    bach.printStream().println("Work on " + project);
+    // main: javac + jar
+    // main: javadoc
+    // main: jlink
+    // test: javac + jar
+    // test: junit
+    // test-preview: javac + jar
+    // test-preview: junit
   }
 }
