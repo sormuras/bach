@@ -1,9 +1,11 @@
 package com.github.sormuras.bach.internal;
 
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /** Internal {@link Path}-related utilities. */
@@ -53,6 +55,15 @@ public class Paths {
     }
   }
 
+  public static void find(Path start, String glob, Consumer<Path> consumer) {
+    var matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
+    try (var stream = Files.find(start, 99, (path, bfa) -> matcher.matches(path))) {
+      stream.filter(Paths::isVisible).forEach(consumer);
+    } catch (Exception exception) {
+      throw new RuntimeException("find failed: " + glob, exception);
+    }
+  }
+
   public static boolean isViewSupported(Path file, String view) {
     return file.getFileSystem().supportedFileAttributeViews().contains(view);
   }
@@ -63,6 +74,7 @@ public class Paths {
         var subpath = path.subpath(0, endIndex);
         // work around https://bugs.openjdk.java.net/browse/JDK-8255576
         var probe = subpath.toString().isEmpty() ? path.toAbsolutePath() : subpath;
+        if (!Files.isReadable(probe)) return false;
         if (Files.isHidden(probe)) return false;
       }
       return true;
@@ -72,7 +84,7 @@ public class Paths {
   }
 
   public static Optional<String> readString(Path path) {
-    try{
+    try {
       return Optional.of(Files.readString(path));
     } catch (Exception exception) {
       return Optional.empty();

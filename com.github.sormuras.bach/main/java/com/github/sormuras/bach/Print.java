@@ -6,12 +6,9 @@ import java.io.PrintStream;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /** Print-related API. */
@@ -30,14 +27,7 @@ public /*sealed*/ interface Print /*permits Bach*/ {
    * @param glob the glob pattern
    */
   default void printFind(String glob) {
-    var matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
-    var start = Path.of("");
-    try (var stream =
-        Files.find(start, 99, (path, bfa) -> Paths.isVisible(path) && matcher.matches(path))) {
-      stream.map(Paths::slashed).filter(Predicate.not(String::isEmpty)).forEach(printStream()::println);
-    } catch (Exception exception) {
-      throw new RuntimeException("find failed: " + glob, exception);
-    }
+    Paths.find(Path.of(""), glob, path -> printStream().println(Paths.slashed(path)));
   }
 
   /**
