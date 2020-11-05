@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /** A nominal space for modules. */
-public interface Space {
+public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/ {
 
   /**
    * Returns the list of module names in this space.
