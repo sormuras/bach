@@ -5,7 +5,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Indicates that the annotated module is a project descriptor. */
+/**
+ * Indicates that the annotated module is a project descriptor.
+ *
+ * <p>In other words, it elevates an annotated {@code module-info.java} compilation unit into a
+ * logical {@code project-info.java} compilation unit.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
@@ -17,14 +22,14 @@ public @interface ProjectInfo {
   String version() default "0-ea";
 
   /** @return the all things Java-related configuration */
-  MainSpace main() default @MainSpace;
+  Main main() default @Main;
 
   /** Describes the main module source space. */
   @Target({})
-  @interface MainSpace {
+  @interface Main {
 
     /** @return the names of the modules to compile */
-    String[] names() default {};
+    String[] modules() default {};
 
     /** @return the module source paths */
     String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};

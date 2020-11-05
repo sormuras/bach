@@ -50,7 +50,7 @@ public record Project(Base base, String name, Version version, MainSpace main) {
         info.name(),
         Version.parse(info.version()),
         new MainSpace(
-            List.of(info.main().names()),
+            List.of(info.main().modules()),
             List.of(info.main().moduleSourcePaths()),
             release(info.main().release()),
             mapOf(info.main().tweaks())) //

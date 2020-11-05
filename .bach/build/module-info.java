@@ -1,12 +1,12 @@
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.ProjectInfo.Link;
-import com.github.sormuras.bach.ProjectInfo.MainSpace;
+import com.github.sormuras.bach.ProjectInfo.Main;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
-    main = @MainSpace(
-              names = "com.github.sormuras.bach",
+    main = @Main(
+              modules = "com.github.sormuras.bach",
               release = 16,
               tweaks = @Tweak(
                   tool = "javac",
