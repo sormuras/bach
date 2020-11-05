@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** An immutable tool call implementation.
+/**
+ * An immutable tool call implementation.
  *
  * @param name the name of the tool to call
  * @param args the arguments
@@ -109,6 +110,17 @@ public record Command(String name, String... args) implements ToolCall {
 
       with(option).with(value);
       for (var more : values) with(more);
+      return this;
+    }
+
+    /**
+     * Adds all arguments provided by the given iterable object.
+     *
+     * @param arguments the arguments to add
+     * @return this builder instance
+     */
+    public Builder withEach(Iterable<?> arguments) {
+      for (var argument : arguments) with(argument);
       return this;
     }
   }
