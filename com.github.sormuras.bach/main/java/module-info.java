@@ -12,6 +12,7 @@
  *
  * @uses java.util.spi.ToolProvider
  */
+@com.github.sormuras.bach.ProjectInfo(name = "🎶")
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.module;

@@ -10,17 +10,44 @@ import java.lang.annotation.Target;
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
 
-  /** The default version {@code 0-ea} as a string. */
-  String VERSION_ZERO_EA = "0-ea";
-
   /** @return the name of the project */
   String name();
 
-  /** @return the version of the project */
-  String version() default VERSION_ZERO_EA;
+  /** @return the version of the project, defaults to {@code 0-ea} */
+  String version() default "0-ea";
 
-  /** @return the feature number of the Java SE release to compile this project for */
-  int java() default 0;
+  /** @return the all things Java-related configuration */
+  MainSpace main() default @MainSpace;
+
+  /** Describes the main module source space. */
+  @Target({})
+  @interface MainSpace {
+
+    /** @return the names of the modules to compile */
+    String[] names() default {};
+
+    /** @return the module source paths */
+    String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};
+
+    /** @return the Java version (release feature number) to compile for */
+    int release() default 0;
+
+    /** @return the additional arguments to be passed on a per-tool basis */
+    Tweak[] tweaks() default {
+      @Tweak(
+          tool = "javac",
+          args = {"-encoding", "UTF-8"})
+    };
+  }
+
+  /** Tool name-args pair annotation. */
+  @Target({})
+  @interface Tweak {
+    /** @return the name of tool to tweak */
+    String tool();
+    /** @return the additional arguments to be passed to the tool call */
+    String[] args();
+  }
 
   /** @return the array of module links */
   Link[] links() default {};

@@ -1,9 +1,17 @@
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.ProjectInfo.Link;
+import com.github.sormuras.bach.ProjectInfo.MainSpace;
+import com.github.sormuras.bach.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
-    java = 16,
+    main = @MainSpace(
+              names = "com.github.sormuras.bach",
+              release = 16,
+              tweaks = @Tweak(
+                  tool = "javac",
+                  args = {"-g", "-parameters", "-Werror", "-Xlint", "-encoding", "UTF-8"})
+           ),
     links = {
       @Link(module = "junit", target = "junit:junit:4.13.1"),
       @Link(module = "org.junit.jupiter", target = "org.junit.jupiter:junit-jupiter:5.7.0"),
