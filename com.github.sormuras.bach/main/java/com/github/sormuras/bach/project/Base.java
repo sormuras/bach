@@ -121,6 +121,55 @@ public record Base(Path directory, Path libraries, Path workspace) {
   }
 
   /**
+   * Returns a resolved path.
+   *
+   * @param entry first path to resolve
+   * @param more more paths to resolve
+   * @return a resolved path
+   */
+  public Path directory(String entry, String... more) {
+    return directory.resolve(Path.of(entry, more));
+  }
+
+  /**
+   * Returns a resolved path.
+   *
+   * @param entry first path to resolve
+   * @param more more paths to resolve
+   * @return a resolved path
+   */
+  public Path workspace(String entry, String... more) {
+    return workspace.resolve(Path.of(entry, more));
+  }
+
+  /**
+   * Returns a resolved path.
+   *
+   * @param space the code space to resolve
+   * @param release the Java release feature number to resolve
+   * @return a resolved path
+   */
+  public Path classes(String space, int release) {
+    return workspace("classes" + suffix(space), String.valueOf(release));
+  }
+
+  /**
+   * Returns a resolved path.
+   *
+   * @param space the code space to resolve
+   * @param release the Java release feature number to resolve
+   * @param module the name of the module to resolve
+   * @return a resolved path
+   */
+  public Path classes(String space, int release, String module) {
+    return classes(space, release).resolve(module);
+  }
+
+  private static String suffix(String name) {
+    return name.isEmpty() || "main".equals(name) ? "" : "-" + name;
+  }
+
+  /**
    * @return the file name of the base directory as a string
    * @throws java.util.NoSuchElementException if no file name is present
    */
