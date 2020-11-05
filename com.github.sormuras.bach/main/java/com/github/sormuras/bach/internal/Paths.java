@@ -58,7 +58,7 @@ public class Paths {
   public static void find(Path start, String glob, Consumer<Path> consumer) {
     var matcher = FileSystems.getDefault().getPathMatcher("glob:" + glob);
     try (var stream = Files.find(start, 99, (path, bfa) -> matcher.matches(path))) {
-      stream.filter(Paths::isVisible).forEach(consumer);
+      stream.filter(Paths::isVisible).map(Path::normalize).forEach(consumer);
     } catch (Exception exception) {
       throw new RuntimeException("find failed: " + glob, exception);
     }
