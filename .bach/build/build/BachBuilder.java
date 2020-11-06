@@ -105,7 +105,6 @@ public class BachBuilder implements BuildProgram {
               .with("--module-source-path", "./*/main/java")
               .with("-windowtitle", "\uD83C\uDFBC Bach " + version)
               .with("-header", "\uD83C\uDFBC Bach " + version)
-              .with("-footer", "\uD83C\uDFBC Bach " + version)
               .with("-use")
               .with("-linksource")
               .with("-notimestamp")
