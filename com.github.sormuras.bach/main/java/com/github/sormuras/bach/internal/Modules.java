@@ -6,18 +6,83 @@ import java.lang.module.ModuleDescriptor.Exports;
 import java.lang.module.ModuleDescriptor.Opens;
 import java.lang.module.ModuleDescriptor.Provides;
 import java.lang.module.ModuleDescriptor.Requires;
+import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Module-related utilities. */
-public class Modules {
+public final class Modules {
+
+  public static Map<String, ModuleDescriptor> parse(Path directory, List<String> globs) {
+    var map = new TreeMap<String, ModuleDescriptor>();
+    for (var glob : globs)
+      Paths.find(
+          directory,
+          glob + "/module-info.java",
+          info -> {
+            var descriptor = parse(info);
+            map.put(descriptor.name(), descriptor);
+          });
+    return Map.copyOf(map);
+  }
+
+  /** Parse module definition from the given file. */
+  public static ModuleDescriptor parse(Path info) {
+    try {
+      var module = parse(Files.readString(info));
+      var temporary = module.build();
+      findMainClass(info, temporary.name()).ifPresent(module::mainClass);
+      return module.build();
+    } catch (Exception exception) {
+      throw new RuntimeException(exception);
+    }
+  }
+
+  /** Parse module definition from the given file. */
+  public static ModuleDescriptor.Builder parse(String source) {
+    // `module Identifier {. Identifier}`
+    var nameMatcher = Patterns.NAME.matcher(source);
+    if (!nameMatcher.find())
+      throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
+    var name = nameMatcher.group(1).trim();
+    var builder = ModuleDescriptor.newModule(name);
+    // "requires module /*version*/;"
+    var requiresMatcher = Patterns.REQUIRES.matcher(source);
+    while (requiresMatcher.find()) {
+      var requiredName = requiresMatcher.group(1);
+      Optional.ofNullable(requiresMatcher.group(2))
+          .ifPresentOrElse(
+              version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
+              () -> builder.requires(requiredName));
+    }
+    return builder;
+  }
+
+  /** Return name of main class of the specified module. */
+  public static Optional<String> findMainClass(Path info, String module) {
+    var main = Path.of(module.replace('.', '/'), "Main.java");
+    var exists = Files.isRegularFile(info.resolveSibling(main));
+    return exists ? Optional.of(module + '.' + "Main") : Optional.empty();
+  }
+
+  /** Return name of the main module by finding a single main class containing descriptor. */
+  public static Optional<String> findMainModule(Stream<ModuleDescriptor> descriptors) {
+    var mains = descriptors.filter(d -> d.mainClass().isPresent()).collect(Collectors.toList());
+    return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
+  }
 
   public static Set<String> declared(ModuleFinder finder) {
     return declared(finder.findAll().stream().map(ModuleReference::descriptor));
@@ -44,7 +109,8 @@ public class Modules {
 
   public static ModuleLayer layer(ModuleFinder finder, String... roots) {
     var boot = ModuleLayer.boot();
-    var configuration = boot.configuration().resolveAndBind(ModuleFinder.of(), finder, Set.of(roots));
+    var before = ModuleFinder.of();
+    var configuration = boot.configuration().resolveAndBind(before, finder, Set.of(roots));
     var parent = Modules.class.getClassLoader();
     var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
     return controller.layer();
@@ -119,6 +185,31 @@ public class Modules {
 
   private static boolean isJrt(URI uri) {
     return (uri != null && uri.getScheme().equalsIgnoreCase("jrt"));
+  }
+
+  /**
+   * Source patterns matching parts of "Module Declarations" grammar.
+   *
+   * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
+   *     Declarations</>
+   */
+  interface Patterns {
+    /** Match {@code `module Identifier {. Identifier}`} snippets. */
+    Pattern NAME =
+        Pattern.compile(
+            "(?:module)" // key word
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*.*\\*/\\s*)?" // optional multi-line comment
+                + "\\s*\\{"); // end marker
+
+    /** Match {@code `requires {RequiresModifier} ModuleName ;`} snippets. */
+    Pattern REQUIRES =
+        Pattern.compile(
+            "(?:requires)" // key word
+                + "(?:\\s+[\\w.]+)?" // optional modifiers
+                + "\\s+([\\w.]+)" // module name
+                + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
+                + "\\s*;"); // end marker
   }
 
   /** Hide default constructor. */
