@@ -56,7 +56,7 @@ import com.github.sormuras.bach.tool.*
 import java.lang.module.ModuleFinder
 
 var BACH = Bach.ofSystem()
-var MODULES = ModuleDirectory.of(Path.of("lib"))
+var MODULES = ModuleDirectory.of(Path.of(".bach", "libraries"))
 var SEARCHER = ModuleSearcher.compose(MODULES::lookup, ModuleSearcher.ofBestEffort(BACH))
 
 void find(String glob) { BACH.printFind(glob); }

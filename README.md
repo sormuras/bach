@@ -7,7 +7,7 @@ Build modular Java projects with [JDK Foundation Tools].
 
 ## Boot Bach into a JShell Session
 
-- Install JDK 16 (`16-ea+22` or later) from https://jdk.java.net
+- Install JDK 16 (`16-ea+23` or later) from https://jdk.java.net
 - Open a command shell in an empty directory
 - `jshell https://bit.ly/bach-ea-boot`
 - Type `/list` to display the set of pre-defined methods

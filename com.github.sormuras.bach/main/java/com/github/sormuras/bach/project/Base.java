@@ -17,7 +17,11 @@ import java.util.Optional;
  *               │   │       module-info.java
  *               │   ├───cache
  *               │   │       com.github.sormuras.bach@16.jar
- * workspace ----│-> └───workspace
+ *               │   │       (more tools and plugins...)
+ * libraries --> │   ├───libraries
+ *               │   │       org.junit.jupiter.jar
+ *               │   │       (more external modules...)
+ * workspace --> │   └───workspace
  *               │       ├───classes
  *               │       │   └───11
  *               │       │       ├───com.greetings
@@ -33,7 +37,6 @@ import java.util.Optional;
  *               │       ├───modules-test
  *               │       ├───reports
  *               │       └───sources
- * libraries --> ├───lib
  *               └───com.greetings
  *                   │   module-info.java
  *                   └───com
@@ -48,7 +51,7 @@ import java.util.Optional;
 public record Base(Path directory, Path libraries, Path workspace) {
 
   private static final Path EMPTY_PATH = Path.of("");
-  private static final Path DEFAULT_LIBRARIES = Path.of("lib");
+  private static final Path DEFAULT_LIBRARIES = Path.of(".bach/libraries");
   private static final Path DEFAULT_WORKSPACE = Path.of(".bach/workspace");
 
   /**
@@ -63,7 +66,7 @@ public record Base(Path directory, Path libraries, Path workspace) {
    *
    * <ul>
    *   <li>{@code directory} = {@code Path.of("")}
-   *   <li>{@code libraries} = {@code Path.of("lib")}
+   *   <li>{@code libraries} = {@code Path.of(".bach", "libraries")}
    *   <li>{@code workspace} = {@code Path.of(".bach", "workspace")}
    * </ul>
    *
@@ -79,7 +82,7 @@ public record Base(Path directory, Path libraries, Path workspace) {
    *
    * <ul>
    *   <li>{@code directory} = {@code Path.of(first, more)}
-   *   <li>{@code libraries} = {@code Path.of(first, more, "lib")}
+   *   <li>{@code libraries} = {@code Path.of(first, more, ".bach", "libraries")}
    *   <li>{@code workspace} = {@code Path.of(first, more, ".bach", "workspace")}
    * </ul>
    *
@@ -96,7 +99,7 @@ public record Base(Path directory, Path libraries, Path workspace) {
    *
    * <ul>
    *   <li>{@code directory} = {@code directory}
-   *   <li>{@code libraries} = {@code directory.resolve("lib")}
+   *   <li>{@code libraries} = {@code directory.resolve(".bach", "libraries")}
    *   <li>{@code workspace} = {@code directory.resolve(".bach", "workspace")}
    * </ul>
    *
@@ -106,7 +109,7 @@ public record Base(Path directory, Path libraries, Path workspace) {
   public static Base of(Path directory) {
     var base = directory.normalize();
     if (base.toString().equals("")) return DEFAULT;
-    return new Base(base, base.resolve("lib"), base.resolve(".bach/workspace"));
+    return new Base(base, base.resolve(DEFAULT_LIBRARIES), base.resolve(DEFAULT_WORKSPACE));
   }
 
   /** @return {@code true} if this is or equals the default base instance */
