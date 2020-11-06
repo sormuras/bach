@@ -21,15 +21,19 @@ public @interface ProjectInfo {
   /** @return the version of the project, defaults to {@code 0-ea} */
   String version() default "0-ea";
 
-  /** @return the all things Java-related configuration */
+  /** @return the main module source space configuration */
   Main main() default @Main;
 
   /** Describes the main module source space. */
   @Target({})
   @interface Main {
 
-    /** @return the names of the modules to compile */
-    String[] modules() default {};
+    /**
+     * @return the names of the modules to compile, with an empty array for none effectively
+     *     skipping compilation of this space, or the single-element array {@code ["*"]} indicating
+     *     to find all module compilation units via {@link #moduleSourcePaths()}
+     */
+    String[] modules() default "*";
 
     /** @return the module source paths */
     String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};

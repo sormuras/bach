@@ -1,8 +1,11 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.module.ModuleInfoFinder;
+import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.project.Base;
 import com.github.sormuras.bach.project.MainSpace;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,17 +27,7 @@ public record Project(Base base, String name, Version version, MainSpace main) {
    * @return a project model
    */
   public static Project of(Base base) {
-    var info = Bach.class.getModule().getAnnotation(ProjectInfo.class);
-    return new Project(
-        base,
-        base.toName(), // name of base directory
-        Version.parse(info.version()),
-        new MainSpace(
-            List.of(), // TODO Scan directory tree for module names...
-            List.of(info.main().moduleSourcePaths()),
-            Runtime.version().feature(),
-            mapOf(info.main().tweaks())) //
-        );
+    return of(base, base.toName(), Bach.class.getModule().getAnnotation(ProjectInfo.class));
   }
 
   /**
@@ -45,23 +38,35 @@ public record Project(Base base, String name, Version version, MainSpace main) {
    * @return a project model
    */
   public static Project of(Base base, ProjectInfo info) {
+    return of(base, info.name(), info);
+  }
+
+  static Project of(Base base, String name, ProjectInfo info) {
+    var main = info.main();
+    var mainFinder = ModuleInfoFinder.of(base.directory(), List.of(main.moduleSourcePaths()));
     return new Project(
         base,
-        info.name(),
+        name,
         Version.parse(info.version()),
         new MainSpace(
-            List.of(info.main().modules()),
-            List.of(info.main().moduleSourcePaths()),
-            release(info.main().release()),
-            mapOf(info.main().tweaks())) //
+            modules(main.modules(), mainFinder),
+            List.of(main.moduleSourcePaths()),
+            release(main.release()),
+            tweaks(main.tweaks())) //
         );
   }
 
-  private static int release(int release) {
+  static List<String> modules(String[] modules, ModuleFinder finder) {
+    return modules.length == 1 && modules[0].equals("*")
+        ? List.copyOf(Modules.declared(finder))
+        : List.of(modules);
+  }
+
+  static int release(int release) {
     return release != 0 ? release : Runtime.version().feature();
   }
 
-  private static Map<String, List<String>> mapOf(ProjectInfo.Tweak... tweaks) {
+  static Map<String, List<String>> tweaks(ProjectInfo.Tweak... tweaks) {
     var map = new HashMap<String, List<String>>();
     for (var tweak : tweaks) map.put(tweak.tool(), List.of(tweak.args()));
     return Map.copyOf(map);
