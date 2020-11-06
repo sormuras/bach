@@ -11,8 +11,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
+/**
+ * A module declaration finder backed by {@code module-info.java} compilation units.
+ *
+ * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
+ *     Declarations</a>
+ */
 public final class ModuleInfoFinder implements ModuleFinder {
 
+  /**
+   * @param directory the directory to walk
+   * @param globs the module source paths to apply
+   * @return a module declaration finder
+   */
   public static ModuleInfoFinder of(Path directory, List<String> globs) {
     var references = new TreeMap<String, ModuleReference>();
     for (var glob : globs)
@@ -44,10 +55,12 @@ public final class ModuleInfoFinder implements ModuleFinder {
     return values;
   }
 
+  /** @return a set of module names */
   public Set<String> declared() {
     return Modules.declared(this);
   }
 
+  /** @return a set of module names */
   public Set<String> required() {
     return Modules.required(this);
   }

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 /**
  * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
- *     Declarations</>
+ *     Declarations</a>
  */
 public final class ModuleInfoReference extends ModuleReference {
 
@@ -36,6 +36,10 @@ public final class ModuleInfoReference extends ModuleReference {
               + "(?:\\s*/\\*\\s*([\\w.\\-+]+)\\s*\\*/\\s*)?" // optional '/*' version '*/'
               + "\\s*;"); // end marker
 
+  /**
+   * @param info the path to the {@code module-info.java} file to parse
+   * @return a module reference
+   */
   public static ModuleReference of(Path info) {
     return new ModuleInfoReference(info);
   }
@@ -52,28 +56,27 @@ public final class ModuleInfoReference extends ModuleReference {
     }
   }
 
-  /** Parse module definition from the given file. */
+  /** Parse module definition from the given source code. */
   static Builder parse(String source) {
     // `module Identifier {. Identifier}`
     var nameMatcher = NAME.matcher(source);
     if (!nameMatcher.find())
       throw new IllegalArgumentException("Expected Java module source unit, but got: " + source);
     var name = nameMatcher.group(1).trim();
-    var builder = ModuleDescriptor.newModule(name,Set.of(Modifier.SYNTHETIC));
+    var builder = ModuleDescriptor.newModule(name, Set.of(Modifier.SYNTHETIC));
     // "requires module /*version*/;"
     var requiresMatcher = REQUIRES.matcher(source);
     while (requiresMatcher.find()) {
       var requiredName = requiresMatcher.group(1);
       Optional.ofNullable(requiresMatcher.group(2))
           .ifPresentOrElse(
-              version ->
-                  builder.requires(Set.of(), requiredName, Version.parse(version)),
+              version -> builder.requires(Set.of(), requiredName, Version.parse(version)),
               () -> builder.requires(requiredName));
     }
     return builder;
   }
 
-  ModuleInfoReference(Path info) {
+  private ModuleInfoReference(Path info) {
     super(parse(info), info.toUri());
   }
 
@@ -81,5 +84,4 @@ public final class ModuleInfoReference extends ModuleReference {
   public ModuleReader open() throws UnsupportedOperationException {
     throw new UnsupportedOperationException("open");
   }
-
 }
