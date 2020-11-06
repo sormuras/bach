@@ -67,9 +67,12 @@ void linkModule(String module, String target) { MODULES = MODULES.withLinks(Modu
 void linkModuleToUri(String module, String uri) { MODULES = MODULES.withLinks(ModuleLink.link(module).toUri(uri)); }
 void linkModuleToMavenCentral(String module, String gav) { MODULES = MODULES.withLinks(ModuleLink.link(module).toMavenCentral(gav)); }
 
-void listDeclaredModules() { find("**/module-info.java"); }
+void listDeclaredModules() { BACH.printModules(ModuleInfoFinder.of(Path.of(""), List.of("*/main/java", "*/main/java-module"))); }
+void listDeclaredTestModules() { BACH.printModules(ModuleInfoFinder.of(Path.of(""), List.of("*/test/java", "*/test/java-module"))); }
+void listDeclaredTestPreview() { BACH.printModules(ModuleInfoFinder.of(Path.of(""), List.of("*/test-preview/java"))); }
 void listLoadedModules() { BACH.printModules(MODULES.finder()); }
 void listMissingModules() { MODULES.missing().stream().sorted().forEach(System.out::println); }
+void listModuleInfoFiles() { find("**/module-info.java"); }
 void listModuleLinks() { MODULES.stream().sorted().forEach(System.out::println); }
 void listSystemModules() { BACH.printModules(ModuleFinder.ofSystem()); }
 void listTools() { BACH.printToolProviders(MODULES.finder()); }
