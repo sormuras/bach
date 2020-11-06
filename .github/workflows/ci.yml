@@ -4,6 +4,12 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Reason'
+        required: false
+        default: 'Because...'
 jobs:
   build:
     runs-on: ubuntu-latest

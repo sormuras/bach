@@ -3,14 +3,14 @@ on:
   push:
     paths:
       - .github/workflows/update-install-jdk-properties.yml
+  schedule:
+    - cron: '23 */4 * * *'
   workflow_dispatch:
     inputs:
       name:
         description: 'Reason'
         required: false
         default: 'Because...'
-  schedule:
-    - cron: '23 */4 * * *'
 jobs:
   update:
     runs-on: ubuntu-latest
