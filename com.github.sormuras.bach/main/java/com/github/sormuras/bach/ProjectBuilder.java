@@ -36,6 +36,9 @@ public class ProjectBuilder {
     // main: jpackage
     if (project.main().isPresent()) {
       runner.run(computeMainJavacCall());
+      for (var module : project.main().modules()) {
+        runner.run(computeMainJarCall(module));
+      }
     }
 
     // test: javac + jar
@@ -50,9 +53,27 @@ public class ProjectBuilder {
     var main = project.main();
     return Command.builder("javac")
         .with("--module", String.join(",", main.modules()))
+        .with("--module-version", project.version())
         .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
-        .with("-d", project.base().classes(main.name(), main.release()))
+        .with("-d", main.classes(project))
+        .build();
+  }
+
+  /**
+   * @param module the name of module to create an archive for
+   * @return the {@code jar} call to jar all assets for the given module
+   */
+  public ToolCall computeMainJarCall(String module) {
+    var main = project.main();
+    var archive = module + "@" + project.version() + ".jar";
+    return Command.builder("jar")
+        .with("--create")
+        .with("--file", project.base().workspace("modules", archive))
+        // .with(unit.descriptor().mainClass(), Jar::withMainClass)
+        .with("-C", main.classes(project), ".")
+        // .with(sources, (call, source) -> call.with("-C", source, "."))
+        // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
   }
 }
