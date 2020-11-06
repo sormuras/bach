@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.Project;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -48,5 +50,13 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
   /** @return {@code true} if at least one module name is present in this space */
   default boolean isPresent() {
     return modules().size() >= 1;
+  }
+
+  /**
+   * @param project the project
+   * @return a path to classes directory of this space
+   */
+  default Path classes(Project project) {
+    return project.base().classes(name(), Runtime.version().feature());
   }
 }

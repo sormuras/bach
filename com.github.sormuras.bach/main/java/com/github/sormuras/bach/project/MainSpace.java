@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.Project;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -21,5 +23,10 @@ public record MainSpace(
   @Override
   public String name() {
     return "";
+  }
+
+  @Override
+  public Path classes(Project project) {
+    return project.base().classes("", release);
   }
 }
