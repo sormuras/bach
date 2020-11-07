@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.module.ModuleDirectory;
 import com.github.sormuras.bach.module.ModuleSearcher;
+import java.net.URI;
 
 /** Module loading-related API. */
 public /*sealed*/ interface Load extends Http /*permits Bach*/ {
@@ -15,7 +16,8 @@ public /*sealed*/ interface Load extends Http /*permits Bach*/ {
    */
   default void loadModule(ModuleDirectory directory, ModuleSearcher lookup, String module) {
     if (directory.finder().find(module).isPresent()) return;
-    var uri = lookup.search(module).orElseThrow();
+    var linked = directory.links().get(module);
+    var uri = linked != null ? URI.create(linked.uri()) : lookup.search(module).orElseThrow();
     httpCopy(uri, directory.path().resolve(module + ".jar"));
   }
 
