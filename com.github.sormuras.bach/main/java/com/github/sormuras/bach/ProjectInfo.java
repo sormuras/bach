@@ -31,12 +31,12 @@ public @interface ProjectInfo {
     /**
      * @return the names of the modules to compile, with an empty array for none effectively
      *     skipping compilation of this space, or the single-element array {@code ["*"]} indicating
-     *     to find all module compilation units via {@link #moduleSourcePaths()}
+     *     to find all module compilation units via {@link #moduleSourcePaths()} patterns
      */
     String[] modules() default "*";
 
     /** @return the module source paths */
-    String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};
+    String[] moduleSourcePaths() default {"*/main/java", "*/main/java-module"};
 
     /** @return the Java version (release feature number) to compile for */
     int release() default 0;

@@ -1,10 +1,10 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleDirectory;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
-import java.io.File;
 import java.util.List;
 
 /** Builds a modular Java project. */
@@ -35,9 +35,10 @@ public class ProjectBuilder {
     // main: jlink
     // main: jpackage
     if (project.main().isPresent()) {
-      runner.run(computeMainJavacCall());
+      runner.run(computeMainJavacCall()).checkSuccessful();
+      Paths.createDirectories(project.base().workspace("modules"));
       for (var module : project.main().modules()) {
-        runner.run(computeMainJarCall(module));
+        runner.run(computeMainJarCall(module)).checkSuccessful();
       }
     }
 
@@ -54,7 +55,7 @@ public class ProjectBuilder {
     return Command.builder("javac")
         .with("--module", String.join(",", main.modules()))
         .with("--module-version", project.version())
-        .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
+        .with("--module-source-path", main.moduleSourcePath(project))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
         .with("-d", main.classes(project))
         .build();
