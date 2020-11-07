@@ -16,7 +16,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/** A collection of module-uri links and local asset management.
+/**
+ * A collection of module-uri links and local asset management.
  *
  * @param path the directory module are stored in
  * @param links the module-uri pairs
@@ -77,6 +78,25 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    */
   public Optional<URI> lookup(String module) {
     return Optional.ofNullable(links.get(module)).map(ModuleLink::uri).map(URI::create);
+  }
+
+  /**
+   * @param module the name of the module
+   * @param searcher the searcher of remote modules
+   * @return a uri targeting a remote modular JAR file
+   */
+  public URI lookup(String module, ModuleSearcher searcher) {
+    return lookup(module)
+        .or(() -> searcher.search(module))
+        .orElseThrow(() -> new RuntimeException("Module not found: " + module));
+  }
+
+  /**
+   * @param module the name of the module
+   * @return a path pointing to the modular JAR file of the given module
+   */
+  public Path jar(String module) {
+    return path.resolve(module + ".jar");
   }
 
   /** @return the names of all modules that are required but not locatable by this instance */
