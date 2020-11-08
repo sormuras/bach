@@ -1,4 +1,4 @@
-package test.modules;
+package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
