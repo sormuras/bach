@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -105,10 +106,13 @@ public record Base(Path directory, Path libraries, Path workspace) {
    *
    * @param directory The path to use as the base directory
    * @return a base object initialized for the given directory
+   * @throws IllegalArgumentException if the given path doesn't point to an existing directory
    */
   public static Base of(Path directory) {
     var base = directory.normalize();
     if (base.toString().equals("")) return DEFAULT;
+    if (Files.notExists(base)) throw new IllegalArgumentException("No such directory: " + base);
+    if (!Files.isDirectory(base)) throw new IllegalArgumentException("Not a directory: " + base);
     return new Base(base, base.resolve(DEFAULT_LIBRARIES), base.resolve(DEFAULT_WORKSPACE));
   }
 
