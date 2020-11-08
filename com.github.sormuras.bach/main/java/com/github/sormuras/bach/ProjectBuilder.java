@@ -72,7 +72,7 @@ public class ProjectBuilder {
         .with("--create")
         .with("--file", project.base().workspace("modules", archive))
         // .with(unit.descriptor().mainClass(), Jar::withMainClass)
-        .with("-C", main.classes(project), ".")
+        .with("-C", main.classes(project).resolve(module), ".")
         // .with(sources, (call, source) -> call.with("-C", source, "."))
         // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
