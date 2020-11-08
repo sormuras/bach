@@ -26,14 +26,20 @@ public final class ModuleInfoFinder implements ModuleFinder {
    */
   public static ModuleInfoFinder of(Path directory, List<String> globs) {
     var references = new TreeMap<String, ModuleReference>();
-    for (var glob : globs)
+    for (var glob : globs) {
+      var pattern = new StringBuilder();
+      pattern.append(glob);
+      if (glob.indexOf('*') < 0) pattern.append("/*");
+      if (!pattern.toString().endsWith("/")) pattern.append("/");
+      pattern.append("module-info.java");
       Paths.find(
           directory,
-          glob + "/module-info.java",
+          pattern.toString(),
           info -> {
             var ref = ModuleInfoReference.of(info);
             references.put(ref.descriptor().name(), ref);
           });
+    }
     return new ModuleInfoFinder(references);
   }
 

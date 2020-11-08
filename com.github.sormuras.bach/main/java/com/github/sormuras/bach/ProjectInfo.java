@@ -35,10 +35,10 @@ public @interface ProjectInfo {
      */
     String[] modules() default "*";
 
-    /** @return the module source paths */
-    String[] moduleSourcePaths() default {"*/main/java", "*/main/java-module"};
+    /** @return the module source path patterns for main modules */
+    String[] moduleSourcePaths() default {".", "./*/main", "./*/main/java", "./*/main/java-module"};
 
-    /** @return the Java version (release feature number) to compile for */
+    /** @return the Java version (release feature number) to compile main modules for */
     int release() default 0;
 
     /** @return the additional arguments to be passed on a per-tool basis */
