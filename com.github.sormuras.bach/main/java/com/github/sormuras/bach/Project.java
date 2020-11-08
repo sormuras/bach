@@ -27,7 +27,7 @@ public record Project(Base base, String name, Version version, MainSpace main) {
    * @return a project model
    */
   public static Project of(Base base) {
-    return of(base, base.toName(), Bach.class.getModule().getAnnotation(ProjectInfo.class));
+    return of(base, base.name(), Bach.class.getModule().getAnnotation(ProjectInfo.class));
   }
 
   /**

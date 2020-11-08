@@ -176,7 +176,8 @@ public record Base(Path directory, Path libraries, Path workspace) {
    * @return the file name of the base directory as a string
    * @throws java.util.NoSuchElementException if no file name is present
    */
-  public String toName() {
-    return Optional.ofNullable(directory.getFileName()).map(Path::toString).orElseThrow();
+  public String name() {
+    var name = directory.toAbsolutePath().getFileName();
+    return Optional.ofNullable(name).map(Path::toString).orElseThrow();
   }
 }
