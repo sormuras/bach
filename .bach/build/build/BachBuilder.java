@@ -4,14 +4,12 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.tool.Command;
+import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.spi.ToolProvider;
 
 public class BachBuilder implements BuildProgram {
 
@@ -61,6 +59,7 @@ public class BachBuilder implements BuildProgram {
     final String jarslug;
 
     final Path workspace = Path.of(".bach/workspace");
+    final ToolRunner runner = new ToolRunner();
 
     Simple(PrintStream out, PrintStream err, String version, String jarslug) {
       this.out = out;
@@ -126,15 +125,7 @@ public class BachBuilder implements BuildProgram {
 
     void run(Command command) {
       out.printf("<< %s%n", command);
-      var tool = ToolProvider.findFirst(command.name()).orElseThrow();
-      var normal = new StringWriter();
-      var errors = new StringWriter();
-      var code = tool.run(new PrintWriter(normal), new PrintWriter(errors), command.args());
-
-      if (!normal.getBuffer().isEmpty()) out.println(normal.toString().indent(3).stripTrailing());
-      if (!errors.getBuffer().isEmpty()) err.println(errors);
-
-      if (code != 0) throw new Error(tool.name() + " returned error code: " + code);
+      runner.run(command).checkSuccessful();
     }
   }
 }
