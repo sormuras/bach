@@ -1,10 +1,12 @@
-package test.base;
+package test.integration;
 
+import com.github.sormuras.bach.tool.ToolCall;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.spi.ToolProvider;
 
 public record PrintToolProvider(boolean configured, boolean normal, String message, int code)
-    implements ToolProvider {
+    implements ToolProvider, ToolCall {
 
   public PrintToolProvider() {
     this(false, true, "String...", 0);
@@ -23,9 +25,9 @@ public record PrintToolProvider(boolean configured, boolean normal, String messa
     return "print";
   }
 
-  // @Override
-  public String[] args() {
-    return configured ? new String[] {message} : new String[0];
+  @Override
+  public List<String> args() {
+    return configured ? List.of(message) : List.of();
   }
 
   @Override
