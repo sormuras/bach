@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleDirectory;
+import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
@@ -12,6 +13,7 @@ public class ProjectBuilder {
 
   private final Bach bach;
   private final Project project;
+  private final ToolRunner runner;
 
   /**
    * Initialize this project builder with the given components.
@@ -22,31 +24,35 @@ public class ProjectBuilder {
   public ProjectBuilder(Bach bach, Project project) {
     this.bach = bach;
     this.project = project;
+    this.runner = new ToolRunner(ModuleDirectory.of(project.base().libraries()).finder());
   }
 
   /** Builds a modular Java project. */
   public void build() {
-    bach.printStream().println("Work on " + project);
+    bach.printStream().println("Build project " + project.name() + " " + project.version());
     // load missing modules
 
-    var runner = new ToolRunner(ModuleDirectory.of(project.base().libraries()).finder());
-    // main: javac + jar
-    // main: javadoc
-    // main: jlink
-    // main: jpackage
-    if (project.main().isPresent()) {
-      runner.run(computeMainJavacCall()).checkSuccessful();
-      Paths.createDirectories(project.base().workspace("modules"));
-      for (var module : project.main().modules()) {
-        runner.run(computeMainJarCall(module)).checkSuccessful();
-      }
+    build(project.main());
+    // build(project.test())
+  }
+
+  /**
+   * Builds the main space.
+   *
+   * <ul>
+   *   <li>javac + jar
+   *   <li>javadoc
+   *   <li>jlink
+   *   <li>jpackage
+   * </ul>
+   */
+  public void build(MainSpace main) {
+    if (main.modules().isEmpty()) return;
+    runner.run(computeMainJavacCall()).checkSuccessful();
+    Paths.createDirectories(project.base().workspace("modules"));
+    for (var module : project.main().modules()) {
+      runner.run(computeMainJarCall(module)).checkSuccessful();
     }
-
-    // test: javac + jar
-    // test: junit
-
-    // test-preview: javac + jar
-    // test-preview: junit
   }
 
   /** @return the {@code javac} call to compile all modules of the main space. */

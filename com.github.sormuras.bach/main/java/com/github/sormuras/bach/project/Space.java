@@ -49,11 +49,6 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
     return name().isEmpty() ? "main" : name();
   }
 
-  /** @return {@code true} if at least one module name is present in this space */
-  default boolean isPresent() {
-    return modules().size() >= 1;
-  }
-
   /**
    * @param project the project
    * @return a string composed of all modules source path patterns resolved to the project's base
