@@ -7,7 +7,6 @@ import com.github.sormuras.bach.ProjectInfo.Tweak;
     main =
         @Main(
             modules = "com.github.sormuras.bach",
-            moduleSourcePaths = "./*/main/java",
             release = 16,
             generateApiDocumentation = true,
             tweaks = {

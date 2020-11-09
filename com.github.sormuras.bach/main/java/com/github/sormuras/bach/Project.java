@@ -53,18 +53,24 @@ public record Project(Base base, String name, Version version, MainSpace main) {
 
   static Project of(Base base, String name, ProjectInfo info) {
     var main = info.main();
-    var mainFinder = ModuleInfoFinder.of(base.directory(), List.of(main.moduleSourcePaths()));
+    var mainModuleInfoFinder = mainModuleInfoFinder(base, info);
     return new Project(
         base,
         name,
         Version.parse(info.version()),
         new MainSpace(
-            modules(main.modules(), mainFinder),
-            List.of(main.moduleSourcePaths()),
+            modules(main.modules(), mainModuleInfoFinder),
+            mainModuleInfoFinder.moduleSourcePaths(),
             release(main.release()),
             main.generateApiDocumentation(),
             tweaks(main.tweaks())) //
         );
+  }
+
+  static ModuleInfoFinder mainModuleInfoFinder(Base base, ProjectInfo info) {
+    var finder = ModuleInfoFinder.of(base.directory(), List.of(info.main().moduleSourcePaths()));
+    if (finder.findAll().isEmpty()) return ModuleInfoFinder.of(base.directory(), List.of("."));
+    return finder;
   }
 
   static List<String> modules(String[] modules, ModuleFinder finder) {

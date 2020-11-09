@@ -21,34 +21,41 @@ public final class ModuleInfoFinder implements ModuleFinder {
 
   /**
    * @param directory the directory to walk
-   * @param globs the module source paths to apply
+   * @param moduleSourcePaths the module source paths to apply
    * @return a module declaration finder
    */
-  public static ModuleInfoFinder of(Path directory, List<String> globs) {
+  public static ModuleInfoFinder of(Path directory, List<String> moduleSourcePaths) {
     var references = new TreeMap<String, ModuleReference>();
-    for (var glob : globs) {
-      var pattern = new StringBuilder();
-      pattern.append(glob);
-      if (glob.indexOf('*') < 0) pattern.append("/*");
-      if (!pattern.toString().endsWith("/")) pattern.append("/");
-      pattern.append("module-info.java");
+    for (var segment : moduleSourcePaths) {
+      var glob = new StringBuilder();
+      glob.append(segment);
+      if (segment.indexOf('*') < 0) glob.append("/*");
+      if (!glob.toString().endsWith("/")) glob.append("/");
+      glob.append("module-info.java");
       Paths.find(
           directory,
-          pattern.toString(),
+          glob.toString(),
           info -> {
             var ref = ModuleInfoReference.of(info);
             references.put(ref.descriptor().name(), ref);
           });
     }
-    return new ModuleInfoFinder(references);
+    return new ModuleInfoFinder(moduleSourcePaths, references);
   }
 
+  private final List<String> moduleSourcePaths;
   private final Map<String, ModuleReference> references;
   private final Set<ModuleReference> values;
 
-  ModuleInfoFinder(Map<String, ModuleReference> references) {
+  ModuleInfoFinder(List<String> moduleSourcePaths, Map<String, ModuleReference> references) {
+    this.moduleSourcePaths = moduleSourcePaths;
     this.references = references;
     this.values = Set.copyOf(references.values());
+  }
+
+  /** @return the configured module source path patterns */
+  public List<String> moduleSourcePaths() {
+    return moduleSourcePaths;
   }
 
   @Override

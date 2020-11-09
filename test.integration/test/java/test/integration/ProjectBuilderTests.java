@@ -30,9 +30,7 @@ class ProjectBuilderTests {
     assertEquals(temp.getFileName().toString(), project.name());
     assertTrue(project.main().modules().isEmpty());
     assertEquals(Runtime.version().feature(), project.main().release());
-    assertEquals(
-        List.of(".", "./*/main", "./*/main/java", "./*/main/java-module"),
-        project.main().moduleSourcePaths());
+    assertEquals(List.of("."), project.main().moduleSourcePaths());
     assertEquals(List.of("-encoding", "UTF-8"), project.main().tweaks().get("javac"));
 
     var builder = new ProjectBuilder(bach, project);
