@@ -7,7 +7,6 @@ import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ModuleInfoFinderTests {
@@ -24,8 +23,10 @@ class ModuleInfoFinderTests {
         """;
 
     var mains = ModuleInfoFinder.of(Path.of("."), List.of("./*/main/java"));
-    Assertions.assertEquals(Set.of("com.github.sormuras.bach"), mains.declared());
+    assertEquals(Set.of("com.github.sormuras.bach"), mains.declared());
     assertLinesMatch(bachMainRequires.lines(), mains.required().stream());
+    var bach = mains.find("com.github.sormuras.bach").orElseThrow().descriptor();
+    assertEquals("com.github.sormuras.bach.Main", bach.mainClass().orElseThrow());
 
     var bachTestRequires =
         """
