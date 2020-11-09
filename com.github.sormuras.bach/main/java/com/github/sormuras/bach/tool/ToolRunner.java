@@ -127,7 +127,7 @@ public class ToolRunner {
     var thread = Thread.currentThread().getId();
     var out = computeMessageText(output);
     var err = computeMessageText(errors);
-    var response = new ToolResponse(name, args, thread, duration, code, out, err);
+    var response = new ToolResponse(name, List.of(args), thread, duration, code, out, err);
     logger.log(Level.DEBUG, response.toString());
 
     history.add(response);
