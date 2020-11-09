@@ -17,6 +17,7 @@ public record MainSpace(
     List<String> modules,
     List<String> moduleSourcePaths,
     int release,
+    boolean generateApiDocumentation,
     Map<String, List<String>> tweaks)
     implements Space {
 

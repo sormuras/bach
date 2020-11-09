@@ -1,7 +1,7 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.module.ModuleInfoFinder;
 import com.github.sormuras.bach.internal.Modules;
+import com.github.sormuras.bach.module.ModuleInfoFinder;
 import com.github.sormuras.bach.project.Base;
 import com.github.sormuras.bach.project.MainSpace;
 import java.lang.module.ModuleDescriptor.Version;
@@ -62,6 +62,7 @@ public record Project(Base base, String name, Version version, MainSpace main) {
             modules(main.modules(), mainFinder),
             List.of(main.moduleSourcePaths()),
             release(main.release()),
+            main.generateApiDocumentation(),
             tweaks(main.tweaks())) //
         );
   }

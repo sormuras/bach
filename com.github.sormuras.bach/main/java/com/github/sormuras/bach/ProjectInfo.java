@@ -41,6 +41,9 @@ public @interface ProjectInfo {
     /** @return the Java version (release feature number) to compile main modules for */
     int release() default 0;
 
+    /** @return {@code true} if an API documenation should be generated, else {@code false} */
+    boolean generateApiDocumentation() default false;
+
     /** @return the additional arguments to be passed on a per-tool basis */
     Tweak[] tweaks() default {
       @Tweak(
