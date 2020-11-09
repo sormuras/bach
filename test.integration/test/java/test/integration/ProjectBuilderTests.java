@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Http;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectBuilder;
 import com.github.sormuras.bach.project.Base;
@@ -24,7 +23,7 @@ class ProjectBuilderTests {
   void buildInEmptyDirectory(@TempDir Path temp) {
     var baos = new ByteArrayOutputStream();
     var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
-    var bach = new Bach(log, Http::newClient);
+    var bach = new Bach(log, Bach::newHttpClient);
 
     var base = Base.of(temp);
     var project = Project.of(base);

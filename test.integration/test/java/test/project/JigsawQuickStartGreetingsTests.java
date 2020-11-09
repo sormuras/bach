@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.BuildProgram;
-import com.github.sormuras.bach.Http;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.project.Base;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +31,7 @@ class JigsawQuickStartGreetingsTests {
 
     var baos = new ByteArrayOutputStream();
     var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
-    var bach = new Bach(log, Http::newClient);
+    var bach = new Bach(log, Bach::newHttpClient);
     assertDoesNotThrow(() -> BuildProgram.build(bach, base, "build"));
 
     var finder = ModuleFinder.of(base.workspace("modules"));
