@@ -29,4 +29,13 @@ public record MainSpace(
   public Path classes(Project project) {
     return project.base().classes("", release);
   }
+
+  /**
+   * @param project the project providing a workspace directory
+   * @param entry the path (directory or regular file) to resolve
+   * @return a path within the given project's documentation workspace
+   */
+  public Path documentation(Project project, String entry) {
+    return project.base().workspace("documentation", entry);
+  }
 }
