@@ -45,6 +45,8 @@ public class ProjectBuilder {
    *   <li>jlink
    *   <li>jpackage
    * </ul>
+   *
+   * @param main the main space to build
    */
   public void build(MainSpace main) {
     if (main.modules().isEmpty()) return;
@@ -52,6 +54,10 @@ public class ProjectBuilder {
     Paths.createDirectories(project.base().workspace("modules"));
     for (var module : project.main().modules()) {
       runner.run(computeMainJarCall(module)).checkSuccessful();
+    }
+    if (main.generateApiDocumentation()) {
+      runner.run(computeMainDocumentationJavadocCall()).checkSuccessful();
+      runner.run(computeMainDocumentationJarCall()).checkSuccessful();
     }
   }
 
@@ -73,7 +79,7 @@ public class ProjectBuilder {
    */
   public ToolCall computeMainJarCall(String module) {
     var main = project.main();
-    var archive = module + "@" + project.version() + ".jar";
+    var archive = computeMainJarFileName(module);
     return Command.builder("jar")
         .with("--create")
         .with("--file", project.base().workspace("modules", archive))
@@ -81,6 +87,39 @@ public class ProjectBuilder {
         .with("-C", main.classes(project).resolve(module), ".")
         // .with(sources, (call, source) -> call.with("-C", source, "."))
         // .with(resources, (call, resource) -> call.with("-C", resource, "."))
+        .build();
+  }
+
+  /**
+   * @param module the name of the module
+   * @return the name of the JAR file for the given module
+   */
+  public String computeMainJarFileName(String module) {
+    return module + "@" + project.version() + ".jar";
+  }
+
+  /** @return the javadoc call generating the API documentation for all main modules */
+  public ToolCall computeMainDocumentationJavadocCall() {
+    var main = project.main();
+    var api = main.documentation(project, "api");
+    return Command.builder("javadoc")
+        .with("--module", String.join(",", main.modules()))
+        .with("--module-source-path", main.moduleSourcePath(project))
+        .withEach(main.tweaks().getOrDefault("javadoc", List.of()))
+        .with("-d", api)
+        .build();
+  }
+
+  /** @return the jar call generating the API documentation archive */
+  public ToolCall computeMainDocumentationJarCall() {
+    var main = project.main();
+    var api = main.documentation(project, "api");
+    var file = project.name() + "-api-" + project.version() + ".zip";
+    return Command.builder("jar")
+        .with("--create")
+        .with("--file", api.getParent().resolve(file))
+        .with("--no-manifest")
+        .with("-C", api, ".")
         .build();
   }
 }
