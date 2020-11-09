@@ -10,7 +10,7 @@ import java.util.Objects;
  * @param name the name of the tool to call
  * @param args the arguments
  */
-public record Command(String name, String... args) implements ToolCall {
+public record Command(String name, List<String> args) implements ToolCall {
 
   /**
    * Instantiates a builder to build a command.
@@ -37,7 +37,7 @@ public record Command(String name, String... args) implements ToolCall {
 
   @Override
   public String toString() {
-    return args.length == 0 ? name : name + ' ' + String.join(" ", args);
+    return args.isEmpty() ? name : name + ' ' + String.join(" ", args);
   }
 
   /**
@@ -77,7 +77,7 @@ public record Command(String name, String... args) implements ToolCall {
      * @return the command object
      */
     public Command build() {
-      return new Command(name, strings.toArray(String[]::new));
+      return new Command(name, List.copyOf(strings));
     }
 
     /**

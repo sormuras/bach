@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.tool;
 
+import java.util.List;
+
 /** A tool call object with its name and an array of argument strings. */
 public interface ToolCall {
   /**
@@ -10,11 +12,11 @@ public interface ToolCall {
   String name();
 
   /**
-   * Return the possibly empty arguments of this tool call.
+   * Return the possibly empty list of arguments of this tool call.
    *
-   * @return an array of strings
+   * @return a list of strings
    */
-  String[] args();
+  List<String> args();
 
   /**
    * Return an immutable tool call instance representing this tool call.

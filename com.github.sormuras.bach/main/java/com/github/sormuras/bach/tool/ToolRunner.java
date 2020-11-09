@@ -98,10 +98,21 @@ public class ToolRunner {
    * @return a tool call response object
    */
   public ToolResponse run(String name, String... args) {
+    return run(name, List.of(args));
+  }
+
+  /**
+   * Runs a tool call.
+   *
+   * @param name the name of the tool to run
+   * @param args the arguments
+   * @return a tool call response object
+   */
+  public ToolResponse run(String name, List<String> args) {
     return run(computeToolProvider(name), args);
   }
 
-  ToolResponse run(ToolProvider provider, String... args) {
+  ToolResponse run(ToolProvider provider, List<String> args) {
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
     currentThread.setContextClassLoader(provider.getClass().getClassLoader());
@@ -112,22 +123,22 @@ public class ToolRunner {
     }
   }
 
-  ToolResponse run2(ToolProvider provider, String... args) {
+  ToolResponse run2(ToolProvider provider, List<String> args) {
     var output = new StringWriter();
     var outputPrintWriter = new PrintWriter(output);
     var errors = new StringWriter();
     var errorsPrintWriter = new PrintWriter(errors);
     var name = provider.name();
-    logger.log(Level.TRACE, "Run " + name + " with " + args.length + " argument(s)");
+    logger.log(Level.TRACE, "Run " + name + " with " + args.size() + " argument(s)");
 
     var start = Instant.now();
-    var code = provider.run(outputPrintWriter, errorsPrintWriter, args);
+    var code = provider.run(outputPrintWriter, errorsPrintWriter, args.toArray(String[]::new));
     var duration = Duration.between(start, Instant.now());
 
     var thread = Thread.currentThread().getId();
     var out = computeMessageText(output);
     var err = computeMessageText(errors);
-    var response = new ToolResponse(name, List.of(args), thread, duration, code, out, err);
+    var response = new ToolResponse(name, args, thread, duration, code, out, err);
     logger.log(Level.DEBUG, response.toString());
 
     history.add(response);
