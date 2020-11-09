@@ -24,7 +24,7 @@ jobs:
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --module-path .bach/workspace/.bootstrap --module build/build.BachBuilder ${VERSION}
+        run: java --module-path .bach/workspace/.bootstrap --module build/build.BachBuildProgram ${VERSION}
       - name: 'Upload module com.github.sormuras.bach@${{ env.VERSION }}'
         uses: actions/upload-release-asset@v1
         with:
