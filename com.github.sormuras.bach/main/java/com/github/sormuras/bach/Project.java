@@ -21,6 +21,16 @@ import java.util.Map;
 public record Project(Base base, String name, Version version, MainSpace main) {
 
   /**
+   * Returns a copy of this project with the given version.
+   *
+   * @param version the new version component
+   * @return a copy of this project with the given version
+   */
+  public Project with(Version version) {
+    return new Project(base, name, version, main);
+  }
+
+  /**
    * Returns a project model based on walking the given base paths.
    *
    * @param base the base paths to walk
