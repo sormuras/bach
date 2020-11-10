@@ -8,6 +8,7 @@ import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
+import java.lang.module.ModuleFinder;
 import java.util.List;
 
 /** Builds a modular Java project. */
@@ -41,13 +42,14 @@ public class ProjectBuilder {
     build(project.test());
   }
 
-  /**
-   *
-   */
+  /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
     var searcher = ModuleSearcher.ofBestEffort(bach);
-    project.library().requires().forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
-    bach.loadMissingModules(moduleDirectory,searcher);
+    project
+        .library()
+        .requires()
+        .forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
+    bach.loadMissingModules(moduleDirectory, searcher);
   }
 
   /**
@@ -93,7 +95,20 @@ public class ProjectBuilder {
     for (var module : project.test().modules()) {
       runner.run(computeTestJarCall(module)).checkSuccessful();
     }
-    // TODO call junit
+    if (moduleDirectory.finder().find("org.junit.platform.console").isPresent()) {
+      for (var module : project.test().modules()) {
+        var base = project.base();
+        var archive = module + "@" + project.version() + "+test.jar";
+        var finder =
+            ModuleFinder.of(
+                base.workspace("modules-test", archive), // module under test
+                base.workspace("modules"), // main modules
+                base.workspace("modules-test"), // (more) test modules
+                base.libraries() // external modules
+                );
+        runner.run(computeTestJUnitCall(module), finder, module).checkSuccessful();
+      }
+    }
   }
 
   /** @return the {@code javac} call to compile all modules of the main space. */
@@ -111,7 +126,7 @@ public class ProjectBuilder {
 
   /**
    * @param module the name of module to create an archive for
-   * @return the {@code jar} call to jar all assets for the given module
+   * @return the {@code jar} call to archive all assets for the given module
    */
   public ToolCall computeMainJarCall(String module) {
     var main = project.main();
@@ -160,7 +175,6 @@ public class ProjectBuilder {
         .build();
   }
 
-
   /** @return the {@code javac} call to compile all modules of the test space. */
   public ToolCall computeTestJavacCall() {
     var test = project.test();
@@ -174,8 +188,8 @@ public class ProjectBuilder {
   }
 
   /**
-   * @param module the name of module to create an archive for
-   * @return the {@code jar} call to jar all assets for the given module
+   * @param module the name of the module to create an archive for
+   * @return the {@code jar} call to archive all assets for the given module
    */
   public ToolCall computeTestJarCall(String module) {
     var test = project.test();
@@ -185,6 +199,17 @@ public class ProjectBuilder {
         .with("--file", project.base().workspace("modules-test", archive))
         .with("-C", test.classes(project).resolve(module), ".")
         // .with(resources, (call, resource) -> call.with("-C", resource, "."))
+        .build();
+  }
+
+  /**
+   * @param module the name of the module to scan for tests
+   * @return the {@code junit} call to launch the JUnit Platform for
+   */
+  public ToolCall computeTestJUnitCall(String module) {
+    return Command.builder("junit")
+        .with("--select-module", module)
+        .with("--reports-dir", project.base().workspace("reports", "junit-test", module))
         .build();
   }
 }

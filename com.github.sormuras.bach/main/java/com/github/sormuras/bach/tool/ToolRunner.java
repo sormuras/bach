@@ -63,7 +63,9 @@ public class ToolRunner {
    * @return a tool provider
    */
   protected ToolProvider computeToolProvider(String name) {
+    var loader = Thread.currentThread().getContextClassLoader();
     return ToolProvider.findFirst(name)
+        .or(() -> find(loader).stream().filter(tool -> tool.name().equals(name)).findFirst())
         .or(() -> find(finder).stream().filter(tool -> tool.name().equals(name)).findFirst())
         .orElseThrow(() -> new NoSuchElementException("Tool with name '" + name + "' not found"));
   }
@@ -112,6 +114,20 @@ public class ToolRunner {
     return run(computeToolProvider(name), args);
   }
 
+  /**
+   * Runs a tool call.
+   *
+   * @param call the call to run
+   * @param finder the module finder
+   * @param roots the modules to initialize
+   * @return a tool call response object
+   */
+  public ToolResponse run(ToolCall call, ModuleFinder finder, String... roots) {
+    var providers = find(finder, roots).stream();
+    var provider = providers.filter(p -> p.name().equals(call.name())).findFirst();
+    return run(provider.orElseThrow(), call.args());
+  }
+
   ToolResponse run(ToolProvider provider, List<String> args) {
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
@@ -145,9 +161,16 @@ public class ToolRunner {
     return response;
   }
 
-  static List<ToolProvider> find(ModuleFinder finder) {
+  static List<ToolProvider> find(ClassLoader loader) {
+    var services = ServiceLoader.load(ToolProvider.class, loader);
+    return services.stream()
+        .map(ServiceLoader.Provider::get)
+        .collect(Collectors.toUnmodifiableList());
+  }
+
+  static List<ToolProvider> find(ModuleFinder finder, String... roots) {
     try {
-      var layer = Modules.layer(finder);
+      var layer = Modules.layer(finder, roots);
       var services = ServiceLoader.load(layer, ToolProvider.class);
       return services.stream()
           .map(ServiceLoader.Provider::get)
