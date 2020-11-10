@@ -9,13 +9,15 @@ import java.util.Map;
  * A space for main modules.
  *
  * @param modules the list of modules to compile
- * @param moduleSourcePaths the list of module source paths
+ * @param moduleSourcePaths the list of module source path patterns
+ * @param modulePaths the list of module paths
  * @param release the Java version (release feature number) to compile for
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
 public record MainSpace(
     List<String> modules,
     List<String> moduleSourcePaths,
+    List<String> modulePaths,
     int release,
     boolean generateApiDocumentation,
     Map<String, List<String>> tweaks)

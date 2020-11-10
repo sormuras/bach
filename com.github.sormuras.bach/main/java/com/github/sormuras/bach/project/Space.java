@@ -25,6 +25,13 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
   List<String> moduleSourcePaths();
 
   /**
+   * Returns the list of module paths.
+   *
+   * @return the list of module paths
+   */
+  List<String> modulePaths();
+
+  /**
    * Returns the possibly empty name of this space.
    *
    * @return an empty string for the main space, else a non-empty name
@@ -59,6 +66,19 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
 
     var joiner = new StringJoiner(File.pathSeparator);
     for (var pattern : moduleSourcePaths()) joiner.add(prefix + File.separator + pattern);
+    return joiner.toString();
+  }
+
+  /**
+   * @param project the project
+   * @return a string composed of all modules path elements resolved to the project's base
+   */
+  default String modulePath(Project project) {
+    var prefix = project.base().directory().normalize().toString();
+    if (prefix.isEmpty()) return String.join(File.pathSeparator, modulePaths());
+
+    var joiner = new StringJoiner(File.pathSeparator);
+    for (var path : modulePaths()) joiner.add(prefix + File.separator + path);
     return joiner.toString();
   }
 

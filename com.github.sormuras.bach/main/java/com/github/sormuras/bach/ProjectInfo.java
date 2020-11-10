@@ -38,6 +38,9 @@ public @interface ProjectInfo {
     /** @return the module source path patterns for main modules */
     String[] moduleSourcePaths() default {"./*/main", "./*/main/java", "./*/main/java-module"};
 
+    /** @return the module paths for main modules */
+    String[] modulePaths() default {".bach/libraries"};
+
     /** @return the Java version (release feature number) to compile main modules for */
     int release() default 0;
 
@@ -52,6 +55,37 @@ public @interface ProjectInfo {
     };
   }
 
+  /** @return the test module source space configuration */
+  Test test() default @Test;
+
+  /** Describes the main module source space. */
+  @Target({})
+  @interface Test{
+    /**
+     * @return the names of the modules to compile, with an empty array for none effectively
+     *     skipping compilation of this space, or the single-element array {@code ["*"]} indicating
+     *     to find all module compilation units via {@link #moduleSourcePaths()} patterns
+     */
+    String[] modules() default "*";
+
+    /** @return the module source path patterns for test modules */
+    String[] moduleSourcePaths() default {"./*/test", "./*/test/java", "./*/test/java-module"};
+
+    /** @return the module path patterns for test modules */
+    String[] modulePaths() default {".bach/workspace/modules", ".bach/libraries"};
+
+    /** @return the additional arguments to be passed on a per-tool basis */
+    Tweak[] tweaks() default {
+        @Tweak(
+            tool = "javac",
+            args = {"-encoding", "UTF-8"}),
+        @Tweak(
+            tool = "junit",
+            args = {"--fail-if-no-tests"}
+        )
+    };
+  }
+
   /** Tool name-args pair annotation. */
   @Target({})
   @interface Tweak {
@@ -61,34 +95,44 @@ public @interface ProjectInfo {
     String[] args();
   }
 
-  /** @return the array of module links */
-  Link[] links() default {};
+  /** @return the library configuration */
+  Library library() default @Library;
 
-  /** Module-URI pair annotation. */
-  @Target({})
-  @interface Link {
-    /** @return the module name */
-    String module();
+  /** Library configuration annotation. */
+  @interface Library{
 
-    /** @return the target of the link, usually resolvable to a remote JAR file */
-    String target();
+    /** @return the array of required module names */
+    String[] requires() default {};
 
-    /**
-     * @return the type of the string returned by {@link #target()}, defaults to {@link Type#AUTO}
-     */
-    Type type() default Type.AUTO;
+    /** @return the array of module links */
+    Link[] links() default {};
 
-    /** @return the repository of Maven-based target coordinates */
-    String mavenRepository() default "https://repo.maven.apache.org/maven2";
+    /** Module-URI pair annotation. */
+    @Target({})
+    @interface Link {
+      /** @return the module name */
+      String module();
 
-    /** Link target type. */
-    enum Type {
-      /** Detect type of link automatically. */
-      AUTO,
-      /** Uniform Resource Identifier (URI) reference as is {@link java.net.URI}. */
-      URI,
-      /** Maven-based coordinates. */
-      MAVEN
+      /** @return the target of the link, usually resolvable to a remote JAR file */
+      String target();
+
+      /**
+       * @return the type of the string returned by {@link #target()}, defaults to {@link Type#AUTO}
+       */
+      Type type() default Type.AUTO;
+
+      /** @return the repository of Maven-based target coordinates */
+      String mavenRepository() default "https://repo.maven.apache.org/maven2";
+
+      /** Link target type. */
+      enum Type {
+        /** Detect type of link automatically. */
+        AUTO,
+        /** Uniform Resource Identifier (URI) reference as is {@link java.net.URI}. */
+        URI,
+        /** Maven-based coordinates. */
+        MAVEN
+      }
     }
   }
 }

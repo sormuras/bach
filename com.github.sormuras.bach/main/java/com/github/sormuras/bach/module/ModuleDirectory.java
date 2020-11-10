@@ -1,9 +1,5 @@
 package com.github.sormuras.bach.module;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toUnmodifiableMap;
-
-import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -29,24 +25,11 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    * @param links the module-uri pairs
    * @return a library for the given directory and links
    */
-  public static ModuleDirectory of(Path path, ModuleLink... links) {
-    var map = Arrays.stream(links).collect(toUnmodifiableMap(ModuleLink::module, identity()));
-    return new ModuleDirectory(path, map);
-  }
-
-  /**
-   * @param module to module to scan for link annotations
-   * @return a new module directory with all module links associated with the given module
-   */
-  public ModuleDirectory withLinks(Module module) {
-    var project = module.getAnnotation(ProjectInfo.class);
-    if (project == null) return this;
-    var links = Set.of(project.links());
-    if (links.isEmpty()) return this;
-
-    var copy = new HashMap<>(this.links);
-    links.forEach(link -> copy.put(link.module(), ModuleLink.of(link)));
-    return new ModuleDirectory(path, Map.copyOf(copy));
+  public static ModuleDirectory of(Path path, Map<String, String> links) {
+    var map = new HashMap<String, ModuleLink>();
+    for(var link : links.entrySet())
+      map.put(link.getKey(), new ModuleLink(link.getKey(), link.getValue()));
+    return new ModuleDirectory(path, Map.copyOf(map));
   }
 
   /**

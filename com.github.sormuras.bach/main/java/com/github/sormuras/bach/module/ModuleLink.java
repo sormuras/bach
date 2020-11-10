@@ -46,7 +46,7 @@ public record ModuleLink(String module, String uri) implements Comparable<Module
    * @param link the annotation to parse
    * @return a module link based on the given annotation
    */
-  public static ModuleLink of(ProjectInfo.Link link) {
+  public static ModuleLink of(ProjectInfo.Library.Link link) {
     var module = link.module();
     var target = link.target();
 
