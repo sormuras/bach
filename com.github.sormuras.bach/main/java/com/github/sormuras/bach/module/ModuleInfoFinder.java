@@ -24,7 +24,7 @@ public final class ModuleInfoFinder implements ModuleFinder {
    * @param moduleSourcePaths the module source paths to apply
    * @return a module declaration finder
    */
-  public static ModuleInfoFinder of(Path directory, List<String> moduleSourcePaths) {
+  public static ModuleInfoFinder of(Path directory, String... moduleSourcePaths) {
     var references = new TreeMap<String, ModuleReference>();
     for (var segment : moduleSourcePaths) {
       var glob = new StringBuilder();
@@ -40,7 +40,7 @@ public final class ModuleInfoFinder implements ModuleFinder {
             references.put(ref.descriptor().name(), ref);
           });
     }
-    return new ModuleInfoFinder(moduleSourcePaths, references);
+    return new ModuleInfoFinder(List.of(moduleSourcePaths), references);
   }
 
   private final List<String> moduleSourcePaths;
