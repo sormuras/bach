@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +21,7 @@ class ModuleInfoFinderTests {
         jdk.jlink
         """;
 
-    var mains = ModuleInfoFinder.of(Path.of("."), List.of("./*/main/java"));
+    var mains = ModuleInfoFinder.of(Path.of(""), "./*/main/java");
     assertEquals(Set.of("com.github.sormuras.bach"), mains.declared());
     assertLinesMatch(bachMainRequires.lines(), mains.required().stream());
     var bach = mains.find("com.github.sormuras.bach").orElseThrow().descriptor();
@@ -38,12 +37,11 @@ class ModuleInfoFinderTests {
         test.base
         """;
 
-    var tests = ModuleInfoFinder.of(Path.of("."), List.of("./*/test/java", "./*/test/java-module"));
-
-    assertEquals(Set.of("com.github.sormuras.bach", "test.base", "test.modules"), tests.declared());
+    var tests = ModuleInfoFinder.of(Path.of(""), "./*/test/java", "./*/test/java-module");
+    assertEquals(Set.of("com.github.sormuras.bach", "test.base", "test.integration"), tests.declared());
     assertLinesMatch(bachTestRequires.lines(), tests.required().stream());
 
-    var preview = ModuleInfoFinder.of(Path.of(""), List.of("./*/test-preview/java"));
+    var preview = ModuleInfoFinder.of(Path.of(""), "./*/test-preview/java");
     assertEquals(Set.of(), preview.declared());
   }
 }

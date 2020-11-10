@@ -27,11 +27,19 @@ class ProjectBuilderTests {
     var base = Base.of(temp);
     var project = Project.of(base);
 
+    // project-info
     assertEquals(temp.getFileName().toString(), project.name());
+    assertEquals("0-ea", project.version().toString());
+    // main space
     assertTrue(project.main().modules().isEmpty());
     assertEquals(Runtime.version().feature(), project.main().release());
     assertEquals(List.of("."), project.main().moduleSourcePaths());
     assertEquals(List.of("-encoding", "UTF-8"), project.main().tweaks().get("javac"));
+    // test space
+    assertEquals(
+        List.of("./*/test", "./*/test/java", "./*/test/java-module"),
+        project.test().moduleSourcePaths());
+    assertEquals(List.of("-encoding", "UTF-8"), project.test().tweaks().get("javac"));
 
     var builder = new ProjectBuilder(bach, project);
     assertDoesNotThrow((Executable) builder::build);
