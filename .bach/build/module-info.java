@@ -1,12 +1,18 @@
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.ProjectInfo.Library;
+import com.github.sormuras.bach.ProjectInfo.Library.Link;
 import com.github.sormuras.bach.ProjectInfo.Main;
+import com.github.sormuras.bach.ProjectInfo.Test;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
+    library =
+        @Library(
+            requires = {"org.junit.platform.console", "junit"},
+            links = @Link(module = "junit", target = "junit:junit:4.13.1")),
     main =
         @Main(
-            modules = "com.github.sormuras.bach",
             release = 16,
             generateApiDocumentation = true,
             tweaks = {
@@ -29,7 +35,16 @@ import com.github.sormuras.bach.ProjectInfo.Tweak;
                     "-Xdoclint",
                     "-quiet"
                   })
-            }))
+            }),
+    test =
+        @Test(
+            tweaks =
+                @Tweak(
+                    tool = "javac",
+                    args = {
+                      "--patch-module",
+                      "com.github.sormuras.bach=com.github.sormuras.bach/main/java"
+                    })))
 module build {
   requires com.github.sormuras.bach;
 
