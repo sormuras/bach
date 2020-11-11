@@ -1,6 +1,5 @@
 package build;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -14,9 +13,9 @@ class Bootstrap {
     var classes = Path.of(".bach/workspace/.bootstrap");
     run(
         "javac",
-        "--module=" + module + ",build",
+        "--module=" + module,
         "--module-version=" + version + "-" + Instant.now(),
-        "--module-source-path=./*/main/java" + File.pathSeparator + ".bach",
+        "--module-source-path=./*/main/java",
         "-g",
         "-parameters",
         "-Werror",
