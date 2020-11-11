@@ -32,6 +32,7 @@ class Bootstrap {
         "jar",
         "--create",
         "--file=" + jar,
+        "--main-class=" + module + ".Main",
         "-C",
         classes.resolve(module).toString(),
         ".");
