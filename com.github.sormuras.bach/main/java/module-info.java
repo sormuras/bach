@@ -28,4 +28,7 @@ module com.github.sormuras.bach {
 
   uses com.github.sormuras.bach.BuildProgram;
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      com.github.sormuras.bach.internal.BachToolProvider;
 }

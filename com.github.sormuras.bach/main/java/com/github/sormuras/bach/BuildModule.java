@@ -31,9 +31,9 @@ class BuildModule {
   }
 
   ModuleLayer computeLayer() {
-    if (Files.notExists(path(".bach", "build", "module-info.java"))) return ModuleLayer.boot();
+    if (Files.notExists(path(".bach", name, "module-info.java"))) return ModuleLayer.empty();
     var cache = path(".bach","cache");
-    var classes = path(".bach","workspace", ".bach", name);
+    var classes = path(".bach","workspace", ".bach");
     var compile =
         Command.builder("javac")
             .with("--module", name)
@@ -43,10 +43,12 @@ class BuildModule {
             .with("-d", classes)
             .build();
 
+    new ToolRunner().run(compile).checkSuccessful();
     var finder = ModuleFinder.of(classes, cache);
-    new ToolRunner(finder).run(compile).checkSuccessful();
+    var layer = Modules.layer(finder, name);
+    assert layer.findModule(name).isPresent() : "Module " + name + " not found?!";
 
-    return Modules.layer(finder, name);
+    return layer;
   }
 
   public Optional<BuildProgram> findBuildProgram() {
