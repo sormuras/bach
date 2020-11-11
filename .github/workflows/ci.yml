@@ -34,7 +34,7 @@ jobs:
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --module-path .bach/workspace/.bootstrap --module build/build.BachBuildProgram ${VERSION} early-access
+        run: java --module-path .bach/cache --module com.github.sormuras.bach build ${VERSION} early-access
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
