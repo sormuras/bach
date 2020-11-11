@@ -26,6 +26,11 @@ public class BachBuildProgram implements BuildProgram {
     var project = Project.of(Base.ofCurrentDirectory(), info);
     out.println("Build Bach " + project.version() + " // @" + project.main().jarslug() + ".jar");
 
+    System.clearProperty("bach.project.name");
+    System.clearProperty("bach.project.version");
+    System.clearProperty("bach.project.main.release");
+    System.clearProperty("bach.project.main.jarslug");
+
     var start = Instant.now();
     try {
       new ProjectBuilder(bach, project).build();
