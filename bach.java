@@ -22,11 +22,14 @@ interface bach {
       }
     }
 
-    find("bach", ModuleFinder.of(cache))
-        .ifPresentOrElse(
-            bach -> bach.run(System.out, System.err, args),
-            () -> System.err.println("Bach not found in directoy: " + cache)
-        );
+    var bach = find("bach", ModuleFinder.of(cache));
+    if (bach.isEmpty()) {
+      System.err.println("Bach not found in directoy: " + cache);
+      System.exit(-1);
+    }
+
+    var status = bach.get().run(System.out, System.err, args);
+    System.exit(status);
   }
 
   static void version(Path cache, Version version) {
