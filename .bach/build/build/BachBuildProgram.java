@@ -6,9 +6,6 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectBuilder;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.project.Base;
-import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -18,28 +15,20 @@ public class BachBuildProgram implements BuildProgram {
     new BachBuildProgram().build(Bach.ofSystem(), args);
   }
 
-  private static String version() {
-    try {
-      return Files.readString(Path.of("VERSION"));
-    } catch (Exception exception) {
-      throw new Error("Read VERSION failed: ", exception);
-    }
-  }
-
   public BachBuildProgram() {}
 
   @Override
   public void build(Bach bach, String... args) {
     var out = bach.printStream();
     var err = System.err;
-    var version = args.length == 0 ? version() : args[0];
-    var jarslug = args.length < 2 ? version : args[1];
-    out.println("Build Bach " + version + " using Bach " + Bach.version() + " // " + jarslug);
+
     var info = getClass().getModule().getAnnotation(ProjectInfo.class);
-    var project = Project.of(Base.ofCurrentDirectory(), info).with(Version.parse(version));
+    var project = Project.of(Base.ofCurrentDirectory(), info);
+    out.println("Build Bach " + project.version() + " // @" + project.main().jarslug() + ".jar");
+
     var start = Instant.now();
     try {
-      new BachBuilder(bach, project, jarslug).build();
+      new ProjectBuilder(bach, project).build();
     } catch (Exception exception) {
       err.println(exception);
     } finally {
@@ -50,20 +39,5 @@ public class BachBuildProgram implements BuildProgram {
   @Override
   public String toString() {
     return "Bach's Build Program";
-  }
-
-  static class BachBuilder extends ProjectBuilder {
-
-    final String jarslug;
-
-    BachBuilder(Bach bach, Project project, String jarslug) {
-      super(bach, project);
-      this.jarslug = jarslug;
-    }
-
-    @Override
-    public String computeMainJarFileName(String module) {
-      return module + "@" + jarslug + ".jar";
-    }
   }
 }

@@ -1,16 +1,13 @@
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.ProjectInfo.Library;
-import com.github.sormuras.bach.ProjectInfo.Library.Link;
 import com.github.sormuras.bach.ProjectInfo.Main;
 import com.github.sormuras.bach.ProjectInfo.Test;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
-    library =
-        @Library(
-            requires = {"org.junit.platform.console", "junit"},
-            links = @Link(module = "junit", target = "junit:junit:4.13.1")),
+    version = "16-ea",
+    library = @Library(requires = {"org.junit.platform.console"}),
     main =
         @Main(
             release = 16,
@@ -48,5 +45,6 @@ import com.github.sormuras.bach.ProjectInfo.Tweak;
 module build {
   requires com.github.sormuras.bach;
 
-  provides com.github.sormuras.bach.BuildProgram with build.BachBuildProgram;
+  provides com.github.sormuras.bach.BuildProgram with
+      build.BachBuildProgram;
 }

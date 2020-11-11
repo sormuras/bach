@@ -8,7 +8,7 @@ import java.util.spi.ToolProvider;
 class Bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
-    var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
+    var version = "16-ea+BOOTSTRAP";
 
     var classes = Path.of(".bach/workspace/.bootstrap");
     run(

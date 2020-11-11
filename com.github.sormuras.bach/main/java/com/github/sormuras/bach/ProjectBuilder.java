@@ -115,6 +115,7 @@ public class ProjectBuilder {
   public ToolCall computeMainJavacCall() {
     var main = project.main();
     return Command.builder("javac")
+        .with("--release", main.release())
         .with("--module", String.join(",", main.modules()))
         .with("--module-version", project.version())
         .with("--module-source-path", main.moduleSourcePath(project))
@@ -146,7 +147,10 @@ public class ProjectBuilder {
    * @return the name of the JAR file for the given module
    */
   public String computeMainJarFileName(String module) {
-    return module + "@" + project.version() + ".jar";
+    var slug = project.main().jarslug();
+    var builder = new StringBuilder(module);
+    if (!slug.isEmpty()) builder.append('@').append(slug);
+    return builder.append(".jar").toString();
   }
 
   /** @return the javadoc call generating the API documentation for all main modules */

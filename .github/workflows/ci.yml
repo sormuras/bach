@@ -29,12 +29,18 @@ jobs:
       - name: 'Set up version'
         run: |
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
-          VERSION=$(<VERSION)+${SHA7}
+          VERSION=16-ea+${SHA7}
           echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --module-path .bach/cache --module com.github.sormuras.bach build ${VERSION} early-access
+        run: |
+          java \
+            -Dbach.project.version=${VERSION} \
+            -Dbach.project.main.jarslug=early-access \
+            --module-path .bach/cache \
+            --module com.github.sormuras.bach \
+            build
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:

@@ -22,17 +22,8 @@ import java.util.TreeSet;
  * @param main the main module space
  * @param test the test module space
  */
-public record Project(Base base, String name, Version version, Library library, MainSpace main, TestSpace test) {
-
-  /**
-   * Returns a copy of this project with the given version.
-   *
-   * @param version the new version component
-   * @return a copy of this project with the given version
-   */
-  public Project with(Version version) {
-    return new Project(base, name, version, library, main, test);
-  }
+public record Project(
+    Base base, String name, Version version, Library library, MainSpace main, TestSpace test) {
 
   /**
    * Returns a project model based on walking the given base paths.
@@ -56,6 +47,8 @@ public record Project(Base base, String name, Version version, Library library, 
   }
 
   static Project of(Base base, String name, ProjectInfo info) {
+    var version = version(info.version());
+
     var main = info.main();
     var mainModuleInfoFinder = mainModuleInfoFinder(base, info);
     var test = info.test();
@@ -70,14 +63,15 @@ public record Project(Base base, String name, Version version, Library library, 
 
     return new Project(
         base,
-        name,
-        Version.parse(info.version()),
+        name(name),
+        version,
         library,
         new MainSpace(
             modules(main.modules(), mainModuleInfoFinder),
             mainModuleInfoFinder.moduleSourcePaths(),
             List.of(main.modulePaths()),
             release(main.release()),
+            jarslug(version),
             main.generateApiDocumentation(),
             tweaks(main.tweaks())),
         new TestSpace(
@@ -85,6 +79,26 @@ public record Project(Base base, String name, Version version, Library library, 
             List.of(test.moduleSourcePaths()),
             List.of(test.modulePaths()),
             tweaks(test.tweaks())));
+  }
+
+  static String name(String name) {
+    return System.getProperty("bach.project.name", name);
+  }
+
+  static Version version(String version) {
+    return Version.parse(System.getProperty("bach.project.version", version));
+  }
+
+  static int release(int release) {
+    try {
+      return Integer.parseInt(System.getProperty("bach.project.main.release"));
+    } catch (RuntimeException ignore) {
+      return release != 0 ? release : Runtime.version().feature();
+    }
+  }
+
+  static String jarslug(Version version) {
+    return System.getProperty("bach.project.main.jarslug", version.toString());
   }
 
   static ModuleInfoFinder mainModuleInfoFinder(Base base, ProjectInfo info) {
@@ -96,10 +110,6 @@ public record Project(Base base, String name, Version version, Library library, 
   static List<String> modules(String[] modules, ModuleFinder finder) {
     var all = modules.length == 1 && modules[0].equals("*");
     return all ? List.copyOf(Modules.declared(finder)) : List.of(modules);
-  }
-
-  static int release(int release) {
-    return release != 0 ? release : Runtime.version().feature();
   }
 
   static Map<String, List<String>> tweaks(ProjectInfo.Tweak... tweaks) {

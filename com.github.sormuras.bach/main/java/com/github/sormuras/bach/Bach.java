@@ -55,11 +55,7 @@ public final class Bach {
   public static String version() {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module
-        .getDescriptor()
-        .version()
-        .map(Object::toString)
-        .orElseGet(() -> Paths.readString(Path.of("VERSION")).orElseThrow());
+    return module.getDescriptor().version().map(Object::toString).orElse("16-ea");
   }
 
   /**
@@ -164,10 +160,8 @@ public final class Bach {
             .orElse(module.toString());
     var info =
         switch (name) {
-          case "jar" -> "Create an archive for classes and resources, and update or restore"
-                            + " resources";
-          case "javac" -> "Read Java class and interface definitions and compile them into class"
-                              + " files";
+          case "jar" -> "Create an archive for classes and resources, and update or restore resources";
+          case "javac" -> "Read Java class and interface definitions and compile them into class files";
           case "javadoc" -> "Generate HTML pages of API documentation from Java source files";
           case "javap" -> "Disassemble one or more class files";
           case "jdeps" -> "Launch the Java class dependency analyzer";
