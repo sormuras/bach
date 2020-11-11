@@ -48,6 +48,6 @@ class ToolRunnerTests {
   @Test
   void failsForUnknownTool() {
     var runner = new ToolRunner();
-    assertThrows(NoSuchElementException.class, () -> runner.run("❌"));
+    assertThrows(NoSuchElementException.class, () -> runner.run("X"));
   }
 }
