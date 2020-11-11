@@ -34,7 +34,7 @@ public class BachBuildProgram implements BuildProgram {
     var err = System.err;
     var version = args.length == 0 ? version() : args[0];
     var jarslug = args.length < 2 ? version : args[1];
-    out.println("Build Bach " + version + " using Bach " + Bach.version());
+    out.println("Build Bach " + version + " using Bach " + Bach.version() + " // " + jarslug);
     var info = getClass().getModule().getAnnotation(ProjectInfo.class);
     var project = Project.of(Base.ofCurrentDirectory(), info).with(Version.parse(version));
     var start = Instant.now();

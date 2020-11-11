@@ -57,7 +57,9 @@ public class Main {
 
   int build(PrintWriter out, PrintWriter err, String... args) {
     try {
-      BuildProgram.build(new Bach(System.out, Bach::newHttpClient), Base.ofCurrentDirectory());
+      var bach = new Bach(System.out, Bach::newHttpClient);
+      var base = Base.ofCurrentDirectory();
+      BuildProgram.build(bach, base, args);
       return 0;
     } catch (RuntimeException exception) {
       return 1;
