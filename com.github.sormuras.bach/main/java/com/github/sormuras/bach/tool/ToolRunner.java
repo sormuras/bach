@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -64,9 +65,9 @@ public class ToolRunner {
    */
   protected ToolProvider computeToolProvider(String name) {
     var loader = Thread.currentThread().getContextClassLoader();
-    return ToolProvider.findFirst(name)
-        .or(() -> find(loader).stream().filter(tool -> tool.name().equals(name)).findFirst())
-        .or(() -> find(finder).stream().filter(tool -> tool.name().equals(name)).findFirst())
+    return findFirst(name, listToolProviders(loader))
+        .or(() -> findFirst(name, listToolProviders(finder)))
+        .or(() -> ToolProvider.findFirst(name))
         .orElseThrow(() -> new NoSuchElementException("Tool with name '" + name + "' not found"));
   }
 
@@ -123,9 +124,7 @@ public class ToolRunner {
    * @return a tool call response object
    */
   public ToolResponse run(ToolCall call, ModuleFinder finder, String... roots) {
-    var providers = find(finder, roots).stream();
-    var provider = providers.filter(p -> p.name().equals(call.name())).findFirst();
-    return run(provider.orElseThrow(), call.args());
+    return run(findFirst(call.name(), listToolProviders(finder, roots)).orElseThrow(), call.args());
   }
 
   ToolResponse run(ToolProvider provider, List<String> args) {
@@ -161,14 +160,14 @@ public class ToolRunner {
     return response;
   }
 
-  static List<ToolProvider> find(ClassLoader loader) {
+  static List<ToolProvider> listToolProviders(ClassLoader loader) {
     var services = ServiceLoader.load(ToolProvider.class, loader);
     return services.stream()
         .map(ServiceLoader.Provider::get)
         .collect(Collectors.toUnmodifiableList());
   }
 
-  static List<ToolProvider> find(ModuleFinder finder, String... roots) {
+  static List<ToolProvider> listToolProviders(ModuleFinder finder, String... roots) {
     try {
       var layer = Modules.layer(finder, roots);
       var services = ServiceLoader.load(layer, ToolProvider.class);
@@ -185,5 +184,9 @@ public class ToolRunner {
       message.add("");
       throw new RuntimeException(message.toString(), exception);
     }
+  }
+
+  static Optional<ToolProvider> findFirst(String name, List<ToolProvider> providers) {
+    return providers.stream().filter(tool -> tool.name().equals(name)).findFirst();
   }
 }

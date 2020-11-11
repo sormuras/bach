@@ -62,7 +62,7 @@ public final class Modules {
     var boot = ModuleLayer.boot();
     var before = ModuleFinder.of();
     var configuration = boot.configuration().resolveAndBind(before, finder, Set.of(roots));
-    var parent = Modules.class.getClassLoader();
+    var parent = ClassLoader.getPlatformClassLoader();
     var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
     return controller.layer();
   }
