@@ -41,7 +41,7 @@ class GitHubTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"early-access", "1-ea+1", "0"})
+  @ValueSource(strings = {"early-access", "1-ea+2", "1-ea+1", "0"})
   void sawdust(String version) {
     var baos = new ByteArrayOutputStream();
     var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
