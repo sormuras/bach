@@ -2,12 +2,14 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
+import com.github.sormuras.bach.module.ModuleInfoReference;
 import com.github.sormuras.bach.project.Base;
 import com.github.sormuras.bach.project.Library;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.TestSpace;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,7 @@ public record Project(
     var version = version(info.version());
 
     var main = info.main();
-    var mainModuleInfoFinder = mainModuleInfoFinder(base, info);
+    var mainModuleInfoFinder = mainModuleInfoFinder(base, main.moduleSourcePaths());
     var test = info.test();
     var testModuleInfoFinder = ModuleInfoFinder.of(base.directory(), test.moduleSourcePaths());
 
@@ -101,9 +103,17 @@ public record Project(
     return System.getProperty("bach.project.main.jarslug", version.toString());
   }
 
-  static ModuleInfoFinder mainModuleInfoFinder(Base base, ProjectInfo info) {
-    var finder = ModuleInfoFinder.of(base.directory(), info.main().moduleSourcePaths());
-    if (finder.findAll().isEmpty()) return ModuleInfoFinder.of(base.directory(), ".");
+  static ModuleInfoFinder mainModuleInfoFinder(Base base, String[] moduleSourcePaths) {
+    // try configured or default module source paths, usually patterns
+    var finder = ModuleInfoFinder.of(base.directory(), moduleSourcePaths);
+    // no module declaration found
+    if (finder.findAll().isEmpty()) {
+      // try single module declaration or what is "simplicissimus"?
+      var info = base.directory("module-info.java");
+      if (Files.exists(info)) return ModuleInfoFinder.of(ModuleInfoReference.of(info));
+      // assume modules are declared in directories named like modules
+      return ModuleInfoFinder.of(base.directory(), ".");
+    }
     return finder;
   }
 

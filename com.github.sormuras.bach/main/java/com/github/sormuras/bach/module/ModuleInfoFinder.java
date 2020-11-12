@@ -5,6 +5,7 @@ import com.github.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,21 @@ public final class ModuleInfoFinder implements ModuleFinder {
           });
     }
     return new ModuleInfoFinder(List.of(moduleSourcePaths), references);
+  }
+
+  /**
+   * @param references the module info references to map and find
+   * @return a module declaration finder
+   */
+  public static ModuleInfoFinder of(ModuleReference... references) {
+    var paths = new ArrayList<String>();
+    var map = new TreeMap<String, ModuleReference>();
+    for (var reference : references) {
+      var name = reference.descriptor().name();
+      paths.add(name + "=" + Path.of(reference.location().orElseThrow()).getParent());
+      map.put(reference.descriptor().name(), reference);
+    }
+    return new ModuleInfoFinder(paths, map);
   }
 
   private final List<String> moduleSourcePaths;
