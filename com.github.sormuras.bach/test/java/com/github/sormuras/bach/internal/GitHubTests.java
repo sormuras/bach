@@ -27,8 +27,14 @@ class GitHubTests {
     assertEquals(Optional.empty(), hub.findReleasedModule(module, "1"));
     assertEquals(Optional.empty(), hub.findReleasedModule(module, "1.3.1"));
     assertEquals(
-        "https://github.com/sormuras/simplicissimus/releases/download/1.4.1/com.github.sormuras.simplicissimus@1.4.1.jar",
-        hub.findReleasedModule(module, "1.4.1").orElseThrow());
+        "https://github.com/sormuras/simplicissimus/releases/download/1.4/com.github.sormuras.simplicissimus@1.4.jar",
+        hub.findReleasedModule(module, "1.4").orElseThrow());
+    assertEquals(
+        "https://github.com/sormuras/simplicissimus/releases/download/1.4.6/com.github.sormuras.simplicissimus@1.4.6.jar",
+        hub.findReleasedModule(module, "1.4.6").orElseThrow());
+    assertEquals(
+        "https://github.com/sormuras/simplicissimus/releases/download/1.5/com.github.sormuras.simplicissimus@1.5.jar",
+        hub.findReleasedModule(module, "1.5").orElseThrow());
 
     var latest = hub.findLatestReleaseTag().orElseThrow();
     assertEquals(
