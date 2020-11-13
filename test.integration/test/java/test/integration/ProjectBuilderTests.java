@@ -24,8 +24,7 @@ class ProjectBuilderTests {
     var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
     var bach = new Bach(log, Bach::newHttpClient);
 
-    var base = Base.of(temp);
-    var project = Project.of(base);
+    var project = Project.of(Base.of(temp));
 
     // project-info
     assertEquals(temp.getFileName().toString(), project.name());
@@ -33,15 +32,26 @@ class ProjectBuilderTests {
     // main space
     assertTrue(project.main().modules().isEmpty());
     assertEquals(Runtime.version().feature(), project.main().release());
-    assertEquals(List.of("."), project.main().moduleSourcePaths());
+    assertEquals(List.of(temp.toString()), project.main().moduleSourcePaths());
+    assertEquals(List.of(project.base().libraries().toString()), project.main().modulePaths());
     assertEquals(List.of("-encoding", "UTF-8"), project.main().tweaks().get("javac"));
     // test space
     assertEquals(
-        List.of("./*/test", "./*/test/java", "./*/test/java-module"),
+        List.of(
+            asterik(temp, "./*/test"),
+            asterik(temp, "./*/test/java"),
+            asterik(temp, "./*/test/java-module")),
         project.test().moduleSourcePaths());
     assertEquals(List.of("-encoding", "UTF-8"), project.test().tweaks().get("javac"));
 
     var builder = new ProjectBuilder(bach, project);
     assertDoesNotThrow((Executable) builder::build);
+  }
+
+  static String asterik(Path temp, String segment) {
+    return temp.resolve(segment.replace("*", "ASTERIK"))
+        .normalize()
+        .toString()
+        .replace("ASTERIK", "*");
   }
 }

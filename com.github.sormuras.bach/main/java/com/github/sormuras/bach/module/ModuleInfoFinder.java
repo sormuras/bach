@@ -2,6 +2,7 @@ package com.github.sormuras.bach.module;
 
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
+import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
@@ -26,8 +27,15 @@ public final class ModuleInfoFinder implements ModuleFinder {
    * @return a module declaration finder
    */
   public static ModuleInfoFinder of(Path directory, String... moduleSourcePaths) {
-    var references = new TreeMap<String, ModuleReference>();
+    var absolute = directory.normalize().toAbsolutePath();
+    var empty = directory.normalize().toString().isEmpty() || absolute.equals(Paths.CWD);
+    var prefix = empty ? "" : absolute + File.separator;
+
+    var paths = new ArrayList<String>();
+    var map = new TreeMap<String, ModuleReference>();
     for (var segment : moduleSourcePaths) {
+      var asterisk = Path.of(prefix + segment.replace("*", "ASTERISK")).normalize();
+      paths.add(asterisk.toString().replace("ASTERISK", "*"));
       var glob = new StringBuilder();
       glob.append(segment);
       if (segment.indexOf('*') < 0) glob.append("/*");
@@ -37,11 +45,11 @@ public final class ModuleInfoFinder implements ModuleFinder {
           directory,
           glob.toString(),
           info -> {
-            var ref = ModuleInfoReference.of(info);
-            references.put(ref.descriptor().name(), ref);
+            var reference = ModuleInfoReference.of(info);
+            map.put(reference.descriptor().name(), reference);
           });
     }
-    return new ModuleInfoFinder(List.of(moduleSourcePaths), references);
+    return new ModuleInfoFinder(List.copyOf(paths), Map.copyOf(map));
   }
 
   /**
@@ -51,12 +59,14 @@ public final class ModuleInfoFinder implements ModuleFinder {
   public static ModuleInfoFinder of(ModuleReference... references) {
     var paths = new ArrayList<String>();
     var map = new TreeMap<String, ModuleReference>();
+    var currentUserDirectory = Path.of("").toAbsolutePath();
     for (var reference : references) {
       var name = reference.descriptor().name();
-      paths.add(name + "=" + Path.of(reference.location().orElseThrow()).getParent());
-      map.put(reference.descriptor().name(), reference);
+      var path = Path.of(reference.location().orElseThrow()).getParent();
+      paths.add(name + "=" + currentUserDirectory.relativize(path));
+      map.put(name, reference);
     }
-    return new ModuleInfoFinder(paths, map);
+    return new ModuleInfoFinder(List.copyOf(paths), Map.copyOf(map));
   }
 
   private final List<String> moduleSourcePaths;

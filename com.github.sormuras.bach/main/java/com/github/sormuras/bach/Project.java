@@ -10,10 +10,13 @@ import com.github.sormuras.bach.project.TestSpace;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Bach's project model.
@@ -71,15 +74,15 @@ public record Project(
         new MainSpace(
             modules(main.modules(), mainModuleInfoFinder),
             mainModuleInfoFinder.moduleSourcePaths(),
-            List.of(main.modulePaths()),
+            rebase(base.directory(), main.modulePaths()),
             release(main.release()),
             jarslug(version),
             main.generateApiDocumentation(),
             tweaks(main.tweaks())),
         new TestSpace(
             modules(test.modules(), testModuleInfoFinder),
-            List.of(test.moduleSourcePaths()),
-            List.of(test.modulePaths()),
+            testModuleInfoFinder.moduleSourcePaths(),
+            rebase(base.directory(), test.modulePaths()),
             tweaks(test.tweaks())));
   }
 
@@ -120,6 +123,13 @@ public record Project(
   static List<String> modules(String[] modules, ModuleFinder finder) {
     var all = modules.length == 1 && modules[0].equals("*");
     return all ? List.copyOf(Modules.declared(finder)) : List.of(modules);
+  }
+
+  static List<String> rebase(Path base, String... paths) {
+    return Arrays.stream(paths)
+        .map(base::resolve)
+        .map(Path::toString)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   static Map<String, List<String>> tweaks(ProjectInfo.Tweak... tweaks) {
