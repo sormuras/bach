@@ -11,6 +11,8 @@ import java.util.function.Predicate;
 /** Internal {@link Path}-related utilities. */
 public class Paths {
 
+  public static final Path CWD = FileSystems.getDefault().getPath("").toAbsolutePath();
+
   public static Path createDirectories(Path directory) {
     try {
       return Files.createDirectories(directory);
