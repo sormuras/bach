@@ -1,11 +1,9 @@
 package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Project;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 
 /** A nominal space for modules. */
 public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/ {
@@ -54,32 +52,6 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
    */
   default String title() {
     return name().isEmpty() ? "main" : name();
-  }
-
-  /**
-   * @param project the project
-   * @return a string composed of all modules source path patterns resolved to the project's base
-   */
-  default String moduleSourcePath(Project project) {
-    var prefix = project.base().directory().normalize().toString();
-    if (prefix.isEmpty()) return String.join(File.pathSeparator, moduleSourcePaths());
-
-    var joiner = new StringJoiner(File.pathSeparator);
-    for (var pattern : moduleSourcePaths()) joiner.add(prefix + File.separator + pattern);
-    return joiner.toString();
-  }
-
-  /**
-   * @param project the project
-   * @return a string composed of all modules path elements resolved to the project's base
-   */
-  default String modulePath(Project project) {
-    var prefix = project.base().directory().normalize().toString();
-    if (prefix.isEmpty()) return String.join(File.pathSeparator, modulePaths());
-
-    var joiner = new StringJoiner(File.pathSeparator);
-    for (var path : modulePaths()) joiner.add(prefix + File.separator + path);
-    return joiner.toString();
   }
 
   /**

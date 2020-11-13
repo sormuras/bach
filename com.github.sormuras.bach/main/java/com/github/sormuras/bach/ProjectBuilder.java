@@ -8,6 +8,7 @@ import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
+import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.util.List;
 
@@ -118,8 +119,8 @@ public class ProjectBuilder {
         .with("--release", main.release())
         .with("--module", String.join(",", main.modules()))
         .with("--module-version", project.version())
-        .with("--module-source-path", main.moduleSourcePath(project))
-        .with("--module-path", main.modulePath(project))
+        .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
+        .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
         .with("-d", main.classes(project))
         .build();
@@ -159,8 +160,8 @@ public class ProjectBuilder {
     var api = main.documentation(project, "api");
     return Command.builder("javadoc")
         .with("--module", String.join(",", main.modules()))
-        .with("--module-source-path", main.moduleSourcePath(project))
-        .with("--module-path", main.modulePath(project))
+        .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
+        .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
         .withEach(main.tweaks().getOrDefault("javadoc", List.of()))
         .with("-d", api)
         .build();
@@ -184,8 +185,8 @@ public class ProjectBuilder {
     var test = project.test();
     return Command.builder("javac")
         .with("--module", String.join(",", test.modules()))
-        .with("--module-source-path", test.moduleSourcePath(project))
-        .with("--module-path", test.modulePath(project))
+        .with("--module-source-path", String.join(File.pathSeparator, test.moduleSourcePaths()))
+        .with("--module-path", String.join(File.pathSeparator, test.modulePaths()))
         .withEach(test.tweaks().getOrDefault("javac", List.of()))
         .with("-d", test.classes(project))
         .build();
