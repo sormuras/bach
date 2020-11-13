@@ -35,7 +35,8 @@ public final class ModuleInfoFinder implements ModuleFinder {
     var map = new TreeMap<String, ModuleReference>();
     for (var segment : moduleSourcePaths) {
       var asterisk = Path.of(prefix + segment.replace("*", "ASTERISK")).normalize();
-      paths.add(asterisk.toString().replace("ASTERISK", "*"));
+      var replaced = asterisk.toString().replace("ASTERISK", "*");
+      paths.add(replaced.startsWith("*") ? "." + File.separator + replaced : replaced);
       var glob = new StringBuilder();
       glob.append(segment);
       if (segment.indexOf('*') < 0) glob.append("/*");
