@@ -15,6 +15,7 @@ class ModuleInfoFinderTests {
         """
         java.net.http
         jdk.compiler
+        jdk.crypto.ec
         jdk.jartool
         jdk.javadoc
         jdk.jdeps

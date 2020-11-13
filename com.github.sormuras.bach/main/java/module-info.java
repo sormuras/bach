@@ -21,6 +21,7 @@ module com.github.sormuras.bach {
 
   requires transitive java.net.http;
   requires jdk.compiler;
+  requires jdk.crypto.ec; // https://stackoverflow.com/questions/55439599
   requires jdk.jartool;
   requires jdk.javadoc;
   requires jdk.jdeps;
