@@ -15,8 +15,8 @@ public class Main {
    * @param args the command line arguments
    */
   public static void main(String... args) {
-    var out = new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
-    var err = new PrintWriter(new OutputStreamWriter(System.err, StandardCharsets.UTF_8));
+    var out = new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), true);
+    var err = new PrintWriter(new OutputStreamWriter(System.err, StandardCharsets.UTF_8), true);
     int status = new Main().execute(out, err, args);
     System.exit(status);
   }
