@@ -1,0 +1,15 @@
+// Bach's Zero-Installtion Build Script
+
+/open https://github.com/sormuras/bach/raw/main/boot
+
+var status = 0
+try {
+  build();
+  System.out.println();
+  System.out.println("Have fun! https://github.com/sponsors/sormuras (-:");
+  System.out.println();
+} catch (Throwable throwable) {
+  status = 1;
+}
+
+/exit status
