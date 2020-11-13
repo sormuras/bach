@@ -34,8 +34,8 @@ public class BachBuildProgram implements BuildProgram {
     var start = Instant.now();
     try {
       new ProjectBuilder(bach, project).build();
-    } catch (Exception exception) {
-      err.println(exception);
+    } catch (RuntimeException exception) {
+      exception.printStackTrace(err);
     } finally {
       out.printf("Build took %d milliseconds%n", Duration.between(start, Instant.now()).toMillis());
     }

@@ -62,6 +62,7 @@ public class Main {
       BuildProgram.build(bach, base, args);
       return 0;
     } catch (RuntimeException exception) {
+      exception.printStackTrace(err);
       return 1;
     }
   }
