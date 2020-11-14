@@ -39,10 +39,33 @@ class ModuleInfoFinderTests {
         """;
 
     var tests = ModuleInfoFinder.of(Path.of(""), "./*/test/java", "./*/test/java-module");
-    assertEquals(Set.of("com.github.sormuras.bach", "test.base", "test.integration"), tests.declared());
+    assertEquals(
+        Set.of("com.github.sormuras.bach", "test.base", "test.integration"), tests.declared());
     assertLinesMatch(bachTestRequires.lines(), tests.required().stream());
 
     var preview = ModuleInfoFinder.of(Path.of(""), "./*/test-preview/java");
     assertEquals(Set.of(), preview.declared());
+  }
+
+  @Test
+  void parseProjectJigsawQuickStartGreetings() {
+    var directory = Path.of("test.integration/project/JigsawQuickStartGreetings");
+    var specific = ModuleInfoFinder.of(directory, "com.greetings=x:y;com.greetings");
+    assertEquals(Set.of("com.greetings"), specific.declared());
+
+    var pattern = ModuleInfoFinder.of(directory, ".");
+    assertEquals(Set.of("com.greetings"), pattern.declared());
+  }
+
+  @Test
+  void parseProjectJigsawQuickStartWorld() {
+    var base = Path.of("test.integration/project/JigsawQuickStartWorld");
+    var modules = Set.of("com.greetings", "org.astro");
+
+    var specific = ModuleInfoFinder.of(base, "com.greetings=com.greetings", "org.astro=org.astro");
+    assertEquals(modules, specific.declared());
+
+    var pattern = ModuleInfoFinder.of(base, ".");
+    assertEquals(modules, pattern.declared());
   }
 }
