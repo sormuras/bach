@@ -2,9 +2,9 @@ package com.github.sormuras.bach.module;
 
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
-import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,23 +23,30 @@ public final class ModuleInfoFinder implements ModuleFinder {
 
   /**
    * @param directory the directory to walk
-   * @param moduleSourcePaths the module source paths to apply
+   * @param forms the module source paths to apply
    * @return a module declaration finder
    */
-  public static ModuleInfoFinder of(Path directory, String... moduleSourcePaths) {
-    var absolute = directory.normalize().toAbsolutePath();
-    var empty = directory.normalize().toString().isEmpty() || absolute.equals(Paths.CWD);
-    var prefix = empty ? "" : absolute + File.separator;
-
-    var paths = new ArrayList<String>();
+  public static ModuleInfoFinder of(Path directory, String... forms) {
     var map = new TreeMap<String, ModuleReference>();
-    for (var segment : moduleSourcePaths) {
-      var asterisk = Path.of(prefix + segment.replace("*", "ASTERISK")).normalize();
-      var replaced = asterisk.toString().replace("ASTERISK", "*");
-      paths.add(replaced.startsWith("*") ? "." + File.separator + replaced : replaced);
+    with_next_form:
+    for (var form : forms) {
+      // handle module-specific form: module-name=file-path (path-separator file-path)*
+      if (form.indexOf('=') >= 0) {
+        var split = form.split("=");
+        var name = split[0];
+        var paths = split[1];
+        for (var path : paths.split("[:;]")) {
+          var info = directory.resolve(path).resolve("module-info.java");
+          if (Files.isRegularFile(info)) {
+            map.put(name, ModuleInfoReference.of(info));
+            continue with_next_form;
+          }
+        }
+      }
+      // handle module-pattern form: string1{alt1 ( ,alt2 )* } string2
       var glob = new StringBuilder();
-      glob.append(segment);
-      if (segment.indexOf('*') < 0) glob.append("/*");
+      glob.append(form); // TODO expand curly braces
+      if (form.indexOf('*') < 0) glob.append("/*");
       if (!glob.toString().endsWith("/")) glob.append("/");
       glob.append("module-info.java");
       Paths.find(
@@ -50,7 +57,7 @@ public final class ModuleInfoFinder implements ModuleFinder {
             map.put(reference.descriptor().name(), reference);
           });
     }
-    return new ModuleInfoFinder(List.copyOf(paths), Map.copyOf(map));
+    return new ModuleInfoFinder(List.of(forms), Map.copyOf(map));
   }
 
   /**

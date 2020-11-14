@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -21,5 +22,10 @@ public record TestSpace(
   @Override
   public String name() {
     return "test";
+  }
+
+  /** @return a path to the classes directory of the main space */
+  public Path classes() {
+    return workspace("classes-" + name(), String.valueOf(Runtime.version().feature()));
   }
 }

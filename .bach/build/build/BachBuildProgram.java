@@ -5,7 +5,6 @@ import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectBuilder;
 import com.github.sormuras.bach.ProjectInfo;
-import com.github.sormuras.bach.project.Base;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -23,7 +22,7 @@ public class BachBuildProgram implements BuildProgram {
     var err = System.err;
 
     var info = getClass().getModule().getAnnotation(ProjectInfo.class);
-    var project = Project.of(Base.ofCurrentDirectory(), info);
+    var project = Project.of(info);
     out.println("Build Bach " + project.version() + " // @" + project.main().jarslug() + ".jar");
 
     System.clearProperty("bach.project.name");

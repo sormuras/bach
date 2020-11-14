@@ -11,8 +11,6 @@ import java.util.function.Predicate;
 /** Internal {@link Path}-related utilities. */
 public class Paths {
 
-  public static final Path CWD = FileSystems.getDefault().getPath("").toAbsolutePath();
-
   public static Path createDirectories(Path directory) {
     try {
       return Files.createDirectories(directory);
@@ -86,6 +84,14 @@ public class Paths {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * @return the file name of the path as a string
+   */
+  public static String name(Path path, String defautName) {
+    var name = path.toAbsolutePath().getFileName();
+    return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
   }
 
   public static Optional<String> readString(Path path) {

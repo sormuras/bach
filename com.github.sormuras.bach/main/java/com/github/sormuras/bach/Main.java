@@ -2,7 +2,6 @@ package com.github.sormuras.bach;
 
 import static java.util.Arrays.copyOfRange;
 
-import com.github.sormuras.bach.project.Base;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -58,8 +57,7 @@ public class Main {
   int build(PrintWriter out, PrintWriter err, String... args) {
     try {
       var bach = new Bach(System.out, Bach::newHttpClient);
-      var base = Base.ofCurrentDirectory();
-      BuildProgram.build(bach, base, args);
+      BuildProgram.execute(bach, args);
       return 0;
     } catch (RuntimeException exception) {
       exception.printStackTrace(err);

@@ -29,13 +29,15 @@ public class ProjectBuilder {
   public ProjectBuilder(Bach bach, Project project) {
     this.bach = bach;
     this.project = project;
-    this.moduleDirectory = ModuleDirectory.of(project.base().libraries(), project.library().links());
+    this.moduleDirectory = ModuleDirectory.of(Project.LIBRARIES, project.library().links());
     this.runner = new ToolRunner(moduleDirectory.finder());
   }
 
   /** Builds a modular Java project. */
   public void build() {
     bach.printStream().println("Build project " + project.name() + " " + project.version());
+
+    if (project.findAllModuleNames().count() == 0) throw new RuntimeException("No module found!");
 
     loadRequiredAndMissingModules();
 
@@ -68,7 +70,7 @@ public class ProjectBuilder {
   public void build(MainSpace main) {
     if (main.modules().isEmpty()) return;
     runner.run(computeMainJavacCall()).checkSuccessful();
-    Paths.createDirectories(project.base().workspace("modules"));
+    Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
       runner.run(computeMainJarCall(module)).checkSuccessful();
     }
@@ -92,20 +94,19 @@ public class ProjectBuilder {
   public void build(TestSpace test) {
     if (test.modules().isEmpty()) return;
     runner.run(computeTestJavacCall()).checkSuccessful();
-    Paths.createDirectories(project.base().workspace("modules-test"));
+    Paths.createDirectories(test.workspace("modules-test"));
     for (var module : project.test().modules()) {
       runner.run(computeTestJarCall(module)).checkSuccessful();
     }
     if (moduleDirectory.finder().find("org.junit.platform.console").isPresent()) {
       for (var module : project.test().modules()) {
-        var base = project.base();
         var archive = module + "@" + project.version() + "+test.jar";
         var finder =
             ModuleFinder.of(
-                base.workspace("modules-test", archive), // module under test
-                base.workspace("modules"), // main modules
-                base.workspace("modules-test"), // (more) test modules
-                base.libraries() // external modules
+                test.workspace("modules-test", archive), // module under test
+                test.workspace("modules"), // main modules
+                test.workspace("modules-test"), // (more) test modules
+                Project.LIBRARIES // external modules
                 );
         runner.run(computeTestJUnitCall(module), finder, module).checkSuccessful();
       }
@@ -122,7 +123,7 @@ public class ProjectBuilder {
         .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
         .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
-        .with("-d", main.classes(project))
+        .with("-d", main.classes())
         .build();
   }
 
@@ -135,9 +136,9 @@ public class ProjectBuilder {
     var archive = computeMainJarFileName(module);
     return Command.builder("jar")
         .with("--create")
-        .with("--file", project.base().workspace("modules", archive))
+        .with("--file", main.workspace("modules", archive))
         // .with(unit.descriptor().mainClass(), Jar::withMainClass)
-        .with("-C", main.classes(project).resolve(module), ".")
+        .with("-C", main.classes().resolve(module), ".")
         // .with(sources, (call, source) -> call.with("-C", source, "."))
         // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
@@ -157,7 +158,7 @@ public class ProjectBuilder {
   /** @return the javadoc call generating the API documentation for all main modules */
   public ToolCall computeMainDocumentationJavadocCall() {
     var main = project.main();
-    var api = main.documentation(project, "api");
+    var api = main.documentation("api");
     return Command.builder("javadoc")
         .with("--module", String.join(",", main.modules()))
         .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
@@ -170,7 +171,7 @@ public class ProjectBuilder {
   /** @return the jar call generating the API documentation archive */
   public ToolCall computeMainDocumentationJarCall() {
     var main = project.main();
-    var api = main.documentation(project, "api");
+    var api = main.documentation("api");
     var file = project.name() + "-api-" + project.version() + ".zip";
     return Command.builder("jar")
         .with("--create")
@@ -188,7 +189,7 @@ public class ProjectBuilder {
         .with("--module-source-path", String.join(File.pathSeparator, test.moduleSourcePaths()))
         .with("--module-path", String.join(File.pathSeparator, test.modulePaths()))
         .withEach(test.tweaks().getOrDefault("javac", List.of()))
-        .with("-d", test.classes(project))
+        .with("-d", test.classes())
         .build();
   }
 
@@ -201,8 +202,8 @@ public class ProjectBuilder {
     var archive = module + "@" + project.version() + "+test.jar";
     return Command.builder("jar")
         .with("--create")
-        .with("--file", project.base().workspace("modules-test", archive))
-        .with("-C", test.classes(project).resolve(module), ".")
+        .with("--file", test.workspace("modules-test", archive))
+        .with("-C", test.classes().resolve(module), ".")
         // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
   }
@@ -212,9 +213,10 @@ public class ProjectBuilder {
    * @return the {@code junit} call to launch the JUnit Platform for
    */
   public ToolCall computeTestJUnitCall(String module) {
+    var test = project.test();
     return Command.builder("junit")
         .with("--select-module", module)
-        .with("--reports-dir", project.base().workspace("reports", "junit-test", module))
+        .with("--reports-dir", test.workspace("reports", "junit-test", module))
         .build();
   }
 }

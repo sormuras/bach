@@ -33,7 +33,6 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
    * Returns the possibly empty name of this space.
    *
    * @return an empty string for the main space, else a non-empty name
-   * @see #title()
    */
   String name();
 
@@ -45,20 +44,34 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
   Map<String, List<String>> tweaks();
 
   /**
-   * Returns the title of this space.
+   * Returns a resolved path.
    *
-   * @return The string {@code "main"} for the main space, else the non-empty name
-   * @see #name()
+   * @param entry first path to resolve
+   * @param more more paths to resolve
+   * @return a resolved path
    */
-  default String title() {
-    return name().isEmpty() ? "main" : name();
+  default Path workspace(String entry, String... more) {
+    return Project.WORKSPACE.resolve(Path.of(entry, more));
   }
 
   /**
-   * @param project the project
-   * @return a path to the classes directory of this space
+   * Returns a resolved path.
+   *
+   * @param release the Java release feature number to resolve
+   * @return a resolved path
    */
-  default Path classes(Project project) {
-    return project.base().classes(name(), Runtime.version().feature());
+  default Path classes(int release) {
+    return workspace("classes-" + name(), String.valueOf(release));
+  }
+
+  /**
+   * Returns a resolved path.
+   *
+   * @param release the Java release feature number to resolve
+   * @param module the name of the module to resolve
+   * @return a resolved path
+   */
+  default Path classes(int release, String module) {
+    return classes(release).resolve(module);
   }
 }

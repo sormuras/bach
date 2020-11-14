@@ -12,32 +12,22 @@ import java.util.ServiceLoader;
 /** Provides insights of {@code .bach/build/module-info.java} and friends. */
 class BuildModule {
 
-  static BuildModule of(Path directory) {
-    return new BuildModule(directory, "build");
-  }
-
-  private final Path directory;
   private final String name;
   private final ModuleLayer layer;
 
-  BuildModule(Path directory, String name) {
-    this.directory = directory;
-    this.name = name;
+  BuildModule() {
+    this.name = "build";
     this.layer = computeLayer();
   }
 
-  Path path(String first, String... more) {
-    return directory.resolve(Path.of(first, more));
-  }
-
   ModuleLayer computeLayer() {
-    if (Files.notExists(path(".bach", name, "module-info.java"))) return ModuleLayer.empty();
-    var cache = path(".bach","cache");
-    var classes = path(".bach","workspace", ".bach");
+    if (Files.notExists(Path.of(".bach", name, "module-info.java"))) return ModuleLayer.empty();
+    var cache = Path.of(".bach","cache");
+    var classes = Project.WORKSPACE.resolve(".bach");
     var compile =
         Command.builder("javac")
             .with("--module", name)
-            .with("--module-source-path", path(".bach"))
+            .with("--module-source-path", Path.of(".bach"))
             .with("--module-path", cache)
             .with("-encoding", "UTF-8")
             .with("-d", classes)

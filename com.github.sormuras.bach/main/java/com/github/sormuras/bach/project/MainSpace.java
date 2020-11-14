@@ -28,20 +28,19 @@ public record MainSpace(
 
   @Override
   public String name() {
-    return "";
+    return "main";
   }
 
-  @Override
-  public Path classes(Project project) {
-    return project.base().classes("", release);
+  /** @return a path to the classes directory of the main space */
+  public Path classes() {
+    return workspace("classes-" + name(), String.valueOf(release));
   }
 
   /**
-   * @param project the project providing a workspace directory
    * @param entry the path (directory or regular file) to resolve
    * @return a path within the given project's documentation workspace
    */
-  public Path documentation(Project project, String entry) {
-    return project.base().workspace("documentation", entry);
+  public Path documentation(String entry) {
+    return Project.WORKSPACE.resolve("documentation/" + entry);
   }
 }
