@@ -84,4 +84,4 @@ void loadMissingModules() { BACH.loadMissingModules(DIRECTORY, SEARCHER::search)
 ToolResponse run(ToolCall tool) { return BACH.toolCall(DIRECTORY, tool); }
 void run(String tool, Object... args) { BACH.toolRun(DIRECTORY, tool, args); }
 
-void build(String... args) { BuildProgram.build(BACH, Base.ofCurrentDirectory(), args); }
+void build(String... args) { BuildProgram.execute(BACH, args); }
