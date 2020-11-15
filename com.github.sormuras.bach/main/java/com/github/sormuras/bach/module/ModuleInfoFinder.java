@@ -30,7 +30,7 @@ public final class ModuleInfoFinder implements ModuleFinder {
     var map = new TreeMap<String, ModuleReference>();
     with_next_form:
     for (var form : forms) {
-      // handle module-specific form: module-name=file-path (path-separator file-path)*
+      // Handle module-specific form: module-name=file-path (path-separator file-path)*
       if (form.indexOf('=') >= 0) {
         var split = form.split("=");
         var name = split[0];
@@ -43,7 +43,11 @@ public final class ModuleInfoFinder implements ModuleFinder {
           }
         }
       }
-      // handle module-pattern form: string1{alt1 ( ,alt2 )* } string2
+      // Handle module-pattern segment: string1{alt1 ( ,alt2 )* } string2
+      if (form.indexOf('*') != form.lastIndexOf('*'))
+        throw new IllegalArgumentException("Segment must have at most one asterisk (*)" + form);
+      if (form.indexOf(':') >= 0 || form.indexOf(';') >= 0)
+        throw new IllegalArgumentException("Segment must not contain path separators: " + form);
       var glob = new StringBuilder();
       glob.append(form); // TODO expand curly braces
       if (form.indexOf('*') < 0) glob.append("/*");
