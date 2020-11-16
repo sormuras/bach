@@ -60,8 +60,8 @@ public final class Modules {
 
   public static ModuleLayer layer(ModuleFinder finder, String... roots) {
     var boot = ModuleLayer.boot();
-    var before = ModuleFinder.of();
-    var configuration = boot.configuration().resolveAndBind(before, finder, Set.of(roots));
+    var system = ModuleFinder.ofSystem();
+    var configuration = boot.configuration().resolveAndBind(finder, system, Set.of(roots));
     var parent = ClassLoader.getPlatformClassLoader();
     var controller = ModuleLayer.defineModulesWithOneLoader(configuration, List.of(boot), parent);
     return controller.layer();
