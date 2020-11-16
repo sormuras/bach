@@ -22,6 +22,14 @@ import java.util.TreeMap;
 public final class ModuleInfoFinder implements ModuleFinder {
 
   /**
+   * @param forms the module source paths to apply
+   * @return a module declaration finder
+   */
+  public static ModuleInfoFinder of(String... forms) {
+    return of(Path.of(""), forms);
+  }
+
+  /**
    * @param directory the directory to walk
    * @param forms the module source paths to apply
    * @return a module declaration finder

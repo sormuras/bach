@@ -4,6 +4,7 @@ import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import com.github.sormuras.bach.module.ModuleInfoReference;
+import com.github.sormuras.bach.module.ModuleLink;
 import com.github.sormuras.bach.project.Library;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.TestSpace;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
@@ -102,19 +104,12 @@ public record Project(String name, Version version, Library library, MainSpace m
     var main = info.main();
     var mainModuleInfoFinder = mainModuleInfoFinder(main.moduleSourcePaths());
     var test = info.test();
-    var testModuleInfoFinder = ModuleInfoFinder.of(Path.of(""), test.moduleSourcePaths());
-
-    var finders = ModuleFinder.compose(mainModuleInfoFinder, testModuleInfoFinder);
-    var requires = new TreeSet<>(List.of(info.library().requires()));
-    requires.addAll(Modules.required(finders));
-    requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
-    requires.removeAll(Modules.declared(finders));
-    var library = new Library(requires, Map.of());
+    var testModuleInfoFinder = ModuleInfoFinder.of(test.moduleSourcePaths());
 
     return new Project(
         name(name),
         version,
-        library,
+        library(info, ModuleFinder.compose(mainModuleInfoFinder, testModuleInfoFinder)),
         new MainSpace(
             modules(main.modules(), mainModuleInfoFinder),
             mainModuleInfoFinder.moduleSourcePaths(),
@@ -138,6 +133,39 @@ public record Project(String name, Version version, Library library, MainSpace m
     return Version.parse(System.getProperty("bach.project.version", version));
   }
 
+  static Library library(ProjectInfo info, ModuleFinder finder) {
+    var requires = new TreeSet<>(List.of(info.library().requires()));
+    requires.addAll(Modules.required(finder));
+    requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    requires.removeAll(Modules.declared(finder));
+    var links = new TreeMap<String, String>();
+    var binding = ProjectInfo.Library.Binding.ofSystem();
+    for (var link : info.library().links()) links.put(link.module(), link(link, binding).uri());
+    return new Library(requires, links);
+  }
+
+  static ModuleLink link(ProjectInfo.Library.Link link, Map<String, String> binding) {
+    var module = link.module();
+    var target = replace(link.target(), binding);
+
+    return switch (link.type()) {
+      case AUTO -> ModuleLink.link(module).to(target);
+      case URI -> ModuleLink.link(module).toUri(target);
+      case MAVEN -> ModuleLink.link(module).toMaven(link.mavenRepository(), target);
+    };
+  }
+
+  static String replace(String template, Map<String, String> binding) {
+    if (template.indexOf('{') < 0) return template;
+    var replaced = template;
+    for (var entry : binding.entrySet()) {
+      var placeholder = entry.getKey();
+      var replacement = entry.getValue();
+      replaced = replaced.replace(placeholder, replacement);
+    }
+    return replaced;
+  }
+
   static int release(int release) {
     try {
       return Integer.parseInt(System.getProperty("bach.project.main.release"));
@@ -151,16 +179,15 @@ public record Project(String name, Version version, Library library, MainSpace m
   }
 
   static ModuleInfoFinder mainModuleInfoFinder(String[] moduleSourcePaths) {
-    var base = Path.of("");
     // try configured or default module source paths, usually patterns
-    var finder = ModuleInfoFinder.of(base, moduleSourcePaths);
+    var finder = ModuleInfoFinder.of(moduleSourcePaths);
     // no module declaration found
     if (finder.findAll().isEmpty()) {
       // try single module declaration or what is "simplicissimus"?
-      var info = base.resolve("module-info.java");
+      var info = Path.of("module-info.java");
       if (Files.exists(info)) return ModuleInfoFinder.of(ModuleInfoReference.of(info));
       // assume modules are declared in directories named like modules
-      return ModuleInfoFinder.of(base, ".");
+      return ModuleInfoFinder.of(".");
     }
     return finder;
   }
