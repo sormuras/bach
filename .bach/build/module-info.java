@@ -17,6 +17,9 @@ import com.github.sormuras.bach.ProjectInfo.Tweak;
                   tool = "javac",
                   args = {"-encoding", "UTF-8", "-g", "-parameters", "-Werror", "-Xlint"}),
               @Tweak(
+                  tool = "jar(com.github.sormuras.bach)",
+                  args = {"--main-class", "com.github.sormuras.bach.Main"}),
+              @Tweak(
                   tool = "javadoc",
                   args = {
                     "-encoding",

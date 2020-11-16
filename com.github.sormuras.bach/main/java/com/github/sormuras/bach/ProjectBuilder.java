@@ -48,10 +48,8 @@ public class ProjectBuilder {
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
     var searcher = ModuleSearcher.ofBestEffort(bach);
-    project
-        .library()
-        .requires()
-        .forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
+    var requires = project.library().requires();
+    requires.forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
     bach.loadMissingModules(moduleDirectory, searcher);
   }
 
@@ -137,10 +135,9 @@ public class ProjectBuilder {
     return Command.builder("jar")
         .with("--create")
         .with("--file", main.workspace("modules", archive))
-        // .with(unit.descriptor().mainClass(), Jar::withMainClass)
+        .withEach(main.tweaks().getOrDefault("jar", List.of()))
+        .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
         .with("-C", main.classes().resolve(module), ".")
-        // .with(sources, (call, source) -> call.with("-C", source, "."))
-        // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
   }
 
@@ -203,8 +200,9 @@ public class ProjectBuilder {
     return Command.builder("jar")
         .with("--create")
         .with("--file", test.workspace("modules-test", archive))
+        .withEach(test.tweaks().getOrDefault("jar", List.of()))
+        .withEach(test.tweaks().getOrDefault("jar(" + module + ')', List.of()))
         .with("-C", test.classes().resolve(module), ".")
-        // .with(resources, (call, resource) -> call.with("-C", resource, "."))
         .build();
   }
 
@@ -217,6 +215,8 @@ public class ProjectBuilder {
     return Command.builder("junit")
         .with("--select-module", module)
         .with("--reports-dir", test.workspace("reports", "junit-test", module))
+        .withEach(test.tweaks().getOrDefault("junit", List.of()))
+        .withEach(test.tweaks().getOrDefault("junit(" + module + ')', List.of()))
         .build();
   }
 }
