@@ -73,7 +73,7 @@ public class ProjectBuilder {
       runner.run(computeMainJarCall(module)).checkSuccessful();
     }
 
-    if (main.generateApiDocumentation()) {
+    if (isGenerateApiDocumentation()) {
       runner.run(computeMainDocumentationJavadocCall()).checkSuccessful();
       runner.run(computeMainDocumentationJarCall()).checkSuccessful();
     }
@@ -109,6 +109,13 @@ public class ProjectBuilder {
         runner.run(computeTestJUnitCall(module), finder, module).checkSuccessful();
       }
     }
+  }
+
+  /**
+   * @return {@code true} if to generate API documentation, else {@code false}
+   */
+  public boolean isGenerateApiDocumentation() {
+    return project.main().generateApiDocumentation();
   }
 
   /** @return the {@code javac} call to compile all modules of the main space. */
