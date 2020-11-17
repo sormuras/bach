@@ -232,7 +232,7 @@ public class ProjectBuilder {
     return Command.builder("jlink")
         .with("--add-modules", String.join(",", main.modules()))
         .with("--module-path", String.join(File.pathSeparator, test.modulePaths()))
-        .withEach(test.tweaks().getOrDefault("jlink", List.of()))
+        .withEach(main.tweaks().getOrDefault("jlink", List.of()))
         .with("--output", main.workspace("image"))
         .build();
   }
