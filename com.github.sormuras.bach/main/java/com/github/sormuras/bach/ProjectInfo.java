@@ -50,11 +50,20 @@ public @interface ProjectInfo {
     /** @return {@code true} if an API documenation should be generated, else {@code false} */
     boolean generateApiDocumentation() default false;
 
+    /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
+    boolean generateCustomRuntimeImage() default false;
+
+    /** @return {@code true} if a self-contained package should be generated, else {@code false} */
+    boolean generateApplicationPackage() default false;
+
     /** @return the additional arguments to be passed on a per-tool basis */
     Tweak[] tweaks() default {
       @Tweak(
           tool = "javac",
-          args = {"-encoding", "UTF-8"})
+          args = {"-encoding", "UTF-8"}),
+      @Tweak(
+          tool = "jlink",
+          args = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"})
     };
   }
 

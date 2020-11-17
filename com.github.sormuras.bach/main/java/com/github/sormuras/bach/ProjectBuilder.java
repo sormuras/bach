@@ -11,6 +11,7 @@ import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.util.List;
+import java.util.Locale;
 
 /** Builds a modular Java project. */
 public class ProjectBuilder {
@@ -33,9 +34,20 @@ public class ProjectBuilder {
     this.runner = new ToolRunner(moduleDirectory.finder());
   }
 
+  /**
+   * Print a formatted message.
+   *
+   * @param format the message to print
+   * @param args the arguments
+   */
+  public void info(String format, Object... args) {
+    if (args.length == 0) bach.printStream().println(format);
+    else bach.printStream().format(Locale.ENGLISH, format + "%n", args);
+  }
+
   /** Builds a modular Java project. */
   public void build() {
-    bach.printStream().println("Build project " + project.name() + " " + project.version());
+    info("Build project %s %s", project.name(), project.version());
 
     if (project.findAllModuleNames().count() == 0) throw new RuntimeException("No module found!");
 
@@ -67,6 +79,9 @@ public class ProjectBuilder {
    */
   public void build(MainSpace main) {
     if (main.modules().isEmpty()) return;
+    Paths.deleteDirectories(main.workspace("modules"));
+
+    info("Compile main modules");
     runner.run(computeMainJavacCall()).checkSuccessful();
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
@@ -74,8 +89,20 @@ public class ProjectBuilder {
     }
 
     if (isGenerateApiDocumentation()) {
+      info("Generate API documentation");
       runner.run(computeMainDocumentationJavadocCall()).checkSuccessful();
       runner.run(computeMainDocumentationJarCall()).checkSuccessful();
+    }
+
+    if (isGenerateCustomRuntimeImage()) {
+      info("Generate custom runtime image");
+      Paths.deleteDirectories(main.workspace("image"));
+      runner.run(computeMainJLinkCall()).checkSuccessful();
+    }
+
+    if (isGenerateApplicationPackage()) {
+      info("Generate self-contained Java application");
+      runner.run(computeMainJPackageCall()).checkSuccessful();
     }
   }
 
@@ -91,11 +118,15 @@ public class ProjectBuilder {
    */
   public void build(TestSpace test) {
     if (test.modules().isEmpty()) return;
+    Paths.deleteDirectories(test.workspace("modules-test"));
+
+    info("Compile test modules");
     runner.run(computeTestJavacCall()).checkSuccessful();
     Paths.createDirectories(test.workspace("modules-test"));
     for (var module : project.test().modules()) {
       runner.run(computeTestJarCall(module)).checkSuccessful();
     }
+
     if (moduleDirectory.finder().find("org.junit.platform.console").isPresent()) {
       for (var module : project.test().modules()) {
         var archive = module + "@" + project.version() + "+test.jar";
@@ -106,16 +137,25 @@ public class ProjectBuilder {
                 test.workspace("modules-test"), // (more) test modules
                 Project.LIBRARIES // external modules
                 );
+        info("Launch JUnit Platform for test module: %s", module);
         runner.run(computeTestJUnitCall(module), finder, module).checkSuccessful();
       }
     }
   }
 
-  /**
-   * @return {@code true} if to generate API documentation, else {@code false}
-   */
+  /** @return {@code true} if an API documenation should be generated, else {@code false} */
   public boolean isGenerateApiDocumentation() {
     return project.main().generateApiDocumentation();
+  }
+
+  /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
+  public boolean isGenerateCustomRuntimeImage() {
+    return project.main().generateCustomRuntimeImage();
+  }
+
+  /** @return {@code true} if a self-contained package should be generated, else {@code false} */
+  public boolean isGenerateApplicationPackage() {
+    return project.main().generateApplicationPackage();
   }
 
   /** @return the {@code javac} call to compile all modules of the main space. */
@@ -183,6 +223,23 @@ public class ProjectBuilder {
         .with("--no-manifest")
         .with("-C", api, ".")
         .build();
+  }
+
+  /** @return the jllink call */
+  public ToolCall computeMainJLinkCall() {
+    var main = project.main();
+    var test = project.test();
+    return Command.builder("jlink")
+        .with("--add-modules", String.join(",", main.modules()))
+        .with("--module-path", String.join(File.pathSeparator, test.modulePaths()))
+        .withEach(test.tweaks().getOrDefault("jlink", List.of()))
+        .with("--output", main.workspace("image"))
+        .build();
+  }
+
+  /** @return the jpackage call */
+  public ToolCall computeMainJPackageCall() {
+    return Command.builder("jpackage").build();
   }
 
   /** @return the {@code javac} call to compile all modules of the test space. */

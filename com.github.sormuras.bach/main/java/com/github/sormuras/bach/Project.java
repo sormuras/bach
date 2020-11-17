@@ -117,6 +117,8 @@ public record Project(String name, Version version, Library library, MainSpace m
             release(main.release()),
             jarslug(version),
             main.generateApiDocumentation(),
+            main.generateCustomRuntimeImage(),
+            main.generateApplicationPackage(),
             tweaks(main.tweaks())),
         new TestSpace(
             modules(test.modules(), testModuleInfoFinder),

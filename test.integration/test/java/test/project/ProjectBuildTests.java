@@ -18,6 +18,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project Simplicissimus 0-ea
+        Compile main modules
         """
             .lines(),
         output.lines());
@@ -36,6 +37,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project JigsawQuickStartGreetings 0-ea
+        Compile main modules
         """
             .lines(),
         output.lines());
@@ -51,6 +53,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project JigsawQuickStartWorld 0-ea
+        Compile main modules
         """
             .lines(),
         output.lines());

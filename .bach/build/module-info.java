@@ -12,6 +12,7 @@ import com.github.sormuras.bach.ProjectInfo.Tweak;
         @Main(
             release = 16,
             generateApiDocumentation = true,
+            generateCustomRuntimeImage = true,
             tweaks = {
               @Tweak(
                   tool = "javac",

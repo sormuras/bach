@@ -14,6 +14,8 @@ import java.util.Map;
  * @param release the Java version (release feature number) to compile for
  * @param jarslug the {@code MODULE-NAME "@" jarslug ".jar"} part of the JAR file name
  * @param generateApiDocumentation {@code true} to enable a {@code javadoc} run
+ * @param generateCustomRuntimeImage {@code true} to enable a {@code jlink} run
+ * @param generateApplicationPackage {@code true} to enable a {@code jpackage} run
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
 public record MainSpace(
@@ -23,6 +25,8 @@ public record MainSpace(
     int release,
     String jarslug,
     boolean generateApiDocumentation,
+    boolean generateCustomRuntimeImage,
+    boolean generateApplicationPackage,
     Map<String, List<String>> tweaks)
     implements Space {
 
