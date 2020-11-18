@@ -3,6 +3,7 @@ package test.project;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,9 @@ class ProjectBuildTests {
         Compile main modules
         >> TOOL CALLS >>
         Build took .+s
+        Logbook written to %s
         """
+            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
             .lines(),
         output.lines());
 
@@ -42,7 +45,9 @@ class ProjectBuildTests {
         Compile main modules
         >> TOOL CALLS >>
         Build took .+s
+        Logbook written to %s
         """
+            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
             .lines(),
         output.lines());
 
@@ -60,7 +65,9 @@ class ProjectBuildTests {
         Compile main modules
         >> TOOL CALLS >>
         Build took .+s
+        Logbook written to %s
         """
+            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
             .lines(),
         output.lines());
 

@@ -25,6 +25,10 @@ class Context {
     this.code = code;
   }
 
+  Path base() {
+    return base;
+  }
+
   String build() throws Exception {
     var idea = Path.of(".idea/out/production/com.github.sormuras.bach").toAbsolutePath().toString();
     var work = Path.of(".bach/workspace/modules").toAbsolutePath().toString();

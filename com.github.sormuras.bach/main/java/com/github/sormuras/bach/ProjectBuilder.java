@@ -48,6 +48,7 @@ public class ProjectBuilder {
   /** Builds a modular Java project. */
   public void build() {
     var start = Instant.now();
+    var logbook = bach.logbook();
     info("Build project %s %s", project.name(), project.version());
     try {
       if (project.findAllModuleNames().count() == 0) throw new RuntimeException("No module found!");
@@ -55,11 +56,12 @@ public class ProjectBuilder {
       build(project.main());
       build(project.test());
     } catch (Exception exception) {
-      bach.logbook().log(System.Logger.Level.ERROR, exception.toString());
+      logbook.log(System.Logger.Level.ERROR, exception.toString());
       throw new BuildException("Build failed: " + exception);
     } finally {
       info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
-      bach.logbook().write(project);
+      var file = logbook.write(project);
+      logbook.accept("Logbook written to " + file.toUri());
     }
   }
 

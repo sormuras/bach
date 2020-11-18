@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -9,11 +10,13 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /** A logbook records text messages. */
 public final class Logbook implements Consumer<String> {
@@ -48,6 +51,14 @@ public final class Logbook implements Consumer<String> {
         .substring(2)
         .replaceAll("(\\d[HMS])(?!$)", "$1 ")
         .toLowerCase();
+  }
+
+  static String markdownJoin(Collection<?> collection) {
+    if (collection.isEmpty()) return "`-`";
+    return collection.stream()
+        .map(Object::toString)
+        .sorted()
+        .collect(Collectors.joining("`, `", "`", "`"));
   }
 
   private final LocalDateTime created = LocalDateTime.now(ZoneOffset.UTC);
@@ -127,7 +138,7 @@ public final class Logbook implements Consumer<String> {
     md.add("");
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
-    // md.addAll(projectModules(project.base().modules("")));
+    md.addAll(toModulesOverview(Project.WORKSPACE.resolve("modules")));
     // md.addAll(projectDescription(project));
     // md.addAll(toToolCallOverview());
     // md.addAll(toToolCallDetails());
@@ -136,6 +147,46 @@ public final class Logbook implements Consumer<String> {
     md.add("## Thanks for using Bach.java " + Bach.version());
     md.add("");
     md.add("Support its development at <https://github.com/sponsors/sormuras>");
+    return md;
+  }
+
+  private List<String> toModulesOverview(Path directory) {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Modules");
+    md.add("");
+    if (!Files.isDirectory(directory)) {
+      md.add(String.format("Directory `%s` doesn't exist or isn't a directory.", directory));
+      return md;
+    }
+    var files = Paths.list(directory, Paths::isJarFile);
+    md.add("- directory: " + directory.toUri());
+    md.add("- files: " + files.size());
+    if (files.isEmpty()) return md;
+    md.add("");
+    md.add("### Module API");
+    md.add("");
+    md.add("| Name | Version | Exports | Provides | Main Class |");
+    md.add("|------|---------|---------|----------|------------|");
+    for (var file : files) {
+      var descriptor = ModuleFinder.of(file).findAll().iterator().next().descriptor();
+      var module = descriptor.name();
+      var version = descriptor.version().map(Object::toString).orElse("-");
+      var exports = markdownJoin(descriptor.exports());
+      var provides = markdownJoin(descriptor.provides());
+      var main = descriptor.mainClass().map(Object::toString).orElse("-");
+      md.add(String.format("|`%s`|%s|%s|%s|`%s`|", module, version, exports, provides, main));
+    }
+    md.add("");
+    md.add("### Modular JAR");
+    md.add("");
+    md.add("| Size [Bytes] | File Name |");
+    md.add("|-------------:|:----------|");
+    for (var file : files) {
+      var size = Paths.size(file);
+      var name = file.getFileName();
+      md.add(String.format("|%,d|%s", size, name));
+    }
     return md;
   }
 
@@ -157,7 +208,6 @@ public final class Logbook implements Consumer<String> {
    * @return the path to the logbook file
    */
   public Path write(Project project) {
-    var base = Path.of("");
     var markdownFile = Project.WORKSPACE.resolve("logbook.md");
     var markdownLines = toMarkdown(project);
     try {

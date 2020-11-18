@@ -1,10 +1,14 @@
 package com.github.sormuras.bach.internal;
 
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -55,6 +59,17 @@ public class Paths {
     }
   }
 
+  /** List content of specified directory in natural order with the given filter applied. */
+  public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+    var paths = new TreeSet<>(Comparator.comparing(Path::toString));
+    try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
+      directoryStream.forEach(paths::add);
+    } catch (Exception e) {
+      throw new Error("Stream directory '" + directory + "' failed: " + e, e);
+    }
+    return List.copyOf(paths);
+  }
+
   public static void find(Path start, String glob, Consumer<Path> consumer) {
     var pattern = glob;
     while (pattern.startsWith(".") || pattern.startsWith("/")) pattern = pattern.substring(1);
@@ -65,6 +80,26 @@ public class Paths {
     } catch (Exception exception) {
       throw new RuntimeException("find failed: " + glob, exception);
     }
+  }
+
+  /** Test supplied path for pointing to a Java Archive file. */
+  public static boolean isJarFile(Path path) {
+    return Files.isRegularFile(path) && name(path).endsWith(".jar");
+  }
+
+  /** Test supplied path for pointing to a Java compilation unit. */
+  public static boolean isJavaFile(Path path) {
+    return Files.isRegularFile(path) && name(path).endsWith(".java");
+  }
+
+  /** Test supplied path for pointing to a Java module declaration compilation unit. */
+  public static boolean isModuleInfoJavaFile(Path path) {
+    return isJavaFile(path) && name(path).equals("module-info.java");
+  }
+
+  /** Test for a path pointing to a file system root like {@code /} or {@code C:\}. */
+  public static boolean isRoot(Path path) {
+    return path.toAbsolutePath().normalize().getNameCount() == 0;
   }
 
   public static boolean isViewSupported(Path file, String view) {
@@ -89,9 +124,22 @@ public class Paths {
   /**
    * @return the file name of the path as a string
    */
+  public static String name(Path path) {
+    return name(path, null);
+  }
+
   public static String name(Path path, String defautName) {
     var name = path.toAbsolutePath().getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
+  }
+
+  /** Return the size of a file in bytes. */
+  public static long size(Path path) {
+    try {
+      return Files.size(path);
+    } catch (Exception e) {
+      throw new Error("Size of file failed: " + e, e);
+    }
   }
 
   public static Optional<String> readString(Path path) {
