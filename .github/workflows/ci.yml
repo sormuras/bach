@@ -46,6 +46,7 @@ jobs:
         with:
           name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
           path: |
+            .bach/workspace/logbook.md
             .bach/workspace/modules
             .bach/workspace/documentation/api
       - name: 'Release early-access build'
