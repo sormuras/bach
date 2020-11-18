@@ -39,6 +39,12 @@ public class ProjectBuilder {
     bach.logbook().log(System.Logger.Level.INFO, format, args);
   }
 
+  void run(ToolCall call) {
+    bach.logbook().log(System.Logger.Level.INFO, call.toCommand().toString());
+    var response = runner.run(call);
+    response.checkSuccessful();
+  }
+
   /** Builds a modular Java project. */
   public void build() {
     var start = Instant.now();
@@ -82,27 +88,27 @@ public class ProjectBuilder {
     Paths.deleteDirectories(main.workspace("modules"));
 
     info("Compile main modules");
-    runner.run(computeMainJavacCall()).checkSuccessful();
+    run(computeMainJavacCall());
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
-      runner.run(computeMainJarCall(module)).checkSuccessful();
+      run(computeMainJarCall(module));
     }
 
     if (isGenerateApiDocumentation()) {
       info("Generate API documentation");
-      runner.run(computeMainDocumentationJavadocCall()).checkSuccessful();
-      runner.run(computeMainDocumentationJarCall()).checkSuccessful();
+      run(computeMainDocumentationJavadocCall());
+      run(computeMainDocumentationJarCall());
     }
 
     if (isGenerateCustomRuntimeImage()) {
       info("Generate custom runtime image");
       Paths.deleteDirectories(main.workspace("image"));
-      runner.run(computeMainJLinkCall()).checkSuccessful();
+      run(computeMainJLinkCall());
     }
 
     if (isGenerateApplicationPackage()) {
       info("Generate self-contained Java application");
-      runner.run(computeMainJPackageCall()).checkSuccessful();
+      run(computeMainJPackageCall());
     }
   }
 
@@ -121,10 +127,10 @@ public class ProjectBuilder {
     Paths.deleteDirectories(test.workspace("modules-test"));
 
     info("Compile test modules");
-    runner.run(computeTestJavacCall()).checkSuccessful();
+    run(computeTestJavacCall());
     Paths.createDirectories(test.workspace("modules-test"));
     for (var module : project.test().modules()) {
-      runner.run(computeTestJarCall(module)).checkSuccessful();
+      run(computeTestJarCall(module));
     }
 
     if (moduleDirectory.finder().find("org.junit.platform.console").isPresent()) {
@@ -138,7 +144,9 @@ public class ProjectBuilder {
                 Project.LIBRARIES // external modules
                 );
         info("Launch JUnit Platform for test module: %s", module);
-        runner.run(computeTestJUnitCall(module), finder, module).checkSuccessful();
+        var junit = computeTestJUnitCall(module);
+        bach.logbook().log(System.Logger.Level.INFO, junit.toCommand().toString());
+        runner.run(junit, finder, module).checkSuccessful();
       }
     }
   }

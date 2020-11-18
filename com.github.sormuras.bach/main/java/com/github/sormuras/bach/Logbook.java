@@ -18,7 +18,13 @@ import java.util.function.Consumer;
 /** A logbook records text messages. */
 public final class Logbook implements Consumer<String> {
 
-  record Entry(long thread, Level level, String text) {}
+  record Entry(long thread, Level level, String text) {
+
+    @Override
+    public String toString() {
+      return String.format("%-7s %6X| %s", level, thread, text);
+    }
+  }
 
   /**
    * Returns a logbook initialized with default components.
@@ -139,11 +145,7 @@ public final class Logbook implements Consumer<String> {
     md.add("## All Entries");
     md.add("");
     md.add("```text");
-    for (var entry : entries) {
-      var line = String.format("%-7s %6X| %s", entry.level, entry.thread, entry.text)
-          .replace('\t', ' ');
-      md.add(line);
-    }
+    for (var entry : entries) md.add(entry.toString().replace('\t', ' '));
     md.add("```");
     return md;
   }
