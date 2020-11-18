@@ -15,7 +15,7 @@ class EmptyDirectoryTests {
     assertLinesMatch(
         """
         Build project %s 0-ea
-        java.lang.RuntimeException: No module found!
+        ERROR java.lang.RuntimeException: No module found!
         >> STACK TRACE >>
         """
             .formatted(temp.getFileName())

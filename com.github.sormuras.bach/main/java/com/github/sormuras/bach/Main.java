@@ -56,7 +56,8 @@ public class Main {
 
   int build(PrintWriter out, PrintWriter err, String... args) {
     try {
-      var bach = new Bach(System.out, Bach::newHttpClient);
+      var book = new Logbook(out::println, Logbook.defaultThresholdLevel());
+      var bach = new Bach(book, Bach::newHttpClient);
       BuildProgram.execute(bach, args);
       return 0;
     } catch (RuntimeException exception) {

@@ -4,9 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import com.github.sormuras.bach.Logbook;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,9 +14,8 @@ class GitHubTests {
 
   @Test
   void simplicissimus() {
-    var baos = new ByteArrayOutputStream();
-    var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
-    var bach = new Bach(log, Bach::newHttpClient);
+    var book = new Logbook(text -> {}, System.Logger.Level.ALL);
+    var bach = new Bach(book, Bach::newHttpClient);
     var hub = new GitHub(bach, "sormuras", "simplicissimus");
     assertTrue(hub.findLatestCommitHash().isPresent());
 
@@ -49,9 +46,8 @@ class GitHubTests {
   @ParameterizedTest
   @ValueSource(strings = {"early-access", "1-ea+2", "1-ea+1", "0"})
   void sawdust(String version) {
-    var baos = new ByteArrayOutputStream();
-    var log = new PrintStream(baos, true, StandardCharsets.UTF_8);
-    var bach = new Bach(log, Bach::newHttpClient);
+    var book = new Logbook(text -> {}, System.Logger.Level.ALL);
+    var bach = new Bach(book, Bach::newHttpClient);
     var hub = new GitHub(bach, "sormuras", "sawdust");
     assertTrue(hub.findReleasedModule("com.github.sormuras.sawdust", version).isPresent());
     assertTrue(hub.findReleasedModule("com.github.sormuras.sawdust.api", version).isPresent());

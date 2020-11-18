@@ -19,6 +19,7 @@ class ProjectBuildTests {
         """
         Build project Simplicissimus 0-ea
         Compile main modules
+        Build took .+s
         """
             .lines(),
         output.lines());
@@ -38,6 +39,7 @@ class ProjectBuildTests {
         """
         Build project JigsawQuickStartGreetings 0-ea
         Compile main modules
+        Build took .+s
         """
             .lines(),
         output.lines());
@@ -54,6 +56,7 @@ class ProjectBuildTests {
         """
         Build project JigsawQuickStartWorld 0-ea
         Compile main modules
+        Build took .+s
         """
             .lines(),
         output.lines());

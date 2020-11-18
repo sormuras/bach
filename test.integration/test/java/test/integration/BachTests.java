@@ -2,7 +2,6 @@ package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.github.sormuras.bach.Bach;
 import java.lang.module.ModuleDescriptor;
@@ -13,7 +12,7 @@ class BachTests {
   @Test
   void defaults() {
     var bach = Bach.ofSystem();
-    assertSame(System.out, bach.printStream());
+    assertNotNull(bach.logbook());
     assertEquals(HttpClient.Redirect.NORMAL, bach.httpClient().followRedirects());
   }
 

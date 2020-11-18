@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.internal;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Exports;
 import java.lang.module.ModuleDescriptor.Opens;
@@ -68,8 +69,10 @@ public final class Modules {
   }
 
   // https://github.com/openjdk/jdk/blob/80380d51d279852f4a24ebbd384921106611bc0c/src/java.base/share/classes/sun/launcher/LauncherHelper.java#L1105
-  public static void describeModule(PrintStream out, ModuleReference mref) {
+  public static String describeModule(ModuleReference mref) {
     var md = mref.descriptor();
+    var writer = new StringWriter();
+    var out = new PrintWriter(writer);
 
     // one-line summary
     out.print(md.toNameAndVersion());
@@ -127,6 +130,8 @@ public final class Modules {
     md.exports().stream().map(Exports::source).forEach(concealed::remove);
     md.opens().stream().map(Opens::source).forEach(concealed::remove);
     concealed.forEach(p -> out.format("contains %s%n", p));
+
+    return writer.toString();
   }
 
   private static <T> String toString(String name, Set<T> modifiers) {

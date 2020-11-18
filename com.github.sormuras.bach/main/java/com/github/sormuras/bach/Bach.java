@@ -9,7 +9,6 @@ import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolResponse;
 import com.github.sormuras.bach.tool.ToolRunner;
-import java.io.PrintStream;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
@@ -43,7 +42,7 @@ public final class Bach {
    * @return a new instance of {@code Bach} initialized with default components
    */
   public static Bach ofSystem() {
-    return new Bach(System.out, Functions.memoize(Bach::newHttpClient));
+    return new Bach(Logbook.ofSystem(), Functions.memoize(Bach::newHttpClient));
   }
 
   /**
@@ -67,8 +66,8 @@ public final class Bach {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
 
-  /** A print stream for normal messages. */
-  private final PrintStream printStream;
+  /** A logbook. */
+  private final Logbook logbook;
 
   /** A supplier of a http client. */
   private final Supplier<HttpClient> httpClientSupplier;
@@ -76,11 +75,11 @@ public final class Bach {
   /**
    * Initialize default constructor.
    *
-   * @param printStream the print stream for normal messages
+   * @param logbook the logbook to record messages
    * @param httpClientSupplier the supplier of an http client
    */
-  public Bach(PrintStream printStream, Supplier<HttpClient> httpClientSupplier) {
-    this.printStream = printStream;
+  public Bach(Logbook logbook, Supplier<HttpClient> httpClientSupplier) {
+    this.logbook = logbook;
     this.httpClientSupplier = httpClientSupplier;
   }
 
@@ -94,12 +93,12 @@ public final class Bach {
   }
 
   /**
-   * Returns the print stream for printing messages.
+   * Returns the logbook.
    *
-   * @return the print stream for printing messages
+   * @return the logbook
    */
-  public PrintStream printStream() {
-    return printStream;
+  public Logbook logbook() {
+    return logbook;
   }
 
   /**
@@ -108,7 +107,7 @@ public final class Bach {
    * @param glob the glob pattern
    */
   public void printFind(String glob) {
-    Paths.find(Path.of(""), glob, path -> printStream().println(Paths.slashed(path)));
+    Paths.find(Path.of(""), glob, path -> logbook.accept(Paths.slashed(path)));
   }
 
   /**
@@ -121,7 +120,7 @@ public final class Bach {
         .map(ModuleReference::descriptor)
         .map(ModuleDescriptor::toNameAndVersion)
         .sorted()
-        .forEach(printStream()::println);
+        .forEach(logbook);
   }
 
   /**
@@ -134,8 +133,8 @@ public final class Bach {
     finder
         .find(module)
         .ifPresentOrElse(
-            reference -> Modules.describeModule(printStream(), reference),
-            () -> printStream().println("No such module found: " + module));
+            reference -> logbook.accept(Modules.describeModule(reference)),
+            () -> logbook.accept("No such module found: " + module));
   }
 
   /**
@@ -148,7 +147,7 @@ public final class Bach {
         .map(ServiceLoader.Provider::get)
         .map(Bach::printDescribe)
         .sorted()
-        .forEach(printStream()::println);
+        .forEach(logbook);
   }
 
   static String printDescribe(ToolProvider tool) {
@@ -222,7 +221,7 @@ public final class Bach {
     var handler = HttpResponse.BodyHandlers.ofFile(file);
     var response = httpSend(request.build(), handler);
     if (response.statusCode() == 200 /* Ok */) {
-      printStream().println(file + " << " + uri);
+      logbook.accept(file + " << " + uri);
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
         try {
           var etagHeader = response.headers().firstValue("etag");
@@ -313,7 +312,7 @@ public final class Bach {
    */
   public void toolRun(ModuleDirectory directory, String name, Object... args) {
     var response = toolCall(directory, Command.of(name, args));
-    if (!response.out().isEmpty()) printStream().println(response.out());
-    printStream().println(response.err());
+    if (!response.out().isEmpty()) logbook.accept(response.out());
+    logbook.accept(response.err());
   }
 }

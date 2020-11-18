@@ -10,8 +10,9 @@ import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
 import java.lang.module.ModuleFinder;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 
 /** Builds a modular Java project. */
 public class ProjectBuilder {
@@ -34,27 +35,26 @@ public class ProjectBuilder {
     this.runner = new ToolRunner(moduleDirectory.finder());
   }
 
-  /**
-   * Print a formatted message.
-   *
-   * @param format the message to print
-   * @param args the arguments
-   */
-  public void info(String format, Object... args) {
-    if (args.length == 0) bach.printStream().println(format);
-    else bach.printStream().format(Locale.ENGLISH, format + "%n", args);
+  void info(String format, Object... args) {
+    bach.logbook().log(System.Logger.Level.INFO, format, args);
   }
 
   /** Builds a modular Java project. */
   public void build() {
+    var start = Instant.now();
     info("Build project %s %s", project.name(), project.version());
-
-    if (project.findAllModuleNames().count() == 0) throw new RuntimeException("No module found!");
-
-    loadRequiredAndMissingModules();
-
-    build(project.main());
-    build(project.test());
+    try {
+      if (project.findAllModuleNames().count() == 0) throw new RuntimeException("No module found!");
+      loadRequiredAndMissingModules();
+      build(project.main());
+      build(project.test());
+    } catch (Exception exception) {
+      bach.logbook().log(System.Logger.Level.ERROR, exception.toString());
+      throw new BuildException("Build failed: " + exception);
+    } finally {
+      info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
+      bach.logbook().write(project);
+    }
   }
 
   /** Load required and missing modules in a best-effort manner. */
