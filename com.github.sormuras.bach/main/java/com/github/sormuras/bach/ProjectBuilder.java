@@ -11,8 +11,12 @@ import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Builds a modular Java project. */
@@ -95,6 +99,10 @@ public class ProjectBuilder {
     run(computeMainJavacCall());
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
+      if (isMultiReleaseModule(module)) {
+        buildMultiReleaseModule(module, Integer.parseInt(System.getProperty("bach.project.base.release", "8")));
+        continue;
+      }
       run(computeMainJarCall(module));
     }
 
@@ -114,6 +122,65 @@ public class ProjectBuilder {
       info("Generate self-contained Java application");
       run(computeMainJPackageCall());
     }
+  }
+
+  public void buildMultiReleaseModule(String module, int base) {
+    var main = project.main();
+
+    // compile "main" module first
+    var destination = Project.WORKSPACE.resolve("classes-mr");
+    var baseModuleInfoJava = Path.of(module + "/main/java-module/module-info.java");
+    if (Files.exists(baseModuleInfoJava)) {
+      var compileBaseModule = Command.builder("javac");
+      compileBaseModule
+          .with("--release", 9)
+          .with("--module-version", project.version())
+          .with(
+              "--source-path",
+              String.join(File.pathSeparator, module + "/main/java", module + "/main/java-module"))
+          .with("-implicit:none")
+          .with("-d", destination.resolve("" + base))
+          .with(baseModuleInfoJava);
+      run(compileBaseModule.build());
+    }
+
+    // compile release-specific classes
+    var features = List.of(base, 11, 16);
+    for (var feature : features) {
+      var sourcePathOffset = "main/java" + (feature == base ? "" : "-" + feature);
+      var javaSourceFiles = new ArrayList<Path>();
+      Paths.find(Path.of(module, sourcePathOffset), "**.java", javaSourceFiles::add);
+      var javac = Command.builder("javac");
+      javac
+          .with("--release", feature)
+          .with("--module-version", project.version())
+          .with("--source-path", module + "/" + sourcePathOffset)
+          .with("--class-path", main.classes());
+      if (feature >= 9) javac.with("--module-path", main.classes());
+      javac
+          .with("-implicit:none") // generate classes for explicitly referenced source files
+          .withEach(main.tweaks().getOrDefault("javac", List.of()))
+          .with("-d", destination.resolve("" + feature))
+          .withEach(javaSourceFiles);
+      run(javac.build());
+    }
+
+    // jar 'em all
+    var archive = computeMainJarFileName(module);
+    var pendings = new ArrayDeque<>(features);
+    var classes0 = destination.resolve("" + pendings.removeFirst());
+    var jar = Command.builder("jar");
+    jar.with("--create")
+        .with("--file", main.workspace("modules", archive))
+        .withEach(main.tweaks().getOrDefault("jar", List.of()))
+        .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
+        .with("-C", classes0, ".");
+
+    for (var feature : pendings) {
+      var classes = destination.resolve("" + feature);
+      jar.with("--release", feature).with("-C", classes, ".");
+    }
+    run(jar.build());
   }
 
   /**
@@ -153,6 +220,10 @@ public class ProjectBuilder {
         runner.run(junit, finder, module).checkSuccessful();
       }
     }
+  }
+
+  boolean isMultiReleaseModule(String module) {
+    return project.name().startsWith("MultiRelease"); // TODO (-:
   }
 
   /** @return {@code true} if an API documenation should be generated, else {@code false} */
