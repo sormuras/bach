@@ -7,6 +7,7 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 
 /** A project build context. */
 class Context {
@@ -29,12 +30,13 @@ class Context {
     return base;
   }
 
-  String build() throws Exception {
+  String build(String... options) throws Exception {
     var idea = Path.of(".idea/out/production/com.github.sormuras.bach").toAbsolutePath().toString();
     var work = Path.of(".bach/workspace/modules").toAbsolutePath().toString();
 
     var command = new ArrayList<String>();
     command.add("java");
+    command.addAll(List.of(options));
     command.add("--module-path");
     command.add(String.join(File.pathSeparator, idea, work));
     command.add("--module");
