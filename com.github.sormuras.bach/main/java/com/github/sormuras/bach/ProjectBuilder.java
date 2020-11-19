@@ -9,6 +9,7 @@ import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,12 +37,13 @@ public class ProjectBuilder {
   }
 
   void info(String format, Object... args) {
-    bach.logbook().log(System.Logger.Level.INFO, format, args);
+    bach.logbook().log(Level.INFO, format, args);
   }
 
   void run(ToolCall call) {
-    bach.logbook().log(System.Logger.Level.INFO, call.toCommand().toString());
+    info(call.toCommand().toString());
     var response = runner.run(call);
+    bach.logbook().log(response);
     response.checkSuccessful();
   }
 
@@ -56,7 +58,7 @@ public class ProjectBuilder {
       build(project.main());
       build(project.test());
     } catch (Exception exception) {
-      logbook.log(System.Logger.Level.ERROR, exception.toString());
+      logbook.log(Level.ERROR, exception.toString());
       throw new BuildException("Build failed: " + exception);
     } finally {
       info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
@@ -147,7 +149,7 @@ public class ProjectBuilder {
                 );
         info("Launch JUnit Platform for test module: %s", module);
         var junit = computeTestJUnitCall(module);
-        bach.logbook().log(System.Logger.Level.INFO, junit.toCommand().toString());
+        info(junit.toCommand().toString());
         runner.run(junit, finder, module).checkSuccessful();
       }
     }

@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
+import com.github.sormuras.bach.tool.ToolResponse;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -53,6 +54,10 @@ public final class Logbook implements Consumer<String> {
         .toLowerCase();
   }
 
+  static String markdown(Object object) {
+    return object.toString().replace('\t', ' ');
+  }
+
   static String markdownJoin(Collection<?> collection) {
     if (collection.isEmpty()) return "`-`";
     return collection.stream()
@@ -61,8 +66,13 @@ public final class Logbook implements Consumer<String> {
         .collect(Collectors.joining("`, `", "`", "`"));
   }
 
+  static String markdownAnchor(ToolResponse response) {
+    return response.name() + '-' + Integer.toHexString(System.identityHashCode(response));
+  }
+
   private final LocalDateTime created = LocalDateTime.now(ZoneOffset.UTC);
   private final Queue<Entry> entries = new ConcurrentLinkedQueue<>();
+  private final Queue<ToolResponse> responses = new ConcurrentLinkedQueue<>();
   private final Consumer<String> printer;
   private final Level threshold;
 
@@ -131,6 +141,16 @@ public final class Logbook implements Consumer<String> {
     return text;
   }
 
+  /**
+   * Adds the given response to the list of responses.
+   * @param response the tool call response
+   */
+  public void log(ToolResponse response) {
+    synchronized (responses) {
+      responses.add(response);
+    }
+  }
+
   List<String> toMarkdown(Project project) {
     var md = new ArrayList<String>();
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
@@ -140,8 +160,8 @@ public final class Logbook implements Consumer<String> {
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
     md.addAll(toModulesOverview(Project.WORKSPACE.resolve("modules")));
     // md.addAll(projectDescription(project));
-    // md.addAll(toToolCallOverview());
-    // md.addAll(toToolCallDetails());
+    md.addAll(toToolsOverview());
+    md.addAll(toToolsDetails());
     md.addAll(toLogbookEntries());
     md.add("");
     md.add("## Thanks for using Bach.java " + Bach.version());
@@ -190,13 +210,60 @@ public final class Logbook implements Consumer<String> {
     return md;
   }
 
+  private List<String> toToolsOverview() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Tool Call Overview");
+    md.add("");
+    md.add("|    |Thread| Duration |Tool|Arguments");
+    md.add("|----|-----:|---------:|----|---------");
+    for (var response : responses) {
+      var kind = ' ';
+      var thread = response.thread();
+      var millis = toString(response.duration());
+      var tool = "[" + response.name() + "](#" + markdownAnchor(response) + ")";
+      var arguments = "`" + String.join(" ", response.args()) + "`";
+      var row = String.format("|%4c|%6X|%10s|%s|%s", kind, thread, millis, tool, arguments);
+      md.add(row);
+    }
+    return md;
+  }
+
+  private List<String> toToolsDetails() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Tool Call Details");
+    md.add("");
+    md.add(String.format("Recorded %d tool call response(s).", responses.size()));
+    for (var response : responses) {
+      md.add("");
+      md.add("### " + markdownAnchor(response));
+      md.add("");
+      md.add("- tool = `" + response.name() + '`');
+      md.add("- args = `" + String.join(" ", response.args()) + '`');
+      if (!response.out().isEmpty()) {
+        md.add("");
+        md.add("```text");
+        md.add(response.out());
+        md.add("```");
+      }
+      if (!response.err().isEmpty()) {
+        md.add("");
+        md.add("```text");
+        md.add(response.err());
+        md.add("```");
+      }
+    }
+    return md;
+  }
+
   private List<String> toLogbookEntries() {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## All Entries");
     md.add("");
     md.add("```text");
-    for (var entry : entries) md.add(entry.toString().replace('\t', ' '));
+    for (var entry : entries) md.add(markdown(entry));
     md.add("```");
     return md;
   }
