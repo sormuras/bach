@@ -81,7 +81,7 @@ class ProjectBuildTests {
   @Test
   void buildMultiRelease8(@TempDir Path temp) throws Exception {
     var context = new Context("MultiRelease8", temp);
-    var output = context.build("-Dbach.project.base.release=8");
+    var output = context.build(); // bach.project.main.release.base defaults to "8"
 
     assertLinesMatch(
         """
@@ -106,7 +106,7 @@ class ProjectBuildTests {
   @Test
   void buildMultiRelease9(@TempDir Path temp) throws Exception {
     var context = new Context("MultiRelease9", temp);
-    var output = context.build("-Dbach.project.base.release=9");
+    var output = context.build("-Dbach.project.main.release.base=9");
 
     assertLinesMatch(
         """

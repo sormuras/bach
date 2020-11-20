@@ -12,6 +12,7 @@ import java.util.Map;
  * @param moduleSourcePaths the list of module source path patterns
  * @param modulePaths the list of module paths
  * @param release the Java version (release feature number) to compile for
+ * @param supplements the additional module-related information
  * @param jarslug the {@code MODULE-NAME "@" jarslug ".jar"} part of the JAR file name
  * @param generateApiDocumentation {@code true} to enable a {@code javadoc} run
  * @param generateCustomRuntimeImage {@code true} to enable a {@code jlink} run
@@ -23,6 +24,7 @@ public record MainSpace(
     List<String> moduleSourcePaths,
     List<String> modulePaths,
     int release,
+    Map<String, ModuleSupplement> supplements,
     String jarslug,
     boolean generateApiDocumentation,
     boolean generateCustomRuntimeImage,

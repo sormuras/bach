@@ -1,16 +1,19 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Modules;
+import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import com.github.sormuras.bach.module.ModuleInfoReference;
 import com.github.sormuras.bach.module.ModuleLink;
 import com.github.sormuras.bach.project.Library;
 import com.github.sormuras.bach.project.MainSpace;
+import com.github.sormuras.bach.project.ModuleSupplement;
 import com.github.sormuras.bach.project.TestSpace;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,7 @@ class ProjectFactory {
             mainModuleInfoFinder.moduleSourcePaths(),
             List.of(main.modulePaths()),
             release(main.release()),
+            supplements(mainModuleInfoFinder),
             jarslug(version),
             main.generateApiDocumentation(),
             main.generateCustomRuntimeImage(),
@@ -62,6 +66,34 @@ class ProjectFactory {
 
   ModuleDescriptor.Version version(String version) {
     return ModuleDescriptor.Version.parse(System.getProperty("bach.project.version", version));
+  }
+
+  int release(int release) {
+    try {
+      return Integer.parseInt(System.getProperty("bach.project.main.release"));
+    } catch (RuntimeException ignore) {
+      return release != 0 ? release : Runtime.version().feature();
+    }
+  }
+
+  String jarslug(ModuleDescriptor.Version version) {
+    return System.getProperty("bach.project.main.jarslug", version.toString());
+  }
+
+  Map<String, ModuleSupplement> supplements(ModuleInfoFinder finder) {
+    var map = new TreeMap<String, ModuleSupplement>();
+    for (var info : finder.findAll()) {
+      var descriptor = info.descriptor();
+      // "java-N", with N = 7, 8, ... 16
+      var releases = new ArrayList<Integer>();
+      var base = Integer.parseInt(System.getProperty("bach.project.main.release.base", "8"));
+      releases.add(base);
+      var path = Path.of(info.location().orElseThrow()).getParent().getParent();
+      var paths = Paths.list(path, p -> Paths.name(p).matches("java-\\d+"));
+      for (var pathN : paths) releases.add(Integer.parseInt(Paths.name(pathN).substring(5)));
+      map.put(descriptor.name(), new ModuleSupplement(descriptor, releases));
+    }
+    return Map.copyOf(map);
   }
 
   Library library(ModuleFinder finder) {
@@ -95,18 +127,6 @@ class ProjectFactory {
       replaced = replaced.replace(placeholder, replacement);
     }
     return replaced;
-  }
-
-  int release(int release) {
-    try {
-      return Integer.parseInt(System.getProperty("bach.project.main.release"));
-    } catch (RuntimeException ignore) {
-      return release != 0 ? release : Runtime.version().feature();
-    }
-  }
-
-  String jarslug(ModuleDescriptor.Version version) {
-    return System.getProperty("bach.project.main.jarslug", version.toString());
   }
 
   ModuleInfoFinder mainModuleInfoFinder(String[] moduleSourcePaths) {

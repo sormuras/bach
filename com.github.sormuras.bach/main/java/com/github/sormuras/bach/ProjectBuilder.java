@@ -4,6 +4,7 @@ import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleDirectory;
 import com.github.sormuras.bach.module.ModuleSearcher;
 import com.github.sormuras.bach.project.MainSpace;
+import com.github.sormuras.bach.project.ModuleSupplement;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
@@ -99,8 +100,9 @@ public class ProjectBuilder {
     run(computeMainJavacCall());
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
-      if (isMultiReleaseModule(module)) {
-        buildMultiReleaseModule(module, Integer.parseInt(System.getProperty("bach.project.base.release", "8")));
+      var supplement = project.main().supplements().get(module);
+      if (supplement != null && supplement.isMultiRelease()) {
+        buildMultiReleaseModule(supplement);
         continue;
       }
       run(computeMainJarCall(module));
@@ -124,7 +126,14 @@ public class ProjectBuilder {
     }
   }
 
-  public void buildMultiReleaseModule(String module, int base) {
+  /**
+   * Builds a multi-release modular JAR file.
+   *
+   * @param supplement the extra information
+   */
+  public void buildMultiReleaseModule(ModuleSupplement supplement) {
+    var module = supplement.descriptor().name();
+    int base = supplement.releases().get(0);
     var main = project.main();
 
     // compile "main" module first
@@ -145,29 +154,28 @@ public class ProjectBuilder {
     }
 
     // compile release-specific classes
-    var features = List.of(base, 11, 16);
-    for (var feature : features) {
-      var sourcePathOffset = "main/java" + (feature == base ? "" : "-" + feature);
+    for (var release : supplement.releases()) {
+      var sourcePathOffset = "main/java" + (release == base ? "" : "-" + release);
       var javaSourceFiles = new ArrayList<Path>();
       Paths.find(Path.of(module, sourcePathOffset), "**.java", javaSourceFiles::add);
       var javac = Command.builder("javac");
       javac
-          .with("--release", feature)
+          .with("--release", release)
           .with("--module-version", project.version())
           .with("--source-path", module + "/" + sourcePathOffset)
           .with("--class-path", main.classes());
-      if (feature >= 9) javac.with("--module-path", main.classes());
+      if (release >= 9) javac.with("--module-path", main.classes());
       javac
           .with("-implicit:none") // generate classes for explicitly referenced source files
           .withEach(main.tweaks().getOrDefault("javac", List.of()))
-          .with("-d", destination.resolve("" + feature))
+          .with("-d", destination.resolve("" + release))
           .withEach(javaSourceFiles);
       run(javac.build());
     }
 
     // jar 'em all
     var archive = computeMainJarFileName(module);
-    var pendings = new ArrayDeque<>(features);
+    var pendings = new ArrayDeque<>(supplement.releases());
     var classes0 = destination.resolve("" + pendings.removeFirst());
     var jar = Command.builder("jar");
     jar.with("--create")
@@ -220,10 +228,6 @@ public class ProjectBuilder {
         runner.run(junit, finder, module).checkSuccessful();
       }
     }
-  }
-
-  boolean isMultiReleaseModule(String module) {
-    return project.name().startsWith("MultiRelease"); // TODO (-:
   }
 
   /** @return {@code true} if an API documenation should be generated, else {@code false} */
