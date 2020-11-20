@@ -35,7 +35,7 @@ public final class ModuleInfoFinder implements ModuleFinder {
    * @return a module declaration finder
    */
   public static ModuleInfoFinder of(Path directory, String... forms) {
-    var map = new TreeMap<String, ModuleReference>();
+    var map = new TreeMap<String, ModuleInfoReference>();
     with_next_form:
     for (var form : forms) {
       // Handle module-specific form: module-name=file-path (path-separator file-path)*
@@ -76,9 +76,9 @@ public final class ModuleInfoFinder implements ModuleFinder {
    * @param references the module info references to map and find
    * @return a module declaration finder
    */
-  public static ModuleInfoFinder of(ModuleReference... references) {
+  public static ModuleInfoFinder of(ModuleInfoReference... references) {
     var paths = new ArrayList<String>();
-    var map = new TreeMap<String, ModuleReference>();
+    var map = new TreeMap<String, ModuleInfoReference>();
     var currentUserDirectory = Path.of("").toAbsolutePath();
     for (var reference : references) {
       var name = reference.descriptor().name();
@@ -90,10 +90,10 @@ public final class ModuleInfoFinder implements ModuleFinder {
   }
 
   private final List<String> moduleSourcePaths;
-  private final Map<String, ModuleReference> references;
+  private final Map<String, ModuleInfoReference> references;
   private final Set<ModuleReference> values;
 
-  ModuleInfoFinder(List<String> moduleSourcePaths, Map<String, ModuleReference> references) {
+  ModuleInfoFinder(List<String> moduleSourcePaths, Map<String, ModuleInfoReference> references) {
     this.moduleSourcePaths = moduleSourcePaths;
     this.references = references;
     this.values = Set.copyOf(references.values());

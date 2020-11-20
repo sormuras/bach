@@ -40,7 +40,7 @@ public final class ModuleInfoReference extends ModuleReference {
    * @param info the path to the {@code module-info.java} file to parse
    * @return a module reference
    */
-  public static ModuleReference of(Path info) {
+  public static ModuleInfoReference of(Path info) {
     return new ModuleInfoReference(info);
   }
 
