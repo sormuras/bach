@@ -83,6 +83,46 @@ class ProjectBuildTests {
   }
 
   @Test
+  void buildSingleRelease8(@TempDir Path temp) throws Exception {
+    var context = new Context("SingleRelease-8", temp);
+    var output = context.build("-Dbach.project.main.release=8");
+
+    assertLinesMatch(
+        """
+        Build project SingleRelease-8 0-ea
+        Compile main modules
+        >> TOOL CALLS >>
+        Build took .+
+        Logbook written to %s
+        """
+            .formatted(context.workspace("logbook.md").toUri())
+            .lines(),
+        output.lines());
+
+    var foo = context.newModuleFinder().find("foo").orElseThrow();
+    assertEquals("foo", foo.descriptor().name());
+    var path = Path.of(foo.location().orElseThrow());
+    try (var jar = new JarFile(path.toFile())) {
+      assertFalse(jar.isMultiRelease(), "A multi-release JAR file?! -> " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          module-info.class
+          foo/
+          foo/Foo.class
+          """
+              .lines(),
+          names.stream());
+    }
+
+    assertEquals(9, Classes.feature(context.workspace("classes-main/8/foo","module-info.class")));
+    assertEquals(8, Classes.feature(context.workspace("classes-main/8/foo", "foo/Foo.class")));
+  }
+
+  @Test
   void buildSingleRelease9(@TempDir Path temp) throws Exception {
     var context = new Context("SingleRelease-9", temp);
     var output = context.build("-Dbach.project.main.release=9");

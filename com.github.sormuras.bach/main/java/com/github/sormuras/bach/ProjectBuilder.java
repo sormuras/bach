@@ -97,7 +97,9 @@ public class ProjectBuilder {
     Paths.deleteDirectories(main.workspace("modules"));
 
     info("Compile main modules");
-    run(computeMainJavacCall());
+    if (main.release() >= 9) run(computeMainJavacCall());
+    else buildSingleRelease78Modules();
+
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
       var supplement = project.main().supplements().get(module);
@@ -123,6 +125,38 @@ public class ProjectBuilder {
     if (isGenerateApplicationPackage()) {
       info("Generate self-contained Java application");
       run(computeMainJPackageCall());
+    }
+  }
+
+  /** Builds all main modules in a single */
+  public void buildSingleRelease78Modules() {
+    var main = project.main();
+    if (main.release() > 8) throw new IllegalStateException("release to high: " + main.release());
+    for (var module : project.main().modules()) {
+      var moduleInfoJavaFiles = new ArrayList<Path>();
+      Paths.find(Path.of(module, "main/java-module"), "module-info.java", moduleInfoJavaFiles::add);
+      var compileModuleOnly =
+          Command.builder("javac")
+              .with("--release", 9)
+              .with("--module-version", project.version())
+              .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
+              .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
+              .with("-implicit:none") // generate classes for explicitly referenced source files
+              .withEach(main.tweaks().getOrDefault("javac", List.of()))
+              .with("-d", main.classes())
+              .withEach(moduleInfoJavaFiles)
+              .build();
+      run(compileModuleOnly);
+
+      var javaSourceFiles = new ArrayList<Path>();
+      Paths.find(Path.of(module, "main/java"), "**.java", javaSourceFiles::add);
+      var javac =
+          Command.builder("javac")
+              .with("--release", main.release()) // 7 or 8
+              .withEach(main.tweaks().getOrDefault("javac", List.of()))
+              .with("-d", main.classes().resolve(module))
+              .withEach(javaSourceFiles);
+      run(javac.build());
     }
   }
 
