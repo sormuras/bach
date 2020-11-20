@@ -2,6 +2,7 @@ package test.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.sormuras.bach.Project;
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -26,8 +27,8 @@ class Context {
     this.code = code;
   }
 
-  Path base() {
-    return base;
+  Path workspace(String first, String... more) {
+    return base.resolve(Project.WORKSPACE).resolve(Path.of(first, more));
   }
 
   String build(String... options) throws Exception {
