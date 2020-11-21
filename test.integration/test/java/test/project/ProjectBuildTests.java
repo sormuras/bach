@@ -10,7 +10,6 @@ import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.jar.JarFile;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Classes;
@@ -160,32 +159,6 @@ class ProjectBuildTests {
 
     assertEquals(9, Classes.feature(context.workspace("classes-main/9/foo","module-info.class")));
     assertEquals(9, Classes.feature(context.workspace("classes-main/9/foo", "foo/Foo.class")));
-  }
-
-  @Test
-  @Disabled
-  void buildMultiRelease8(@TempDir Path temp) throws Exception {
-    var context = new Context("MultiRelease8", temp);
-    var output = context.build(); // bach.project.main.release.base defaults to "8"
-
-    assertLinesMatch(
-        """
-        Build project MultiRelease8 0-ea
-        Compile main modules
-        >> TOOL CALLS >>
-        Build took .+s
-        Logbook written to %s
-        """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
-            .lines(),
-        output.lines());
-
-    var foo = context.newModuleFinder().find("foo").orElseThrow();
-    assertEquals("foo", foo.descriptor().name());
-    var path = Path.of(foo.location().orElseThrow());
-    try (var jar = new JarFile(path.toFile())) {
-      assertTrue(jar.isMultiRelease(), "Not a multi-release JAR file: " + path);
-    }
   }
 
   @Test
