@@ -1,16 +1,19 @@
 package com.github.sormuras.bach.internal;
 
+import java.io.File;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /** Internal {@link Path}-related utilities. */
 public class Paths {
@@ -119,6 +122,10 @@ public class Paths {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static String join(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
   }
 
   /**

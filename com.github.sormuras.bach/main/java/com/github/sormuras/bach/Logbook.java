@@ -17,6 +17,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** A logbook records text messages. */
@@ -149,6 +150,10 @@ public final class Logbook implements Consumer<String> {
     synchronized (responses) {
       responses.add(response);
     }
+  }
+
+  List<ToolResponse> responses(Predicate<ToolResponse> predicate) {
+    return responses.stream().filter(predicate).collect(Collectors.toList());
   }
 
   List<String> toMarkdown(Project project) {

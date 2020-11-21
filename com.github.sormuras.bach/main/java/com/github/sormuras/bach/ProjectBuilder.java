@@ -7,10 +7,12 @@ import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
+import com.github.sormuras.bach.tool.ToolResponse;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -95,7 +97,15 @@ public class ProjectBuilder {
 
     info("Compile main modules");
     if (main.release() >= 9) run(computeMainJavacCall());
-    else buildSingleRelease78Modules();
+    else {
+      var feature = Runtime.version().feature();
+      run(computeMainJavacCall(feature));
+      var libraries = Project.LIBRARIES;
+      var classPaths = new ArrayList<Path>();
+      for (var module : project.main().modules()) classPaths.add(main.classes(feature, module));
+      if (Files.isDirectory(libraries)) classPaths.addAll(Paths.list(libraries, Paths::isJarFile));
+      buildSingleRelease78Modules(classPaths);
+    }
 
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
@@ -123,10 +133,15 @@ public class ProjectBuilder {
     }
   }
 
-  /** Builds all main modules in a single */
-  public void buildSingleRelease78Modules() {
+  /**
+   * Builds all main modules in a single.
+   *
+   * @param classPaths paths to pre-compiled classes and external modules
+   */
+  public void buildSingleRelease78Modules(List<Path> classPaths) {
     var main = project.main();
     if (main.release() > 8) throw new IllegalStateException("release too high: " + main.release());
+
     for (var module : project.main().modules()) {
       var moduleInfoJavaFiles = new ArrayList<Path>();
       Paths.find(Path.of(module, "main/java-module"), "module-info.java", moduleInfoJavaFiles::add);
@@ -143,11 +158,15 @@ public class ProjectBuilder {
               .build();
       run(compileModuleOnly);
 
+      var path = Path.of(module, "main/java");
+      if (Files.notExists(path)) continue;
+
       var javaSourceFiles = new ArrayList<Path>();
-      Paths.find(Path.of(module, "main/java"), "**.java", javaSourceFiles::add);
+      Paths.find(path, "**.java", javaSourceFiles::add);
       var javac =
           Command.builder("javac")
               .with("--release", main.release()) // 7 or 8
+              .with("--class-path", Paths.join(classPaths))
               .withEach(main.tweaks().getOrDefault("javac", List.of()))
               .with("-d", main.classes().resolve(module))
               .withEach(javaSourceFiles);
@@ -189,7 +208,12 @@ public class ProjectBuilder {
         info("Launch JUnit Platform for test module: %s", module);
         var junit = computeTestJUnitCall(module);
         info(junit.toCommand().toString());
-        runner.run(junit, finder, module).checkSuccessful();
+        var response = runner.run(junit, finder, module);
+        bach.logbook().log(response);
+      }
+      var errors = bach.logbook().responses(ToolResponse::isError);
+      if (errors.size() > 0) {
+        throw new BuildException("JUnit reported failed test module(s): " + errors.size());
       }
     }
   }
@@ -211,15 +235,21 @@ public class ProjectBuilder {
 
   /** @return the {@code javac} call to compile all modules of the main space. */
   public ToolCall computeMainJavacCall() {
+    return computeMainJavacCall(project.main().release());
+  }
+
+  /**
+   * @param release the release
+   * @return the {@code javac} call to compile all modules of the main space. */
+  public ToolCall computeMainJavacCall(int release) {
     var main = project.main();
     return Command.builder("javac")
-        .with("--release", main.release())
+        .with("--release", release)
         .with("--module", String.join(",", main.modules()))
         .with("--module-version", project.version())
         .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
-        .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
-        .with("-d", main.classes())
+        .with("-d", main.classes(release))
         .build();
   }
 
