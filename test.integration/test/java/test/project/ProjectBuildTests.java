@@ -9,6 +9,7 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.jar.JarFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -247,5 +248,66 @@ class ProjectBuildTests {
     assertEquals(9, Classes.feature(context.workspace("classes-main/9/foo", "foo/Foo.class")));
     assertEquals(11, Classes.feature(context.workspace("classes-mr/11/foo", "foo/Foo.class")));
     assertEquals(15, Classes.feature(context.workspace("classes-mr/15/foo", "foo/Foo.class")));
+  }
+
+  @Test
+  void buildMultiRelease11(@TempDir Path temp) throws Exception {
+    var context = new Context("MultiRelease-11", temp);
+    var output = context.build("-Dbach.project.main.release=11");
+
+    assertLinesMatch(
+        """
+        Build project MultiRelease-11 0-ea
+        Compile main modules
+        >> TOOL CALLS >>
+        Build took .+s
+        Logbook written to %s
+        """
+            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .lines(),
+        output.lines());
+
+    var foo = context.newModuleFinder().find("foo").orElseThrow();
+    assertEquals("foo", foo.descriptor().name());
+    var path = Path.of(foo.location().orElseThrow());
+    try (var jar = new JarFile(path.toFile())) {
+      assertTrue(jar.isMultiRelease(), "Not a multi-release JAR file: " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      Collections.sort(names);
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          META-INF/versions/12/
+          META-INF/versions/12/foo/
+          META-INF/versions/12/foo/Foo.class
+          META-INF/versions/13/
+          META-INF/versions/13/foo/
+          META-INF/versions/13/foo/Foo.class
+          META-INF/versions/14/
+          META-INF/versions/14/foo/
+          META-INF/versions/14/foo/Foo.class
+          META-INF/versions/15/
+          META-INF/versions/15/foo/
+          META-INF/versions/15/foo/Foo.class
+          META-INF/versions/16/
+          META-INF/versions/16/foo/
+          META-INF/versions/16/foo/Foo.class
+          foo/
+          foo/Foo.class
+          module-info.class        
+          """
+              .lines(),
+          names.stream());
+    }
+
+    assertEquals(11, Classes.feature(context.workspace("classes-main/11/foo","module-info.class")));
+    assertEquals(11, Classes.feature(context.workspace("classes-main/11/foo", "foo/Foo.class")));
+    assertEquals(12, Classes.feature(context.workspace("classes-mr/12/foo", "foo/Foo.class")));
+    assertEquals(13, Classes.feature(context.workspace("classes-mr/13/foo", "foo/Foo.class")));
+    assertEquals(14, Classes.feature(context.workspace("classes-mr/14/foo", "foo/Foo.class")));
+    assertEquals(15, Classes.feature(context.workspace("classes-mr/15/foo", "foo/Foo.class")));
+    assertEquals(16, Classes.feature(context.workspace("classes-mr/16/foo", "foo/Foo.class")));
   }
 }
