@@ -15,7 +15,6 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -191,16 +190,14 @@ public class ProjectBuilder {
 
     // jar 'em all
     var archive = computeMainJarFileName(module);
-    var pendings = new ArrayDeque<>(supplement.releases());
-    var classes0 = destination.resolve(pendings.removeFirst() + "/" + module);
     var jar = Command.builder("jar");
     jar.with("--create")
         .with("--file", main.workspace("modules", archive))
         .withEach(main.tweaks().getOrDefault("jar", List.of()))
         .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
-        .with("-C", classes0, ".");
+        .with("-C", main.classes(main.release(), module), ".");
 
-    for (var release : pendings) {
+    for (var release : supplement.releases()) {
       var classes = destination.resolve(release + "/" + module);
       jar.with("--release", release).with("-C", classes, ".");
     }

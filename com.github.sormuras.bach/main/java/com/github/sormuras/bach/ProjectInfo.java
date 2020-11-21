@@ -39,7 +39,7 @@ public @interface ProjectInfo {
     String[] modules() default "*";
 
     /** @return the module source path patterns for main modules */
-    String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-9", "./*/main/java-module"};
+    String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};
 
     /** @return the module paths for main modules */
     String[] modulePaths() default {".bach/libraries"};

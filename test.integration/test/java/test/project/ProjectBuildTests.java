@@ -204,7 +204,7 @@ class ProjectBuildTests {
   @Test
   void buildMultiRelease9(@TempDir Path temp) throws Exception {
     var context = new Context("MultiRelease-9", temp);
-    var output = context.build();
+    var output = context.build("-Dbach.project.main.release=9");
 
     assertLinesMatch(
         """
@@ -243,8 +243,8 @@ class ProjectBuildTests {
           names.stream());
     }
 
-    assertEquals(9, Classes.feature(context.workspace("classes-mr/9/foo","module-info.class")));
-    assertEquals(9, Classes.feature(context.workspace("classes-mr/9/foo", "foo/Foo.class")));
+    assertEquals(9, Classes.feature(context.workspace("classes-main/9/foo","module-info.class")));
+    assertEquals(9, Classes.feature(context.workspace("classes-main/9/foo", "foo/Foo.class")));
     assertEquals(11, Classes.feature(context.workspace("classes-mr/11/foo", "foo/Foo.class")));
     assertEquals(15, Classes.feature(context.workspace("classes-mr/15/foo", "foo/Foo.class")));
   }
