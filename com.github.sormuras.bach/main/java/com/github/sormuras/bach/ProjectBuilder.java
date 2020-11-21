@@ -4,7 +4,6 @@ import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleDirectory;
 import com.github.sormuras.bach.module.ModuleSearcher;
 import com.github.sormuras.bach.project.MainSpace;
-import com.github.sormuras.bach.project.ModuleSupplement;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
@@ -100,10 +99,8 @@ public class ProjectBuilder {
 
     Paths.createDirectories(main.workspace("modules"));
     for (var module : project.main().modules()) {
-      var supplement = project.main().supplements().get(module);
-      if (supplement != null && supplement.isMultiRelease()) {
-        buildMultiReleaseModule(supplement);
-        continue;
+      for (var release : project.main().supplements().get(module).releases()) {
+        run(computeMainJavacCall(module, release));
       }
       run(computeMainJarCall(module));
     }
@@ -129,7 +126,7 @@ public class ProjectBuilder {
   /** Builds all main modules in a single */
   public void buildSingleRelease78Modules() {
     var main = project.main();
-    if (main.release() > 8) throw new IllegalStateException("release to high: " + main.release());
+    if (main.release() > 8) throw new IllegalStateException("release too high: " + main.release());
     for (var module : project.main().modules()) {
       var moduleInfoJavaFiles = new ArrayList<Path>();
       Paths.find(Path.of(module, "main/java-module"), "module-info.java", moduleInfoJavaFiles::add);
@@ -156,52 +153,6 @@ public class ProjectBuilder {
               .withEach(javaSourceFiles);
       run(javac.build());
     }
-  }
-
-  /**
-   * Builds a multi-release modular JAR file.
-   *
-   * @param supplement the extra information
-   */
-  public void buildMultiReleaseModule(ModuleSupplement supplement) {
-    var module = supplement.descriptor().name();
-    var main = project.main();
-
-    // compile "main" module first
-    var destination = Project.WORKSPACE.resolve("classes-mr");
-    // compile release-specific classes
-    for (var release : supplement.releases()) {
-      var javaSourceFiles = new ArrayList<Path>();
-      Paths.find(Path.of(module, "main/java-" + release), "**.java", javaSourceFiles::add);
-      var javac = Command.builder("javac");
-      javac
-          .with("--release", release)
-          .with("--module-version", project.version())
-          .with("--source-path", module + "/main/java-" + release)
-          .with("--class-path", main.classes());
-      if (release >= 9) javac.with("--module-path", main.classes());
-      javac
-          .with("-implicit:none") // generate classes for explicitly referenced source files
-          .withEach(main.tweaks().getOrDefault("javac", List.of()))
-          .with("-d", destination.resolve(release + "/" + module))
-          .withEach(javaSourceFiles);
-      run(javac.build());
-    }
-
-    // jar 'em all
-    var archive = computeMainJarFileName(module);
-    var jar = Command.builder("jar");
-    jar.with("--create")
-        .with("--file", main.workspace("modules", archive))
-        .withEach(main.tweaks().getOrDefault("jar", List.of()))
-        .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
-        .with("-C", main.classes(main.release(), module), ".");
-
-    for (var release : supplement.releases()) {
-      var classes = destination.resolve(release + "/" + module);
-      jar.with("--release", release).with("-C", classes, ".");
-    }
-    run(jar.build());
   }
 
   /**
@@ -273,19 +224,45 @@ public class ProjectBuilder {
   }
 
   /**
+   * @param module the module to compile
+   * @param release the release to compile
+   * @return the {@code javac} call to compile a version of a multi-release module
+   */
+  public ToolCall computeMainJavacCall(String module, int release) {
+    var main = project.main();
+    var classes = main.workspace("classes-mr", release + "/" + module);
+    var javaSourceFiles = new ArrayList<Path>();
+    Paths.find(Path.of(module, "main/java-" + release), "**.java", javaSourceFiles::add);
+    return Command.builder("javac")
+        .with("--release", release)
+        .with("--module-version", project.version())
+        .with("--module-path", main.classes())
+        .with("-implicit:none") // generate classes for explicitly referenced source files
+        .withEach(main.tweaks().getOrDefault("javac", List.of()))
+        .with("-d", classes)
+        .withEach(javaSourceFiles)
+        .build();
+  }
+
+  /**
    * @param module the name of module to create an archive for
    * @return the {@code jar} call to archive all assets for the given module
    */
   public ToolCall computeMainJarCall(String module) {
     var main = project.main();
     var archive = computeMainJarFileName(module);
-    return Command.builder("jar")
-        .with("--create")
-        .with("--file", main.workspace("modules", archive))
-        .withEach(main.tweaks().getOrDefault("jar", List.of()))
-        .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
-        .with("-C", main.classes().resolve(module), ".")
-        .build();
+    var jar =
+        Command.builder("jar")
+            .with("--create")
+            .with("--file", main.workspace("modules", archive))
+            .withEach(main.tweaks().getOrDefault("jar", List.of()))
+            .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
+            .with("-C", main.classes().resolve(module), ".");
+    for (var release : main.supplements().get(module).releases()) {
+      var classes = main.workspace("classes-mr", release + "/" + module);
+      jar.with("--release", release).with("-C", classes, ".");
+    }
+    return jar.build();
   }
 
   /**
