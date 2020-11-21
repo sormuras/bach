@@ -12,7 +12,6 @@ import com.github.sormuras.bach.tool.ToolRunner;
 import java.io.File;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -167,42 +166,25 @@ public class ProjectBuilder {
    */
   public void buildMultiReleaseModule(ModuleSupplement supplement) {
     var module = supplement.descriptor().name();
-    int base = supplement.releases().get(0);
     var main = project.main();
 
     // compile "main" module first
     var destination = Project.WORKSPACE.resolve("classes-mr");
-    var baseModuleInfoJava = Path.of(module + "/main/java-module/module-info.java");
-    if (Files.exists(baseModuleInfoJava)) {
-      var compileBaseModule = Command.builder("javac");
-      compileBaseModule
-          .with("--release", 9)
-          .with("--module-version", project.version())
-          .with(
-              "--source-path",
-              String.join(File.pathSeparator, module + "/main/java", module + "/main/java-module"))
-          .with("-implicit:none")
-          .with("-d", destination.resolve("" + base))
-          .with(baseModuleInfoJava);
-      run(compileBaseModule.build());
-    }
-
     // compile release-specific classes
     for (var release : supplement.releases()) {
-      var sourcePathOffset = "main/java" + (release == base ? "" : "-" + release);
       var javaSourceFiles = new ArrayList<Path>();
-      Paths.find(Path.of(module, sourcePathOffset), "**.java", javaSourceFiles::add);
+      Paths.find(Path.of(module, "main/java-" + release), "**.java", javaSourceFiles::add);
       var javac = Command.builder("javac");
       javac
           .with("--release", release)
           .with("--module-version", project.version())
-          .with("--source-path", module + "/" + sourcePathOffset)
+          .with("--source-path", module + "/main/java-" + release)
           .with("--class-path", main.classes());
       if (release >= 9) javac.with("--module-path", main.classes());
       javac
           .with("-implicit:none") // generate classes for explicitly referenced source files
           .withEach(main.tweaks().getOrDefault("javac", List.of()))
-          .with("-d", destination.resolve("" + release))
+          .with("-d", destination.resolve(release + "/" + module))
           .withEach(javaSourceFiles);
       run(javac.build());
     }
@@ -210,7 +192,7 @@ public class ProjectBuilder {
     // jar 'em all
     var archive = computeMainJarFileName(module);
     var pendings = new ArrayDeque<>(supplement.releases());
-    var classes0 = destination.resolve("" + pendings.removeFirst());
+    var classes0 = destination.resolve(pendings.removeFirst() + "/" + module);
     var jar = Command.builder("jar");
     jar.with("--create")
         .with("--file", main.workspace("modules", archive))
@@ -218,9 +200,9 @@ public class ProjectBuilder {
         .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
         .with("-C", classes0, ".");
 
-    for (var feature : pendings) {
-      var classes = destination.resolve("" + feature);
-      jar.with("--release", feature).with("-C", classes, ".");
+    for (var release : pendings) {
+      var classes = destination.resolve(release + "/" + module);
+      jar.with("--release", release).with("-C", classes, ".");
     }
     run(jar.build());
   }

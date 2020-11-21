@@ -189,14 +189,13 @@ class ProjectBuildTests {
   }
 
   @Test
-  @Disabled
   void buildMultiRelease9(@TempDir Path temp) throws Exception {
-    var context = new Context("MultiRelease9", temp);
-    var output = context.build("-Dbach.project.main.release.base=9");
+    var context = new Context("MultiRelease-9", temp);
+    var output = context.build();
 
     assertLinesMatch(
         """
-        Build project MultiRelease9 0-ea
+        Build project MultiRelease-9 0-ea
         Compile main modules
         >> TOOL CALLS >>
         Build took .+s
@@ -211,6 +210,29 @@ class ProjectBuildTests {
     var path = Path.of(foo.location().orElseThrow());
     try (var jar = new JarFile(path.toFile())) {
       assertTrue(jar.isMultiRelease(), "Not a multi-release JAR file: " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          module-info.class
+          foo/
+          foo/Foo.class
+          META-INF/versions/11/
+          META-INF/versions/11/foo/
+          META-INF/versions/11/foo/Foo.class
+          META-INF/versions/15/
+          META-INF/versions/15/foo/
+          META-INF/versions/15/foo/Foo.class          
+          """
+              .lines(),
+          names.stream());
     }
+
+    assertEquals(9, Classes.feature(context.workspace("classes-mr/9/foo","module-info.class")));
+    assertEquals(9, Classes.feature(context.workspace("classes-mr/9/foo", "foo/Foo.class")));
+    assertEquals(11, Classes.feature(context.workspace("classes-mr/11/foo", "foo/Foo.class")));
+    assertEquals(15, Classes.feature(context.workspace("classes-mr/15/foo", "foo/Foo.class")));
   }
 }

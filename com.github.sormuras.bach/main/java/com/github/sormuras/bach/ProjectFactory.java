@@ -13,7 +13,6 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,13 +84,11 @@ class ProjectFactory {
     for (var info : finder.findAll()) {
       var descriptor = info.descriptor();
       // "java-N", with N = 7, 8, ... 16
-      var releases = new ArrayList<Integer>();
-      var base = Integer.parseInt(System.getProperty("bach.project.main.release.base", "8"));
-      releases.add(base);
+      var releases = new TreeSet<Integer>();
       var path = Path.of(info.location().orElseThrow()).getParent().getParent();
       var paths = Paths.list(path, p -> Paths.name(p).matches("java-\\d+"));
       for (var pathN : paths) releases.add(Integer.parseInt(Paths.name(pathN).substring(5)));
-      map.put(descriptor.name(), new ModuleSupplement(descriptor, releases));
+      map.put(descriptor.name(), new ModuleSupplement(descriptor, List.copyOf(releases)));
     }
     return Map.copyOf(map);
   }
