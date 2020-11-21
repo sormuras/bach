@@ -78,7 +78,7 @@ public class Paths {
         Files.find(start, 99, (path, bfa) -> matcher.matches(start.relativize(path)))) {
       stream.filter(Paths::isVisible).map(Path::normalize).forEach(consumer);
     } catch (Exception exception) {
-      throw new RuntimeException("find failed: " + glob, exception);
+      throw new RuntimeException("find failed: " + start + " -> " + glob, exception);
     }
   }
 
