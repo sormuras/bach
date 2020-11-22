@@ -1,12 +1,13 @@
 package com.github.sormuras.bach.project;
 
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
  * Additional module-related information.
  */
-public record ModuleSupplement(ModuleDescriptor descriptor, List<Integer> releases) {
+public record ModuleSupplement(Path info, ModuleDescriptor descriptor, List<Integer> releases) {
 
   /**
    *

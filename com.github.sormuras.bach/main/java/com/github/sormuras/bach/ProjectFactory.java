@@ -81,14 +81,19 @@ class ProjectFactory {
 
   Map<String, ModuleSupplement> supplements(ModuleInfoFinder finder) {
     var map = new TreeMap<String, ModuleSupplement>();
-    for (var info : finder.findAll()) {
-      var descriptor = info.descriptor();
+    var currentWorkingDirectory = Path.of("").toAbsolutePath();
+    for (var reference : finder.findAll()) {
+      var info = Path.of(reference.location().orElseThrow());
       // "java-N", with N = 7, 8, ... 16
       var releases = new TreeSet<Integer>();
-      var path = Path.of(info.location().orElseThrow()).getParent().getParent();
+      var path = info.getParent().getParent();
       var paths = Paths.list(path, p -> Paths.name(p).matches("java-\\d+"));
       for (var pathN : paths) releases.add(Integer.parseInt(Paths.name(pathN).substring(5)));
-      map.put(descriptor.name(), new ModuleSupplement(descriptor, List.copyOf(releases)));
+      var descriptor = reference.descriptor();
+      map.put(
+          descriptor.name(),
+          new ModuleSupplement(
+              currentWorkingDirectory.relativize(info), descriptor, List.copyOf(releases)));
     }
     return Map.copyOf(map);
   }

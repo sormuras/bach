@@ -240,7 +240,8 @@ public class ProjectBuilder {
 
   /**
    * @param release the release
-   * @return the {@code javac} call to compile all modules of the main space. */
+   * @return the {@code javac} call to compile all modules of the main space
+   */
   public ToolCall computeMainJavacCall(int release) {
     var main = project.main();
     return Command.builder("javac")
@@ -288,9 +289,27 @@ public class ProjectBuilder {
             .withEach(main.tweaks().getOrDefault("jar", List.of()))
             .withEach(main.tweaks().getOrDefault("jar(" + module + ')', List.of()))
             .with("-C", main.classes().resolve(module), ".");
-    for (var release : main.supplements().get(module).releases()) {
+    // include resource and source files
+    var supplement = main.supplements().get(module);
+    var info0 = supplement.info();
+    var source0 = info0.getParent();
+    if (source0 == null) jar.with(info0);
+    else {
+      jar.with("-C", source0, ".");
+      if (Paths.name(source0).equals("java-module")) {
+        var java0 = source0.resolveSibling("java");
+        if (Files.isDirectory(java0)) jar.with("-C", java0, ".");
+      }
+    }
+    // add versioned class files
+    for (var release : supplement.releases()) {
       var classes = main.workspace("classes-mr", release + "/" + module);
       jar.with("--release", release).with("-C", classes, ".");
+      // add versioned resource and source files
+      if (source0 != null) {
+        var sources = source0.resolveSibling("java-" + release);
+        jar.with("-C", sources, ".");
+      }
     }
     return jar.build();
   }
