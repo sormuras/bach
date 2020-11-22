@@ -56,7 +56,7 @@ public final class Logbook implements Consumer<String> {
   }
 
   static String markdown(Object object) {
-    return object.toString().replace('\t', ' ');
+    return object.toString().replace('\t', ' ').replaceAll("\\e\\[[\\d;]*[^\\d;]","");
   }
 
   static String markdownJoin(Collection<?> collection) {
@@ -249,13 +249,13 @@ public final class Logbook implements Consumer<String> {
       if (!response.out().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(response.out());
+        md.add(markdown(response.out()));
         md.add("```");
       }
       if (!response.err().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(response.err());
+        md.add(markdown(response.err()));
         md.add("```");
       }
     }
