@@ -3,7 +3,6 @@ package com.github.sormuras.bach.module;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.internal.GitHubReleasesSearcher;
 import com.github.sormuras.bach.internal.MavenCentralSearcher;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,9 +13,9 @@ public interface ModuleSearcher {
    * Returns an optional URI of the given module name.
    *
    * @param module the name of the module to find
-   * @return a URI wrapped in an optional object
+   * @return a URI as a {@code String} wrapped in an optional object
    */
-  Optional<URI> search(String module);
+  Optional<String> search(String module);
 
   /**
    * Returns a module searcher that is composed from a sequence of zero or more module searcher.

@@ -70,7 +70,7 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    */
   public URI lookup(String module, ModuleSearcher searcher) {
     return lookup(module)
-        .or(() -> searcher.search(module))
+        .or(() -> searcher.search(module).map(URI::create))
         .orElseThrow(() -> new RuntimeException("Module not found: " + module));
   }
 

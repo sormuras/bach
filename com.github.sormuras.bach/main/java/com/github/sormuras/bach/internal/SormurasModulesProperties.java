@@ -22,7 +22,7 @@ public class SormurasModulesProperties {
     this.variants = variants;
   }
 
-  public Optional<URI> search(String module) {
+  public Optional<String> search(String module) {
     if (moduleMaven == null && moduleVersion == null)
       try {
         moduleMaven = load("module-maven.properties");
@@ -44,7 +44,7 @@ public class SormurasModulesProperties {
             .group(maven.substring(0, indexOfColon))
             .artifact(maven.substring(indexOfColon + 1))
             .version(version);
-    return Optional.of(URI.create(joiner.toString()));
+    return Optional.of(joiner.toString());
   }
 
   private static final String ROOT = "https://github.com/sormuras/modules";

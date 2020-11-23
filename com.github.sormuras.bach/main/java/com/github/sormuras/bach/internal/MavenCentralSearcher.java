@@ -2,7 +2,6 @@ package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.module.ModuleSearcher;
-import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 
@@ -16,7 +15,7 @@ public class MavenCentralSearcher implements ModuleSearcher {
   }
 
   @Override
-  public Optional<URI> search(String module) {
+  public Optional<String> search(String module) {
     return properties.search(module);
   }
 }

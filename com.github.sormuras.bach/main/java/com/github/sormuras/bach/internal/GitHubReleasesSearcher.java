@@ -2,7 +2,6 @@ package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.module.ModuleSearcher;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +17,7 @@ public class GitHubReleasesSearcher implements ModuleSearcher {
   }
 
   @Override
-  public Optional<URI> search(String module) {
+  public Optional<String> search(String module) {
     if (!module.startsWith("com.github.")) return Optional.empty();
     var split = module.split("\\.");
     if (split.length < 4) return Optional.empty();
@@ -28,11 +27,11 @@ public class GitHubReleasesSearcher implements ModuleSearcher {
     var latest = github.findLatestReleaseTag();
     if (latest.isPresent()) {
       var releasedModule = github.findReleasedModule(module, latest.get());
-      if (releasedModule.isPresent()) return releasedModule.map(URI::create);
+      if (releasedModule.isPresent()) return releasedModule;
     }
     for (var tag : List.of("early-access", "ea", "latest", "snapshot")) {
       var candidate = github.findReleasedModule(module, tag);
-      if (candidate.isPresent()) return candidate.map(URI::create);
+      if (candidate.isPresent()) return candidate;
     }
     return Optional.empty();
   }
