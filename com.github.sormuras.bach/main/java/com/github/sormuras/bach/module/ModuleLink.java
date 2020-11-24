@@ -39,36 +39,6 @@ public record ModuleLink(String module, String uri) implements Comparable<Module
     return new Factory(module);
   }
 
-  /**
-   * Returns a module link pointing to a modular JUnit Jupiter JAR file hosted at Maven Central.
-   *
-   * @param suffix the suffix used to complete the module name and the Maven Artifact ID
-   * @param version the version string
-   * @return a new Maven Central-based {@code Link} instance of JUnit Jupiter
-   * @see <a
-   *     href="https://search.maven.org/search?q=g:org.junit.jupiter">org.junit.jupiter[.]$suffix</a>
-   */
-  public static ModuleLink ofJUnitJupiter(String suffix, String version) {
-    var module = "org.junit.jupiter" + (suffix.isEmpty() ? "" : '.' + suffix);
-    var artifact = "junit-jupiter" + (suffix.isEmpty() ? "" : '-' + suffix);
-    return link(module).toMavenCentral("org.junit.jupiter:" + artifact + ':' + version);
-  }
-
-  /**
-   * Returns a module link pointing to a modular JUnit Platform JAR file hosted at Maven Central.
-   *
-   * @param suffix the suffix used to complete the module name and the Maven Artifact ID
-   * @param version the version string
-   * @return a new Maven Central-based {@code Link} instance of JUnit Platform
-   * @see <a
-   *     href="https://search.maven.org/search?q=g:org.junit.platform">org.junit.platform.$suffix</a>
-   */
-  public static ModuleLink ofJUnitPlatform(String suffix, String version) {
-    var module = "org.junit.platform." + suffix;
-    var artifact = "junit-platform-" + suffix;
-    return link(module).toMavenCentral("org.junit.platform:" + artifact + ':' + version);
-  }
-
   /** A builder of links. */
   public static class Factory {
 
