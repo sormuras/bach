@@ -1,13 +1,27 @@
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.ProjectInfo.Library;
+import com.github.sormuras.bach.ProjectInfo.Library.Link;
+import com.github.sormuras.bach.ProjectInfo.Library.Searcher;
 import com.github.sormuras.bach.ProjectInfo.Main;
 import com.github.sormuras.bach.ProjectInfo.Test;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
+import com.github.sormuras.bach.module.ModuleSearcher.JUnitJupiterSearcher;
+import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
 
 @ProjectInfo(
     name = "bach",
     version = "16-ea",
-    library = @Library(requires = {"org.junit.platform.console"}),
+    library =
+        @Library(
+            requires = {"org.junit.platform.console"},
+            links = {
+              @Link(module = "org.apiguardian.api", target = "org.apiguardian:apiguardian-api:1.1.0"),
+              @Link(module = "org.opentest4j", target = "org.opentest4j:opentest4j:1.2.0"),
+            },
+            searchers = {
+              @Searcher(with = JUnitJupiterSearcher.class, version = "5.7.0"),
+              @Searcher(with = JUnitPlatformSearcher.class, version = "1.7.0"),
+            }),
     main =
         @Main(
             release = 16,
