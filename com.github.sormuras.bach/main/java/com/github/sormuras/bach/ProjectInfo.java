@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.module.ModuleSearcher;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -172,6 +173,20 @@ public @interface ProjectInfo {
         /** Maven-based coordinates. */
         MAVEN
       }
+    }
+
+    /** @return an array of module searchers */
+    Searcher[] searchers() default {};
+
+    /** Module URI searcher. */
+    @Target({})
+    @interface Searcher {
+      /**
+       * @return a class that implements the module searcher inteface
+       */
+      Class<? extends ModuleSearcher> with();
+      /** @return the version */
+      String version();
     }
   }
 }

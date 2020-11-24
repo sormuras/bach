@@ -73,7 +73,9 @@ public class ProjectBuilder {
 
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
-    var searcher = ModuleSearcher.ofBestEffort(bach);
+    var searchers = new ArrayList<>(project.library().searchers());
+    searchers.add(ModuleSearcher.ofBestEffort(bach));
+    var searcher = ModuleSearcher.compose(searchers.toArray(ModuleSearcher[]::new));
     var requires = project.library().requires();
     requires.forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
     bach.loadMissingModules(moduleDirectory, searcher);

@@ -5,6 +5,7 @@ import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import com.github.sormuras.bach.module.ModuleInfoReference;
 import com.github.sormuras.bach.module.ModuleLink;
+import com.github.sormuras.bach.module.ModuleSearcher;
 import com.github.sormuras.bach.project.Library;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.ModuleSupplement;
@@ -13,6 +14,7 @@ import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +108,9 @@ class ProjectFactory {
     var links = new TreeMap<String, String>();
     var binding = ProjectInfo.Library.Binding.ofSystem();
     for (var link : info.library().links()) links.put(link.module(), link(link, binding).uri());
-    return new Library(requires, links);
+    var searchers = new ArrayList<ModuleSearcher>();
+    for (var searcher : info.library().searchers()) searchers.add(searcher(searcher));
+    return new Library(requires, links, searchers);
   }
 
   ModuleLink link(ProjectInfo.Library.Link link, Map<String, String> binding) {
@@ -118,6 +122,18 @@ class ProjectFactory {
       case URI -> ModuleLink.link(module).toUri(target);
       case MAVEN -> ModuleLink.link(module).toMaven(link.mavenRepository(), target);
     };
+  }
+
+  ModuleSearcher searcher(ProjectInfo.Library.Searcher searcher) {
+    try {
+      try {
+        return searcher.with().getConstructor(String.class).newInstance(searcher.version());
+      } catch (NoSuchMethodException exception) {
+        return searcher.with().getConstructor().newInstance();
+      }
+    } catch (ReflectiveOperationException exception) {
+      throw new RuntimeException("Creating module searcher failed: " + searcher.with(), exception);
+    }
   }
 
   String replace(String template, Map<String, String> binding) {
