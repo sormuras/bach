@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.internal.GitHubReleasesSearcher;
 import com.github.sormuras.bach.internal.MavenCentralSearcher;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /** Try to find a URI for a specific module name. */
@@ -42,6 +43,53 @@ public interface ModuleSearcher {
    */
   static ModuleSearcher ofBestEffort(Bach bach) {
     return compose(new GitHubReleasesSearcher(bach), new MavenCentralSearcher(bach));
+  }
+
+  /**
+   * Maps well-known JavaFX module names to their Maven Central artifacts.
+   */
+  class JavaFXSearcher implements ModuleSearcher {
+
+    /**
+     * @return the classifier determined via the {@code os.name} system property
+     */
+    public static String classifier() {
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      var isWindows = os.contains("win");
+      var isMac = os.contains("mac");
+      var isLinux = !(isWindows || isMac);
+      return isLinux ? "linux" : isMac ? "mac" : "win";
+    }
+
+    private final String version;
+    private final String classifier;
+
+    /**
+     * Constructs a new module searcher with the given version.
+     * @param version the version
+     */
+    public JavaFXSearcher(String version) {
+      this(version, classifier());
+    }
+
+    /**
+     * Constructs a new module searcher with the given version.
+     * @param version the version
+     * @param classifier the classifier
+     */
+    public JavaFXSearcher(String version, String classifier) {
+      this.version = version;
+      this.classifier = classifier;
+    }
+
+    @Override
+    public Optional<String> search(String module) {
+      if (!module.startsWith("javafx.")) return Optional.empty();
+      var group = "org.openjfx";
+      var artifact = "javafx-" + module.substring(7).replace('.', '-');
+      var coordinates = group + ':' + artifact + ':' + version + ':' + classifier;
+      return Optional.of(ModuleLink.link(module).toMavenCentral(coordinates).uri());
+    }
   }
 
   /** Maps well-known JUnit Jupiter module names to their Maven Central artifacts. */
