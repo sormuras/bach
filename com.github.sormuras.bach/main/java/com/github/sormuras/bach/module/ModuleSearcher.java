@@ -45,14 +45,10 @@ public interface ModuleSearcher {
     return compose(new GitHubReleasesSearcher(bach), new MavenCentralSearcher(bach));
   }
 
-  /**
-   * Maps well-known JavaFX module names to their Maven Central artifacts.
-   */
+  /** Maps well-known JavaFX module names to their Maven Central artifacts. */
   class JavaFXSearcher implements ModuleSearcher {
 
-    /**
-     * @return the classifier determined via the {@code os.name} system property
-     */
+    /** @return the classifier determined via the {@code os.name} system property */
     public static String classifier() {
       var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
       var isWindows = os.contains("win");
@@ -66,6 +62,7 @@ public interface ModuleSearcher {
 
     /**
      * Constructs a new module searcher with the given version.
+     *
      * @param version the version
      */
     public JavaFXSearcher(String version) {
@@ -74,6 +71,7 @@ public interface ModuleSearcher {
 
     /**
      * Constructs a new module searcher with the given version.
+     *
      * @param version the version
      * @param classifier the classifier
      */
@@ -99,6 +97,7 @@ public interface ModuleSearcher {
 
     /**
      * Constructs a new module searcher with the given version.
+     *
      * @param version the version
      */
     public JUnitJupiterSearcher(String version) {
@@ -133,6 +132,7 @@ public interface ModuleSearcher {
 
     /**
      * Constructs a new module searcher with the given version.
+     *
      * @param version the version
      */
     public JUnitPlatformSearcher(String version) {
@@ -157,6 +157,65 @@ public interface ModuleSearcher {
         case "org.junit.platform.reporting" -> map("reporting");
         default -> Optional.empty();
       };
+    }
+  }
+
+  /** Maps well-known LWJGL module names to their Maven Central artifacts. */
+  class LWJGLSearcher implements ModuleSearcher {
+
+    /** @return the classifier determined via the {@code os.name} system property */
+    public static String classifier() {
+      var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+      var isWindows = os.contains("win");
+      var isMac = os.contains("mac");
+      var isLinux = !(isWindows || isMac);
+      var arch = System.getProperty("os.arch").toLowerCase(Locale.ENGLISH);
+      var is64 = arch.contains("64");
+      if (isLinux) {
+        if (arch.startsWith("arm") || arch.startsWith("aarch64")) {
+          var arm64 = is64 || arch.startsWith("armv8");
+          return arm64 ? "natives-linux-arm64" : "natives-linux-arm32";
+        }
+        return "natives-linux";
+      }
+      if (isWindows) {
+        return is64 ? "natives-windows" : "natives-windows-x86";
+      }
+      return "natives-macos";
+    }
+
+    private final String version;
+    private final String classifier;
+
+    /**
+     * Constructs a new module searcher with the given version.
+     *
+     * @param version the version
+     */
+    public LWJGLSearcher(String version) {
+      this(version, classifier());
+    }
+
+    /**
+     * Constructs a new module searcher with the given version.
+     *
+     * @param version the version
+     * @param classifier the classifier
+     */
+    public LWJGLSearcher(String version, String classifier) {
+      this.version = version;
+      this.classifier = classifier;
+    }
+
+    @Override
+    public Optional<String> search(String module) {
+      if (!module.startsWith("org.lwjgl")) return Optional.empty();
+      var group = "org.lwjgl";
+      var natives = module.endsWith(".natives");
+      var end = natives ? module.length() - 8 : module.length();
+      var artifact = "lwjgl" + module.substring(9, end).replace('.', '-');
+      var coordinates = group + ':' + artifact + ':' + version + (natives ? ":" + classifier : "");
+      return Optional.of(ModuleLink.link(module).toMavenCentral(coordinates).uri());
     }
   }
 }

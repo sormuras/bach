@@ -23,4 +23,24 @@ class ModuleSearcherTests {
     var actual = searcher.search(module).orElseThrow();
     assertEquals(expected, actual);
   }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "openal", "opencl", "opengl", "opengles", "openvr"})
+  void checkLWJGL(String suffix) {
+    var group = "org/lwjgl";
+    var artifact = "lwjgl" + (suffix.isEmpty() ? "" : "-" + suffix);
+    var version = "3.2.3";
+    var jar = artifact + "-" + version + ".jar";
+    var repository = "https://repo.maven.apache.org/maven2";
+    var expected = String.join("/", repository, group, artifact, version, jar);
+
+    var searcher = new ModuleSearcher.LWJGLSearcher(version);
+    var module = "org.lwjgl" + (suffix.isEmpty() ? "" : "." + suffix);
+    assertEquals(expected, searcher.search(module).orElseThrow());
+
+    var classifier = ModuleSearcher.LWJGLSearcher.classifier();
+    var jarNatives = artifact + "-" + version + "-" + classifier + ".jar";
+    var expectedNatives = String.join("/", repository, group, artifact, version, jarNatives);
+    assertEquals(expectedNatives, searcher.search(module + ".natives").orElseThrow());
+  }
 }
