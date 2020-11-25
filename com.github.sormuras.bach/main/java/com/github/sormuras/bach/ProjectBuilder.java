@@ -251,6 +251,7 @@ public class ProjectBuilder {
         .with("--module", String.join(",", main.modules()))
         .with("--module-version", project.version())
         .with("--module-source-path", String.join(File.pathSeparator, main.moduleSourcePaths()))
+        .with("--module-path", String.join(File.pathSeparator, main.modulePaths()))
         .withEach(main.tweaks().getOrDefault("javac", List.of()))
         .with("-d", main.classes(release))
         .build();
