@@ -106,16 +106,15 @@ class ProjectFactory {
     requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
     requires.removeAll(Modules.declared(finder));
     var links = new TreeMap<String, String>();
-    var binding = ProjectInfo.Library.Binding.ofSystem();
-    for (var link : info.library().links()) links.put(link.module(), link(link, binding).uri());
+    for (var link : info.library().links()) links.put(link.module(), link(link).uri());
     var searchers = new ArrayList<ModuleSearcher>();
     for (var searcher : info.library().searchers()) searchers.add(searcher(searcher));
     return new Library(requires, links, searchers);
   }
 
-  ModuleLink link(ProjectInfo.Library.Link link, Map<String, String> binding) {
+  ModuleLink link(ProjectInfo.Library.Link link) {
     var module = link.module();
-    var target = replace(link.target(), binding);
+    var target = link.target();
 
     return switch (link.type()) {
       case AUTO -> ModuleLink.link(module).to(target);
@@ -134,17 +133,6 @@ class ProjectFactory {
     } catch (ReflectiveOperationException exception) {
       throw new RuntimeException("Creating module searcher failed: " + searcher.with(), exception);
     }
-  }
-
-  String replace(String template, Map<String, String> binding) {
-    if (template.indexOf('{') < 0) return template;
-    var replaced = template;
-    for (var entry : binding.entrySet()) {
-      var placeholder = entry.getKey();
-      var replacement = entry.getValue();
-      replaced = replaced.replace(placeholder, replacement);
-    }
-    return replaced;
   }
 
   ModuleInfoFinder mainModuleInfoFinder(String[] moduleSourcePaths) {

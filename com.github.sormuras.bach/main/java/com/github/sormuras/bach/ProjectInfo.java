@@ -5,9 +5,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Indicates that the annotated module is a project descriptor.
@@ -112,34 +109,6 @@ public @interface ProjectInfo {
 
   /** Library configuration annotation. */
   @interface Library {
-
-    /** Placeholder-replacement bindings support for link targets. */
-    interface Binding {
-      /** @return the default binding */
-      static Map<String, String> ofSystem() {
-        var os = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-        var arch = System.getProperty("os.arch").toLowerCase(Locale.ENGLISH);
-        var isWindows = os.contains("win");
-        var isMac = os.contains("mac");
-        var isLinux = !(isWindows || isMac);
-        var is64 = arch.contains("64");
-
-        var map = new TreeMap<String, String>();
-        // JavaFX
-        map.put("${JAVAFX-PLATFORM}", isLinux ? "linux" : isMac ? "mac" : "win");
-
-        // LWJGL
-        map.put("${LWJGL-NATIVES}", "natives-" + (isLinux ? "linux" : isMac ? "macos" : "windows"));
-        if (isLinux)
-          if (arch.startsWith("arm") || arch.startsWith("aarch64")) {
-            var arm64 = is64 || arch.startsWith("armv8");
-            map.put("${LWJGL-NATIVES}", arm64 ? "natives-linux-arm64" : "natives-linux-arm32");
-          }
-        if (isWindows) if (!is64) map.put("${LWJGL-NATIVES}", "natives-windows-x86");
-
-        return map;
-      }
-    }
 
     /** @return the array of required module names */
     String[] requires() default {};
