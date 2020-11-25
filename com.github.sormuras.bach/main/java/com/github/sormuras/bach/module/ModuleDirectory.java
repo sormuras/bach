@@ -59,8 +59,8 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    * @return an optional with URI created from the registered module links or an empty optional
    * @see ModuleSearcher
    */
-  public Optional<URI> lookup(String module) {
-    return Optional.ofNullable(links.get(module)).map(ModuleLink::uri).map(URI::create);
+  public Optional<String> lookup(String module) {
+    return Optional.ofNullable(links.get(module)).map(ModuleLink::uri);
   }
 
   /**
@@ -70,7 +70,8 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
    */
   public URI lookup(String module, ModuleSearcher searcher) {
     return lookup(module)
-        .or(() -> searcher.search(module).map(URI::create))
+        .or(() -> searcher.search(module))
+        .map(URI::create)
         .orElseThrow(() -> new RuntimeException("Module not found: " + module));
   }
 
