@@ -4,9 +4,7 @@ import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -30,18 +28,6 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
     for(var link : links.entrySet())
       map.put(link.getKey(), new ModuleLink(link.getKey(), link.getValue()));
     return new ModuleDirectory(path, Map.copyOf(map));
-  }
-
-  /**
-   * @param link the new module link to register
-   * @param more more module links to register
-   * @return a new module directory
-   */
-  public ModuleDirectory withLinks(ModuleLink link, ModuleLink... more) {
-    var copy = new HashMap<>(links);
-    copy.put(link.module(), link);
-    Arrays.stream(more).forEach(next -> copy.put(next.module(), next));
-    return new ModuleDirectory(path, Map.copyOf(copy));
   }
 
   /** @return a new stream of module-uri pairs */
@@ -86,7 +72,7 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
   /** @return the names of all modules that are required but not locatable by this instance */
   public Set<String> missing() {
     var finder = finder();
-    var missing = new HashSet<>(Modules.required(finder));
+    var missing = Modules.required(finder); // as mutable TreeSet<String>
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(Modules.declared(finder));
     missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
