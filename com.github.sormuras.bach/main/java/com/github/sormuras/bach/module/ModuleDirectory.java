@@ -72,7 +72,7 @@ public record ModuleDirectory(Path path, Map<String, ModuleLink> links) {
   /** @return the names of all modules that are required but not locatable by this instance */
   public Set<String> missing() {
     var finder = finder();
-    var missing = Modules.required(finder); // as mutable TreeSet<String>
+    var missing = Modules.required(finder);
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(Modules.declared(finder));
     missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));

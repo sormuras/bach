@@ -36,19 +36,19 @@ public final class Modules {
     return mains.size() == 1 ? Optional.of(mains.get(0).name()) : Optional.empty();
   }
 
-  public static Set<String> declared(ModuleFinder finder) {
+  public static TreeSet<String> declared(ModuleFinder finder) {
     return declared(finder.findAll().stream().map(ModuleReference::descriptor));
   }
 
-  public static Set<String> declared(Stream<ModuleDescriptor> descriptors) {
+  public static TreeSet<String> declared(Stream<ModuleDescriptor> descriptors) {
     return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
   }
 
-  public static Set<String> required(ModuleFinder finder) {
+  public static TreeSet<String> required(ModuleFinder finder) {
     return required(finder.findAll().stream().map(ModuleReference::descriptor));
   }
 
-  public static Set<String> required(Stream<ModuleDescriptor> descriptors) {
+  public static TreeSet<String> required(Stream<ModuleDescriptor> descriptors) {
     return descriptors
         .map(ModuleDescriptor::requires)
         .flatMap(Set::stream)
