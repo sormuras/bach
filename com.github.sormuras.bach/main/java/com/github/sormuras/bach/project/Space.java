@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.Bach;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,7 @@ public /*sealed*/ interface Space /*permits MainSpace, TestSpace, PreviewSpace*/
    * @return a resolved path
    */
   default Path workspace(String entry, String... more) {
-    return Project.WORKSPACE.resolve(Path.of(entry, more));
+    return Bach.WORKSPACE.resolve(Path.of(entry, more));
   }
 
   /**

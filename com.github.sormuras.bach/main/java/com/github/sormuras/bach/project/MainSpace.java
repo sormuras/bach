@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.Bach;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +47,6 @@ public record MainSpace(
    * @return a path within the given project's documentation workspace
    */
   public Path documentation(String entry) {
-    return Project.WORKSPACE.resolve("documentation/" + entry);
+    return Bach.WORKSPACE.resolve("documentation/" + entry);
   }
 }

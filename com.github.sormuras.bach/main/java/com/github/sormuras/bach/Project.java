@@ -60,12 +60,6 @@ public record Project(String name, Version version, Library library, MainSpace m
     return Stream.concat(main.modules().stream(), test.modules().stream());
   }
 
-  /** Path to directory with external modules. */
-  public static final Path LIBRARIES = Path.of(".bach/libraries");
-
-  /** Path to directory that collects all generated assets. */
-  public static final Path WORKSPACE = Path.of(".bach/workspace");
-
   /**
    * Returns a project model based on walking the current workding directory.
    *

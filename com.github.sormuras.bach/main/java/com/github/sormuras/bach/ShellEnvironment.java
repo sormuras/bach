@@ -27,7 +27,7 @@ public class ShellEnvironment {
   private static final Consumer<Object> err = System.err::println;
 
   private static final Bach bach = Bach.ofSystem();
-  private static ModuleDirectory moduleDirectory = ModuleDirectory.of(Project.LIBRARIES, Map.of());
+  private static ModuleDirectory moduleDirectory = ModuleDirectory.of(Bach.LIBRARIES, Map.of());
   private static final ModuleSearcher moduleSearcher =
       ModuleSearcher.compose(moduleDirectory::lookup, ModuleSearcher.ofBestEffort(bach));
 

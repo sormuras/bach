@@ -163,7 +163,7 @@ public final class Logbook implements Consumer<String> {
     md.add("");
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
-    md.addAll(toModulesOverview(Project.WORKSPACE.resolve("modules")));
+    md.addAll(toModulesOverview(Bach.WORKSPACE.resolve("modules")));
     // md.addAll(projectDescription(project));
     md.addAll(toToolsOverview());
     md.addAll(toToolsDetails());
@@ -280,15 +280,16 @@ public final class Logbook implements Consumer<String> {
    * @return the path to the logbook file
    */
   public Path write(Project project) {
-    var markdownFile = Project.WORKSPACE.resolve("logbook.md");
+    var workspace = Bach.WORKSPACE;
+    var markdownFile = workspace.resolve("logbook.md");
     var markdownLines = toMarkdown(project);
     try {
-      Paths.createDirectories(Project.WORKSPACE);
+      Paths.createDirectories(workspace);
       Files.write(markdownFile, markdownLines);
 
       var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
       var timestamp = formatter.format(created);
-      var logbooks = Paths.createDirectories(Project.WORKSPACE.resolve("logbooks"));
+      var logbooks = Paths.createDirectories(workspace.resolve("logbooks"));
       Files.write(logbooks.resolve("logbook-" + timestamp + ".md"), markdownLines);
     } catch (Exception exception) {
       var message = log(Level.ERROR, "Writing logbook failed: %s", exception);

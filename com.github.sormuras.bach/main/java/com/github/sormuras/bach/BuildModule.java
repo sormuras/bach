@@ -24,7 +24,7 @@ class BuildModule {
   ModuleLayer computeLayer() {
     if (Files.notExists(Path.of(".bach", name, "module-info.java"))) return ModuleLayer.empty();
     var cache = Path.of(".bach","cache");
-    var classes = Project.WORKSPACE.resolve(".bach");
+    var classes = Bach.WORKSPACE.resolve(".bach");
     var compile =
         Command.builder("javac")
             .with("--module", name)

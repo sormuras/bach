@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.module.ModuleInfoFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ class ProjectBuildTests {
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .formatted(context.workspace("logbook.md").toUri())
             .lines(),
         output.lines());
 
@@ -52,7 +51,7 @@ class ProjectBuildTests {
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .formatted(context.workspace("logbook.md").toUri())
             .lines(),
         output.lines());
 
@@ -72,7 +71,7 @@ class ProjectBuildTests {
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .formatted(context.workspace("logbook.md").toUri())
             .lines(),
         output.lines());
 
@@ -220,7 +219,7 @@ class ProjectBuildTests {
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .formatted(context.workspace("logbook.md").toUri())
             .lines(),
         output.lines());
 
@@ -272,7 +271,7 @@ class ProjectBuildTests {
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.base.resolve(Project.WORKSPACE.resolve("logbook.md")).toUri())
+            .formatted(context.workspace("logbook.md").toUri())
             .lines(),
         output.lines());
 

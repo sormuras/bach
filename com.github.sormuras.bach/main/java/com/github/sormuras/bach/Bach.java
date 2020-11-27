@@ -24,6 +24,12 @@ import java.util.function.Supplier;
 /** Java Shell Builder. */
 public final class Bach {
 
+  /** Path to directory with external modules. */
+  public static final Path LIBRARIES = Path.of(".bach/libraries");
+
+  /** Path to directory that collects all generated assets. */
+  public static final Path WORKSPACE = Path.of(".bach/workspace");
+
   /**
    * Returns a shell builder initialized with default components.
    *

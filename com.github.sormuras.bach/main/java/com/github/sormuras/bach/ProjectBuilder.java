@@ -36,7 +36,7 @@ public class ProjectBuilder {
   public ProjectBuilder(Bach bach, Project project) {
     this.bach = bach;
     this.project = project;
-    this.moduleDirectory = ModuleDirectory.of(Project.LIBRARIES, project.library().links());
+    this.moduleDirectory = ModuleDirectory.of(Bach.LIBRARIES, project.library().links());
     this.runner = new ToolRunner(moduleDirectory.finder());
   }
 
@@ -102,7 +102,7 @@ public class ProjectBuilder {
     else {
       var feature = Runtime.version().feature();
       run(computeMainJavacCall(feature));
-      var libraries = Project.LIBRARIES;
+      var libraries = Bach.LIBRARIES;
       var classPaths = new ArrayList<Path>();
       for (var module : project.main().modules()) classPaths.add(main.classes(feature, module));
       if (Files.isDirectory(libraries)) classPaths.addAll(Paths.list(libraries, Paths::isJarFile));
@@ -205,7 +205,7 @@ public class ProjectBuilder {
                 test.workspace("modules-test", archive), // module under test
                 test.workspace("modules"), // main modules
                 test.workspace("modules-test"), // (more) test modules
-                Project.LIBRARIES // external modules
+                Bach.LIBRARIES // external modules
                 );
         info("Launch JUnit Platform for test module: %s", module);
         var junit = computeTestJUnitCall(module);
