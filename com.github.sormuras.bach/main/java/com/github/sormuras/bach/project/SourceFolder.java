@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.internal.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -32,8 +33,6 @@ public record SourceFolder(Path path, int release) {
 
   static SourceFolder of(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    var file = path.normalize().getFileName();
-    var name = file != null ? file : path.toAbsolutePath().getFileName();
-    return new SourceFolder(path, parseReleaseNumber(name.toString()));
+    return new SourceFolder(path, parseReleaseNumber(Paths.name(path)));
   }
 }
