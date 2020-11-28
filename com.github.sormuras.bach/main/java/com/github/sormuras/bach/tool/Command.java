@@ -3,6 +3,8 @@ package com.github.sormuras.bach.tool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * An immutable tool call implementation.
@@ -110,6 +112,33 @@ public record Command(String name, List<String> args) implements ToolCall {
 
       with(option).with(value);
       for (var more : values) with(more);
+      return this;
+    }
+
+    /**
+     * Calls the given consumer if a value is present in the given optional.
+     *
+     * @param optional the optional
+     * @param consumer the consumer
+     * @param <T> the type of the optional element
+     * @return this builder instance
+     */
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public <T> Builder with(Optional<T> optional, BiConsumer<Builder, T> consumer) {
+      optional.ifPresent(it -> consumer.accept(this, it));
+      return this;
+    }
+
+    /**
+     * Calls for each iterable element the given consumer.
+     *
+     * @param iterable the iterable
+     * @param consumer the consumer
+     * @param <T> the type of elements
+     * @return this builder instance
+     */
+    public <T> Builder withEach(Iterable<T> iterable, BiConsumer<Builder, T> consumer) {
+      for (var element : iterable) consumer.accept(this, element);
       return this;
     }
 
