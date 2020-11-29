@@ -1,21 +1,21 @@
 package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.module.ModuleInfoReference;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * A module declaration connects a module descriptor with source folders and resource paths.
+ * A module declaration connects a module compilation unit with source folders and resource paths.
  *
- * @param descriptor the module descriptor
+ * @param reference the module info reference
  * @param sources the source folders
  * @param resources the resource paths
  */
 public record ModuleDeclaration(
-    ModuleDescriptor descriptor, SourceFolders sources, List<Path> resources)
+    ModuleInfoReference reference,
+    SourceFolders sources,
+    List<Path> resources)
     implements Comparable<ModuleDeclaration> {
 
   @Override
@@ -25,20 +25,16 @@ public record ModuleDeclaration(
 
   /** @return the name of the module descriptor component */
   public String name() {
-    return descriptor().name();
-  }
-
-  static ModuleDeclaration of(Path path) {
-    return of(path, 0);
+    return reference.descriptor().name();
   }
 
   static ModuleDeclaration of(Path path, int defaultJavaRelease) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
-    var descriptor = ModuleInfoReference.of(info).descriptor();
+    var reference = ModuleInfoReference.of(info);
     var parent = info.getParent() != null ? info.getParent() : Path.of(".");
     var directories = SourceFolders.of(parent, defaultJavaRelease);
     var resources = resources(parent);
-    return new ModuleDeclaration(descriptor, directories, resources);
+    return new ModuleDeclaration(reference, directories, resources);
   }
 
   static List<Path> resources(Path infoDirectory) {

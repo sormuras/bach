@@ -1,12 +1,9 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.project.Library;
-import com.github.sormuras.bach.project.MainSpace;
-import com.github.sormuras.bach.project.TestSpace;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 /**
  * Bach's project model.
@@ -33,11 +30,13 @@ import java.util.stream.Stream;
  *               │       │           └───greetings
  *               │       │                   Main.class
  *               │       ├───classes-test
+ *               │       ├───classes-test-preview
  *               │       ├───documentation
  *               │       ├───image
  *               │       ├───modules
  *               │       │       com.greetings@2020.jar
  *               │       ├───modules-test
+ *               │       ├───modules-test-preview
  *               │       ├───reports
  *               │       └───sources
  *               └───com.greetings
@@ -50,34 +49,28 @@ import java.util.stream.Stream;
  * @param name the name of the project
  * @param version the version of the project
  * @param library the external modules manager
- * @param main the main module space
- * @param test the test module space
+ * @param spaces the codes space component
  */
-public record Project(String name, Version version, Library library, MainSpace main, TestSpace test) {
-
-  /** @return a stream of all module names */
-  public Stream<String> findAllModuleNames() {
-    return Stream.concat(main.modules().stream(), test.modules().stream());
-  }
+public record Project(String name, Version version, Library library, CodeSpaces spaces) {
 
   /**
-   * Returns a project model based on walking the current workding directory.
+   * Returns a project model based on walking the current working directory.
    *
    * @return a project model
    */
   public static Project of() {
     var name = Paths.name(Path.of(""), "unnamed");
-    var info = Bach.class.getModule().getAnnotation(ProjectInfo.class);
-    return new ProjectFactory(name, info).newProject();
+    var info = ProjectInfo.class.getModule().getAnnotation(ProjectInfo.class);
+    return new ProjectBuilder(name, info).build();
   }
 
   /**
-   * Returns a project model based on the current workding directory and the given info annotation.
+   * Returns a project model based on the current working directory and the given info annotation.
    *
    * @param info the project info annotation
    * @return a project model
    */
   public static Project of(ProjectInfo info) {
-    return new ProjectFactory(info.name(), info).newProject();
+    return new ProjectBuilder(info.name(), info).build();
   }
 }

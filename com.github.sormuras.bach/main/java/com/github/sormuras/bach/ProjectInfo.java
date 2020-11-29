@@ -30,14 +30,11 @@ public @interface ProjectInfo {
   @interface Main {
 
     /**
-     * @return the names of the modules to compile, with an empty array for none effectively
-     *     skipping compilation of this space, or the single-element array {@code ["*"]} indicating
-     *     to find all module compilation units via {@link #moduleSourcePaths()} patterns
+     * @return the names of the modules to compile, with an empty array for none (effectively
+     *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
+     *     to find all matching module compilation units
      */
     String[] modules() default "*";
-
-    /** @return the module source path patterns for main modules */
-    String[] moduleSourcePaths() default {"./*/main/java", "./*/main/java-module"};
 
     /** @return the module paths for main modules */
     String[] modulePaths() default {".bach/libraries"};
@@ -50,9 +47,6 @@ public @interface ProjectInfo {
 
     /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
     boolean generateCustomRuntimeImage() default false;
-
-    /** @return {@code true} if a self-contained package should be generated, else {@code false} */
-    boolean generateApplicationPackage() default false;
 
     /** @return the additional arguments to be passed on a per-tool basis */
     Tweak[] tweaks() default {
@@ -72,14 +66,11 @@ public @interface ProjectInfo {
   @Target({})
   @interface Test {
     /**
-     * @return the names of the modules to compile, with an empty array for none effectively
-     *     skipping compilation of this space, or the single-element array {@code ["*"]} indicating
-     *     to find all module compilation units via {@link #moduleSourcePaths()} patterns
+     * @return the names of the modules to compile, with an empty array for none (effectively
+     *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
+     *     to find all matching module compilation units
      */
     String[] modules() default "*";
-
-    /** @return the module source path patterns for test modules */
-    String[] moduleSourcePaths() default {"./*/test/java", "./*/test/java-module"};
 
     /** @return the module path patterns for test modules */
     String[] modulePaths() default {".bach/workspace/modules", ".bach/libraries"};
@@ -150,9 +141,7 @@ public @interface ProjectInfo {
     /** Module URI searcher. */
     @Target({})
     @interface Searcher {
-      /**
-       * @return a class that implements the module searcher inteface
-       */
+      /** @return a class that implements the module searcher inteface */
       Class<? extends ModuleSearcher> with();
       /** @return the version */
       String version();

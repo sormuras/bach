@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.module;
+package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleDescriptor;
@@ -7,11 +7,13 @@ import java.lang.module.ModuleDescriptor.Modifier;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * @see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-7.7">Module
@@ -76,12 +78,37 @@ public final class ModuleInfoReference extends ModuleReference {
     return builder;
   }
 
+  private final Path info;
+
   private ModuleInfoReference(Path info) {
     super(parse(info), info.toUri());
+    this.info = info;
+  }
+
+  /** @return the path to the {@code module-info.java} file */
+  public Path info() {
+    return info;
   }
 
   @Override
-  public ModuleReader open() throws UnsupportedOperationException {
-    throw new UnsupportedOperationException("open");
+  public ModuleReader open() {
+    return new NullModuleReader();
+  }
+
+  private static class NullModuleReader implements ModuleReader {
+    private NullModuleReader() {}
+
+    @Override
+    public Optional<URI> find(String name) {
+      return Optional.empty();
+    }
+
+    @Override
+    public Stream<String> list() {
+      return Stream.empty();
+    }
+
+    @Override
+    public void close() {}
   }
 }

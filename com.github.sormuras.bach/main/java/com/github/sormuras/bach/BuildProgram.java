@@ -1,5 +1,7 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.Project;
+
 /** The {@code BuildProgram} interface should be implemented by custom build programs. */
 @FunctionalInterface
 public interface BuildProgram {
@@ -36,6 +38,7 @@ public interface BuildProgram {
       return;
     }
     var project = buildModule.findProjectInfo().map(Project::of).orElseGet(Project::of);
-    new ProjectBuilder(bach, project).build();
+    var builder = new Builder(bach, project);
+    builder.build();
   }
 }

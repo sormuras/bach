@@ -5,15 +5,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.module.ModuleInfoFinder;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Classes;
 
 class ProjectBuildTests {
+
+  private static Set<String> requires(ModuleDescriptor descriptor) {
+    return descriptor.requires().stream()
+        .map(ModuleDescriptor.Requires::name)
+        .collect(Collectors.toCollection(TreeSet::new));
+  }
 
   @Test
   void buildSimplicissimus(@TempDir Path temp) throws Exception {
@@ -23,7 +32,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project Simplicissimus 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s
@@ -32,21 +41,50 @@ class ProjectBuildTests {
             .lines(),
         output.lines());
 
-    assertTrue(context.newModuleFinder().find("simplicissimus").isPresent());
+    var reference = context.newModuleFinder().find("simplicissimus").orElseThrow();
+    var descriptor = reference.descriptor();
+    assertTrue(reference.location().isPresent());
+    assertEquals("simplicissimus@0-ea", descriptor.toNameAndVersion());
+    assertEquals(Set.of("java.base"), requires(descriptor));
+    assertFalse(descriptor.isAutomatic());
+    assertFalse(descriptor.isOpen());
+    assertTrue(descriptor.exports().isEmpty());
+    assertTrue(descriptor.mainClass().isEmpty());
+    assertTrue(descriptor.modifiers().isEmpty());
+    assertTrue(descriptor.opens().isEmpty());
+    assertTrue(descriptor.packages().isEmpty());
+    assertTrue(descriptor.provides().isEmpty());
+
+    var path = Path.of(reference.location().orElseThrow());
+    try (var jar = new JarFile(path.toFile())) {
+      assertFalse(jar.isMultiRelease(), "A multi-release JAR file?! -> " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          module-info.class
+          module-info.java
+          """
+              .lines(),
+          names.stream().sorted());
+    }
+
+    var feature = Runtime.version().feature();
+    var simplicissimus = context.workspace("classes-main", "" + feature, "simplicissimus");
+    assertEquals(feature, Classes.feature(simplicissimus.resolve("module-info.class")));
   }
 
   @Test
   void buildJigsawQuickStartGreetings(@TempDir Path temp) throws Exception {
     var context = new Context("JigsawQuickStartGreetings", temp);
-    var infos = ModuleInfoFinder.of(context.base, ".");
-    assertTrue(infos.find("com.greetings").isPresent());
-
     var output = context.build();
 
     assertLinesMatch(
         """
         Build project JigsawQuickStartGreetings 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s
@@ -55,7 +93,34 @@ class ProjectBuildTests {
             .lines(),
         output.lines());
 
-    assertTrue(context.newModuleFinder().find("com.greetings").isPresent());
+    var reference = context.newModuleFinder().find("com.greetings").orElseThrow();
+    var descriptor = reference.descriptor();
+    assertTrue(reference.location().isPresent());
+    assertEquals("com.greetings@0-ea", descriptor.toNameAndVersion());
+    assertEquals(Set.of("java.base"), requires(descriptor));
+    assertEquals(Set.of("com.greetings"), descriptor.packages());
+    assertTrue(descriptor.exports().isEmpty());
+    assertTrue(descriptor.mainClass().isPresent());
+
+    var path = Path.of(reference.location().orElseThrow());
+    try (var jar = new JarFile(path.toFile())) {
+      assertFalse(jar.isMultiRelease(), "A multi-release JAR file?! -> " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          com/
+          com/greetings/
+          com/greetings/Main.class
+          com/greetings/Main.java
+          module-info.class
+          module-info.java
+          """
+              .lines(),
+          names.stream().sorted());
+    }
   }
 
   @Test
@@ -66,7 +131,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project JigsawQuickStartWorld 0-ea
-        Compile main modules
+        Compile 2 main modules
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s
@@ -88,7 +153,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project SingleRelease-7 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+
         Logbook written to %s
@@ -130,7 +195,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project SingleRelease-8 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+
         Logbook written to %s
@@ -172,7 +237,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project SingleRelease-9 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+
         Logbook written to %s
@@ -214,7 +279,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project MultiRelease-9 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s
@@ -266,7 +331,7 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project MultiRelease-11 0-ea
-        Compile main modules
+        Compile 1 main module
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s

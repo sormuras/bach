@@ -2,35 +2,27 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Bach;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A space for main modules.
  *
- * @param modules the list of modules to compile
- * @param moduleSourcePaths the list of module source path patterns
+ * @param modules the list of main modules to compile
  * @param modulePaths the list of module paths
  * @param release the Java version (release feature number) to compile for
- * @param supplements the additional module-related information
  * @param jarslug the {@code MODULE-NAME "@" jarslug ".jar"} part of the JAR file name
  * @param generateApiDocumentation {@code true} to enable a {@code javadoc} run
  * @param generateCustomRuntimeImage {@code true} to enable a {@code jlink} run
- * @param generateApplicationPackage {@code true} to enable a {@code jpackage} run
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
-public record MainSpace(
-    List<String> modules,
-    List<String> moduleSourcePaths,
-    List<String> modulePaths,
+public record MainCodeSpace(
+    ModuleDeclarations modules,
+    ModulePaths modulePaths,
     int release,
-    Map<String, ModuleSupplement> supplements,
     String jarslug,
     boolean generateApiDocumentation,
     boolean generateCustomRuntimeImage,
-    boolean generateApplicationPackage,
-    Map<String, List<String>> tweaks)
-    implements Space {
+    Tweaks tweaks)
+    implements CodeSpace {
 
   @Override
   public String name() {
@@ -38,6 +30,7 @@ public record MainSpace(
   }
 
   /** @return a path to the classes directory of the main space */
+  @Override
   public Path classes() {
     return workspace("classes-" + name(), String.valueOf(release));
   }

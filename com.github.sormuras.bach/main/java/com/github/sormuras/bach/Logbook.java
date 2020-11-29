@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
+import com.github.sormuras.bach.project.Project;
 import com.github.sormuras.bach.tool.ToolResponse;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;

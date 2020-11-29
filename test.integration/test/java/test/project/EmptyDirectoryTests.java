@@ -15,7 +15,7 @@ class EmptyDirectoryTests {
     assertLinesMatch(
         """
         Build project %s 0-ea
-        ERROR java.lang.RuntimeException: No module found!
+        ERROR com.github.sormuras.bach.BuildException: No modules declared?!
         >> STACK TRACE >>
         """
             .formatted(temp.getFileName())

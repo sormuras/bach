@@ -24,6 +24,7 @@ import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
             }),
     main =
         @Main(
+            modules = "com.github.sormuras.bach/main/java/module-info.java",
             release = 16,
             generateApiDocumentation = true,
             generateCustomRuntimeImage = true,
@@ -31,9 +32,6 @@ import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
               @Tweak(
                   tool = "javac",
                   args = {"-encoding", "UTF-8", "-g", "-parameters", "-Werror", "-Xlint"}),
-              @Tweak(
-                  tool = "jar(com.github.sormuras.bach)",
-                  args = {"--main-class", "com.github.sormuras.bach.Main"}),
               @Tweak(
                   tool = "javadoc",
                   args = {
@@ -53,13 +51,11 @@ import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
             }),
     test =
         @Test(
-            tweaks =
-                @Tweak(
-                    tool = "javac",
-                    args = {
-                      "--patch-module",
-                      "com.github.sormuras.bach=com.github.sormuras.bach/main/java"
-                    })))
+            modules = {
+                "com.github.sormuras.bach/test/java-module/module-info.java",
+                "test.base/test/java/module-info.java",
+                "test.integration/test/java/module-info.java",
+            }))
 module build {
   requires com.github.sormuras.bach;
 

@@ -2,9 +2,9 @@ package build;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.BuildProgram;
-import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.ProjectBuilder;
+import com.github.sormuras.bach.Builder;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
 
 public class BachBuildProgram implements BuildProgram {
@@ -21,14 +21,14 @@ public class BachBuildProgram implements BuildProgram {
     var info = getClass().getModule().getAnnotation(ProjectInfo.class);
     var project = Project.of(info);
 
-    book.log(Level.INFO, "Build Bach %s // @%s.jar", project.version(), project.main().jarslug());
+    book.log(Level.INFO, "Custom build program started");
 
     System.clearProperty("bach.project.name");
     System.clearProperty("bach.project.version");
     System.clearProperty("bach.project.main.release");
     System.clearProperty("bach.project.main.jarslug");
 
-    new ProjectBuilder(bach, project).build();
+    new Builder(bach, project).build();
   }
 
   @Override

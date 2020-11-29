@@ -32,17 +32,6 @@ public record SourceFolders(List<SourceFolder> list) {
     return list.get(0);
   }
 
-  /** @return the last source folder in the underlying list */
-  public SourceFolder last() {
-    return list.get(list.size() - 1);
-  }
-
-  /** @return {@code true} if all source folders are targeted, else {@code false} */
-  public boolean isMultiTarget() {
-    if (list.size() == 1) return first().isTargeted();
-    return list.stream().allMatch(SourceFolder::isTargeted);
-  }
-
   /** @return a string for {@code javac --module-source-path PATH} in module-specific form */
   public String toModuleSpecificSourcePath() {
     return Paths.join(toModuleSpecificSourcePaths());
@@ -56,29 +45,20 @@ public record SourceFolders(List<SourceFolder> list) {
     throw new IllegalStateException("No module-info.java found in: " + list);
   }
 
-  static SourceFolders of() {
-    return new SourceFolders(List.of());
-  }
-
-  static SourceFolders of(Path infoDirectory) {
-    return of(infoDirectory, 0);
-  }
-
   static SourceFolders of(Path infoDirectory, int javaRelease) {
     return new SourceFolders(list(infoDirectory, javaRelease));
   }
 
   static List<SourceFolder> list(Path infoDirectory, int javaRelease) {
-    var source = SourceFolder.of(infoDirectory); // contains module-info.java file
     var parent = infoDirectory.getParent();
-    if (javaRelease != 0 || source.release() == 0 || parent == null) {
+    if (parent == null) {
+      var source = SourceFolder.of(infoDirectory); // contains module-info.java file
       var java = infoDirectory.resolveSibling("java");
       if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
       return List.of(new SourceFolder(java, javaRelease), source);
     }
     return Paths.list(parent, Files::isDirectory).stream()
         .map(SourceFolder::of)
-        .filter(SourceFolder::isTargeted)
         .sorted(Comparator.comparingInt(SourceFolder::release))
         .collect(Collectors.toUnmodifiableList());
   }

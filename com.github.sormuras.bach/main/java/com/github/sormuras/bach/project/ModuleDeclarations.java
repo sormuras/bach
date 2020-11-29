@@ -3,12 +3,15 @@ package com.github.sormuras.bach.project;
 import com.github.sormuras.bach.internal.Paths;
 import java.io.File;
 import java.lang.module.FindException;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -19,26 +22,25 @@ import java.util.stream.Stream;
  *
  * @param map the map of module declarations
  */
-public record ModuleDeclarations(Map<String, ModuleDeclaration> map) {
+public record ModuleDeclarations(Map<String, ModuleDeclaration> map) implements ModuleFinder {
 
-  /**
-   * Returns an optional module declaration for the given module name.
-   *
-   * @param name the module name
-   * @return an optional module declaration
-   */
-  public Optional<ModuleDeclaration> find(String name) {
+  @Override
+  public Optional<ModuleReference> find(String name) {
+    return findDeclaration(name).map(ModuleDeclaration::reference);
+  }
+
+  @Override
+  public Set<ModuleReference> findAll() {
+    return map.values().stream().map(ModuleDeclaration::reference).collect(Collectors.toSet());
+  }
+
+  Optional<ModuleDeclaration> findDeclaration(String name) {
     return Optional.ofNullable(map.get(name));
   }
 
   /** @return {@code true} if no module declaration is available, else {@code false} */
   public boolean isEmpty() {
     return map.isEmpty();
-  }
-
-  /** @return {@code true} if one or more module declarations are available, else {@code false} */
-  public boolean isPresent() {
-    return map.size() >= 1;
   }
 
   /** @return the number of module declarations available */
@@ -59,11 +61,6 @@ public record ModuleDeclarations(Map<String, ModuleDeclaration> map) {
    */
   public String toNames(String delimiter) {
     return toNames().collect(Collectors.joining(delimiter));
-  }
-
-  /** @return a stream of all available module declarations */
-  public Stream<ModuleDeclaration> toUnits() {
-    return map.values().stream();
   }
 
   /**
@@ -109,7 +106,7 @@ public record ModuleDeclarations(Map<String, ModuleDeclaration> map) {
     for (var declaration : map.values()) {
       var module = declaration.name();
       upstream
-          .find(module)
+          .findDeclaration(module)
           .ifPresent(up -> patches.put(module, up.sources().toModuleSpecificSourcePath()));
     }
     return patches;
