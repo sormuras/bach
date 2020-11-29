@@ -98,6 +98,7 @@ class ProjectBuilder {
     var iterator = paths.listIterator();
     while (iterator.hasNext()) {
       var path = iterator.next();
+      if (path.startsWith(".bach")) continue;
       if (isTestPreviewModule.test(path)) {
         var declaration = ModuleDeclaration.of(path, feature);
         views.put(declaration.name(), declaration);
