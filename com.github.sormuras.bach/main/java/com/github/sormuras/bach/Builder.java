@@ -237,25 +237,35 @@ public class Builder {
     var main = project.spaces().main();
     var archive = computeMainJarFileName(module);
     var mainClass = module.reference().descriptor().mainClass();
+    var name = module.name();
     var jar =
         Command.builder("jar")
             .with("--create")
             .with("--file", main.workspace("modules", archive))
             .with(mainClass, (builder, className) -> builder.with("--main-class", className))
             .withEach(main.tweaks().arguments("jar"))
-            .withEach(main.tweaks().arguments("jar(" + module.name() + ')'));
+            .withEach(main.tweaks().arguments("jar(" + name + ')'));
     // add base classes
-    var baseClasses = main.classes().resolve(module.name());
+    var baseClasses = main.classes().resolve(name);
     if (Files.isDirectory(baseClasses)) jar.with("-C", baseClasses, ".");
-    if (module.simplicisissums()) return jar.with(module.reference().info()).build();
-    for (var folder : module.resources().list()) {
-      if (folder.isTargeted()) continue; // handled later
-      jar.with("-C", folder.path(), ".");
-    }
-    // add targeted assets in ascending order
-    for (var asset : computeMainJarTargetedDirectories(module).entrySet()) {
-      jar.with("--release", asset.getKey());
-      for (var path : asset.getValue()) jar.with("-C", path, ".");
+    // add base resources
+    if (module.reference().info().toString().equals("module-info.java")) {
+      jar.with("module-info.java");
+      var dot = name.indexOf('.');
+      var prefix = name.substring(0, dot > 0 ? dot : name.length());
+      try (var stream = Files.walk(Path.of(""))) {
+        stream.filter(path -> path.startsWith(prefix)).forEach(jar::with);
+      } catch (Exception ignore) {}
+    } else {
+      for (var folder : module.resources().list()) {
+        if (folder.isTargeted()) continue; // handled later
+        jar.with("-C", folder.path(), ".");
+      }
+      // add targeted classes and targeted resources in ascending order
+      for (var directory : computeMainJarTargetedDirectories(module).entrySet()) {
+        jar.with("--release", directory.getKey());
+        for (var path : directory.getValue()) jar.with("-C", path, ".");
+      }
     }
     return jar.build();
   }

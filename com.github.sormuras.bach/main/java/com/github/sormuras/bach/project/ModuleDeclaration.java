@@ -28,21 +28,14 @@ public record ModuleDeclaration(
     return reference.name();
   }
 
-  /** @return {@code true} of source and resources lists are emtpy */
-  public boolean simplicisissums() {
-    return sources.list().isEmpty() && resources.list().isEmpty();
-  }
-
   static ModuleDeclaration of(Path path, boolean resourcesIncludeSources) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var reference = ModuleInfoReference.of(info);
+
+    if (info.equals(Path.of("module-info.java")))
+      return new ModuleDeclaration(reference, new SourceFolders(List.of()), new SourceFolders(List.of()));
+
     var parent = info.getParent();
-    if (parent == null) // simplicissimus-style
-    return new ModuleDeclaration(
-          reference,
-          new SourceFolders(List.of()), // no source folders
-          new SourceFolders(List.of()) // no resource folder
-          );
     if (Paths.name(parent).equals(reference.name())) { // single source folder
       var folder = SourceFolder.of(parent);
       return new ModuleDeclaration(
@@ -66,7 +59,6 @@ public record ModuleDeclaration(
             .map(SourceFolder::of)
             .sorted(Comparator.comparingInt(SourceFolder::release))
             .collect(Collectors.toUnmodifiableList());
-
     return new SourceFolders(paths);
   }
 }
