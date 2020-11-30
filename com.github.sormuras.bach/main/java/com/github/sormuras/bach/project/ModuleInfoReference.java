@@ -90,6 +90,11 @@ public final class ModuleInfoReference extends ModuleReference {
     return info;
   }
 
+  /** @return the module name */
+  public String name() {
+    return descriptor().name();
+  }
+
   @Override
   public ModuleReader open() {
     return new NullModuleReader();

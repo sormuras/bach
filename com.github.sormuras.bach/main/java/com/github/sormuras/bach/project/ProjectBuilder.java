@@ -31,15 +31,14 @@ class ProjectBuilder {
 
   Project build() {
     var version = version(info.version());
-    var release = release(info.main().release());
-    var declarations = declarations(release);
+    var declarations = declarations();
 
     var spaces =
         new CodeSpaces(
             new MainCodeSpace(
                 declarations.mainModuleDeclarations(),
                 newModulePaths(info.main().modulePaths()),
-                release,
+                release(info.main().release()),
                 jarslug(version),
                 info.main().generateApiDocumentation(),
                 info.main().generateCustomRuntimeImage(),
@@ -83,7 +82,7 @@ class ProjectBuilder {
       ModuleDeclarations testModuleDeclarations,
       ModuleDeclarations testPreviewModuleDeclarations) {}
 
-  Declarations declarations(int release) {
+  Declarations declarations() {
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(Path.of(""), 9));
 
     var views = new TreeMap<String, ModuleDeclaration>();
@@ -94,25 +93,24 @@ class ProjectBuilder {
     var isTestModule = isModuleOf("test", info.test().modules());
     var isMainModule = isModuleOf("main", info.main().modules());
 
-    var feature = Runtime.version().feature();
     var iterator = paths.listIterator();
     while (iterator.hasNext()) {
       var path = iterator.next();
       if (path.startsWith(".bach")) continue;
       if (isTestPreviewModule.test(path)) {
-        var declaration = ModuleDeclaration.of(path, feature);
+        var declaration = ModuleDeclaration.of(path, false);
         views.put(declaration.name(), declaration);
         iterator.remove();
         continue;
       }
       if (isTestModule.test(path)) {
-        var declaration = ModuleDeclaration.of(path, feature);
+        var declaration = ModuleDeclaration.of(path, false);
         tests.put(declaration.name(), declaration);
         iterator.remove();
         continue;
       }
       if (isMainModule.test(path)) {
-        var declaration = ModuleDeclaration.of(path, release);
+        var declaration = ModuleDeclaration.of(path, true);
         mains.put(declaration.name(), declaration);
         iterator.remove();
       }

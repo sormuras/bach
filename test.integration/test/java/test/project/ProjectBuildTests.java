@@ -218,6 +218,7 @@ class ProjectBuildTests {
           foo/
           foo/Foo.class
           foo/Foo.java
+          foo/Foo.txt
           module-info.class
           module-info.java
           """
@@ -303,6 +304,9 @@ class ProjectBuildTests {
           META-INF/versions/11/foo/
           META-INF/versions/11/foo/Foo.class
           META-INF/versions/11/foo/Foo.java
+          META-INF/versions/13/
+          META-INF/versions/13/foo/
+          META-INF/versions/13/foo/Foo.txt
           META-INF/versions/15/
           META-INF/versions/15/foo/
           META-INF/versions/15/foo/Foo.class
@@ -310,6 +314,7 @@ class ProjectBuildTests {
           foo/
           foo/Foo.class
           foo/Foo.java
+          foo/Foo.txt
           module-info.class
           module-info.java
           """

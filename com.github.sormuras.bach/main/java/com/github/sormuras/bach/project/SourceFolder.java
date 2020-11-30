@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /**
- * A source directory potentially targeting a specific Java SE release.
+ * A source or resource directory potentially targeting a specific Java SE release.
  *
  * @param path the directory
  * @param release the feature number of the Java SE release

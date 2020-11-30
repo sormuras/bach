@@ -18,11 +18,8 @@
 package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.internal.Paths;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /** A list of source folder objects. */
 public record SourceFolders(List<SourceFolder> list) {
@@ -38,28 +35,10 @@ public record SourceFolders(List<SourceFolder> list) {
   }
 
   List<Path> toModuleSpecificSourcePaths() {
-    var first = first();
+    var first = list.isEmpty() ? SourceFolder.of(Path.of(".")) : first();
     if (first.isModuleInfoJavaPresent()) return List.of(first.path());
     for (var directory : list)
       if (directory.isModuleInfoJavaPresent()) return List.of(first.path(), directory.path());
     throw new IllegalStateException("No module-info.java found in: " + list);
-  }
-
-  static SourceFolders of(Path infoDirectory, int javaRelease) {
-    return new SourceFolders(list(infoDirectory, javaRelease));
-  }
-
-  static List<SourceFolder> list(Path infoDirectory, int javaRelease) {
-    var parent = infoDirectory.getParent();
-    if (parent == null) {
-      var source = SourceFolder.of(infoDirectory); // contains module-info.java file
-      var java = infoDirectory.resolveSibling("java");
-      if (java.equals(infoDirectory) || Files.notExists(java)) return List.of(source);
-      return List.of(new SourceFolder(java, javaRelease), source);
-    }
-    return Paths.list(parent, Files::isDirectory).stream()
-        .map(SourceFolder::of)
-        .sorted(Comparator.comparingInt(SourceFolder::release))
-        .collect(Collectors.toUnmodifiableList());
   }
 }

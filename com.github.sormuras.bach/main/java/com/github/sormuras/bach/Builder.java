@@ -13,6 +13,8 @@ import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolResponse;
 import com.github.sormuras.bach.tool.ToolRunner;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -20,6 +22,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** A modular Java project builder. */
 public class Builder {
@@ -52,8 +58,11 @@ public class Builder {
       loadRequiredAndMissingModules();
       buildAllSpaces(project.spaces());
     } catch (Exception exception) {
-      logbook.log(Level.ERROR, exception.toString());
-      throw new BuildException("Build failed: " + exception);
+      var trace = new StringWriter();
+      exception.printStackTrace(new PrintWriter(trace));
+      var message = "Build failed: " + exception + '\n' + trace.toString().indent(0);
+      logbook.log(Level.ERROR, message);
+      throw new BuildException(message);
     } finally {
       info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
       var file = logbook.write(project);
@@ -112,6 +121,7 @@ public class Builder {
     for (var declaration : main.modules().map().values()) {
       declaration.sources().list().stream()
           .filter(SourceFolder::isTargeted)
+          .peek(System.out::println)
           .forEach(folder -> run(computeMainJavacCall(declaration.name(), folder)));
       run(computeMainJarCall(declaration));
     }
@@ -225,8 +235,7 @@ public class Builder {
    */
   public ToolCall computeMainJarCall(ModuleDeclaration module) {
     var main = project.spaces().main();
-    var name = module.name();
-    var archive = computeMainJarFileName(name);
+    var archive = computeMainJarFileName(module);
     var mainClass = module.reference().descriptor().mainClass();
     var jar =
         Command.builder("jar")
@@ -234,33 +243,61 @@ public class Builder {
             .with("--file", main.workspace("modules", archive))
             .with(mainClass, (builder, className) -> builder.with("--main-class", className))
             .withEach(main.tweaks().arguments("jar"))
-            .withEach(main.tweaks().arguments("jar(" + name + ')'))
-            .with("-C", main.classes().resolve(name), ".")
-            .withEach(module.resources(), (builder, path) -> builder.with("-C", path, "."));
-
-    for (var folder : module.sources().list()) {
-      if (folder.isTargeted()) {
-        var release = folder.release();
-        jar.with("--release", release);
-        var classes = main.workspace("classes-mr", release + "/" + name);
-        jar.with("-C", classes, ".");
-      }
-      if (!folder.path().equals(Path.of("."))) jar.with("-C", folder.path(), ".");
-      else if (Files.exists(Path.of("module-info.java"))) jar.with("module-info.java");
+            .withEach(main.tweaks().arguments("jar(" + module.name() + ')'));
+    // add base classes
+    var baseClasses = main.classes().resolve(module.name());
+    if (Files.isDirectory(baseClasses)) jar.with("-C", baseClasses, ".");
+    if (module.simplicisissums()) return jar.with(module.reference().info()).build();
+    for (var folder : module.resources().list()) {
+      if (folder.isTargeted()) continue; // handled later
+      jar.with("-C", folder.path(), ".");
     }
-
+    // add targeted assets in ascending order
+    for (var asset : computeMainJarTargetedDirectories(module).entrySet()) {
+      jar.with("--release", asset.getKey());
+      for (var path : asset.getValue()) jar.with("-C", path, ".");
+    }
     return jar.build();
   }
 
   /**
-   * @param module the name of the module
-   * @return the name of the JAR file for the given module
+   * @param module the module declaration
+   * @return the name of the JAR file for the given module declaration
    */
-  public String computeMainJarFileName(String module) {
+  public String computeMainJarFileName(ModuleDeclaration module) {
     var slug = project.spaces().main().jarslug();
-    var builder = new StringBuilder(module);
+    var builder = new StringBuilder(module.name());
     if (!slug.isEmpty()) builder.append('@').append(slug);
     return builder.append(".jar").toString();
+  }
+
+  /**
+   * @param module the module declaration
+   * @return a map with "release to list-of-path" entries
+   */
+  public TreeMap<Integer, List<Path>> computeMainJarTargetedDirectories(ModuleDeclaration module) {
+    var main = project.spaces().main();
+    var assets = new TreeMap<Integer, List<Path>>();
+    // targeted classes
+    for (var source : module.sources().list()) {
+      if (!source.isTargeted()) continue;
+      var release = source.release();
+      var classes = main.workspace("classes-mr", release + "/" + module.name());
+      assets.merge(
+          release,
+          List.of(classes),
+          (o, n) -> Stream.concat(o.stream(), n.stream()).collect(Collectors.toList()));
+    }
+    // targeted resources
+    for (var resource : module.resources().list()) {
+      if (!resource.isTargeted()) continue;
+      var release = resource.release();
+      assets.merge(
+          release,
+          List.of(resource.path()),
+          (o, n) -> Stream.concat(o.stream(), n.stream()).collect(Collectors.toList()));
+    }
+    return assets;
   }
 
   /** @return the javadoc call generating the API documentation for all main modules */

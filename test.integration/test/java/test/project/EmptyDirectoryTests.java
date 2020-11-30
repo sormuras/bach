@@ -15,7 +15,7 @@ class EmptyDirectoryTests {
     assertLinesMatch(
         """
         Build project %s 0-ea
-        ERROR com.github.sormuras.bach.BuildException: No modules declared?!
+        ERROR Build failed: com.github.sormuras.bach.BuildException: No modules declared?!
         >> STACK TRACE >>
         """
             .formatted(temp.getFileName())
