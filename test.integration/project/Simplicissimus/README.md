@@ -1,3 +1,3 @@
 # Project `simplicissimus`
 
-One module. No class.
+One module. No classes. No resources.

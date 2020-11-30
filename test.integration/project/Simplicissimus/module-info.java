@@ -1,1 +1,1 @@
-module simplicissimus{}
+module simplicissimus {}
