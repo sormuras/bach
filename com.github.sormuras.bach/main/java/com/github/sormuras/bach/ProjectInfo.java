@@ -79,10 +79,7 @@ public @interface ProjectInfo {
     Tweak[] tweaks() default {
       @Tweak(
           tool = "javac",
-          args = {"-encoding", "UTF-8"}),
-      @Tweak(
-          tool = "junit",
-          args = {"--fail-if-no-tests"})
+          args = {"-encoding", "UTF-8"})
     };
   }
 

@@ -52,10 +52,14 @@ import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
     test =
         @Test(
             modules = {
-                "com.github.sormuras.bach/test/java-module/module-info.java",
-                "test.base/test/java/module-info.java",
-                "test.integration/test/java/module-info.java",
-            }))
+              "com.github.sormuras.bach/test/java-module/module-info.java",
+              "test.base/test/java/module-info.java",
+              "test.integration/test/java/module-info.java",
+            },
+            tweaks =
+                @Tweak(
+                    tool = "junit",
+                    args = {"--fail-if-no-tests"})))
 module build {
   requires com.github.sormuras.bach;
 
