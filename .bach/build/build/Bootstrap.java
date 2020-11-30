@@ -3,12 +3,15 @@ package build;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.spi.ToolProvider;
 
 class Bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
     var version = "16-ea+BOOTSTRAP";
+
+    deleteWorkspaces();
 
     var classes = Path.of(".bach/workspace/.bootstrap");
     run(
@@ -35,6 +38,17 @@ class Bootstrap {
         "-C",
         classes.resolve(module).toString(),
         ".");
+  }
+
+  static void deleteWorkspaces() throws Exception {
+    try (var stream = Files.walk(Path.of(""))) {
+      var selected = stream
+          .filter(path -> path.toUri().toString().contains(".bach/workspace"))
+          .sorted(Comparator.reverseOrder())
+          .toArray(Path[]::new);
+      for (var path : selected) Files.delete(path);
+      System.out.println(">> " + selected.length + " workspace files deleted");
+    }
   }
 
   static void run(String name, String... args) {
