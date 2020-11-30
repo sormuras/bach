@@ -41,6 +41,12 @@ jobs:
             --module-path .bach/cache \
             --module com.github.sormuras.bach \
             build
+      - name: 'Publish test summary'
+        uses: EnricoMi/publish-unit-test-result-action@v1.6
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: .bach/workspace/reports/junit-test/*/*.xml
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
