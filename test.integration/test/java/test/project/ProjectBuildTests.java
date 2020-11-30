@@ -24,6 +24,72 @@ class ProjectBuildTests {
         .collect(Collectors.toCollection(TreeSet::new));
   }
 
+  private static Set<String> exports(ModuleDescriptor descriptor) {
+    return descriptor.exports().stream()
+        .map(ModuleDescriptor.Exports::source)
+        .collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  @Test
+  void buildSimple(@TempDir Path temp) throws Exception {
+    var context = new Context("Simple", temp);
+    var output = context.build();
+
+    assertLinesMatch(
+        """
+        Build project Simple 0-ea
+        Compile 1 main module
+        >> TOOL CALLS >>
+        Build took .+s
+        Logbook written to %s
+        """
+            .formatted(context.workspace("logbook.md").toUri())
+            .lines(),
+        output.lines());
+
+    var reference = context.newModuleFinder().find("simple").orElseThrow();
+    var descriptor = reference.descriptor();
+    assertTrue(reference.location().isPresent());
+    assertEquals("simple@0-ea", descriptor.toNameAndVersion());
+    assertEquals(Set.of("java.base"), requires(descriptor));
+    assertFalse(descriptor.isAutomatic());
+    assertFalse(descriptor.isOpen());
+    assertEquals(Set.of("simple"), exports(descriptor));
+    assertEquals("simple.Main", descriptor.mainClass().orElseThrow());
+    assertTrue(descriptor.modifiers().isEmpty());
+    assertTrue(descriptor.opens().isEmpty());
+    assertEquals(Set.of("simple", "simple.internal"), descriptor.packages());
+    assertTrue(descriptor.provides().isEmpty());
+
+    var path = Path.of(reference.location().orElseThrow());
+    try (var jar = new JarFile(path.toFile())) {
+      assertFalse(jar.isMultiRelease(), "A multi-release JAR file?! -> " + path);
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          module-info.class
+          module-info.java
+          simple/
+          simple/Main.class
+          simple/Main.java
+          simple/Main.txt
+          simple/internal/
+          simple/internal/Interface.class
+          simple/internal/Interface.java
+          """
+              .lines(),
+          names.stream().sorted());
+    }
+
+    var feature = Runtime.version().feature();
+    var simple = context.workspace("classes-main", "" + feature, "simple");
+    assertEquals(feature, Classes.feature(simple.resolve("module-info.class")));
+    assertEquals(feature, Classes.feature(simple.resolve("simple/Main.class")));
+  }
+
   @Test
   void buildSimplicissimus(@TempDir Path temp) throws Exception {
     var context = new Context("Simplicissimus", temp);

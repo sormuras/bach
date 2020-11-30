@@ -1,0 +1,3 @@
+module simple {
+  exports simple;
+}
