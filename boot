@@ -50,3 +50,5 @@ System.out.println(
 /reset
 
 import static com.github.sormuras.bach.ShellEnvironment.*
+
+void api() { listPublicStaticMethods(); }
