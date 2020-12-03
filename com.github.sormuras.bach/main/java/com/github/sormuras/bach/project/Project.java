@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
@@ -30,13 +29,11 @@ import java.nio.file.Path;
  *               │       │           └───greetings
  *               │       │                   Main.class
  *               │       ├───classes-test
- *               │       ├───classes-test-preview
  *               │       ├───documentation
  *               │       ├───image
  *               │       ├───modules
  *               │       │       com.greetings@2020.jar
  *               │       ├───modules-test
- *               │       ├───modules-test-preview
  *               │       ├───reports
  *               │       └───sources
  *               └───com.greetings
@@ -51,7 +48,7 @@ import java.nio.file.Path;
  * @param library the external modules manager
  * @param spaces the codes space component
  */
-public record Project(String name, Version version, Library library, CodeSpaces spaces) {
+public record Project(String name, Version version, ModuleDirectory library, CodeSpaces spaces) {
 
   /**
    * Returns a project model based on walking the current working directory.

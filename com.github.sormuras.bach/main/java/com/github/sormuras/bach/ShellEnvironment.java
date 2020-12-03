@@ -2,9 +2,9 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.module.ModuleDirectory;
-import com.github.sormuras.bach.module.ModuleLink;
-import com.github.sormuras.bach.module.ModuleSearcher;
+import com.github.sormuras.bach.project.ModuleDirectory;
+import com.github.sormuras.bach.project.ExternalModule;
+import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.lang.module.ModuleDescriptor;
@@ -13,9 +13,11 @@ import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
@@ -27,9 +29,9 @@ public class ShellEnvironment {
   private static final Consumer<Object> err = System.err::println;
 
   private static final Bach bach = Bach.ofSystem();
-  private static ModuleDirectory moduleDirectory = ModuleDirectory.of(Bach.LIBRARIES, Map.of());
-  private static final ModuleSearcher moduleSearcher =
-      ModuleSearcher.compose(moduleDirectory::lookup, ModuleSearcher.ofBestEffort(bach));
+  private static ModuleDirectory moduleDirectory = new ModuleDirectory(Set.of(), Map.of(), List.of());
+  private static final ModuleLookup moduleSearcher =
+      ModuleLookup.compose(moduleDirectory::lookup, ModuleLookup.ofBestEffort(bach));
 
   /**
    * Builds a project by delegating to the default build sequence.
@@ -80,16 +82,16 @@ public class ShellEnvironment {
    * @return the possibly expanded target of the link
    */
   public static String linkModule(String module, String target) {
-    var link = ModuleLink.link(module).to(target);
+    var link = ExternalModule.link(module).to(target);
     moduleDirectory = linkModule(link);
     return link.uri();
   }
 
-  private static ModuleDirectory linkModule(ModuleLink link, ModuleLink... more) {
+  private static ModuleDirectory linkModule(ExternalModule link, ExternalModule... more) {
     var copy = new HashMap<>(moduleDirectory.links());
     copy.put(link.module(), link);
     Arrays.stream(more).forEach(next -> copy.put(next.module(), next));
-    return new ModuleDirectory(moduleDirectory.path(), Map.copyOf(copy));
+    return new ModuleDirectory(moduleDirectory.requires(), Map.copyOf(copy), moduleDirectory.lookups());
   }
 
   /** Prints a list of all loaded modules. */

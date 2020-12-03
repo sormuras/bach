@@ -1,6 +1,9 @@
+@com.github.sormuras.bach.project.ProjectInfo(name = "🎶")
 open /*test*/ module com.github.sormuras.bach {
+  requires org.junit.jupiter;
+  requires test.base;
+
   exports com.github.sormuras.bach;
-  exports com.github.sormuras.bach.module;
   exports com.github.sormuras.bach.project;
   exports com.github.sormuras.bach.tool;
 
@@ -11,8 +14,6 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.javadoc;
   requires jdk.jdeps;
   requires jdk.jlink;
-  requires org.junit.jupiter;
-  requires test.base;
 
   uses com.github.sormuras.bach.BuildProgram;
   uses java.util.spi.ToolProvider;

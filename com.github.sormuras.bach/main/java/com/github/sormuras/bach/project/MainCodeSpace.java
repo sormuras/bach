@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.Bach;
 import java.nio.file.Path;
 
 /**
@@ -40,6 +39,6 @@ public record MainCodeSpace(
    * @return a path within the given project's documentation workspace
    */
   public Path documentation(String entry) {
-    return Bach.WORKSPACE.resolve("documentation/" + entry);
+    return workspace("documentation", entry);
   }
 }

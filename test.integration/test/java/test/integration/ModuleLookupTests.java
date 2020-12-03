@@ -2,25 +2,26 @@ package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.sormuras.bach.module.ModuleSearcher;
+import com.github.sormuras.bach.project.ModuleLookup;
+import com.github.sormuras.bach.project.ModuleLookups;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class ModuleSearcherTests {
+class ModuleLookupTests {
   @ParameterizedTest
   @ValueSource(strings = {"base", "controls", "fxml", "graphics", "media", "swing", "web"})
   void checkJavaFX(String suffix) {
     var group = "org/openjfx";
     var artifact = "javafx-" + suffix;
     var version = "15";
-    var classifier = ModuleSearcher.JavaFXSearcher.classifier();
+    var classifier = ModuleLookup.JavaFX.classifier();
     var jar = artifact + "-" + version + "-" + classifier + ".jar";
     var repository = "https://repo.maven.apache.org/maven2";
     var expected = String.join("/", repository, group, artifact, version, jar);
 
-    var searcher = new ModuleSearcher.JavaFXSearcher(version);
+    var lookup = new ModuleLookup.JavaFX(version);
     var module = "javafx." + suffix;
-    var actual = searcher.search(module).orElseThrow();
+    var actual = lookup.lookup(module).orElseThrow();
     assertEquals(expected, actual);
   }
 
@@ -34,13 +35,13 @@ class ModuleSearcherTests {
     var repository = "https://repo.maven.apache.org/maven2";
     var expected = String.join("/", repository, group, artifact, version, jar);
 
-    var searcher = new ModuleSearcher.LWJGLSearcher(version);
+    var lookup = new ModuleLookups.LWJGL_3_2_3();
     var module = "org.lwjgl" + (suffix.isEmpty() ? "" : "." + suffix);
-    assertEquals(expected, searcher.search(module).orElseThrow());
+    assertEquals(expected, lookup.lookup(module).orElseThrow());
 
-    var classifier = ModuleSearcher.LWJGLSearcher.classifier();
+    var classifier = ModuleLookup.LWJGL.classifier();
     var jarNatives = artifact + "-" + version + "-" + classifier + ".jar";
     var expectedNatives = String.join("/", repository, group, artifact, version, jarNatives);
-    assertEquals(expectedNatives, searcher.search(module + ".natives").orElseThrow());
+    assertEquals(expectedNatives, lookup.lookup(module + ".natives").orElseThrow());
   }
 }

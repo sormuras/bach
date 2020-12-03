@@ -1,10 +1,7 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.module.ModuleLink;
-import com.github.sormuras.bach.module.ModuleSearcher;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -37,24 +34,20 @@ class ProjectBuilder {
         new CodeSpaces(
             new MainCodeSpace(
                 declarations.mainModuleDeclarations(),
-                newModulePaths(info.main().modulePaths()),
-                release(info.main().release()),
+                newModulePaths(info.modulePaths()),
+                release(info.compileModulesForJavaRelease()),
                 jarslug(version),
-                info.main().generateApiDocumentation(),
-                info.main().generateCustomRuntimeImage(),
-                newTweaks(info.main().tweaks())),
+                info.generateApiDocumentation(),
+                info.generateCustomRuntimeImage(),
+                newTweaks(info.tweaks())),
             new TestCodeSpace(
                 declarations.testModuleDeclarations(),
                 newModulePaths(info.test().modulePaths()),
-                newTweaks(info.test().tweaks())),
-            new TestPreviewCodeSpace(
-                declarations.testPreviewModuleDeclarations(),
-                newModulePaths(info.test().modulePaths()),
                 newTweaks(info.test().tweaks())));
 
-    var library = library(spaces.finder());
+    var externalModules = newExternalModules(spaces.finder());
 
-    return new Project(name(name), version, library, spaces);
+    return new Project(name(name), version, externalModules, spaces);
   }
 
   String name(String name) {
@@ -78,31 +71,21 @@ class ProjectBuilder {
   }
 
   private record Declarations(
-      ModuleDeclarations mainModuleDeclarations,
-      ModuleDeclarations testModuleDeclarations,
-      ModuleDeclarations testPreviewModuleDeclarations) {}
+      ModuleDeclarations mainModuleDeclarations, ModuleDeclarations testModuleDeclarations) {}
 
   Declarations declarations() {
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(Path.of(""), 9));
 
-    var views = new TreeMap<String, ModuleDeclaration>();
     var tests = new TreeMap<String, ModuleDeclaration>();
     var mains = new TreeMap<String, ModuleDeclaration>();
 
-    var isTestPreviewModule = isModuleOf("test-preview", "*");
     var isTestModule = isModuleOf("test", info.test().modules());
-    var isMainModule = isModuleOf("main", info.main().modules());
+    var isMainModule = isModuleOf("main", info.modules());
 
     var iterator = paths.listIterator();
     while (iterator.hasNext()) {
       var path = iterator.next();
       if (path.startsWith(".bach")) continue;
-      if (isTestPreviewModule.test(path)) {
-        var declaration = ModuleDeclaration.of(path, false);
-        views.put(declaration.name(), declaration);
-        iterator.remove();
-        continue;
-      }
       if (isTestModule.test(path)) {
         var declaration = ModuleDeclaration.of(path, false);
         tests.put(declaration.name(), declaration);
@@ -115,44 +98,37 @@ class ProjectBuilder {
         iterator.remove();
       }
     }
-    return new Declarations(
-        new ModuleDeclarations(mains),
-        new ModuleDeclarations(tests),
-        new ModuleDeclarations(views));
+    return new Declarations(new ModuleDeclarations(mains), new ModuleDeclarations(tests));
   }
 
-  Library library(ModuleFinder finder) {
-    var requires = new TreeSet<>(List.of(info.library().requires()));
+  ModuleDirectory newExternalModules(ModuleFinder finder) {
+    var requires = new TreeSet<>(List.of(info.externalModules().requires()));
     requires.addAll(Modules.required(finder));
     requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
     requires.removeAll(Modules.declared(finder));
-    var links = new TreeMap<String, String>();
-    for (var link : info.library().links()) links.put(link.module(), link(link).uri());
-    var searchers = new ArrayList<ModuleSearcher>();
-    for (var searcher : info.library().searchers()) searchers.add(searcher(searcher));
-    return new Library(requires, links, searchers);
+    var links = new TreeMap<String, ExternalModule>();
+    for (var link : info.externalModules().links()) links.put(link.module(), link(link));
+    var lookups = new ArrayList<ModuleLookup>();
+    for (var lookup : info.externalModules().lookups()) lookups.add(newModuleLookup(lookup));
+    return new ModuleDirectory(requires, links, lookups);
   }
 
-  ModuleLink link(ProjectInfo.Library.Link link) {
+  ExternalModule link(ProjectInfo.ExternalModules.Link link) {
     var module = link.module();
-    var target = link.target();
+    var target = link.to();
 
     return switch (link.type()) {
-      case AUTO -> ModuleLink.link(module).to(target);
-      case URI -> ModuleLink.link(module).toUri(target);
-      case MAVEN -> ModuleLink.link(module).toMaven(link.mavenRepository(), target);
+      case AUTO -> ExternalModule.link(module).to(target);
+      case URI -> ExternalModule.link(module).toUri(target);
+      case MAVEN -> ExternalModule.link(module).toMaven(link.mavenRepository(), target);
     };
   }
 
-  ModuleSearcher searcher(ProjectInfo.Library.Searcher searcher) {
+  ModuleLookup newModuleLookup(Class<? extends ModuleLookup> lookup) {
     try {
-      try {
-        return searcher.with().getConstructor(String.class).newInstance(searcher.version());
-      } catch (NoSuchMethodException exception) {
-        return searcher.with().getConstructor().newInstance();
-      }
+      return lookup.getConstructor().newInstance();
     } catch (ReflectiveOperationException exception) {
-      throw new RuntimeException("Creating module searcher failed: " + searcher.with(), exception);
+      throw new RuntimeException("Creating module lookup failed: " + lookup, exception);
     }
   }
 

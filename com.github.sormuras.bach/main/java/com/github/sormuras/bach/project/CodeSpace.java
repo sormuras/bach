@@ -6,7 +6,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 /** A nominal space for modular Java source code. */
-/*sealed*/ interface CodeSpace /*permits MainCodeSpace, TestCodeSpace, TestPreviewCodeSpace*/ {
+/*sealed*/ interface CodeSpace /*permits MainCodeSpace, TestCodeSpace*/ {
 
   /**
    * Returns all module declarations of this code space.

@@ -2,8 +2,9 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Functions;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.module.ModuleDirectory;
-import com.github.sormuras.bach.module.ModuleSearcher;
+import com.github.sormuras.bach.project.ModuleDirectory;
+import com.github.sormuras.bach.project.ModuleLookup;
+import com.github.sormuras.bach.project.ProjectInfo;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -25,10 +26,10 @@ import java.util.function.Supplier;
 public final class Bach {
 
   /** Path to directory with external modules. */
-  public static final Path LIBRARIES = Path.of(".bach/libraries");
+  public static final Path LIBRARIES = Path.of(ProjectInfo.EXTERNAL_MODULES);
 
   /** Path to directory that collects all generated assets. */
-  public static final Path WORKSPACE = Path.of(".bach/workspace");
+  public static final Path WORKSPACE = Path.of(ProjectInfo.WORKSPACE);
 
   /**
    * Returns a shell builder initialized with default components.
@@ -180,7 +181,7 @@ public final class Bach {
    * @param searcher the function that maps a module name to its uri
    * @param module the name of the module to load
    */
-  public void loadModule(ModuleDirectory directory, ModuleSearcher searcher, String module) {
+  public void loadModule(ModuleDirectory directory, ModuleLookup searcher, String module) {
     if (directory.finder().find(module).isPresent()) return;
     httpCopy(directory.lookup(module, searcher), directory.jar(module));
   }
@@ -189,9 +190,9 @@ public final class Bach {
    * Load all missing modules of the given module directory.
    *
    * @param directory the module finder to query for already loaded modules
-   * @param searcher the searcher to query for linked module-
+   * @param searcher the searcher to query for linked modules
    */
-  public void loadMissingModules(ModuleDirectory directory, ModuleSearcher searcher) {
+  public void loadMissingModules(ModuleDirectory directory, ModuleLookup searcher) {
     while (true) {
       var missing = directory.missing();
       if (missing.isEmpty()) return;

@@ -1,8 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.module.ModuleDirectory;
-import com.github.sormuras.bach.module.ModuleSearcher;
+import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.project.CodeSpaces;
 import com.github.sormuras.bach.project.MainCodeSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
@@ -32,7 +31,6 @@ public class Builder {
 
   private final Bach bach;
   private final Project project;
-  private final ModuleDirectory moduleDirectory;
   private final ToolRunner runner;
 
   /**
@@ -45,8 +43,7 @@ public class Builder {
     this.bach = bach;
     this.project = project;
 
-    this.moduleDirectory = ModuleDirectory.of(Bach.LIBRARIES, project.library().links());
-    this.runner = new ToolRunner(moduleDirectory.finder());
+    this.runner = new ToolRunner(project.library().finder());
   }
 
   /** Builds a modular Java project. */
@@ -72,12 +69,13 @@ public class Builder {
 
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
-    var searchers = new ArrayList<>(project.library().searchers());
-    searchers.add(ModuleSearcher.ofBestEffort(bach));
-    var searcher = ModuleSearcher.compose(searchers.toArray(ModuleSearcher[]::new));
-    var requires = project.library().requires();
-    requires.forEach(module -> bach.loadModule(moduleDirectory, searcher, module));
-    bach.loadMissingModules(moduleDirectory, searcher);
+    var library = project.library();
+    var moduleLookups = new ArrayList<>(library.lookups());
+    moduleLookups.add(ModuleLookup.ofBestEffort(bach));
+    var searcher = ModuleLookup.compose(moduleLookups.toArray(ModuleLookup[]::new));
+    var requires = library.requires();
+    requires.forEach(module -> bach.loadModule(library, searcher, module));
+    bach.loadMissingModules(library, searcher);
   }
 
   /**
@@ -372,7 +370,7 @@ public class Builder {
       run(computeTestJarCall(module));
     }
 
-    if (moduleDirectory.finder().find("org.junit.platform.console").isPresent()) {
+    if (project.library().finder().find("org.junit.platform.console").isPresent()) {
       for (var declaration : project.spaces().test().modules().map().values()) {
         var module = declaration.name();
         var archive = module + "@" + project.version() + "+test.jar";

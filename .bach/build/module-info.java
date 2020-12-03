@@ -1,53 +1,48 @@
-import com.github.sormuras.bach.ProjectInfo;
-import com.github.sormuras.bach.ProjectInfo.Library;
-import com.github.sormuras.bach.ProjectInfo.Library.Link;
-import com.github.sormuras.bach.ProjectInfo.Library.Searcher;
-import com.github.sormuras.bach.ProjectInfo.Main;
-import com.github.sormuras.bach.ProjectInfo.Test;
-import com.github.sormuras.bach.ProjectInfo.Tweak;
-import com.github.sormuras.bach.module.ModuleSearcher.JUnitJupiterSearcher;
-import com.github.sormuras.bach.module.ModuleSearcher.JUnitPlatformSearcher;
+import com.github.sormuras.bach.project.ModuleLookups;
+import com.github.sormuras.bach.project.ProjectInfo;
+import com.github.sormuras.bach.project.ProjectInfo.ExternalModules;
+import com.github.sormuras.bach.project.ProjectInfo.ExternalModules.Link;
+import com.github.sormuras.bach.project.ProjectInfo.Test;
+import com.github.sormuras.bach.project.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
     version = "16-ea",
-    library =
-        @Library(
+    modules = "com.github.sormuras.bach/main/java/module-info.java",
+    compileModulesForJavaRelease = 16,
+    generateApiDocumentation = true,
+    generateCustomRuntimeImage = true,
+    tweaks = {
+      @Tweak(
+          tool = "javac",
+          args = {"-encoding", "UTF-8", "-g", "-parameters", "-Werror", "-Xlint"}),
+      @Tweak(
+          tool = "javadoc",
+          args = {
+            "-encoding",
+            "UTF-8",
+            "-windowtitle",
+            "\uD83C\uDFBC Bach",
+            "-header",
+            "\uD83C\uDFBC Bach",
+            "-use",
+            "-linksource",
+            "-notimestamp",
+            "-Werror",
+            "-Xdoclint",
+            "-quiet"
+          })
+    },
+    externalModules =
+        @ExternalModules(
             requires = {"org.junit.platform.console"},
             links = {
-              @Link(module = "org.apiguardian.api", target = "org.apiguardian:apiguardian-api:1.1.0"),
-              @Link(module = "org.opentest4j", target = "org.opentest4j:opentest4j:1.2.0"),
+              @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+              @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
             },
-            searchers = {
-              @Searcher(with = JUnitJupiterSearcher.class, version = "5.7.0"),
-              @Searcher(with = JUnitPlatformSearcher.class, version = "1.7.0"),
-            }),
-    main =
-        @Main(
-            modules = "com.github.sormuras.bach/main/java/module-info.java",
-            release = 16,
-            generateApiDocumentation = true,
-            generateCustomRuntimeImage = true,
-            tweaks = {
-              @Tweak(
-                  tool = "javac",
-                  args = {"-encoding", "UTF-8", "-g", "-parameters", "-Werror", "-Xlint"}),
-              @Tweak(
-                  tool = "javadoc",
-                  args = {
-                    "-encoding",
-                    "UTF-8",
-                    "-windowtitle",
-                    "\uD83C\uDFBC Bach",
-                    "-header",
-                    "\uD83C\uDFBC Bach",
-                    "-use",
-                    "-linksource",
-                    "-notimestamp",
-                    "-Werror",
-                    "-Xdoclint",
-                    "-quiet"
-                  })
+            lookups = {
+              ModuleLookups.JUnitJupiter_5_7.class,
+              ModuleLookups.JUnitPlatform_1_7.class
             }),
     test =
         @Test(

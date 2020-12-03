@@ -1,34 +1,34 @@
-package com.github.sormuras.bach.module;
+package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.internal.GitHubReleasesSearcher;
-import com.github.sormuras.bach.internal.MavenCentralSearcher;
+import com.github.sormuras.bach.internal.GitHubReleasesModuleLookup;
+import com.github.sormuras.bach.internal.MavenCentralModuleLookup;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Try to find a URI for a specific module name. */
+/** A function that tries to map a module name to a specific uniform resource identifier. */
 @FunctionalInterface
-public interface ModuleSearcher {
+public interface ModuleLookup {
   /**
-   * Returns an optional URI of the given module name.
+   * Returns an optional uniform resource identifier for the given module name.
    *
-   * @param module the name of the module to find
-   * @return a URI as a {@code String} wrapped in an optional object
+   * @param module the name of the module to lookup
+   * @return a string-representation of a uniform resource identifier wrapped in an optional object
    */
-  Optional<String> search(String module);
+  Optional<String> lookup(String module);
 
   /**
-   * Returns a module searcher that is composed from a sequence of zero or more module searcher.
+   * Returns a module lookup that is composed from a sequence of zero or more module lookup objects.
    *
-   * @param searchers the array of module searchers
-   * @return a module searcher that composes a sequence of module searchers
+   * @param lookups the array of module lookups
+   * @return a module lookup that composes a sequence of module lookup objects
    */
-  static ModuleSearcher compose(ModuleSearcher... searchers) {
-    var searcherList = List.of(searchers); // defensive copy and require non-null entries
+  static ModuleLookup compose(ModuleLookup... lookups) {
+    var moduleLookups = List.of(lookups);
     return module -> {
-      for (var searcher : searcherList) {
-        var result = searcher.search(module);
+      for (var moduleLookup : moduleLookups) {
+        var result = moduleLookup.lookup(module);
         if (result.isPresent()) return result;
       }
       return Optional.empty();
@@ -36,17 +36,17 @@ public interface ModuleSearcher {
   }
 
   /**
-   * Returns a best-effort module searcher.
+   * Returns a best-effort module lookup.
    *
    * @param bach the Java Shell Builder instance
-   * @return a module searcher that tries to find a module in various locations
+   * @return a module lookup that tries to find a module in various locations
    */
-  static ModuleSearcher ofBestEffort(Bach bach) {
-    return compose(new GitHubReleasesSearcher(bach), new MavenCentralSearcher(bach));
+  static ModuleLookup ofBestEffort(Bach bach) {
+    return compose(new GitHubReleasesModuleLookup(bach), new MavenCentralModuleLookup(bach));
   }
 
   /** Maps well-known JavaFX module names to their Maven Central artifacts. */
-  class JavaFXSearcher implements ModuleSearcher {
+  class JavaFX implements ModuleLookup {
 
     /** @return the classifier determined via the {@code os.name} system property */
     public static String classifier() {
@@ -65,7 +65,7 @@ public interface ModuleSearcher {
      *
      * @param version the version
      */
-    public JavaFXSearcher(String version) {
+    public JavaFX(String version) {
       this(version, classifier());
     }
 
@@ -75,23 +75,23 @@ public interface ModuleSearcher {
      * @param version the version
      * @param classifier the classifier
      */
-    public JavaFXSearcher(String version, String classifier) {
+    public JavaFX(String version, String classifier) {
       this.version = version;
       this.classifier = classifier;
     }
 
     @Override
-    public Optional<String> search(String module) {
+    public Optional<String> lookup(String module) {
       if (!module.startsWith("javafx.")) return Optional.empty();
       var group = "org.openjfx";
       var artifact = "javafx-" + module.substring(7).replace('.', '-');
       var coordinates = group + ':' + artifact + ':' + version + ':' + classifier;
-      return Optional.of(ModuleLink.link(module).toMavenCentral(coordinates).uri());
+      return Optional.of(ExternalModule.link(module).toMavenCentral(coordinates).uri());
     }
   }
 
   /** Maps well-known JUnit Jupiter module names to their Maven Central artifacts. */
-  class JUnitJupiterSearcher implements ModuleSearcher {
+  class JUnitJupiter implements ModuleLookup {
 
     private final String version;
 
@@ -100,7 +100,7 @@ public interface ModuleSearcher {
      *
      * @param version the version
      */
-    public JUnitJupiterSearcher(String version) {
+    public JUnitJupiter(String version) {
       this.version = version;
     }
 
@@ -108,12 +108,12 @@ public interface ModuleSearcher {
       var module = "org.junit.jupiter" + (suffix.isEmpty() ? "" : '.' + suffix);
       var artifact = "junit-jupiter" + (suffix.isEmpty() ? "" : '-' + suffix);
       var coordinates = "org.junit.jupiter" + ':' + artifact + ':' + version;
-      var uri = ModuleLink.link(module).toMavenCentral(coordinates).uri();
+      var uri = ExternalModule.link(module).toMavenCentral(coordinates).uri();
       return Optional.of(uri);
     }
 
     @Override
-    public Optional<String> search(String module) {
+    public Optional<String> lookup(String module) {
       return switch (module) {
         case "org.junit.jupiter" -> map("");
         case "org.junit.jupiter.api" -> map("api");
@@ -126,7 +126,7 @@ public interface ModuleSearcher {
   }
 
   /** Maps well-known JUnit Platform module names to their Maven Central artifacts. */
-  class JUnitPlatformSearcher implements ModuleSearcher {
+  class JUnitPlatform implements ModuleLookup {
 
     private final String version;
 
@@ -135,7 +135,7 @@ public interface ModuleSearcher {
      *
      * @param version the version
      */
-    public JUnitPlatformSearcher(String version) {
+    public JUnitPlatform(String version) {
       this.version = version;
     }
 
@@ -143,12 +143,12 @@ public interface ModuleSearcher {
       var module = "org.junit.platform." + suffix;
       var artifact = "junit-platform-" + suffix;
       var coordinates = "org.junit.platform:" + artifact + ':' + version;
-      var uri = ModuleLink.link(module).toMavenCentral(coordinates).uri();
+      var uri = ExternalModule.link(module).toMavenCentral(coordinates).uri();
       return Optional.of(uri);
     }
 
     @Override
-    public Optional<String> search(String module) {
+    public Optional<String> lookup(String module) {
       return switch (module) {
         case "org.junit.platform.commons" -> map("commons");
         case "org.junit.platform.console" -> map("console");
@@ -161,7 +161,7 @@ public interface ModuleSearcher {
   }
 
   /** Maps well-known LWJGL module names to their Maven Central artifacts. */
-  class LWJGLSearcher implements ModuleSearcher {
+  abstract class LWJGL implements ModuleLookup {
 
     /** @return the classifier determined via the {@code os.name} system property */
     public static String classifier() {
@@ -192,7 +192,7 @@ public interface ModuleSearcher {
      *
      * @param version the version
      */
-    public LWJGLSearcher(String version) {
+    public LWJGL(String version) {
       this(version, classifier());
     }
 
@@ -202,20 +202,20 @@ public interface ModuleSearcher {
      * @param version the version
      * @param classifier the classifier
      */
-    public LWJGLSearcher(String version, String classifier) {
+    public LWJGL(String version, String classifier) {
       this.version = version;
       this.classifier = classifier;
     }
 
     @Override
-    public Optional<String> search(String module) {
+    public Optional<String> lookup(String module) {
       if (!module.startsWith("org.lwjgl")) return Optional.empty();
       var group = "org.lwjgl";
       var natives = module.endsWith(".natives");
       var end = natives ? module.length() - 8 : module.length();
       var artifact = "lwjgl" + module.substring(9, end).replace('.', '-');
       var coordinates = group + ':' + artifact + ':' + version + (natives ? ":" + classifier : "");
-      return Optional.of(ModuleLink.link(module).toMavenCentral(coordinates).uri());
+      return Optional.of(ExternalModule.link(module).toMavenCentral(coordinates).uri());
     }
   }
 }

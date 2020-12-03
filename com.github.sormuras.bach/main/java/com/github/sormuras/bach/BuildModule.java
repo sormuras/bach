@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.lang.module.ModuleFinder;

@@ -1,23 +1,23 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.module.ModuleSearcher;
+import com.github.sormuras.bach.project.ModuleLookup;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Search for a modular JAR file attached to a GitHub release.
  */
-public class GitHubReleasesSearcher implements ModuleSearcher {
+public class GitHubReleasesModuleLookup implements ModuleLookup {
 
   private final Bach bach;
 
-  public GitHubReleasesSearcher(Bach bach) {
+  public GitHubReleasesModuleLookup(Bach bach) {
     this.bach = bach;
   }
 
   @Override
-  public Optional<String> search(String module) {
+  public Optional<String> lookup(String module) {
     if (!module.startsWith("com.github.")) return Optional.empty();
     var split = module.split("\\.");
     if (split.length < 4) return Optional.empty();

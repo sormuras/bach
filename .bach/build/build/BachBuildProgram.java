@@ -3,7 +3,7 @@ package build;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.Builder;
-import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.Project;
 import java.lang.System.Logger.Level;
 
