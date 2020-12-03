@@ -101,7 +101,7 @@ class ProjectBuilder {
     return new Declarations(new ModuleDeclarations(mains), new ModuleDeclarations(tests));
   }
 
-  ModuleDirectory newExternalModules(ModuleFinder finder) {
+  ExternalModules newExternalModules(ModuleFinder finder) {
     var requires = new TreeSet<>(List.of(info.externalModules().requires()));
     requires.addAll(Modules.required(finder));
     requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
@@ -110,7 +110,7 @@ class ProjectBuilder {
     for (var link : info.externalModules().links()) links.put(link.module(), link(link));
     var lookups = new ArrayList<ModuleLookup>();
     for (var lookup : info.externalModules().lookups()) lookups.add(newModuleLookup(lookup));
-    return new ModuleDirectory(requires, links, lookups);
+    return new ExternalModules(requires, links, lookups);
   }
 
   ExternalModule link(ProjectInfo.ExternalModules.Link link) {

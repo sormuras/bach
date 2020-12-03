@@ -2,7 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Functions;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.project.ModuleDirectory;
+import com.github.sormuras.bach.project.ExternalModules;
 import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.project.ProjectInfo;
 import java.net.URI;
@@ -181,7 +181,7 @@ public final class Bach {
    * @param searcher the function that maps a module name to its uri
    * @param module the name of the module to load
    */
-  public void loadModule(ModuleDirectory directory, ModuleLookup searcher, String module) {
+  public void loadModule(ExternalModules directory, ModuleLookup searcher, String module) {
     if (directory.finder().find(module).isPresent()) return;
     httpCopy(directory.lookup(module, searcher), directory.jar(module));
   }
@@ -192,7 +192,7 @@ public final class Bach {
    * @param directory the module finder to query for already loaded modules
    * @param searcher the searcher to query for linked modules
    */
-  public void loadMissingModules(ModuleDirectory directory, ModuleLookup searcher) {
+  public void loadMissingModules(ExternalModules directory, ModuleLookup searcher) {
     while (true) {
       var missing = directory.missing();
       if (missing.isEmpty()) return;

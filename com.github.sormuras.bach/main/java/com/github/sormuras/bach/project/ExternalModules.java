@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * @param links the module-uri pairs
  * @param lookups the list of module's uri lookups
  */
-public record ModuleDirectory(Set<String> requires, Map<String, ExternalModule> links, List<ModuleLookup> lookups) {
+public record ExternalModules(Set<String> requires, Map<String, ExternalModule> links, List<ModuleLookup> lookups) {
 
   /** @return a new stream of module-uri pairs */
   public Stream<ExternalModule> stream() {

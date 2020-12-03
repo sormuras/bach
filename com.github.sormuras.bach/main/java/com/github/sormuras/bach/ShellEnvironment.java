@@ -2,14 +2,16 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.project.ModuleDirectory;
 import com.github.sormuras.bach.project.ExternalModule;
+import com.github.sormuras.bach.project.ExternalModules;
 import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolRunner;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,6 +22,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 
 /** An enviroment used by Bach's Boot Script. */
 @SuppressWarnings("unused")
@@ -29,9 +32,9 @@ public class ShellEnvironment {
   private static final Consumer<Object> err = System.err::println;
 
   private static final Bach bach = Bach.ofSystem();
-  private static ModuleDirectory moduleDirectory = new ModuleDirectory(Set.of(), Map.of(), List.of());
-  private static final ModuleLookup moduleSearcher =
-      ModuleLookup.compose(moduleDirectory::lookup, ModuleLookup.ofBestEffort(bach));
+  private static ExternalModules externals = new ExternalModules(Set.of(), Map.of(), List.of());
+  private static final ModuleLookup lookup =
+      ModuleLookup.compose(externals::lookup, ModuleLookup.ofBestEffort(bach));
 
   /**
    * Builds a project by delegating to the default build sequence.
@@ -48,7 +51,7 @@ public class ShellEnvironment {
    * @param module the name of the module to describe
    */
   public static void describeModule(String module) {
-    describeModule(module, ModuleFinder.compose(ModuleFinder.ofSystem(), moduleDirectory.finder()));
+    describeModule(module, ModuleFinder.compose(ModuleFinder.ofSystem(), externals.finder()));
   }
 
   /**
@@ -83,30 +86,40 @@ public class ShellEnvironment {
    */
   public static String linkModule(String module, String target) {
     var link = ExternalModule.link(module).to(target);
-    moduleDirectory = linkModule(link);
+    externals = linkModule(link);
     return link.uri();
   }
 
-  private static ModuleDirectory linkModule(ExternalModule link, ExternalModule... more) {
-    var copy = new HashMap<>(moduleDirectory.links());
+  private static ExternalModules linkModule(ExternalModule link, ExternalModule... more) {
+    var copy = new HashMap<>(externals.links());
     copy.put(link.module(), link);
     Arrays.stream(more).forEach(next -> copy.put(next.module(), next));
-    return new ModuleDirectory(moduleDirectory.requires(), Map.copyOf(copy), moduleDirectory.lookups());
+    return new ExternalModules(externals.requires(), Map.copyOf(copy), externals.lookups());
   }
 
   /** Prints a list of all loaded modules. */
   public static void listLoadedModules() {
-    printModules(moduleDirectory.finder());
+    printModules(externals.finder());
   }
 
   /** Prints all missing modules. */
   public static void listMissingModules() {
-    moduleDirectory.missing().forEach(out);
+    externals.missing().forEach(out);
   }
 
   /** Prints all module links. */
   public static void listModuleLinks() {
-    moduleDirectory.stream().sorted().forEach(out);
+    externals.stream().sorted().forEach(out);
+  }
+
+  /** Prints all public static method names. */
+  public static void listPublicStaticMethods() {
+    Stream.of(ShellEnvironment.class.getDeclaredMethods())
+        .filter(method -> Modifier.isPublic(method.getModifiers()))
+        .filter(method -> Modifier.isStatic(method.getModifiers()))
+        .map(Method::getName)
+        .sorted()
+        .forEach(out);
   }
 
   /** Prints a list of all system modules. */
@@ -120,7 +133,7 @@ public class ShellEnvironment {
    * @see ToolProvider
    */
   public static void listToolProviders() {
-    printToolProviders(moduleDirectory.finder());
+    printToolProviders(externals.finder());
   }
 
   /**
@@ -129,12 +142,12 @@ public class ShellEnvironment {
    * @param module the name of the module to load
    */
   public static void loadModule(String module) {
-    bach.loadModule(moduleDirectory, moduleSearcher, module);
+    bach.loadModule(externals, lookup, module);
   }
 
   /** Loads all missing modules. */
   public static void loadMissingModules() {
-    bach.loadMissingModules(moduleDirectory, moduleSearcher);
+    bach.loadMissingModules(externals, lookup);
   }
 
   /**
@@ -145,7 +158,7 @@ public class ShellEnvironment {
    */
   public static void run(String tool, Object... args) {
     var call = Command.of(tool, args);
-    var response = new ToolRunner(moduleDirectory.finder()).run(call);
+    var response = new ToolRunner(externals.finder()).run(call);
     if (!response.out().isEmpty()) out.accept(response.out());
     if (!response.err().isEmpty()) err.accept(response.err());
     if (response.isError()) throw new Error(tool + " returned " + response.code());

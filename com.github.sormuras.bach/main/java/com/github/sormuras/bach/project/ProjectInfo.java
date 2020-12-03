@@ -99,7 +99,7 @@ public @interface ProjectInfo {
     String[] args();
   }
 
-  /** @return the library configuration */
+  /** @return the external modules configuration */
   ExternalModules externalModules() default @ExternalModules;
 
   /** Library configuration annotation. */

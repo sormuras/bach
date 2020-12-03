@@ -45,10 +45,10 @@ import java.nio.file.Path;
  *
  * @param name the name of the project
  * @param version the version of the project
- * @param library the external modules manager
+ * @param externals the external modules manager
  * @param spaces the codes space component
  */
-public record Project(String name, Version version, ModuleDirectory library, CodeSpaces spaces) {
+public record Project(String name, Version version, ExternalModules externals, CodeSpaces spaces) {
 
   /**
    * Returns a project model based on walking the current working directory.

@@ -43,7 +43,7 @@ public class Builder {
     this.bach = bach;
     this.project = project;
 
-    this.runner = new ToolRunner(project.library().finder());
+    this.runner = new ToolRunner(project.externals().finder());
   }
 
   /** Builds a modular Java project. */
@@ -69,7 +69,7 @@ public class Builder {
 
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
-    var library = project.library();
+    var library = project.externals();
     var moduleLookups = new ArrayList<>(library.lookups());
     moduleLookups.add(ModuleLookup.ofBestEffort(bach));
     var searcher = ModuleLookup.compose(moduleLookups.toArray(ModuleLookup[]::new));
@@ -370,7 +370,7 @@ public class Builder {
       run(computeTestJarCall(module));
     }
 
-    if (project.library().finder().find("org.junit.platform.console").isPresent()) {
+    if (project.externals().finder().find("org.junit.platform.console").isPresent()) {
       for (var declaration : project.spaces().test().modules().map().values()) {
         var module = declaration.name();
         var archive = module + "@" + project.version() + "+test.jar";
