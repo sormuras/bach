@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 public @interface ProjectInfo {
 
   /** Path to the directory that collects downloaded external modules. */
-  String EXTERNAL_MODULES = ".bach/libraries";
+  String EXTERNAL_MODULES = ".bach/external-modules";
 
   /** Path to the directory that collects all generated assets. */
   String WORKSPACE = ".bach/workspace";

@@ -42,8 +42,8 @@
  *
  * <h3>System Modules</h3>
  *
- * A system module is provided by a Java runtime image. Here's an excerpt of a listing of system
- * modules provided by a standard OpenJDK image.
+ * A system module is provided by a Java Runtime. Here's an excerpt of a listing of system modules
+ * provided by a standard OpenJDK Runtime image.
  *
  * <pre>{@code
  * java.base
@@ -56,14 +56,14 @@
  * jdk.zipfs
  * }</pre>
  *
- * Consult the output of {@code java --list-modules} for a complete listing of all observable system
- * modules for a specific Java image. Also see {@link java.lang.module.ModuleFinder#ofSystem()
- * ModuleFinder.ofSystem()} for details.
+ * Consult the output of the "{@code java --list-modules}" command for a complete listing of all
+ * observable system modules for a specific Java image. Also see {@link
+ * java.lang.module.ModuleFinder#ofSystem() ModuleFinder.ofSystem()} for details.
  *
  * <h3>External Modules</h3>
  *
- * An external module is not declared by a project nor is it provided by the Java runtime image. An
- * external module has to be provided by the user in form of a modular JAR file.
+ * An external module is not declared by the current project nor is it provided by the Java Runtime.
+ * An external module has to be provided by the user in form of a modular JAR file.
  *
  * <p>For example, {@code org.junit.jupiter} and all other modules published by the JUnit-Team are
  * considered external modules. Here's a listing of external modules used to compile and launch
@@ -83,8 +83,8 @@
  * org.opentest4j.jar
  * }</pre>
  *
- * By default the directory {@link com.github.sormuras.bach.project.ProjectInfo#EXTERNAL_MODULES
- * .bach/libraries} contains the user-provided modular JAR files.
+ * By default, the directory {@link com.github.sormuras.bach.project.ProjectInfo#EXTERNAL_MODULES
+ * .bach/external-modules} contains the user-provided modular JAR files.
  *
  * <h2>Links</h2>
  *

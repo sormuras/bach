@@ -188,7 +188,7 @@ public class Builder {
     if (release > 8) throw new IllegalStateException("release too high: " + release);
 
     var classPaths = new ArrayList<Path>();
-    var libraries = Bach.LIBRARIES;
+    var libraries = Bach.EXTERNALS;
     main.modules().toNames().forEach(name -> classPaths.add(main.classes(mainRelease, name)));
     if (Files.isDirectory(libraries)) classPaths.addAll(Paths.list(libraries, Paths::isJarFile));
 
@@ -387,7 +387,7 @@ public class Builder {
                 test.workspace("modules-test", archive), // module under test
                 test.workspace("modules"), // main modules
                 test.workspace("modules-test"), // (more) test modules
-                Bach.LIBRARIES // external modules
+                Bach.EXTERNALS // external modules
                 );
         info("Launch JUnit Platform for test module: %s", module);
         var junit = computeTestJUnitCall(declaration);

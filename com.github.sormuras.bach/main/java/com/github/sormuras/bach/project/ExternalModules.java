@@ -27,7 +27,7 @@ public record ExternalModules(Set<String> requires, Map<String, ExternalModule> 
 
   /** @return a new module finder using the path of this module directory */
   public ModuleFinder finder() {
-    return ModuleFinder.of(Bach.LIBRARIES);
+    return ModuleFinder.of(Bach.EXTERNALS);
   }
 
   /**
@@ -56,7 +56,7 @@ public record ExternalModules(Set<String> requires, Map<String, ExternalModule> 
    * @return a path pointing to the modular JAR file of the given module
    */
   public Path jar(String module) {
-    return Bach.LIBRARIES.resolve(module + ".jar");
+    return Bach.EXTERNALS.resolve(module + ".jar");
   }
 
   /** @return the names of all modules that are required but not locatable by this instance */

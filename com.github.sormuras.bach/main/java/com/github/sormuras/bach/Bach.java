@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 public final class Bach {
 
   /** Path to directory with external modules. */
-  public static final Path LIBRARIES = Path.of(ProjectInfo.EXTERNAL_MODULES);
+  public static final Path EXTERNALS = Path.of(ProjectInfo.EXTERNAL_MODULES);
 
   /** Path to directory that collects all generated assets. */
   public static final Path WORKSPACE = Path.of(ProjectInfo.WORKSPACE);
