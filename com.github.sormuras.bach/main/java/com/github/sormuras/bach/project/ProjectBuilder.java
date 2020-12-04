@@ -7,6 +7,7 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +29,8 @@ class ProjectBuilder {
 
   Project build() {
     var version = version(info.version());
-    var declarations = declarations();
+    var features = newFeatures(info.features());
+    var declarations = newDeclarations(features);
 
     var spaces =
         new CodeSpaces(
@@ -37,8 +39,7 @@ class ProjectBuilder {
                 newModulePaths(info.modulePaths()),
                 release(info.compileModulesForJavaRelease()),
                 jarslug(version),
-                info.generateApiDocumentation(),
-                info.generateCustomRuntimeImage(),
+                features,
                 newTweaks(info.tweaks())),
             new TestCodeSpace(
                 declarations.testModuleDeclarations(),
@@ -73,7 +74,15 @@ class ProjectBuilder {
   private record Declarations(
       ModuleDeclarations mainModuleDeclarations, ModuleDeclarations testModuleDeclarations) {}
 
-  Declarations declarations() {
+  Features newFeatures(Feature... features) {
+    var property = System.getProperty("bach.project.main.features");
+    if (property == null) return new Features(Set.of(features));
+    var set = EnumSet.noneOf(Feature.class);
+    for (var feature : property.split(",")) set.add(Feature.valueOf(feature));
+    return new Features(set);
+  }
+
+  Declarations newDeclarations(Features features) {
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(Path.of(""), 9));
 
     var tests = new TreeMap<String, ModuleDeclaration>();
@@ -81,6 +90,7 @@ class ProjectBuilder {
 
     var isTestModule = isModuleOf("test", info.test().modules());
     var isMainModule = isModuleOf("main", info.modules());
+    var withSources = features.set().contains(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
 
     var iterator = paths.listIterator();
     while (iterator.hasNext()) {
@@ -93,7 +103,7 @@ class ProjectBuilder {
         continue;
       }
       if (isMainModule.test(path)) {
-        var declaration = ModuleDeclaration.of(path, true);
+        var declaration = ModuleDeclaration.of(path, withSources);
         mains.put(declaration.name(), declaration);
         iterator.remove();
       }

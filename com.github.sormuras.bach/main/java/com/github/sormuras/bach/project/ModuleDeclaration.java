@@ -28,7 +28,7 @@ public record ModuleDeclaration(
     return reference.name();
   }
 
-  static ModuleDeclaration of(Path path, boolean resourcesIncludeSources) {
+  static ModuleDeclaration of(Path path, boolean treatSourcesAsResources) {
     var info = Paths.isModuleInfoJavaFile(path) ? path : path.resolve("module-info.java");
     var reference = ModuleInfoReference.of(info);
 
@@ -41,14 +41,14 @@ public record ModuleDeclaration(
       return new ModuleDeclaration(
           reference,
           new SourceFolders(List.of(folder)),
-          new SourceFolders(resourcesIncludeSources ? List.of(folder) : List.of()));
+          new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of()));
     }
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
     // resources = "resources", or targeted "resource.*?(\d+)$"
     var space = parent.getParent(); // usually "main", "test", or equivalent
     if (space == null) throw new AssertionError("No parents' parent? info -> " + info);
     var sources = folders(space, "java");
-    var resources = folders(space, resourcesIncludeSources ? "" : "resource");
+    var resources = folders(space, treatSourcesAsResources ? "" : "resource");
     return new ModuleDeclaration(reference, sources, resources);
   }
 

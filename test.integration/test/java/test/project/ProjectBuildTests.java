@@ -1,10 +1,12 @@
 package test.project;
 
+import static com.github.sormuras.bach.project.Feature.INCLUDE_SOURCES_IN_MODULAR_JAR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.project.Feature;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -12,11 +14,21 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import test.base.Classes;
 
 class ProjectBuildTests {
+
+  private static String release(int release) {
+    return "-Dbach.project.main.release=" + release;
+  }
+
+  private static String features(Feature... features) {
+    var names = Stream.of(features).map(Enum::name).toArray(String[]::new);
+    return "-Dbach.project.main.features=" + String.join(",", names);
+  }
 
   private static Set<String> requires(ModuleDescriptor descriptor) {
     return descriptor.requires().stream()
@@ -33,7 +45,7 @@ class ProjectBuildTests {
   @Test
   void buildSimple(@TempDir Path temp) throws Exception {
     var context = new Context("Simple", temp);
-    var output = context.build();
+    var output = context.build(features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -93,7 +105,7 @@ class ProjectBuildTests {
   @Test
   void buildSimplicissimus(@TempDir Path temp) throws Exception {
     var context = new Context("Simplicissimus", temp);
-    var output = context.build();
+    var output = context.build(features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -145,7 +157,7 @@ class ProjectBuildTests {
   @Test
   void buildJigsawQuickStartGreetings(@TempDir Path temp) throws Exception {
     var context = new Context("JigsawQuickStartGreetings", temp);
-    var output = context.build();
+    var output = context.build(features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -192,7 +204,7 @@ class ProjectBuildTests {
   @Test
   void buildJigsawQuickStartWorld(@TempDir Path temp) throws Exception {
     var context = new Context("JigsawQuickStartWorld", temp);
-    var output = context.build();
+    var output = context.build(features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -206,15 +218,39 @@ class ProjectBuildTests {
             .lines(),
         output.lines());
 
-    var finder = context.newModuleFinder();
-    assertTrue(finder.find("com.greetings").isPresent());
-    assertTrue(finder.find("org.astro").isPresent());
+    var greetings = context.newModuleFinder().find("com.greetings").orElseThrow();
+    var descriptor = greetings.descriptor();
+    assertTrue(greetings.location().isPresent());
+    assertEquals("com.greetings@0-ea", descriptor.toNameAndVersion());
+    assertEquals(Set.of("java.base", "org.astro"), requires(descriptor));
+    assertEquals(Set.of("com.greetings"), descriptor.packages());
+    assertTrue(descriptor.exports().isEmpty());
+    assertTrue(descriptor.mainClass().isPresent());
+
+    try (var jar = new JarFile(Path.of(greetings.location().orElseThrow()).toFile())) {
+      assertFalse(jar.isMultiRelease(), "A multi-release JAR file?!");
+      var names = new ArrayList<String>();
+      jar.entries().asIterator().forEachRemaining(e -> names.add(e.getName()));
+      assertLinesMatch(
+          """
+          META-INF/
+          META-INF/MANIFEST.MF
+          com/
+          com/greetings/
+          com/greetings/Main.class
+          com/greetings/Main.java
+          module-info.class
+          module-info.java
+          """
+              .lines(),
+          names.stream().sorted());
+    }
   }
 
   @Test
   void buildSingleRelease7(@TempDir Path temp) throws Exception {
     var context = new Context("SingleRelease-7", temp);
-    var output = context.build("-Dbach.project.main.release=7");
+    var output = context.build(release(7), features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -256,7 +292,7 @@ class ProjectBuildTests {
   @Test
   void buildSingleRelease8(@TempDir Path temp) throws Exception {
     var context = new Context("SingleRelease-8", temp);
-    var output = context.build("-Dbach.project.main.release=8");
+    var output = context.build(release(8), features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -299,7 +335,7 @@ class ProjectBuildTests {
   @Test
   void buildSingleRelease9(@TempDir Path temp) throws Exception {
     var context = new Context("SingleRelease-9", temp);
-    var output = context.build("-Dbach.project.main.release=9");
+    var output = context.build(release(9), features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -341,7 +377,7 @@ class ProjectBuildTests {
   @Test
   void buildMultiRelease9(@TempDir Path temp) throws Exception {
     var context = new Context("MultiRelease-9", temp);
-    var output = context.build("-Dbach.project.main.release=9");
+    var output = context.build(release(9), features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """
@@ -397,7 +433,7 @@ class ProjectBuildTests {
   @Test
   void buildMultiRelease11(@TempDir Path temp) throws Exception {
     var context = new Context("MultiRelease-11", temp);
-    var output = context.build("-Dbach.project.main.release=11");
+    var output = context.build(release(11), features(INCLUDE_SOURCES_IN_MODULAR_JAR));
 
     assertLinesMatch(
         """

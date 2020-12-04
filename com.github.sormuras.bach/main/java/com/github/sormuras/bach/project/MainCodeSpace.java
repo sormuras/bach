@@ -9,8 +9,7 @@ import java.nio.file.Path;
  * @param modulePaths the list of module paths
  * @param release the Java version (release feature number) to compile for
  * @param jarslug the {@code MODULE-NAME "@" jarslug ".jar"} part of the JAR file name
- * @param generateApiDocumentation {@code true} to enable a {@code javadoc} run
- * @param generateCustomRuntimeImage {@code true} to enable a {@code jlink} run
+ * @param features the feature set
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
 public record MainCodeSpace(
@@ -18,10 +17,17 @@ public record MainCodeSpace(
     ModulePaths modulePaths,
     int release,
     String jarslug,
-    boolean generateApiDocumentation,
-    boolean generateCustomRuntimeImage,
+    Features features,
     Tweaks tweaks)
     implements CodeSpace {
+
+  /**
+   * @param feature the feature to test
+   * @return {@code true} if the given feature constant is part of the configured feature set
+   */
+  public boolean is(Feature feature) {
+    return features.set().contains(feature);
+  }
 
   @Override
   public String name() {

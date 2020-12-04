@@ -1,3 +1,4 @@
+import com.github.sormuras.bach.project.Feature;
 import com.github.sormuras.bach.project.ModuleLookups;
 import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.ProjectInfo.ExternalModules;
@@ -10,8 +11,11 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
     version = "16-ea",
     modules = "com.github.sormuras.bach/main/java/module-info.java",
     compileModulesForJavaRelease = 16,
-    generateApiDocumentation = true,
-    generateCustomRuntimeImage = true,
+    features = {
+      Feature.GENERATE_API_DOCUMENTATION,
+      Feature.GENERATE_CUSTOM_RUNTIME_IMAGE,
+      Feature.INCLUDE_SOURCES_IN_MODULAR_JAR
+    },
     tweaks = {
       @Tweak(
           tool = "javac",

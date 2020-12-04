@@ -1,10 +1,11 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.project.CodeSpaces;
+import com.github.sormuras.bach.project.Feature;
 import com.github.sormuras.bach.project.MainCodeSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.project.Project;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.project.TestCodeSpace;
@@ -246,14 +247,21 @@ public class Builder {
     // add base classes
     var baseClasses = main.classes().resolve(name);
     if (Files.isDirectory(baseClasses)) jar.with("-C", baseClasses, ".");
-    // add base resources
+    // add base (re)sources
+    var withSources = isIncludeSourcesInModules();
     if (module.reference().info().toString().equals("module-info.java")) {
-      jar.with("module-info.java");
+      if (withSources) jar.with("module-info.java");
       var dot = name.indexOf('.');
       var prefix = name.substring(0, dot > 0 ? dot : name.length());
       try (var stream = Files.walk(Path.of(""))) {
-        stream.filter(path -> path.startsWith(prefix)).forEach(jar::with);
-      } catch (Exception ignore) {}
+        if (withSources) stream.filter(path -> path.startsWith(prefix)).forEach(jar::with);
+        else
+          stream // exlcude ".java" files
+              .filter(path -> path.startsWith(prefix))
+              .filter(path -> !path.getFileName().toString().endsWith(".java"))
+              .forEach(jar::with);
+      } catch (Exception ignore) {
+      }
     } else {
       for (var folder : module.resources().list()) {
         if (folder.isTargeted()) continue; // handled later
@@ -454,12 +462,17 @@ public class Builder {
 
   /** @return {@code true} if an API documenation should be generated, else {@code false} */
   public boolean isGenerateApiDocumentation() {
-    return project.spaces().main().generateApiDocumentation();
+    return project.spaces().main().is(Feature.GENERATE_API_DOCUMENTATION);
   }
 
   /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
   public boolean isGenerateCustomRuntimeImage() {
-    return project.spaces().main().generateCustomRuntimeImage();
+    return project.spaces().main().is(Feature.GENERATE_CUSTOM_RUNTIME_IMAGE);
+  }
+
+  /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
+  public boolean isIncludeSourcesInModules() {
+    return project.spaces().main().is(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
   }
 
   /**
