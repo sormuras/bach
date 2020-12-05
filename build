@@ -9,6 +9,10 @@ try {
   System.out.println("Have fun! https://github.com/sponsors/sormuras (-:");
   System.out.println();
 } catch (Throwable throwable) {
+  System.err.println();
+  System.err.println("Build error detected: " + throwable.getMessage());
+  System.err.println();
+  throwable.printStackTrace(System.err)
   status = 1;
 }
 
