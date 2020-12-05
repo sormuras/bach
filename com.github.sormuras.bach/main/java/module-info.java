@@ -112,6 +112,7 @@ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses com.github.sormuras.bach.BuildProgram;
+  uses com.github.sormuras.bach.project.ModuleLookup;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with

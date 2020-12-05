@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -120,6 +121,9 @@ class ProjectBuilder {
     for (var link : info.externalModules().links()) links.put(link.module(), link(link));
     var lookups = new ArrayList<ModuleLookup>();
     for (var lookup : info.externalModules().lookups()) lookups.add(newModuleLookup(lookup));
+    ServiceLoader.load(ModuleLookup.class).stream()
+        .map(ServiceLoader.Provider::get)
+        .forEach(lookups::add);
     return new ExternalModules(requires, links, lookups);
   }
 
