@@ -68,6 +68,7 @@ public record Project(String name, Version version, ExternalModules externals, C
    * @return a project model
    */
   public static Project of(ProjectInfo info) {
-    return new ProjectBuilder(info.name(), info).build();
+    var name = info.name().equals("*") ? Paths.name(Path.of("")) : info.name();
+    return new ProjectBuilder(name, info).build();
   }
 }

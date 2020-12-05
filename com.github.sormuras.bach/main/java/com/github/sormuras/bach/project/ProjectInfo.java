@@ -30,7 +30,7 @@ public @interface ProjectInfo {
   String WORKSPACE_MODULES = WORKSPACE + "/modules";
 
   /** @return the name of the project */
-  String name();
+  String name() default "*";
 
   /** @return the version of the project, defaults to {@code 0-ea} */
   String version() default "0-ea";
