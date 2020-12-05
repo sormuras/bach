@@ -21,6 +21,10 @@ class Context {
     this(Path.of("test.integration", "project", name), temp, 0);
   }
 
+  Context(String name, Path temp, int code) {
+    this(Path.of("test.integration", "broken", name), temp, code);
+  }
+
   Context(Path base, Path temp, int code) {
     this.base = base;
     this.temp = temp;
