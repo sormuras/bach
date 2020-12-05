@@ -1,5 +1,4 @@
 import com.github.sormuras.bach.project.Feature;
-import com.github.sormuras.bach.project.ModuleLookups;
 import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.ProjectInfo.ExternalModules;
 import com.github.sormuras.bach.project.ProjectInfo.ExternalModules.Link;
@@ -43,10 +42,6 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             links = {
               @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
               @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
-            },
-            lookups = {
-              ModuleLookups.JUnitJupiter_5_7.class,
-              ModuleLookups.JUnitPlatform_1_7.class
             }),
     test =
         @Test(
@@ -64,4 +59,6 @@ module build {
 
   provides com.github.sormuras.bach.BuildProgram with
       build.BachBuildProgram;
+  provides com.github.sormuras.bach.project.ModuleLookup with
+      build.JUnitModuleLookup;
 }
