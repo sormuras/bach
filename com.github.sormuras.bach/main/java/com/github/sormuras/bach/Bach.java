@@ -31,6 +31,9 @@ public final class Bach {
   /** Path to directory that collects all generated assets. */
   public static final Path WORKSPACE = Path.of(ProjectInfo.WORKSPACE);
 
+  /** Default {@code project-info} annotation instance. */
+  public static final ProjectInfo INFO = Bach.class.getModule().getAnnotation(ProjectInfo.class);
+
   /**
    * Returns a shell builder initialized with default components.
    *
@@ -177,27 +180,43 @@ public final class Bach {
   /**
    * Load a module.
    *
-   * @param directory the module finder to query for already loaded modules
-   * @param searcher the function that maps a module name to its uri
+   * @param externals the module finder to query for already loaded modules
+   * @param lookup the function that maps a module name to its uri
    * @param module the name of the module to load
    */
-  public void loadModule(ExternalModules directory, ModuleLookup searcher, String module) {
-    if (directory.finder().find(module).isPresent()) return;
-    httpCopy(directory.lookup(module, searcher), directory.jar(module));
+  public void loadModule(ExternalModules externals, ModuleLookup lookup, String module) {
+    if (externals.finder().find(module).isPresent()) return;
+    copy(externals.lookup(module, lookup), externals.jar(module));
   }
 
   /**
    * Load all missing modules of the given module directory.
    *
-   * @param directory the module finder to query for already loaded modules
-   * @param searcher the searcher to query for linked modules
+   * @param externals the module finder to query for already loaded modules
+   * @param lookup the searcher to query for linked modules
    */
-  public void loadMissingModules(ExternalModules directory, ModuleLookup searcher) {
+  public void loadMissingModules(ExternalModules externals, ModuleLookup lookup) {
     while (true) {
-      var missing = directory.missing();
+      var missing = externals.missing();
       if (missing.isEmpty()) return;
-      for (var module : missing)
-        httpCopy(directory.lookup(module, searcher), directory.jar(module));
+      for (var module : missing) copy(externals.lookup(module, lookup), externals.jar(module));
     }
+  }
+
+  private Path copy(URI uri, Path file, CopyOption... options) {
+    return switch (uri.getScheme().toLowerCase()) {
+      case "file":
+        try {
+          var directory = file.getParent();
+          if (directory != null) Paths.createDirectories(directory);
+          yield Files.copy(Path.of(uri), file, options);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      case "http", "https":
+        yield httpCopy(uri, file, options);
+      default:
+        throw new IllegalArgumentException("Unexpected scheme: " + uri);
+    };
   }
 }

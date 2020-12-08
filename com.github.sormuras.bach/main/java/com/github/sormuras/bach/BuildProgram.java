@@ -37,7 +37,8 @@ public interface BuildProgram {
       buildProgram.get().build(bach, args);
       return;
     }
-    var project = buildModule.findProjectInfo().map(Project::of).orElseGet(Project::of);
+    var info = buildModule.findProjectInfo().orElse(Bach.INFO);
+    var project = Project.of(info, buildModule.findModuleLookups());
     var builder = new Builder(bach, project);
     builder.build();
   }

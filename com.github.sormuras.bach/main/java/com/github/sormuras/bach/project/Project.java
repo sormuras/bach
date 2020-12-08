@@ -1,8 +1,6 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Path;
 
 /**
  * Bach's project model.
@@ -56,19 +54,17 @@ public record Project(String name, Version version, ExternalModules externals, C
    * @return a project model
    */
   public static Project of() {
-    var name = Paths.name(Path.of(""), "unnamed");
-    var info = ProjectInfo.class.getModule().getAnnotation(ProjectInfo.class);
-    return new ProjectBuilder(name, info).build();
+    return of(ProjectInfo.class.getModule().getAnnotation(ProjectInfo.class));
   }
 
   /**
    * Returns a project model based on the current working directory and the given info annotation.
    *
    * @param info the project info annotation
+   * @param lookups the prefered module lookups
    * @return a project model
    */
-  public static Project of(ProjectInfo info) {
-    var name = info.name().equals("*") ? Paths.name(Path.of("")) : info.name();
-    return new ProjectBuilder(name, info).build();
+  public static Project of(ProjectInfo info, ModuleLookup... lookups) {
+    return new ProjectBuilder(info, lookups).build();
   }
 }

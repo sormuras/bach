@@ -497,4 +497,22 @@ class ProjectBuildTests {
     assertEquals(15, Classes.feature(context.workspace("classes-mr/15/foo", "foo/Foo.class")));
     assertEquals(16, Classes.feature(context.workspace("classes-mr/16/foo", "foo/Foo.class")));
   }
+
+  @Test
+  void buildModuleLookup(@TempDir Path temp) throws Exception {
+    var context = new Context("ModuleLookup", temp);
+    var output = context.build();
+
+    assertLinesMatch(
+        """
+        Build project ModuleLookup 0-ea
+        Compile 1 main module
+        >> TOOL CALLS >>
+        Build took .+s
+        Logbook written to %s
+        """
+            .formatted(context.workspace("logbook.md").toUri())
+            .lines(),
+        output.lines());
+  }
 }

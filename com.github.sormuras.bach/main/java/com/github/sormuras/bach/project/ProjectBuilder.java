@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -20,12 +19,12 @@ import java.util.stream.Collectors;
 /** Creates project instances. */
 class ProjectBuilder {
 
-  private final String name;
   private final ProjectInfo info;
+  private final List<ModuleLookup> buildModuleLookups;
 
-  ProjectBuilder(String name, ProjectInfo info) {
-    this.name = name;
+  ProjectBuilder(ProjectInfo info, ModuleLookup... buildModuleLookups) {
     this.info = info;
+    this.buildModuleLookups = List.of(buildModuleLookups);
   }
 
   Project build() {
@@ -49,11 +48,12 @@ class ProjectBuilder {
 
     var externalModules = newExternalModules(spaces.finder());
 
-    return new Project(name(name), version, externalModules, spaces);
+    return new Project(name(info.name()), version, externalModules, spaces);
   }
 
   String name(String name) {
-    return System.getProperty("bach.project.name", name);
+    var value = System.getProperty("bach.project.name", name);
+    return value.equals("*") ? Paths.name(Path.of("")) : value;
   }
 
   Version version(String version) {
@@ -119,11 +119,8 @@ class ProjectBuilder {
     requires.removeAll(Modules.declared(finder));
     var links = new TreeMap<String, ExternalModule>();
     for (var link : info.externalModules().links()) links.put(link.module(), link(link));
-    var lookups = new ArrayList<ModuleLookup>();
+    var lookups = new ArrayList<>(buildModuleLookups);
     for (var lookup : info.externalModules().lookups()) lookups.add(newModuleLookup(lookup));
-    ServiceLoader.load(ModuleLookup.class).stream()
-        .map(ServiceLoader.Provider::get)
-        .forEach(lookups::add);
     return new ExternalModules(requires, links, lookups);
   }
 

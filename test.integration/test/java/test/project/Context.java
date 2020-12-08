@@ -3,7 +3,6 @@ package test.project;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.sormuras.bach.Bach;
-import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,14 +35,16 @@ class Context {
   }
 
   String build(String... options) throws Exception {
-    var idea = Path.of(".idea/out/production/com.github.sormuras.bach").toAbsolutePath().toString();
-    var work = Path.of(".bach/workspace/modules").toAbsolutePath().toString();
+    var idea = Path.of(".idea/out/production/com.github.sormuras.bach").toAbsolutePath();
+    var work = Path.of(".bach/workspace/modules").toAbsolutePath();
+    var cache = (Files.isDirectory(idea) ? idea : work).toString();
 
     var command = new ArrayList<String>();
     command.add("java");
+    command.add("-Dbach.cache=" + cache);
     command.addAll(List.of(options));
     command.add("--module-path");
-    command.add(String.join(File.pathSeparator, idea, work));
+    command.add(cache);
     command.add("--module");
     command.add("com.github.sormuras.bach/com.github.sormuras.bach.Main");
     command.add("build");
