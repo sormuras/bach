@@ -4,6 +4,7 @@ import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.Paths;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ class ProjectBuilder {
   }
 
   Project build() {
+    var name = name(info.name());
     var version = version(info.version());
     var features = newFeatures(info.features());
     var declarations = newDeclarations(features);
@@ -39,6 +41,7 @@ class ProjectBuilder {
                 newModulePaths(info.modulePaths()),
                 release(info.compileModulesForJavaRelease()),
                 jarslug(version),
+                newLauncher(name, info.launchCustomRuntimeImageWithModule(), declarations),
                 features,
                 newTweaks(info.tweaks())),
             new TestCodeSpace(
@@ -48,7 +51,7 @@ class ProjectBuilder {
 
     var externalModules = newExternalModules(spaces.finder());
 
-    return new Project(name(info.name()), version, externalModules, spaces);
+    return new Project(name, version, externalModules, spaces);
   }
 
   String name(String name) {
@@ -70,6 +73,14 @@ class ProjectBuilder {
 
   String jarslug(Version version) {
     return System.getProperty("bach.project.main.jarslug", version.toString());
+  }
+
+  Launcher newLauncher(String name, String module, Declarations declarations) {
+    if (!module.equals("*")) return new Launcher(name, module);
+
+    var descriptors = declarations.mainModuleDeclarations().findAll();
+    var mainModule = Modules.findMainModule(descriptors.stream().map(ModuleReference::descriptor));
+    return new Launcher(name, mainModule.orElse(""));
   }
 
   private record Declarations(
@@ -109,6 +120,7 @@ class ProjectBuilder {
         iterator.remove();
       }
     }
+
     return new Declarations(new ModuleDeclarations(mains), new ModuleDeclarations(tests));
   }
 

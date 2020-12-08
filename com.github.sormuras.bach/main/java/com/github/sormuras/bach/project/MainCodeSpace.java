@@ -9,6 +9,7 @@ import java.nio.file.Path;
  * @param modulePaths the list of module paths
  * @param release the Java version (release feature number) to compile for
  * @param jarslug the {@code MODULE-NAME "@" jarslug ".jar"} part of the JAR file name
+ * @param launcher the launcher configuration
  * @param features the feature set
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
@@ -17,6 +18,7 @@ public record MainCodeSpace(
     ModulePaths modulePaths,
     int release,
     String jarslug,
+    Launcher launcher,
     Features features,
     Tweaks tweaks)
     implements CodeSpace {

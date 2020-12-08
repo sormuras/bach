@@ -50,6 +50,9 @@ public @interface ProjectInfo {
   /** @return the Java version (release feature number) to compile main modules for */
   int compileModulesForJavaRelease() default 0;
 
+  /** @return the name of the main module, {@code "*"} for auto-detect, an empty string for none */
+  String launchCustomRuntimeImageWithModule() default "*";
+
   /** @return a set of feature flags */
   Feature[] features() default {};
 

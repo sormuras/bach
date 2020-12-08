@@ -349,6 +349,7 @@ public class Builder {
     return Command.builder("jlink")
         .with("--add-modules", main.modules().toNames(","))
         .with("--module-path", test.toModulePath())
+        .with(main.launcher().command(), (jlink, command) -> jlink.with("--launcher", command))
         .withEach(main.tweaks().arguments("jlink"))
         .with("--output", main.workspace("image"))
         .build();
