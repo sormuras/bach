@@ -22,6 +22,9 @@ public class MavenConsumerPomFilesGenerator {
   }
 
   public String computeMavenGroupId(ModuleDeclaration unit) {
+    var group = System.getProperty("bach.project.deploy.maven.group");
+    if (group != null) return group;
+
     var env = System.getenv();
     // https://docs.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables#default-environment-variables
     if ("true".equals(env.get("GITHUB_ACTIONS")))
@@ -35,6 +38,10 @@ public class MavenConsumerPomFilesGenerator {
 
   public String computeMavenArtifactId(ModuleDeclaration unit) {
     return unit.name();
+  }
+
+  public String computeMavenVersion() {
+    return System.getProperty("bach.project.deploy.maven.version", project.version().toString());
   }
 
   public void execute() {
@@ -98,7 +105,7 @@ public class MavenConsumerPomFilesGenerator {
     pom.append("\n");
     pom.addNewLine().add("groupId", computeMavenGroupId(unit));
     pom.addNewLine().add("artifactId", computeMavenArtifactId(unit));
-    pom.addNewLine().add("version", project.version().toString());
+    pom.addNewLine().add("version", computeMavenVersion());
   }
 
   public void generateDependencies(Pom pom, ModuleDeclaration unit) {

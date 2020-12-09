@@ -40,6 +40,7 @@ jobs:
           java \
             -Dbach.project.version=${VERSION} \
             -Dbach.project.main.jarslug=early-access \
+            -Dbach.project.deploy.maven.version=${VERSION}+SNAPSHOT \
             --module-path .bach/cache \
             --module com.github.sormuras.bach \
             build
@@ -51,9 +52,8 @@ jobs:
             .bach/workspace/logbook.md
             .bach/workspace/deploy
             .bach/workspace/modules
-            .bach/workspace/documentation/api
 
-  release:
+  deploy:
     needs: build
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
-      - name: 'Release early-access build'
+      - name: 'Release early-access build to https://github.com/sormuras/bach/releases/tag/early-access'
         uses: marvinpinto/action-automatic-releases@latest
         with:
           automatic_release_tag: 'early-access'
@@ -76,3 +76,9 @@ jobs:
           title: "Bach ${{ env.VERSION }}"
           files: |
             .bach/workspace/modules/*.jar
+      - name: 'Deploy early-access build to https://github.com/sormuras/bach/packages'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
+          REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
+        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
