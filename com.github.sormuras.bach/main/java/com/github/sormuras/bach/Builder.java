@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.MavenConsumerPomFilesGenerator;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.project.CodeSpaces;
 import com.github.sormuras.bach.project.Feature;
@@ -45,6 +46,11 @@ public class Builder {
     this.project = project;
 
     this.runner = new ToolRunner(project.externals().finder());
+  }
+
+  /** @return the project to build */
+  public Project project() {
+    return project;
   }
 
   /** Builds a modular Java project. */
@@ -135,6 +141,11 @@ public class Builder {
       info("Generate custom runtime image");
       Paths.deleteDirectories(main.workspace("image"));
       run(computeMainJLinkCall());
+    }
+
+    if (isGenerateMavenPomFiles()) {
+      var generator = new MavenConsumerPomFilesGenerator(this, "  ");
+      generator.execute();
     }
   }
 
@@ -469,6 +480,11 @@ public class Builder {
   /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
   public boolean isGenerateCustomRuntimeImage() {
     return project.spaces().main().is(Feature.GENERATE_CUSTOM_RUNTIME_IMAGE);
+  }
+
+  /** @return {@code true} if a custom runtime image should be generated, else {@code false} */
+  public boolean isGenerateMavenPomFiles() {
+    return project.spaces().main().is(Feature.GENERATE_MAVEN_POM_FILES);
   }
 
   /** @return {@code true} if a custom runtime image should be generated, else {@code false} */

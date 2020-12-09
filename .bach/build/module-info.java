@@ -13,6 +13,7 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
     features = {
       Feature.GENERATE_API_DOCUMENTATION,
       Feature.GENERATE_CUSTOM_RUNTIME_IMAGE,
+      Feature.GENERATE_MAVEN_POM_FILES,
       Feature.INCLUDE_SOURCES_IN_MODULAR_JAR
     },
     tweaks = {
