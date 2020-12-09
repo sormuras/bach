@@ -49,6 +49,7 @@ jobs:
         with:
           name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
           path: |
+            LICENSE
             .bach/workspace/logbook.md
             .bach/workspace/deploy
             .bach/workspace/modules
