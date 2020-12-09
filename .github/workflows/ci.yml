@@ -77,6 +77,8 @@ jobs:
           title: "Bach ${{ env.VERSION }}"
           files: |
             .bach/workspace/modules/*.jar
+      - name: 'Set up (default) Java using GitHub''s Maven settings'
+        uses: actions/setup-java@v1
       - name: 'Deploy early-access build to https://github.com/sormuras/bach/packages'
         env:
           GITHUB_TOKEN: ${{ github.token }}
