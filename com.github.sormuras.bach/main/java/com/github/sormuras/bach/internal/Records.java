@@ -30,39 +30,40 @@ public class Records {
     /** Returns a multi-line string representation of the given object. */
     List<String> toLines(int level, Record record) {
       var lines = new ArrayList<String>();
-      if (level == 0) lines.add(record.getClass().getSimpleName());
+      if (level == 0) lines.add(simpleName(record));
       var shift = indent.repeat(level);
       for (var component : record.getClass().getRecordComponents()) {
         var name = component.getName();
         try {
-          var value = component.getAccessor().invoke(record);
-          if (value instanceof Record) {
-            lines.add(format("%s%s%s: %s", shift, indent, name, value.getClass().getSimpleName()));
-            lines.addAll(toLines(level + 2, (Record) value));
+          var object = component.getAccessor().invoke(record);
+          if (object instanceof Record) {
+            lines.add(format("%s%s%s: %s", shift, indent, name, simpleName(object)));
+            lines.addAll(toLines(level + 2, (Record) object));
             continue;
           }
-          if (value instanceof Map) {
+          if (object instanceof Map) {
             lines.add(format("%s%s%s", shift, indent, name));
-            for (var entry : ((Map<?, ?>) value).entrySet()) {
-              var entryKey = entry.getKey();
-              var entryValue = entry.getValue();
-              if (entryValue instanceof Record) {
-                lines.add(
-                    format(
-                        "%s%s(%s) -> %s",
-                        shift, indent, entryKey, entryValue.getClass().getSimpleName()));
-                lines.addAll(toLines(level + 2, (Record) entryValue));
-              } else lines.add(format("%s%s  %s -> %s", shift, indent, entryKey, entryValue));
+            for (var entry : ((Map<?, ?>) object).entrySet()) {
+              var key = entry.getKey();
+              var value = entry.getValue();
+              if (value instanceof Record) {
+                lines.add(format("%s%s(%s) -> %s", shift, indent, key, simpleName(value)));
+                lines.addAll(toLines(level + 2, (Record) value));
+              } else lines.add(format("%s%s(%s) -> %s", shift, indent, key, value));
             }
             continue;
           }
-          lines.add(format("%s%s%s: %s", shift, indent, name, value));
+          lines.add(format("%s%s%s: %s", shift, indent, name, object));
         } catch (ReflectiveOperationException e) {
           lines.add("// Reflection over " + component + " failed: " + e);
         }
       }
       return lines;
     }
+  }
+
+  private static String simpleName(Object object) {
+    return object.getClass().getSimpleName();
   }
 
   /** Hidden default constructor. */
