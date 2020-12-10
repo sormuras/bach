@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Paths;
+import com.github.sormuras.bach.internal.Records;
 import com.github.sormuras.bach.project.Project;
 import com.github.sormuras.bach.tool.ToolResponse;
 import java.lang.System.Logger.Level;
@@ -165,7 +166,7 @@ public final class Logbook implements Consumer<String> {
     md.add("- Created at " + formatter.format(created));
     md.add("- Written at " + formatter.format(LocalDateTime.now(ZoneOffset.UTC)));
     md.addAll(toModulesOverview(Bach.WORKSPACE.resolve("modules")));
-    // md.addAll(projectDescription(project));
+    md.addAll(toProjectDescription(project));
     md.addAll(toToolsOverview());
     md.addAll(toToolsDetails());
     md.addAll(toLogbookEntries());
@@ -213,6 +214,22 @@ public final class Logbook implements Consumer<String> {
       var name = file.getFileName();
       md.add(String.format("|%,d|%s", size, name));
     }
+    return md;
+  }
+
+  private List<String> toProjectDescription(Project project) {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Project");
+    md.add("");
+    md.add("- name: " + project.name());
+    md.add("- version: " + project.version());
+    md.add("");
+    md.add("### Project Descriptor");
+    md.add("");
+    md.add("```text");
+    md.add(Records.toLines(project));
+    md.add("```");
     return md;
   }
 

@@ -100,6 +100,11 @@ public final class ModuleInfoReference extends ModuleReference {
     return new NullModuleReader();
   }
 
+  @Override
+  public String toString() {
+    return "ModuleInfoReference[info=" + info + ']';
+  }
+
   private static class NullModuleReader implements ModuleReader {
     private NullModuleReader() {}
 
