@@ -1,0 +1,65 @@
+// Bach's Initialization Script
+
+/open https://github.com/sormuras/bach/raw/main/boot
+
+var gitignore = Path.of(".bach/.gitignore")
+if (Files.notExists(gitignore)) {
+  System.out.println();
+  System.out.println("Generate default " + gitignore + " configuration");
+  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "", "*.jar"));
+}
+
+var action = Path.of(".bach/action")
+if (Files.notExists(action)) {
+  System.out.println();
+  System.out.println("Generate launcher script");
+  var command = "java --module-path " + Path.of(".bach/cache") + " --module com.github.sormuras.bach";
+  Files.write(action, List.of("/usr/bin/env " + command + " \"$@\"")).toFile().setExecutable(true);
+  Files.write(Path.of(".bach/action.bat"), List.of("@ECHO OFF", command + " %*"));
+}
+
+var build = Path.of(".bach/build")
+if (Files.notExists(build)) {
+  System.out.println();
+  System.out.println("Generate build script");
+  var command = "java --module-path " + Path.of(".bach/cache") + " --module com.github.sormuras.bach build";
+  Files.write(build, List.of("/usr/bin/env " + command + " build")).toFile().setExecutable(true);
+  Files.write(Path.of(".bach/build.bat"), List.of("@ECHO OFF", command + " build"));
+}
+
+var update = Path.of(".bach/update")
+if (Files.notExists(update)) {
+  System.out.println();
+  System.out.println("Generate update script");
+  Files.writeString(Path.of(".bach/update"),
+    """
+    #!/usr/bin/env bash
+    jshell -R-Dreboot -R-Dversion=${1:-early-access} https://bit.ly/bach-main-init
+    """).toFile().setExecutable(true);
+  Files.writeString(Path.of(".bach/update.bat"),
+    """
+    @ECHO OFF
+    IF [%1]==[] (SET version=early-access) ELSE (SET version=%1)
+    jshell -R-Dreboot -R-Dversion=%version% https://bit.ly/bach-main-init
+    """);
+}
+
+System.out.println()
+System.out.println("Use the following scripts:")
+System.out.println()
+System.out.println(action + " [ACTION...]")
+System.out.println("    Launch Bach's main program.")
+System.out.println()
+System.out.println(build)
+System.out.println("    Build the modular Java project.")
+System.out.println()
+System.out.println(update + " [VERSION]")
+System.out.println("    Update Bach to the specified version. If no version tag is given")
+System.out.println("    an early-access version of Bach is downloaded and cached.")
+System.out.println()
+System.out.println("Bach " + com.github.sormuras.bach.Bach.version() + " initialized.")
+System.out.println()
+System.out.println("Have fun! https://github.com/sponsors/sormuras (-:")
+System.out.println()
+
+/exit
