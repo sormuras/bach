@@ -42,8 +42,13 @@ public class Records {
             continue;
           }
           if (object instanceof Map) {
-            lines.add(format("%s%s%s", shift, indent, name));
-            for (var entry : ((Map<?, ?>) object).entrySet()) {
+            var map = (Map<?, ?>) object;
+            if (map.isEmpty()) {
+              lines.add(format("%s%s%s: []", shift, indent, name));
+              continue;
+            }
+            lines.add(format("%s%s%s: (KEY) -> VALUE", shift, indent, name));
+            for (var entry : map.entrySet()) {
               var key = entry.getKey();
               var value = entry.getValue();
               if (value instanceof Record) {
