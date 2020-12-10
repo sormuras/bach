@@ -9,7 +9,7 @@ if (Files.notExists(gitignore)) {
   Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "", "*.jar"));
 }
 
-var action = Path.of(".bach/action")
+var action = Path.of(".bach/action.sh")
 if (Files.notExists(action)) {
   System.out.println();
   System.out.println("Generate launcher script");
@@ -18,7 +18,7 @@ if (Files.notExists(action)) {
   Files.write(Path.of(".bach/action.bat"), List.of("@ECHO OFF", command + " %*"));
 }
 
-var build = Path.of(".bach/build")
+var build = Path.of(".bach/build.sh")
 if (Files.notExists(build)) {
   System.out.println();
   System.out.println("Generate build script");
@@ -27,11 +27,11 @@ if (Files.notExists(build)) {
   Files.write(Path.of(".bach/build.bat"), List.of("@ECHO OFF", command + " build"));
 }
 
-var update = Path.of(".bach/update")
+var update = Path.of(".bach/update.sh")
 if (Files.notExists(update)) {
   System.out.println();
   System.out.println("Generate update script");
-  Files.writeString(Path.of(".bach/update"),
+  Files.writeString(update,
     """
     #!/usr/bin/env bash
     jshell -R-Dreboot -R-Dversion=${1:-early-access} https://bit.ly/bach-main-init
@@ -44,22 +44,22 @@ if (Files.notExists(update)) {
     """);
 }
 
-System.out.println()
-System.out.println("Use the following scripts:")
-System.out.println()
-System.out.println(action + " [ACTION...]")
-System.out.println("    Launch Bach's main program.")
-System.out.println()
-System.out.println(build)
-System.out.println("    Build the modular Java project.")
-System.out.println()
-System.out.println(update + " [VERSION]")
-System.out.println("    Update Bach to the specified version. If no version tag is given")
-System.out.println("    an early-access version of Bach is downloaded and cached.")
-System.out.println()
-System.out.println("Bach " + com.github.sormuras.bach.Bach.version() + " initialized.")
-System.out.println()
-System.out.println("Have fun! https://github.com/sponsors/sormuras (-:")
-System.out.println()
+System.out.println(
+  """
+  Use the following scripts:
+
+  .bach/action [ACTION...]
+      Launch Bach's main program.
+
+  .bach/build
+      Convenient short-cut for ".bach/action build"
+
+  .bach/update [VERSION]
+      Update Bach to the specified version. If no version tag is given")
+      an early-access version of Bach is downloaded and cached.")
+
+  Bach initialized. Have fun! https://github.com/sponsors/sormuras (-:
+  """
+)
 
 /exit
