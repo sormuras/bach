@@ -23,8 +23,17 @@ if (Files.notExists(build)) {
   System.out.println();
   System.out.println("Generate build script");
   var command = "java --module-path " + Path.of(".bach/cache") + " --module com.github.sormuras.bach build";
-  Files.write(build, List.of("/usr/bin/env " + command + " build")).toFile().setExecutable(true);
-  Files.write(Path.of(".bach/build.bat"), List.of("@ECHO OFF", command + " build"));
+  Files.write(build, List.of("/usr/bin/env " + command + " \"$@\"")).toFile().setExecutable(true);
+  Files.write(Path.of(".bach/build.bat"), List.of("@ECHO OFF", command + " %*"));
+}
+
+var version = Path.of(".bach/version.sh")
+if (Files.notExists(version)) {
+  System.out.println();
+  System.out.println("Generate version script");
+  var command = "java --module-path " + Path.of(".bach/cache") + " --module com.github.sormuras.bach version";
+  Files.write(version, List.of("/usr/bin/env " + command)).toFile().setExecutable(true);
+  Files.write(Path.of(".bach/version.bat"), List.of("@ECHO OFF", command));
 }
 
 var update = Path.of(".bach/update.sh")
@@ -46,19 +55,24 @@ if (Files.notExists(update)) {
 
 System.out.println(
   """
-  Use the following scripts:
 
-  .bach/action [ACTION...]
-      Launch Bach's main program.
+  Bach initialized.
 
-  .bach/build
-      Convenient short-cut for ".bach/action build"
+  .bach/action [ACTION [ARGS...]]
+      Launch Bach's main program handling the specified action and passing
+      optional arguments to the action handler.
+
+  .bach/build [ARGS...]
+      Convenient short-cut for ".bach/action build [ARGS...]"
 
   .bach/update [VERSION]
-      Update Bach to the specified version. If no version tag is given")
-      an early-access version of Bach is downloaded and cached.")
+      Update Bach to the specified version. If no version argument is given
+      an early-access version of Bach is downloaded and cached.
 
-  Bach initialized. Have fun! https://github.com/sponsors/sormuras (-:
+  .bach/version
+      Convenient short-cut for ".bach/action version"
+
+  Have fun! https://github.com/sponsors/sormuras (-:
   """
 )
 
