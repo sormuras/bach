@@ -55,7 +55,7 @@ public class Builder {
 
   /** Builds a modular Java project. */
   public void build() {
-    info("Build project %s %s", project.name(), project.version());
+    bach.info("Build project %s %s", project.name(), project.version());
     var start = Instant.now();
     var logbook = bach.logbook();
     try {
@@ -68,7 +68,7 @@ public class Builder {
       logbook.log(Level.ERROR, message);
       throw new BuildException(message);
     } finally {
-      info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
+      bach.info("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
       var file = logbook.write(project);
       logbook.accept("Logbook written to " + file.toUri());
     }
@@ -76,6 +76,7 @@ public class Builder {
 
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
+    bach.debug("Load required and missing modules");
     var library = project.externals();
     var moduleLookups = new ArrayList<>(library.lookups());
     moduleLookups.add(ModuleLookup.ofBestEffort(bach));
@@ -110,8 +111,8 @@ public class Builder {
    */
   public void buildMainCodeSpace(MainCodeSpace main) {
     var modules = main.modules();
-    info("Compile %d main module%s", modules.size(), modules.size() == 1 ? "" : "s");
     if (modules.isEmpty()) return;
+    bach.info("Compile %d main module%s", modules.size(), modules.size() == 1 ? "" : "s");
 
     Paths.deleteDirectories(main.workspace("modules"));
     var release = main.release();
@@ -123,22 +124,25 @@ public class Builder {
     }
 
     Paths.createDirectories(main.workspace("modules"));
-    for (var declaration : main.modules().map().values()) {
-      declaration.sources().list().stream()
-          .filter(SourceFolder::isTargeted)
-          .peek(System.out::println)
-          .forEach(folder -> run(computeMainJavacCall(declaration.name(), folder)));
-      run(computeMainJarCall(declaration));
+    for (var module : main.modules().map().values()) {
+      var name = module.name();
+      for (SourceFolder folder : module.sources().list()) {
+        if (folder.isTargeted()) {
+          var description = "javac(" + name + "/" + folder.release() + ")";
+          run(description, computeMainJavacCall(name, folder));
+        }
+      }
+      run("jar(" + name + ")", computeMainJarCall(module));
     }
 
     if (isGenerateApiDocumentation()) {
-      info("Generate API documentation");
+      bach.info("Generate API documentation");
       run(computeMainDocumentationJavadocCall());
       run(computeMainDocumentationJarCall());
     }
 
     if (isGenerateCustomRuntimeImage()) {
-      info("Generate custom runtime image");
+      bach.info("Generate custom runtime image");
       Paths.deleteDirectories(main.workspace("image"));
       run(computeMainJLinkCall());
     }
@@ -378,16 +382,15 @@ public class Builder {
    */
   public void buildTestCodeSpace(TestCodeSpace test) {
     var modules = test.modules();
-    info("Compile %d test module%s", modules.size(), modules.size() == 1 ? "" : "s");
     if (modules.isEmpty()) return;
+    bach.info("Compile %d test module%s", modules.size(), modules.size() == 1 ? "" : "s");
 
     Paths.deleteDirectories(test.workspace("modules-test"));
 
-    info("Compile test modules");
     run(computeTestJavacCall());
     Paths.createDirectories(test.workspace("modules-test"));
     for (var module : project.spaces().test().modules().map().values()) {
-      run(computeTestJarCall(module));
+      run("jar(" + module.name() + ")", computeTestJarCall(module));
     }
 
     if (project.externals().finder().find("org.junit.platform.console").isPresent()) {
@@ -401,9 +404,9 @@ public class Builder {
                 test.workspace("modules-test"), // (more) test modules
                 Bach.EXTERNALS // external modules
                 );
-        info("Launch JUnit Platform for test module: %s", module);
+        bach.info("Run junit(%s)", module);
         var junit = computeTestJUnitCall(declaration);
-        info(junit.toCommand().toString());
+        bach.debug(junit.toCommand().toString());
         var response = runner.run(junit, finder, module);
         bach.logbook().log(response);
       }
@@ -462,16 +465,6 @@ public class Builder {
         .build();
   }
 
-  /**
-   * Log a formatted message at info level.
-   *
-   * @param format the message format
-   * @param args the arguments to apply
-   */
-  public void info(String format, Object... args) {
-    bach.logbook().log(Level.INFO, format, args);
-  }
-
   /** @return {@code true} if an API documenation should be generated, else {@code false} */
   public boolean isGenerateApiDocumentation() {
     return project.spaces().main().is(Feature.GENERATE_API_DOCUMENTATION);
@@ -493,12 +486,26 @@ public class Builder {
   }
 
   /**
-   * Runs the given tool call.
+   * Runs the given tool call generating a generic description.
    *
    * @param call the tool call to run
    */
   public void run(ToolCall call) {
-    info(call.toCommand().toString());
+    var size = call.args().size();
+    var s = size == 1 ? "" : "s";
+    var description = String.format("Run %s with %s argument%s", call.name(), size, s);
+    run(description, call);
+  }
+
+  /**
+   * Runs the given tool call using the given description.
+   *
+   * @param description the description to log
+   * @param call the tool call to run
+   */
+  public void run(String description, ToolCall call) {
+    bach.info(description);
+    bach.debug(call.toCommand().toString());
     var response = runner.run(call);
     bach.logbook().log(response);
     response.checkSuccessful();

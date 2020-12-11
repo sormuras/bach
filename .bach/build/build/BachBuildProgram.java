@@ -5,7 +5,6 @@ import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.Builder;
 import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.Project;
-import java.lang.System.Logger.Level;
 
 public class BachBuildProgram implements BuildProgram {
 
@@ -17,11 +16,13 @@ public class BachBuildProgram implements BuildProgram {
 
   @Override
   public void build(Bach bach, String... args) {
-    var book = bach.logbook();
-    var info = getClass().getModule().getAnnotation(ProjectInfo.class);
-    var project = Project.of(info);
+    var module = getClass().getModule();
+    bach.info("Start of custom build program in %s", module);
 
-    book.log(Level.INFO, "Custom build program started");
+    var info = module.getAnnotation(ProjectInfo.class);
+    bach.debug("project-info -> %s", info);
+
+    var project = Project.of(info);
 
     System.clearProperty("bach.project.name");
     System.clearProperty("bach.project.version");

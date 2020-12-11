@@ -82,6 +82,26 @@ public final class Bach {
   }
 
   /**
+   * Log a formatted message at debug level.
+   *
+   * @param format the message format
+   * @param args the arguments to apply
+   */
+  public void debug(String format, Object... args) {
+    logbook.log(System.Logger.Level.DEBUG, format, args);
+  }
+
+  /**
+   * Log a formatted message at info level.
+   *
+   * @param format the message format
+   * @param args the arguments to apply
+   */
+  public void info(String format, Object... args) {
+    logbook.log(System.Logger.Level.INFO, format, args);
+  }
+
+  /**
    * Returns the http client for downloading files.
    *
    * @return the http client for downloading files

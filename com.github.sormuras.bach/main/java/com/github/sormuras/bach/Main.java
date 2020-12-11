@@ -1,11 +1,10 @@
 package com.github.sormuras.bach;
 
-import static java.util.Arrays.copyOfRange;
-
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /** Bach's main program. */
 public class Main {
@@ -22,7 +21,7 @@ public class Main {
   }
 
   /**
-   * Print usage instructions to the default output stream.
+   * Print usage instructions to the given print stream.
    *
    * @param stream the stream to print to
    */
@@ -49,7 +48,7 @@ public class Main {
     }
     var action = args[0];
     return switch (action) {
-      case "build" -> build(out, err, copyOfRange(args, 1, args.length));
+      case "build" -> build(out, err, Arrays.copyOfRange(args, 1, args.length));
       case "help", "usage" -> help(out);
       case "version" -> version(out);
       default -> {

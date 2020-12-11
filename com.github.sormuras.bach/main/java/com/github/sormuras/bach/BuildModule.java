@@ -17,15 +17,20 @@ class BuildModule {
 
   private static final String BUILD = "build";
 
+  private final Bach bach;
   private final ModuleLayer layer;
 
-  BuildModule() {
+  BuildModule(Bach bach) {
+    this.bach = bach;
     this.layer = computeLayer();
   }
 
   ModuleLayer computeLayer() {
     var buildModuleCompilationUnit = Path.of(".bach", BUILD, "module-info.java");
-    if (Files.notExists(buildModuleCompilationUnit)) return ModuleLayer.empty();
+    if (Files.notExists(buildModuleCompilationUnit)) {
+      bach.debug("No build module (%s) present -> empty layer", buildModuleCompilationUnit);
+      return ModuleLayer.empty();
+    }
 
     var cache = Path.of(System.getProperty("bach.cache", ".bach/cache"));
     var classes = Bach.WORKSPACE.resolve(".bach");
@@ -38,6 +43,7 @@ class BuildModule {
             .with("-d", classes)
             .build();
 
+    bach.debug("Compile build module: %s", javac);
     new ToolRunner().run(javac).checkSuccessful();
 
     var before = ModuleFinder.of();
