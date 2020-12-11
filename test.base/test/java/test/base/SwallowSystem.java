@@ -29,6 +29,8 @@ public @interface SwallowSystem {
 
   class Extension implements BeforeEachCallback, ParameterResolver {
 
+    public Extension() {}
+
     @Override
     public void beforeEach(ExtensionContext context) {
       getOrComputeStreamsIfAbsent(context);

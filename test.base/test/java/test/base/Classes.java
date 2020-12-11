@@ -19,4 +19,6 @@ public class Classes {
       throw new AssertionError(e);
     }
   }
+
+  private Classes() {}
 }
