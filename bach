@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [[ $1 != 'init' ]]; then
+  java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+else
+  rm -f .bach/cache/com.github.sormuras.bach@*.jar
+  jshell -R-Dreboot -R-Dversion=${2:-early-access} https://bit.ly/bach-main-init
+fi
