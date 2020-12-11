@@ -79,7 +79,7 @@ public @interface ProjectInfo {
    *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
    *     to find all matching module compilation units
    */
-  String[] testModules() default "*";
+  String[] tests() default "*";
 
   /** @return the module path patterns for test modules */
   String[] testModulePaths() default {WORKSPACE_MODULES, EXTERNAL_MODULES};

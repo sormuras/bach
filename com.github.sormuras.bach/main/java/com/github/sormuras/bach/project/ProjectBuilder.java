@@ -99,7 +99,7 @@ class ProjectBuilder {
     var tests = new TreeMap<String, ModuleDeclaration>();
     var mains = new TreeMap<String, ModuleDeclaration>();
 
-    var isTestModule = isModuleOf("test", info.testModules());
+    var isTestModule = isModuleOf("test", info.tests());
     var isMainModule = isModuleOf("main", info.modules());
     var withSources = features.set().contains(Feature.INCLUDE_SOURCES_IN_MODULAR_JAR);
 

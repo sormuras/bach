@@ -14,15 +14,15 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
       Feature.GENERATE_MAVEN_POM_FILES,
       Feature.INCLUDE_SOURCES_IN_MODULAR_JAR
     },
-    testModules = {
-        "com.github.sormuras.bach/test/java-module/module-info.java",
-        "test.base/test/java/module-info.java",
-        "test.integration/test/java/module-info.java",
+    tests = {
+      "com.github.sormuras.bach/test/java-module/module-info.java",
+      "test.base/test/java/module-info.java",
+      "test.integration/test/java/module-info.java",
     },
     requires = {"org.junit.platform.console"},
     links = {
-        @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
-        @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
+      @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+      @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
     },
     tweaks = {
       @Tweak(tool = "javac", with = {"-encoding", "UTF-8"}),
@@ -47,8 +47,7 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             "-quiet"
           }),
       @Tweak(tool = "junit", with = "--fail-if-no-tests", in = Tweak.Space.TEST)
-    }
-)
+    })
 module build {
   requires com.github.sormuras.bach;
 
