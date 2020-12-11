@@ -33,12 +33,12 @@ if (Files.notExists(bach)) {
 
     IF [%1]==[init] GOTO INIT
 
-    java --module-path .bach\cache --module com.github.sormuras.bach %*
+    java --module-path .bach\\cache --module com.github.sormuras.bach %*
 
     GOTO END
 
     :INIT
-    del .bach\cache\com.github.sormuras.bach@*.jar >nul 2>&1
+    del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
     SETLOCAL
     SET tag=%2
     IF [%tag%]==[] SET tag=early-access
@@ -49,7 +49,7 @@ if (Files.notExists(bach)) {
     """);
 }
 
-com.github.sormuras.bach.Main("help")
+com.github.sormuras.bach.Main.printUsageInstructions(System.out)
 
 System.out.println(
   """

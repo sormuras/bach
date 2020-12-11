@@ -3,6 +3,7 @@ package com.github.sormuras.bach;
 import static java.util.Arrays.copyOfRange;
 
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
@@ -18,6 +19,16 @@ public class Main {
     var err = new PrintWriter(new OutputStreamWriter(System.err, StandardCharsets.UTF_8), true);
     int status = new Main().execute(out, err, args);
     System.exit(status);
+  }
+
+  /**
+   * Print usage instructions to the default output stream.
+   *
+   * @param stream the stream to print to
+   */
+  public static void printUsageInstructions(PrintStream stream) {
+    var out = new PrintWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8), true);
+    new Main().help(out);
   }
 
   /** Default constructor. */
@@ -39,14 +50,8 @@ public class Main {
     var action = args[0];
     return switch (action) {
       case "build" -> build(out, err, copyOfRange(args, 1, args.length));
-      case "help", "usage" -> {
-        out.println("Usage: bach ACTION [ARGS...]");
-        yield 0;
-      }
-      case "version" -> {
-        out.println(Bach.version());
-        yield 0;
-      }
+      case "help", "usage" -> help(out);
+      case "version" -> version(out);
       default -> {
         err.println("Unsupported action: " + action);
         yield 1;
@@ -64,5 +69,15 @@ public class Main {
       exception.printStackTrace(err);
       return 1;
     }
+  }
+
+  int help(PrintWriter out) {
+    out.println("Usage: bach ACTION [ARGS...]");
+    return 0;
+  }
+
+  int version(PrintWriter out) {
+    out.println(Bach.version());
+    return 0;
   }
 }
