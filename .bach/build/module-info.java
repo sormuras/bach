@@ -1,7 +1,6 @@
 import com.github.sormuras.bach.project.Feature;
 import com.github.sormuras.bach.project.ProjectInfo;
-import com.github.sormuras.bach.project.ProjectInfo.ExternalModules;
-import com.github.sormuras.bach.project.ProjectInfo.ExternalModules.Link;
+import com.github.sormuras.bach.project.ProjectInfo.Link;
 import com.github.sormuras.bach.project.ProjectInfo.Test;
 import com.github.sormuras.bach.project.ProjectInfo.Tweak;
 
@@ -37,13 +36,6 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             "-quiet"
           })
     },
-    externalModules =
-        @ExternalModules(
-            requires = {"org.junit.platform.console"},
-            links = {
-              @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
-              @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
-            }),
     test =
         @Test(
             modules = {
@@ -54,7 +46,13 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             tweaks =
                 @Tweak(
                     tool = "junit",
-                    args = {"--fail-if-no-tests"})))
+                    args = {"--fail-if-no-tests"})),
+    requires = {"org.junit.platform.console"},
+    links = {
+        @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+        @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
+    }
+)
 module build {
   requires com.github.sormuras.bach;
 

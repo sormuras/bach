@@ -125,18 +125,18 @@ class ProjectBuilder {
   }
 
   ExternalModules newExternalModules(ModuleFinder finder) {
-    var requires = new TreeSet<>(List.of(info.externalModules().requires()));
+    var requires = new TreeSet<>(List.of(info.requires()));
     requires.addAll(Modules.required(finder));
     requires.removeAll(Modules.declared(ModuleFinder.ofSystem()));
     requires.removeAll(Modules.declared(finder));
     var links = new TreeMap<String, ExternalModule>();
-    for (var link : info.externalModules().links()) links.put(link.module(), link(link));
+    for (var link : info.links()) links.put(link.module(), link(link));
     var lookups = new ArrayList<>(buildModuleLookups);
-    for (var lookup : info.externalModules().lookups()) lookups.add(newModuleLookup(lookup));
+    for (var lookup : info.lookups()) lookups.add(newModuleLookup(lookup));
     return new ExternalModules(requires, links, lookups);
   }
 
-  ExternalModule link(ProjectInfo.ExternalModules.Link link) {
+  ExternalModule link(ProjectInfo.Link link) {
     var module = link.module();
     var target = link.to();
 

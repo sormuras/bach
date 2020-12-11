@@ -66,6 +66,15 @@ public @interface ProjectInfo {
         args = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"})
   };
 
+  /** @return the array of required module names */
+  String[] requires() default {};
+
+  /** @return an array of external module links */
+  Link[] links() default {};
+
+  /** @return an array of module lookup service implementations */
+  Class<? extends ModuleLookup>[] lookups() default {};
+
   /** @return the test module source space configuration */
   Test test() default @Test;
 
@@ -99,46 +108,29 @@ public @interface ProjectInfo {
     String[] args();
   }
 
-  /** @return the external modules configuration */
-  ExternalModules externalModules() default @ExternalModules;
-
-  /** Library configuration annotation. */
+  /** An external module name to URI pair annotation. */
   @Target({})
-  @interface ExternalModules {
+  @interface Link {
+    /** @return the module name */
+    String module();
 
-    /** @return the array of required module names */
-    String[] requires() default {};
+    /** @return the target of the link, usually resolvable to a remote JAR file */
+    String to();
 
-    /** @return the array of module links */
-    Link[] links() default {};
+    /** @return the type of the string returned by {@link #to()}, defaults to {@link Type#AUTO} */
+    Type type() default Type.AUTO;
 
-    /** Module-URI pair annotation. */
-    @Target({})
-    @interface Link {
-      /** @return the module name */
-      String module();
+    /** @return the repository of Maven-based target coordinates */
+    String mavenRepository() default "https://repo.maven.apache.org/maven2";
 
-      /** @return the target of the link, usually resolvable to a remote JAR file */
-      String to();
-
-      /** @return the type of the string returned by {@link #to()}, defaults to {@link Type#AUTO} */
-      Type type() default Type.AUTO;
-
-      /** @return the repository of Maven-based target coordinates */
-      String mavenRepository() default "https://repo.maven.apache.org/maven2";
-
-      /** Link target type. */
-      enum Type {
-        /** Detect type of link automatically. */
-        AUTO,
-        /** Uniform Resource Identifier (URI) reference as is {@link java.net.URI}. */
-        URI,
-        /** Maven-based coordinates. */
-        MAVEN
-      }
+    /** Link target type. */
+    enum Type {
+      /** Detect type of link automatically. */
+      AUTO,
+      /** Uniform Resource Identifier (URI) reference as is {@link java.net.URI}. */
+      URI,
+      /** Maven-based coordinates. */
+      MAVEN
     }
-
-    /** @return an array of module lookup annotations */
-    Class<? extends ModuleLookup>[] lookups() default {};
   }
 }
