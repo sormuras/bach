@@ -14,13 +14,25 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
       Feature.GENERATE_MAVEN_POM_FILES,
       Feature.INCLUDE_SOURCES_IN_MODULAR_JAR
     },
+    testModules = {
+        "com.github.sormuras.bach/test/java-module/module-info.java",
+        "test.base/test/java/module-info.java",
+        "test.integration/test/java/module-info.java",
+    },
+    requires = {"org.junit.platform.console"},
+    links = {
+        @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+        @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
+    },
     tweaks = {
-      @Tweak(
-          tool = "javac",
-          args = {"-encoding", "UTF-8", "-g", "-parameters", "-Werror", "-Xlint"}),
+      @Tweak(tool = "javac", with = {"-encoding", "UTF-8"}),
+      @Tweak(tool = "javac", with = "-g"),
+      @Tweak(tool = "javac", with = "-parameters"),
+      @Tweak(tool = "javac", with = "-Xlint"),
+      @Tweak(tool = "javac", with = "-Werror", in = Tweak.Space.MAIN),
       @Tweak(
           tool = "javadoc",
-          args = {
+          with = {
             "-encoding",
             "UTF-8",
             "-windowtitle",
@@ -34,20 +46,9 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             "-Xdoclint",
             "-quiet"
           }),
-      @Tweak(
-          tool = "junit",
-          args = {"--fail-if-no-tests"})
-    },
-    testModules = {
-      "com.github.sormuras.bach/test/java-module/module-info.java",
-      "test.base/test/java/module-info.java",
-      "test.integration/test/java/module-info.java",
-    },
-    requires = {"org.junit.platform.console"},
-    links = {
-      @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
-      @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
-    })
+      @Tweak(tool = "junit", with = "--fail-if-no-tests", in = Tweak.Space.TEST)
+    }
+)
 module build {
   requires com.github.sormuras.bach;
 

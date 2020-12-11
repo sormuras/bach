@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,11 +42,11 @@ class ProjectBuilder {
                 jarslug(version),
                 newLauncher(name, info.launchCustomRuntimeImageWithModule(), declarations),
                 features,
-                newTweaks(info.tweaks())),
+                newTweaks(ProjectInfo.Tweak.Space.MAIN, info.tweaks())),
             new TestCodeSpace(
                 declarations.testModuleDeclarations(),
                 newModulePaths(info.testModulePaths()),
-                newTweaks(info.tweaks())));
+                newTweaks(ProjectInfo.Tweak.Space.TEST, info.tweaks())));
 
     var externalModules = newExternalModules(spaces.finder());
 
@@ -159,10 +158,13 @@ class ProjectBuilder {
     return new ModulePaths(Arrays.stream(paths).map(Path::of).collect(Collectors.toList()));
   }
 
-  Tweaks newTweaks(ProjectInfo.Tweak... tweaks) {
-    var map = new HashMap<String, Tweak>();
-    for (var tweak : tweaks) map.put(tweak.tool(), new Tweak(tweak.tool(), List.of(tweak.args())));
-    return new Tweaks(map);
+  Tweaks newTweaks(ProjectInfo.Tweak.Space space, ProjectInfo.Tweak... tweaks) {
+    var list = new ArrayList<Tweak>();
+    for (var tweak : tweaks) {
+      if (!Set.of(tweak.in()).contains(space)) continue;
+      list.add(new Tweak(tweak.tool(), List.of(tweak.with())));
+    }
+    return new Tweaks(list);
   }
 
   static Predicate<Path> isModuleOf(String space, String... configuration) {

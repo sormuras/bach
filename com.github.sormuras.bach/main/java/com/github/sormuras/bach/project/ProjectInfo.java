@@ -58,12 +58,11 @@ public @interface ProjectInfo {
 
   /** @return the additional arguments to be passed on a per-tool basis */
   Tweak[] tweaks() default {
-    @Tweak(
-        tool = "javac",
-        args = {"-encoding", "UTF-8"}),
-    @Tweak(
-        tool = "jlink",
-        args = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"})
+    @Tweak(tool = "javac", with = {"-encoding", "UTF-8"}),
+    @Tweak(tool = "jlink", with = {"--compress", "2"}),
+    @Tweak(tool = "jlink", with = "--no-header-files"),
+    @Tweak(tool = "jlink", with = "--no-man-pages"),
+    @Tweak(tool = "jlink", with = "--strip-debug")
   };
 
   /** @return the array of required module names */
@@ -88,10 +87,22 @@ public @interface ProjectInfo {
   /** Tool name-args pair annotation. */
   @Target({})
   @interface Tweak {
-    /** @return the name of tool to tweak */
+    /** @return the trigger describing the tool call to be tweaked */
     String tool();
+
     /** @return the additional arguments to be passed to the tool call */
-    String[] args();
+    String[] with();
+
+    /** @return the code spaces in which this tweak is registered */
+    Space[] in() default {Space.MAIN, Space.TEST};
+
+    /** An enumeration of code spaces. */
+    enum Space {
+      /** Main code space. */
+      MAIN,
+      /** Test code space. */
+      TEST
+    }
   }
 
   /** An external module name to URI pair annotation. */
