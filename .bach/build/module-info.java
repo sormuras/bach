@@ -1,7 +1,6 @@
 import com.github.sormuras.bach.project.Feature;
 import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.ProjectInfo.Link;
-import com.github.sormuras.bach.project.ProjectInfo.Test;
 import com.github.sormuras.bach.project.ProjectInfo.Tweak;
 
 @ProjectInfo(
@@ -34,25 +33,21 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
             "-Werror",
             "-Xdoclint",
             "-quiet"
-          })
+          }),
+      @Tweak(
+          tool = "junit",
+          args = {"--fail-if-no-tests"})
     },
-    test =
-        @Test(
-            modules = {
-              "com.github.sormuras.bach/test/java-module/module-info.java",
-              "test.base/test/java/module-info.java",
-              "test.integration/test/java/module-info.java",
-            },
-            tweaks =
-                @Tweak(
-                    tool = "junit",
-                    args = {"--fail-if-no-tests"})),
+    testModules = {
+      "com.github.sormuras.bach/test/java-module/module-info.java",
+      "test.base/test/java/module-info.java",
+      "test.integration/test/java/module-info.java",
+    },
     requires = {"org.junit.platform.console"},
     links = {
-        @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
-        @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
-    }
-)
+      @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+      @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
+    })
 module build {
   requires com.github.sormuras.bach;
 

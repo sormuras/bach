@@ -75,29 +75,15 @@ public @interface ProjectInfo {
   /** @return an array of module lookup service implementations */
   Class<? extends ModuleLookup>[] lookups() default {};
 
-  /** @return the test module source space configuration */
-  Test test() default @Test;
+  /**
+   * @return the names of the test modules to compile, with an empty array for none (effectively
+   *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
+   *     to find all matching module compilation units
+   */
+  String[] testModules() default "*";
 
-  /** Describes the main module source space. */
-  @Target({})
-  @interface Test {
-    /**
-     * @return the names of the modules to compile, with an empty array for none (effectively
-     *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
-     *     to find all matching module compilation units
-     */
-    String[] modules() default "*";
-
-    /** @return the module path patterns for test modules */
-    String[] modulePaths() default {WORKSPACE_MODULES, EXTERNAL_MODULES};
-
-    /** @return the additional arguments to be passed on a per-tool basis */
-    Tweak[] tweaks() default {
-      @Tweak(
-          tool = "javac",
-          args = {"-encoding", "UTF-8"})
-    };
-  }
+  /** @return the module path patterns for test modules */
+  String[] testModulePaths() default {WORKSPACE_MODULES, EXTERNAL_MODULES};
 
   /** Tool name-args pair annotation. */
   @Target({})
