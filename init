@@ -2,14 +2,6 @@
 
 /open https://github.com/sormuras/bach/raw/main/boot
 
-var gitignore = Path.of(".bach/.gitignore")
-if (Files.notExists(gitignore)) {
-  System.out.println();
-  System.out.println("Generate " + gitignore + " configuration");
-
-  Files.write(Path.of(".bach/.gitignore"), List.of("/workspace/", "", "*.jar"));
-}
-
 var bach = Path.of("bach")
 if (Files.notExists(bach)) {
   System.out.println();
@@ -23,7 +15,7 @@ if (Files.notExists(bach)) {
       java --module-path .bach/cache --module com.github.sormuras.bach "$@"
     else
       rm -f .bach/cache/com.github.sormuras.bach@*.jar
-      jshell -R-Dreboot -R-Dversion=${2:-early-access} https://bit.ly/bach-main-init
+      jshell -R-Dreboot -R-Dversion="${2:-early-access}" https://bit.ly/bach-main-init
     fi
     """).toFile().setExecutable(true);
 
@@ -40,8 +32,7 @@ if (Files.notExists(bach)) {
     :INIT
     del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
     SETLOCAL
-    SET tag=%2
-    IF [%tag%]==[] SET tag=early-access
+    IF [%2]==[] ( SET tag=early-access ) ELSE ( SET tag=%2 )
     jshell -R-Dreboot -R-Dversion=%tag% https://bit.ly/bach-main-init
     ENDLOCAL
 
