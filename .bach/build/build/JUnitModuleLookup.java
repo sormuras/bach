@@ -9,7 +9,7 @@ public class JUnitModuleLookup implements ModuleLookup {
   private final ModuleLookup junitPlatform;
 
   public JUnitModuleLookup() {
-    this.junitJupiter = new JUnitPlatform("5.7.0");
+    this.junitJupiter = new JUnitJupiter("5.7.0");
     this.junitPlatform = new JUnitPlatform("1.7.0");
   }
 

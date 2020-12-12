@@ -141,7 +141,7 @@ public interface ModuleLookup {
 
     Optional<String> map(String suffix) {
       var module = "org.junit.platform." + suffix;
-      var artifact = "junit-platform-" + suffix;
+      var artifact = "junit-platform-" + suffix.replace('.', '-');
       var coordinates = "org.junit.platform:" + artifact + ':' + version;
       var uri = ExternalModule.link(module).toMavenCentral(coordinates).uri();
       return Optional.of(uri);
@@ -153,8 +153,11 @@ public interface ModuleLookup {
         case "org.junit.platform.commons" -> map("commons");
         case "org.junit.platform.console" -> map("console");
         case "org.junit.platform.engine" -> map("engine");
+        case "org.junit.platform.jfr" -> map("jfr");
         case "org.junit.platform.launcher" -> map("launcher");
         case "org.junit.platform.reporting" -> map("reporting");
+        case "org.junit.platform.suite.api" -> map("suite.api");
+        case "org.junit.platform.testkit" -> map("testkit");
         default -> Optional.empty();
       };
     }

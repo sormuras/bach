@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.project;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A collection of tweak objects.
@@ -18,6 +19,6 @@ public record Tweaks(List<Tweak> list) {
     return list.stream()
         .filter(tweak -> tweak.trigger().equals(trigger))
         .flatMap(tweak -> tweak.arguments().stream())
-        .toList();
+        .collect(Collectors.toUnmodifiableList()); // TODO .toList()
   }
 }
