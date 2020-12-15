@@ -11,6 +11,7 @@ class Bootstrap {
     var module = "com.github.sormuras.bach";
     var version = "16-ea+BOOTSTRAP";
 
+    deleteCached("com.github.sormuras.bach@*.jar");
     deleteWorkspaces();
 
     var classes = Path.of(".bach/workspace/.bootstrap");
@@ -40,12 +41,23 @@ class Bootstrap {
         ".");
   }
 
+  static void deleteCached(String glob) throws Exception {
+    var cache = Path.of(".bach/cache");
+    try (var stream = Files.newDirectoryStream(cache, glob)) {
+      for (var path : stream) {
+        Files.delete(path);
+        System.out.println(">> " + path + " deleted");
+      }
+    }
+  }
+
   static void deleteWorkspaces() throws Exception {
     try (var stream = Files.walk(Path.of(""))) {
-      var selected = stream
-          .filter(path -> path.toUri().toString().contains(".bach/workspace"))
-          .sorted(Comparator.reverseOrder())
-          .toArray(Path[]::new);
+      var selected =
+          stream
+              .filter(path -> path.toUri().toString().contains(".bach/workspace"))
+              .sorted(Comparator.reverseOrder())
+              .toArray(Path[]::new);
       for (var path : selected) Files.delete(path);
       System.out.println(">> " + selected.length + " workspace files deleted");
     }
