@@ -30,22 +30,16 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
       @Tweak(tool = "javac", with = "-parameters"),
       @Tweak(tool = "javac", with = "-Xlint"),
       @Tweak(tool = "javac", with = "-Werror", in = Tweak.Space.MAIN),
-      @Tweak(
-          tool = "javadoc",
-          with = {
-            "-encoding",
-            "UTF-8",
-            "-windowtitle",
-            "🎼 Bach",
-            "-header",
-            "🎼 Bach",
-            "-use",
-            "-linksource",
-            "-notimestamp",
-            "-Werror",
-            "-Xdoclint",
-            "-quiet"
-          }),
+      @Tweak(tool = "javadoc", with = {"-encoding", "UTF-8"}),
+      @Tweak(tool = "javadoc", with = {"-windowtitle", "🎼 Bach"}),
+      @Tweak(tool = "javadoc", with = {"-header", "🎼 Bach"}),
+      @Tweak(tool = "javadoc", with = {"-doctitle", "🎼 Bach 16-ea"}),
+      @Tweak(tool = "javadoc", with = {"-overview", "documentation/api/overview.html"}),
+      @Tweak(tool = "javadoc", with = "-quiet"),
+      @Tweak(tool = "javadoc", with = "-notimestamp"),
+      @Tweak(tool = "javadoc", with = "-use"),
+      @Tweak(tool = "javadoc", with = "-Xdoclint"),
+      @Tweak(tool = "javadoc", with = "-Werror"),
       @Tweak(tool = "junit", with = "--fail-if-no-tests", in = Tweak.Space.TEST)
     })
 module build {
