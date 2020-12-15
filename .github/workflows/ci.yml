@@ -22,7 +22,7 @@ jobs:
         uses: sormuras/download-jdk@v1
         id: jdk
         with:
-          feature: 16
+          feature: 17
       - name: 'Set up JDK'
         uses: actions/setup-java@v1
         with:
