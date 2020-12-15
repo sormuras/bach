@@ -7,9 +7,9 @@ Build modular Java projects with [JDK Foundation Tools].
 
 ## Boot Bach into a JShell Session
 
-- Install JDK 16 (`16-ea+24` or later) from https://jdk.java.net
+- Install JDK 16 (or higher) from https://jdk.java.net
 - Open a command shell in an empty directory
-- `jshell https://bit.ly/bach-main-boot`
+- Enter `jshell https://bit.ly/bach-main-boot` to launch JShell booting Bach - this is a short-cut for `jshell` and `/load https://github.com/sormuras/bach/raw/main/boot`
 - Type `/list` to display the set of pre-defined API methods
 - Try `find("**.jar")`, `describeModules("java.logging")`, `listSystemModules()`, and other methods
 - Exit JShell via `/exit`
