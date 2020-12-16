@@ -94,6 +94,8 @@ jobs:
     steps:
       - name: 'Set up Maven'
         uses: actions/setup-java@v1
+        with:
+          java-version: 11
       - name: 'Download build artifact'
         uses: actions/download-artifact@v2
         with:
