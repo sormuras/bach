@@ -13,7 +13,25 @@ on:
         default: 'Because...'
 
 jobs:
+
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      sha7: ${{ steps.version.outputs.sha7 }}
+      sha8: ${{ steps.version.outputs.sha8 }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 'Compute short version strings'
+        id: version
+        run: |
+          SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
+          echo "::set-output name=sha7::${SHA7}"
+          echo "::set-output name=sha7::${SHA8}"
+          echo "::set-output name=version::16-ea+${SHA7}"
+
   build:
+    needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out repository'
@@ -28,53 +46,43 @@ jobs:
         with:
           java-version: ${{ steps.jdk.outputs.version }}
           jdkFile: ${{ steps.jdk.outputs.file }}
-      - name: 'Set up version'
-        run: |
-          SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
-          VERSION=16-ea+${SHA7}
-          echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
-      - name: 'Build Bach ${{ env.VERSION }}'
+      - name: 'Build Bach ${{ needs.setup.outputs.version }}'
         run: |
           java \
-            -Dbach.project.version=${VERSION} \
+            -Dbach.project.version=${{ needs.setup.outputs.version }} \
             -Dbach.project.main.jarslug=early-access \
-            -Dbach.project.deploy.maven.version=${VERSION}+SNAPSHOT \
+            -Dbach.project.deploy.maven.version=${{ needs.setup.outputs.version }}+SNAPSHOT \
             --module-path .bach/cache \
             --module com.github.sormuras.bach \
             build
       - name: 'Upload build artifacts'
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
           path: |
             LICENSE
             .bach/workspace/logbook.md
             .bach/workspace/deploy
             .bach/workspace/modules
 
-  deploy:
-    needs: build
+  deploy-modules:
+    needs: [ setup, build ]
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: 'Set up version'
-        run: |
-          SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
-          VERSION=16-ea+${SHA7}
-          echo "VERSION=${VERSION}" >> ${GITHUB_ENV}
       - name: 'Download build artifact'
         uses: actions/download-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
       - name: 'Release early-access build to https://github.com/sormuras/bach/releases/tag/early-access'
         uses: marvinpinto/action-automatic-releases@latest
         with:
           automatic_release_tag: 'early-access'
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          title: "Bach ${{ env.VERSION }}"
+          title: "Bach ${{ needs.setup.outputs.version }}"
           files: |
             .bach/workspace/modules/*.jar
       - name: 'Set up Maven (GitHub flavored settings.xml) by setting up Java'
