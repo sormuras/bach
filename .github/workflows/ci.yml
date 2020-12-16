@@ -65,9 +65,10 @@ jobs:
             LICENSE
             .bach/workspace/logbook.md
             .bach/workspace/deploy
+            .bach/workspace/documentation
             .bach/workspace/modules
 
-  deploy-modules:
+  deploy-to-releases:
     needs: [ setup, build ]
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -85,13 +86,53 @@ jobs:
           title: "Bach ${{ needs.setup.outputs.version }}"
           files: |
             .bach/workspace/modules/*.jar
-      - name: 'Set up Maven (GitHub flavored settings.xml) by setting up Java'
+
+  deploy-to-packages:
+    needs: [ setup, build ]
+    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Set up Maven'
         uses: actions/setup-java@v1
+      - name: 'Download build artifact'
+        uses: actions/download-artifact@v2
         with:
-          java-version: 11
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
       - name: 'Deploy early-access build to https://github.com/sormuras/bach/packages'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
           REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
         run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
+
+  deploy-to-api-repository:
+    needs: [ setup, build ]
+    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out sormuras/api repository'
+        uses: actions/checkout@v2
+        with:
+          repository: sormuras/api
+          token: ${{ secrets.PAT }}
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Sync early-access documentation'
+        run: |
+          mkdir --parents ${{ github.event.repository.name }}/early-access
+          rsync --archive --delete --verbose .bach/workspace/documentation/api/ ${{ github.event.repository.name }}/early-access
+      - name: 'Check for modifications'
+        id: diff
+        run: |
+          git status
+          echo ::set-output name=modified::$(if [[ -z $(git status --porcelain) ]]; then echo 'false'; else echo 'true'; fi)
+      - name: 'Commit and push changes'
+        if: steps.diff.outputs.modified == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit --message 'Update API documentation of ${{ github.event.repository.name }} to ${{ needs.setup.outputs.version }}'
+          git push
