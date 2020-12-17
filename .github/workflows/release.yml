@@ -1,12 +1,32 @@
 name: Release
+
 on:
   release:
     types: [ prereleased, released ]
+
 env:
-  VERSION: ${{ github.event.release.tag_name }}
   GITHUB_TOKEN: ${{ github.token }}
+
 jobs:
+
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      sha7: ${{ steps.version.outputs.sha7 }}
+      sha8: ${{ steps.version.outputs.sha8 }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 'Compute version string'
+        id: version
+        run: |
+          SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
+          echo "::set-output name=sha7::${SHA7}"
+          echo "::set-output name=sha8::${SHA8}"
+          echo "::set-output name=version::${{ github.event.release.tag_name }}"
+
   release:
+    needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out repository'
@@ -15,7 +35,7 @@ jobs:
         uses: sormuras/download-jdk@v1
         id: jdk
         with:
-          feature: 16
+          feature: 17
       - name: 'Set up JDK'
         uses: actions/setup-java@v1
         with:
@@ -23,12 +43,17 @@ jobs:
           jdkFile: ${{ steps.jdk.outputs.file }}
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/build/build/Bootstrap.java
-      - name: 'Build Bach ${{ env.VERSION }}'
-        run: java --module-path .bach/cache --module com.github.sormuras.bach build ${VERSION}
+      - name: 'Build Bach ${{ needs.setup.outputs.version }}'
+        run: |
+          java \
+            -Dbach.project.version=${{ needs.setup.outputs.version }} \
+            --module-path .bach/cache \
+            --module com.github.sormuras.bach \
+            build
       - name: 'Upload module com.github.sormuras.bach@${{ env.VERSION }}'
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: .bach/workspace/modules/com.github.sormuras.bach@${{ env.VERSION }}.jar
-          asset_name: com.github.sormuras.bach@${{ env.VERSION }}.jar
+          asset_path: .bach/workspace/modules/com.github.sormuras.bach@${{ needs.setup.outputs.version }}.jar
+          asset_name: com.github.sormuras.bach@${{ needs.setup.outputs.version }}.jar
           asset_content_type: application/java-archive

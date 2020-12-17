@@ -21,13 +21,13 @@ jobs:
       sha8: ${{ steps.version.outputs.sha8 }}
       version: ${{ steps.version.outputs.version }}
     steps:
-      - name: 'Compute short version strings'
+      - name: 'Compute version string'
         id: version
         run: |
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
           SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
           echo "::set-output name=sha7::${SHA7}"
-          echo "::set-output name=sha7::${SHA8}"
+          echo "::set-output name=sha8::${SHA8}"
           echo "::set-output name=version::16-ea+${SHA7}"
 
   build:
