@@ -42,6 +42,16 @@ public record Command(String name, List<String> args) implements ToolCall {
     return args.isEmpty() ? name : name + ' ' + String.join(" ", args);
   }
 
+
+  /**
+   * Instantiates a builder based on this a command's components.
+   *
+   * @return a new builder
+   */
+  public Builder toBuilder() {
+    return new Builder(name, args);
+  }
+
   /**
    * A builder for building {@link Command} objects.
    *
@@ -63,14 +73,13 @@ public record Command(String name, List<String> args) implements ToolCall {
     private final String name;
     private final List<String> strings;
 
-    /**
-     * Initializes a new builder with the given tool name.
-     *
-     * @param name the name of the tool
-     */
     Builder(String name) {
+      this(name, List.of());
+    }
+
+    Builder(String name, List<String> args) {
       this.name = name;
-      this.strings = new ArrayList<>();
+      this.strings = new ArrayList<>(args);
     }
 
     /**

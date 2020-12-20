@@ -3,8 +3,9 @@ package build;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.BuildProgram;
 import com.github.sormuras.bach.Builder;
-import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.project.Project;
+import com.github.sormuras.bach.project.ProjectInfo;
+import com.github.sormuras.bach.tool.ToolCall;
 
 public class BachBuildProgram implements BuildProgram {
 
@@ -29,7 +30,17 @@ public class BachBuildProgram implements BuildProgram {
     System.clearProperty("bach.project.main.release");
     System.clearProperty("bach.project.main.jarslug");
 
-    new Builder(bach, project).build();
+    new Builder(bach, project) {
+      @Override
+      public ToolCall computeMainDocumentationJavadocCall() {
+        var title = "🎼 Bach " + project.version();
+        return super.computeMainDocumentationJavadocCall().toCommand().toBuilder()
+            .with("-windowtitle", title)
+            .with("-header", title)
+            .with("-doctitle", title)
+            .build();
+      }
+    }.build();
   }
 
   @Override
