@@ -21,7 +21,7 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
     },
     requires = {"org.junit.platform.console"},
     links = {
-      @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.0"),
+      @Link(module = "org.apiguardian.api", to = "org.apiguardian:apiguardian-api:1.1.1"),
       @Link(module = "org.opentest4j", to = "org.opentest4j:opentest4j:1.2.0"),
     },
     tweaks = {
