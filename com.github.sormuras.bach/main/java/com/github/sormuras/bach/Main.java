@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.Paths;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -49,6 +50,7 @@ public class Main {
     var action = args[0];
     return switch (action) {
       case "build" -> build(out, err, Arrays.copyOfRange(args, 1, args.length));
+      case "clean" -> clean();
       case "help", "usage" -> help(out);
       case "version" -> version(out);
       default -> {
@@ -68,6 +70,11 @@ public class Main {
       exception.printStackTrace(err);
       return 1;
     }
+  }
+
+  int clean() {
+    Paths.deleteDirectories(Bach.WORKSPACE);
+    return 0;
   }
 
   int help(PrintWriter out) {
