@@ -1,5 +1,6 @@
 package build;
 
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -58,7 +59,15 @@ class Bootstrap {
               .filter(path -> path.toUri().toString().contains(".bach/workspace"))
               .sorted(Comparator.reverseOrder())
               .toArray(Path[]::new);
-      for (var path : selected) Files.delete(path);
+      for (var path : selected) {
+        Files.delete(path);
+        // also delete non-empty ".bach" directory
+        if (path.endsWith(Path.of(".bach", "workspace")))
+          try {
+            Files.deleteIfExists(path.getParent());
+          } catch (DirectoryNotEmptyException ignore) {
+          }
+      }
       System.out.println(">> " + selected.length + " workspace files deleted");
     }
   }
