@@ -5,13 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-record Jar(Mode mode, Path file, List<Argument> arguments) implements ToolCall<Jar> {
+record Jar(Mode mode, Path file, List<Argument> arguments) implements Command<Jar> {
 
   public enum Mode {
     CREATE,
-    LIST,
-    UPDATE,
-    EXTRACT,
     DESCRIBE_MODULE
   }
 
@@ -19,22 +16,29 @@ record Jar(Mode mode, Path file, List<Argument> arguments) implements ToolCall<J
     return new Jar(Mode.CREATE, Path.of(file), List.of());
   }
 
-  public Jar withMode(Mode mode) {
+  @Override
+  public String tool() {
+    return "jar";
+  }
+
+  public Jar mode(Mode mode) {
+    if (this.mode == mode) return this;
     return new Jar(mode, file, arguments);
   }
 
-  public Jar withFile(Path file) {
+  public Jar file(Path file) {
+    if (this.file == file) return this;
     return new Jar(mode, file, arguments);
   }
 
   @Override
-  public Jar with(List<Argument> arguments) {
+  public Jar arguments(List<Argument> arguments) {
     if (this.arguments == arguments) return this;
     return new Jar(mode, file, List.copyOf(arguments));
   }
 
-  public Jar withMainClass(String mainClass) {
-    return with("--main-class", mainClass);
+  public Jar addMainClass(String mainClass) {
+    return add("--main-class", mainClass);
   }
 
   @Override
@@ -45,7 +49,7 @@ record Jar(Mode mode, Path file, List<Argument> arguments) implements ToolCall<J
       strings.add("--file");
       strings.add(file.toString());
     }
-    strings.addAll(ToolCall.super.toStrings());
+    strings.addAll(Command.super.toStrings());
     return List.copyOf(strings);
   }
 }

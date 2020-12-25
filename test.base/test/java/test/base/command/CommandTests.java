@@ -8,13 +8,17 @@ import org.junit.jupiter.api.Test;
 
 class CommandTests {
   @Test
-  void createCommandForToolCalledJar() {
-    var command = Command.of("jar")
-        .with("--create")
-        .with("--file", Path.of("foo.jar"))
-        .with("--verbose")
-        .with("--main-class", "foo.bar.Main")
-        .with("-C", Path.of("classes"), ".");
+  void callJar() {
+    var command = Command.call("jar")
+        .add("--create")
+        .add("--file", Path.of("foo.jar"))
+        .add("--verbose")
+        .add("--main-class", "foo.bar.Main")
+        .add("-C", Path.of("classes"), ".");
+
+    assertEquals("jar", command.tool());
+    assertEquals(Path.of("classes"), command.findFirstArgument("-C").orElseThrow().values().get(0));
+    assertEquals(".", command.findFirstArgument("-C").orElseThrow().values().get(1));
     assertLinesMatch("""
         --create
         --file
@@ -29,25 +33,23 @@ class CommandTests {
   }
 
   @Test
-  void createJarCall() {
+  void createJar() {
     var jar = Jar.create("foo.jar")
-        .with("--verbose")
-        .withMainClass("foo.bar.Main")
-        .withFile(Path.of("bar.jar"))
-        .with("-C", Path.of("classes"), ".");
+        .add("--verbose")
+        .addMainClass("foo.bar.Main")
+        .file(Path.of("bar.jar"))
+        .add("-C", Path.of("classes"), ".")
+        .add("-C", Path.of("others"), ".")
+        .clear("--verbose")
+        .mode(Jar.Mode.DESCRIBE_MODULE)
+        .clear("-C")
+        .clear("--main-class");
 
+    assertEquals("jar", jar.tool());
     assertLinesMatch("""
-        --create
+        --describe-module
         --file
         bar.jar
-        --verbose
-        --main-class
-        foo.bar.Main
-        -C
-        classes
-        .
         """.lines().toList(), jar.toStrings());
-    assertEquals(Path.of("classes"), jar.findFirstArgument("-C").orElseThrow().values().get(0));
-    assertEquals(".", jar.findFirstArgument("-C").orElseThrow().values().get(1));
   }
 }
