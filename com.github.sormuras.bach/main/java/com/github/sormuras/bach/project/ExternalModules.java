@@ -3,9 +3,7 @@ package com.github.sormuras.bach.project;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.internal.Modules;
 import java.lang.module.ModuleFinder;
-import java.net.URI;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -14,11 +12,11 @@ import java.util.stream.Stream;
 /**
  * An external modules configuration.
  *
- * @param requires the set of additionally required modules
+ * @param requires the set of required modules
  * @param links the module-uri pairs
- * @param lookups the list of module's uri lookups
  */
-public record ExternalModules(Set<String> requires, Map<String, ExternalModule> links, List<ModuleLookup> lookups) {
+public record ExternalModules(Set<String> requires, Map<String, ExternalModule> links)
+    implements ModuleLookup {
 
   /** @return a new stream of module-uri pairs */
   public Stream<ExternalModule> stream() {
@@ -30,25 +28,9 @@ public record ExternalModules(Set<String> requires, Map<String, ExternalModule> 
     return ModuleFinder.of(Bach.EXTERNALS);
   }
 
-  /**
-   * @param module the name of the module
-   * @return an optional with URI created from the registered module links or an empty optional
-   * @see ModuleLookup
-   */
+  @Override
   public Optional<String> lookup(String module) {
     return Optional.ofNullable(links.get(module)).map(ExternalModule::uri);
-  }
-
-  /**
-   * @param module the name of the module
-   * @param searcher the searcher of remote modules
-   * @return a uri targeting a remote modular JAR file
-   */
-  public URI lookup(String module, ModuleLookup searcher) {
-    return lookup(module)
-        .or(() -> searcher.lookup(module))
-        .map(URI::create)
-        .orElseThrow(() -> new RuntimeException("Module not found: " + module));
   }
 
   /**

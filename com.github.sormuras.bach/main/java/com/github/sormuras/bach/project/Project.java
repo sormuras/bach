@@ -61,10 +61,9 @@ public record Project(String name, Version version, ExternalModules externals, C
    * Returns a project model based on the current working directory and the given info annotation.
    *
    * @param info the project info annotation
-   * @param lookups the prefered module lookups
    * @return a project model
    */
-  public static Project of(ProjectInfo info, ModuleLookup... lookups) {
-    return new ProjectBuilder(info, lookups).build();
+  public static Project of(ProjectInfo info) {
+    return new ProjectBuilder(info).build();
   }
 }

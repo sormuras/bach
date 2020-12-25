@@ -20,11 +20,9 @@ import java.util.stream.Collectors;
 class ProjectBuilder {
 
   private final ProjectInfo info;
-  private final List<ModuleLookup> buildModuleLookups;
 
-  ProjectBuilder(ProjectInfo info, ModuleLookup... buildModuleLookups) {
+  ProjectBuilder(ProjectInfo info) {
     this.info = info;
-    this.buildModuleLookups = List.of(buildModuleLookups);
   }
 
   Project build() {
@@ -130,9 +128,7 @@ class ProjectBuilder {
     requires.removeAll(Modules.declared(finder));
     var links = new TreeMap<String, ExternalModule>();
     for (var link : info.links()) links.put(link.module(), link(link));
-    var lookups = new ArrayList<>(buildModuleLookups);
-    for (var lookup : info.lookups()) lookups.add(newModuleLookup(lookup));
-    return new ExternalModules(requires, links, lookups);
+    return new ExternalModules(requires, links);
   }
 
   ExternalModule link(ProjectInfo.Link link) {
@@ -144,14 +140,6 @@ class ProjectBuilder {
       case URI -> ExternalModule.link(module).toUri(target);
       case MAVEN -> ExternalModule.link(module).toMaven(link.mavenRepository(), target);
     };
-  }
-
-  ModuleLookup newModuleLookup(Class<? extends ModuleLookup> lookup) {
-    try {
-      return lookup.getConstructor().newInstance();
-    } catch (ReflectiveOperationException exception) {
-      throw new RuntimeException("Creating module lookup failed: " + lookup, exception);
-    }
   }
 
   ModulePaths newModulePaths(String... paths) {

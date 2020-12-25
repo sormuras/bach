@@ -48,6 +48,11 @@ public class Builder {
     this.runner = new ToolRunner(project.externals().finder());
   }
 
+  /** @return the underlying Bach instance */
+  public Bach bach() {
+    return bach;
+  }
+
   /** @return the project to build */
   public Project project() {
     return project;
@@ -77,13 +82,19 @@ public class Builder {
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
     bach.debug("Load required and missing modules");
-    var library = project.externals();
-    var moduleLookups = new ArrayList<>(library.lookups());
-    moduleLookups.add(ModuleLookup.ofBestEffort(bach));
-    var searcher = ModuleLookup.compose(moduleLookups.toArray(ModuleLookup[]::new));
-    var requires = library.requires();
-    requires.forEach(module -> bach.loadModule(library, searcher, module));
-    bach.loadMissingModules(library, searcher);
+    var externals = project.externals();
+    var lookup = computeModuleLookup();
+    externals.requires().forEach(module -> bach.loadModule(externals, lookup, module));
+    bach.loadMissingModules(externals, lookup);
+  }
+
+  /**
+   * Returns a module lookup composed of external module links and best-effort lookup.
+   *
+   * @return a module lookup
+   */
+  public ModuleLookup computeModuleLookup() {
+    return ModuleLookup.compose(project.externals(), ModuleLookup.ofBestEffort(bach));
   }
 
   /**

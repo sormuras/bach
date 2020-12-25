@@ -43,7 +43,7 @@ public interface BuildProgram {
     }
     var info = buildModule.findProjectInfo().orElse(Bach.INFO);
     bach.debug("project-info -> %s", info);
-    var project = Project.of(info, buildModule.findModuleLookups());
+    var project = Project.of(info);
     var builder = new Builder(bach, project);
     builder.build();
   }

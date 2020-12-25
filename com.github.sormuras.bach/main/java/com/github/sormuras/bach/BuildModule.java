@@ -1,6 +1,5 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.project.ModuleLookup;
 import com.github.sormuras.bach.project.ProjectInfo;
 import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolRunner;
@@ -56,12 +55,6 @@ class BuildModule {
 
   Optional<BuildProgram> findBuildProgram() {
     return ServiceLoader.load(layer, BuildProgram.class).findFirst();
-  }
-
-  ModuleLookup[] findModuleLookups() {
-    return ServiceLoader.load(layer, ModuleLookup.class).stream()
-        .map(ServiceLoader.Provider::get)
-        .toArray(ModuleLookup[]::new);
   }
 
   Optional<ProjectInfo> findProjectInfo() {

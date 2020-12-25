@@ -206,7 +206,7 @@ public final class Bach {
    */
   public void loadModule(ExternalModules externals, ModuleLookup lookup, String module) {
     if (externals.finder().find(module).isPresent()) return;
-    copy(externals.lookup(module, lookup), externals.jar(module));
+    copy(uri(lookup, module), externals.jar(module));
   }
 
   /**
@@ -219,8 +219,21 @@ public final class Bach {
     while (true) {
       var missing = externals.missing();
       if (missing.isEmpty()) return;
-      for (var module : missing) copy(externals.lookup(module, lookup), externals.jar(module));
+      for (var module : missing) copy(uri(lookup, module), externals.jar(module));
     }
+  }
+
+  /**
+   * @param lookup the lookup function
+   * @param module the name of the module to lookup
+   * @return a URI
+   * @throws IllegalArgumentException if the looked-up uri string violates RFC&nbsp;2396
+   * @throws BuildException if module lookup failed
+   */
+  private URI uri(ModuleLookup lookup, String module) {
+    var uri = lookup.lookup(module);
+    if (uri.isEmpty()) throw new BuildException("Module not found: " + module);
+    return URI.create(uri.get());
   }
 
   private Path copy(URI uri, Path file, CopyOption... options) {

@@ -44,6 +44,4 @@ module build {
 
   provides com.github.sormuras.bach.BuildProgram with
       build.BachBuildProgram;
-  provides com.github.sormuras.bach.project.ModuleLookup with
-      build.JUnitModuleLookup;
 }

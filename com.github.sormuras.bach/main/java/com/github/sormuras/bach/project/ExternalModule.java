@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.project;
 
 import java.util.Comparator;
-import java.util.Optional;
 
 /**
  * A module-uri pair used to connect a module name to a specific modular JAR file.
@@ -16,19 +15,13 @@ import java.util.Optional;
  * @param module the name of the module
  * @param uri the uniform resource identifier of the module
  */
-public record ExternalModule(String module, String uri)
-    implements Comparable<ExternalModule>, ModuleLookup {
+public record ExternalModule(String module, String uri) implements Comparable<ExternalModule> {
 
   @Override
   public int compareTo(ExternalModule o) {
     return Comparator.comparing(ExternalModule::module)
         .thenComparing(ExternalModule::uri)
         .compare(this, o);
-  }
-
-  @Override
-  public Optional<String> lookup(String name) {
-    return module.equals(name) ? Optional.of(uri) : Optional.empty();
   }
 
   @Override
@@ -44,5 +37,15 @@ public record ExternalModule(String module, String uri)
    */
   public static ExternalModuleBuilder link(String module) {
     return new ExternalModuleBuilder(module);
+  }
+
+  /**
+   * Returns the uniform resource identifier computed from the given target string.
+   *
+   * @param target the target to parse into a uri
+   * @return the uniform resource identifier as a string
+   */
+  public static String uri(String target) {
+    return link("any").to(target).uri;
   }
 }

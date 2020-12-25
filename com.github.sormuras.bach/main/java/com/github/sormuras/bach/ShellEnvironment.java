@@ -15,7 +15,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -32,9 +31,9 @@ public class ShellEnvironment {
   private static final Consumer<Object> err = System.err::println;
 
   private static final Bach bach = Bach.ofSystem();
-  private static ExternalModules externals = new ExternalModules(Set.of(), Map.of(), List.of());
+  private static ExternalModules externals = new ExternalModules(Set.of(), Map.of());
   private static final ModuleLookup lookup =
-      ModuleLookup.compose(externals::lookup, ModuleLookup.ofBestEffort(bach));
+      ModuleLookup.compose(externals, ModuleLookup.ofBestEffort(bach));
 
   /**
    * Builds a project by delegating to the default build sequence.
@@ -94,7 +93,7 @@ public class ShellEnvironment {
     var copy = new HashMap<>(externals.links());
     copy.put(link.module(), link);
     Arrays.stream(more).forEach(next -> copy.put(next.module(), next));
-    return new ExternalModules(externals.requires(), Map.copyOf(copy), externals.lookups());
+    return new ExternalModules(externals.requires(), Map.copyOf(copy));
   }
 
   /** Prints a list of all loaded modules. */
