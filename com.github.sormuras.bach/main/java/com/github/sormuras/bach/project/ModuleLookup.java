@@ -1,9 +1,10 @@
 package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.internal.ComposedModuleLookup;
+import com.github.sormuras.bach.internal.EmptyModuleLookup;
 import com.github.sormuras.bach.internal.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.internal.MavenCentralModuleLookup;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -21,18 +22,13 @@ public interface ModuleLookup {
   /**
    * Returns a module lookup that is composed from a sequence of zero or more module lookup objects.
    *
-   * @param lookups the array of module lookups
+   * @param moduleLookups the array of module lookups
    * @return a module lookup that composes a sequence of module lookup objects
    */
-  static ModuleLookup compose(ModuleLookup... lookups) {
-    var moduleLookups = List.of(lookups);
-    return module -> {
-      for (var moduleLookup : moduleLookups) {
-        var result = moduleLookup.lookup(module);
-        if (result.isPresent()) return result;
-      }
-      return Optional.empty();
-    };
+  static ModuleLookup compose(ModuleLookup... moduleLookups) {
+    if (moduleLookups.length == 0) return ofEmpty();
+    if (moduleLookups.length == 1) return moduleLookups[0];
+    return new ComposedModuleLookup(moduleLookups);
   }
 
   /**
@@ -43,6 +39,11 @@ public interface ModuleLookup {
    */
   static ModuleLookup ofBestEffort(Bach bach) {
     return compose(new GitHubReleasesModuleLookup(bach), new MavenCentralModuleLookup(bach));
+  }
+
+  /** @return an always empty-returning module lookup */
+  static ModuleLookup ofEmpty() {
+    return EmptyModuleLookup.SINGLETON;
   }
 
   /** Maps well-known JavaFX module names to their Maven Central artifacts. */
