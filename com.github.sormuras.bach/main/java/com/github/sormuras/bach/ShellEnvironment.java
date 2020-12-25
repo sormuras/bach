@@ -32,8 +32,6 @@ public class ShellEnvironment {
 
   private static final Bach bach = Bach.ofSystem();
   private static ExternalModules externals = new ExternalModules(Set.of(), Map.of());
-  private static final ModuleLookup lookup =
-      ModuleLookup.compose(externals, ModuleLookup.ofBestEffort(bach));
 
   /**
    * Builds a project by delegating to the default build sequence.
@@ -141,11 +139,13 @@ public class ShellEnvironment {
    * @param module the name of the module to load
    */
   public static void loadModule(String module) {
+    var lookup = ModuleLookup.compose(externals, ModuleLookup.ofBestEffort(bach));
     bach.loadModule(externals, lookup, module);
   }
 
   /** Loads all missing modules. */
   public static void loadMissingModules() {
+    var lookup = ModuleLookup.compose(externals, ModuleLookup.ofBestEffort(bach));
     bach.loadMissingModules(externals, lookup);
   }
 
