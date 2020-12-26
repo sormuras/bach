@@ -2,6 +2,7 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.internal.Maven;
 import java.net.URI;
+import java.nio.file.Path;
 
 /** A builder of external module objects. */
 public class ExternalModuleBuilder {
@@ -28,6 +29,19 @@ public class ExternalModuleBuilder {
     var maven = target.indexOf('/') == -1 && target.chars().filter(ch -> ch == ':').count() >= 2;
     if (maven) return toMavenCentral(target);
     return toUri(target);
+  }
+
+  /**
+   * Returns a module link pointing to local path.
+   *
+   * @param base the base directory
+   * @param more the path to the file
+   * @return an external module link
+   */
+  public ExternalModule toPath(String base, String more) {
+    var first = base.equals("~") ? System.getProperty("user.home") : base;
+    var path = Path.of(first, more);
+    return toUri(path.normalize().toUri());
   }
 
   /**
@@ -65,6 +79,16 @@ public class ExternalModuleBuilder {
    * @return a module link
    */
   public ExternalModule toUri(String uri) {
-    return new ExternalModule(module, URI.create(uri).toString());
+    return toUri(URI.create(uri));
+  }
+
+  /**
+   * Returns a module link pointing to the given uniform resource identifier.
+   *
+   * @param uri uniform resource identifier of the module
+   * @return a module link
+   */
+  public ExternalModule toUri(URI uri) {
+    return new ExternalModule(module, uri.toString());
   }
 }

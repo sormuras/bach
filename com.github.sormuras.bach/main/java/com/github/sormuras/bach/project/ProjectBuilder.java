@@ -138,6 +138,7 @@ class ProjectBuilder {
     return switch (link.type()) {
       case AUTO -> ExternalModule.link(module).to(target);
       case URI -> ExternalModule.link(module).toUri(target);
+      case PATH -> ExternalModule.link(module).toPath(link.pathBase(), target);
       case MAVEN -> ExternalModule.link(module).toMaven(link.mavenRepository(), target);
     };
   }

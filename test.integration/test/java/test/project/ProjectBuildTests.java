@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.project.Feature;
 import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Set;
@@ -501,7 +503,11 @@ class ProjectBuildTests {
   @Test
   void buildModuleLookup(@TempDir Path temp) throws Exception {
     var context = new Context("ModuleLookup", temp);
+    var foo = context.base.resolve(Bach.EXTERNALS).resolve("foo.jar");
+
+    Files.deleteIfExists(foo);
     var output = context.build();
+    assertTrue(Files.exists(foo), "File not found: " + foo);
 
     assertLinesMatch(
         """

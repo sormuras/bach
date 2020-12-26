@@ -71,9 +71,6 @@ public @interface ProjectInfo {
   /** @return an array of external module links */
   Link[] links() default {};
 
-  /** @return an array of module lookup service implementations */
-  Class<? extends ModuleLookup>[] lookups() default {};
-
   /**
    * @return the names of the test modules to compile, with an empty array for none (effectively
    *     skipping compilation of this space), or the single-element array {@code ["*"]} indicating
@@ -117,6 +114,9 @@ public @interface ProjectInfo {
     /** @return the type of the string returned by {@link #to()}, defaults to {@link Type#AUTO} */
     Type type() default Type.AUTO;
 
+    /** @return the base path of path targets */
+    String pathBase() default ".";
+
     /** @return the repository of Maven-based target coordinates */
     String mavenRepository() default "https://repo.maven.apache.org/maven2";
 
@@ -126,6 +126,8 @@ public @interface ProjectInfo {
       AUTO,
       /** Uniform Resource Identifier (URI) reference as is {@link java.net.URI}. */
       URI,
+      /** Path to a local file. */
+      PATH,
       /** Maven-based coordinates. */
       MAVEN
     }
