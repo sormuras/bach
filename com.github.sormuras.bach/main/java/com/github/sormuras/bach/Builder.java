@@ -126,39 +126,43 @@ public class Builder {
     bach.info("Compile %d main module%s", modules.size(), modules.size() == 1 ? "" : "s");
 
     Paths.deleteDirectories(main.workspace("modules"));
+    var names = modules.toNames(", ");
     var release = main.release();
-    if (release >= 9) run(computeMainJavacCall(release));
-    else {
+    if (release >= 9) {
+      run("Compile " + names, computeMainJavacCall(release));
+    } else {
       var feature = Runtime.version().feature();
-      run(computeMainJavacCall(feature));
+      run("Pre-compile " + names, computeMainJavacCall(feature));
       buildMainSingleReleaseVintageModules(feature);
     }
 
     Paths.createDirectories(main.workspace("modules"));
-    for (var module : main.modules().map().values()) {
-      var name = module.name();
-      for (SourceFolder folder : module.sources().list()) {
-        if (folder.isTargeted()) {
-          var description = "javac(" + name + "/" + folder.release() + ")";
-          run(description, computeMainJavacCall(name, folder));
-        }
+    var targeted = new ArrayList<ToolCall>();
+    var jars = new ArrayList<ToolCall>();
+    for (var declaration : modules.map().values()) {
+      for (var folder : declaration.sources().list()) {
+        if (!folder.isTargeted()) continue;
+        targeted.add(computeMainJavacCall(declaration.name(), folder));
       }
-      run("jar(" + name + ")", computeMainJarCall(module));
+      jars.add(computeMainJarCall(declaration));
     }
+    if (targeted.size() > 0) run("Compile targeted sources", targeted.stream());
+    run("Create JAR files", jars.stream());
 
     if (isGenerateApiDocumentation()) {
       bach.info("Generate API documentation");
-      run(computeMainDocumentationJavadocCall());
-      run(computeMainDocumentationJarCall());
+      run("Run javadoc for " + names, computeMainDocumentationJavadocCall());
+      run("Create javadoc archive", computeMainDocumentationJarCall());
     }
 
     if (isGenerateCustomRuntimeImage()) {
       bach.info("Generate custom runtime image");
       Paths.deleteDirectories(main.workspace("image"));
-      run(computeMainJLinkCall());
+      run("Run jlink for " + names, computeMainJLinkCall());
     }
 
     if (isGenerateMavenPomFiles()) {
+      bach.info("Generate Maven consumer POM files");
       var generator = new MavenConsumerPomFilesGenerator(this, "  ");
       generator.execute();
     }
@@ -218,6 +222,7 @@ public class Builder {
     main.modules().toNames().forEach(name -> classPaths.add(main.classes(mainRelease, name)));
     if (Files.isDirectory(libraries)) classPaths.addAll(Paths.list(libraries, Paths::isJarFile));
 
+    var compiles = new ArrayList<ToolCall>();
     for (var declaration : main.modules().map().values()) {
       var moduleInfoJavaFiles = new ArrayList<Path>();
       declaration.sources().list().stream()
@@ -235,7 +240,7 @@ public class Builder {
               .with("-d", main.classes())
               .withEach(moduleInfoJavaFiles)
               .build();
-      run(compileModuleOnly);
+      compiles.add(compileModuleOnly);
 
       var module = declaration.name();
       var path = Path.of(module, "main/java");
@@ -243,15 +248,17 @@ public class Builder {
 
       var javaSourceFiles = new ArrayList<Path>();
       Paths.find(path, "**.java", javaSourceFiles::add);
-      var javac =
+      var compileSources =
           Command.builder("javac")
               .with("--release", release) // 7 or 8
               .with("--class-path", Paths.join(classPaths))
               .withEach(main.tweaks().arguments("javac"))
               .with("-d", main.classes().resolve(module))
-              .withEach(javaSourceFiles);
-      run(javac.build());
+              .withEach(javaSourceFiles)
+              .build();
+      compiles.add(compileSources);
     }
+    run("Compile vintage sources", compiles.stream());
   }
 
   /**
@@ -398,14 +405,14 @@ public class Builder {
 
     Paths.deleteDirectories(test.workspace("modules-test"));
 
-    run(computeTestJavacCall());
+    run("Compile " + modules.toNames(", "), computeTestJavacCall());
     Paths.createDirectories(test.workspace("modules-test"));
-    for (var module : project.spaces().test().modules().map().values()) {
-      run("jar(" + module.name() + ")", computeTestJarCall(module));
-    }
+
+    var declarations = test.modules().map().values();
+    run("Create modular JAR files", declarations.stream().map(this::computeTestJarCall));
 
     if (project.externals().finder().find("org.junit.platform.console").isPresent()) {
-      for (var declaration : project.spaces().test().modules().map().values()) {
+      for (var declaration : declarations) {
         var module = declaration.name();
         var archive = module + "@" + project.version() + "+test.jar";
         var finder =
@@ -415,7 +422,7 @@ public class Builder {
                 test.workspace("modules-test"), // (more) test modules
                 Bach.EXTERNALS // external modules
                 );
-        bach.info("Run junit(%s)", module);
+        bach.info("Run tests in module %s", module);
         var junit = computeTestJUnitCall(declaration);
         bach.debug(junit.toCommand().toString());
         var response = runner.run(junit, finder, module);
@@ -497,18 +504,6 @@ public class Builder {
   }
 
   /**
-   * Runs the given tool call generating a generic description.
-   *
-   * @param call the tool call to run
-   */
-  public void run(ToolCall call) {
-    var size = call.args().size();
-    var s = size == 1 ? "" : "s";
-    var description = String.format("Run %s with %s argument%s", call.name(), size, s);
-    run(description, call);
-  }
-
-  /**
    * Runs the given tool call using the given description.
    *
    * @param description the description to log
@@ -516,9 +511,26 @@ public class Builder {
    */
   public void run(String description, ToolCall call) {
     bach.info(description);
+    run(call).checkSuccessful();
+  }
+
+  /**
+   * Runs tool calls of the given stream in parallel.
+   *
+   * @param description the description to log
+   * @param calls the tool calls to run
+   */
+  public void run(String description, Stream<ToolCall> calls) {
+    bach.info(description);
+    calls.parallel().forEach(this::run);
+    var errors = bach.logbook().responses(ToolResponse::isError);
+    if (errors.size() > 0) throw new BuildException("Run failed due to: " + errors);
+  }
+
+  private ToolResponse run(ToolCall call) {
     bach.debug(call.toCommand().toString());
     var response = runner.run(call);
     bach.logbook().log(response);
-    response.checkSuccessful();
+    return response;
   }
 }
