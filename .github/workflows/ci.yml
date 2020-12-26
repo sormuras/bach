@@ -58,6 +58,7 @@ jobs:
             --module com.github.sormuras.bach \
             build
       - name: 'Upload build artifacts'
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
