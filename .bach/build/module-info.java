@@ -32,7 +32,6 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
       @Tweak(tool = "javac", with = "-Werror", in = Tweak.Space.MAIN),
       @Tweak(tool = "javadoc", with = {"-encoding", "UTF-8"}),
       @Tweak(tool = "javadoc", with = {"-header", "🎼 Bach API documentation"}),
-      @Tweak(tool = "javadoc", with = {"-footer", "🎼 Bach API documentation"}),
       @Tweak(tool = "javadoc", with = {"-overview", "documentation/api/overview.html"}),
       @Tweak(tool = "javadoc", with = "-quiet"),
       @Tweak(tool = "javadoc", with = "-notimestamp"),
