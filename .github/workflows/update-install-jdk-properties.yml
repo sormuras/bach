@@ -1,6 +1,7 @@
 name: 'Update install-jdk.properties'
 on:
   push:
+    branches: [ main ]
     paths:
       - .github/workflows/update-install-jdk-properties.yml
   schedule:

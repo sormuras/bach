@@ -64,7 +64,6 @@ jobs:
 
   deploy-to-releases:
     needs: [ setup, build ]
-    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
@@ -81,7 +80,6 @@ jobs:
 
   deploy-to-api-repository:
     needs: [ setup, build ]
-    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out sormuras/api repository'
@@ -113,7 +111,6 @@ jobs:
 
   deploy-to-packages:
     needs: [ setup, build ]
-    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: 'Download build artifact'
@@ -133,7 +130,6 @@ jobs:
 
   deploy-to-bintray:
     needs: [ setup, build ]
-    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: 'Download build artifact'
