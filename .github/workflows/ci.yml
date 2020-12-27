@@ -88,26 +88,6 @@ jobs:
           files: |
             .bach/workspace/modules/*.jar
 
-  deploy-to-packages:
-    needs: [ setup, build ]
-    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Set up Maven'
-        uses: actions/setup-java@v1
-        with:
-          java-version: 11
-      - name: 'Download build artifact'
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
-      - name: 'Deploy early-access build to https://github.com/sormuras/bach/packages'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
-          REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
-        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
-
   deploy-to-api-repository:
     needs: [ setup, build ]
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
