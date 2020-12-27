@@ -41,7 +41,6 @@ class BachBuilder extends Builder implements ModuleLookup {
   public ToolCall computeMainDocumentationJavadocCall() {
     var title = "🎼 Bach " + project().version();
     return super.computeMainDocumentationJavadocCall().toCommand().toBuilder()
-        .with("-windowtitle", title)
         .with("-doctitle", title)
         .build();
   }
