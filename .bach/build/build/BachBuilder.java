@@ -19,7 +19,6 @@ class BachBuilder extends Builder implements ModuleLookup {
   public Optional<String> lookup(String module) {
     var uri =
         switch (module) {
-          // case "foo" -> "https://.../foo@1.jar";
           case "org.apiguardian.api" -> uri("org.apiguardian:apiguardian-api:1.1.1");
           case "org.opentest4j" -> uri("org.opentest4j:opentest4j:1.2.0");
           default -> null;
@@ -43,7 +42,6 @@ class BachBuilder extends Builder implements ModuleLookup {
     var title = "🎼 Bach " + project().version();
     return super.computeMainDocumentationJavadocCall().toCommand().toBuilder()
         .with("-windowtitle", title)
-        .with("-header", title)
         .with("-doctitle", title)
         .build();
   }
