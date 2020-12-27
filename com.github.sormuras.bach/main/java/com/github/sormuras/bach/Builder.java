@@ -14,8 +14,6 @@ import com.github.sormuras.bach.tool.Command;
 import com.github.sormuras.bach.tool.ToolCall;
 import com.github.sormuras.bach.tool.ToolResponse;
 import com.github.sormuras.bach.tool.ToolRunner;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -68,9 +66,7 @@ public class Builder {
       loadRequiredAndMissingModules();
       buildAllSpaces(project.spaces());
     } catch (Exception exception) {
-      var trace = new StringWriter();
-      exception.printStackTrace(new PrintWriter(trace));
-      var message = "Build failed: " + exception + '\n' + trace.toString().indent(0);
+      var message = "Build failed: " + exception;
       logbook.log(Level.ERROR, message);
       throw new BuildException(message);
     } finally {
@@ -423,11 +419,7 @@ public class Builder {
                 Bach.EXTERNALS // external modules
                 );
         var junit = computeTestJUnitCall(declaration);
-        run(junit, call -> runner.run(call, finder, module));
-      }
-      var errors = bach.logbook().responses(ToolResponse::isError);
-      if (errors.size() > 0) {
-        throw new BuildException("JUnit reported failed test module(s): " + errors.size());
+        run(junit, call -> runner.run(call, finder, module)).checkSuccessful();
       }
     }
   }
@@ -515,9 +507,7 @@ public class Builder {
    * @param calls the tool calls to run
    */
   public void run(Stream<ToolCall> calls) {
-    calls.parallel().forEach(call -> run(call, runner::run));
-    var errors = bach.logbook().responses(ToolResponse::isError);
-    if (errors.size() > 0) throw new BuildException("Run failed due to: " + errors);
+    calls.parallel().forEach(call -> run(call, runner::run).checkSuccessful());
   }
 
   private ToolResponse run(ToolCall call, Function<ToolCall, ToolResponse> function) {

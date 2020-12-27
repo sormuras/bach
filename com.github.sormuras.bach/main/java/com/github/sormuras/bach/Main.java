@@ -66,7 +66,10 @@ public class Main {
       var bach = new Bach(book, Bach::newHttpClient);
       BuildProgram.execute(bach, args);
       return 0;
-    } catch (RuntimeException exception) {
+    } catch (BuildException exception) {
+      err.println(exception.toString().lines().findFirst().orElse(exception.getClass().toString()));
+      return 1;
+    } catch (Exception exception) {
       exception.printStackTrace(err);
       return 1;
     }
