@@ -25,7 +25,7 @@ jobs:
           echo "::set-output name=sha8::${SHA8}"
           echo "::set-output name=version::${{ github.event.release.tag_name }}"
 
-  release:
+  build:
     needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
@@ -50,10 +50,107 @@ jobs:
             --module-path .bach/cache \
             --module com.github.sormuras.bach \
             build
-      - name: 'Upload module com.github.sormuras.bach@${{ env.VERSION }}'
+      - name: 'Upload build artifacts'
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+          path: |
+            LICENSE
+            .bach/workspace/logbook.md
+            .bach/workspace/deploy
+            .bach/workspace/documentation
+            .bach/workspace/modules
+
+  deploy-to-releases:
+    needs: [ setup, build ]
+    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Upload to https://github.com/sormuras/bach/releases/tag/${{ needs.setup.outputs.version }}'
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: .bach/workspace/modules/com.github.sormuras.bach@${{ needs.setup.outputs.version }}.jar
           asset_name: com.github.sormuras.bach@${{ needs.setup.outputs.version }}.jar
           asset_content_type: application/java-archive
+
+  deploy-to-api-repository:
+    needs: [ setup, build ]
+    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out sormuras/api repository'
+        uses: actions/checkout@v2
+        with:
+          repository: sormuras/api
+          token: ${{ secrets.PAT }}
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Sync documentation'
+        run: |
+          mkdir --parents ${{ github.event.repository.name }}/${{ needs.setup.outputs.version }}
+          rsync --archive --delete --verbose .bach/workspace/documentation/api/ ${{ github.event.repository.name }}/${{ needs.setup.outputs.version }}
+      - name: 'Check for modifications'
+        id: diff
+        run: |
+          git status
+          echo ::set-output name=modified::$(if [[ -z $(git status --porcelain) ]]; then echo 'false'; else echo 'true'; fi)
+      - name: 'Commit and push changes'
+        if: steps.diff.outputs.modified == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit --message 'Update API documentation of ${{ github.event.repository.name }} to ${{ needs.setup.outputs.version }}'
+          git push
+
+  deploy-to-packages:
+    needs: [ setup, build ]
+    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download build artifact'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Set up Maven (GitHub)'
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: 'Deploy to https://github.com/sormuras/bach/packages'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
+          REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
+        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
+
+  deploy-to-bintray:
+    needs: [ setup, build ]
+    if: github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download build artifact'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Set up Maven (Bintray)'
+        uses: actions/setup-java@v1
+        with: # https://github.com/actions/setup-java#publishing-using-apache-maven
+          java-version: 11
+          server-id: bintray-sormuras-maven
+          server-username: BINTRAY_USERNAME
+          server-password: BINTRAY_PASSWORD
+      - name: 'Deploy to https://bintray.com/sormuras/maven/bach'
+        env:
+          BINTRAY_USERNAME: sormuras
+          BINTRAY_PASSWORD: ${{ secrets.BINTRAY_KEY }}
+          DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
+          REPOSITORY: '-DrepositoryId=bintray-sormuras-maven -Durl=https://api.bintray.com/maven/sormuras/maven/bach/;publish=1'
+        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
