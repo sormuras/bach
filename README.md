@@ -1,21 +1,14 @@
 # Bach - Java Shell Builder
  
 [![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
-[![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://github.com/sormuras/bach)
+[![experimental](https://img.shields.io/badge/API%2016-stable-green.svg)](https://sormuras.github.io/api/bach/16)
 
-Build modular Java projects with [JDK Foundation Tools].
+Bach builds on(ly) Java modules
 
-## Boot Bach into a JShell Session
-
-- Install JDK 16 (or higher) from https://jdk.java.net
-- Open a command shell in an empty directory
-- Enter `jshell https://bit.ly/bach-main-boot` to launch JShell booting Bach - this is a short-cut for `jshell` and `/load https://github.com/sormuras/bach/raw/main/boot`
-- Type `/list` to display the set of pre-defined API methods
-- Try `find("**.jar")`, `describeModules("java.logging")`, `listSystemModules()`, and other methods
-- Exit JShell via `/exit`
+> "The tools we use have a profound (and devious!) influence on our thinking habits, and, therefore, on our thinking abilities."
+> 
+> [Edsger W. Dijkstra, 18 June 1975](https://www.cs.virginia.edu/~evans/cs655/readings/ewd498.html)
 
 # be free - have fun
 
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
-
-[JDK Foundation Tools]: https://docs.oracle.com/en/java/javase/15/docs/specs/man

@@ -10,7 +10,7 @@ import java.util.spi.ToolProvider;
 class Bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
-    var version = "16-ea+BOOTSTRAP";
+    var version = "16+BOOTSTRAP";
 
     deleteCached("com.github.sormuras.bach@*.jar");
     deleteWorkspaces();

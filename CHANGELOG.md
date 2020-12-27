@@ -10,4 +10,9 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 Nothing notable, yet.
 
-[Early Access]: https://github.com/sormuras/simplicissimus/releases/tag/early-access
+## Version [16] released 2020-12-27
+
+Initial release.
+
+[Early Access]: https://github.com/sormuras/bach/releases/tag/early-access
+[16]: https://github.com/sormuras/bach/compare/16...main

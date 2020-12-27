@@ -52,7 +52,7 @@ public final class Bach {
   public static String version() {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("16-ea");
+    return module.getDescriptor().version().map(Object::toString).orElse("16");
   }
 
   /**
