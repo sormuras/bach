@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,13 +127,12 @@ public class Builder {
     bach.info("Compile %d main module%s", modules.size(), modules.size() == 1 ? "" : "s");
 
     Paths.deleteDirectories(main.workspace("modules"));
-    var names = modules.toNames(", ");
     var release = main.release();
     if (release >= 9) {
-      run("Compile " + names, computeMainJavacCall(release));
+      run(computeMainJavacCall(release));
     } else {
       var feature = Runtime.version().feature();
-      run("Pre-compile " + names, computeMainJavacCall(feature));
+      run(computeMainJavacCall(feature));
       buildMainSingleReleaseVintageModules(feature);
     }
 
@@ -146,19 +146,19 @@ public class Builder {
       }
       jars.add(computeMainJarCall(declaration));
     }
-    if (targeted.size() > 0) run("Compile targeted sources", targeted.stream());
-    run("Create JAR files", jars.stream());
+    if (targeted.size() > 0) run(targeted.stream());
+    run(jars.stream());
 
     if (isGenerateApiDocumentation()) {
       bach.info("Generate API documentation");
-      run("Run javadoc for " + names, computeMainDocumentationJavadocCall());
-      run("Create javadoc archive", computeMainDocumentationJarCall());
+      run(computeMainDocumentationJavadocCall());
+      run(computeMainDocumentationJarCall());
     }
 
     if (isGenerateCustomRuntimeImage()) {
       bach.info("Generate custom runtime image");
       Paths.deleteDirectories(main.workspace("image"));
-      run("Run jlink for " + names, computeMainJLinkCall());
+      run(computeMainJLinkCall());
     }
 
     if (isGenerateMavenPomFiles()) {
@@ -258,7 +258,7 @@ public class Builder {
               .build();
       compiles.add(compileSources);
     }
-    run("Compile vintage sources", compiles.stream());
+    run(compiles.stream());
   }
 
   /**
@@ -405,11 +405,11 @@ public class Builder {
 
     Paths.deleteDirectories(test.workspace("modules-test"));
 
-    run("Compile " + modules.toNames(", "), computeTestJavacCall());
+    run(computeTestJavacCall());
     Paths.createDirectories(test.workspace("modules-test"));
 
     var declarations = test.modules().map().values();
-    run("Create modular JAR files", declarations.stream().map(this::computeTestJarCall));
+    run(declarations.stream().map(this::computeTestJarCall));
 
     if (project.externals().finder().find("org.junit.platform.console").isPresent()) {
       for (var declaration : declarations) {
@@ -422,11 +422,8 @@ public class Builder {
                 test.workspace("modules-test"), // (more) test modules
                 Bach.EXTERNALS // external modules
                 );
-        bach.info("Run tests in module %s", module);
         var junit = computeTestJUnitCall(declaration);
-        bach.debug(junit.toCommand().toString());
-        var response = runner.run(junit, finder, module);
-        bach.logbook().log(response);
+        run(junit, call -> runner.run(call, finder, module));
       }
       var errors = bach.logbook().responses(ToolResponse::isError);
       if (errors.size() > 0) {
@@ -504,33 +501,43 @@ public class Builder {
   }
 
   /**
-   * Runs the given tool call using the given description.
+   * Runs the given tool call.
    *
-   * @param description the description to log
    * @param call the tool call to run
    */
-  public void run(String description, ToolCall call) {
-    bach.info(description);
-    run(call).checkSuccessful();
+  public void run(ToolCall call) {
+    run(call, runner::run).checkSuccessful();
   }
 
   /**
    * Runs tool calls of the given stream in parallel.
    *
-   * @param description the description to log
    * @param calls the tool calls to run
    */
-  public void run(String description, Stream<ToolCall> calls) {
-    bach.info(description);
-    calls.parallel().forEach(this::run);
+  public void run(Stream<ToolCall> calls) {
+    calls.parallel().forEach(call -> run(call, runner::run));
     var errors = bach.logbook().responses(ToolResponse::isError);
     if (errors.size() > 0) throw new BuildException("Run failed due to: " + errors);
   }
 
-  private ToolResponse run(ToolCall call) {
+  private ToolResponse run(ToolCall call, Function<ToolCall, ToolResponse> function) {
+    var description = computeToolCallArgumentsDescription(call, 117);
+    if (!description.isEmpty()) bach.info("  %-8s %s", call.name(), description);
     bach.debug(call.toCommand().toString());
-    var response = runner.run(call);
+    var response = function.apply(call);
     bach.logbook().log(response);
     return response;
+  }
+
+  /**
+   * Returns a description of the given tool call.
+   *
+   * @param call the tool call to describe
+   * @param maxLineLength the maximum number of characters to return
+   * @return a string that describes a tool call
+   */
+  public String computeToolCallArgumentsDescription(ToolCall call, int maxLineLength) {
+    var line = call.args().isEmpty() ? "</>" : String.join(" ", call.args());
+    return line.length() <= maxLineLength ? line : line.substring(0, maxLineLength - 5) + "[...]";
   }
 }

@@ -65,7 +65,6 @@ public class MavenConsumerPomFilesGenerator {
         // https://central.sonatype.org/pages/requirements.html#supply-javadoc-and-sources
         var emptyJar = maven.resolve(module + "-empty.jar");
         builder.run(
-            "Create an almost empty JAR",
             Command.builder("jar")
                 .with("--create")
                 .with("--file", emptyJar)
