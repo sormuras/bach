@@ -29,9 +29,10 @@ jobs:
         run: |
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
           SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
+          VERSION=$(<VERSION)-ea+${SHA7}
           echo "::set-output name=sha7::${SHA7}"
           echo "::set-output name=sha8::${SHA8}"
-          echo "::set-output name=version::$(<VERSION)-ea+${SHA7}"
+          echo "::set-output name=version::${VERSION}"
 
   build:
     needs: [ setup ]
