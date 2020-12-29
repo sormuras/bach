@@ -1,7 +1,7 @@
-# Bach - Java Shell Builder
+# Bach 16 - Java Shell Builder
  
 [![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
-[![experimental](https://img.shields.io/badge/API%2016-stable-green.svg)](https://sormuras.github.io/api/bach/16)
+[![stable](https://img.shields.io/badge/API%2016-stable-green.svg)](https://sormuras.github.io/api/bach/16)
 
 Bach builds on(ly) Java modules
 

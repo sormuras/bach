@@ -5,7 +5,7 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
 
 @ProjectInfo(
     name = "bach",
-    version = "16",
+    version = "16.1",
     modules = "com.github.sormuras.bach/main/java/module-info.java",
     compileModulesForJavaRelease = 16,
     features = {
@@ -31,8 +31,8 @@ import com.github.sormuras.bach.project.ProjectInfo.Tweak;
       @Tweak(tool = "javac", with = "-Xlint"),
       @Tweak(tool = "javac", with = "-Werror", in = Tweak.Space.MAIN),
       @Tweak(tool = "javadoc", with = {"-encoding", "UTF-8"}),
-      @Tweak(tool = "javadoc", with = {"-windowtitle", "🎼 Bach 16"}),
-      @Tweak(tool = "javadoc", with = {"-header", "🎼 Bach 16 API documentation"}),
+      @Tweak(tool = "javadoc", with = {"-windowtitle", "🎼 Bach 16.1"}),
+      @Tweak(tool = "javadoc", with = {"-header", "🎼 Bach 16.1 API documentation"}),
       @Tweak(tool = "javadoc", with = "-quiet"),
       @Tweak(tool = "javadoc", with = "-notimestamp"),
       @Tweak(tool = "javadoc", with = "-use"),
