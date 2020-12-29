@@ -31,7 +31,7 @@ jobs:
           SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
           echo "::set-output name=sha7::${SHA7}"
           echo "::set-output name=sha8::${SHA8}"
-          echo "::set-output name=version::16-ea+${SHA7}"
+          echo "::set-output name=version::$(<VERSION)-ea+${SHA7}"
 
   build:
     needs: [ setup ]
