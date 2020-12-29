@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'releases/*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ '*' ]
   workflow_dispatch:
     inputs:
       name:
@@ -21,14 +21,19 @@ jobs:
       sha8: ${{ steps.version.outputs.sha8 }}
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - name: 'Compute version string'
         id: version
         run: |
           SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
           SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
+          VERSION=$(<VERSION)-ea+${SHA7}
           echo "::set-output name=sha7::${SHA7}"
           echo "::set-output name=sha8::${SHA8}"
-          echo "::set-output name=version::16-ea+${SHA7}"
+          echo "::set-output name=version::${VERSION}"
 
   build:
     needs: [ setup ]
