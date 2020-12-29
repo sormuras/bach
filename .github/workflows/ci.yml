@@ -24,6 +24,10 @@ jobs:
       sha8: ${{ steps.version.outputs.sha8 }}
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - name: 'Compute version string'
         id: version
         run: |
