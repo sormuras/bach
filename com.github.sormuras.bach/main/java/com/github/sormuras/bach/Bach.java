@@ -153,7 +153,7 @@ public final class Bach {
     var handler = HttpResponse.BodyHandlers.ofFile(file);
     var response = httpSend(request.build(), handler);
     if (response.statusCode() == 200 /* Ok */) {
-      logbook.accept(file + " << " + uri);
+      logbook.accept("  " + file + " << " + uri);
       if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
         try {
           var etagHeader = response.headers().firstValue("etag");
@@ -242,6 +242,7 @@ public final class Bach {
         try {
           var directory = file.getParent();
           if (directory != null) Paths.createDirectories(directory);
+          logbook.accept("  " + file + " << " + uri);
           yield Files.copy(Path.of(uri), file, options);
         } catch (Exception e) {
           throw new RuntimeException(e);

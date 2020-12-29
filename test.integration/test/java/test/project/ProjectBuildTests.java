@@ -504,6 +504,7 @@ class ProjectBuildTests {
   void buildModuleLookup(@TempDir Path temp) throws Exception {
     var context = new Context("ModuleLookup", temp);
     var foo = context.base.resolve(Bach.EXTERNALS).resolve("foo.jar");
+    var zip = context.base.resolve("module-foo.zip");
 
     Files.deleteIfExists(foo);
     var output = context.build();
@@ -512,12 +513,18 @@ class ProjectBuildTests {
     assertLinesMatch(
         """
         Build project ModuleLookup 0-ea
+        Load required and missing external modules
+          %s << %s
         Compile 1 main module
         >> TOOL CALLS >>
         Build took .+s
         Logbook written to %s
         """
-            .formatted(context.workspace("logbook.md").toUri())
+            .formatted(
+                context.base.relativize(foo),
+                zip.toUri(),
+                context.workspace("logbook.md").toUri()
+            )
             .lines(),
         output.lines());
   }

@@ -78,8 +78,10 @@ public class Builder {
 
   /** Load required and missing modules in a best-effort manner. */
   public void loadRequiredAndMissingModules() {
-    bach.debug("Load required and missing modules");
     var externals = project.externals();
+    if (externals.requires().isEmpty() && externals.missing().isEmpty()) return;
+
+    bach.info("Load required and missing external modules");
     var lookup = computeModuleLookup();
     externals.requires().forEach(module -> bach.loadModule(externals, lookup, module));
     bach.loadMissingModules(externals, lookup);
