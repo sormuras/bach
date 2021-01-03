@@ -1,29 +1,39 @@
 package test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.sormuras.bach.Bach;
-import java.lang.module.ModuleDescriptor;
-import java.net.http.HttpClient;
+import com.github.sormuras.bach.Base;
+import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Recording;
+import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
   @Test
   void defaults() {
-    var bach = Bach.ofSystem();
-    assertNotNull(bach.logbook());
-    assertEquals(HttpClient.Redirect.NORMAL, bach.httpClient().followRedirects());
+    var bach = new Bach();
+    assertNotNull(bach.toString());
   }
 
   @Test
-  void versionIsNotNull() {
-    assertNotNull(Bach.version());
-  }
+  void print() {
+    var bach = new Bach(Base.ofSystem(), silent -> {});
 
-  @Test
-  void versionIsParsable() {
-    var version = Bach.version();
-    assertEquals(version, ModuleDescriptor.Version.parse(version).toString());
+    bach.run(Command.of("print").add("10", "PRINT 'HELLO WORLD'"));
+    bach.run(ToolProvider.findFirst("print").orElseThrow(), "20", "PRINT 20");
+    bach.run(new PrintToolProvider("30 GOTO 10"));
+    bach.run(new PrintToolProvider(true, "END.", 0));
+
+    assertLinesMatch(
+        """
+            10 PRINT 'HELLO WORLD'
+            20 PRINT 20
+            30 GOTO 10
+            END.
+            """
+            .lines(),
+        bach.recordings().stream().map(Recording::output));
   }
 }

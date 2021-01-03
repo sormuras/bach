@@ -1,255 +1,194 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.Functions;
-import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.project.ExternalModules;
-import com.github.sormuras.bach.project.ModuleLookup;
-import com.github.sormuras.bach.project.ProjectInfo;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.CopyOption;
+import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Queue;
+import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 
 /** Java Shell Builder. */
-public final class Bach {
+public class Bach {
 
-  /** Path to directory with external modules. */
-  public static final Path EXTERNALS = Path.of(ProjectInfo.EXTERNAL_MODULES);
+  public static final Path CACHE = Path.of(".bach/cache");
 
-  /** Path to directory that collects all generated assets. */
-  public static final Path WORKSPACE = Path.of(ProjectInfo.WORKSPACE);
+  public static final Path EXTERNALS = Path.of(".bach/external-modules");
 
-  /** Default {@code project-info} annotation instance. */
-  public static final ProjectInfo INFO = Bach.class.getModule().getAnnotation(ProjectInfo.class);
+  public static final Path WORKSPACE = Path.of(".bach/workspace");
 
-  /**
-   * Returns a shell builder initialized with default components.
-   *
-   * @return a new instance of {@code Bach} initialized with default components
-   */
-  public static Bach ofSystem() {
-    return new Bach(Logbook.ofSystem(), Functions.memoize(Bach::newHttpClient));
+  public static Bach of(String module) {
+    var layer = new ModuleLayerBuilder(module).build();
+    return ServiceLoader.load(layer, Bach.class).findFirst().orElseGet(Bach::new);
   }
 
-  /**
-   * Returns the version of Bach.
-   *
-   * @return the version as a string
-   * @throws IllegalStateException if not running on the module path
-   */
   public static String version() {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("17-ea");
+    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
   }
 
-  /**
-   * Returns a new HttpClient following {@linkplain HttpClient.Redirect#NORMAL normal} redirects.
-   *
-   * @return a new http client instance
-   */
-  public static HttpClient newHttpClient() {
-    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+  private final Base base;
+  private final Set<Flag> flags;
+  private final Consumer<String> printer;
+  private final Queue<Recording> recordings;
+  private final Project project;
+
+  public Bach() {
+    this(Base.ofSystem(), System.out::println);
   }
 
-  /** A logbook. */
-  private final Logbook logbook;
+  public Bach(Base base, Consumer<String> printer, Flag... flags) {
+    this.base = base;
+    this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
+    this.printer = printer;
+    this.recordings = new ConcurrentLinkedQueue<>();
 
-  /** A supplier of a http client. */
-  private final Supplier<HttpClient> httpClientSupplier;
+    debug("module: %s", getClass().getModule().getName());
+    debug("class: %s", getClass().getName());
+    debug("base: %s", this.base);
+    debug("flags: %s", this.flags);
 
-  /**
-   * Initialize default constructor.
-   *
-   * @param logbook the logbook to record messages
-   * @param httpClientSupplier the supplier of an http client
-   */
-  public Bach(Logbook logbook, Supplier<HttpClient> httpClientSupplier) {
-    this.logbook = logbook;
-    this.httpClientSupplier = httpClientSupplier;
-  }
-
-  /**
-   * Log a formatted message at debug level.
-   *
-   * @param format the message format
-   * @param args the arguments to apply
-   */
-  public void debug(String format, Object... args) {
-    logbook.log(System.Logger.Level.DEBUG, format, args);
-  }
-
-  /**
-   * Log a formatted message at info level.
-   *
-   * @param format the message format
-   * @param args the arguments to apply
-   */
-  public void info(String format, Object... args) {
-    logbook.log(System.Logger.Level.INFO, format, args);
-  }
-
-  /**
-   * Returns the http client for downloading files.
-   *
-   * @return the http client for downloading files
-   */
-  public HttpClient httpClient() {
-    return httpClientSupplier.get();
-  }
-
-  /**
-   * Returns the logbook.
-   *
-   * @return the logbook
-   */
-  public Logbook logbook() {
-    return logbook;
-  }
-
-  /**
-   * Copy all content and attributes from a uri to a target file.
-   *
-   * @param uri the request URI of the remote source file
-   * @param file the path to the local target file
-   * @return the local target file
-   */
-  public Path httpCopy(URI uri, Path file) {
-    return httpCopy(uri, file, StandardCopyOption.COPY_ATTRIBUTES);
-  }
-
-  /**
-   * Copy all content from a uri to a target file.
-   *
-   * @param uri the request URI of the remote source file
-   * @param file the path to the local target file
-   * @param options options specifying how the copy should be done
-   * @return the local target file
-   */
-  public Path httpCopy(URI uri, Path file, CopyOption... options) {
-    var request = HttpRequest.newBuilder(uri).GET();
-    if (Files.exists(file) && Paths.isViewSupported(file, "user"))
-      try {
-        var etagBytes = (byte[]) Files.getAttribute(file, "user:etag");
-        var etag = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(etagBytes)).toString();
-        request.setHeader("If-None-Match", etag);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    var directory = file.getParent();
-    if (directory != null) Paths.createDirectories(directory);
-    var handler = HttpResponse.BodyHandlers.ofFile(file);
-    var response = httpSend(request.build(), handler);
-    if (response.statusCode() == 200 /* Ok */) {
-      logbook.accept(file + " << " + uri);
-      if (Set.of(options).contains(StandardCopyOption.COPY_ATTRIBUTES))
-        try {
-          var etagHeader = response.headers().firstValue("etag");
-          if (etagHeader.isPresent() && Paths.isViewSupported(file, "user")) {
-            var etag = StandardCharsets.UTF_8.encode(etagHeader.get());
-            Files.setAttribute(file, "user:etag", etag);
-          }
-          var lastModifiedHeader = response.headers().firstValue("last-modified");
-          if (lastModifiedHeader.isPresent()) {
-            var text = lastModifiedHeader.get(); // force " GMT" suffix
-            if (!text.endsWith(" GMT")) text = text.substring(0, text.lastIndexOf(' ')) + " GMT";
-            var time = ZonedDateTime.parse(text, DateTimeFormatter.RFC_1123_DATE_TIME);
-            Files.setLastModifiedTime(file, FileTime.from(Instant.from(time)));
-          }
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      return file;
-    }
-    if (response.statusCode() == 304 /*Not Modified*/) return file;
-    Paths.deleteIfExists(file);
-    throw new IllegalStateException("Copy " + uri + " failed: response=" + response);
-  }
-
-  /**
-   * Read all content from a uri into a string.
-   *
-   * @param uri the uri to read
-   * @return a UTF-8 encoded string of the requested URI
-   */
-  public String httpRead(URI uri) {
-    var request = HttpRequest.newBuilder(uri).GET();
-    return httpSend(request.build(), HttpResponse.BodyHandlers.ofString()).body();
-  }
-
-  <T> HttpResponse<T> httpSend(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
     try {
-      return httpClient().send(request, handler);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      this.project = newProject();
+    } catch (Exception exception) {
+      throw new Error("Project creation failed", exception);
     }
+
+    debug("project: %s", project);
   }
 
-  /**
-   * Load a module.
-   *
-   * @param externals the module finder to query for already loaded modules
-   * @param lookup the function that maps a module name to its uri
-   * @param module the name of the module to load
-   */
-  public void loadModule(ExternalModules externals, ModuleLookup lookup, String module) {
-    if (externals.finder().find(module).isPresent()) return;
-    copy(uri(lookup, module), externals.jar(module));
+  public final Base base() {
+    return base;
   }
 
-  /**
-   * Load all missing modules of the given module directory.
-   *
-   * @param externals the module finder to query for already loaded modules
-   * @param lookup the searcher to query for linked modules
-   */
-  public void loadMissingModules(ExternalModules externals, ModuleLookup lookup) {
-    while (true) {
-      var missing = externals.missing();
-      if (missing.isEmpty()) return;
-      for (var module : missing) copy(uri(lookup, module), externals.jar(module));
-    }
+  public final List<Recording> recordings() {
+    return recordings.stream().toList();
   }
 
-  /**
-   * @param lookup the lookup function
-   * @param module the name of the module to lookup
-   * @return a URI
-   * @throws IllegalArgumentException if the looked-up uri string violates RFC&nbsp;2396
-   * @throws BuildException if module lookup failed
-   */
-  private URI uri(ModuleLookup lookup, String module) {
-    var uri = lookup.lookup(module);
-    if (uri.isEmpty()) throw new BuildException("Module not found: " + module);
-    return URI.create(uri.get());
+  public final Project project() {
+    return project;
   }
 
-  private Path copy(URI uri, Path file, CopyOption... options) {
-    return switch (uri.getScheme().toLowerCase()) {
-      case "file":
-        try {
-          var directory = file.getParent();
-          if (directory != null) Paths.createDirectories(directory);
-          yield Files.copy(Path.of(uri), file, options);
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+  public Logbook newLogbook() {
+    return new Logbook(this);
+  }
+
+  public Project newProject() throws Exception {
+    return new Project();
+  }
+
+  @Main.Action
+  public void build() throws Exception {
+    debug("Build...");
+
+    try {
+      var root = base.directory();
+      try (var walk = Files.walk(root, 9)) {
+        var found =
+            walk.filter(path -> String.valueOf(path.getFileName()).equals("module-info.java"))
+                .toList();
+        debug("%d module declaration(s) found", found.size());
+        if (found.size() == 0) {
+          var message = print("No modules found in file tree rooted at %s", root);
+          throw new IllegalStateException(message);
         }
-      case "http", "https":
-        yield httpCopy(uri, file, options);
-      default:
-        throw new IllegalArgumentException("Unexpected scheme: " + uri);
-    };
+
+        buildMainSpace();
+      }
+    } finally {
+      writeLogbook();
+    }
+  }
+
+  public void buildMainSpace() throws Exception {}
+
+  public String computeMainJarFileName(String module) {
+    return module + '@' + project().versionNumberAndPreRelease() + ".jar";
+  }
+
+  @Main.Action
+  public void clean() throws Exception {
+    debug("Clean...");
+
+    try (var walk = Files.walk(base.workspace())) {
+      var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
+      debug("Delete %s paths", paths.length);
+      for (var path : paths) Files.deleteIfExists(path);
+    }
+  }
+
+  public boolean is(Flag flag) {
+    return flags.contains(flag);
+  }
+
+  public void debug(String format, Object... args) {
+    if (is(Flag.VERBOSE)) print("// " + format, args);
+  }
+
+  public String print(String format, Object... args) {
+    var message = args == null || args.length == 0 ? format : String.format(format, args);
+    printer.accept(message);
+    return message;
+  }
+
+  @Main.Action({"help", "usage"})
+  public void printHelp() {
+    print("""
+      Usage: bach ACTION [ARGS...]
+      """);
+  }
+
+  @Main.Action("version")
+  public void printVersion() {
+    print(version());
+  }
+
+  public void run(Command<?> command) {
+    var provider = ToolProvider.findFirst(command.name()).orElseThrow();
+    var arguments = command.toStrings().toArray(String[]::new);
+    debug("Run %s", command.toLine());
+    var recording = run(provider, arguments);
+    recording.requireSuccessful();
+  }
+
+  public Recording run(ToolProvider provider, String... arguments) {
+    var output = new StringWriter();
+    var outputPrintWriter = new PrintWriter(output);
+    var errors = new StringWriter();
+    var errorsPrintWriter = new PrintWriter(errors);
+
+    var start = Instant.now();
+    var code = provider.run(outputPrintWriter, errorsPrintWriter, arguments);
+    var recording =
+        new Recording(
+            provider.name(),
+            arguments,
+            Thread.currentThread().getId(),
+            Duration.between(start, Instant.now()),
+            code,
+            output.toString().trim(),
+            errors.toString().trim());
+
+    recordings.add(recording);
+    return recording;
+  }
+
+  public void writeLogbook() throws Exception {
+    var logbook = newLogbook();
+    var lines = logbook.build();
+
+    Files.createDirectories(base.workspace());
+    var file = Files.write(base.workspace("logbook.md"), lines);
+    var logbooks = Files.createDirectories(base.workspace("logbooks"));
+    Files.copy(file, logbooks.resolve("logbook-" + logbook.timestamp() + ".md"));
   }
 }

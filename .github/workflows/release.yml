@@ -12,17 +12,11 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      sha7: ${{ steps.version.outputs.sha7 }}
-      sha8: ${{ steps.version.outputs.sha8 }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: 'Compute version string'
         id: version
         run: |
-          SHA7=$(echo "${{ github.sha }}" | cut -c1-7)
-          SHA8=$(echo "${{ github.sha }}" | cut -c1-8)
-          echo "::set-output name=sha7::${SHA7}"
-          echo "::set-output name=sha8::${SHA8}"
           echo "::set-output name=version::${{ github.event.release.tag_name }}"
 
   build:
@@ -50,7 +44,7 @@ jobs:
             --module-path .bach/cache \
             --module com.github.sormuras.bach \
             build
-      - name: 'Upload build artifacts'
+      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}'
         if: always()
         uses: actions/upload-artifact@v2
         with:
@@ -91,7 +85,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
-      - name: 'Sync documentation'
+      - name: 'Sync API documentation'
         run: |
           mkdir --parents ${{ github.event.repository.name }}/${{ needs.setup.outputs.version }}
           rsync --archive --delete --verbose .bach/workspace/documentation/api/ ${{ github.event.repository.name }}/${{ needs.setup.outputs.version }}
@@ -113,7 +107,7 @@ jobs:
     needs: [ setup, build ]
     runs-on: ubuntu-latest
     steps:
-      - name: 'Download build artifact'
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
@@ -132,7 +126,7 @@ jobs:
     needs: [ setup, build ]
     runs-on: ubuntu-latest
     steps:
-      - name: 'Download build artifact'
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}

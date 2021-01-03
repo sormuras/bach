@@ -1,92 +1,73 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.Paths;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /** Bach's main program. */
 public class Main {
+
   /**
-   * Main entry-point.
+   * An annotated method indicates that it is intended to be run from Bach's main program's CLI.
    *
-   * @param args the command line arguments
+   * @see #run(String)
    */
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.SOURCE)
+  @Documented
+  @Inherited
+  public @interface Action {
+    String[] value() default {};
+  }
+
   public static void main(String... args) {
-    var out = new PrintWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), true);
-    var err = new PrintWriter(new OutputStreamWriter(System.err, StandardCharsets.UTF_8), true);
-    int status = new Main().execute(out, err, args);
-    System.exit(status);
+    System.exit(run("build", args));
   }
 
-  /**
-   * Print usage instructions to the given print stream.
-   *
-   * @param stream the stream to print to
-   */
-  public static void printUsageInstructions(PrintStream stream) {
-    var out = new PrintWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8), true);
-    new Main().help(out);
-  }
-
-  /** Default constructor. */
-  public Main() {}
-
-  /**
-   * Main program.
-   *
-   * @param out the writer for normal messages, i.e. expected output
-   * @param err the writer for error messages
-   * @param args the command line arguments
-   * @return a zero indicates normal execution, a non-zero value indicates abnormal termination
-   */
-  public int execute(PrintWriter out, PrintWriter err, String... args) {
+  public static int run(String module, String... args) {
+    var bach = Bach.of(module);
     if (args.length == 0) {
-      out.println("No argument, no action.");
+      bach.print("No argument, no action.");
       return 0;
     }
-    var action = args[0];
-    return switch (action) {
-      case "build" -> build(out, err, Arrays.copyOfRange(args, 1, args.length));
-      case "clean" -> clean();
-      case "help", "usage" -> help(out);
-      case "version" -> version(out);
-      default -> {
-        err.println("Unsupported action: " + action);
-        yield 1;
-      }
-    };
+    return new Main(bach).run(args);
   }
 
-  int build(PrintWriter out, PrintWriter err, String... args) {
+  private final Bach bach;
+
+  public Main(Bach bach) {
+    this.bach = bach;
+  }
+
+  public int run(String... actions) {
+    for (var action : actions) {
+      var status = run(action);
+      if (status != 0) return status;
+    }
+    return 0;
+  }
+
+  public int run(String action) {
+    bach.debug("Run main action: `%s`", action);
     try {
-      var book = new Logbook(out::println, Logbook.defaultThresholdLevel());
-      var bach = new Bach(book, Bach::newHttpClient);
-      BuildProgram.execute(bach, args);
+      switch (action) {
+        case "build" -> bach.build();
+        case "clean" -> bach.clean();
+        case "help", "usage" -> bach.printHelp();
+        case "version" -> bach.printVersion();
+        default -> {
+          bach.print("Unsupported action: %s", action);
+          return 4;
+        }
+      }
       return 0;
-    } catch (BuildException exception) {
-      err.println(exception.toString().lines().findFirst().orElse(exception.getClass().toString()));
-      return 1;
     } catch (Exception exception) {
-      exception.printStackTrace(err);
+      bach.print("Action %s failed: %s", action, exception);
+      exception.printStackTrace(System.err);
       return 1;
     }
-  }
-
-  int clean() {
-    Paths.deleteDirectories(Bach.WORKSPACE);
-    return 0;
-  }
-
-  int help(PrintWriter out) {
-    out.println("Usage: bach ACTION [ARGS...]");
-    return 0;
-  }
-
-  int version(PrintWriter out) {
-    out.println(Bach.version());
-    return 0;
   }
 }

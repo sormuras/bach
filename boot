@@ -14,14 +14,14 @@ void boot(String version, boolean reboot) throws Exception {
   var reference = java.lang.module.ModuleFinder.of(cache).find(module);
   if (reference.isPresent()) {
     var cached = Path.of(reference.get().location().orElseThrow());
-    var cachedIsEarlyAccess = cached.getFileName().toString().contains("early-access");
+    var cachedIsEarlyAccess = cached.getFileName().toString().endsWith("-ea");
     if (cachedIsEarlyAccess || reboot) Files.delete(cached); else return;
   }
 
   try (var stream = new URL(source).openStream()) { Files.copy(stream, target); }
 }
 
-boot(System.getProperty("version", "early-access"), System.getProperty("reboot") != null)
+boot(System.getProperty("version", "17-ea"), System.getProperty("reboot") != null)
 
 /env --module-path .bach/cache --add-modules com.github.sormuras.bach
 
@@ -49,6 +49,4 @@ System.out.println(
 
 /reset
 
-import static com.github.sormuras.bach.ShellEnvironment.*
-
-void api() { listPublicStaticMethods(); }
+import com.github.sormuras.bach.*

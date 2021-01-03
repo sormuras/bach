@@ -4,7 +4,7 @@
 
 var status = 0
 try {
-  build();
+  status = com.github.sormuras.bach.Main.run("build", "build");
   System.out.println();
   System.out.println("Have fun! https://github.com/sponsors/sormuras (-:");
   System.out.println();
@@ -13,7 +13,7 @@ try {
   System.err.println("Build error detected: " + throwable.getMessage());
   System.err.println();
   throwable.printStackTrace(System.err);
-  status = 1;
+  status = -1;
 }
 
 /exit status
