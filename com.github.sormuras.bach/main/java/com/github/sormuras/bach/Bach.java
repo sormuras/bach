@@ -119,6 +119,7 @@ public class Bach {
   public void clean() throws Exception {
     debug("Clean...");
 
+    if (Files.notExists(base.workspace())) return;
     try (var walk = Files.walk(base.workspace())) {
       var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
       debug("Delete %s paths", paths.length);
