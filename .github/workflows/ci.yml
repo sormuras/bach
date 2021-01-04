@@ -2,12 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - 'releases/*'
+    branches: [ 'releases/16' ]
   pull_request:
-    branches:
-      - '*'
+    branches: [ 'releases/16' ]
   workflow_dispatch:
     inputs:
       name:
@@ -79,7 +76,7 @@ jobs:
 
   deploy-to-releases:
     needs: [ setup, build ]
-    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/releases/16'
     runs-on: ubuntu-latest
     steps:
       - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
@@ -98,7 +95,7 @@ jobs:
 
   deploy-to-api-repository:
     needs: [ setup, build ]
-    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/releases/16'
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out sormuras/api repository'
