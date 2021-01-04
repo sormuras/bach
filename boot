@@ -14,7 +14,7 @@ void boot(String version, boolean reboot) throws Exception {
   var reference = java.lang.module.ModuleFinder.of(cache).find(module);
   if (reference.isPresent()) {
     var cached = Path.of(reference.get().location().orElseThrow());
-    var cachedIsEarlyAccess = cached.getFileName().toString().endsWith("-ea");
+    var cachedIsEarlyAccess = cached.getFileName().toString().contains("-");
     if (cachedIsEarlyAccess || reboot) Files.delete(cached); else return;
   }
 
