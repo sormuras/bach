@@ -1,6 +1,6 @@
 // Bach's Zero-Installtion Build Script
 
-/open https://github.com/sormuras/bach/raw/main/boot
+/open https://github.com/sormuras/bach/raw/releases/16/boot
 
 var status = 0
 try {

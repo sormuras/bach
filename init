@@ -1,6 +1,6 @@
 // Bach's Initialization Script
 
-/open https://github.com/sormuras/bach/raw/main/boot
+/open https://github.com/sormuras/bach/raw/releases/16/boot
 
 var bach = Path.of("bach")
 if (Files.notExists(bach)) {
