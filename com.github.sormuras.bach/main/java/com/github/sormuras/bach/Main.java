@@ -6,6 +6,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.List;
 
 /** Bach's main program. */
 public class Main {
@@ -13,7 +14,7 @@ public class Main {
   /**
    * An annotated method indicates that it is intended to be run from Bach's main program's CLI.
    *
-   * @see #run(String)
+   * @see #performAction(String)
    */
   @Target(ElementType.METHOD)
   @Retention(RetentionPolicy.SOURCE)
@@ -33,7 +34,7 @@ public class Main {
       bach.print("No argument, no action.");
       return 0;
     }
-    return new Main(bach).run(args);
+    return new Main(bach).performActions(args);
   }
 
   private final Bach bach;
@@ -42,16 +43,18 @@ public class Main {
     this.bach = bach;
   }
 
-  public int run(String... actions) {
-    for (var action : actions) {
-      var status = run(action);
+  public int performActions(String... actions) {
+    var list = List.of(actions);
+    bach.debug("Perform %d action%s: %s", list.size(), list.size() == 1 ? "" : "s", list);
+    for (var action : list) {
+      var status = performAction(action);
       if (status != 0) return status;
     }
     return 0;
   }
 
-  public int run(String action) {
-    bach.debug("Run main action: `%s`", action);
+  public int performAction(String action) {
+    bach.debug("Perform main action: `%s`", action);
     try {
       switch (action) {
         case "build" -> bach.build();

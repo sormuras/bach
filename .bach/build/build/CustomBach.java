@@ -18,7 +18,7 @@ public class CustomBach extends Bach {
   public static void main(String... args) {
     var bach = new CustomBach(new Flag[0]);
     var main = new Main(bach);
-    var code = args.length == 0 ? main.run("build") : main.run(args);
+    var code = args.length == 0 ? main.performAction("build") : main.performActions(args);
     System.exit(code);
   }
 
