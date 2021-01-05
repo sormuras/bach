@@ -7,6 +7,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Recording;
+import java.util.List;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ class BachTests {
     var bach = new Bach(Base.ofSystem(), silent -> {});
 
     bach.run(Command.of("print").add("10", "PRINT 'HELLO WORLD'"));
-    bach.run(ToolProvider.findFirst("print").orElseThrow(), "20", "PRINT 20");
+    bach.run(ToolProvider.findFirst("print").orElseThrow(), List.of("20", "PRINT 20"));
     bach.run(new PrintToolProvider("30 GOTO 10"));
     bach.run(new PrintToolProvider(true, "END.", 0));
 

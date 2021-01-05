@@ -115,6 +115,12 @@ public class Bach {
     return module + '@' + project().versionNumberAndPreRelease() + ".jar";
   }
 
+  public ToolProvider computeToolProvider(String name) {
+    var provider = ToolProvider.findFirst(name);
+    if (provider.isPresent()) return provider.get();
+    throw new RuntimeException("No tool provider found for name: " + name);
+  }
+
   @Main.Action
   public void clean() throws Exception {
     debug("Clean...");
@@ -154,30 +160,34 @@ public class Bach {
   }
 
   public void run(Command<?> command) {
-    var provider = ToolProvider.findFirst(command.name()).orElseThrow();
-    var arguments = command.toStrings().toArray(String[]::new);
     debug("Run %s", command.toLine());
+    var provider = computeToolProvider(command.name());
+    var arguments = command.toStrings();
     var recording = run(provider, arguments);
     recording.requireSuccessful();
   }
 
-  public Recording run(ToolProvider provider, String... arguments) {
-    var output = new StringWriter();
-    var outputPrintWriter = new PrintWriter(output);
-    var errors = new StringWriter();
-    var errorsPrintWriter = new PrintWriter(errors);
+  public Recording run(ToolProvider provider, List<String> arguments) {
+    var currentThread = Thread.currentThread();
+    var currentLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(provider.getClass().getClassLoader());
 
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = arguments.toArray(String[]::new);
     var start = Instant.now();
-    var code = provider.run(outputPrintWriter, errorsPrintWriter, arguments);
-    var recording =
-        new Recording(
-            provider.name(),
-            arguments,
-            Thread.currentThread().getId(),
-            Duration.between(start, Instant.now()),
-            code,
-            output.toString().trim(),
-            errors.toString().trim());
+    int code;
+    try {
+      code = provider.run(new PrintWriter(out), new PrintWriter(err), args);
+    } finally {
+      currentThread.setContextClassLoader(currentLoader);
+    }
+
+    var duration = Duration.between(start, Instant.now());
+    var tid = currentThread.getId();
+    var output = out.toString().trim();
+    var errors = err.toString().trim();
+    var recording = new Recording(provider.name(), arguments, tid, duration, code, output, errors);
 
     recordings.add(recording);
     return recording;

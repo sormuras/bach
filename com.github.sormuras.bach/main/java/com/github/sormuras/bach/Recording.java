@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * A recording of a tool run.
@@ -15,7 +16,7 @@ import java.time.Duration;
  */
 public record Recording(
     String name,
-    String[] args,
+    List<String> args,
     long thread,
     Duration duration,
     int code,
