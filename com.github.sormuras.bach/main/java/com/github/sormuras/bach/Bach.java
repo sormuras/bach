@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 
 /** Java Shell Builder. */
 public class Bach {
@@ -26,7 +27,7 @@ public class Bach {
   public static final Path WORKSPACE = Path.of(".bach/workspace");
 
   public static Bach of(String module) {
-    var layer = new ModuleLayerBuilder(module).build();
+    var layer = ModuleLayerBuilder.build(module);
     return ServiceLoader.load(layer, Bach.class).findFirst().orElseGet(Bach::new);
   }
 
@@ -51,19 +52,11 @@ public class Bach {
     this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     this.printer = printer;
     this.recordings = new ConcurrentLinkedQueue<>();
-
-    debug("module: %s", getClass().getModule().getName());
-    debug("class: %s", getClass().getName());
-    debug("base: %s", this.base);
-    debug("flags: %s", this.flags);
-
     try {
       this.project = newProject();
     } catch (Exception exception) {
       throw new Error("Project creation failed", exception);
     }
-
-    debug("project: %s", project);
   }
 
   public final Base base() {
@@ -115,8 +108,13 @@ public class Bach {
     return module + '@' + project().versionNumberAndPreRelease() + ".jar";
   }
 
+  public Stream<ToolProvider> computeToolProviders() {
+    var layer = ModuleLayerBuilder.build(EXTERNALS);
+    return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
+  }
+
   public ToolProvider computeToolProvider(String name) {
-    var provider = ToolProvider.findFirst(name);
+    var provider = computeToolProviders().filter(it -> it.name().equals(name)).findFirst();
     if (provider.isPresent()) return provider.get();
     throw new RuntimeException("No tool provider found for name: " + name);
   }
@@ -154,17 +152,25 @@ public class Bach {
       """);
   }
 
+  @Main.Action("info")
+  public void printInfo() {
+    print("module: %s", getClass().getModule().getName());
+    print("class: %s", getClass().getName());
+    print("base: %s", base);
+    print("flags: %s", flags);
+    print("project: %s", project);
+  }
+
   @Main.Action("version")
   public void printVersion() {
     print(version());
   }
 
-  public void run(Command<?> command) {
+  public Recording run(Command<?> command) {
     debug("Run %s", command.toLine());
     var provider = computeToolProvider(command.name());
     var arguments = command.toStrings();
-    var recording = run(provider, arguments);
-    recording.requireSuccessful();
+    return run(provider, arguments);
   }
 
   public Recording run(ToolProvider provider, List<String> arguments) {

@@ -8,19 +8,19 @@ import org.junit.jupiter.api.Test;
 class ModuleLayerBuilderTests {
   @Test
   void ofNotExistingPath() {
-    var layer = new ModuleLayerBuilder(Path.of("does-not-exist"), "module").build();
+    var layer = ModuleLayerBuilder.build(Path.of("does-not-exist"), "module");
     assertTrue(layer.modules().isEmpty());
   }
 
   @Test
   void ofNotExistingModule() {
-    var layer = new ModuleLayerBuilder("does-not-exist").build();
+    var layer = ModuleLayerBuilder.build("does-not-exist");
     assertTrue(layer.modules().isEmpty());
   }
 
   @Test
   void ofDotBachBuildModule() {
-    var layer = new ModuleLayerBuilder("build").build();
+    var layer = ModuleLayerBuilder.build("build");
     assertTrue(layer.findModule("build").isPresent());
     assertTrue(layer.findModule("com.github.sormuras.bach").isPresent());
   }

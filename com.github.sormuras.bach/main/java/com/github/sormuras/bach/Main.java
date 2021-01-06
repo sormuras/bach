@@ -60,6 +60,7 @@ public class Main {
         case "build" -> bach.build();
         case "clean" -> bach.clean();
         case "help", "usage" -> bach.printHelp();
+        case "info" -> bach.printInfo();
         case "version" -> bach.printVersion();
         default -> {
           bach.print("Unsupported action: %s", action);

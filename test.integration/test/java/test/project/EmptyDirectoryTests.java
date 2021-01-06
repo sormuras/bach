@@ -27,16 +27,11 @@ class EmptyDirectoryTests {
 
     assertLinesMatch(
         """
-            // module: com.github.sormuras.bach
-            // class: com.github.sormuras.bach.Bach
-            // base: %s
-            // flags: [VERBOSE]
-            // project: Project[name=bach, version=0]
             // Build...
             // 0 module declaration(s) found
             No modules found in file tree rooted at %s
             """
-            .formatted(base, temp)
+            .formatted(temp)
             .lines()
             .toList(),
         lines);
