@@ -50,3 +50,8 @@ System.out.println(
 /reset
 
 import com.github.sormuras.bach.*
+import static com.github.sormuras.bach.Shell.*
+void api() { printPublicStaticShellMethods(); }
+
+api()
+System.out.println()
