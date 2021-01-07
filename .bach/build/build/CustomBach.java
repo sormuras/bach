@@ -6,7 +6,9 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.ModuleLookup;
-import com.github.sormuras.bach.ModuleLookups;
+import com.github.sormuras.bach.ModuleLookups.JavaFX;
+import com.github.sormuras.bach.ModuleLookups.JUnit;
+import com.github.sormuras.bach.ModuleLookups.LWJGL;
 import com.github.sormuras.bach.Project;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,10 +47,7 @@ public class CustomBach extends Bach {
 
   @Override
   public ModuleLookup newModuleLookup() {
-    return ModuleLookup.compose(
-        ModuleLookups.ofJUnit_5_7(),
-        new ModuleLookups.JavaFX("15.0.1"),
-        new ModuleLookups.LWJGL("3.2.3"));
+    return ModuleLookup.compose(JUnit.V_5_7_0, new JavaFX("15.0.1"), new LWJGL("3.2.3"));
   }
 
   @Override

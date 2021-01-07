@@ -7,14 +7,29 @@ import java.util.Optional;
 /** Implementations of {@link ModuleLookup} for various libraries. */
 public class ModuleLookups {
 
-  public static ModuleLookup ofJUnit_5_7() {
-    return ModuleLookup.compose(
-        ModuleLookup.linkExternalModule("org.apiguardian.api")
-            .toMavenCentral("org.apiguardian", "apiguardian-api", "1.1.1"),
-        ModuleLookup.linkExternalModule("org.opentest4j")
-            .toMavenCentral("org.opentest4j", "opentest4j", "1.2.0"),
-        new ModuleLookups.JUnitJupiter("5.7.0"),
-        new ModuleLookups.JUnitPlatform("1.7.0"));
+  /** Link well-known JUnit module to their Maven Central artifacts. */
+  public enum JUnit implements ModuleLookup {
+
+    /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
+    V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0");
+
+    private final ModuleLookup junit;
+
+    JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
+      this.junit =
+          ModuleLookup.compose(
+              new JUnitJupiter(jupiter),
+              new JUnitPlatform(platform),
+              ModuleLookup.linkExternalModule("org.apiguardian.api")
+                  .toMavenCentral("org.apiguardian", "apiguardian-api", apiguardian),
+              ModuleLookup.linkExternalModule("org.opentest4j")
+                  .toMavenCentral("org.opentest4j", "opentest4j", opentest4j));
+    }
+
+    @Override
+    public Optional<String> lookupModule(String module) {
+      return junit.lookupModule(module);
+    }
   }
 
   /** Maps well-known JavaFX module names to their Maven Central artifacts. */
