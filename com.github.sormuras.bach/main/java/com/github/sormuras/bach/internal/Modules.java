@@ -2,10 +2,12 @@ package com.github.sormuras.bach.internal;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Exports;
 import java.lang.module.ModuleDescriptor.Opens;
 import java.lang.module.ModuleDescriptor.Provides;
 import java.lang.module.ModuleDescriptor.Requires;
+import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.util.Comparator;
@@ -15,6 +17,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Modules {
+
+  public static TreeSet<String> declared(ModuleFinder finder) {
+    return declared(finder.findAll().stream().map(ModuleReference::descriptor));
+  }
+
+  public static TreeSet<String> declared(Stream<ModuleDescriptor> descriptors) {
+    return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public static TreeSet<String> required(ModuleFinder finder) {
+    return required(finder.findAll().stream().map(ModuleReference::descriptor));
+  }
+
+  public static TreeSet<String> required(Stream<ModuleDescriptor> descriptors) {
+    return descriptors
+        .map(ModuleDescriptor::requires)
+        .flatMap(Set::stream)
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+        .map(Requires::name)
+        .collect(Collectors.toCollection(TreeSet::new));
+  }
 
   // https://github.com/openjdk/jdk/blob/80380d51d279852f4a24ebbd384921106611bc0c/src/java.base/share/classes/sun/launcher/LauncherHelper.java#L1105
   public static String describe(ModuleReference mref) {

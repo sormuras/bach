@@ -69,6 +69,14 @@ public class Shell {
     }
   }
 
+  public static void loadExternalModules(String... modules) {
+    bach.loadExternalModules(modules);
+  }
+
+  public static void loadMissingExternalModules() {
+    bach.loadMissingExternalModules();
+  }
+
   /**
    * Prints a module description of the given module.
    *
@@ -97,12 +105,19 @@ public class Shell {
         .map(ModuleDescriptor::toNameAndVersion)
         .sorted()
         .forEach(out);
-    out.accept(String.format("-> %d module%s", all.size(), all.size() == 1 ? "" : "s"));
+    out.accept(String.format("%n-> %d module%s", all.size(), all.size() == 1 ? "" : "s"));
   }
 
   /** Prints a list of all external modules. */
   public static void printExternalModules() {
     printModules(ModuleFinder.of(bach.base().externals()));
+  }
+
+  public static void printMissingExternalModules() {
+    var modules = bach.computeMissingExternalModules();
+    var size = modules.size();
+    modules.stream().sorted().forEach(out);
+    out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
   }
 
   /** Prints a list of all system modules. */
@@ -128,15 +143,21 @@ public class Shell {
   }
 
   public static void printRecordings() {
-    bach.recordings().forEach(Shell::printRecording);
+    var recordings = bach.recordings();
+    var size = recordings.size();
+    recordings.forEach(Shell::printRecording);
+    out.accept(String.format("%n-> %d recording%s", size, size == 1 ? "" : "s"));
   }
 
   public static void printToolProviders() {
-    bach.computeToolProviders()
+    var providers = bach.computeToolProviders().toList();
+    var size = providers.size();
+    providers.stream()
         .map(ToolProviders::describe)
         .sorted()
         .map(description -> "\n" + description)
         .forEach(out);
+    out.accept(String.format("%n-> %d provider%s", size, size == 1 ? "" : "s"));
   }
 
   public static void run(String tool, Object... args) {

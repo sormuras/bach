@@ -1,8 +1,10 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.internal.Modules;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -13,6 +15,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -136,6 +139,17 @@ public class Bach {
     return module + '@' + project().versionNumberAndPreRelease() + ".jar";
   }
 
+  /** @return the names of all modules that are required but not locatable by this instance */
+  public Set<String> computeMissingExternalModules() {
+    var finder = ModuleFinder.of(EXTERNALS);
+    var missing = Modules.required(finder);
+    if (missing.isEmpty()) return Set.of();
+    missing.removeAll(Modules.declared(finder));
+    missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    if (missing.isEmpty()) return Set.of();
+    return missing;
+  }
+
   public Stream<ToolProvider> computeToolProviders() {
     var layer = ModuleLayerBuilder.build(EXTERNALS);
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
@@ -168,11 +182,28 @@ public class Bach {
   }
 
   public void loadExternalModules(String... modules) {
+    debug("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
     if (modules.length == 0) return;
     UnaryOperator<String> uri = this::computeExternalModuleUri;
     Function<String, Path> jar = this::computeExternalModuleFile;
     if (modules.length == 1) browser().load(uri.apply(modules[0]), jar.apply(modules[0]));
     else browser().load(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
+  }
+
+  public void loadMissingExternalModules() {
+    debug("Load missing external modules");
+    var loaded = new TreeSet<String>();
+    var difference = new TreeSet<String>();
+    while (true) {
+      var missing = computeMissingExternalModules();
+      if (missing.isEmpty()) break;
+      difference.retainAll(missing);
+      if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
+      difference.addAll(missing);
+      loadExternalModules(missing.toArray(String[]::new));
+      loaded.addAll(missing);
+    }
+    debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
   }
 
   public String print(String format, Object... args) {
