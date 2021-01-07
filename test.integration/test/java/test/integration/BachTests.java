@@ -1,7 +1,9 @@
 package test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
@@ -15,7 +17,17 @@ class BachTests {
   @Test
   void defaults() {
     var bach = new Bach();
-    assertNotNull(bach.toString());
+    // components
+    assertNotNull(bach.project());
+    assertTrue(bach.recordings().isEmpty());
+    // compute
+    assertTrue(bach.computeExternalModuleUri("java.base").isEmpty());
+    assertEquals("foo@0.jar", bach.computeMainJarFileName("foo"));
+    assertEquals("jar", bach.computeToolProvider("jar").name());
+    assertEquals("javac", bach.computeToolProvider("javac").name());
+    assertEquals("javadoc", bach.computeToolProvider("javadoc").name());
+    var tools = List.of("jar", "javac", "javadoc", "javap", "jdeps", "jlink", "jmod", "jpackage");
+    assertTrue(bach.computeToolProviders().map(ToolProvider::name).toList().containsAll(tools));
   }
 
   @Test

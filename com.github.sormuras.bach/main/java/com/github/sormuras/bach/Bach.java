@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -42,6 +43,7 @@ public class Bach {
   private final Consumer<String> printer;
   private final Queue<Recording> recordings;
   private final Project project;
+  private final ModuleLookup moduleLookup;
 
   public Bach() {
     this(Base.ofSystem(), System.out::println);
@@ -54,8 +56,9 @@ public class Bach {
     this.recordings = new ConcurrentLinkedQueue<>();
     try {
       this.project = newProject();
+      this.moduleLookup = newModuleLookup();
     } catch (Exception exception) {
-      throw new Error("Project creation failed", exception);
+      throw new Error("Initialization failed", exception);
     }
   }
 
@@ -77,6 +80,10 @@ public class Bach {
 
   public Project newProject() throws Exception {
     return new Project();
+  }
+
+  public ModuleLookup newModuleLookup() {
+    return ModuleLookup.ofEmpty();
   }
 
   @Main.Action
@@ -103,6 +110,10 @@ public class Bach {
   }
 
   public void buildMainSpace() throws Exception {}
+
+  public Optional<String> computeExternalModuleUri(String module) {
+    return moduleLookup.lookupModule(module);
+  }
 
   public String computeMainJarFileName(String module) {
     return module + '@' + project().versionNumberAndPreRelease() + ".jar";
