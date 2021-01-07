@@ -6,6 +6,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayDeque;
 import java.util.List;
 
 /** Bach's main program. */
@@ -33,6 +34,21 @@ public class Main {
     if (args.length == 0) {
       bach.print("No argument, no action.");
       return 0;
+    }
+    if (args[0].equals("tool")) {
+      var deque = new ArrayDeque<>(List.of(args));
+      deque.removeFirst(); // "tool"
+      if (deque.isEmpty()) {
+        bach.print("Main action 'tool' requires at a name: bach tool NAME <ARGS...>");
+        return 1;
+      }
+      var command = Command.of(deque.removeFirst());
+      var recording = bach.run(deque.isEmpty() ? command : command.add("", deque.toArray()));
+      if (!recording.errors().isEmpty()) bach.print(recording.errors());
+      if (!recording.output().isEmpty()) bach.print(recording.output());
+      if (recording.isError())
+        bach.print("Tool %s returned exit code %d", command.name(), recording.code());
+      return recording.code();
     }
     return new Main(bach).performActions(args);
   }
