@@ -9,13 +9,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Java Shell Builder. */
@@ -44,6 +47,7 @@ public class Bach {
   private final Queue<Recording> recordings;
   private final Project project;
   private final ModuleLookup moduleLookup;
+  private /*-*/ Browser browser;
 
   public Bach() {
     this(Base.ofSystem(), System.out::println);
@@ -74,6 +78,11 @@ public class Bach {
     return project;
   }
 
+  public final synchronized Browser browser() {
+    if (browser == null) browser = newBrowser();
+    return browser;
+  }
+
   public Logbook newLogbook() {
     return new Logbook(this);
   }
@@ -84,6 +93,10 @@ public class Bach {
 
   public ModuleLookup newModuleLookup() {
     return ModuleLookup.ofEmpty();
+  }
+
+  public Browser newBrowser() {
+    return new Browser(this);
   }
 
   @Main.Action
@@ -111,8 +124,12 @@ public class Bach {
 
   public void buildMainSpace() throws Exception {}
 
-  public Optional<String> computeExternalModuleUri(String module) {
-    return moduleLookup.lookupModule(module);
+  public String computeExternalModuleUri(String module) {
+    return moduleLookup.lookupModule(module).orElseThrow(() -> new NoSuchElementException(module));
+  }
+
+  public Path computeExternalModuleFile(String module) {
+    return base.externals().resolve(module + ".jar");
   }
 
   public String computeMainJarFileName(String module) {
@@ -148,6 +165,14 @@ public class Bach {
 
   public void debug(String format, Object... args) {
     if (is(Flag.VERBOSE)) print("// " + format, args);
+  }
+
+  public void loadExternalModules(String... modules) {
+    if (modules.length == 0) return;
+    UnaryOperator<String> uri = this::computeExternalModuleUri;
+    Function<String, Path> jar = this::computeExternalModuleFile;
+    if (modules.length == 1) browser().load(uri.apply(modules[0]), jar.apply(modules[0]));
+    else browser().load(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
   }
 
   public String print(String format, Object... args) {

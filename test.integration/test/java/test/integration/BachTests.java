@@ -19,6 +19,7 @@ class BachTests {
     var bach = new Bach();
     // components
     assertNotNull(bach.project());
+    assertNotNull(bach.browser());
     assertTrue(bach.recordings().isEmpty());
     // compute
     assertTrue(bach.computeExternalModuleUri("java.base").isEmpty());
