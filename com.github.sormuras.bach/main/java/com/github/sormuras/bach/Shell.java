@@ -33,8 +33,8 @@ public class Shell {
         .scheduleWithFixedDelay(Shell::refreshOnChanges, 3, 2, TimeUnit.SECONDS);
   }
 
-  public static void bach(String... actions) {
-    new Main(bach).performActions(actions);
+  public static Bach bach() {
+    return bach;
   }
 
   public static void refresh() {
