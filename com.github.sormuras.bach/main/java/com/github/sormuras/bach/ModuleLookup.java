@@ -3,6 +3,7 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.ComposedModuleLookup;
 import com.github.sormuras.bach.internal.EmptyModuleLookup;
 import com.github.sormuras.bach.internal.ExternalModuleLookup;
+import com.github.sormuras.bach.internal.MappedModuleLookup;
 import com.github.sormuras.bach.internal.Maven;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,16 @@ public interface ModuleLookup {
   /** @return an always empty-returning module lookup */
   static ModuleLookup ofEmpty() {
     return EmptyModuleLookup.SINGLETON;
+  }
+
+  /** {@return a module lookup that is backed by the given map} */
+  static ModuleLookup ofMap(Map<String, String> map) {
+    if (map.isEmpty()) return ofEmpty();
+    if (map.size() == 1) {
+      var entry = map.entrySet().stream().findFirst().orElseThrow();
+      return new ExternalModuleLookup(entry.getKey(), entry.getValue());
+    }
+    return new MappedModuleLookup(Map.copyOf(map));
   }
 
   /** @return an external module lookup builder */
