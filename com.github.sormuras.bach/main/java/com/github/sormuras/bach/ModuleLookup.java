@@ -1,11 +1,13 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ComposedModuleLookup;
+import com.github.sormuras.bach.internal.DynamicModuleLookup;
 import com.github.sormuras.bach.internal.EmptyModuleLookup;
 import com.github.sormuras.bach.internal.ExternalModuleLookup;
 import com.github.sormuras.bach.internal.MappedModuleLookup;
 import com.github.sormuras.bach.internal.Maven;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** A function that tries to link a module name to a specific uniform resource identifier. */
@@ -45,6 +47,11 @@ public interface ModuleLookup {
       return new ExternalModuleLookup(entry.getKey(), entry.getValue());
     }
     return new MappedModuleLookup(Map.copyOf(map));
+  }
+
+  /** {@return a module lookup that is backed by providers found among the external modules} */
+  static ModuleLookup ofProvidersFoundInExternalModules() {
+    return new DynamicModuleLookup(Bach.EXTERNALS);
   }
 
   /** @return an external module lookup builder */
