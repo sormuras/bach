@@ -15,7 +15,7 @@ if (Files.notExists(bach)) {
       java --module-path .bach/cache --module com.github.sormuras.bach "$@"
     else
       rm -f .bach/cache/com.github.sormuras.bach@*.jar
-      jshell -R-Dreboot -R-Dversion="${2:-early-access}" https://bit.ly/bach-main-init
+      jshell -R-Dreboot -R-Dversion="${2:-17-ea}" https://bit.ly/bach-main-init
     fi
     """).toFile().setExecutable(true);
 
@@ -32,7 +32,7 @@ if (Files.notExists(bach)) {
     :INIT
     del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
     SETLOCAL
-    IF [%2]==[] ( SET tag=early-access ) ELSE ( SET tag=%2 )
+    IF [%2]==[] ( SET tag=17-ea ) ELSE ( SET tag=%2 )
     jshell -R-Dreboot -R-Dversion=%tag% https://bit.ly/bach-main-init
     ENDLOCAL
 
@@ -40,7 +40,7 @@ if (Files.notExists(bach)) {
     """);
 }
 
-com.github.sormuras.bach.Main.printUsageInstructions(System.out)
+bach().printHelp()
 
 System.out.println(
   """
