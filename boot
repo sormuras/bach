@@ -51,7 +51,7 @@ System.out.println(
 
 import com.github.sormuras.bach.*
 import static com.github.sormuras.bach.Shell.*
-void api() { printPublicStaticShellMethods(); }
+void api() { listPublicStaticShellMethods(); }
 
 api()
 System.out.println()

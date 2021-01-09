@@ -61,17 +61,17 @@ public class Shell {
   }
 
   private static byte[] computeHash() {
-    return computeDigest(bach.base().directory(".bach", "build"));
+    return computeHash(bach.base().directory(".bach", "build"));
   }
 
-  private static byte[] computeDigest(Path path) {
+  private static byte[] computeHash(Path path) {
     if (Files.notExists(path)) return new byte[0];
     try {
       var md = MessageDigest.getInstance("MD5");
       if (Files.isRegularFile(path)) return md.digest(Files.readAllBytes(path));
       try (var walk = Files.walk(path)) {
         var paths = walk.filter(Files::isRegularFile).sorted().toArray(Path[]::new);
-        for (var it : paths) md.update(Files.readAllBytes(it));
+        for (var file : paths) md.update(Files.readAllBytes(file));
       }
       return md.digest();
     } catch (Exception exception) {
@@ -121,18 +121,18 @@ public class Shell {
   }
 
   /** Prints a list of all external modules. */
-  public static void printExternalModules() {
+  public static void listExternalModules() {
     printModules(ModuleFinder.of(bach.base().externals()));
   }
 
-  public static void printMissingExternalModules() {
+  public static void listMissingExternalModules() {
     var modules = bach.computeMissingExternalModules();
     var size = modules.size();
     modules.stream().sorted().forEach(out);
     out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
   }
 
-  public static void printRequiresDirectivesMatching(String regex) {
+  public static void listModulesWithRequiresDirectivesMatching(String regex) {
     var finder = ModuleFinder.of(bach.base().externals());
     var descriptors =
         finder.findAll().stream()
@@ -150,11 +150,11 @@ public class Shell {
   }
 
   /** Prints a list of all system modules. */
-  public static void printSystemModules() {
+  public static void listSystemModules() {
     printModules(ModuleFinder.ofSystem());
   }
 
-  public static void printPublicStaticShellMethods() {
+  public static void listPublicStaticShellMethods() {
     Stream.of(Shell.class.getDeclaredMethods())
         .filter(method -> Modifier.isPublic(method.getModifiers()))
         .filter(method -> Modifier.isStatic(method.getModifiers()))
@@ -171,14 +171,14 @@ public class Shell {
     out.accept(recording);
   }
 
-  public static void printRecordings() {
+  public static void listRecordings() {
     var recordings = bach.recordings();
     var size = recordings.size();
     recordings.forEach(Shell::printRecording);
     out.accept(String.format("%n-> %d recording%s", size, size == 1 ? "" : "s"));
   }
 
-  public static void printToolProviders() {
+  public static void listToolProviders() {
     var providers = bach.computeToolProviders().toList();
     var size = providers.size();
     providers.stream()
