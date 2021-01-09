@@ -43,9 +43,9 @@ public class Shell {
     } catch (Exception exception) {
       err.accept(
           """
-    
+
           Refresh failed: %s
-    
+
             Falling back to default Bach instance.
           """
               .formatted(exception.getMessage()));
@@ -130,6 +130,23 @@ public class Shell {
     var size = modules.size();
     modules.stream().sorted().forEach(out);
     out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
+  }
+
+  public static void printRequiresDirectivesMatching(String regex) {
+    var finder = ModuleFinder.of(bach.base().externals());
+    var descriptors =
+        finder.findAll().stream()
+            .map(ModuleReference::descriptor)
+            .sorted(Comparator.comparing(ModuleDescriptor::name))
+            .toList();
+    for (var descriptor : descriptors) {
+      var matched = descriptor.requires().stream()
+          .filter(requires -> requires.name().matches(regex))
+          .toList();
+      if (matched.isEmpty()) continue;
+      out.accept(descriptor.toNameAndVersion());
+      matched.forEach(requires -> out.accept("  " + requires));
+    }
   }
 
   /** Prints a list of all system modules. */
