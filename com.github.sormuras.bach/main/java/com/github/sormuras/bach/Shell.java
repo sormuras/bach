@@ -38,7 +38,19 @@ public class Shell {
   }
 
   public static void refresh() {
-    bach = Bach.of("build");
+    try {
+      bach = Bach.of("build");
+    } catch (Exception exception) {
+      err.accept(
+          """
+    
+          Refresh failed: %s
+    
+            Falling back to default Bach instance.
+          """
+              .formatted(exception.getMessage()));
+      bach = new Bach();
+    }
     hash = computeHash();
   }
 
