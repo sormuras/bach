@@ -145,6 +145,7 @@ public class Bach {
     var missing = Modules.required(finder);
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(Modules.declared(finder));
+    missing.removeAll(Modules.declared(ModuleFinder.of(CACHE)));
     missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
     if (missing.isEmpty()) return Set.of();
     return missing;
