@@ -3,6 +3,7 @@ package test.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
@@ -10,6 +11,7 @@ import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Recording;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +24,7 @@ class BachTests {
     assertNotNull(bach.browser());
     assertTrue(bach.recordings().isEmpty());
     // compute
-    assertTrue(bach.computeExternalModuleUri("java.base").isEmpty());
+    assertThrows(NoSuchElementException.class, () -> bach.computeExternalModuleUri("java.base"));
     assertEquals("foo@0.jar", bach.computeMainJarFileName("foo"));
     assertEquals("jar", bach.computeToolProvider("jar").name());
     assertEquals("javac", bach.computeToolProvider("javac").name());
