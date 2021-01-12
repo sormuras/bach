@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.ComposedModuleLookup;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.ToolProviders;
 import java.lang.module.ModuleDescriptor;
@@ -130,6 +131,18 @@ public class Shell {
     var size = modules.size();
     modules.stream().sorted().forEach(out);
     out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
+  }
+
+  public static void listModuleLookups() {
+    printModuleLookup(bach.moduleLookup());
+  }
+
+  public static void printModuleLookup(ModuleLookup lookup) {
+    out.accept(String.format("%s", lookup));
+    if (lookup instanceof ComposedModuleLookup) {
+      var composed = (ComposedModuleLookup) lookup;
+      composed.lookups().forEach(Shell::printModuleLookup);
+    }
   }
 
   public static void listModulesWithRequiresDirectivesMatching(String regex) {
