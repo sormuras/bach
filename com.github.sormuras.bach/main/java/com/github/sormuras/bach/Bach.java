@@ -81,6 +81,10 @@ public class Bach {
     return project;
   }
 
+  public ModuleLookup moduleLookup() {
+    return moduleLookup;
+  }
+
   public final synchronized Browser browser() {
     if (browser == null) browser = newBrowser();
     return browser;
