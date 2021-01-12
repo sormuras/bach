@@ -37,6 +37,11 @@ public class ModuleLookups {
       }
       return Optional.empty();
     }
+
+    @Override
+    public String toString() {
+      return "GitHubReleases";
+    }
   }
 
   /** Maps well-known JavaFX module names to their Maven Central artifacts. */
@@ -80,6 +85,11 @@ public class ModuleLookups {
       var artifact = "javafx-" + module.substring(7).replace('.', '-');
       return Optional.of(Maven.central("org.openjfx", artifact, version, classifier));
     }
+
+    @Override
+    public String toString() {
+      return "JavaFX " + version + " (" + classifier + ')';
+    }
   }
 
   /** Link well-known JUnit module to their Maven Central artifacts. */
@@ -88,10 +98,12 @@ public class ModuleLookups {
     /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
     V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0");
 
-    private final ModuleLookup junit;
+    private final String version;
+    private final ModuleLookup lookup;
 
     JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
-      this.junit =
+      this.version = jupiter;
+      this.lookup =
           ModuleLookup.compose(
               new JUnitJupiter(jupiter),
               new JUnitPlatform(platform),
@@ -103,7 +115,12 @@ public class ModuleLookups {
 
     @Override
     public Optional<String> lookupModule(String module) {
-      return junit.lookupModule(module);
+      return lookup.lookupModule(module);
+    }
+
+    @Override
+    public String toString() {
+      return "JUnit " + version + " -> " + lookup.toString();
     }
   }
 
@@ -136,6 +153,11 @@ public class ModuleLookups {
         case "org.junit.jupiter.params" -> map("params");
         default -> Optional.empty();
       };
+    }
+
+    @Override
+    public String toString() {
+      return "JUnit Jupiter " + version;
     }
   }
 
@@ -171,6 +193,11 @@ public class ModuleLookups {
         case "org.junit.platform.testkit" -> map("testkit");
         default -> Optional.empty();
       };
+    }
+
+    @Override
+    public String toString() {
+      return "JUnit Platform " + version;
     }
   }
 
@@ -228,6 +255,11 @@ public class ModuleLookups {
       var end = natives ? module.length() - 8 : module.length();
       var artifact = "lwjgl" + module.substring(9, end).replace('.', '-');
       return Optional.of(Maven.central("org.lwjgl", artifact, version, natives ? classifier : ""));
+    }
+
+    @Override
+    public String toString() {
+      return "LWJGL " + version + " (" + classifier + ")";
     }
   }
 

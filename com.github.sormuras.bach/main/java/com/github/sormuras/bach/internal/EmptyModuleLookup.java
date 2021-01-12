@@ -20,4 +20,9 @@ public final class EmptyModuleLookup implements ModuleLookup {
   public Optional<String> lookupModule(String module) {
     return Optional.empty();
   }
+
+  @Override
+  public String toString() {
+    return "EmptyModuleLookup";
+  }
 }

@@ -19,4 +19,9 @@ public record ComposedModuleLookup(List<ModuleLookup> lookups) implements Module
     }
     return Optional.empty();
   }
+
+  @Override
+  public String toString() {
+    return "ComposedModuleLookup (" + lookups.size() + ")";
+  }
 }
