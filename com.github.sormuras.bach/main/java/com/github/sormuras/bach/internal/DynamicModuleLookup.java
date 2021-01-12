@@ -16,16 +16,23 @@ public final class DynamicModuleLookup implements ModuleLookup {
 
   public DynamicModuleLookup(Path directory) {
     this.directory = directory;
+    this.directoryLookup = ModuleLookup.ofEmpty();
+    this.directoryNames = "<init>";
   }
 
   @Override
   public Optional<String> lookupModule(String module) {
     var computedNames = computeNames(directory);
-    if (directoryLookup == null || !computedNames.equals(directoryNames)) {
+    if (!computedNames.equals(directoryNames)) {
       directoryLookup = computeModuleLookup(directory);
       directoryNames = computedNames;
     }
     return directoryLookup.lookupModule(module);
+  }
+
+  @Override
+  public String toString() {
+    return "DynamicModuleLookup -> " + directoryLookup;
   }
 
   private static String computeNames(Path directory) {
@@ -44,6 +51,6 @@ public final class DynamicModuleLookup implements ModuleLookup {
     var layer = ModuleLayerBuilder.build(directory);
     var loader = ServiceLoader.load(layer, ModuleLookup.class);
     var lookups = loader.stream().map(ServiceLoader.Provider::get).toList();
-    return new ComposedModuleLookup(lookups);
+    return lookups.isEmpty() ? ModuleLookup.ofEmpty() : new ComposedModuleLookup(lookups);
   }
 }
