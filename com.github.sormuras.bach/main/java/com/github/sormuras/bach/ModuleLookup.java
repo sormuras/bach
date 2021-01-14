@@ -39,14 +39,20 @@ public interface ModuleLookup {
     return EmptyModuleLookup.SINGLETON;
   }
 
-  /** {@return a module lookup that is backed by the given map} */
-  static ModuleLookup ofMap(Map<String, String> map) {
+  /** {@return a module lookup that is created from or backed by a copy of the given map} */
+  static ModuleLookup of(Map<String, String> map) {
     if (map.isEmpty()) return ofEmpty();
-    if (map.size() == 1) {
-      var entry = map.entrySet().stream().findFirst().orElseThrow();
-      return new ExternalModuleLookup(entry.getKey(), entry.getValue());
-    }
+    if (map.size() == 1)
+      return map.entrySet().stream()
+          .findFirst()
+          .map(first -> of(first.getKey(), first.getValue()))
+          .orElseThrow();
     return new MappedModuleLookup(Map.copyOf(map));
+  }
+
+  /** {@return an external module lookup that links the given module name to the given uri} */
+  static ModuleLookup of(String module, String uri) {
+    return linkExternalModule(module).toUri(uri);
   }
 
   /** {@return a module lookup that is backed by providers found among the external modules} */
