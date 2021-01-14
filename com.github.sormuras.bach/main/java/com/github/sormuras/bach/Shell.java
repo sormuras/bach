@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ComposedModuleLookup;
+import com.github.sormuras.bach.internal.MappedModuleLookup;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.ToolProviders;
 import java.lang.module.ModuleDescriptor;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -134,15 +136,23 @@ public class Shell {
   }
 
   public static void listModuleLookups() {
-    printModuleLookup(bach.moduleLookup());
+    print(bach.moduleLookup(), out::accept, "", 100);
   }
 
-  public static void printModuleLookup(ModuleLookup lookup) {
-    out.accept(String.format("%s", lookup));
+  static void print(ModuleLookup lookup, Consumer<String> printer, String tab, int max) {
     if (lookup instanceof ComposedModuleLookup) {
-      var composed = (ComposedModuleLookup) lookup;
-      composed.lookups().forEach(Shell::printModuleLookup);
+      for (var entry : ((ComposedModuleLookup) lookup).lookups()) print(entry, printer, tab, max);
+      return;
     }
+    if (lookup instanceof MappedModuleLookup) {
+      ((MappedModuleLookup) lookup)
+          .map().entrySet().stream()
+              .sorted(Map.Entry.comparingByKey())
+              .map(entry -> ModuleLookup.of(entry.getKey(), entry.getValue()))
+              .forEach(external -> print(external, printer, tab, max));
+      return;
+    }
+    printer.accept(String.format("%s%." + max + "s", tab, lookup));
   }
 
   public static void listModulesWithRequiresDirectivesMatching(String regex) {
@@ -153,9 +163,10 @@ public class Shell {
             .sorted(Comparator.comparing(ModuleDescriptor::name))
             .toList();
     for (var descriptor : descriptors) {
-      var matched = descriptor.requires().stream()
-          .filter(requires -> requires.name().matches(regex))
-          .toList();
+      var matched =
+          descriptor.requires().stream()
+              .filter(requires -> requires.name().matches(regex))
+              .toList();
       if (matched.isEmpty()) continue;
       out.accept(descriptor.toNameAndVersion());
       matched.forEach(requires -> out.accept("  " + requires));
