@@ -32,7 +32,7 @@ public final class DynamicModuleLookup implements ModuleLookup {
 
   @Override
   public String toString() {
-    return "DynamicModuleLookup -> " + directoryLookup;
+    return "DynamicModuleLookup (" + directory + ")";
   }
 
   private static String computeNames(Path directory) {

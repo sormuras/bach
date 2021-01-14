@@ -28,6 +28,6 @@ public record ExternalModuleLookup(String module, String uri) implements ModuleL
 
   @Override
   public String toString() {
-    return "ExternalModuleLookup (" + module + " -> " + uri + ')';
+    return module + " -> " + uri;
   }
 }

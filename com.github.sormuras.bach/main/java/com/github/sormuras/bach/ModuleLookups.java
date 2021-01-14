@@ -40,7 +40,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "GitHubReleases";
+      return "com.github.USER.REPOSITORY[.*] -> GitHub Releases";
     }
   }
 
@@ -88,7 +88,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "JavaFX " + version + " (" + classifier + ')';
+      return "javafx.[*] -> JavaFX " + version + '-' + classifier;
     }
   }
 
@@ -120,7 +120,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "JUnit " + version + " -> " + lookup.toString();
+      return "JUnit " + version;
     }
   }
 
@@ -157,7 +157,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "JUnit Jupiter " + version;
+      return "org.junit.jupiter[*] -> JUnit Jupiter " + version;
     }
   }
 
@@ -197,7 +197,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "JUnit Platform " + version;
+      return "org.junit.platform.[*] -> JUnit Platform " + version;
     }
   }
 
@@ -259,7 +259,7 @@ public class ModuleLookups {
 
     @Override
     public String toString() {
-      return "LWJGL " + version + " (" + classifier + ")";
+      return "org.lwjgl[*] -> LWJGL " + version + '-' + classifier;
     }
   }
 
