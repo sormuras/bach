@@ -57,8 +57,8 @@ public class Bach {
 
   public Bach(Base base, Consumer<String> printer, Flag... flags) {
     this.base = base;
-    this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     this.printer = printer;
+    this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     this.recordings = new ConcurrentLinkedQueue<>();
     try {
       this.project = newProject();
@@ -233,6 +233,20 @@ public class Bach {
     var provider = computeToolProvider(command.name());
     var arguments = command.toStrings();
     return run(provider, arguments);
+  }
+
+  public List<Recording> run(Command<?> command, Command<?>... commands) {
+    return run(Stream.concat(Stream.of(command), Stream.of(commands)).toList());
+  }
+
+  public List<Recording> run(List<Command<?>> commands) {
+    var size = commands.size();
+    debug("Run %d command%s", size, size == 1 ? "" : "s");
+    if (size == 0) return List.of();
+    if (size == 1) return List.of(run(commands.iterator().next()));
+    var sequential = is(Flag.RUN_COMMANDS_SEQUENTIALLY);
+    var stream = sequential ? commands.stream() : commands.stream().parallel();
+    return stream.map(this::run).toList();
   }
 
   public Recording run(ToolProvider provider, List<String> arguments) {
