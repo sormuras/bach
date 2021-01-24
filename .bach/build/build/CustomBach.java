@@ -5,11 +5,6 @@ import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
-import com.github.sormuras.bach.ModuleLookup;
-import com.github.sormuras.bach.ModuleLookups.GitHubReleases;
-import com.github.sormuras.bach.ModuleLookups.JUnit;
-import com.github.sormuras.bach.ModuleLookups.JavaFX;
-import com.github.sormuras.bach.ModuleLookups.LWJGL;
 import com.github.sormuras.bach.Project;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,16 +39,6 @@ public class CustomBach extends Bach {
                 + "-custom+"
                 + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now));
     return super.newProject().version(version);
-  }
-
-  @Override
-  public ModuleLookup newModuleLookup() {
-    return ModuleLookup.compose(
-        JUnit.V_5_7_0,
-        new JavaFX("15.0.1"),
-        new LWJGL("3.2.3"),
-        new GitHubReleases(this),
-        ModuleLookup.ofProvidersFoundInExternalModules());
   }
 
   @Override

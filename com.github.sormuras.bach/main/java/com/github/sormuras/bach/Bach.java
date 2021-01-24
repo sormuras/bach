@@ -49,7 +49,6 @@ public class Bach {
   private final Consumer<String> printer;
   private final Queue<Recording> recordings;
   private final Project project;
-  private final ModuleLookup moduleLookup;
   private /*-*/ Browser browser;
 
   public Bach() {
@@ -63,7 +62,6 @@ public class Bach {
     this.recordings = new ConcurrentLinkedQueue<>();
     try {
       this.project = newProject();
-      this.moduleLookup = newModuleLookup();
     } catch (Exception exception) {
       throw new Error("Initialization failed", exception);
     }
@@ -81,10 +79,6 @@ public class Bach {
     return project;
   }
 
-  public ModuleLookup moduleLookup() {
-    return moduleLookup;
-  }
-
   public final synchronized Browser browser() {
     if (browser == null) browser = newBrowser();
     return browser;
@@ -96,10 +90,6 @@ public class Bach {
 
   public Project newProject() throws Exception {
     return new Project();
-  }
-
-  public ModuleLookup newModuleLookup() {
-    return ModuleLookup.ofEmpty();
   }
 
   public Browser newBrowser() {
@@ -132,7 +122,7 @@ public class Bach {
   public void buildMainSpace() throws Exception {}
 
   public String computeExternalModuleUri(String module) {
-    return moduleLookup.lookupModule(module).orElseThrow(() -> new NoSuchElementException(module));
+    throw new NoSuchElementException(module);
   }
 
   public Path computeExternalModuleFile(String module) {

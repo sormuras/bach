@@ -1,7 +1,5 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.ComposedModuleLookup;
-import com.github.sormuras.bach.internal.MappedModuleLookup;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.internal.ToolProviders;
 import java.lang.module.ModuleDescriptor;
@@ -14,7 +12,6 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -133,26 +130,6 @@ public class Shell {
     var size = modules.size();
     modules.stream().sorted().forEach(out);
     out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
-  }
-
-  public static void listModuleLookups() {
-    print(bach.moduleLookup(), out::accept, "", 100);
-  }
-
-  static void print(ModuleLookup lookup, Consumer<String> printer, String tab, int max) {
-    if (lookup instanceof ComposedModuleLookup) {
-      for (var entry : ((ComposedModuleLookup) lookup).lookups()) print(entry, printer, tab, max);
-      return;
-    }
-    if (lookup instanceof MappedModuleLookup) {
-      ((MappedModuleLookup) lookup)
-          .map().entrySet().stream()
-              .sorted(Map.Entry.comparingByKey())
-              .map(entry -> ModuleLookup.of(entry.getKey(), entry.getValue()))
-              .forEach(external -> print(external, printer, tab, max));
-      return;
-    }
-    printer.accept(String.format("%s%." + max + "s", tab, lookup));
   }
 
   public static void listModulesWithRequiresDirectivesMatching(String regex) {
