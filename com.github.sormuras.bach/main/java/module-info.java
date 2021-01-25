@@ -17,7 +17,7 @@ module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.tool;
 
-  requires java.net.http;
+  requires transitive java.net.http;
   requires jdk.compiler;
   requires jdk.crypto.ec; // https://stackoverflow.com/questions/55439599
   requires jdk.jartool;

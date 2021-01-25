@@ -17,7 +17,7 @@ public class Browser {
 
   public Browser(Bach bach) {
     this.bach = bach;
-    this.client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    this.client = bach.newHttpClient();
   }
 
   public void load(String uri, Path file) {
@@ -31,6 +31,8 @@ public class Browser {
   }
 
   public void load(Map<String, Path> map) {
+    bach.debug("Load %d file%s", map.size(), map.size() == 1 ? "" : "s");
+    if (map.isEmpty()) return;
     var futures = new ArrayList<CompletableFuture<Path>>();
     for (var entry : map.entrySet()) {
       var uri = entry.getKey();

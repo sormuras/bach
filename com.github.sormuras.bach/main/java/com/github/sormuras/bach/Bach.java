@@ -5,6 +5,7 @@ import com.github.sormuras.bach.internal.Modules;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -84,16 +85,20 @@ public class Bach {
     return browser;
   }
 
-  public Logbook newLogbook() {
+  protected Logbook newLogbook() {
     return new Logbook(this);
   }
 
-  public Project newProject() throws Exception {
+  protected Project newProject() throws Exception {
     return new Project();
   }
 
-  public Browser newBrowser() {
+  protected Browser newBrowser() {
     return new Browser(this);
+  }
+
+  protected HttpClient newHttpClient() {
+    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
 
   @Main.Action
