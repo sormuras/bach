@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Finder;
 import com.github.sormuras.bach.Finders;
+import com.github.sormuras.bach.lookup.Maven;
 import org.junit.jupiter.api.Test;
 
 class FinderTests {
@@ -20,11 +21,17 @@ class FinderTests {
 
   @Test
   void checkMaven() {
-    var finder = Finder.empty()
-        .link("junit")
-        .toMaven("junit", "junit", "4.12", maven -> maven.repository(""));
-    var m = finder.find("junit").orElseThrow();
-    assertEquals("u", m.uri());
+    var finder =
+        Finder.empty()
+            .link("junit")
+            .toMaven(
+                "junit",
+                "junit",
+                "4.13",
+                maven -> maven.repository(Maven.CENTRAL_REPOSITORY).type("jar").classifier("alt"));
+    var junit = finder.find("junit").orElseThrow();
+    assertTrue(junit.uri().endsWith("junit-4.13-alt.jar"));
+    assertEquals(Maven.central("junit", "junit", "4.13", "alt"), junit.uri());
   }
 
   @Test

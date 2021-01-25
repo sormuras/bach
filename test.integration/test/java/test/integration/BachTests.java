@@ -10,8 +10,8 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Recording;
+import com.github.sormuras.bach.lookup.LookupException;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +24,7 @@ class BachTests {
     assertNotNull(bach.browser());
     assertTrue(bach.recordings().isEmpty());
     // compute
-    assertThrows(NoSuchElementException.class, () -> bach.computeExternalModuleUri("java.base"));
+    assertThrows(LookupException.class, () -> bach.computeExternalModuleUri("java.base"));
     assertEquals("foo@0.jar", bach.computeMainJarFileName("foo"));
     assertEquals("jar", bach.computeToolProvider("jar").name());
     assertEquals("javac", bach.computeToolProvider("javac").name());

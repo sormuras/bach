@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 /** Maven-related utilities. */
-public class Maven {
+public final class Maven {
 
   public static final String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
 
@@ -32,6 +32,9 @@ public class Maven {
     private String version;
     private String classifier = "";
     private String type = "jar";
+
+    /** Hidden default constructor. */
+    private Joiner() {}
 
     @Override
     public String toString() {
