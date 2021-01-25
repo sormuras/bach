@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.internal;
+package com.github.sormuras.bach.lookup;
 
 import java.util.Objects;
 import java.util.StringJoiner;
