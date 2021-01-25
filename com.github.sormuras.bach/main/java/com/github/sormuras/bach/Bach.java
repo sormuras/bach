@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import com.github.sormuras.bach.internal.Modules;
+import com.github.sormuras.bach.lookup.LookupException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
@@ -12,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -49,6 +49,7 @@ public class Bach {
   private final Set<Flag> flags;
   private final Consumer<String> printer;
   private final Queue<Recording> recordings;
+  private final Finder finder;
   private final Project project;
   private /*-*/ Browser browser;
 
@@ -62,6 +63,7 @@ public class Bach {
     this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     this.recordings = new ConcurrentLinkedQueue<>();
     try {
+      this.finder = newFinder();
       this.project = newProject();
     } catch (Exception exception) {
       throw new Error("Initialization failed", exception);
@@ -76,6 +78,10 @@ public class Bach {
     return recordings.stream().toList();
   }
 
+  public final Finder finder() {
+    return finder;
+  }
+
   public final Project project() {
     return project;
   }
@@ -87,6 +93,10 @@ public class Bach {
 
   protected Logbook newLogbook() {
     return new Logbook(this);
+  }
+
+  protected Finder newFinder() {
+    return new Finder();
   }
 
   protected Project newProject() throws Exception {
@@ -127,7 +137,9 @@ public class Bach {
   public void buildMainSpace() throws Exception {}
 
   public String computeExternalModuleUri(String module) {
-    throw new NoSuchElementException(module);
+    var found = finder().find(module).orElseThrow(() -> new LookupException(module));
+    debug("%s <- %s", module, found);
+    return found.uri();
   }
 
   public Path computeExternalModuleFile(String module) {

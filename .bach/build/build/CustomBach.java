@@ -3,6 +3,8 @@ package build;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Finder;
+import com.github.sormuras.bach.Finders;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
@@ -28,6 +30,11 @@ public class CustomBach extends Bach {
 
   public CustomBach(Flag... flags) {
     super(Base.ofSystem(), System.out::println, flags);
+  }
+
+  @Override
+  protected Finder newFinder() {
+    return Finder.empty().with(Finders.JUnit.V_5_7_0);
   }
 
   @Override
