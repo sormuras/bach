@@ -37,6 +37,11 @@ public class Shell {
     return bach;
   }
 
+  public static void beep() {
+    System.out.print("\007");
+    System.out.flush();
+  }
+
   public static void refresh() {
     try {
       bach = Bach.of("build");
@@ -57,7 +62,7 @@ public class Shell {
   private static void refreshOnChanges() {
     if (Arrays.equals(hash, computeHash())) return;
     refresh();
-    bach.printInfo();
+    beep();
   }
 
   private static byte[] computeHash() {
