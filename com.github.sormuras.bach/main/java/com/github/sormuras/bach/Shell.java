@@ -7,6 +7,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -40,6 +41,42 @@ public class Shell {
   public static void beep() {
     System.out.print("\007");
     System.out.flush();
+  }
+
+  /**
+   * Prints a listing of all files matching the given glob pattern.
+   *
+   * @param glob the glob pattern
+   */
+  public static void find(String glob) {
+    var start = Path.of("");
+    var pattern = glob;
+    while (pattern.startsWith(".") || pattern.startsWith("/")) pattern = pattern.substring(1);
+    var matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+    try (var paths = Files.find(start, 99, (path, __) -> matcher.matches(start.relativize(path)))) {
+      paths.filter(Shell::isVisible).map(Path::normalize).map(Shell::slashed).forEach(out);
+    } catch (Exception exception) {
+      throw new RuntimeException("find failed: " + start + " -> " + glob, exception);
+    }
+  }
+
+  private static boolean isVisible(Path path) {
+    try {
+      for (int endIndex = 1; endIndex <= path.getNameCount(); endIndex++) {
+        var subpath = path.subpath(0, endIndex);
+        // work around https://bugs.openjdk.java.net/browse/JDK-8255576
+        var probe = subpath.toString().isEmpty() ? path.toAbsolutePath() : subpath;
+        if (!Files.isReadable(probe)) return false;
+        if (Files.isHidden(probe)) return false;
+      }
+      return true;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static String slashed(Path path) {
+    return path.toString().replace('\\', '/');
   }
 
   public static void refresh() {
