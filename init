@@ -2,43 +2,7 @@
 
 /open https://github.com/sormuras/bach/raw/main/boot
 
-var bach = Path.of("bach")
-if (Files.notExists(bach)) {
-  System.out.println();
-  System.out.println("Generate bach launch script");
-
-  Files.writeString(bach,
-    """
-    #!/usr/bin/env bash
-
-    if [[ $1 != 'init' ]]; then
-      java --module-path .bach/cache --module com.github.sormuras.bach "$@"
-    else
-      rm -f .bach/cache/com.github.sormuras.bach@*.jar
-      jshell -R-Dreboot -R-Dversion="${2:-17-ea}" https://bit.ly/bach-main-init
-    fi
-    """).toFile().setExecutable(true);
-
-  Files.writeString(Path.of("bach.bat"),
-    """
-    @ECHO OFF
-
-    IF [%1]==[init] GOTO INIT
-
-    java --module-path .bach\\cache --module com.github.sormuras.bach %*
-
-    GOTO END
-
-    :INIT
-    del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
-    SETLOCAL
-    IF [%2]==[] ( SET tag=17-ea ) ELSE ( SET tag=%2 )
-    jshell -R-Dreboot -R-Dversion=%tag% https://bit.ly/bach-main-init
-    ENDLOCAL
-
-    :END
-    """);
-}
+Shell.initBachLaunchScripts()
 
 bach().printHelp()
 

@@ -19,7 +19,7 @@ class Bootstrap {
     run(
         "javac",
         "--module=" + module,
-        "--module-version=" + version + "-" + Instant.now(),
+        "--module-version=" + version + "+" + Instant.now(),
         "--module-source-path=./*/main/java",
         "-g",
         "-parameters",

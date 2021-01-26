@@ -80,8 +80,12 @@ public class Shell {
   }
 
   public static void refresh() {
+   refresh("build");
+  }
+
+  public static void refresh(String module) {
     try {
-      bach = Bach.of("build");
+      bach = Bach.of(module);
     } catch (Exception exception) {
       err.accept(
           """
@@ -120,6 +124,81 @@ public class Shell {
       bach.debug("Compute digest failed for: %s", path);
       bach.debug("%s", exception);
       return new byte[0];
+    }
+  }
+
+  public static void init() throws Exception {
+    initBachLaunchScripts();
+    initBuildModule("build");
+  }
+
+  public static void initBachLaunchScripts() throws Exception {
+    var bash = bach.base().directory("bach");
+    if (Files.exists(bash) && !Boolean.getBoolean("force-init")) {
+      out.accept("Launch script already exists: " + bash);
+    } else {
+      out.accept("Generate launch script: " + bash);
+      Files.writeString(
+              bash,
+              """
+          #!/usr/bin/env bash
+
+          if [[ $1 != 'init' ]]; then
+            java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+          else
+            rm -f .bach/cache/com.github.sormuras.bach@*.jar
+            jshell -R-Dreboot -R-Dversion="${2:-17-ea}" https://bit.ly/bach-main-init
+          fi
+          """)
+          .toFile()
+          .setExecutable(true);
+    }
+    var bat = bach.base().directory("bach.bat");
+    if (Files.exists(bat) && !Boolean.getBoolean("force-init")) {
+      out.accept("Launch script already exists: " + bat);
+    } else {
+      out.accept("Generate launch script: " + bat);
+      Files.writeString(
+          bat,
+          """
+          @ECHO OFF
+
+          IF [%1]==[init] GOTO INIT
+
+          java --module-path .bach\\cache --module com.github.sormuras.bach %*
+
+          GOTO END
+
+          :INIT
+          del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
+          SETLOCAL
+          IF [%2]==[] ( SET tag=17-ea ) ELSE ( SET tag=%2 )
+          jshell -R-Dreboot -R-Dversion=%tag% https://bit.ly/bach-main-init
+          ENDLOCAL
+
+          :END
+          """);
+    }
+  }
+
+  public static void initBuildModule(String name) throws Exception {
+    var info = bach.base().directory(".bach", name, "module-info.java");
+    if (Files.exists(info) && !Boolean.getBoolean("force-init")) {
+      out.accept("Build module already exists: " + info);
+    } else {
+      out.accept("Generate build module declaration: " + info);
+      Files.createDirectories(info.getParent());
+      Files.writeString(
+              info,
+              """
+              // @ProjectInfo()
+              module %1$s {
+                requires com.github.sormuras.bach;
+                // provides com.github.sormuras.bach.Bach with %1$s.CustomBach;
+              }
+              """.formatted(name))
+          .toFile()
+          .setExecutable(true);
     }
   }
 
