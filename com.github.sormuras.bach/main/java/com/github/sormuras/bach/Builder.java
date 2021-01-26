@@ -176,7 +176,9 @@ public class Builder {
         .with("--release", release)
         .with("--module", main.modules().toNames(","))
         .with("--module-version", project.version())
-        .with("--module-source-path", main.toModuleSourcePath())
+        .withEach(
+            main.modules().toModuleSourcePaths(false),
+            (javac, paths) -> javac.with("--module-source-path", paths))
         .with("--module-path", main.toModulePath())
         .withEach(main.tweaks().arguments("javac"))
         .with("-d", main.classes(release))
@@ -231,7 +233,9 @@ public class Builder {
           Command.builder("javac")
               .with("--release", 9)
               .with("--module-version", project.version())
-              .with("--module-source-path", main.toModuleSourcePath())
+              .withEach(
+                  main.modules().toModuleSourcePaths(false),
+                  (javac, paths) -> javac.with("--module-source-path", paths))
               .with("--module-path", main.toModulePath())
               .with("-implicit:none") // generate classes for explicitly referenced source files
               .withEach(main.tweaks().arguments("javac"))
@@ -353,7 +357,9 @@ public class Builder {
     var api = main.documentation("api");
     return Command.builder("javadoc")
         .with("--module", main.modules().toNames(","))
-        .with("--module-source-path", main.toModuleSourcePath())
+        .withEach(
+            main.modules().toModuleSourcePaths(false),
+            (javac, paths) -> javac.with("--module-source-path", paths))
         .with("--module-path", main.toModulePath())
         .withEach(main.tweaks().arguments("javadoc"))
         .with("-d", api)
@@ -432,7 +438,9 @@ public class Builder {
     var test = project.spaces().test();
     return Command.builder("javac")
         .with("--module", test.modules().toNames(","))
-        .with("--module-source-path", test.toModuleSourcePath())
+        .withEach(
+            test.modules().toModuleSourcePaths(false),
+            (javac, paths) -> javac.with("--module-source-path", paths))
         .with("--module-path", test.toModulePath())
         .withEach(
             test.modules().toModulePatches(main.modules()).entrySet(),

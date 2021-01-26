@@ -2,7 +2,6 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.internal.Paths;
-import java.io.File;
 import java.nio.file.Path;
 
 /** A nominal space for modular Java source code. */
@@ -75,11 +74,6 @@ import java.nio.file.Path;
    */
   default Path classes(int release, String module) {
     return classes(release).resolve(module);
-  }
-
-  /** @return a string usable for {@code --module-source-path} */
-  default String toModuleSourcePath() {
-    return String.join(File.pathSeparator, modules().toModuleSourcePaths(false));
   }
 
   /** @return a string usable for {@code --module-path} */
