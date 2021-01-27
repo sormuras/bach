@@ -48,7 +48,7 @@ public class ModuleLayerBuilder {
         .oneLoader(true)
         .parentConfigurations(List.of(boot.configuration()))
         .before(ModuleFinder.of())
-        .after(ModuleFinder.of(destination, Bach.CACHE))
+        .after(ModuleFinder.of(destination.resolve(module), Bach.CACHE))
         .roots(Set.of(module))
         .parentLayers(List.of(boot))
         .parentLoader(ClassLoader.getPlatformClassLoader())
