@@ -16,10 +16,6 @@ import java.util.spi.ToolProvider;
 /** A builder for building module layers. */
 public class ModuleLayerBuilder {
 
-  public static ModuleLayer build(Path... entries) {
-    return new ModuleLayerBuilder().before(ModuleFinder.of(entries)).build();
-  }
-
   public static ModuleLayer build(String module) {
     return build(Path.of(".bach"), module);
   }

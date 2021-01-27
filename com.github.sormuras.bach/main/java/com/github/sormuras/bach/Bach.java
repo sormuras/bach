@@ -163,7 +163,7 @@ public class Bach {
   }
 
   public Stream<ToolProvider> computeToolProviders() {
-    var layer = ModuleLayerBuilder.build(EXTERNALS);
+    var layer = new ModuleLayerBuilder().before(ModuleFinder.of(EXTERNALS)).build();
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
