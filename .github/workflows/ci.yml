@@ -55,7 +55,7 @@ jobs:
           java-version: ${{ steps.jdk.outputs.version }}
           jdkFile: ${{ steps.jdk.outputs.file }}
       - name: 'Bootstrap Bach'
-        run: java --show-version .bach/build/build/Bootstrap.java
+        run: java --show-version .bach/source/Bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
         run: |
           java \

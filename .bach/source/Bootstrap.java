@@ -1,5 +1,3 @@
-package build;
-
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
