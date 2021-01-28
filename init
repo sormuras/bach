@@ -1,7 +1,4 @@
 // Bach's Initialization Script
 
-/open https://github.com/sormuras/bach/raw/main/.bach/source/Init.java
-
-void dir() throws Exception { Init.dir("", "*"); }
-void dir(String folder) throws Exception { Init.dir(folder, "*"); }
-void dir(String folder, String glob) throws Exception { Init.dir(folder, glob); }
+//open https://github.com/sormuras/bach/raw/main/.bach/source/Init.java
+/open .bach/source/Init.java

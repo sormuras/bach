@@ -2,11 +2,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @SuppressWarnings("unused")
 public class Init {
 
   private static final Consumer<Object> out = System.out::println;
+
+  public static void dir() throws Exception {
+    dir("");
+  }
+
+  public static void dir(String folder) throws Exception {
+    dir(folder, "*");
+  }
 
   public static void dir(String folder, String glob) throws Exception {
     var directory = Path.of(folder).toAbsolutePath().normalize();
@@ -45,5 +54,46 @@ public class Init {
     out.accept("");
     out.accept(String.format("%15d path%s in directory %s", all, all == 1 ? "" : "s", directory));
     out.accept(String.format("%,15d bytes in %d file%s", bytes, files, files == 1 ? "" : "s"));
+  }
+
+  public static void tree() throws Exception {
+    tree("");
+  }
+
+  public static void tree(String folder) throws Exception {
+    tree(folder, Files::isDirectory);
+  }
+
+  public static void tree(String folder, Predicate<Path> filter) throws Exception {
+    var root = Path.of(folder);
+    try (var stream = Files.walk(root)) {
+      stream
+          .filter(filter)
+          .map(root::relativize)
+          .map(Path::toString)
+          .filter(Predicate.not(String::isEmpty))
+          .map(string -> string.replace('\\', '/'))
+          .sorted()
+          .forEach(out);
+    }
+  }
+
+  public static ProjectTemplate newProject(String name) {
+    return new ProjectTemplate(Path.of(""), name);
+  }
+
+  record ProjectTemplate(Path directory, String name) {
+
+    void createProject() throws Exception {
+      out.accept("Create project using " + this);
+      var base = directory.resolve(name);
+      if (Files.exists(base)) {
+        out.accept("Path already exists: " + base);
+        return;
+      }
+      Files.createDirectories(base);
+      out.accept("Created project " + name);
+      tree(base.toString(), Files::exists);
+    }
   }
 }
