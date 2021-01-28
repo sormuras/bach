@@ -1,26 +1,7 @@
 // Bach's Initialization Script
 
-/open https://github.com/sormuras/bach/raw/main/boot
+/open https://github.com/sormuras/bach/raw/.bach/source/Init.java
 
-Shell.initBachLaunchScripts()
-
-bach().printHelp()
-
-System.out.println(
-  """
-
-  Bach initialized.
-
-  bach [ACTION [ARGS...]]
-      Launch Bach's main program handling the specified action and passing
-      optional arguments to the action handler.
-
-  bach init [VERSION]
-      Update Bach to the specified version. If no version argument is given
-      an early-access version of Bach is downloaded and cached.
-
-  Have fun! https://github.com/sponsors/sormuras (-:
-  """
-)
-
-/exit
+void dir() throws Exception { Init.dir("", "*"); }
+void dir(String folder) throws Exception { Init.dir(folder, "*"); }
+void dir(String folder, String glob) throws Exception { Init.dir(folder, glob); }
