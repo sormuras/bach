@@ -6,4 +6,4 @@ void dir() { Init.dir(); }
 void pwd() { System.out.println(Path.of("").toAbsolutePath()); }
 void tree() { Init.tree(); }
 
-Init.Project project() { return Init.project(); }
+Init.Project project() { return new Init.Project(); }

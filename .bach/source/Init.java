@@ -3,7 +3,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -104,31 +106,52 @@ public class Init {
     return files;
   }
 
-  public static Project project() {
-    return new Project();
-  }
+  record Project(Path directory, String name, Version bach, Set<Flag> flags) {
 
-  record Project(Path directory, String name, Version bach) {
+    enum Flag {}
 
     Project() {
-      this(Path.of(""), "noname", Version.parse("17-ea"));
+      this(Path.of(""), "noname", Version.parse("16-ea"), Set.of());
     }
 
-    Project in(String directory) {
-      return new Project(Path.of(directory), name, bach);
+    Project with(Flag flag, Flag... more) {
+      var copy = EnumSet.of(flag, more);
+      copy.addAll(flags);
+      return new Project(directory, name, bach, copy);
     }
 
-    Project name(String name) {
-      return new Project(directory, name, bach);
+    Project withinDirectory(String directory) {
+      return new Project(Path.of(directory), name, bach, flags);
     }
 
-    Project bach(String version) {
-      return new Project(directory, name, Version.parse(version));
+    Project withName(String name) {
+      return new Project(directory, name, bach, flags);
+    }
+
+    Project withBach(String version) {
+      return new Project(directory, name, Version.parse(version), flags);
+    }
+
+    Creator creator() {
+      return new Creator(this, Set.of());
+    }
+  }
+
+  record Creator(Project project, Set<Flag> flags) {
+
+    enum Flag {
+      DRY_RUN
+    }
+
+    Creator with(Flag flag, Flag... more) {
+      var copy = EnumSet.of(flag, more);
+      copy.addAll(flags);
+      return new Creator(project, copy);
     }
 
     void create() throws Exception {
       out.accept("Create " + this);
-      var base = directory.resolve(name);
+      var base = project.directory.resolve(project.name);
       if (Files.exists(base)) {
         out.accept("Path already exists: " + base);
         return;
@@ -138,12 +161,12 @@ public class Init {
       createCache();
       createLaunchers();
       out.accept("");
-      out.accept("Created project " + name);
+      out.accept("Created project " + project.name);
       tree(base.toString(), __ -> true);
     }
 
     void createBuildModule() throws Exception {
-      var base = directory.resolve(name);
+      var base = project.directory.resolve(project.name);
       var info = base.resolve(".bach/build/module-info.java");
       out.accept("Create build module declaration: " + info);
       Files.createDirectories(info.getParent());
@@ -159,11 +182,11 @@ public class Init {
     }
 
     void createCache() throws Exception {
-      var base = directory.resolve(name);
+      var base = project.directory.resolve(project.name);
       var cache = base.resolve(".bach/cache");
       var module = "com.github.sormuras.bach";
-      var jar = module + '@' + bach + ".jar";
-      var source = "https://github.com/sormuras/bach/releases/download/" + bach + '/' + jar;
+      var jar = module + '@' + project.bach + ".jar";
+      var source = "https://github.com/sormuras/bach/releases/download/" + project.bach + '/' + jar;
       var target = cache.resolve(jar);
 
       Files.createDirectories(cache);
@@ -173,22 +196,16 @@ public class Init {
     }
 
     void createLaunchers() throws Exception {
-      var base = directory.resolve(name);
+      var base = project.directory.resolve(project.name);
 
       var bash = base.resolve("bach");
       out.accept("Create launcher: " + bash);
       Files.writeString(
               bash,
               """
-              #!/usr/bin/env bash
-
-              if [[ $1 != 'init' ]]; then
-                java --module-path .bach/cache --module com.github.sormuras.bach "$@"
-              else
-                rm -f .bach/cache/com.github.sormuras.bach@*.jar
-                jshell -R-Dreboot -R-Dversion="${2:-17-ea}" https://bit.ly/bach-main-init
-              fi
-              """)
+          #!/usr/bin/env bash
+          java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+          """)
           .toFile()
           .setExecutable(true);
 
@@ -197,23 +214,9 @@ public class Init {
       Files.writeString(
           bat,
           """
-            @ECHO OFF
-
-            IF [%1]==[init] GOTO INIT
-
-            java --module-path .bach\\cache --module com.github.sormuras.bach %*
-
-            GOTO END
-
-            :INIT
-            del .bach\\cache\\com.github.sormuras.bach@*.jar >nul 2>&1
-            SETLOCAL
-            IF [%2]==[] ( SET tag=17-ea ) ELSE ( SET tag=%2 )
-            jshell -R-Dreboot -R-Dversion=%tag% https://bit.ly/bach-main-init
-            ENDLOCAL
-
-            :END
-            """);
+          @ECHO OFF
+          java --module-path .bach\\cache --module com.github.sormuras.bach %*
+          """);
     }
   }
 }
