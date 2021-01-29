@@ -1,4 +1,7 @@
 // Bach's Initialization Script
 
-//open https://github.com/sormuras/bach/raw/main/.bach/source/Init.java
-/open .bach/source/Init.java
+/open https://github.com/sormuras/bach/raw/main/.bach/source/Init.java
+
+void dir() { Init.dir(); }
+void pwd() { System.out.println(Path.of("").toAbsolutePath()); }
+void tree() { Init.tree(); }

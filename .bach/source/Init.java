@@ -2,22 +2,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 @SuppressWarnings("unused")
 public class Init {
 
   private static final Consumer<Object> out = System.out::println;
 
-  public static void dir() throws Exception {
+  public static void dir() {
     dir("");
   }
 
-  public static void dir(String folder) throws Exception {
+  public static void dir(String folder) {
     dir(folder, "*");
   }
 
-  public static void dir(String folder, String glob) throws Exception {
+  public static void dir(String folder, String glob) {
     var directory = Path.of(folder).toAbsolutePath().normalize();
     var paths = new ArrayList<Path>();
     try (var stream = Files.newDirectoryStream(directory, glob)) {
@@ -25,6 +24,8 @@ public class Init {
         // if (Files.isHidden(path)) continue;
         paths.add(path);
       }
+    } catch (Exception exception) {
+      out.accept(exception);
     }
     paths.sort(
         (Path p1, Path p2) -> {
@@ -39,11 +40,14 @@ public class Init {
     for (var path : paths) {
       var name = path.getFileName().toString();
       if (Files.isDirectory(path)) out.accept(String.format("%-15s %s", "[+]", name));
-      else {
+      else try {
         files++;
         var size = Files.size(path);
         bytes += size;
         out.accept(String.format("%,15d %s", size, name));
+      } catch (Exception exception) {
+        out.accept(exception);
+        return;
       }
     }
     var all = paths.size();
@@ -56,26 +60,35 @@ public class Init {
     out.accept(String.format("%,15d bytes in %d file%s", bytes, files, files == 1 ? "" : "s"));
   }
 
-  public static void tree() throws Exception {
+  public static void tree() {
     tree("");
   }
 
-  public static void tree(String folder) throws Exception {
-    tree(folder, Files::isDirectory);
+  public static void tree(String folder) {
+    var directory = Path.of(folder).toAbsolutePath();
+    var files = tree(directory, "");
+    out.accept("");
+    out.accept(String.format("%d file%s in tree of %s", files, files == 1 ? "" : "s", directory));
   }
 
-  public static void tree(String folder, Predicate<Path> filter) throws Exception {
-    var root = Path.of(folder);
-    try (var stream = Files.walk(root)) {
-      stream
-          .filter(filter)
-          .map(root::relativize)
-          .map(Path::toString)
-          .filter(Predicate.not(String::isEmpty))
-          .map(string -> string.replace('\\', '/'))
-          .sorted()
-          .forEach(out);
+  private static int tree(Path directory, String indent) {
+    var files = 0;
+    try (var stream = Files.newDirectoryStream(directory, "*")) {
+      for (var path : stream) {
+        if (Files.isHidden(path)) continue;
+        var name = path.getFileName().toString();
+        if (Files.isDirectory(path)) {
+          out.accept(indent + name + "/");
+          files += tree(path, indent + "  ");
+          continue;
+        }
+        files++;
+        if (name.contains("module-info")) out.accept(indent + name);
+      }
+    } catch (Exception exception) {
+      out.accept(exception);
     }
+    return files;
   }
 
   public static ProjectTemplate newProject(String name) {
@@ -93,7 +106,7 @@ public class Init {
       }
       Files.createDirectories(base);
       out.accept("Created project " + name);
-      tree(base.toString(), Files::exists);
+      tree(base.toString());
     }
   }
 }
