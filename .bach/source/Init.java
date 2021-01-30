@@ -110,11 +110,17 @@ public class Init {
     return files;
   }
 
-  public static Project demoJigsawQuickStartGreetings() {
+  public static Project projectJigsawQuickStartGreetings() {
     return new Project()
         .withName("jigsaw-quick-start-greetings")
-        .withModule(
-            ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main").build());
+        .withModule(ModuleDescriptor.newModule("com.greetings").build());
+  }
+
+  public static Project projectJigsawQuickStartWorld() {
+    return new Project()
+        .withName("jigsaw-quick-start-world")
+        .withModule(ModuleDescriptor.newModule("com.greetings").requires("org.astro").build())
+        .withModule(ModuleDescriptor.newModule("org.astro").exports("org.astro").build());
   }
 
   record Project(String name, Version version, Set<ModuleDescriptor> modules) {
@@ -200,6 +206,11 @@ public class Init {
         out.accept("");
         out.accept("Created project " + project.name + " in " + directory.toAbsolutePath());
         tree(base.toString(), __ -> true);
+        out.accept("");
+        out.accept("Next steps:");
+        out.accept(" - /exit to return to your shell");
+        out.accept(" - cd " + base);
+        out.accept(" - bach build");
       }
     }
 
@@ -284,12 +295,23 @@ public class Init {
     void createModulesOfMainModuleSpace() throws Exception {
       var base = directory.resolve(project.name);
       for (var module : project.modules) {
-        var info = base.resolve(module.name() + "/module-info.java");
+        var info = base.resolve(module.name() + "/main/java/module-info.java");
         var text = new StringJoiner(System.lineSeparator());
         var open = module.isOpen() ? "open " : "";
         text.add(open + "module " + module.name() + " {");
+        // exports PACKAGE [to MODULE[, ...]] ;
+        for (var exports : new TreeSet<>(module.exports())) {
+          var directive = new StringJoiner(" ");
+          directive.add("exports");
+          directive.add(exports.source());
+          if (!exports.targets().isEmpty()) {
+            directive.add("to");
+            directive.add(String.join(", ", new TreeSet<>(exports.targets())));
+          }
+          text.add("  " + directive + ";");
+        }
         // requires [STATIC] [TRANSITIVE] MODULE ;
-        for (var requires : module.requires()) {
+        for (var requires : new TreeSet<>(module.requires())) {
           var modifiers = requires.modifiers();
           if (modifiers.contains(Requires.Modifier.MANDATED)) continue;
           var directive = new StringJoiner(" ");
@@ -303,8 +325,9 @@ public class Init {
 
         if (isDryRun("Create module declaration: %s", info)) {
           out.accept(text.toString().indent(10 + 4).stripTrailing());
-          return;
+          continue;
         }
+
         Files.createDirectories(info.getParent());
         Files.writeString(info, text.toString());
       }
