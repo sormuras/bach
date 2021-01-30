@@ -219,4 +219,7 @@ public class Init {
           """);
     }
   }
+
+  /** Hidden default constructor. */
+  private Init() {}
 }
