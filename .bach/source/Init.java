@@ -1,4 +1,5 @@
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URL;
 import java.nio.file.Files;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -134,6 +136,8 @@ public class Init {
     }
 
     Project withModule(ModuleDescriptor module) {
+      if (module.isOpen()) throw new IllegalArgumentException("module must not be open");
+      if (module.isAutomatic()) throw new IllegalArgumentException("module must not be automatic");
       var modules = new TreeSet<>(this.modules);
       modules.add(module);
       return new Project(name, version, modules);
@@ -191,6 +195,7 @@ public class Init {
       createBuildModule();
       createCacheDirectoryByDownloadBach();
       createLaunchers();
+      createModules();
       if (isNormalRun()) {
         out.accept("");
         out.accept("Created project " + project.name + " in " + directory.toAbsolutePath());
@@ -270,6 +275,42 @@ public class Init {
 
       Files.writeString(bat, text);
     }
+
+    void createModules() throws Exception {
+      createModulesOfMainModuleSpace();
+      createModulesOfTestModuleSpace();
+    }
+
+    void createModulesOfMainModuleSpace() throws Exception {
+      var base = directory.resolve(project.name);
+      for (var module : project.modules) {
+        var info = base.resolve(module.name() + "/module-info.java");
+        var text = new StringJoiner(System.lineSeparator());
+        var open = module.isOpen() ? "open " : "";
+        text.add(open + "module " + module.name() + " {");
+        // requires [STATIC] [TRANSITIVE] MODULE ;
+        for (var requires : module.requires()) {
+          var modifiers = requires.modifiers();
+          if (modifiers.contains(Requires.Modifier.MANDATED)) continue;
+          var directive = new StringJoiner(" ");
+          directive.add("requires");
+          if (modifiers.contains(Requires.Modifier.STATIC)) directive.add("static");
+          if (modifiers.contains(Requires.Modifier.TRANSITIVE)) directive.add("transitive");
+          directive.add(requires.name());
+          text.add("  " + directive + ";");
+        }
+        text.add("}");
+
+        if (isDryRun("Create module declaration: %s", info)) {
+          out.accept(text.toString().indent(10 + 4).stripTrailing());
+          return;
+        }
+        Files.createDirectories(info.getParent());
+        Files.writeString(info, text.toString());
+      }
+    }
+
+    void createModulesOfTestModuleSpace() {}
   }
 
   /** Hidden default constructor. */
