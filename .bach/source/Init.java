@@ -1,3 +1,4 @@
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.net.URL;
 import java.nio.file.Files;
@@ -6,6 +7,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -106,88 +108,123 @@ public class Init {
     return files;
   }
 
-  record Project(Path directory, String name, Version bach, Set<Flag> flags) {
+  public static Project demoJigsawQuickStartGreetings() {
+    return new Project()
+        .withName("jigsaw-quick-start-greetings")
+        .withModule(
+            ModuleDescriptor.newModule("com.greetings").mainClass("com.greetings.Main").build());
+  }
 
-    enum Flag {}
+  record Project(String name, Version version, Set<ModuleDescriptor> modules) {
 
     Project() {
-      this(Path.of(""), "noname", Version.parse("16-ea"), Set.of());
-    }
-
-    Project with(Flag flag, Flag... more) {
-      var copy = EnumSet.of(flag, more);
-      copy.addAll(flags);
-      return new Project(directory, name, bach, copy);
-    }
-
-    Project withinDirectory(String directory) {
-      return new Project(Path.of(directory), name, bach, flags);
+      this("noname", Version.parse("0-ea"), Set.of());
     }
 
     Project withName(String name) {
-      return new Project(directory, name, bach, flags);
+      return new Project(name, version, modules);
     }
 
-    Project withBach(String version) {
-      return new Project(directory, name, Version.parse(version), flags);
+    Project withVersion(String version) {
+      return withVersion(Version.parse(version));
+    }
+
+    Project withVersion(Version version) {
+      return new Project(name, version, modules);
+    }
+
+    Project withModule(ModuleDescriptor module) {
+      var modules = new TreeSet<>(this.modules);
+      modules.add(module);
+      return new Project(name, version, modules);
     }
 
     Creator creator() {
-      return new Creator(this, Set.of());
+      return new Creator(Version.parse("16-ea"), Path.of(""), this, Set.of());
     }
   }
 
-  record Creator(Project project, Set<Flag> flags) {
+  record Creator(Version bach, Path directory, Project project, Set<Flag> flags) {
 
     enum Flag {
       DRY_RUN
     }
 
+    Creator withParentDirectory(String first, String... more) {
+      var directory = Path.of(first, more);
+      return new Creator(bach, directory, project, flags);
+    }
+
+    Creator withDryRunFlag() {
+      return with(Flag.DRY_RUN);
+    }
+
     Creator with(Flag flag, Flag... more) {
       var copy = EnumSet.of(flag, more);
       copy.addAll(flags);
-      return new Creator(project, copy);
+      return new Creator(bach, directory, project, copy);
+    }
+
+    boolean isDryRun() {
+      return flags.contains(Flag.DRY_RUN);
+    }
+
+    boolean isDryRun(String format, Object... args) {
+      var dry = isDryRun();
+      out.accept(String.format((dry ? "[dry-run] " : "") + format, args));
+      return dry;
+    }
+
+    boolean isNormalRun() {
+      return !isDryRun();
     }
 
     void create() throws Exception {
-      out.accept("Create " + this);
-      var base = project.directory.resolve(project.name);
-      if (Files.exists(base)) {
-        out.accept("Path already exists: " + base);
-        return;
+      var base = directory.resolve(project.name);
+      if (isNormalRun()) {
+        if (Files.exists(base)) {
+          out.accept("Path already exists: " + base);
+          return;
+        }
+        Files.createDirectories(base);
       }
-      Files.createDirectories(base);
       createBuildModule();
-      createCache();
+      createCacheDirectoryByDownloadBach();
       createLaunchers();
-      out.accept("");
-      out.accept("Created project " + project.name);
-      tree(base.toString(), __ -> true);
+      if (isNormalRun()) {
+        out.accept("");
+        out.accept("Created project " + project.name + " in " + directory.toAbsolutePath());
+        tree(base.toString(), __ -> true);
+      }
     }
 
     void createBuildModule() throws Exception {
-      var base = project.directory.resolve(project.name);
+      var base = directory.resolve(project.name);
       var info = base.resolve(".bach/build/module-info.java");
-      out.accept("Create build module declaration: " + info);
-      Files.createDirectories(info.getParent());
-      Files.writeString(
-          info,
+      var text =
           """
-              // @ProjectInfo()
-              module build {
-                requires com.github.sormuras.bach;
-                // provides com.github.sormuras.bach.Bach with build.CustomBach;
-              }
-              """);
+          // @com.github.sormuras.bach.ProjectInfo()
+          module build {
+            requires com.github.sormuras.bach;
+            // provides com.github.sormuras.bach.Bach with build.CustomBach;
+          }
+          """;
+
+      if (isDryRun("Create build module declaration: %s", info)) return;
+
+      Files.createDirectories(info.getParent());
+      Files.writeString(info, text);
     }
 
-    void createCache() throws Exception {
-      var base = project.directory.resolve(project.name);
+    void createCacheDirectoryByDownloadBach() throws Exception {
+      var base = directory.resolve(project.name);
       var cache = base.resolve(".bach/cache");
       var module = "com.github.sormuras.bach";
-      var jar = module + '@' + project.bach + ".jar";
-      var source = "https://github.com/sormuras/bach/releases/download/" + project.bach + '/' + jar;
+      var jar = module + '@' + bach + ".jar";
+      var source = "https://github.com/sormuras/bach/releases/download/" + bach + '/' + jar;
       var target = cache.resolve(jar);
+
+      if (isDryRun("Create cache by downloading %s to %s", jar, cache)) return;
 
       Files.createDirectories(cache);
       try (var stream = new URL(source).openStream()) {
@@ -196,27 +233,42 @@ public class Init {
     }
 
     void createLaunchers() throws Exception {
-      var base = project.directory.resolve(project.name);
+      createLauncherScriptForUnix();
+      createLauncherScriptForWindows();
+    }
 
+    void createLauncherScriptForUnix() throws Exception {
+      var base = directory.resolve(project.name);
       var bash = base.resolve("bach");
-      out.accept("Create launcher: " + bash);
-      Files.writeString(
-              bash,
-              """
+      var text =
+          """
           #!/usr/bin/env bash
           java --module-path .bach/cache --module com.github.sormuras.bach "$@"
-          """)
-          .toFile()
-          .setExecutable(true);
+          """;
 
+      if (isDryRun("Create launcher for Linux/MacOS: %s", bash)) {
+        out.accept(text.indent(10 + 4).stripTrailing());
+        return;
+      }
+
+      Files.writeString(bash, text).toFile().setExecutable(true);
+    }
+
+    void createLauncherScriptForWindows() throws Exception {
+      var base = directory.resolve(project.name);
       var bat = base.resolve("bach.bat");
-      out.accept("Create launcher: " + bat);
-      Files.writeString(
-          bat,
+      var text =
           """
           @ECHO OFF
           java --module-path .bach\\cache --module com.github.sormuras.bach %*
-          """);
+          """;
+
+      if (isDryRun("Create launcher for Windows: %s", bat)) {
+        out.accept(text.indent(10 + 4).stripTrailing());
+        return;
+      }
+
+      Files.writeString(bat, text);
     }
   }
 
