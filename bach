@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-if [[ $1 != 'init' ]]; then
-  java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+if [[ $1 == 'boot' ]]; then
+  jshell --module-path .bach/cache --add-modules com.github.sormuras.bach .bach/boot.jsh
 else
-  rm -f .bach/cache/com.github.sormuras.bach@*.jar
-  jshell -R-Dreboot -R-Dversion="${2:-17-ea}" https://bit.ly/bach-main-init
+  java --module-path .bach/cache --module com.github.sormuras.bach "$@"
 fi

@@ -1,4 +1,5 @@
 /workspace/
 *.bat
 *.jar
+*.jsh
 *.sh

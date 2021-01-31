@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @SuppressWarnings("unused")
-public class Init {
+public class Bach {
 
   public static final Version DEFAULT_BACH_VERSION = Version.parse("16-ea");
 
@@ -232,6 +232,7 @@ public class Init {
         tree(base.toString(), __ -> true);
         out(
             """
+
             In order to build the created project:
             - /exit
             - cd %s
@@ -275,8 +276,63 @@ public class Init {
     }
 
     void createLaunchers() throws Exception {
+      createLaunchersBootScript();
       createLauncherScriptForUnix();
       createLauncherScriptForWindows();
+    }
+
+    void createLaunchersBootScript() throws Exception {
+      var base = directory.resolve(project.name);
+      var boot = base.resolve(".bach/boot.jsh");
+      var text =
+          """
+          // Bach's Boot Script
+
+          var version = com.github.sormuras.bach.Bach.version()
+          System.out.println(
+          ""\"
+              ___      ___      ___      ___
+             /\\\\  \\\\    /\\\\  \\\\    /\\\\  \\\\    /\\\\__\\\\
+            /::\\\\  \\\\  /::\\\\  \\\\  /::\\\\  \\\\  /:/__/_
+           /::\\\\:\\\\__\\\\/::\\\\:\\\\__\\\\/:/\\\\:\\\\__\\\\/::\\\\/\\\\__\\\\
+           \\\\:\\\\::/  /\\\\/\\\\::/  /\\\\:\\\\ \\\\/__/\\\\/\\\\::/  /
+            \\\\::/  /   /:/  /  \\\\:\\\\__\\\\    /:/  /
+             \\\\/__/    \\\\/__/    \\\\/__/    \\\\/__/.boot
+
+                          Bach %s
+                  Java Runtime %s
+              Operating System %s
+             Working Directory %s
+          ""\"
+          .formatted(
+            version,
+            Runtime.version(),
+            System.getProperty("os.name"),
+            Path.of("").toAbsolutePath()
+          ))
+
+          var overlay = new StringJoiner(System.lineSeparator())
+          overlay.add("// Bach's Boot Script Overlay for Bach " + version)
+          overlay.add("")
+          overlay.add("import com.github.sormuras.bach.*")
+          if (version.startsWith("16")) {
+            overlay.add("import static com.github.sormuras.bach.ShellEnvironment.*");
+            overlay.add("void api() { listPublicStaticMethods(); }");
+          }
+          if (version.startsWith("17")) {
+            overlay.add("import static com.github.sormuras.bach.Shell.*");
+            overlay.add("void api() { listPublicStaticShellMethods(); }");
+          }
+          Files.writeString(Path.of(".bach/boot-overlay.jsh"), overlay.toString())
+
+          /reset
+
+          /open .bach/boot-overlay.jsh
+          """;
+
+      if (isDryRun("Create boot script: %s", boot)) return;
+
+      Files.writeString(boot, text).toFile().setExecutable(true);
     }
 
     void createLauncherScriptForUnix() throws Exception {
@@ -285,13 +341,15 @@ public class Init {
       var text =
           """
           #!/usr/bin/env bash
-          java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+          
+          if [[ $1 == 'boot' ]]; then
+            jshell --module-path .bach/cache --add-modules com.github.sormuras.bach .bach/boot.jsh
+          else
+            java --module-path .bach/cache --module com.github.sormuras.bach "$@"
+          fi
           """;
 
-      if (isDryRun("Create launcher for Linux/MacOS: %s", bash)) {
-        out(text.indent(10 + 4).stripTrailing());
-        return;
-      }
+      if (isDryRun("Create launcher for Linux/MacOS: %s", bash)) return;
 
       Files.writeString(bash, text).toFile().setExecutable(true);
     }
@@ -302,13 +360,22 @@ public class Init {
       var text =
           """
           @ECHO OFF
+
+          IF [%1]==[boot] GOTO BOOT
+          GOTO MAIN
+
+          :BOOT
+          jshell --module-path .bach\\cache --add-modules com.github.sormuras.bach .bach\\boot.jsh
+          GOTO END
+          
+          :MAIN
           java --module-path .bach\\cache --module com.github.sormuras.bach %*
+          GOTO END
+
+          :END
           """;
 
-      if (isDryRun("Create launcher for Windows: %s", bat)) {
-        out(text.indent(10 + 4).stripTrailing());
-        return;
-      }
+      if (isDryRun("Create launcher for Windows: %s", bat)) return;
 
       Files.writeString(bat, text);
     }
@@ -393,5 +460,5 @@ public class Init {
   }
 
   /** Hidden default constructor. */
-  private Init() {}
+  private Bach() {}
 }
