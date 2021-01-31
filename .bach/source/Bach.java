@@ -1,6 +1,8 @@
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,6 +112,59 @@ public class Bach {
       out(exception);
     }
     return files;
+  }
+
+  public static void showVersion() {
+    var cache = Path.of(".bach/cache");
+    if (Files.notExists(cache)) {
+      out("Cache directory not found: %s", cache.toAbsolutePath());
+      return;
+    }
+    showVersion(cache);
+  }
+
+  public static void showVersion(Path cache) {
+    var module = "com.github.sormuras.bach";
+    var finder = ModuleFinder.of(cache);
+    var reference = finder.find(module);
+    if (reference.isEmpty()) {
+      out("Module %s not found in: %s", module, cache.toAbsolutePath());
+      return;
+    }
+    out("%s", reference.get().descriptor().toNameAndVersion());
+  }
+
+  public static void swapVersion(String version) throws Exception {
+    var cache = Path.of(".bach/cache");
+    if (Files.notExists(cache)) {
+      out("Cache directory not found: %s", cache.toAbsolutePath());
+      return;
+    }
+    swapVersion(cache, Version.parse(version));
+  }
+
+  public static void swapVersion(Path cache, Version version) throws Exception {
+    var module = "com.github.sormuras.bach";
+    var jar = module + '@' + version + ".jar";
+    var source = "https://github.com/sormuras/bach/releases/download/" + version + '/' + jar;
+    var target = cache.resolve(jar);
+
+    Files.createDirectories(cache);
+    var temp = cache.resolve(jar + ".temp");
+    try (var stream = new URL(source).openStream()) {
+      out("Download %s", source);
+      Files.copy(stream, temp);
+    }
+
+    var finder = ModuleFinder.of(cache);
+    var cached = finder.find(module).flatMap(ModuleReference::location).map(Path::of);
+    if (cached.isPresent()) {
+      var old = cached.get();
+      out("Delete %s", old);
+      Files.delete(old);
+    }
+    out("Create %s", target);
+    Files.move(temp, target);
   }
 
   public static Project projectJigsawQuickStartGreetings() {
@@ -262,17 +317,10 @@ public class Bach {
     void createCacheDirectoryByDownloadBach() throws Exception {
       var base = directory.resolve(project.name);
       var cache = base.resolve(".bach/cache");
-      var module = "com.github.sormuras.bach";
-      var jar = module + '@' + bach + ".jar";
-      var source = "https://github.com/sormuras/bach/releases/download/" + bach + '/' + jar;
-      var target = cache.resolve(jar);
 
-      if (isDryRun("Create cache by downloading %s to %s", jar, cache)) return;
+      if (isDryRun("Create cache by downloading Bach %s to: %s", bach, cache)) return;
 
-      Files.createDirectories(cache);
-      try (var stream = new URL(source).openStream()) {
-        Files.copy(stream, target);
-      }
+      swapVersion(cache, bach);
     }
 
     void createLaunchers() throws Exception {
@@ -341,7 +389,7 @@ public class Bach {
       var text =
           """
           #!/usr/bin/env bash
-          
+
           if [[ $1 == 'boot' ]]; then
             jshell --module-path .bach/cache --add-modules com.github.sormuras.bach .bach/boot.jsh
           else
@@ -367,7 +415,7 @@ public class Bach {
           :BOOT
           jshell --module-path .bach\\cache --add-modules com.github.sormuras.bach .bach\\boot.jsh
           GOTO END
-          
+
           :MAIN
           java --module-path .bach\\cache --module com.github.sormuras.bach %*
           GOTO END
