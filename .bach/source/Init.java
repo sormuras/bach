@@ -20,8 +20,6 @@ public class Init {
 
   public static final Version DEFAULT_BACH_VERSION = Version.parse("16-ea");
 
-  private static final Consumer<Object> out = System.out::println;
-
   public static void dir() {
     dir("");
   }
@@ -40,7 +38,7 @@ public class Init {
         paths.add(path);
       }
     } catch (Exception exception) {
-      out.accept(exception);
+      out(exception);
     }
     paths.sort(
         (Path p1, Path p2) -> {
@@ -54,26 +52,26 @@ public class Init {
     long bytes = 0;
     for (var path : paths) {
       var name = path.getFileName().toString();
-      if (Files.isDirectory(path)) out.accept(String.format("%-15s %s", "[+]", name));
+      if (Files.isDirectory(path)) out("%-15s %s", "[+]", name);
       else
         try {
           files++;
           var size = Files.size(path);
           bytes += size;
-          out.accept(String.format("%,15d %s", size, name));
+          out("%,15d %s", size, name);
         } catch (Exception exception) {
-          out.accept(exception);
+          out(exception);
           return;
         }
     }
     var all = paths.size();
     if (all == 0) {
-      out.accept(String.format("Directory %s is empty", directory));
+      out("Directory %s is empty", directory);
       return;
     }
-    out.accept("");
-    out.accept(String.format("%15d path%s in directory %s", all, all == 1 ? "" : "s", directory));
-    out.accept(String.format("%,15d bytes in %d file%s", bytes, files, files == 1 ? "" : "s"));
+    out("");
+    out("%15d path%s in directory %s", all, all == 1 ? "" : "s", directory);
+    out("%,15d bytes in %d file%s", bytes, files, files == 1 ? "" : "s");
   }
 
   public static void tree() {
@@ -86,10 +84,10 @@ public class Init {
 
   public static void tree(String folder, Predicate<String> fileNameFilter) {
     var directory = Path.of(folder).toAbsolutePath();
-    out.accept(folder.isEmpty() ? directory : folder);
+    out("%s", folder.isEmpty() ? directory : folder);
     var files = tree(directory, "  ", fileNameFilter);
-    out.accept("  ");
-    out.accept(String.format("%d file%s in tree of %s", files, files == 1 ? "" : "s", directory));
+    out("");
+    out("%d file%s in tree of %s", files, files == 1 ? "" : "s", directory);
   }
 
   private static int tree(Path directory, String indent, Predicate<String> filter) {
@@ -100,16 +98,16 @@ public class Init {
         if (win && Files.isHidden(path)) continue;
         var name = path.getFileName().toString();
         if (Files.isDirectory(path)) {
-          out.accept(indent + name + "/");
+          out(indent + name + "/");
           if (name.equals(".git")) continue;
           files += tree(path, indent + "  ", filter);
           continue;
         }
         files++;
-        if (filter.test(name)) out.accept(indent + name);
+        if (filter.test(name)) out(indent + name);
       }
     } catch (Exception exception) {
-      out.accept(exception);
+      out(exception);
     }
     return files;
   }
@@ -209,7 +207,7 @@ public class Init {
 
     boolean isDryRun(String format, Object... args) {
       var dry = isDryRun();
-      out.accept(String.format((dry ? "[dry-run] " : "") + format, args));
+      out((dry ? "[dry-run] " : "") + format, args);
       return dry;
     }
 
@@ -221,7 +219,7 @@ public class Init {
       var base = directory.resolve(project.name);
       if (isNormalRun()) {
         if (Files.exists(base)) {
-          out.accept("Path already exists: " + base);
+          out("Path already exists: %s", base);
           return;
         }
         Files.createDirectories(base);
@@ -231,14 +229,14 @@ public class Init {
       createLaunchers();
       createModules();
       if (isNormalRun()) {
-        out.accept("");
-        out.accept("Created project " + project.name + " in " + directory.toAbsolutePath());
         tree(base.toString(), __ -> true);
-        out.accept("");
-        out.accept("Next steps:");
-        out.accept(" - /exit to return to your shell");
-        out.accept(" - cd " + base);
-        out.accept(" - bach build");
+        out(
+            """
+            In order to build the created project:
+            - /exit
+            - cd %s
+            - bach build""",
+            base);
       }
     }
 
@@ -291,7 +289,7 @@ public class Init {
           """;
 
       if (isDryRun("Create launcher for Linux/MacOS: %s", bash)) {
-        out.accept(text.indent(10 + 4).stripTrailing());
+        out(text.indent(10 + 4).stripTrailing());
         return;
       }
 
@@ -308,7 +306,7 @@ public class Init {
           """;
 
       if (isDryRun("Create launcher for Windows: %s", bat)) {
-        out.accept(text.indent(10 + 4).stripTrailing());
+        out(text.indent(10 + 4).stripTrailing());
         return;
       }
 
@@ -355,7 +353,7 @@ public class Init {
         text.add("}");
 
         if (isDryRun("Create module declaration: %s", file)) {
-          out.accept(text.toString().indent(10 + 4).stripTrailing());
+          out(text.toString().indent(10 + 4).stripTrailing());
           continue;
         }
 
@@ -368,7 +366,7 @@ public class Init {
         for (var entry : source.files.entrySet()) {
           var file = base.resolve(module.name()).resolve(offset).resolve(entry.getKey());
           if (isDryRun("Create file: %s", file)) {
-            out.accept(entry.getValue().indent(10 + 4).stripTrailing());
+            out(entry.getValue().indent(10 + 4).stripTrailing());
             continue;
           }
           Files.createDirectories(file.getParent());
@@ -378,6 +376,20 @@ public class Init {
     }
 
     void createModulesOfTestModuleSpace() {}
+  }
+
+  private static final Consumer<Object> out = System.out::println;
+
+  private static void out(Exception exception) {
+    out("""
+        #
+        # %s
+        #
+        """, exception);
+  }
+
+  private static void out(String format, Object... args) {
+    out.accept(args == null || args.length == 0 ? format : String.format(format, args));
   }
 
   /** Hidden default constructor. */
