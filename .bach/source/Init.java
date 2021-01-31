@@ -7,14 +7,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @SuppressWarnings("unused")
 public class Init {
+
+  public static final Version DEFAULT_BACH_VERSION = Version.parse("16-ea");
 
   private static final Consumer<Object> out = System.out::println;
 
@@ -120,13 +124,22 @@ public class Init {
     return new Project()
         .withName("jigsaw-quick-start-world")
         .withModule(ModuleDescriptor.newModule("com.greetings").requires("org.astro").build())
-        .withModule(ModuleDescriptor.newModule("org.astro").exports("org.astro").build());
+        .withModule(
+            ModuleDescriptor.newModule("org.astro").exports("org.astro").build(),
+            Map.of(
+                Path.of("org/astro/World.java"),
+                """
+                package org.astro;
+                public class World {}
+                """));
   }
 
-  record Project(String name, Version version, Set<ModuleDescriptor> modules) {
+  record Project(String name, Version version, Map<String, ModuleSource> modules) {
+
+    record ModuleSource(ModuleDescriptor descriptor, Map<Path, String> files) {}
 
     Project() {
-      this("noname", Version.parse("0-ea"), Set.of());
+      this("noname", Version.parse("0-ea"), Map.of());
     }
 
     Project withName(String name) {
@@ -141,16 +154,26 @@ public class Init {
       return new Project(name, version, modules);
     }
 
-    Project withModule(ModuleDescriptor module) {
-      if (module.isOpen()) throw new IllegalArgumentException("module must not be open");
-      if (module.isAutomatic()) throw new IllegalArgumentException("module must not be automatic");
-      var modules = new TreeSet<>(this.modules);
-      modules.add(module);
+    Project withModule(ModuleDescriptor descriptor) {
+      return withModule(descriptor, Map.of());
+    }
+
+    Project withModule(ModuleDescriptor descriptor, Map<Path, String> files) {
+      return withModule(new ModuleSource(descriptor, files));
+    }
+
+    Project withModule(ModuleSource module) {
+      var modules = new TreeMap<>(this.modules);
+      modules.put(module.descriptor.name(), module);
       return new Project(name, version, modules);
     }
 
+    void create() throws Exception {
+      creator().create();
+    }
+
     Creator creator() {
-      return new Creator(Version.parse("16-ea"), Path.of(""), this, Set.of());
+      return new Creator(DEFAULT_BACH_VERSION, Path.of(""), this, Set.of());
     }
   }
 
@@ -158,6 +181,11 @@ public class Init {
 
     enum Flag {
       DRY_RUN
+    }
+
+    Creator withBachVersion(String version) {
+      var bach = Version.parse(version);
+      return new Creator(bach, directory, project, flags);
     }
 
     Creator withParentDirectory(String first, String... more) {
@@ -294,8 +322,11 @@ public class Init {
 
     void createModulesOfMainModuleSpace() throws Exception {
       var base = directory.resolve(project.name);
-      for (var module : project.modules) {
-        var info = base.resolve(module.name() + "/main/java/module-info.java");
+      var offset = Path.of("main/java");
+      // module descriptor files
+      for (var source : project.modules.values()) {
+        var module = source.descriptor;
+        var file = base.resolve(module.name()).resolve(offset).resolve("module-info.java");
         var text = new StringJoiner(System.lineSeparator());
         var open = module.isOpen() ? "open " : "";
         text.add(open + "module " + module.name() + " {");
@@ -323,13 +354,26 @@ public class Init {
         }
         text.add("}");
 
-        if (isDryRun("Create module declaration: %s", info)) {
+        if (isDryRun("Create module declaration: %s", file)) {
           out.accept(text.toString().indent(10 + 4).stripTrailing());
           continue;
         }
 
-        Files.createDirectories(info.getParent());
-        Files.writeString(info, text.toString());
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, text.toString());
+      }
+      // files
+      for (var source : project.modules.values()) {
+        var module = source.descriptor;
+        for (var entry : source.files.entrySet()) {
+          var file = base.resolve(module.name()).resolve(offset).resolve(entry.getKey());
+          if (isDryRun("Create file: %s", file)) {
+            out.accept(entry.getValue().indent(10 + 4).stripTrailing());
+            continue;
+          }
+          Files.createDirectories(file.getParent());
+          Files.writeString(file, entry.getValue());
+        }
       }
     }
 
