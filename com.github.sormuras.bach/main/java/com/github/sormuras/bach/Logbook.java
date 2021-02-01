@@ -48,7 +48,7 @@ public class Logbook {
     md.addAll(recordingsDetails());
 
     md.add("");
-    md.add("## Thanks for using Bach " + Bach.version());
+    md.add("## Thanks for using Bach");
     md.add("");
     md.add("Support its development at <https://github.com/sponsors/sormuras>");
     return md;
