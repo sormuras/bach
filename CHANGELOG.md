@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com).
 This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
 
+## Version [16.0.2] released 2021-02-01
+
+[#197](https://github.com/sormuras/bach/issues/197) Fix module source path computation.
+
 ## Version [16.0.1] released 2021-01-03
 
 Minor build and output fixes.
@@ -15,5 +19,6 @@ Minor build and output fixes.
 
 Initial release.
 
+[16.0.2]: https://github.com/sormuras/bach/compare/16.0.1...16.0.2
 [16.0.1]: https://github.com/sormuras/bach/compare/16...16.0.1
 [16]: https://github.com/sormuras/bach/releases/tag/16
