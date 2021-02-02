@@ -5,12 +5,14 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.spi.ToolProvider;
 
+/** Compile and package Bach's main module. */
 class Bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
     var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
 
-    deleteCached("com.github.sormuras.bach@*.jar");
+    var bin = Path.of(".bach/bin");
+    delete(bin,"com.github.sormuras.bach@*.jar");
     deleteWorkspaces();
 
     var classes = Path.of(".bach/workspace/.bootstrap");
@@ -29,7 +31,7 @@ class Bootstrap {
         classes.toString());
 
     var file = module + "@" + version + ".jar";
-    var jar = Files.createDirectories(Path.of(".bach/cache")).resolve(file);
+    var jar = Files.createDirectories(bin).resolve(file);
     run(
         "jar",
         "--create",
@@ -40,9 +42,8 @@ class Bootstrap {
         ".");
   }
 
-  static void deleteCached(String glob) throws Exception {
-    var cache = Path.of(".bach/cache");
-    try (var stream = Files.newDirectoryStream(cache, glob)) {
+  static void delete(Path directory, String glob) throws Exception {
+    try (var stream = Files.newDirectoryStream(directory, glob)) {
       for (var path : stream) {
         Files.delete(path);
         System.out.println(">> " + path + " deleted");

@@ -1,4 +1,4 @@
-// Bach's Initialization Script
+// Bach's Boot Script
 
 System.out.println(
 """
@@ -8,22 +8,23 @@ System.out.println(
  /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\
  \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  /
   \\::/  /   /:/  /  \\:\\__\\    /:/  /
-   \\/__/    \\/__/    \\/__/    \\/__/.java
+   \\/__/    \\/__/    \\/__/    \\/__/.boot
 
+                Bach %s
         Java Runtime %s
     Operating System %s
    Working Directory %s
 """
 .formatted(
+  com.github.sormuras.bach.Bach.version(),
   Runtime.version(),
   System.getProperty("os.name"),
   Path.of("").toAbsolutePath()
 ))
 
-void pwd() { System.out.println(Path.of("").toAbsolutePath()); }
+/reset
 
-/open https://github.com/sormuras/bach/raw/main/.bach/source/Bach.java
+import com.github.sormuras.bach.*
+import static com.github.sormuras.bach.Shell.*
 
-void dir() { Bach.dir(); }
-void tree() { Bach.tree(); }
-Bach.Project project() { return new Bach.Project(); }
+void api() { listPublicStaticShellMethods(); }

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [[ $1 == 'boot' ]]; then
+  jshell --module-path .bach/bin --add-modules com.github.sormuras.bach .bach/bin/boot.jsh
+else
+  java --module-path .bach/bin --module com.github.sormuras.bach "$@"
+fi

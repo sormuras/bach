@@ -1,4 +1,4 @@
-package build;
+package configuration;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
@@ -15,20 +15,20 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.StringJoiner;
 
-public class CustomBach extends Bach {
+public class ConfiguredBach extends Bach {
 
   public static void main(String... args) {
-    var bach = new CustomBach(new Flag[0]);
+    var bach = new ConfiguredBach(new Flag[0]);
     var main = new Main(bach);
     var code = args.length == 0 ? main.performAction("build") : main.performActions(args);
     System.exit(code);
   }
 
-  public CustomBach() {
+  public ConfiguredBach() {
     this(Flag.VERBOSE);
   }
 
-  public CustomBach(Flag... flags) {
+  public ConfiguredBach(Flag... flags) {
     super(Base.ofSystem(), System.out::println, flags);
   }
 

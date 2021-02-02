@@ -52,12 +52,12 @@ jobs:
           java-version: ${{ steps.jdk.outputs.version }}
           jdkFile: ${{ steps.jdk.outputs.file }}
       - name: 'Bootstrap Bach'
-        run: java --show-version .bach/source/Bootstrap.java
+        run: java --show-version .bach/bin/Bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
         run: |
           java \
             -Dbach.project.version=${{ needs.setup.outputs.version }} \
-            --module-path .bach/cache \
+            --module-path .bach/bin \
             --module com.github.sormuras.bach \
             build
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}'
