@@ -10,7 +10,7 @@ if [[ $1 == 'init' ]]; then
     echo "Usage: bach init VERSION"
     exit 1
   fi
-  java .bach/bin/Init.java $2
+  java .bach/bin/init.java $2
   exit $?
 fi
 
