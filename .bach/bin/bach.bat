@@ -1,14 +1,18 @@
 @ECHO OFF
 
-IF [%1]==[boot] GOTO BOOT
-GOTO MAIN
+IF "%~1" == "boot" (
+  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach .bach\bin\boot.jsh
+  EXIT /B %ERRORLEVEL%
+)
 
-:BOOT
-jshell --module-path .bach\bin --add-modules com.github.sormuras.bach .bach\bin\boot.jsh
-GOTO END
+IF "%~1" == "init" (
+  IF "%~2" == "" (
+    ECHO "Usage: bach init VERSION"
+    EXIT /B 1
+  )
+  java .bach\bin\Init.java %2
+  EXIT /B %ERRORLEVEL%
+)
 
-:MAIN
 java --module-path .bach\bin --module com.github.sormuras.bach %*
-GOTO END
-
-:END
+EXIT /B %ERRORLEVEL%

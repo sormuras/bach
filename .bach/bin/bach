@@ -2,6 +2,17 @@
 
 if [[ $1 == 'boot' ]]; then
   jshell --module-path .bach/bin --add-modules com.github.sormuras.bach .bach/bin/boot.jsh
-else
-  java --module-path .bach/bin --module com.github.sormuras.bach "$@"
+  exit $?
 fi
+
+if [[ $1 == 'init' ]]; then
+  if [[ -z $2 ]]; then
+    echo "Usage: bach init VERSION"
+    exit 1
+  fi
+  java .bach/bin/Init.java $2
+  exit $?
+fi
+
+java --module-path .bach/bin --module com.github.sormuras.bach "$@"
+exit $?
