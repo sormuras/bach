@@ -1,4 +1,4 @@
-package build;
+package configuration;
 
 import com.github.sormuras.bach.project.ModuleLookup;
 import java.nio.file.Path;

@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 /** Java Shell Builder. */
 public class Bach {
 
-  public static final Path CACHE = Path.of(".bach/cache");
+  public static final Path BIN = Path.of(".bach/bin");
 
   public static final Path EXTERNALS = Path.of(".bach/external-modules");
 
@@ -156,7 +156,7 @@ public class Bach {
     var missing = Modules.required(finder);
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(Modules.declared(finder));
-    missing.removeAll(Modules.declared(ModuleFinder.of(CACHE)));
+    missing.removeAll(Modules.declared(ModuleFinder.of(BIN)));
     missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
     if (missing.isEmpty()) return Set.of();
     return missing;

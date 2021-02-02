@@ -18,7 +18,7 @@ class EmptyDirectoryTests {
   @Test
   void build(@TempDir Path temp) {
     var idea = Path.of(".idea/out/production");
-    var base = Base.of(temp).cache(Files.isDirectory(idea) ? idea : Bach.CACHE);
+    var base = Base.of(temp); // .cache(Files.isDirectory(idea) ? idea : Bach.CACHE);
     var lines = new ArrayList<String>();
     var bach = new Bach(base, lines::add, Flag.VERBOSE);
 

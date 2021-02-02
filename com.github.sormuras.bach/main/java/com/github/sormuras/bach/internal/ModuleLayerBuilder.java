@@ -21,16 +21,16 @@ public class ModuleLayerBuilder {
   }
 
   public static ModuleLayer build(Path moduleSourceDirectory, String module) {
-    var buildModulePath = moduleSourceDirectory.resolve(module);
-    var buildModuleInfo = buildModulePath.resolve("module-info.java");
-    if (Files.notExists(buildModuleInfo)) return ModuleLayer.empty();
+    var modulePath = moduleSourceDirectory.resolve(module);
+    var moduleInfo = modulePath.resolve("module-info.java");
+    if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
 
     var destination = Bach.WORKSPACE.resolve(moduleSourceDirectory);
     var args =
         Command.of("javac")
             .add("--module", module)
             .add("--module-source-path", moduleSourceDirectory)
-            .add("--module-path", Bach.CACHE)
+            .add("--module-path", Bach.BIN)
             .add("-encoding", "UTF-8")
             .add("-d", destination)
             .toStrings()
@@ -44,7 +44,7 @@ public class ModuleLayerBuilder {
         .oneLoader(true)
         .parentConfigurations(List.of(boot.configuration()))
         .before(ModuleFinder.of())
-        .after(ModuleFinder.of(destination.resolve(module), Bach.CACHE))
+        .after(ModuleFinder.of(destination.resolve(module), Bach.BIN))
         .roots(Set.of(module))
         .parentLayers(List.of(boot))
         .parentLoader(ClassLoader.getPlatformClassLoader())

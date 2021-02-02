@@ -26,7 +26,7 @@ public class Main {
   }
 
   public static void main(String... args) {
-    System.exit(run("build", args));
+    System.exit(run("configuration", args));
   }
 
   public static int run(String module, String... args) {

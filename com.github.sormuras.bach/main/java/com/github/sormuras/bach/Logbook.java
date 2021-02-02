@@ -39,7 +39,6 @@ public class Logbook {
     md.add(String.format("- %s", formatter.format(now)));
 
     md.add(String.format("- directory = `%s`", bach.base().directory().toAbsolutePath()));
-    md.add(String.format("- cache = `%s`", bach.base().cache()));
     md.add(String.format("- externals = `%s`", bach.base().externals()));
     md.add(String.format("- workspace = `%s`", bach.base().workspace()));
 
