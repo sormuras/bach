@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.spi.ToolProvider;
 
 /** Compile and package Bach's main module. */
-class Bootstrap {
+class bootstrap {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
     var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
