@@ -6,10 +6,17 @@ The `.bach` directory contains all Bach-related assets.
 
 The `.bach/bin` directory contains scripts and modules used to build modular Java projects.
 
+### Scripts
+
 - `bach`: Launch script for Linux and MacOS
 - `bach.bat`: Launch script for Windows
-- `Bootstrap.java`: Bach's platform-agnostic build program used by GitHub Actions workflows.
-- `com.github.sormuras.bach@VERSION.jar`: Module `com.github.sormuras.bach`
+- `bootstrap.java`: Bach's platform-agnostic build program used by GitHub Actions workflows
+- `init.java`: Bach's init program used by launcher scripts and `init.jsh`
+- `init.jsh`: Bach's platform-agnostic init as a JShell load-file
+
+### Modules
+
+- `com.github.sormuras.bach@VERSION.jar`: Defines the API of 🎼 Bach, the Java Shell Builder
 
 ## Directory `.bach/configuration`
 

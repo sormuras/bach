@@ -22,8 +22,8 @@ class init {
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
     loadScript("boot.jsh");
-    loadModule("com.github.sormuras.bach", version);
     loadScript("init.java");
+    loadModule("com.github.sormuras.bach", version);
 
     System.out.printf("%nBach %s initialized.%n", version);
   }
@@ -47,7 +47,4 @@ class init {
     }
     return file;
   }
-
-  /** Hidden default constructor. */
-  private init() {}
 }
