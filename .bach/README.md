@@ -20,3 +20,9 @@ If this directory does not exist, Bach is running in "zero-configuration" mode.
 
 The `.bach/external-modules` directory contains all external modules required to build this project.
 An external module is a module that neither is declared by the current project, nor a module that is provided by the Java Runtime.
+
+## Directory `.bach/workspace`
+
+The `.bach/workspace` directory is created by Bach to store intermediat and final assets.
+Usually, Bach stores reusable modules of library projects in `.bach/workspace/modules`.
+Custom runtime images of application projects are stored in `.bach/workspace/image`.
