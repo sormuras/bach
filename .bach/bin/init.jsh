@@ -20,8 +20,8 @@ System.out.println(
   Path.of("").toAbsolutePath()
 ))
 
-/open https://github.com/sormuras/bach/raw/main/.bach/bin/Init.java
+/open https://github.com/sormuras/bach/raw/main/.bach/bin/init.java
 
-Init.main()
+init.main()
 
 /exit

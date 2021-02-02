@@ -1,23 +1,29 @@
+import java.lang.module.ModuleFinder;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-/** Bach's Initialization class used by Bach's Init Script. */
-class Init {
+/** Bach's init program. */
+class init {
 
-  /** Default initialization program. */
   public static void main(String... args) throws Exception {
     var version = args.length == 0 ? "17-ea" : args[0];
-    var current = Path.of("").toAbsolutePath();
+    System.out.printf("Initialize Bach %s in %s%n", version, Path.of("").toAbsolutePath());
 
-    System.out.printf("Initialize Bach %s in directory: %s%n", version, current);
-    Files.createDirectories(Path.of(".bach/bin"));
+    var bin = Path.of(".bach/bin");
+    if (Files.isDirectory(bin)) {
+      var module = ModuleFinder.of(bin).find("com.github.sormuras.bach");
+      if (module.isPresent()) Files.delete(Path.of(module.get().location().orElseThrow()));
+    } else {
+      Files.createDirectories(bin);
+    }
 
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
     loadScript("boot.jsh");
     loadModule("com.github.sormuras.bach", version);
+    loadScript("init.java");
 
     System.out.printf("%nBach %s initialized.%n", version);
   }
@@ -43,5 +49,5 @@ class Init {
   }
 
   /** Hidden default constructor. */
-  private Init() {}
+  private init() {}
 }
