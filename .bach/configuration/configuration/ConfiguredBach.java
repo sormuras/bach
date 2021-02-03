@@ -9,6 +9,7 @@ import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
+import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -35,7 +36,10 @@ public class ConfiguredBach extends Bach {
 
   @Override
   protected Finder newFinder() {
-    return Finder.empty().with(Finders.JUnit.V_5_7_0).with(new GitHubReleasesModuleLookup(this));
+    return Finder.empty()
+        .with(Finders.JUnit.V_5_7_0)
+        .with(new GitHubReleasesModuleLookup(this))
+        .with(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
   }
 
   @Override
