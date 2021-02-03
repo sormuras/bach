@@ -127,12 +127,29 @@ public class Shell {
     }
   }
 
-  public static void loadExternalModules(String... modules) {
-    bach.loadExternalModules(modules);
+  public static void loadExternalModule(String module) {
+    bach.loadExternalModules(module);
   }
 
   public static void loadMissingExternalModules() {
     bach.loadMissingExternalModules();
+  }
+
+  public static void deleteExternalModule(String module) throws Exception {
+    Files.deleteIfExists(bach.computeExternalModuleFile(module));
+  }
+
+  public static void deleteExternalModules() throws Exception {
+    var externals = bach.base().externals();
+    if (!Files.isDirectory(externals)) return;
+    try (var jars = Files.newDirectoryStream(externals, "*.jar")) {
+      for (var jar : jars) try {
+        bach.debug("Delete %s", jar);
+        Files.deleteIfExists(jar);
+      } catch (Exception exception) {
+        bach.print("Delete failed: %s", jar);
+      }
+    }
   }
 
   /**
