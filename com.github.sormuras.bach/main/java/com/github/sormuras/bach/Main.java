@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.tool.Tool;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -7,7 +8,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Bach's main program. */
 public class Main {
@@ -25,6 +29,50 @@ public class Main {
     String[] value() default {};
   }
 
+  /** A command line option parser. */
+  record Options(
+      // all arguments (raw)
+      String[] args,
+      // "--version"
+      boolean printVersionAndExit,
+      // "--show-version"
+      boolean showVersionAndContinue,
+      // "tool NAME [ARGS...]"
+      Optional<Tool> tool,
+      // actions
+      List<String> actions
+      ) {
+
+    static Options parse(String... args) {
+      var deque = new ArrayDeque<>(List.of(args));
+      var printVersionAndExit = false;
+      var showVersionAndContinue = false;
+      var tool = new AtomicReference<Tool>(null);
+      var actions = new ArrayList<String>();
+      while (!deque.isEmpty()) {
+        var argument = deque.removeFirst();
+        switch (argument) {
+          case "--version" -> printVersionAndExit = true;
+          case "--show-version" -> showVersionAndContinue = true;
+          case "tool" -> {
+            if (deque.isEmpty())
+              throw new IllegalArgumentException("No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
+            var command = Command.of(deque.removeFirst(), deque.toArray(String[]::new));
+            tool.set(command);
+            deque.clear();
+          }
+          default -> actions.add(argument);
+        }
+      }
+      return new Options(
+          args,
+          printVersionAndExit,
+          showVersionAndContinue,
+          Optional.ofNullable(tool.get()),
+          List.copyOf(actions));
+    }
+  }
+
   public static void main(String... args) {
     System.exit(run("configuration", args));
   }
@@ -35,22 +83,21 @@ public class Main {
       bach.print("No argument, no action.");
       return 0;
     }
-    if (args[0].equals("tool")) {
-      var deque = new ArrayDeque<>(List.of(args));
-      deque.removeFirst(); // "tool"
-      if (deque.isEmpty()) {
-        bach.print("Main action 'tool' requires at a name: bach tool NAME <ARGS...>");
-        return 1;
-      }
-      var command = Command.of(deque.removeFirst());
-      var recording = bach.run(deque.isEmpty() ? command : command.add("", deque.toArray()));
+    var options = Options.parse(args);
+    if (options.showVersionAndContinue || options.printVersionAndExit) {
+      bach.printVersion();
+      if (options.printVersionAndExit) return 0;
+    }
+    if (options.tool.isPresent()) {
+      var command = options.tool.get();
+      var recording = bach.run(command);
       if (!recording.errors().isEmpty()) bach.print(recording.errors());
       if (!recording.output().isEmpty()) bach.print(recording.output());
       if (recording.isError())
         bach.print("Tool %s returned exit code %d", command.name(), recording.code());
       return recording.code();
     }
-    return new Main(bach).performActions(args);
+    return new Main(bach).performActions(options.actions);
   }
 
   private final Bach bach;
@@ -59,8 +106,7 @@ public class Main {
     this.bach = bach;
   }
 
-  public int performActions(String... actions) {
-    var list = List.of(actions);
+  public int performActions(List<String> list) {
     bach.debug("Perform %d action%s: %s", list.size(), list.size() == 1 ? "" : "s", list);
     for (var action : list) {
       var status = performAction(action);

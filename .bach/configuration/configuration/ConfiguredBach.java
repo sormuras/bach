@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.StringJoiner;
 
 public class ConfiguredBach extends Bach {
@@ -22,7 +23,7 @@ public class ConfiguredBach extends Bach {
   public static void main(String... args) {
     var bach = new ConfiguredBach(new Flag[0]);
     var main = new Main(bach);
-    var code = args.length == 0 ? main.performAction("build") : main.performActions(args);
+    var code = args.length == 0 ? main.performAction("build") : main.performActions(List.of(args));
     System.exit(code);
   }
 

@@ -13,8 +13,8 @@ import java.util.function.Predicate;
 
 public interface Command<C> {
 
-  static Command<Tool> of(String name) {
-    return new Tool(name, List.of());
+  static Tool of(String name, String... args) {
+    return new Tool(name, args.length == 0 ? List.of() : List.of(Argument.of("", (Object[]) args)));
   }
 
   static Jar jar() {
