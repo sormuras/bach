@@ -135,6 +135,17 @@ public class Shell {
     listMissingExternalModules(missing);
   }
 
+  public static void loadExternalModuleComGithubSormurasModules() {
+    loadExternalModuleComGithubSormurasModules("0-ea");
+  }
+
+  public static void loadExternalModuleComGithubSormurasModules(String version) {
+    var module = "com.github.sormuras.modules";
+    var jar = module + "@" + version + ".jar";
+    var uri = "https://github.com/sormuras/modules/releases/download/" + version + "/" + jar;
+    bach.browser().load(uri, bach.computeExternalModuleFile(module));
+  }
+
   public static void loadMissingExternalModules() {
     bach.loadMissingExternalModules();
   }
