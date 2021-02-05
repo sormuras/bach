@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -129,6 +130,9 @@ public class Shell {
 
   public static void loadExternalModule(String module) {
     bach.loadExternalModules(module);
+    var missing = bach.computeMissingExternalModules();
+    if (missing.isEmpty()) return;
+    listMissingExternalModules(missing);
   }
 
   public static void loadMissingExternalModules() {
@@ -189,7 +193,10 @@ public class Shell {
   }
 
   public static void listMissingExternalModules() {
-    var modules = bach.computeMissingExternalModules();
+    listMissingExternalModules(bach.computeMissingExternalModules());
+  }
+
+  private static void listMissingExternalModules(Set<String> modules) {
     var size = modules.size();
     modules.stream().sorted().forEach(out);
     out.accept(String.format("%n-> %d module%s missing", size, size == 1 ? " is" : "s are"));
