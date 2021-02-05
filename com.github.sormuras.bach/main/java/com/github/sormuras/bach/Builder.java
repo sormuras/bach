@@ -194,12 +194,14 @@ public class Builder {
     var main = project.spaces().main();
     var release = folder.release();
     var classes = main.workspace("classes-mr", release + "/" + module);
+    var modulePaths = new ArrayList<>(main.modulePaths().paths());
+    modulePaths.add(main.classes());
     var javaSourceFiles = new ArrayList<Path>();
     Paths.find(Path.of(module, "main/java-" + release), "**.java", javaSourceFiles::add);
     return Command.builder("javac")
         .with("--release", release)
         .with("--module-version", project.version())
-        .with("--module-path", main.classes())
+        .with("--module-path", Paths.join(modulePaths))
         .with("-implicit:none") // generate classes for explicitly referenced source files
         .withEach(main.tweaks().arguments("javac"))
         .with("-d", classes)
