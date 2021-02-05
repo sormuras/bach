@@ -24,6 +24,8 @@ System.out.println(
 
 /reset
 
+/open .bach/bin/boot.java
+
 import com.github.sormuras.bach.*
 import static com.github.sormuras.bach.Shell.*
 

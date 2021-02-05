@@ -21,6 +21,7 @@ class init {
 
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
+    loadScript("boot.java");
     loadScript("boot.jsh");
     loadScript("init.java");
     loadModule("com.github.sormuras.bach", version);

@@ -10,7 +10,7 @@ IF "%~1" == "init" (
     ECHO "Usage: bach init VERSION"
     EXIT /B 1
   )
-  java .bach\bin\Init.java %2
+  java .bach\bin\init.java %2
   EXIT /B %ERRORLEVEL%
 )
 
