@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
@@ -24,9 +25,10 @@ public class Browser {
     bach.debug("Load %s from %s", file, uri);
     var request = HttpRequest.newBuilder(URI.create(uri)).build();
     try {
+      Files.createDirectories(file.getParent());
       client.send(request, HttpResponse.BodyHandlers.ofFile(file));
     } catch (Exception exception) {
-      throw new IllegalStateException(exception);
+      throw new RuntimeException(exception);
     }
   }
 
@@ -38,6 +40,11 @@ public class Browser {
       var uri = entry.getKey();
       var file = entry.getValue();
       bach.debug("Load %s from %s", file, uri);
+      try {
+        Files.createDirectories(file.getParent());
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
       var request = HttpRequest.newBuilder(URI.create(uri)).build();
       var handler = HttpResponse.BodyHandlers.ofFile(file);
       futures.add(client.sendAsync(request, handler).thenApply(HttpResponse::body));
@@ -51,7 +58,7 @@ public class Browser {
       bach.debug("Read %s", uri);
       return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
     } catch (Exception exception) {
-      throw new IllegalStateException(exception);
+      throw new RuntimeException(exception);
     }
   }
 }
