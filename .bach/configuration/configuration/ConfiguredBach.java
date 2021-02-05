@@ -38,7 +38,7 @@ public class ConfiguredBach extends Bach {
   @Override
   protected Finder newFinder() {
     return Finder.empty()
-        .with(Finders.JUnit.V_5_7_0)
+        .with(Finders.JUnit.V_5_7_1)
         .with(new GitHubReleasesModuleLookup(this))
         .with(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
   }

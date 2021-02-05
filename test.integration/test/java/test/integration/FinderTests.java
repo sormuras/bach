@@ -46,4 +46,17 @@ class FinderTests {
     var opentest = finder.find("org.opentest4j").orElseThrow();
     assertTrue(opentest.uri().endsWith("opentest4j-1.2.0.jar"));
   }
+
+  @Test
+  void checkJUnit571() {
+    var finder = Finder.empty().with(Finders.JUnit.V_5_7_1);
+    var jupiter = finder.find("org.junit.jupiter").orElseThrow();
+    assertTrue(jupiter.uri().endsWith("junit-jupiter-5.7.1.jar"));
+    var console = finder.find("org.junit.platform.console").orElseThrow();
+    assertTrue(console.uri().endsWith("junit-platform-console-1.7.1.jar"));
+    var guardian = finder.find("org.apiguardian.api").orElseThrow();
+    assertTrue(guardian.uri().endsWith("apiguardian-api-1.1.1.jar"));
+    var opentest = finder.find("org.opentest4j").orElseThrow();
+    assertTrue(opentest.uri().endsWith("opentest4j-1.2.0.jar"));
+  }
 }
