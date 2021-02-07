@@ -481,7 +481,7 @@ public class boot {
       var head = line.indexOf("bach.boot.");
       if (head > 0) line = line.substring(head + 10);
       var tail = line.indexOf(") throws");
-      if (tail > 0) line = line.substring(0, tail - 1);
+      if (tail > 0) line = line.substring(0, tail + 1);
       if (!line.endsWith("()")) {
         line = line.replace("com.github.sormuras.bach.", "");
         line = line.replace("java.util.function.", "");
