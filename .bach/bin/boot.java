@@ -28,35 +28,17 @@ import java.util.stream.Stream;
 @SuppressWarnings("unused")
 public class boot {
 
+  public static Bach bach() {
+    return bach.get();
+  }
+
   public static void beep() {
     System.out.print("\007"); // 🔔
     System.out.flush();
   }
 
-  interface bach {
-    static void set(Bach instance) {
-      bach.set(instance);
-    }
-
-    static void refresh() {
-      refresh("configuration");
-    }
-
-    static void refresh(String module) {
-      try {
-        set(Bach.of(module));
-      } catch (Exception exception) {
-        out(
-            """
-  
-            Refresh failed: %s
-  
-              Falling back to default Bach instance.
-            """
-                ,exception.getMessage());
-        set(new Bach());
-      }
-    }
+  public static void refresh() {
+    utils.refresh("configuration");
   }
 
   public interface files {
@@ -422,7 +404,7 @@ public class boot {
       Stream.of(type.getDeclaredMethods())
           .filter(utils::describeOnlyInterestingMethods)
           .sorted(Comparator.comparing(Method::getName).thenComparing(Method::getParameterCount))
-          .map(utils::describe)
+          .map(utils::describeMethod)
           .forEach(out);
       list(type);
     }
@@ -438,7 +420,7 @@ public class boot {
       return Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers);
     }
 
-    private static String describe(Method method) {
+    private static String describeMethod(Method method) {
       var generic = method.toGenericString();
       var line = generic.replace('$', '.');
       var head = line.indexOf("bach.boot.");
@@ -468,13 +450,33 @@ public class boot {
           .peek(declared -> out(""))
           .forEach(utils::describeClass);
     }
+
+    private static void set(Bach instance) {
+      bach.set(instance);
+    }
+
+    private static void refresh(String module) {
+      try {
+        set(Bach.of(module));
+      } catch (Exception exception) {
+        out(
+            """
+
+            Refresh failed: %s
+
+              Falling back to default Bach instance.
+            """,
+            exception.getMessage());
+        set(new Bach());
+      }
+    }
   }
 
   private static final Consumer<Object> out = System.out::println;
-  private static final AtomicReference<Bach> bach = new AtomicReference<>(Bach.of("configuration"));
+  private static final AtomicReference<Bach> bach = new AtomicReference<>();
 
-  private static Bach bach() {
-    return bach.get();
+  static {
+    refresh();
   }
 
   private static void out(Exception exception) {
