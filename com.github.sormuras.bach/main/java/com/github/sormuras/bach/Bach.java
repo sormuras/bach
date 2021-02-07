@@ -95,7 +95,7 @@ public class Bach {
     return new Logbook(this);
   }
 
-  protected Finder newFinder() {
+  protected Finder newFinder() throws Exception {
     return new Finder();
   }
 
