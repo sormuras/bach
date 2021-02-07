@@ -24,9 +24,9 @@ System.out.println(
 
 /reset
 
-/open .bach/bin/boot.java
-
+import static bach.boot.*
 import com.github.sormuras.bach.*
-import static com.github.sormuras.bach.Shell.*
 
-void api() { listPublicStaticShellMethods(); }
+void api() { utils.api(); }
+void dir() { files.dir(); }
+void pwd() { System.out.println(Path.of("").toAbsolutePath()); }
