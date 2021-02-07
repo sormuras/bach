@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 if [[ $1 == 'boot' ]]; then
-  jshell --module-path .bach/bin --add-modules com.github.sormuras.bach .bach/bin/boot.jsh
+  javac --module-path .bach/bin --add-modules com.github.sormuras.bach -d .bach/workspace/.bach .bach/bin/boot.java
+  jshell --module-path .bach/bin --add-modules com.github.sormuras.bach --class-path .bach/workspace/.bach .bach/bin/boot.jsh
   exit $?
 fi
 

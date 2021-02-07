@@ -1,7 +1,8 @@
 @ECHO OFF
 
 IF "%~1" == "boot" (
-  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach .bach\bin\boot.jsh
+  javac --module-path .bach\bin --add-modules com.github.sormuras.bach -d .bach\workspace\.bach .bach\bin\boot.java
+  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach --class-path .bach\workspace\.bach .bach\bin\boot.jsh
   EXIT /B %ERRORLEVEL%
 )
 
