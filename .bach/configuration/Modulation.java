@@ -18,25 +18,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.StringJoiner;
 
-public class ConfiguredBach extends Bach {
+public class Modulation extends Bach {
 
   public static void main(String... args) {
-    var bach = new ConfiguredBach(new Flag[0]);
+    var bach = new configuration.Modulation(new Flag[0]);
     var main = new Main(bach);
     var code = args.length == 0 ? main.performAction("build") : main.performActions(List.of(args));
     System.exit(code);
   }
 
-  public ConfiguredBach() {
+  public Modulation() {
     this(Flag.VERBOSE);
   }
 
-  public ConfiguredBach(Flag... flags) {
+  public Modulation(Flag... flags) {
     super(Base.ofSystem(), System.out::println, flags);
   }
 
   @Override
-  protected Finder newFinder() {
+  protected Finder newFinder() throws Exception {
     return Finder.empty()
         .with(Finders.JUnit.V_5_7_1)
         .with(new GitHubReleasesModuleLookup(this))
@@ -44,7 +44,7 @@ public class ConfiguredBach extends Bach {
   }
 
   @Override
-  public Project newProject() throws Exception {
+  protected Project newProject() throws Exception {
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var version =
         Project.defaultVersion(
