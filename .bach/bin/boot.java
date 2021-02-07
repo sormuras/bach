@@ -41,6 +41,61 @@ public class boot {
     utils.refresh("configuration");
   }
 
+  public interface configuration {
+    static void init() throws Exception {
+      init("configuration", "Modulation");
+    }
+
+    static void init(String moduleName, String providerName) throws Exception {
+      var moduleDirectory = bach().base().directory(".bach", moduleName);
+      if (Files.exists(moduleDirectory)) {
+        out("Configuration module directory already exists: %s", moduleDirectory);
+        return;
+      }
+      Files.createDirectories(moduleDirectory);
+
+      Files.writeString(
+          moduleDirectory.resolve("module-info.java"),
+          """
+          // @com.github.sormuras.bach.ProjectInfo()
+          module {{MODULE-NAME}} {
+            requires com.github.sormuras.bach;
+            provides com.github.sormuras.bach.Bach with configuration.{{PROVIDER-NAME}};
+          }
+          """
+              .replace("{{MODULE-NAME}}", moduleName)
+              .replace("{{PROVIDER-NAME}}", providerName));
+
+      Files.writeString(
+          moduleDirectory.resolve(providerName + ".java"),
+          """
+          package configuration;
+
+          import com.github.sormuras.bach.*;
+          import com.github.sormuras.bach.lookup.*;
+
+          public class {{PROVIDER-NAME}} extends Bach {
+            public {{PROVIDER-NAME}}() {}
+
+            @Override
+            protected Finder newFinder() throws Exception {
+              return Finder.empty()
+                  // .with(Finders.JUnit.V_5_7_1)
+                  // .with(new GitHubReleasesModuleLookup(this))
+                  // .with(new ToolProvidersModuleLookup(this, Bach.EXTERNALS))
+                  ;
+            }
+
+            @Override
+            protected Project newProject() throws Exception {
+              return super.newProject().version("1-ea");
+            }
+          }
+          """
+              .replace("{{PROVIDER-NAME}}", providerName));
+    }
+  }
+
   public interface files {
 
     static void dir() {
@@ -451,11 +506,7 @@ public class boot {
           .forEach(utils::describeClass);
     }
 
-    private static void set(Bach instance) {
-      bach.set(instance);
-    }
-
-    private static void refresh(String module) {
+    static void refresh(String module) {
       try {
         set(Bach.of(module));
       } catch (Exception exception) {
@@ -469,6 +520,10 @@ public class boot {
             exception.getMessage());
         set(new Bach());
       }
+    }
+
+    private static void set(Bach instance) {
+      bach.set(instance);
     }
   }
 
