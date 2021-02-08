@@ -1,18 +1,19 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
+import com.github.sormuras.bach.lookup.JUnitJupiter;
+import com.github.sormuras.bach.lookup.JUnitPlatform;
 import com.github.sormuras.bach.lookup.Maven;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 
 /** A finder of external modules. */
 public record Finder(ModuleLookup... lookups) {
 
-  public static Finder empty() {
-    return new Finder();
+  public static Finder of(ModuleLookup... lookups) {
+    return new Finder(lookups);
   }
 
   public boolean isEmpty() {
@@ -49,7 +50,7 @@ public record Finder(ModuleLookup... lookups) {
     }
 
     public Finder toUri(String uri) {
-      return Finder.this.with(new ExternalModuleLookup(module, uri));
+      return with(new ExternalModuleLookup(module, uri));
     }
   }
 
@@ -57,21 +58,42 @@ public record Finder(ModuleLookup... lookups) {
     return new Linker(module);
   }
 
-  public Finder with(UnaryOperator<Finder> operator) {
-    return operator.apply(this);
-  }
-
-  public Finder with(Finder that) {
-    if (that.isEmpty()) return this;
-    var copy = Arrays.copyOf(lookups, lookups.length + that.lookups.length);
-    System.arraycopy(that.lookups, 0, copy, lookups.length, that.lookups.length);
-    return new Finder(copy);
-  }
-
   public Finder with(ModuleLookup lookup, ModuleLookup... more) {
     var copy = Arrays.copyOf(lookups, lookups.length + 1 + more.length);
     copy[lookups.length] = lookup;
     if (more.length > 0) System.arraycopy(more, 0, copy, lookups.length + 1, more.length);
     return new Finder(copy);
+  }
+
+  /** Link well-known JUnit modules to their Maven Central artifacts. */
+  public enum JUnit implements ModuleLookup {
+
+    /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
+    V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0"),
+    /** Link modules of JUnit 5.7.1 to their Maven Central artifacts. */
+    V_5_7_1("5.7.1", "1.7.1", "1.1.1", "1.2.0");
+
+    private final String version;
+    private final Finder finder;
+
+    JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
+      this.version = jupiter;
+      this.finder =
+          new Finder(new JUnitJupiter(jupiter), new JUnitPlatform(platform))
+              .link("org.apiguardian.api")
+              .toMavenCentral("org.apiguardian", "apiguardian-api", apiguardian)
+              .link("org.opentest4j")
+              .toMavenCentral("org.opentest4j", "opentest4j", opentest4j);
+    }
+
+    @Override
+    public Optional<String> lookupModule(String name) {
+      return finder.find(name).map(Finder.Found::uri);
+    }
+
+    @Override
+    public String toString() {
+      return "JUnit " + version;
+    }
   }
 }

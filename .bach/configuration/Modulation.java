@@ -4,7 +4,6 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Finder;
-import com.github.sormuras.bach.Finders;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
@@ -37,10 +36,10 @@ public class Modulation extends Bach {
 
   @Override
   protected Finder newFinder() throws Exception {
-    return Finder.empty()
-        .with(Finders.JUnit.V_5_7_1)
-        .with(new GitHubReleasesModuleLookup(this))
-        .with(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
+    return new Finder(
+        Finder.JUnit.V_5_7_1,
+        new GitHubReleasesModuleLookup(this),
+        new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
   }
 
   @Override

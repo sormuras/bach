@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Finder;
-import com.github.sormuras.bach.Finders;
 import com.github.sormuras.bach.lookup.Maven;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +12,7 @@ class FinderTests {
 
   @Test
   void checkModuleUri() {
-    var finder = Finder.empty().link("m").toUri("u");
+    var finder = Finder.of().link("m").toUri("u");
     var m = finder.find("m").orElseThrow();
     assertEquals("u", m.uri());
     assertFalse(m.by().lookupModule("u").isPresent());
@@ -22,7 +21,7 @@ class FinderTests {
   @Test
   void checkMaven() {
     var finder =
-        Finder.empty()
+        Finder.of()
             .link("junit")
             .toMaven(
                 "junit",
@@ -36,7 +35,7 @@ class FinderTests {
 
   @Test
   void checkJUnit570() {
-    var finder = Finder.empty().with(Finders.JUnit.V_5_7_0);
+    var finder = Finder.of(Finder.JUnit.V_5_7_0);
     var jupiter = finder.find("org.junit.jupiter").orElseThrow();
     assertTrue(jupiter.uri().endsWith("junit-jupiter-5.7.0.jar"));
     var console = finder.find("org.junit.platform.console").orElseThrow();
@@ -49,7 +48,7 @@ class FinderTests {
 
   @Test
   void checkJUnit571() {
-    var finder = Finder.empty().with(Finders.JUnit.V_5_7_1);
+    var finder = Finder.of(Finder.JUnit.V_5_7_1);
     var jupiter = finder.find("org.junit.jupiter").orElseThrow();
     assertTrue(jupiter.uri().endsWith("junit-jupiter-5.7.1.jar"));
     var console = finder.find("org.junit.platform.console").orElseThrow();
