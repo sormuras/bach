@@ -1,4 +1,4 @@
-package bach;
+package boot;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;

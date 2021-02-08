@@ -24,7 +24,7 @@ System.out.println(
 
 /reset
 
-import static bach.boot.*
+import static boot.boot.*
 import com.github.sormuras.bach.*
 
 void api() { utils.api(); }
