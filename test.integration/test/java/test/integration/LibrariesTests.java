@@ -36,6 +36,19 @@ class LibrariesTests {
   }
 
   @Test
+  void checkJavaFX() {
+    var libraries = Libraries.of(Libraries.lookupJavaFX("99"));
+    assertFalse(libraries.find("foo").isPresent());
+    assertTrue(libraries.find("javafx.base").isPresent());
+    assertTrue(libraries.find("javafx.controls").isPresent());
+    assertTrue(libraries.find("javafx.fxml").isPresent());
+    assertTrue(libraries.find("javafx.graphics").isPresent());
+    assertTrue(libraries.find("javafx.media").isPresent());
+    assertTrue(libraries.find("javafx.swing").isPresent());
+    assertTrue(libraries.find("javafx.web").isPresent());
+  }
+
+  @Test
   void checkJUnit570() {
     var libraries = Libraries.of(Libraries.JUnit.V_5_7_0);
     var jupiter = libraries.find("org.junit.jupiter").orElseThrow();
@@ -59,5 +72,20 @@ class LibrariesTests {
     assertTrue(guardian.uri().endsWith("apiguardian-api-1.1.1.jar"));
     var opentest = libraries.find("org.opentest4j").orElseThrow();
     assertTrue(opentest.uri().endsWith("opentest4j-1.2.0.jar"));
+  }
+
+
+  @Test
+  void checkLWJGL() {
+    var libraries = Libraries.of(Libraries.lookupLWJGL("99"));
+    assertFalse(libraries.find("foo").isPresent());
+    assertTrue(libraries.find("org.lwjgl").isPresent());
+    assertTrue(libraries.find("org.lwjgl.natives").isPresent());
+    assertTrue(libraries.find("org.lwjgl.openal").isPresent());
+    assertTrue(libraries.find("org.lwjgl.openal.natives").isPresent());
+    assertTrue(libraries.find("org.lwjgl.opengl").isPresent());
+    assertTrue(libraries.find("org.lwjgl.opengl.natives").isPresent());
+    assertTrue(libraries.find("org.lwjgl.vulkan").isPresent());
+    assertTrue(libraries.find("org.lwjgl.vulkan.natives").isPresent());
   }
 }

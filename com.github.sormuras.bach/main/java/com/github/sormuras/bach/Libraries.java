@@ -3,6 +3,8 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.JUnitJupiterModuleLookup;
 import com.github.sormuras.bach.lookup.JUnitPlatformModuleLookup;
+import com.github.sormuras.bach.lookup.JavaFXModuleLookup;
+import com.github.sormuras.bach.lookup.LWJGLModuleLookup;
 import com.github.sormuras.bach.lookup.Maven;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import java.util.Arrays;
@@ -15,15 +17,23 @@ public record Libraries(ModuleLookup... lookups) {
     return new Libraries(lookups);
   }
 
+  public static ModuleLookup lookupJavaFX(String version) {
+    return new JavaFXModuleLookup(version);
+  }
+
+  public static ModuleLookup lookupLWJGL(String version) {
+    return new LWJGLModuleLookup(version);
+  }
+
   public boolean isEmpty() {
     return lookups.length == 0;
   }
 
   public record Found(String uri, ModuleLookup by) {}
 
-  public Optional<Found> find(String name) {
+  public Optional<Found> find(String module) {
     for (var lookup : lookups) {
-      var uri = lookup.lookupUri(name);
+      var uri = lookup.lookupUri(module);
       if (uri.isPresent()) return Optional.of(new Found(uri.get(), lookup));
     }
     return Optional.empty();
@@ -36,7 +46,7 @@ public record Libraries(ModuleLookup... lookups) {
     return new Libraries(copy);
   }
 
-  /** Link well-known JUnit modules to their Maven Central artifacts. */
+  /** Find well-known JUnit modules published at Maven Central. */
   public enum JUnit implements ModuleLookup {
 
     /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
