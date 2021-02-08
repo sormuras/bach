@@ -3,8 +3,8 @@ package configuration;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Finder;
-import com.github.sormuras.bach.Finder.JUnit;
+import com.github.sormuras.bach.Libraries;
+import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
@@ -38,8 +38,8 @@ public class Modulation extends Bach {
   }
 
   @Override
-  protected Finder newFinder() throws Exception {
-    return new Finder(
+  protected Libraries newLibraries() {
+    return new Libraries(
         JUnit.V_5_7_1,
         new ExternalModuleLookup("junit", Maven.central("junit", "junit", "4.13.1")),
         new ExternalModuleLookup("org.hamcrest", Maven.central("org.hamcrest", "hamcrest", "2.2")),

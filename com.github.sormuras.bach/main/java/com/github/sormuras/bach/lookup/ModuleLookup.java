@@ -4,5 +4,5 @@ import java.util.Optional;
 
 @FunctionalInterface
 public interface ModuleLookup {
-  Optional<String> lookupModule(String name);
+  Optional<String> lookupUri(String module);
 }

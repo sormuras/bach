@@ -24,7 +24,7 @@ public class ToolProvidersModuleLookup implements ModuleLookup {
   }
 
   @Override
-  public Optional<String> lookupModule(String module) {
+  public Optional<String> lookupUri(String module) {
     if (!Files.isDirectory(directory)) return Optional.empty();
 
     var layer = new ModuleLayerBuilder().before(ModuleFinder.of(directory)).build();

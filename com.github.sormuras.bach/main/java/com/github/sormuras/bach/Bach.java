@@ -49,7 +49,7 @@ public class Bach {
   private final Set<Flag> flags;
   private final Consumer<String> printer;
   private final Queue<Recording> recordings;
-  private final Finder finder;
+  private final Libraries libraries;
   private final Project project;
   private /*-*/ Browser browser;
 
@@ -63,7 +63,7 @@ public class Bach {
     this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
     this.recordings = new ConcurrentLinkedQueue<>();
     try {
-      this.finder = newFinder();
+      this.libraries = newLibraries();
       this.project = newProject();
     } catch (Exception exception) {
       throw new Error("Initialization failed", exception);
@@ -76,10 +76,6 @@ public class Bach {
 
   public final List<Recording> recordings() {
     return recordings.stream().toList();
-  }
-
-  public final Finder finder() {
-    return finder;
   }
 
   public final Project project() {
@@ -95,8 +91,8 @@ public class Bach {
     return new Logbook(this);
   }
 
-  protected Finder newFinder() throws Exception {
-    return new Finder();
+  protected Libraries newLibraries() {
+    return new Libraries();
   }
 
   protected Project newProject() throws Exception {
@@ -137,7 +133,7 @@ public class Bach {
   public void buildMainSpace() throws Exception {}
 
   public String computeExternalModuleUri(String module) {
-    var found = finder().find(module).orElseThrow(() -> new LookupException(module));
+    var found = libraries.find(module).orElseThrow(() -> new LookupException(module));
     debug("%s <- %s", module, found);
     return found.uri();
   }

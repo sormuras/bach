@@ -22,7 +22,7 @@ public record ExternalModuleLookup(String module, String uri) implements ModuleL
   }
 
   @Override
-  public Optional<String> lookupModule(String name) {
-    return module.equals(name) ? Optional.of(uri) : Optional.empty();
+  public Optional<String> lookupUri(String module) {
+    return this.module.equals(module) ? Optional.of(uri) : Optional.empty();
   }
 }
