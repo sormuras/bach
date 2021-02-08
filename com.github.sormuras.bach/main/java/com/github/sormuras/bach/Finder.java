@@ -80,6 +80,8 @@ public record Finder(ModuleLookup... lookups) {
       this.version = jupiter;
       this.finder =
           new Finder(new JUnitJupiter(jupiter), new JUnitPlatform(platform))
+              .link("org.junit.vintage.engine")
+              .toMavenCentral("org.junit.vintage", "junit-vintage-engine", jupiter)
               .link("org.apiguardian.api")
               .toMavenCentral("org.apiguardian", "apiguardian-api", apiguardian)
               .link("org.opentest4j")

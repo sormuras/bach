@@ -4,10 +4,13 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Finder;
+import com.github.sormuras.bach.Finder.JUnit;
 import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
+import com.github.sormuras.bach.lookup.Maven;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,7 +40,9 @@ public class Modulation extends Bach {
   @Override
   protected Finder newFinder() throws Exception {
     return new Finder(
-        Finder.JUnit.V_5_7_1,
+        JUnit.V_5_7_1,
+        new ExternalModuleLookup("junit", Maven.central("junit", "junit", "4.13.1")),
+        new ExternalModuleLookup("org.hamcrest", Maven.central("org.hamcrest", "hamcrest", "2.2")),
         new GitHubReleasesModuleLookup(this),
         new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
   }
