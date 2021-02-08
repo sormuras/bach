@@ -1,11 +1,10 @@
 package configuration;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Base;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.Libraries.JUnit;
-import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
@@ -18,23 +17,21 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
 
 public class Modulation extends Bach {
 
   public static void main(String... args) {
-    var bach = new configuration.Modulation(new Flag[0]);
+    var bach = new Modulation();
     var main = new Main(bach);
     var code = args.length == 0 ? main.performAction("build") : main.performActions(List.of(args));
     System.exit(code);
   }
 
-  public Modulation() {
-    this(Flag.VERBOSE);
-  }
-
-  public Modulation(Flag... flags) {
-    super(Base.ofSystem(), System.out::println, flags);
+  @Override
+  protected Set<Flag> newFlags() {
+    return Set.of(Flag.VERBOSE);
   }
 
   @Override
@@ -48,14 +45,19 @@ public class Modulation extends Bach {
   }
 
   @Override
-  protected Project newProject() throws Exception {
+  protected Project newProject() {
     var now = LocalDateTime.now(ZoneOffset.UTC);
-    var version =
-        Project.defaultVersion(
-            Files.readString(Path.of("VERSION"))
-                + "-custom+"
-                + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now));
+    var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
+    var version = Project.defaultVersion(readVersionFromFile() + "-custom+" + timestamp);
     return super.newProject().version(version);
+  }
+
+  private static String readVersionFromFile() {
+    try {
+      return Files.readString(Path.of("VERSION"));
+    } catch (Exception exception) {
+      throw new RuntimeException("Read version failed: " + exception);
+    }
   }
 
   @Override

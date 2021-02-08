@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.ServiceLoader;
@@ -49,42 +48,38 @@ public class Bach {
   private final Set<Flag> flags;
   private final Consumer<String> printer;
   private final Queue<Recording> recordings;
+  private /*-*/ Browser browser;
   private final Libraries libraries;
   private final Project project;
-  private /*-*/ Browser browser;
 
   public Bach() {
-    this(Base.ofSystem(), System.out::println);
-  }
-
-  public Bach(Base base, Consumer<String> printer, Flag... flags) {
-    this.base = base;
-    this.printer = printer;
-    this.flags = flags.length == 0 ? Set.of() : EnumSet.copyOf(Set.of(flags));
+    this.base = newBase();
+    this.flags = newFlags();
+    this.printer = newPrinter();
     this.recordings = new ConcurrentLinkedQueue<>();
-    try {
-      this.libraries = newLibraries();
-      this.project = newProject();
-    } catch (Exception exception) {
-      throw new Error("Initialization failed", exception);
-    }
+    this.browser = null; // defered creation in its accessor
+    this.libraries = newLibraries();
+    this.project = newProject();
   }
 
-  public final Base base() {
-    return base;
+  protected Base newBase() {
+    return Base.ofSystem();
   }
 
-  public final List<Recording> recordings() {
-    return recordings.stream().toList();
+  protected Set<Flag> newFlags() {
+    return Set.of();
   }
 
-  public final Project project() {
-    return project;
+  protected Consumer<String> newPrinter() {
+    return System.out::println;
   }
 
-  public final synchronized Browser browser() {
-    if (browser == null) browser = newBrowser();
-    return browser;
+  protected Browser newBrowser() {
+    return new Browser(this);
+  }
+
+  protected HttpClient newHttpClient() {
+    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
 
   protected Logbook newLogbook() {
@@ -95,16 +90,25 @@ public class Bach {
     return new Libraries();
   }
 
-  protected Project newProject() throws Exception {
+  protected Project newProject() {
     return new Project();
   }
 
-  protected Browser newBrowser() {
-    return new Browser(this);
+  public final Base base() {
+    return base;
   }
 
-  protected HttpClient newHttpClient() {
-    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+  public final synchronized Browser browser() {
+    if (browser == null) browser = newBrowser();
+    return browser;
+  }
+
+  public final List<Recording> recordings() {
+    return recordings.stream().toList();
+  }
+
+  public final Project project() {
+    return project;
   }
 
   @Main.Action
