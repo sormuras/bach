@@ -111,7 +111,6 @@ public class Bach {
     return project;
   }
 
-  @Main.Action
   public void build() throws Exception {
     debug("Build...");
 
@@ -173,7 +172,6 @@ public class Bach {
     throw new RuntimeException("No tool provider found for name: " + name);
   }
 
-  @Main.Action
   public void clean() throws Exception {
     debug("Clean...");
 
@@ -224,14 +222,12 @@ public class Bach {
     return message;
   }
 
-  @Main.Action({"help", "usage"})
   public void printHelp() {
     print("""
       Usage: bach ACTION [ARGS...]
       """);
   }
 
-  @Main.Action("info")
   public void printInfo() {
     print("module: %s", getClass().getModule().getName());
     print("class: %s", getClass().getName());
@@ -240,7 +236,6 @@ public class Bach {
     print("project: %s", project);
   }
 
-  @Main.Action("version")
   public void printVersion() {
     print(version());
   }

@@ -1,12 +1,6 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.tool.Tool;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,19 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Bach's main program. */
 public class Main {
-
-  /**
-   * An annotated method indicates that it is intended to be run from Bach's main program's CLI.
-   *
-   * @see #performAction(String)
-   */
-  @Target(ElementType.METHOD)
-  @Retention(RetentionPolicy.SOURCE)
-  @Documented
-  @Inherited
-  public @interface Action {
-    String[] value() default {};
-  }
 
   /** A command line option parser. */
   record Options(
