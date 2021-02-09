@@ -1,5 +1,7 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.tool.JDeps;
+import com.github.sormuras.bach.tool.JLink;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.tool.Javadoc;
@@ -27,6 +29,14 @@ public interface Command<C> {
 
   static Javadoc javadoc() {
     return new Javadoc();
+  }
+
+  static JDeps jdeps() {
+    return new JDeps();
+  }
+
+  static JLink jlink() {
+    return new JLink();
   }
 
   String name();

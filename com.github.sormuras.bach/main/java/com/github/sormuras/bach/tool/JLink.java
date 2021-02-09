@@ -4,6 +4,11 @@ import com.github.sormuras.bach.Command;
 import java.util.List;
 
 public record JLink(List<Argument> arguments) implements Command<JLink> {
+
+  public JLink() {
+    this(List.of());
+  }
+
   @Override
   public String name() {
     return "jlink";

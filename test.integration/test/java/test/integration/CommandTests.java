@@ -37,4 +37,13 @@ class CommandTests {
     var expected = Command.of("name");
     assertSame(expected, expected.arguments(expected.arguments()));
   }
+
+  @Test
+  void touchFoundationTools() {
+    assertEquals("jar", Command.jar().name());
+    assertEquals("javac", Command.javac().name());
+    assertEquals("javadoc", Command.javadoc().name());
+    assertEquals("jdeps", Command.jdeps().name());
+    assertEquals("jlink", Command.jlink().name());
+  }
 }
