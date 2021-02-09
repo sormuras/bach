@@ -2,7 +2,7 @@ package configuration;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Flag;
+import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Main;

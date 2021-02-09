@@ -23,6 +23,10 @@ public record Options(
     String configuration,
     // flags, like "--verbose", "--run-commands-sequentially"
     Set<Flag> flags,
+    // "--project-name"
+    String projectName,
+    // "--project-version"
+    String projectVersion,
     // "tool NAME [ARGS...]"
     Optional<Tool> tool,
     // actions
@@ -39,13 +43,17 @@ public record Options(
   public static Options of(PrintWriter out, PrintWriter err, String... args) {
     var deque = new ArrayDeque<>(List.of(args));
     var configuration = new AtomicReference<>("configuration");
+    var projectName = new AtomicReference<>("noname");
+    var projectVersion = new AtomicReference<>("0");
     var tool = new AtomicReference<Tool>(null);
     var flags = new HashSet<Flag>();
     var actions = new ArrayList<String>();
     while (!deque.isEmpty()) {
       var argument = deque.removeFirst();
       switch (argument) {
-        case "--configuration" -> configuration.set(next(deque, "--configuration NAME"));
+        case "--configuration" -> configuration.set(next(deque, "--configuration MODULE"));
+        case "--project-name" -> projectName.set(next(deque, "--project-name NAME"));
+        case "--project-version" -> projectVersion.set(next(deque, "--project-version VERSION"));
         case "tool" -> {
           var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
           tool.set(Command.of(name, deque.toArray(String[]::new)));
@@ -70,6 +78,8 @@ public record Options(
         List.of(args),
         configuration.get(),
         flags,
+        projectName.get(),
+        projectVersion.get(),
         Optional.ofNullable(tool.get()),
         actions);
   }
@@ -77,5 +87,56 @@ public record Options(
   private static String next(ArrayDeque<String> deque, String message) {
     if (deque.isEmpty()) throw new IllegalArgumentException(message);
     return deque.removeFirst();
+  }
+
+  /**
+   * Feature toggle.
+   */
+  public enum Flag {
+
+    /**
+     * Print messages about what Bach is doing.
+     *
+     * @see Bach#debug(String, Object...)
+     */
+    VERBOSE("Print messages about what Bach is doing."),
+
+    /**
+     * Mute all normal (expected) printouts.
+     */
+    SILENT("Mute all normal (expected) printouts."),
+
+    /**
+     * Print Bach's version and exit.
+     */
+    VERSION("Print Bach's version and exit."),
+
+    /**
+     * Print Bach's version and continue.
+     */
+    SHOW_VERSION("Print Bach's version and continue."),
+
+    /**
+     * Print usage information and exit.
+     */
+    HELP("Print usage information and exit."),
+
+    /**
+     * Prevent parallel execution of commands.
+     *
+     * @see Bach#run(Command, Command[])
+     * @see Bach#run(List)
+     */
+    RUN_COMMANDS_SEQUENTIALLY("Prevent parallel execution of commands.");
+
+    final String help;
+
+    Flag(String help) {
+      this.help = help;
+    }
+
+    String help() {
+      return help;
+    }
   }
 }

@@ -1,6 +1,9 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.Options.Flag;
 import java.io.PrintWriter;
+import java.util.Locale;
+import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
 
 /** Bach's main program. */
@@ -11,18 +14,33 @@ public class Main implements ToolProvider {
   }
 
   public static String computeHelpMessage() {
+    var flags = new StringJoiner("\n");
+    for (var flag : Flag.values()) {
+      flags.add("--" + flag.name().toLowerCase(Locale.ROOT).replace('_', '-'));
+      flags.add("  " + flag.help());
+    }
     return """
         Usage: bach [OPTIONS] ACTION [ACTIONS...]
                  to execute one or more actions in sequence
            or: bach [OPTIONS] [ACTIONS...] tool NAME [ARGS...]
                  to execute a provided tool with tool-specific arguments
 
+        Options include the following flags:
+
+        {{FLAGS}}
+
         Options include:
 
-          --version
-            Print version information and exit.
-          --show-version
-            Print version information and continue.
+          --configuration MODULE
+            Specify the module that is normally annotated with @ProjectInfo or provides
+            a custom Bach.Factory implementation, defaults to "configuration".
+
+        Project-related options include:
+
+          --project-name NAME
+            Specify the name of the project, defaults to "noname".
+          --project-version VERSION
+            Specify the version of the project, defaults to "0".
 
         Actions include:
 
@@ -34,7 +52,8 @@ public class Main implements ToolProvider {
             Print information about Bach and the current project.
           tool
             Run provided tool with NAME passing any following arguments.
-        """;
+        """
+        .replace("{{FLAGS}}", flags.toString().indent(2).stripTrailing());
   }
 
   /** Default constructor usually used by the ServiceLoader facility. */

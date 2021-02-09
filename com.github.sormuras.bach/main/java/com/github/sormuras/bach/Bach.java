@@ -1,17 +1,18 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.lookup.LookupException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.ServiceLoader;
@@ -53,7 +54,6 @@ public class Bach {
 
   private final Options options;
   private final Base base;
-  private final Set<Flag> flags;
   private final Queue<Recording> recordings;
   private /*-*/ Browser browser;
   private final Libraries libraries;
@@ -62,7 +62,6 @@ public class Bach {
   public Bach(Options options) {
     this.options = options;
     this.base = newBase();
-    this.flags = options.flags().isEmpty() ? Set.of() : EnumSet.copyOf(options.flags());
     this.recordings = new ConcurrentLinkedQueue<>();
     this.browser = null; // defered creation in its accessor
     this.libraries = newLibraries();
@@ -94,7 +93,9 @@ public class Bach {
   }
 
   protected Project newProject() {
-    return new Project();
+    var name = options.projectName();
+    var version = Version.parse(options.projectVersion());
+    return new Project(name, version);
   }
 
   public final Base base() {
@@ -186,12 +187,8 @@ public class Bach {
     }
   }
 
-  public boolean is(Flag flag) {
-    return flags.contains(flag);
-  }
-
   public void debug(String format, Object... args) {
-    if (is(Flag.VERBOSE)) print("// " + format, args);
+    if (options().is(Flag.VERBOSE)) print("// " + format, args);
   }
 
   public void loadExternalModules(String... modules) {
@@ -229,7 +226,7 @@ public class Bach {
     print("module: %s", getClass().getModule().getName());
     print("class: %s", getClass().getName());
     print("base: %s", base);
-    print("flags: %s", flags);
+    print("flags: %s", options.flags());
     print("project: %s", project);
   }
 
@@ -249,7 +246,7 @@ public class Bach {
     debug("Run %d command%s", size, size == 1 ? "" : "s");
     if (size == 0) return List.of();
     if (size == 1) return List.of(run(commands.iterator().next()));
-    var sequential = is(Flag.RUN_COMMANDS_SEQUENTIALLY);
+    var sequential = options().is(Flag.RUN_COMMANDS_SEQUENTIALLY);
     var stream = sequential ? commands.stream() : commands.stream().parallel();
     return stream.map(this::run).toList();
   }
