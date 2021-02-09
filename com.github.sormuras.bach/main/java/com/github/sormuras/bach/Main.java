@@ -55,21 +55,17 @@ public class Main implements ToolProvider {
   }
 
   public int run(Options options) {
-    if (options.flags().contains(Flag.VERBOSE)) options.out().println(options);
-    if (options.args().isEmpty()) {
-      options.out().println("No argument, no action.");
-      return 0;
-    }
+    if (options.is(Flag.VERBOSE)) options.out().println(options);
     return run(Bach.of(options));
   }
 
   public int run(Bach bach) {
     var options = bach.options();
-    if (options.printVersionAndExit() || options.printVersionAndContinue()) {
+    if (options.is(Flag.VERSION) || options.is(Flag.SHOW_VERSION)) {
       bach.print("%s", Bach.version());
-      if (options.printVersionAndExit()) return 0;
+      if (options.is(Flag.VERSION /* and exit */)) return 0;
     }
-    if (options.printHelpAndExit()) {
+    if (options.is(Flag.HELP /* and exit */)) {
       bach.print("%s", computeHelpMessage());
       return 0;
     }

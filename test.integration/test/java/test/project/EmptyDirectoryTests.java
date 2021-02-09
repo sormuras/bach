@@ -6,12 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Base;
-import com.github.sormuras.bach.Flag;
+import com.github.sormuras.bach.Options;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,22 +17,18 @@ class EmptyDirectoryTests {
   @Test
   void build(@TempDir Path temp) {
     var lines = new ArrayList<String>();
-    var bach = new Bach() {
+    var bach = new Bach(Options.of("--verbose")) {
 
       @Override
       protected Base newBase() {
-        var idea = Path.of(".idea/out/production");
-        return Base.of(temp); // .cache(Files.isDirectory(idea) ? idea : Bach.CACHE);
+        return Base.of(temp);
       }
 
       @Override
-      protected Set<Flag> newFlags() {
-        return EnumSet.of(Flag.VERBOSE);
-      }
-
-      @Override
-      protected Consumer<String> newPrinter() {
-        return lines::add;
+      public String print(String format, Object... args) {
+        var line = String.format(format, args);
+        lines.add(line);
+        return line;
       }
     };
 

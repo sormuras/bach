@@ -38,7 +38,7 @@ public class Bach {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.configuration().orElse("configuration"));
+    var layer = ModuleLayerBuilder.build(options.configuration());
     return ServiceLoader.load(layer, Factory.class)
         .findFirst()
         .map(factory -> factory.newBach(options))

@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.tool.Tool;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -18,14 +19,8 @@ public record Options(
     PrintWriter err,
     // all arguments (raw)
     List<String> args,
-    // "--version"
-    boolean printVersionAndExit,
-    // "--show-version"
-    boolean printVersionAndContinue,
-    // "--help"|"--usage"
-    boolean printHelpAndExit,
     // "--configuration" "configuration"
-    Optional<String> configuration,
+    String configuration,
     // flags, like "--verbose", "--run-commands-sequentially"
     Set<Flag> flags,
     // "tool NAME [ARGS...]"
@@ -33,15 +28,16 @@ public record Options(
     // actions
     List<String> actions) {
 
+  public boolean is(Flag flag) {
+    return flags.contains(flag);
+  }
+
   public static Options of(String... args) {
     return of(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
   }
 
   public static Options of(PrintWriter out, PrintWriter err, String... args) {
     var deque = new ArrayDeque<>(List.of(args));
-    var printVersionAndExit = false;
-    var printVersionAndContinue = false;
-    var printHelpAndExit = false;
     var configuration = new AtomicReference<>("configuration");
     var tool = new AtomicReference<Tool>(null);
     var flags = new HashSet<Flag>();
@@ -49,9 +45,6 @@ public record Options(
     while (!deque.isEmpty()) {
       var argument = deque.removeFirst();
       switch (argument) {
-        case "--version" -> printVersionAndExit = true;
-        case "--show-version" -> printVersionAndContinue = true;
-        case "--help", "--usage" -> printHelpAndExit = true;
         case "--configuration" -> configuration.set(next(deque, "--configuration NAME"));
         case "tool" -> {
           var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
@@ -72,13 +65,10 @@ public record Options(
       }
     }
     return new Options(
-        out,
+        flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
         err,
         List.of(args),
-        printVersionAndExit,
-        printVersionAndContinue,
-        printHelpAndExit,
-        Optional.of(configuration.get()),
+        configuration.get(),
         flags,
         Optional.ofNullable(tool.get()),
         actions);

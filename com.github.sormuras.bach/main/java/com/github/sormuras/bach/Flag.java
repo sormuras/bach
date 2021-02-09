@@ -13,6 +13,26 @@ public enum Flag {
   VERBOSE,
 
   /**
+   * Mute all normal (expected) printouts.
+   */
+  SILENT,
+
+  /**
+   * Print Bach's version and exit.
+   */
+  VERSION,
+
+  /**
+   * Print Bach's version and continue.
+   */
+  SHOW_VERSION,
+
+  /**
+   * Print usage information and exit.
+   */
+  HELP,
+
+  /**
    * Prevent parallel execution of commands.
    *
    * @see Bach#run(Command, Command[])

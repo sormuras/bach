@@ -8,17 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.lookup.LookupException;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
   @Test
   void defaults() {
-    var bach = new Bach();
+    var bach = new Bach(Options.of());
     // components
     assertNotNull(bach.project());
     assertNotNull(bach.browser());
@@ -35,12 +35,7 @@ class BachTests {
 
   @Test
   void print() {
-    var bach = new Bach() {
-      @Override
-      protected Consumer<String> newPrinter() {
-        return silence -> {};
-      }
-    };
+    var bach = new Bach(Options.of("--silent"));
 
     bach.run(Command.of("print").add("10", "PRINT 'HELLO WORLD'"));
     bach.run(ToolProvider.findFirst("print").orElseThrow(), List.of("20", "PRINT 20"));
