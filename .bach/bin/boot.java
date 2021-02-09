@@ -2,6 +2,7 @@ package bin;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Options;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
@@ -508,7 +509,7 @@ public class boot {
 
     static void refresh(String module) {
       try {
-        set(Bach.of(Bach.Options.of("--configuration", module)));
+        set(Bach.of(Options.of("--configuration", module)));
       } catch (Exception exception) {
         out(
             """
@@ -518,7 +519,7 @@ public class boot {
               Falling back to default Bach instance.
             """,
             exception.getMessage());
-        set(new Bach(Bach.Options.of()));
+        set(new Bach(Options.of()));
       }
     }
 

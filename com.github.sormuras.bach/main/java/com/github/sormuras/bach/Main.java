@@ -47,21 +47,21 @@ public class Main implements ToolProvider {
   }
 
   public int run(String... args) {
-    return run(Bach.Options.of(args));
+    return run(Options.of(args));
   }
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var options = Bach.Options.of(out, err, args);
+    var options = Options.of(out, err, args);
     return run(options);
   }
 
-  public int run(Bach.Options options) {
+  public int run(Options options) {
+    if (options.flags().contains(Flag.VERBOSE)) options.out().println(options);
     if (options.args().isEmpty()) {
       options.out().println("No argument, no action.");
       return 0;
     }
-    if (options.flags().contains(Flag.VERBOSE)) options.out().println(options);
     return run(Bach.of(options));
   }
 

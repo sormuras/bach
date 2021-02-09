@@ -6,6 +6,7 @@ import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Main;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
