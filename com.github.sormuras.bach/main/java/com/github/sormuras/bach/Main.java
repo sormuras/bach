@@ -10,9 +10,8 @@ public class Main implements ToolProvider {
     System.exit(new Main().run(args));
   }
 
-  public static void help(PrintWriter printer) {
-    printer.print(
-        """
+  public static String computeHelpMessage() {
+    return """
         Usage: bach [OPTIONS] ACTION [ACTIONS...]
                  to execute one or more actions in sequence
            or: bach [OPTIONS] [ACTIONS...] tool NAME [ARGS...]
@@ -35,7 +34,7 @@ public class Main implements ToolProvider {
             Print information about Bach and the current project.
           tool
             Run provided tool with NAME passing any following arguments.
-        """);
+        """;
   }
 
   /** Default constructor usually used by the ServiceLoader facility. */
@@ -52,8 +51,7 @@ public class Main implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var options = Options.of(out, err, args);
-    return run(options);
+    return run(Options.of(out, err, args));
   }
 
   public int run(Options options) {
@@ -68,11 +66,11 @@ public class Main implements ToolProvider {
   public int run(Bach bach) {
     var options = bach.options();
     if (options.printVersionAndExit() || options.printVersionAndContinue()) {
-      options.out().print(Bach.version());
+      bach.print("%s", Bach.version());
       if (options.printVersionAndExit()) return 0;
     }
     if (options.printHelpAndExit()) {
-      help(options.out());
+      bach.print("%s", computeHelpMessage());
       return 0;
     }
     if (options.tool().isPresent()) {
