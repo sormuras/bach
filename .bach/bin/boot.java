@@ -508,7 +508,7 @@ public class boot {
 
     static void refresh(String module) {
       try {
-        set(Bach.of(module));
+        set(Bach.of(Bach.Options.of("--configuration", module)));
       } catch (Exception exception) {
         out(
             """
@@ -518,7 +518,7 @@ public class boot {
               Falling back to default Bach instance.
             """,
             exception.getMessage());
-        set(new Bach());
+        set(new Bach(Bach.Options.of()));
       }
     }
 

@@ -3,6 +3,7 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.lookup.LookupException;
+import com.github.sormuras.bach.tool.Tool;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
@@ -11,13 +12,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
@@ -33,9 +40,95 @@ public class Bach {
 
   public static final Path WORKSPACE = Path.of(".bach/workspace");
 
-  public static Bach of(String module) {
-    var layer = ModuleLayerBuilder.build(module);
-    return ServiceLoader.load(layer, Bach.class).findFirst().orElseGet(Bach::new);
+  public interface Factory<B extends Bach> {
+    B newBach(Options options);
+  }
+
+  public record Options(
+      // a stream to which "expected" output should be written
+      PrintWriter out,
+      // a stream to which any error messages should be written
+      PrintWriter err,
+      // all arguments (raw)
+      List<String> args,
+      // "--version"
+      boolean printVersionAndExit,
+      // "--show-version"
+      boolean printVersionAndContinue,
+      // "--help"|"--usage"
+      boolean printHelpAndExit,
+      // "--configuration" "configuration"
+      Optional<String> configuration,
+      // flags, like "--verbose", "--run-commands-sequentially"
+      Set<Flag> flags,
+      // "tool NAME [ARGS...]"
+      Optional<Tool> tool,
+      // actions
+      List<String> actions) {
+
+    public static Options of(String... args) {
+      return of(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
+    }
+
+    public static Options of(PrintWriter out, PrintWriter err, String... args) {
+      var deque = new ArrayDeque<>(List.of(args));
+      var printVersionAndExit = false;
+      var printVersionAndContinue = false;
+      var printHelpAndExit = false;
+      var configuration = new AtomicReference<>("configuration");
+      var tool = new AtomicReference<Tool>(null);
+      var flags = new HashSet<Flag>();
+      var actions = new ArrayList<String>();
+      while (!deque.isEmpty()) {
+        var argument = deque.removeFirst();
+        switch (argument) {
+          case "--version" -> printVersionAndExit = true;
+          case "--show-version" -> printVersionAndContinue = true;
+          case "--help", "--usage" -> printHelpAndExit = true;
+          case "--configuration" -> configuration.set(next(deque, "--configuration NAME"));
+          case "tool" -> {
+            var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
+            tool.set(Command.of(name, deque.toArray(String[]::new)));
+            deque.clear();
+          }
+          default -> {
+            if (argument.startsWith("--")) { // handle flags
+              var name = argument.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
+              var flag = Flag.valueOf(name); // throws IllegalArgumentException
+              flags.add(flag);
+              continue;
+            }
+            actions.add(argument);
+            actions.addAll(deque);
+            deque.clear();
+          }
+        }
+      }
+      return new Options(
+          out,
+          err,
+          List.of(args),
+          printVersionAndExit,
+          printVersionAndContinue,
+          printHelpAndExit,
+          Optional.of(configuration.get()),
+          flags,
+          Optional.ofNullable(tool.get()),
+          actions);
+    }
+
+    private static String next(ArrayDeque<String> deque, String message) {
+      if (deque.isEmpty()) throw new IllegalArgumentException(message);
+      return deque.removeFirst();
+    }
+  }
+
+  public static Bach of(Options options) {
+    var layer = ModuleLayerBuilder.build(options.configuration().orElse("configuration"));
+    return ServiceLoader.load(layer, Factory.class)
+        .findFirst()
+        .map(factory -> factory.newBach(options))
+        .orElse(new Bach(options));
   }
 
   public static String version() {
@@ -44,34 +137,30 @@ public class Bach {
     return module.getDescriptor().version().map(Object::toString).orElse("exploded");
   }
 
+  private final Options options;
   private final Base base;
   private final Set<Flag> flags;
-  private final Consumer<String> printer;
   private final Queue<Recording> recordings;
   private /*-*/ Browser browser;
   private final Libraries libraries;
   private final Project project;
 
-  public Bach() {
+  public Bach(Options options) {
+    this.options = options;
     this.base = newBase();
-    this.flags = newFlags();
-    this.printer = newPrinter();
+    this.flags = options.flags().isEmpty() ? Set.of() : EnumSet.copyOf(options.flags());
     this.recordings = new ConcurrentLinkedQueue<>();
     this.browser = null; // defered creation in its accessor
     this.libraries = newLibraries();
     this.project = newProject();
   }
 
+  public Options options() {
+    return options;
+  }
+
   protected Base newBase() {
     return Base.ofSystem();
-  }
-
-  protected Set<Flag> newFlags() {
-    return Set.of();
-  }
-
-  protected Consumer<String> newPrinter() {
-    return System.out::println;
   }
 
   protected Browser newBrowser() {
@@ -218,26 +307,16 @@ public class Bach {
 
   public String print(String format, Object... args) {
     var message = args == null || args.length == 0 ? format : String.format(format, args);
-    printer.accept(message);
+    options.out().println(message);
     return message;
   }
 
-  public void printHelp() {
-    print("""
-      Usage: bach ACTION [ARGS...]
-      """);
-  }
-
-  public void printInfo() {
+  public void info() {
     print("module: %s", getClass().getModule().getName());
     print("class: %s", getClass().getName());
     print("base: %s", base);
     print("flags: %s", flags);
     print("project: %s", project);
-  }
-
-  public void printVersion() {
-    print(version());
   }
 
   public Recording run(Command<?> command) {

@@ -16,22 +16,25 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Set;
 import java.util.StringJoiner;
 
 public class Modulation extends Bach {
 
   public static void main(String... args) {
-    var bach = new Modulation();
-    var main = new Main(bach);
-    var code = args.length == 0 ? main.performAction("build") : main.performActions(List.of(args));
-    System.exit(code);
+    var options = Options.of(args.length == 0 ? new String[] {"build"} : args);
+    System.exit(new Main().run(provider().newBach(options)));
   }
 
-  @Override
-  protected Set<Flag> newFlags() {
-    return Set.of(Flag.VERBOSE);
+  public static Factory<Modulation> provider() {
+    return options -> {
+      options.flags().add(Flag.VERBOSE);
+      options.flags().add(Flag.RUN_COMMANDS_SEQUENTIALLY);
+      return new Modulation(options);
+    };
+  }
+
+  private Modulation(Options options) {
+    super(options);
   }
 
   @Override

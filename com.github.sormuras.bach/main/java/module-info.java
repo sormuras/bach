@@ -26,6 +26,9 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Bach;
+  uses com.github.sormuras.bach.Bach.Factory;
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      com.github.sormuras.bach.Main;
 }

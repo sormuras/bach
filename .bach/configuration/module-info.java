@@ -1,4 +1,4 @@
 module configuration {
   requires com.github.sormuras.bach;
-  provides com.github.sormuras.bach.Bach with configuration.Modulation;
+  provides com.github.sormuras.bach.Bach.Factory with configuration.Modulation;
 }
