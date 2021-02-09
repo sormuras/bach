@@ -10,7 +10,7 @@
  *       href="https://docs.oracle.com/en/java/javase/15/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
- * @uses com.github.sormuras.bach.Bach
+ * @uses com.github.sormuras.bach.Bach.Factory
  * @uses java.util.spi.ToolProvider
  */
 module com.github.sormuras.bach {
