@@ -34,7 +34,13 @@ public class Bach {
 
   public static final Path WORKSPACE = Path.of(".bach/workspace");
 
+  /** A {@code Bach}-creating service. */
   public interface Factory<B extends Bach> {
+    /**
+     * {@return a new instance of service-provider that extends {@code Bach}}
+     *
+     * @param options the options object to be passed on
+     */
     B newBach(Options options);
   }
 

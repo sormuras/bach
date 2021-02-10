@@ -12,34 +12,55 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * @param out a stream to which "expected" output should be written
+ * @param err a stream to which any error messages should be written
+ * @param configuration project-info module's name passed via {@code --configuration MODULE}
+ * @param flags a set of feature toggles passed individually like {@code --verbose --help ...}
+ * @param projectName project's name passed via {@code --project-name NAME}
+ * @param projectVersion project's version passed via {@code --project-version VERSION}
+ * @param actions the list of actions to execute passed individually like {@code info build ...}
+ * @param tool an optional command to execute passed via {@code tool NAME [ARGS...]}
+ */
 public record Options(
-    // a stream to which "expected" output should be written
     PrintWriter out,
-    // a stream to which any error messages should be written
     PrintWriter err,
-    // all arguments (raw)
-    List<String> args,
-    // "--configuration" "configuration"
     String configuration,
-    // flags, like "--verbose", "--run-commands-sequentially"
     Set<Flag> flags,
-    // "--project-name"
     String projectName,
-    // "--project-version"
     String projectVersion,
-    // "tool NAME [ARGS...]"
-    Optional<Tool> tool,
-    // actions
-    List<String> actions) {
+    List<String> actions,
+    Optional<Tool> tool) {
 
+  /**
+   * {@return {@code true} if the given flag is present within the set of flags, else {@code false}}
+   *
+   * @param flag a binary option to check for being present
+   */
   public boolean is(Flag flag) {
     return flags.contains(flag);
   }
 
+  /**
+   * {@return an instance of {@code Options} parsed from the given command-line arguments}
+   *
+   * <p>This convenient overload wraps the {@link System#out} and {@link System#err} streams into
+   * automatically flushing {@link PrintWriter} objects and delegates to {@link #of(PrintWriter,
+   * PrintWriter, String...)}.
+   *
+   * @param args the command-line arguments to parse
+   */
   public static Options of(String... args) {
     return of(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
   }
 
+  /**
+   * {@return an instance of {@code Options} parsed from the given command-line arguments}
+   *
+   * @param out a stream to which "expected" output should be written
+   * @param err a stream to which any error messages should be written
+   * @param args the command-line arguments to parse
+   */
   public static Options of(PrintWriter out, PrintWriter err, String... args) {
     var deque = new ArrayDeque<>(List.of(args));
     var configuration = new AtomicReference<>("configuration");
@@ -75,13 +96,12 @@ public record Options(
     return new Options(
         flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
         err,
-        List.of(args),
         configuration.get(),
         flags,
         projectName.get(),
         projectVersion.get(),
-        Optional.ofNullable(tool.get()),
-        actions);
+        actions,
+        Optional.ofNullable(tool.get()));
   }
 
   private static String next(ArrayDeque<String> deque, String message) {
@@ -89,9 +109,7 @@ public record Options(
     return deque.removeFirst();
   }
 
-  /**
-   * Feature toggle.
-   */
+  /** Feature toggle. */
   public enum Flag {
 
     /**
@@ -101,24 +119,16 @@ public record Options(
      */
     VERBOSE("Print messages about what Bach is doing."),
 
-    /**
-     * Mute all normal (expected) printouts.
-     */
+    /** Mute all normal (expected) printouts. */
     SILENT("Mute all normal (expected) printouts."),
 
-    /**
-     * Print Bach's version and exit.
-     */
+    /** Print Bach's version and exit. */
     VERSION("Print Bach's version and exit."),
 
-    /**
-     * Print Bach's version and continue.
-     */
+    /** Print Bach's version and continue. */
     SHOW_VERSION("Print Bach's version and continue."),
 
-    /**
-     * Print usage information and exit.
-     */
+    /** Print usage information and exit. */
     HELP("Print usage information and exit."),
 
     /**

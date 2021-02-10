@@ -26,6 +26,7 @@ public class Modulation extends Bach {
     System.exit(new Main().run(provider().newBach(options)));
   }
 
+  /** {@return an instance of a {@code Bach.Factory} service-provider} */
   public static Factory<Modulation> provider() {
     return options -> {
       options.flags().add(Flag.VERBOSE);
