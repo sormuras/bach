@@ -50,7 +50,7 @@ public class boot {
     static void init(String moduleName, String providerName) throws Exception {
       var moduleDirectory = bach().base().directory(".bach", moduleName);
       if (Files.exists(moduleDirectory)) {
-        out("Configuration module directory already exists: %s", moduleDirectory);
+        out("Module directory already exists: %s", moduleDirectory);
         return;
       }
       Files.createDirectories(moduleDirectory);
@@ -61,7 +61,7 @@ public class boot {
           // @com.github.sormuras.bach.ProjectInfo()
           module {{MODULE-NAME}} {
             requires com.github.sormuras.bach;
-            provides com.github.sormuras.bach.Bach with configuration.{{PROVIDER-NAME}};
+            provides com.github.sormuras.bach.Bach.Factory with {{MODULE-NAME}}.{{PROVIDER-NAME}};
           }
           """
               .replace("{{MODULE-NAME}}", moduleName)
@@ -70,29 +70,26 @@ public class boot {
       Files.writeString(
           moduleDirectory.resolve(providerName + ".java"),
           """
-          package configuration;
+          package {{MODULE-NAME}};
 
           import com.github.sormuras.bach.*;
           import com.github.sormuras.bach.lookup.*;
 
+          /** An extension of class {@code Bach} modulating default build-related logic. */
           public class {{PROVIDER-NAME}} extends Bach {
-            public {{PROVIDER-NAME}}() {}
 
-            @Override
-            protected Finder newFinder() throws Exception {
-              return Finder.empty()
-                  // .with(Finders.JUnit.V_5_7_1)
-                  // .with(new GitHubReleasesModuleLookup(this))
-                  // .with(new ToolProvidersModuleLookup(this, Bach.EXTERNALS))
-                  ;
+            /** {@return an instance of a {@code Bach.Factory} service-provider} */
+            public static Factory<{{PROVIDER-NAME}}> provider() {
+              return options -> new {{PROVIDER-NAME}}(options);
             }
 
-            @Override
-            protected Project newProject() throws Exception {
-              return super.newProject().version("1-ea");
+            /** Initializes this instance using the given options. */
+            private {{PROVIDER-NAME}}(Options options) {
+              super(options);
             }
           }
           """
+              .replace("{{MODULE-NAME}}", moduleName)
               .replace("{{PROVIDER-NAME}}", providerName));
     }
   }
