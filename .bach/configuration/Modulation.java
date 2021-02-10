@@ -2,15 +2,12 @@ package configuration;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Options.Flag;
-import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
-import com.github.sormuras.bach.lookup.Maven;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,26 +37,20 @@ public class Modulation extends Bach {
   }
 
   @Override
-  protected Libraries newLibraries() {
-    return new Libraries(
-        JUnit.V_5_7_1,
-        new ExternalModuleLookup("junit", Maven.central("junit", "junit", "4.13.1")),
-        new ExternalModuleLookup("org.hamcrest", Maven.central("org.hamcrest", "hamcrest", "2.2")),
-        new GitHubReleasesModuleLookup(this),
-        new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
+  protected Project newProject() {
+    var project = super.newProject();
+    var libraries = project.libraries()
+        .withModuleLookup(JUnit.V_5_7_0)
+        .withModuleLookup(new GitHubReleasesModuleLookup(this))
+        .withModuleLookup(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
+    return project.version(computeVersion()).libraries(libraries);
   }
 
-  @Override
-  protected Project newProject() {
+  private static String computeVersion() {
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
-    var version = readVersionFromFile() + "-custom+" + timestamp;
-    return super.newProject().version(version);
-  }
-
-  private static String readVersionFromFile() {
     try {
-      return Files.readString(Path.of("VERSION"));
+      return Files.readString(Path.of("VERSION")) + "-custom+" + timestamp;
     } catch (Exception exception) {
       throw new RuntimeException("Read version failed: " + exception);
     }
