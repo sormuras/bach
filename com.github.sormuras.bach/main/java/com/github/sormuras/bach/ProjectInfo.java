@@ -21,6 +21,6 @@ public @interface ProjectInfo {
   /** @return the name of the project, defaults to {@code "*"} */
   String name() default "*";
 
-  /** @return the version of the project, defaults to {@code "0-ea"} */
-  String version() default "0-ea";
+  /** @return the version of the project, defaults to {@code "0"} */
+  String version() default "0";
 }

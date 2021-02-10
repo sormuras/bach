@@ -53,7 +53,7 @@ public class Modulation extends Bach {
   protected Project newProject() {
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
-    var version = Project.defaultVersion(readVersionFromFile() + "-custom+" + timestamp);
+    var version = readVersionFromFile() + "-custom+" + timestamp;
     return super.newProject().version(version);
   }
 

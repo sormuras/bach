@@ -7,7 +7,6 @@ import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.lookup.LookupException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
@@ -100,9 +99,7 @@ public class Bach {
   }
 
   protected Project newProject() {
-    var name = options.get(Property.PROJECT_NAME, "noname");
-    var version = Version.parse(options.get(Property.PROJECT_VERSION, "0"));
-    return new Project(name, version);
+    return Project.of(this);
   }
 
   public final Base base() {
@@ -116,6 +113,12 @@ public class Bach {
 
   public final List<Recording> recordings() {
     return recordings.stream().toList();
+  }
+
+  public ProjectInfo computeProjectInfo() {
+    var info = getClass().getModule().getAnnotation(ProjectInfo.class);
+    if (info != null) return info;
+    return Bach.class.getModule().getAnnotation(ProjectInfo.class);
   }
 
   public final Project project() {

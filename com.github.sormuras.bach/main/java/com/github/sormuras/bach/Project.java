@@ -1,12 +1,26 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.Options.Property;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 
 public record Project(String name, Version version) {
 
+  public static Project of(Bach bach) {
+    var info = bach.computeProjectInfo();
+    var options = bach.options();
+    var name = info.name().equals("*") ? Path.of("").toAbsolutePath().getFileName().toString() : info.name();
+    return new Project()
+        .name(options.get(Property.PROJECT_NAME, name))
+        .version(options.get(Property.PROJECT_VERSION, info.version()));
+  }
+
   public Project() {
-    this(defaultName("noname"), defaultVersion("0"));
+    this("noname", Version.parse("0"));
+  }
+
+  public Project name(String name) {
+    return new Project(name, version);
   }
 
   public Project version(String version) {
@@ -19,15 +33,6 @@ public record Project(String name, Version version) {
 
   public String versionNumberAndPreRelease() {
     return toNumberAndPreRelease(version);
-  }
-
-  public static String defaultName(String defaultName) {
-    var name = Path.of("").toAbsolutePath().getFileName();
-    return System.getProperty("bach.project.name", name != null ? name.toString() : defaultName);
-  }
-
-  public static Version defaultVersion(String defaultVersion) {
-    return Version.parse(System.getProperty("bach.project.version", defaultVersion));
   }
 
   /**
