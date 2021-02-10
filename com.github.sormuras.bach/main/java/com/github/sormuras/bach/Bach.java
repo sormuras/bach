@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.Options.Flag;
+import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.lookup.LookupException;
@@ -45,7 +46,7 @@ public class Bach {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.configuration());
+    var layer = ModuleLayerBuilder.build(options.get(Property.CONFIGURATION, "configuration"));
     return ServiceLoader.load(layer, Factory.class)
         .findFirst()
         .map(factory -> factory.newBach(options))
@@ -99,8 +100,8 @@ public class Bach {
   }
 
   protected Project newProject() {
-    var name = options.projectName();
-    var version = Version.parse(options.projectVersion());
+    var name = options.get(Property.PROJECT_NAME, "noname");
+    var version = Version.parse(options.get(Property.PROJECT_VERSION, "0"));
     return new Project(name, version);
   }
 

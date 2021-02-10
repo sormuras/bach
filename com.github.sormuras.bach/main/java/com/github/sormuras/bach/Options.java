@@ -5,32 +5,41 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 /**
+ * An options descriptor.
+ *
  * @param out a stream to which "expected" output should be written
  * @param err a stream to which any error messages should be written
- * @param configuration project-info module's name passed via {@code --configuration MODULE}
  * @param flags a set of feature toggles passed individually like {@code --verbose --help ...}
- * @param projectName project's name passed via {@code --project-name NAME}
- * @param projectVersion project's version passed via {@code --project-version VERSION}
  * @param actions the list of actions to execute passed individually like {@code info build ...}
  * @param tool an optional command to execute passed via {@code tool NAME [ARGS...]}
  */
 public record Options(
     PrintWriter out,
     PrintWriter err,
-    String configuration,
     Set<Flag> flags,
-    String projectName,
-    String projectVersion,
+    Map<Property, List<String>> properties,
     List<String> actions,
     Optional<Tool> tool) {
+
+  public List<String> get(Property property) {
+    return properties.getOrDefault(property, List.of());
+  }
+
+  public String get(Property property, String defaultValue) {
+    var values = get(property);
+    return values.isEmpty() ? defaultValue : values.get(0);
+  }
 
   /**
    * {@return {@code true} if the given flag is present within the set of flags, else {@code false}}
@@ -63,43 +72,49 @@ public record Options(
    */
   public static Options of(PrintWriter out, PrintWriter err, String... args) {
     var deque = new ArrayDeque<>(List.of(args));
-    var configuration = new AtomicReference<>("configuration");
-    var projectName = new AtomicReference<>("noname");
-    var projectVersion = new AtomicReference<>("0");
-    var tool = new AtomicReference<Tool>(null);
-    var flags = new HashSet<Flag>();
+    var mapOfFlagArguments = map(Flag.class);
+    var flags = new TreeSet<Flag>();
+    var mapOfPropertyArguments = map(Property.class);
+    var properties = new TreeMap<Property, List<String>>();
     var actions = new ArrayList<String>();
+    var tool = new AtomicReference<Tool>(null);
+
     while (!deque.isEmpty()) {
       var argument = deque.removeFirst();
-      switch (argument) {
-        case "--configuration" -> configuration.set(next(deque, "--configuration MODULE"));
-        case "--project-name" -> projectName.set(next(deque, "--project-name NAME"));
-        case "--project-version" -> projectVersion.set(next(deque, "--project-version VERSION"));
-        case "tool" -> {
-          var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
-          tool.set(Command.of(name, deque.toArray(String[]::new)));
-          deque.clear();
+      if (argument.isBlank()) throw new IllegalArgumentException("An argument must not be blank");
+
+      if (argument.startsWith("--")) { // handle flags and properties
+        var flag = mapOfFlagArguments.get(argument);
+        if (flag != null) {
+          flags.add(flag);
+          continue;
         }
-        default -> {
-          if (argument.startsWith("--")) { // handle flags
-            var name = argument.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
-            var flag = Flag.valueOf(name); // throws IllegalArgumentException
-            flags.add(flag);
-            continue;
-          }
-          actions.add(argument);
-          actions.addAll(deque);
-          deque.clear();
+        var property = mapOfPropertyArguments.get(argument);
+        if (property != null) {
+          var value = next(deque, property.name());
+          properties.merge(property, List.of(value), Options::merge);
+          continue;
         }
+        throw new IllegalArgumentException("No flag, no property: " + argument);
       }
+
+      if ("tool".equals(argument)) {
+        var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
+        tool.set(Command.of(name, deque.toArray(String[]::new)));
+        deque.clear();
+        continue;
+      }
+
+      actions.add(argument);
+      actions.addAll(deque);
+      deque.clear();
     }
+
     return new Options(
         flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
         err,
-        configuration.get(),
         flags,
-        projectName.get(),
-        projectVersion.get(),
+        properties,
         actions,
         Optional.ofNullable(tool.get()));
   }
@@ -107,6 +122,20 @@ public record Options(
   private static String next(ArrayDeque<String> deque, String message) {
     if (deque.isEmpty()) throw new IllegalArgumentException(message);
     return deque.removeFirst();
+  }
+
+  static <E extends Enum<E>> String key(E constant) {
+    return "--" + constant.name().toLowerCase(Locale.ROOT).replace('_', '-');
+  }
+
+  private static <E extends Enum<E>> TreeMap<String, E> map(Class<? extends E> enums) {
+    var map = new TreeMap<String, E>();
+    for (var constant : enums.getEnumConstants()) map.put(key(constant), constant);
+    return map;
+  }
+
+  private static <E> List<E> merge(List<E> head, List<E> tail) {
+    return Stream.concat(head.stream(), tail.stream()).toList();
   }
 
   /** Feature toggle. */
@@ -147,6 +176,38 @@ public record Options(
 
     String help() {
       return help;
+    }
+  }
+
+  /** Key-value pair option. */
+  public enum Property {
+    /** Name of the project-info module passed via {@code --configuration MODULE} */
+    CONFIGURATION("Specify the name of the configuration module, defaults to \"configuration\""),
+    /** Project's name passed via {@code --project-name NAME}. */
+    PROJECT_NAME("Specify the name of the project."),
+    /** Project's version passed via {@code --project-version VERSION}. */
+    PROJECT_VERSION("Specify the version of the project."),
+    /** Skip all executions for the specified tool, this option is repeatable */
+    SKIP_TOOL("Skip all executions of the specified tool.", true);
+
+    final String help;
+    final boolean repeatable;
+
+    Property(String help) {
+      this(help, false);
+    }
+
+    Property(String help, boolean repeatable) {
+      this.help = help;
+      this.repeatable = repeatable;
+    }
+
+    String help() {
+      return help;
+    }
+
+    boolean repeatable() {
+      return repeatable;
     }
   }
 }

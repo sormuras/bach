@@ -1,8 +1,8 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.Options.Flag;
+import com.github.sormuras.bach.Options.Property;
 import java.io.PrintWriter;
-import java.util.Locale;
 import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
 
@@ -15,10 +15,15 @@ public class Main implements ToolProvider {
 
   public static String computeHelpMessage() {
     var flags = new StringJoiner("\n");
-    for (var flag : Flag.values()) {
-      flags.add("--" + flag.name().toLowerCase(Locale.ROOT).replace('_', '-'));
-      flags.add("  " + flag.help());
+    for (var flag : Flag.values()) flags.add(Options.key(flag)).add("  " + flag.help());
+
+    var properties = new StringJoiner("\n");
+    for (var property : Property.values()) {
+      var repeatable = property.repeatable() ? " (repeatable option)" : "";
+      properties.add(Options.key(property) + " VALUE" + repeatable);
+      properties.add("  " + property.help());
     }
+
     return """
         Usage: bach [OPTIONS] ACTION [ACTIONS...]
                  to execute one or more actions in sequence
@@ -29,18 +34,9 @@ public class Main implements ToolProvider {
 
         {{FLAGS}}
 
-        Options include:
+        Options include the following key-value pairs:
 
-          --configuration MODULE
-            Specify the module that is normally annotated with @ProjectInfo or provides
-            a custom Bach.Factory implementation, defaults to "configuration".
-
-        Project-related options include:
-
-          --project-name NAME
-            Specify the name of the project, defaults to "noname".
-          --project-version VERSION
-            Specify the version of the project, defaults to "0".
+        {{PROPERTIES}}
 
         Actions include:
 
@@ -53,7 +49,8 @@ public class Main implements ToolProvider {
           tool
             Run provided tool with NAME passing any following arguments.
         """
-        .replace("{{FLAGS}}", flags.toString().indent(2).stripTrailing());
+        .replace("{{FLAGS}}", flags.toString().indent(2).stripTrailing())
+        .replace("{{PROPERTIES}}", properties.toString().indent(2).stripTrailing());
   }
 
   /** Default constructor usually used by the ServiceLoader facility. */

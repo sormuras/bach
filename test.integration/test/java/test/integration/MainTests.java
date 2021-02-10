@@ -32,18 +32,16 @@ class MainTests {
           --run-commands-sequentially
             Prevent parallel execution of commands.
 
-        Options include:
-
-          --configuration MODULE
-            Specify the module that is normally annotated with @ProjectInfo or provides
-            a custom Bach.Factory implementation, defaults to "configuration".
-
-        Project-related options include:
-
-          --project-name NAME
-            Specify the name of the project, defaults to "noname".
-          --project-version VERSION
-            Specify the version of the project, defaults to "0".
+        Options include the following key-value pairs:
+        
+          --configuration VALUE
+            Specify the name of the configuration module, defaults to "configuration"
+          --project-name VALUE
+            Specify the name of the project.
+          --project-version VALUE
+            Specify the version of the project.
+          --skip-tool VALUE (repeatable option)
+            Skip all executions of the specified tool.
 
         Actions include:
 
