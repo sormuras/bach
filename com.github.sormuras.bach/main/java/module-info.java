@@ -13,6 +13,7 @@
  * @uses com.github.sormuras.bach.Bach.Factory
  * @uses java.util.spi.ToolProvider
  */
+@com.github.sormuras.bach.ProjectInfo
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.lookup;

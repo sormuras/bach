@@ -1,3 +1,4 @@
+@com.github.sormuras.bach.project.ProjectInfo
 open /*test*/ module com.github.sormuras.bach {
   requires org.junit.jupiter;
   requires test.base;
