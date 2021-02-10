@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -62,7 +63,6 @@ public class Bach {
   private final Base base;
   private final Queue<Recording> recordings;
   private /*-*/ Browser browser;
-  private final Libraries libraries;
   private final Project project;
 
   public Bach(Options options) {
@@ -70,12 +70,23 @@ public class Bach {
     this.base = newBase();
     this.recordings = new ConcurrentLinkedQueue<>();
     this.browser = null; // defered creation in its accessor
-    this.libraries = newLibraries();
     this.project = newProject();
   }
 
   public Options options() {
     return options;
+  }
+
+  public boolean is(Flag flag) {
+    return options.is(flag);
+  }
+
+  public String get(Property property, String defaultValue) {
+    return options.get(property, defaultValue);
+  }
+
+  public Optional<String> get(Property property) {
+    return Optional.ofNullable(get(property, null));
   }
 
   protected Base newBase() {
@@ -94,12 +105,8 @@ public class Bach {
     return new Logbook(this);
   }
 
-  protected Libraries newLibraries() {
-    return new Libraries();
-  }
-
   protected Project newProject() {
-    return Project.of(this);
+    return new ProjectBuilder(this).build();
   }
 
   public final Base base() {
@@ -150,7 +157,7 @@ public class Bach {
   public void buildMainSpace() throws Exception {}
 
   public String computeExternalModuleUri(String module) {
-    var found = libraries.find(module).orElseThrow(() -> new LookupException(module));
+    var found = project.libraries().find(module).orElseThrow(() -> new LookupException(module));
     debug("%s <- %s", module, found);
     return found.uri();
   }
@@ -198,7 +205,7 @@ public class Bach {
   }
 
   public void debug(String format, Object... args) {
-    if (options().is(Flag.VERBOSE)) print("// " + format, args);
+    if (is(Flag.VERBOSE)) print("// " + format, args);
   }
 
   public void loadExternalModules(String... modules) {
@@ -256,7 +263,7 @@ public class Bach {
     debug("Run %d command%s", size, size == 1 ? "" : "s");
     if (size == 0) return List.of();
     if (size == 1) return List.of(run(commands.iterator().next()));
-    var sequential = options().is(Flag.RUN_COMMANDS_SEQUENTIALLY);
+    var sequential = is(Flag.RUN_COMMANDS_SEQUENTIALLY);
     var stream = sequential ? commands.stream() : commands.stream().parallel();
     return stream.map(this::run).toList();
   }
@@ -273,7 +280,7 @@ public class Bach {
     var start = Instant.now();
     int code;
     try {
-      var skips = options.get(Property.SKIP_TOOL);
+      var skips = options.values(Property.SKIP_TOOL);
       var skip = skips.contains(name);
       if (skip) debug("Skip run of '%s' due to --skip-tool=%s", name, skips);
       code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);

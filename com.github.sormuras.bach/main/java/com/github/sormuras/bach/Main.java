@@ -76,17 +76,16 @@ public class Main implements ToolProvider {
   }
 
   public int run(Bach bach) {
-    var options = bach.options();
-    if (options.is(Flag.VERSION) || options.is(Flag.SHOW_VERSION)) {
+    if (bach.is(Flag.VERSION) || bach.is(Flag.SHOW_VERSION)) {
       bach.print("%s", Bach.version());
-      if (options.is(Flag.VERSION /* and exit */)) return 0;
+      if (bach.is(Flag.VERSION /* and exit */)) return 0;
     }
-    if (options.is(Flag.HELP /* and exit */)) {
+    if (bach.is(Flag.HELP /* and exit */)) {
       bach.print("%s", computeHelpMessage());
       return 0;
     }
-    if (options.tool().isPresent()) {
-      var command = options.tool().get();
+    if (bach.options().tool().isPresent()) {
+      var command = bach.options().tool().get();
       var recording = bach.run(command);
       if (!recording.errors().isEmpty()) bach.print(recording.errors());
       if (!recording.output().isEmpty()) bach.print(recording.output());
@@ -94,7 +93,7 @@ public class Main implements ToolProvider {
         bach.print("Tool %s returned exit code %d", command.name(), recording.code());
       return recording.code();
     }
-    for (var action : options.actions()) {
+    for (var action : bach.options().actions()) {
       bach.debug("Perform main action: `%s`", action);
       try {
         switch (action) {
@@ -108,7 +107,7 @@ public class Main implements ToolProvider {
         }
       } catch (Exception exception) {
         bach.print("Action %s failed: %s", action, exception);
-        exception.printStackTrace(options.err());
+        exception.printStackTrace(bach.options().err());
         return 1;
       }
     }

@@ -32,12 +32,12 @@ public record Options(
     List<String> actions,
     Optional<Tool> tool) {
 
-  public List<String> get(Property property) {
+  public List<String> values(Property property) {
     return properties.getOrDefault(property, List.of());
   }
 
   public String get(Property property, String defaultValue) {
-    var values = get(property);
+    var values = values(property);
     return values.isEmpty() ? defaultValue : values.get(0);
   }
 

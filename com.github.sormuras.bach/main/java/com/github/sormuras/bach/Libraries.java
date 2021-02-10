@@ -1,20 +1,26 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.lookup.ExternalModuleLookup;
+import com.github.sormuras.bach.lookup.ExternalModuleLookupBuilder;
 import com.github.sormuras.bach.lookup.JUnitJupiterModuleLookup;
 import com.github.sormuras.bach.lookup.JUnitPlatformModuleLookup;
 import com.github.sormuras.bach.lookup.JavaFXModuleLookup;
 import com.github.sormuras.bach.lookup.LWJGLModuleLookup;
-import com.github.sormuras.bach.lookup.Maven;
 import com.github.sormuras.bach.lookup.ModuleLookup;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** A finder of external modules. */
-public record Libraries(ModuleLookup... lookups) {
+public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
 
   public static Libraries of(ModuleLookup... lookups) {
-    return new Libraries(lookups);
+    return new Libraries(Set.of(), List.of(lookups));
+  }
+
+  public static ExternalModuleLookupBuilder link(String module) {
+    return new ExternalModuleLookupBuilder(module);
   }
 
   public static ModuleLookup lookupJavaFX(String version) {
@@ -23,10 +29,6 @@ public record Libraries(ModuleLookup... lookups) {
 
   public static ModuleLookup lookupLWJGL(String version) {
     return new LWJGLModuleLookup(version);
-  }
-
-  public boolean isEmpty() {
-    return lookups.length == 0;
   }
 
   public record Found(String uri, ModuleLookup by) {}
@@ -39,11 +41,16 @@ public record Libraries(ModuleLookup... lookups) {
     return Optional.empty();
   }
 
-  public Libraries with(ModuleLookup lookup, ModuleLookup... more) {
-    var copy = Arrays.copyOf(lookups, lookups.length + 1 + more.length);
-    copy[lookups.length] = lookup;
-    if (more.length > 0) System.arraycopy(more, 0, copy, lookups.length + 1, more.length);
-    return new Libraries(copy);
+  public Libraries withRequires(String module) {
+    var requires = new HashSet<>(this.requires);
+    requires.add(module);
+    return new Libraries(Set.copyOf(requires), lookups);
+  }
+
+  public Libraries withModuleLookup(ModuleLookup lookup) {
+    var lookups = new ArrayList<>(this.lookups);
+    lookups.add(lookup);
+    return new Libraries(requires, List.copyOf(lookups));
   }
 
   /** Find well-known JUnit modules published at Maven Central. */
@@ -60,17 +67,15 @@ public record Libraries(ModuleLookup... lookups) {
     JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
       this.version = jupiter;
       this.libraries =
-          new Libraries(
+          Libraries.of(
               new JUnitJupiterModuleLookup(jupiter),
               new JUnitPlatformModuleLookup(platform),
-              new ExternalModuleLookup(
-                  "org.junit.vintage.engine",
-                  Maven.central("org.junit.vintage", "junit-vintage-engine", jupiter)),
-              new ExternalModuleLookup(
-                  "org.apiguardian.api",
-                  Maven.central("org.apiguardian", "apiguardian-api", apiguardian)),
-              new ExternalModuleLookup(
-                  "org.opentest4j", Maven.central("org.opentest4j", "opentest4j", opentest4j)));
+              Libraries.link("org.junit.vintage.engine")
+                  .toMavenCentral("org.junit.vintage:junit-vintage-engine:" + jupiter),
+              Libraries.link("org.apiguardian.api")
+                  .toMavenCentral("org.apiguardian:apiguardian-api:" + apiguardian),
+              Libraries.link("org.opentest4j")
+                  .toMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
     }
 
     @Override
