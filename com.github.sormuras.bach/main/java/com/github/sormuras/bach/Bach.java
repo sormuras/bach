@@ -259,6 +259,7 @@ public class Bach {
   }
 
   public Recording run(ToolProvider provider, List<String> arguments) {
+    var name = provider.name();
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
     currentThread.setContextClassLoader(provider.getClass().getClassLoader());
@@ -269,7 +270,10 @@ public class Bach {
     var start = Instant.now();
     int code;
     try {
-      code = provider.run(new PrintWriter(out), new PrintWriter(err), args);
+      var skips = options.get(Property.SKIP_TOOL);
+      var skip = skips.contains(name);
+      if (skip) debug("Skip run of '%s' due to --skip-tool=%s", name, skips);
+      code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
     } finally {
       currentThread.setContextClassLoader(currentLoader);
     }
@@ -278,7 +282,7 @@ public class Bach {
     var tid = currentThread.getId();
     var output = out.toString().trim();
     var errors = err.toString().trim();
-    var recording = new Recording(provider.name(), arguments, tid, duration, code, output, errors);
+    var recording = new Recording(name, arguments, tid, duration, code, output, errors);
 
     recordings.add(recording);
     return recording;
