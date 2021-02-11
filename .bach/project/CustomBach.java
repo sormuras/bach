@@ -2,13 +2,16 @@ package project;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ProjectBuilder;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -34,22 +37,26 @@ public class CustomBach extends Bach {
 
   @Override
   protected Project newProject() {
-    var project = super.newProject();
-    var libraries = project.libraries()
-        .withModuleLookup(JUnit.V_5_7_1)
-        .withModuleLookup(new GitHubReleasesModuleLookup(this))
-        .withModuleLookup(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
-    return project.version(computeVersion()).libraries(libraries);
-  }
+    return new ProjectBuilder(this) {
+      @Override
+      public Version computeVersion() {
+        var now = LocalDateTime.now(ZoneOffset.UTC);
+        var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
+        try {
+          return Version.parse(Files.readString(Path.of("VERSION")) + "-custom+" + timestamp);
+        } catch (Exception exception) {
+          throw new RuntimeException("Read version failed: " + exception);
+        }
+      }
 
-  private static String computeVersion() {
-    var now = LocalDateTime.now(ZoneOffset.UTC);
-    var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
-    try {
-      return Files.readString(Path.of("VERSION")) + "-custom+" + timestamp;
-    } catch (Exception exception) {
-      throw new RuntimeException("Read version failed: " + exception);
-    }
+      @Override
+      public Libraries computeLibraries() {
+        return super.computeLibraries()
+            .withModuleLookup(JUnit.V_5_7_1)
+            .withModuleLookup(new GitHubReleasesModuleLookup(CustomBach.this))
+            .withModuleLookup(new ToolProvidersModuleLookup(CustomBach.this, Bach.EXTERNALS));
+      }
+    }.build();
   }
 
   @Override
