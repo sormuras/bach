@@ -357,17 +357,22 @@ public class boot {
       var name = String.valueOf(Path.of("").toAbsolutePath().getFileName());
       var template = new ProjectTemplate(name, "1-ea", Map.of());
       project(template);
+      idea(template);
     }
 
     static void project(ProjectTemplate template) throws Exception {
+      var dot = bach().base().directory(".bach");
       var name = template.name;
+      out("Scaffold project %s", name);
+
       var providerModuleName = "project";
       var providerClassName = name.toUpperCase(Locale.ROOT).charAt(0) + name.substring(1) + "Bach";
-      var providerDirectory = bach().base().directory(".bach", "project");
+      var providerDirectory = dot.resolve("project");
       if (Files.exists(providerDirectory)) {
-        out("Provider directory already exists: %s", providerDirectory);
+        out("Bach directory already exists: %s", providerDirectory);
         return;
       }
+
       Files.createDirectories(providerDirectory);
 
       Files.writeString(
@@ -408,6 +413,101 @@ public class boot {
               .replace("{{PROVIDER-MODULE-NAME}}", providerModuleName)
               .replace("{{PROVIDER-CLASS-NAME}}", providerClassName));
     }
+
+    static void idea(ProjectTemplate template) throws Exception {
+      var idea = bach().base().directory(".idea");
+      var name = template.name;
+      if (Files.exists(idea)) {
+        out("IDEA's project directory already exists: %s", idea);
+        return;
+      }
+
+      Files.createDirectories(idea);
+
+      Files.writeString(
+          idea.resolve(".gitignore"),
+          """
+          # Default ignored files
+          /shelf/
+          /workspace.xml
+          """);
+
+      Files.writeString(
+          idea.resolve("misc.xml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project version="4">
+            <component name="ProjectRootManager" version="2" languageLevel="JDK_16" default="true" project-jdk-name="16" project-jdk-type="JavaSDK">
+              <output url="file://$PROJECT_DIR$/.idea/out" />
+            </component>
+          </project>
+          """);
+
+      Files.writeString(
+          idea.resolve("modules.xml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project version="4">
+            <component name="ProjectModuleManager">
+              <modules>
+                <module fileurl="file://$PROJECT_DIR$/.idea/{{PROJECT-NAME}}.iml" filepath="$PROJECT_DIR$/.idea/{{PROJECT-NAME}}.iml" />
+                <module fileurl="file://$PROJECT_DIR$/.idea/bach-project.iml" filepath="$PROJECT_DIR$/.idea/project.iml" />
+              </modules>
+            </component>
+          </project>
+          """
+              .replace("{{PROJECT-NAME}}", name));
+
+      Files.writeString(
+          idea.resolve(name + ".iml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <module type="JAVA_MODULE" version="4">
+            <component name="NewModuleRootManager" inherit-compiler-output="true">
+              <exclude-output />
+              <content url="file://$MODULE_DIR$">
+                <excludeFolder url="file://$MODULE_DIR$/.bach/workspace" />
+              </content>
+              <orderEntry type="sourceFolder" forTests="false" />
+              <orderEntry type="inheritedJdk" />
+            </component>
+          </module>
+          """);
+
+      Files.writeString(
+          idea.resolve("bach-project.iml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <module type="JAVA_MODULE" version="4">
+            <component name="NewModuleRootManager" inherit-compiler-output="true">
+              <exclude-output />
+              <content url="file://$MODULE_DIR$/.bach/project">
+                <sourceFolder url="file://$MODULE_DIR$/.bach/project" isTestSource="false" />
+              </content>
+              <orderEntry type="sourceFolder" forTests="false" />
+              <orderEntry type="library" name="bach-bin" level="project" />
+              <orderEntry type="inheritedJdk" />
+            </component>
+          </module>
+          """);
+
+      var libraries = Files.createDirectories(idea.resolve("libraries"));
+
+      Files.writeString(
+          libraries.resolve("bach_bin.xml"),
+          """
+          <component name="libraryTable">
+            <library name="bach-bin">
+              <CLASSES>
+                <root url="file://$PROJECT_DIR$/.bach/bin" />
+              </CLASSES>
+              <JAVADOC />
+              <SOURCES />
+              <jarDirectory url="file://$PROJECT_DIR$/.bach/bin" recursive="false" />
+            </library>
+          </component>
+          """);
+    }
   }
 
   public interface tools {
@@ -422,8 +522,7 @@ public class boot {
       var info =
           switch (name) {
             case "jar" -> "Create an archive for classes and resources, and update or restore them";
-            case "javac" -> "Read Java class and interface definitions and compile them into"
-                + " classes";
+            case "javac" -> "Read Java compilation units (*.java) and compile them into classes";
             case "javadoc" -> "Generate HTML pages of API documentation from Java source files";
             case "javap" -> "Disassemble one or more class files";
             case "jdeps" -> "Launch the Java class dependency analyzer";
