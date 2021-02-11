@@ -40,18 +40,18 @@ public class ProjectBuilder {
   public Libraries computeLibraries() {
     var requires = Set.of(info.requires());
     var lookups = new ArrayList<ModuleLookup>();
-    for (var lookup : info.lookups()) lookups.add(computeModuleLookup(lookup));
+    for (var external : info.lookup()) lookups.add(computeModuleLookup(external));
     return new Libraries(requires, List.copyOf(lookups));
   }
 
-  public ModuleLookup computeModuleLookup(ProjectInfo.Lookup lookup) {
-    var module = lookup.module();
-    var target = lookup.via();
-    return switch (lookup.type()) {
-      case AUTO -> Libraries.link(module).to(target);
-      case URI -> Libraries.link(module).toUri(target);
-      case PATH -> Libraries.link(module).toPath(lookup.pathBase(), target);
-      case MAVEN -> Libraries.link(module).toMaven(lookup.mavenRepository(), target);
+  public ModuleLookup computeModuleLookup(ProjectInfo.External external) {
+    var module = external.module();
+    var target = external.via();
+    return switch (external.type()) {
+      case AUTO -> Libraries.lookup(module).via(target);
+      case URI -> Libraries.lookup(module).viaUri(target);
+      case PATH -> Libraries.lookup(module).viaPath(external.pathBase(), target);
+      case MAVEN -> Libraries.lookup(module).viaMaven(external.mavenRepository(), target);
     };
   }
 }

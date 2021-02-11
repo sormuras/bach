@@ -12,14 +12,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** A finder of external modules. */
+/**
+ * An external module manager.
+ *
+ * @param requires modules on which the current project has a dependence
+ * @param lookups sequence of module lookup objects to query for uris
+ */
 public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
 
   public static Libraries of(ModuleLookup... lookups) {
     return new Libraries(Set.of(), List.of(lookups));
   }
 
-  public static ExternalModuleLookupBuilder link(String module) {
+  public static ExternalModuleLookupBuilder lookup(String module) {
     return new ExternalModuleLookupBuilder(module);
   }
 
@@ -70,12 +75,12 @@ public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
           Libraries.of(
               new JUnitJupiterModuleLookup(jupiter),
               new JUnitPlatformModuleLookup(platform),
-              Libraries.link("org.junit.vintage.engine")
-                  .toMavenCentral("org.junit.vintage:junit-vintage-engine:" + jupiter),
-              Libraries.link("org.apiguardian.api")
-                  .toMavenCentral("org.apiguardian:apiguardian-api:" + apiguardian),
-              Libraries.link("org.opentest4j")
-                  .toMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
+              lookup("org.junit.vintage.engine")
+                  .viaMavenCentral("org.junit.vintage:junit-vintage-engine:" + jupiter),
+              lookup("org.apiguardian.api")
+                  .viaMavenCentral("org.apiguardian:apiguardian-api:" + apiguardian),
+              lookup("org.opentest4j")
+                  .viaMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
     }
 
     @Override

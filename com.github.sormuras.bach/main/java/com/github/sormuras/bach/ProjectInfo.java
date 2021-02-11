@@ -34,15 +34,23 @@ public @interface ProjectInfo {
    */
   String version() default "0";
 
-  /** {@return the array of required module names} */
+  /**
+   * {@return the array of required module names}
+   *
+   * @see Libraries#requires()
+   */
   String[] requires() default {};
 
-  /** {@return an array of external module lookup} */
-  Lookup[] lookups() default {};
+  /**
+   * {@return an array of external module lookup}
+   *
+   * @see Libraries#lookup(String)
+   */
+  External[] lookup() default {};
 
   /** An external module name to URI pair annotation. */
   @Target({})
-  @interface Lookup {
+  @interface External {
     /** {@return the module name} */
     String module();
 
