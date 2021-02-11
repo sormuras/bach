@@ -475,7 +475,8 @@ public class boot {
     }
 
     private static boolean describeOnlyInterestingClasses(Class<?> type) {
-      if (utils.class.equals(type)) return false;
+      if (type.isRecord()) return false;
+      if (type.equals(utils.class)) return false;
       var modifiers = type.getModifiers();
       return Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers);
     }
