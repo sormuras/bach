@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -39,59 +40,7 @@ public class boot {
   }
 
   public static void refresh() {
-    utils.refresh("configuration");
-  }
-
-  public interface configuration {
-    static void init() throws Exception {
-      init("configuration", "Modulation");
-    }
-
-    static void init(String moduleName, String providerName) throws Exception {
-      var moduleDirectory = bach().base().directory(".bach", moduleName);
-      if (Files.exists(moduleDirectory)) {
-        out("Module directory already exists: %s", moduleDirectory);
-        return;
-      }
-      Files.createDirectories(moduleDirectory);
-
-      Files.writeString(
-          moduleDirectory.resolve("module-info.java"),
-          """
-          // @com.github.sormuras.bach.ProjectInfo()
-          module {{MODULE-NAME}} {
-            requires com.github.sormuras.bach;
-            provides com.github.sormuras.bach.Bach.Factory with {{MODULE-NAME}}.{{PROVIDER-NAME}};
-          }
-          """
-              .replace("{{MODULE-NAME}}", moduleName)
-              .replace("{{PROVIDER-NAME}}", providerName));
-
-      Files.writeString(
-          moduleDirectory.resolve(providerName + ".java"),
-          """
-          package {{MODULE-NAME}};
-
-          import com.github.sormuras.bach.*;
-          import com.github.sormuras.bach.lookup.*;
-
-          /** An extension of class {@code Bach} modulating default build-related logic. */
-          public class {{PROVIDER-NAME}} extends Bach {
-
-            /** {@return an instance of a {@code Bach.Factory} service-provider} */
-            public static Factory<{{PROVIDER-NAME}}> provider() {
-              return options -> new {{PROVIDER-NAME}}(options);
-            }
-
-            /** Initializes this instance using the given options. */
-            private {{PROVIDER-NAME}}(Options options) {
-              super(options);
-            }
-          }
-          """
-              .replace("{{MODULE-NAME}}", moduleName)
-              .replace("{{PROVIDER-NAME}}", providerName));
-    }
+    utils.refresh("project");
   }
 
   public interface files {
@@ -398,6 +347,69 @@ public class boot {
     }
   }
 
+  public interface scaffold {
+
+    record ModuleTemplate(ModuleDescriptor descriptor, Map<Path, String> files) {}
+
+    record ProjectTemplate(String name, String version, Map<String, ModuleTemplate> modules) {}
+
+    static void project() throws Exception {
+      var name = String.valueOf(Path.of("").toAbsolutePath().getFileName());
+      var template = new ProjectTemplate(name, "1-ea", Map.of());
+      project(template);
+    }
+
+    static void project(ProjectTemplate template) throws Exception {
+      var name = template.name;
+      var providerModuleName = "project";
+      var providerClassName = name.toUpperCase(Locale.ROOT).charAt(0) + name.substring(1) + "Bach";
+      var providerDirectory = bach().base().directory(".bach", "project");
+      if (Files.exists(providerDirectory)) {
+        out("Provider directory already exists: %s", providerDirectory);
+        return;
+      }
+      Files.createDirectories(providerDirectory);
+
+      Files.writeString(
+          providerDirectory.resolve("module-info.java"),
+          """
+          import com.github.sormuras.bach.ProjectInfo;
+
+          @ProjectInfo(name = "{{PROJECT-NAME}}")
+          module {{PROVIDER-MODULE-NAME}} {
+            requires com.github.sormuras.bach;
+            provides com.github.sormuras.bach.Bach.Provider with {{PROVIDER-MODULE-NAME}}.{{PROVIDER-CLASS-NAME}};
+          }
+          """
+              .replace("{{PROVIDER-MODULE-NAME}}", providerModuleName)
+              .replace("{{PROVIDER-CLASS-NAME}}", providerClassName)
+              .replace("{{PROJECT-NAME}}", name));
+
+      Files.writeString(
+          providerDirectory.resolve(providerClassName + ".java"),
+          """
+          package {{PROVIDER-MODULE-NAME}};
+
+          import com.github.sormuras.bach.*;
+          import com.github.sormuras.bach.lookup.*;
+
+          /** An extension of class {@code Bach} modulating build-related logic. */
+          public class {{PROVIDER-CLASS-NAME}} extends Bach {
+
+            public static Provider<{{PROVIDER-CLASS-NAME}}> provider() {
+              return options -> new {{PROVIDER-CLASS-NAME}}(options);
+            }
+
+            private {{PROVIDER-CLASS-NAME}}(Options options) {
+              super(options);
+            }
+          }
+          """
+              .replace("{{PROVIDER-MODULE-NAME}}", providerModuleName)
+              .replace("{{PROVIDER-CLASS-NAME}}", providerClassName));
+    }
+  }
+
   public interface tools {
 
     static String describe(ToolProvider provider) {
@@ -506,7 +518,7 @@ public class boot {
 
     static void refresh(String module) {
       try {
-        set(Bach.of(Options.of("--configuration", module)));
+        set(Bach.of(Options.of("--project", module)));
       } catch (Exception exception) {
         out(
             """
