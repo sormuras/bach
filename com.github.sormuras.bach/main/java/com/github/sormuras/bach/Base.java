@@ -4,12 +4,10 @@ import java.nio.file.Path;
 
 public record Base(Path directory, Path externals, Path workspace) {
 
-  public static Base ofSystem() {
-    return of(Path.of(""));
-  }
-
-  public static Base of(Path path) {
-    return new Base(path, path.resolve(Bach.EXTERNALS), path.resolve(Bach.WORKSPACE));
+  public static Base of(Path directory) {
+    var externals = directory.resolve(Bach.EXTERNALS);
+    var workspace = directory.resolve(Bach.WORKSPACE);
+    return new Base(directory, externals, workspace);
   }
 
   public Path directory(String first, String... more) {

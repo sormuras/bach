@@ -90,7 +90,7 @@ public class Bach {
   }
 
   protected Base newBase() {
-    return Base.ofSystem();
+    return Base.of(Path.of(options.get(Property.BASE_DIRECTORY, "")));
   }
 
   protected Browser newBrowser() {
@@ -133,24 +133,18 @@ public class Bach {
   }
 
   public void build() throws Exception {
-    debug("Build...");
-
+    print("Build %s %s", project.name(), project.version());
+    if (is(Flag.VERBOSE)) info();
+    var start = Instant.now();
     try {
-      var root = base.directory();
-      try (var walk = Files.walk(root, 9)) {
-        var found =
-            walk.filter(path -> String.valueOf(path.getFileName()).equals("module-info.java"))
-                .toList();
-        debug("%d module declaration(s) found", found.size());
-        if (found.size() == 0) {
-          var message = print("No modules found in file tree rooted at %s", root);
-          throw new IllegalStateException(message);
-        }
-
-        buildMainSpace();
-      }
+      loadMissingExternalModules();
+      buildMainSpace();
+    } catch (Exception exception) {
+      throw new RuntimeException("Build failed: " + exception);
     } finally {
-      writeLogbook();
+      print("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
+      var logbook = writeLogbook();
+      print("Logbook written to %s", logbook.toUri());
     }
   }
 
@@ -233,10 +227,9 @@ public class Bach {
     debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
   }
 
-  public String print(String format, Object... args) {
+  public void print(String format, Object... args) {
     var message = args == null || args.length == 0 ? format : String.format(format, args);
     options.out().println(message);
-    return message;
   }
 
   public void info() {
@@ -298,7 +291,7 @@ public class Bach {
     return recording;
   }
 
-  public void writeLogbook() throws Exception {
+  public Path writeLogbook() throws Exception {
     var logbook = newLogbook();
     var lines = logbook.build();
 
@@ -306,5 +299,6 @@ public class Bach {
     var file = Files.write(base.workspace("logbook.md"), lines);
     var logbooks = Files.createDirectories(base.workspace("logbooks"));
     Files.copy(file, logbooks.resolve("logbook-" + logbook.timestamp() + ".md"));
+    return file;
   }
 }
