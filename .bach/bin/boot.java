@@ -488,8 +488,8 @@ public class boot {
     private static String describeMethod(Method method) {
       var generic = method.toGenericString();
       var line = generic.replace('$', '.');
-      var head = line.indexOf("bach.boot.");
-      if (head > 0) line = line.substring(head + 10);
+      var head = line.indexOf("bin.boot.");
+      if (head > 0) line = line.substring(head + 9);
       var tail = line.indexOf(") throws");
       if (tail > 0) line = line.substring(0, tail + 1);
       if (!line.endsWith("()")) {
