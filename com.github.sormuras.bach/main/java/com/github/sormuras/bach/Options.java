@@ -181,6 +181,8 @@ public record Options(
 
   /** Key-value pair option. */
   public enum Property {
+    /** Base directory of the project, defaults to user's current directory. */
+    BASE_DIRECTORY("Specify the base directory of the project, defaults to user's current directory"),
     /** Name of the project-info module passed via {@code --configuration MODULE} */
     CONFIGURATION("Specify the name of the configuration module, defaults to \"configuration\""),
     /** Project's name passed via {@code --project-name NAME}. */

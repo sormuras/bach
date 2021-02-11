@@ -34,6 +34,8 @@ class MainTests {
 
         Options include the following key-value pairs:
         
+          --base-directory VALUE
+            Specify the base directory of the project, defaults to user's current directory
           --configuration VALUE
             Specify the name of the configuration module, defaults to "configuration"
           --project-name VALUE
