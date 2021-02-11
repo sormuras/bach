@@ -168,6 +168,7 @@ public class Bach {
   public Set<String> computeMissingExternalModules() {
     var finder = ModuleFinder.of(EXTERNALS);
     var missing = Modules.required(finder);
+    missing.addAll(project.libraries().requires());
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(Modules.declared(finder));
     missing.removeAll(Modules.declared(ModuleFinder.of(BIN)));

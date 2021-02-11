@@ -31,18 +31,20 @@ public @interface ProjectInfo {
    * {@return the version of the project, defaults to {@code "0"}}
    *
    * @see Project#version()
+   * @see java.lang.module.ModuleDescriptor.Version
    */
   String version() default "0";
 
   /**
-   * {@return the array of required module names}
+   * {@return an array of external modules on which the project has a dependence}
    *
    * @see Libraries#requires()
+   * @see java.lang.module.ModuleDescriptor.Requires
    */
   String[] requires() default {};
 
   /**
-   * {@return an array of external module lookup}
+   * {@return an array of external module lookup annotations}
    *
    * @see Libraries#lookup(String)
    */
