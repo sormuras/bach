@@ -19,9 +19,9 @@ class ModuleLayerBuilderTests {
   }
 
   @Test
-  void ofDotBachBuildModule() {
-    var layer = ModuleLayerBuilder.build("configuration");
-    assertTrue(layer.findModule("configuration").isPresent());
+  void ofDotBachProject() {
+    var layer = ModuleLayerBuilder.build("project");
+    assertTrue(layer.findModule("project").isPresent());
     assertTrue(layer.findModule("com.github.sormuras.bach").isPresent());
   }
 }

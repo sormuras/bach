@@ -36,7 +36,7 @@ public class Bach {
   public static final Path WORKSPACE = Path.of(".bach/workspace");
 
   /** A {@code Bach}-creating service. */
-  public interface Factory<B extends Bach> {
+  public interface Provider<B extends Bach> {
     /**
      * {@return a new instance of service-provider that extends {@code Bach}}
      *
@@ -46,8 +46,8 @@ public class Bach {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.get(Property.CONFIGURATION, "configuration"));
-    return ServiceLoader.load(layer, Factory.class)
+    var layer = ModuleLayerBuilder.build(options.get(Property.PROJECT, "project"));
+    return ServiceLoader.load(layer, Provider.class)
         .findFirst()
         .map(factory -> factory.newBach(options))
         .orElse(new Bach(options));

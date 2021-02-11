@@ -1,4 +1,4 @@
-package configuration;
+package project;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
@@ -16,23 +16,19 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.StringJoiner;
 
-public class Modulation extends Bach {
+public class CustomBach extends Bach {
 
   public static void main(String... args) {
     var options = Options.of(args.length == 0 ? new String[] {"build"} : args);
-    System.exit(new Main().run(provider().newBach(options)));
+    var bach = provider().newBach(options);
+    System.exit(new Main().run(bach));
   }
 
-  /** {@return an instance of a {@code Bach.Factory} service-provider} */
-  public static Factory<Modulation> provider() {
-    return options -> {
-      options.flags().add(Flag.VERBOSE);
-      options.flags().add(Flag.RUN_COMMANDS_SEQUENTIALLY);
-      return new Modulation(options);
-    };
+  public static Provider<CustomBach> provider() {
+    return options -> new CustomBach(options.with(Flag.VERBOSE));
   }
 
-  private Modulation(Options options) {
+  private CustomBach(Options options) {
     super(options);
   }
 
@@ -40,7 +36,7 @@ public class Modulation extends Bach {
   protected Project newProject() {
     var project = super.newProject();
     var libraries = project.libraries()
-        .withModuleLookup(JUnit.V_5_7_0)
+        .withModuleLookup(JUnit.V_5_7_1)
         .withModuleLookup(new GitHubReleasesModuleLookup(this))
         .withModuleLookup(new ToolProvidersModuleLookup(this, Bach.EXTERNALS));
     return project.version(computeVersion()).libraries(libraries);

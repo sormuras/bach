@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +32,19 @@ public record Options(
     Map<Property, List<String>> properties,
     List<String> actions,
     Optional<Tool> tool) {
+
+  /**
+   * {@return new {@code Options} instance with the given flags added}
+   *
+   * @param flag a flag constant to add to the set of flags of this options object
+   * @param more more flags to add
+   */
+  public Options with(Flag flag, Flag... more) {
+    var flags = new HashSet<>(this.flags);
+    flags.add(flag);
+    flags.addAll(Set.of(more));
+    return new Options(out, err, flags, properties, actions, tool);
+  }
 
   public List<String> values(Property property) {
     return properties.getOrDefault(property, List.of());
@@ -183,12 +197,16 @@ public record Options(
   public enum Property {
     /** Base directory of the project, defaults to user's current directory. */
     BASE_DIRECTORY("Specify the base directory of the project, defaults to user's current directory"),
-    /** Name of the project-info module passed via {@code --configuration MODULE} */
-    CONFIGURATION("Specify the name of the configuration module, defaults to \"configuration\""),
+
+    /** Name of the module to load on startup passed via {@code --project MODULE} */
+    PROJECT("Specify the module to load on startup, defaults to \"project\""),
+
     /** Project's name passed via {@code --project-name NAME}. */
     PROJECT_NAME("Specify the name of the project."),
+
     /** Project's version passed via {@code --project-version VERSION}. */
     PROJECT_VERSION("Specify the version of the project."),
+
     /** Skip all executions for the specified tool, this option is repeatable */
     SKIP_TOOL("Skip all executions of the specified tool.", true);
 
