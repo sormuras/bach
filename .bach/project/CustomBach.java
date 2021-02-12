@@ -52,7 +52,7 @@ public class CustomBach extends Bach {
       @Override
       public Libraries computeLibraries() {
         return super.computeLibraries()
-            .withModuleLookup(JUnit.V_5_7_1)
+            .withModuleLookup(JUnit.V_5_8_0_M1)
             .withModuleLookup(new GitHubReleasesModuleLookup(CustomBach.this))
             .withModuleLookup(new ToolProvidersModuleLookup(CustomBach.this, Bach.EXTERNALS));
       }
