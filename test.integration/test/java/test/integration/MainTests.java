@@ -36,8 +36,8 @@ class MainTests {
         
           --base-directory VALUE
             Specify the base directory of the project, defaults to user's current directory
-          --project VALUE
-            Specify the module to load on startup, defaults to "project"
+          --bach-info VALUE
+            Specify the module to load on startup, defaults to "bach.info"
           --project-name VALUE
             Specify the name of the project.
           --project-version VALUE

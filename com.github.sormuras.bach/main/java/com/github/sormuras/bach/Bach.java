@@ -35,6 +35,8 @@ public class Bach {
 
   public static final Path WORKSPACE = Path.of(".bach/workspace");
 
+  public static final String INFO_MODULE = "bach.info";
+
   /** A {@code Bach}-creating service. */
   public interface Provider<B extends Bach> {
     /**
@@ -50,7 +52,7 @@ public class Bach {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.get(Property.PROJECT, "project"));
+    var layer = ModuleLayerBuilder.build(options.get(Property.BACH_INFO, INFO_MODULE));
     return ServiceLoader.load(layer, Provider.class)
         .findFirst()
         .map(factory -> factory.newBach(options))

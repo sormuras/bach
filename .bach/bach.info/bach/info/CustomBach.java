@@ -1,4 +1,4 @@
-package project;
+package bach.info;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;

@@ -10,7 +10,7 @@ import com.github.sormuras.bach.ProjectInfo.External;
         @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
     }
 )
-module project {
+module bach.info {
   requires com.github.sormuras.bach;
-  provides com.github.sormuras.bach.Bach.Provider with project.CustomBach;
+  provides com.github.sormuras.bach.Bach.Provider with bach.info.CustomBach;
 }
