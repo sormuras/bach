@@ -64,7 +64,10 @@ public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
     /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
     V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0"),
     /** Link modules of JUnit 5.7.1 to their Maven Central artifacts. */
-    V_5_7_1("5.7.1", "1.7.1", "1.1.1", "1.2.0");
+    V_5_7_1("5.7.1", "1.7.1", "1.1.1", "1.2.0"),
+    /** Link modules of JUnit 5.8.0-M1 to their Maven Central artifacts. */
+    V_5_8_0_M1("5.8.0-M1", "1.8.0-M1", "1.1.1", "1.2.0"),
+    ;
 
     private final String version;
     private final Libraries libraries;
