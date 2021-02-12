@@ -396,13 +396,16 @@ public class boot {
           package {{PROVIDER-MODULE-NAME}};
 
           import com.github.sormuras.bach.*;
-          import com.github.sormuras.bach.lookup.*;
 
           /** An extension of class {@code Bach} modulating build-related logic. */
           public class {{PROVIDER-CLASS-NAME}} extends Bach {
+          
+            public static void main(String... args) {
+              Bach.main(args);
+            }
 
             public static Provider<{{PROVIDER-CLASS-NAME}}> provider() {
-              return options -> new {{PROVIDER-CLASS-NAME}}(options);
+              return {{PROVIDER-CLASS-NAME}}::new;
             }
 
             private {{PROVIDER-CLASS-NAME}}(Options options) {

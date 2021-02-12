@@ -45,6 +45,10 @@ public class Bach {
     B newBach(Options options);
   }
 
+  public static void main(String... args) {
+    System.exit(new Main().run(args));
+  }
+
   public static Bach of(Options options) {
     var layer = ModuleLayerBuilder.build(options.get(Property.PROJECT, "project"));
     return ServiceLoader.load(layer, Provider.class)
