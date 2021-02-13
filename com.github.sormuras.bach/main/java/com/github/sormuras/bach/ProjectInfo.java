@@ -23,7 +23,7 @@ public @interface ProjectInfo {
    * {@return the name of the project, defaults to {@code "*"}}
    *
    * @see Project#name()
-   * @see ProjectBuilder#computeName()
+   * @see ProjectComputer#computeProjectName(ProjectInfo)
    */
   String name() default "*";
 
@@ -31,6 +31,7 @@ public @interface ProjectInfo {
    * {@return the version of the project, defaults to {@code "0"}}
    *
    * @see Project#version()
+   * @see ProjectComputer#computeProjectVersion(ProjectInfo)
    * @see java.lang.module.ModuleDescriptor.Version
    */
   String version() default "0";
@@ -39,6 +40,7 @@ public @interface ProjectInfo {
    * {@return an array of external modules on which the project has a dependence}
    *
    * @see Libraries#requires()
+   * @see ProjectComputer#computeProjectLibraries(ProjectInfo)
    * @see java.lang.module.ModuleDescriptor.Requires
    */
   String[] requires() default {};
@@ -47,10 +49,16 @@ public @interface ProjectInfo {
    * {@return an array of external module lookup annotations}
    *
    * @see Libraries#lookup(String)
+   * @see ProjectComputer#computeProjectLibraries(ProjectInfo)
    */
   External[] lookup() default {};
 
-  /** An external module name to URI pair annotation. */
+  /**
+   * An external module name to URI pair annotation.
+   *
+   * @see com.github.sormuras.bach.lookup.ExternalModuleLookup
+   * @see ProjectComputer#computeProjectModuleLookup(External)
+   */
   @Target({})
   @interface External {
     /** {@return the module name} */
@@ -59,7 +67,7 @@ public @interface ProjectInfo {
     /** {@return the target of the lookup, usually resolvable to a remote JAR file} */
     String via();
 
-    /** {@return the type of the string returned by {@link #via()}, defaults to {@link Type#AUTO}} */
+    /** {@return the type of the {@link #via()} target string, defaults to {@link Type#AUTO}} */
     Type type() default Type.AUTO;
 
     /** {@return the base path of path targets} */

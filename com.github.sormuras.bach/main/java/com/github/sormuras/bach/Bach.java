@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Java Shell Builder. */
-public class Bach {
+public class Bach implements ProjectComputer {
 
   public static final Path BIN = Path.of(".bach/bin");
 
@@ -79,6 +79,11 @@ public class Bach {
     this.project = newProject();
   }
 
+  @Override
+  public final Bach bach() {
+    return this;
+  }
+
   public Options options() {
     return options;
   }
@@ -112,7 +117,7 @@ public class Bach {
   }
 
   protected Project newProject() {
-    return new ProjectBuilder(this).build();
+    return computeProject();
   }
 
   public final Base base() {
@@ -126,12 +131,6 @@ public class Bach {
 
   public final List<Recording> recordings() {
     return recordings.stream().toList();
-  }
-
-  public ProjectInfo computeProjectInfo() {
-    var info = getClass().getModule().getAnnotation(ProjectInfo.class);
-    if (info != null) return info;
-    return Bach.class.getModule().getAnnotation(ProjectInfo.class);
   }
 
   public final Project project() {
