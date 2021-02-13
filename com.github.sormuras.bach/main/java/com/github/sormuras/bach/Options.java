@@ -138,7 +138,7 @@ public record Options(
     return deque.removeFirst();
   }
 
-  static <E extends Enum<E>> String key(E constant) {
+  public static <E extends Enum<E>> String key(E constant) {
     return "--" + constant.name().toLowerCase(Locale.ROOT).replace('_', '-');
   }
 

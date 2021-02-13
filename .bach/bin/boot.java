@@ -3,6 +3,7 @@ package bin;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Options.Property;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
@@ -40,7 +41,7 @@ public class boot {
   }
 
   public static void refresh() {
-    utils.refresh("project");
+    utils.refresh(Bach.INFO_MODULE);
   }
 
   public interface files {
@@ -620,8 +621,11 @@ public class boot {
     }
 
     static void refresh(String module) {
+      var load = Options.key(Property.BACH_INFO);
+      var options = Options.of(load, module);
       try {
-        set(Bach.of(Options.of("--project", module)));
+        var bach = Bach.of(options);
+        set(bach);
       } catch (Exception exception) {
         out(
             """
