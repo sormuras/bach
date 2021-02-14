@@ -45,6 +45,57 @@ public class boot {
 
   public interface files {
 
+    static void createBachInfoModuleDescriptor() throws Exception {
+      var file = bach().base().directory(".bach/bach.info/module-info.java");
+      if (Files.exists(file)) {
+        out("File already exists: %s", file);
+        return;
+      }
+      out("Create build information module descriptor: %s", file);
+      var text =
+          """
+          @com.github.sormuras.bach.ProjectInfo (
+            name = "{{PROJECT-NAME}}",
+            version = "{{PROJECT-VERSION}}"
+          )
+          module bach.info {
+            requires com.github.sormuras.bach;
+            provides com.github.sormuras.bach.Bach.Provider with bach.info.Builder;
+          }
+          """
+              .replace("{{PROJECT-NAME}}", bach().project().name())
+              .replace("{{PROJECT-VERSION}}", bach().project().version().toString());
+      Files.createDirectories(file.getParent());
+      Files.writeString(file, text);
+    }
+
+    static void createBachInfoBuilderClass() throws Exception {
+      var file = bach().base().directory(".bach/bach.info/bach/info/Builder.java");
+      out("Create builder class: %s", file);
+      var text =
+          """
+          package bach.info;
+
+          import com.github.sormuras.bach.*;
+
+          public class Builder extends Bach {
+            public static void main(String... args) {
+              Bach.main(args);
+            }
+
+            public static Provider<Builder> provider() {
+              return Builder::new;
+            }
+
+            private Builder(Options options) {
+              super(options);
+            }
+          }
+          """;
+      Files.createDirectories(file.getParent());
+      Files.writeString(file, text);
+    }
+
     static void dir() {
       dir("");
     }
