@@ -16,9 +16,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -41,6 +43,147 @@ public class boot {
 
   public static void refresh() {
     utils.refresh(Bach.INFO_MODULE);
+  }
+
+  public static void scaffold() throws Exception {
+    files.createBachInfoModuleDescriptor();
+    files.createBachInfoBuilderClass();
+    exports.idea();
+  }
+
+  public interface exports {
+
+    static void idea() throws Exception {
+      var idea = bach().base().directory(".idea");
+      if (Files.exists(idea)) {
+        out("IntelliJ's IDEA directory already exits: %s", idea);
+        return;
+      }
+
+      Files.createDirectories(idea);
+      ideaMisc(idea);
+      ideaRootModule(idea, bach().project().name());
+      ideaModules(idea, List.of(bach().project().name(), "bach.info"));
+      if (Files.exists(bach().base().directory(".bach/bach.info"))) ideaBachInfoModule(idea);
+      ideaLibraries(idea);
+    }
+
+    private static void ideaMisc(Path idea) throws Exception {
+      Files.writeString(
+          idea.resolve(".gitignore"),
+          """
+          # Default ignored files
+          /shelf/
+          /workspace.xml
+          """);
+
+      Files.writeString(
+          idea.resolve("misc.xml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project version="4">
+            <component name="ProjectRootManager" version="2" languageLevel="JDK_16" default="true" project-jdk-name="16" project-jdk-type="JavaSDK">
+              <output url="file://$PROJECT_DIR$/.idea/out" />
+            </component>
+          </project>
+          """);
+    }
+
+    private static void ideaModules(Path idea, List<String> files) throws Exception {
+      var modules = new StringJoiner("\n");
+      for (var file : files) {
+        modules.add(
+            """
+            <module fileurl="file://$PROJECT_DIR$/.idea/{{FILE}}.iml" filepath="$PROJECT_DIR$/.idea/{{FILE}}.iml" />"""
+                .replace("{{FILE}}", file)
+                .strip());
+      }
+
+      Files.writeString(
+          idea.resolve("modules.xml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project version="4">
+            <component name="ProjectModuleManager">
+              <modules>
+          {{MODULES}}
+              </modules>
+            </component>
+          </project>
+          """
+              .replace("{{MODULES}}", modules.toString().indent(6)));
+    }
+
+    private static void ideaRootModule(Path idea, String name) throws Exception {
+      Files.writeString(
+          idea.resolve(name + ".iml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <module type="JAVA_MODULE" version="4">
+            <component name="NewModuleRootManager" inherit-compiler-output="true">
+              <exclude-output />
+              <content url="file://$MODULE_DIR$">
+                <excludeFolder url="file://$MODULE_DIR$/.bach/workspace" />
+              </content>
+              <orderEntry type="sourceFolder" forTests="false" />
+              <orderEntry type="inheritedJdk" />
+            </component>
+          </module>
+          """);
+    }
+
+    private static void ideaBachInfoModule(Path idea) throws Exception {
+      Files.writeString(
+          idea.resolve("bach.info.iml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <module type="JAVA_MODULE" version="4">
+            <component name="NewModuleRootManager" inherit-compiler-output="true">
+              <exclude-output />
+              <content url="file://$MODULE_DIR$/.bach/bach.info">
+                <sourceFolder url="file://$MODULE_DIR$/.bach/bach.info" isTestSource="false" />
+              </content>
+              <orderEntry type="sourceFolder" forTests="false" />
+              <orderEntry type="library" name="bach-bin" level="project" />
+              <orderEntry type="inheritedJdk" />
+            </component>
+          </module>
+          """);
+    }
+
+    private static void ideaLibraries(Path idea) throws Exception {
+      var libraries = Files.createDirectories(idea.resolve("libraries"));
+
+      Files.writeString(
+          libraries.resolve("bach_bin.xml"),
+          """
+          <component name="libraryTable">
+            <library name="bach-bin">
+              <CLASSES>
+                <root url="file://$PROJECT_DIR$/.bach/bin" />
+              </CLASSES>
+              <JAVADOC />
+              <SOURCES />
+              <jarDirectory url="file://$PROJECT_DIR$/.bach/bin" recursive="false" />
+            </library>
+          </component>
+          """);
+
+      Files.writeString(
+          libraries.resolve("bach_external_modules.xml"),
+          """
+          <component name="libraryTable">
+            <library name="bach-external-modules">
+              <CLASSES>
+                <root url="file://$PROJECT_DIR$/.bach/external-modules" />
+              </CLASSES>
+              <JAVADOC />
+              <SOURCES />
+              <jarDirectory url="file://$PROJECT_DIR$/.bach/external-modules" recursive="false" />
+            </library>
+          </component>
+          """);
+    }
   }
 
   public interface files {
