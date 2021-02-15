@@ -6,7 +6,6 @@ import com.github.sormuras.bach.api.BachAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.module.ModuleFinder;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +17,6 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 
 /** Java Shell Builder. */
 public class Bach implements BachAPI {
@@ -135,21 +133,6 @@ public class Bach implements BachAPI {
     buildProject();
   }
 
-  public String computeMainJarFileName(String module) {
-    return module + '@' + project().versionNumberAndPreRelease() + ".jar";
-  }
-
-  public Stream<ToolProvider> computeToolProviders() {
-    var layer = new ModuleLayerBuilder().before(ModuleFinder.of(EXTERNALS)).build();
-    return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
-  }
-
-  public ToolProvider computeToolProvider(String name) {
-    var provider = computeToolProviders().filter(it -> it.name().equals(name)).findFirst();
-    if (provider.isPresent()) return provider.get();
-    throw new RuntimeException("No tool provider found for name: " + name);
-  }
-
   public void clean() throws Exception {
     debug("Clean...");
 
@@ -178,27 +161,7 @@ public class Bach implements BachAPI {
     print("project: %s", project);
   }
 
-  public Recording run(Command<?> command) {
-    debug("Run %s", command.toLine());
-    var provider = computeToolProvider(command.name());
-    var arguments = command.toStrings();
-    return run(provider, arguments);
-  }
-
-  public List<Recording> run(Command<?> command, Command<?>... commands) {
-    return run(Stream.concat(Stream.of(command), Stream.of(commands)).toList());
-  }
-
-  public List<Recording> run(List<Command<?>> commands) {
-    var size = commands.size();
-    debug("Run %d command%s", size, size == 1 ? "" : "s");
-    if (size == 0) return List.of();
-    if (size == 1) return List.of(run(commands.iterator().next()));
-    var sequential = is(Flag.RUN_COMMANDS_SEQUENTIALLY);
-    var stream = sequential ? commands.stream() : commands.stream().parallel();
-    return stream.map(this::run).toList();
-  }
-
+  @Override
   public Recording run(ToolProvider provider, List<String> arguments) {
     var name = provider.name();
     var currentThread = Thread.currentThread();

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /** Methods related to building projects. */
-public interface ProjectAPI {
+public interface ProjectBuilderAPI {
 
   Bach bach();
 
@@ -63,6 +63,10 @@ public interface ProjectAPI {
       case PATH -> Libraries.lookup(module).viaPath(external.pathBase(), target);
       case MAVEN -> Libraries.lookup(module).viaMaven(external.mavenRepository(), target);
     };
+  }
+
+  default String computeMainJarFileName(String module) {
+    return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 
   default void buildProject() throws Exception {
