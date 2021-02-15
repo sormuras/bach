@@ -132,7 +132,7 @@ public class Bach implements BachAPI {
   }
 
   public void build() throws Exception {
-    makeProject();
+    buildProject();
   }
 
   public String computeMainJarFileName(String module) {

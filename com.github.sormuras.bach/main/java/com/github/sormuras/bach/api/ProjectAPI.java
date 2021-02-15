@@ -65,7 +65,7 @@ public interface ProjectAPI {
     };
   }
 
-  default void makeProject() throws Exception {
+  default void buildProject() throws Exception {
     var bach = bach();
     var project = bach.project();
     bach.print("Build %s %s", project.name(), project.version());
@@ -73,7 +73,7 @@ public interface ProjectAPI {
     var start = Instant.now();
     try {
       bach.loadMissingExternalModules();
-      makeProjectMainSpace();
+      buildProjectMainSpace();
     } catch (Exception exception) {
       throw new RuntimeException("Build failed: " + exception);
     } finally {
@@ -83,5 +83,5 @@ public interface ProjectAPI {
     }
   }
 
-  default void makeProjectMainSpace() throws Exception {}
+  default void buildProjectMainSpace() throws Exception {}
 }
